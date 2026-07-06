@@ -699,7 +699,7 @@ renderCal();
 (function(){
   var CURRENT="employee";
   window.nav=function(w){ if(w!==CURRENT) location.href=w+".html"; };
-  window.enter=function(w){ location.href="signin.html#"+(w||"advisor"); };
+  window.enter=function(w){ location.href=(w||"advisor")+".html"; };
   window.signout=function(){ location.href="index.html"; };
   document.getElementById("landing").style.display="none";
   document.getElementById("app").classList.add("on");

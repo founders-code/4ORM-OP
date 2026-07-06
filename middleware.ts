@@ -10,7 +10,7 @@ const hasClerk =
 
 // Each room requires its own role. Roles are ADDITIVE: one person can hold
 // several. An advisor who becomes an employee has ['advisor','employee'] and
-// gets both offices. Engineers typically have ['employee','engineering'].
+// gets both offices. Engineers typically have ['advisor','engineering'].
 const ROOM_ROLE: Record<string, string> = {
   '/advisor.html': 'advisor',
   '/employee.html': 'employee',
@@ -26,12 +26,12 @@ const isDocuments = createRouteMatcher(['/documents/(.*)']);
 
 const gated = clerkMiddleware(async (auth, req) => {
   if (isRoom(req) || isDocuments(req)) {
-    const { userId, sessionClaims } = await auth();
+    const { userId, redirectToSignIn, sessionClaims } = await auth();
 
     // 1) Must be signed in (Google, restricted to the 4ormfinance.com domain in
-    //    the Clerk dashboard). If not, send to sign-in.
+    //    the Clerk dashboard). Sends them to Clerk sign-in, then back here.
     if (!userId) {
-      return NextResponse.redirect(new URL('/sign-in', req.url));
+      return redirectToSignIn({ returnBackUrl: req.url });
     }
 
     // 2) Must hold the room's role. Add `roles` to the session token in Clerk
