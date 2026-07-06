@@ -464,7 +464,7 @@ function go(which){
  document.getElementById('pLead').textContent=P.lead;
  document.getElementById('docNote').textContent=P.docNote;
  document.getElementById('clockSlot').innerHTML='';
- if(P.clock){var _r=new Date(firstLogin);_r.setMonth(_r.getMonth()+6);var _d=Math.max(0,Math.round((_r-new Date())/86400000)||184);document.getElementById('daysRev').innerHTML='<b>'+_d+'</b> days to review';}else{document.getElementById('daysRev').innerHTML='';}
+ document.getElementById('daysRev').innerHTML='';
  renderBoxes(P.boxes);
  renderCal();
  window.scrollTo({top:0,behavior:'smooth'});
@@ -512,7 +512,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal('docModa
 /* ---------------- six-month clock ---------------- */
 const firstLogin=new Date();
 function clockHTML(){
- const rev=new Date(firstLogin); rev.setMonth(rev.getMonth()+6);
+ const rev=window.REVIEW_DATE?new Date(window.REVIEW_DATE):(function(){var r=new Date(firstLogin);r.setMonth(r.getMonth()+6);return r;})();
  const days=Math.max(0,Math.round((rev-new Date())/86400000)||184);
  const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
  return `<div class="clock"><div class="ck-ico">&#9203;</div>
@@ -529,7 +529,7 @@ function calMove(n){calM+=n;if(calM<0){calM=11;calY--;}if(calM>11){calM=0;calY++
 function renderCal(){
  const first=new Date(calY,calM,1), start=first.getDay(), dim=new Date(calY,calM+1,0).getDate();
  const today=new Date(), council=firstMonday(calY,calM);
- const rev=new Date(firstLogin); rev.setMonth(rev.getMonth()+6);
+ const rev=window.REVIEW_DATE?new Date(window.REVIEW_DATE):(function(){var r=new Date(firstLogin);r.setMonth(r.getMonth()+6);return r;})();
  document.getElementById('calLabel').textContent=first.toLocaleDateString('en-US',{month:'long',year:'numeric'});
  let cells=[],day=1;
  for(let i=0;i<42;i++){
