@@ -2,32 +2,52 @@ import type { NextRequest, NextFetchEvent } from 'next/server';
 import { NextResponse } from 'next/server';
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
-// Gating is added once Clerk keys are present. Until then the app deploys and
-// serves openly, so the build never fails for a missing key. Each room is gated
-// separately and never crosses over.
+// Gating activates only when Clerk keys are present, so the app still builds and
+// deploys before Clerk is wired.
 const hasClerk =
   !!process.env.CLERK_SECRET_KEY &&
   !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
-const isProtected = createRouteMatcher([
+// Each room requires its own role. Roles are ADDITIVE: one person can hold
+// several. An advisor who becomes an employee has ['advisor','employee'] and
+// gets both offices. Engineers typically have ['employee','engineering'].
+const ROOM_ROLE: Record<string, string> = {
+  '/advisor.html': 'advisor',
+  '/employee.html': 'employee',
+  '/engineering.html': 'engineering',
+};
+
+const isRoom = createRouteMatcher([
   '/advisor.html',
   '/employee.html',
   '/engineering.html',
-  '/documents/(.*)',
 ]);
+const isDocuments = createRouteMatcher(['/documents/(.*)']);
 
 const gated = clerkMiddleware(async (auth, req) => {
-  if (isProtected(req)) {
-    const { userId } = await auth();
+  if (isRoom(req) || isDocuments(req)) {
+    const { userId, sessionClaims } = await auth();
+
+    // 1) Must be signed in (Google, restricted to the 4ormfinance.com domain in
+    //    the Clerk dashboard). If not, send to sign-in.
     if (!userId) {
       return NextResponse.redirect(new URL('/sign-in', req.url));
     }
 
-    // TODO (production): enforce room-by-room separation by Clerk Organization.
-    // const { orgSlug } = await auth();
-    // if (req.nextUrl.pathname === '/advisor.html'     && orgSlug !== 'advisors')    return NextResponse.redirect(new URL('/', req.url));
-    // if (req.nextUrl.pathname === '/employee.html'    && orgSlug !== 'employees')   return NextResponse.redirect(new URL('/', req.url));
-    // if (req.nextUrl.pathname === '/engineering.html' && orgSlug !== 'engineering') return NextResponse.redirect(new URL('/', req.url));
+    // 2) Must hold the room's role. Add `roles` to the session token in Clerk
+    //    (Sessions -> Customize session token: {"metadata": "{{user.public_metadata}}"}),
+    //    then set each person's public metadata to e.g. { "roles": ["advisor"] }.
+    const claims = sessionClaims as Record<string, any> | undefined;
+    const roles: string[] =
+      claims?.metadata?.roles ??
+      claims?.publicMetadata?.roles ??
+      [];
+
+    const needed = ROOM_ROLE[req.nextUrl.pathname];
+    if (needed && !roles.includes(needed)) {
+      // Signed in but not entitled to this room: send home.
+      return NextResponse.redirect(new URL('/', req.url));
+    }
   }
 });
 
