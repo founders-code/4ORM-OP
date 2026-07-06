@@ -146,12 +146,10 @@
  .cd{width:100%;aspect-ratio:1;max-width:38px;margin:0 auto;display:grid;place-items:center;border-radius:8px;font-size:.82rem;color:var(--t2);position:relative;}
  .cd.muted{color:rgba(255,255,255,.2);}
  .cd.today{outline:1px solid var(--peach);color:#fff;font-weight:700;}
- .cd.ev-council{background:rgba(46,107,242,.28);color:#fff;font-weight:700;}
- .cd.ev-exec{color:#fff;}
- .cd.ev-exec::after{content:'';position:absolute;bottom:5px;width:5px;height:5px;border-radius:50%;background:var(--peach);}
- .cd.ev-oneonone{color:#fff;}
- .cd.ev-oneonone::after{content:'';position:absolute;bottom:5px;width:5px;height:5px;border-radius:50%;background:var(--green);}
- .cd.ev-review{background:rgba(231,199,108,.24);color:#fff;font-weight:700;outline:1px solid rgba(231,199,108,.5);}
+ .cd.ev-council{background:rgba(46,107,242,.34);border:1px solid rgba(46,107,242,.6);color:#fff;font-weight:700;}
+ .cd.ev-exec{background:rgba(255,217,168,.26);border:1px solid rgba(255,217,168,.6);color:#fff;font-weight:700;}
+ .cd.ev-oneonone{background:rgba(123,227,176,.24);border:1px solid rgba(123,227,176,.55);color:#fff;font-weight:700;}
+ .cd.ev-review{background:rgba(231,199,108,.24);border:1px solid rgba(231,199,108,.55);color:#fff;font-weight:700;}
  .cal-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;font-size:.7rem;color:var(--t3);}
  .cal-legend span{display:inline-flex;align-items:center;gap:6px;}
  .cal-legend i{width:11px;height:11px;border-radius:4px;display:inline-block;}
@@ -302,6 +300,7 @@
  .placeholder p{font-size:.95rem;line-height:1.6;margin-bottom:8px;}
  .placeholder .tag{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);font-weight:700;margin-top:14px;}
 </style>
+<script src="config.js"></script>
 </head>
 <body>
 
@@ -1221,6 +1220,11 @@ renderCal();
   document.getElementById("landing").style.display="none";
   document.getElementById("app").classList.add("on");
   go(CURRENT);
+  var pk=window.CLERK_PK||"";
+  if(pk){ var fapi=""; try{ fapi=atob(pk.replace(/^pk_(live|test)_/,"")).replace(/\$+$/,""); }catch(e){} 
+    if(fapi){ var s=document.createElement("script"); s.src="https://"+fapi+"/npm/@clerk/clerk-js@5/dist/clerk.browser.js"; s.async=true; s.crossOrigin="anonymous"; s.setAttribute("data-clerk-publishable-key",pk);
+      s.onload=function(){ window.Clerk.load().then(function(){ var u=window.Clerk.user; if(u){ var nm=u.fullName||u.firstName||(u.primaryEmailAddress&&u.primaryEmailAddress.emailAddress)||""; if(nm){ var el=document.getElementById("userName"); if(el) el.textContent=nm; } } }); };
+      document.head.appendChild(s); } }
 })();
 </script>
 </body>
