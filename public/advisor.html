@@ -177,10 +177,9 @@
  .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 24px;border-left:3px solid var(--brand);}
  .box.alt{border-left-color:var(--green);}
  .box.private{border-color:rgba(231,199,108,.34);border-left-color:var(--gold);background:rgba(231,199,108,.04);}
- .box-tag{font-size:.9rem;color:rgba(255,255,255,.85);font-weight:500;margin-bottom:12px;}
- .cat-pill{display:inline-flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:99px;padding:8px 20px 8px 13px;margin-bottom:16px;}
- .cat-pill .cp-n{font-family:var(--font-mono);font-size:1.2rem;font-weight:800;color:var(--brand);line-height:1;}
- .cat-pill .cp-l{font-family:var(--font-mono);font-size:.84rem;font-weight:700;letter-spacing:.05em;color:#fff;}
+ .cat-pill{display:inline-flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:99px;padding:10px 24px 10px 16px;margin-bottom:16px;}
+ .cat-pill .cp-n{font-family:var(--font-mono);font-size:1.4rem;font-weight:800;color:var(--brand);line-height:1;}
+ .cat-pill .cp-l{font-family:var(--font-mono);font-size:.98rem;font-weight:700;letter-spacing:.05em;color:#fff;}
  .box.alt .cat-pill .cp-n{color:var(--green);}
  .box.private .cat-pill .cp-n{color:var(--gold);}
  .cat-bar{height:3px;border-radius:99px;background:linear-gradient(90deg,var(--brand),rgba(46,107,242,.15));margin-bottom:12px;}
@@ -445,38 +444,45 @@ const PORTALS={
   docNote:'Page through everything on one screen. Live items open on brand and view-only. Private items sit in your own folder and are never shared with other advisors.',
   boxes:[
    {n:'00',k:'Orientation',t:'Start Here',files:[
+     {name:'Welcome to the Team',sub:'From the founder',st:'live',doc:'welcome'},
      {name:'Why 4orm',sub:'Where we come from and where we are going',st:'live',doc:'whatis'},
      {name:'Working With Us',sub:'The welcome and how-we-work companion',st:'live',doc:'workingwithus'},
      {name:'How to use this room',sub:'A two-minute orientation',st:'live',doc:'howto'},
      {name:'How 4orm Works',sub:'Architecture brief',st:'live',doc:'architecture'}]},
-   {n:'01',k:'Private to you',t:'Your Agreements',priv:true,files:[
-     {name:'Signed Engagement Letter',sub:'IP terms included',st:'private'},
-     {name:'Compensation & Terms Schedule',sub:'Personal',st:'private'},
-     {name:'Signed Mutual NDA',sub:'Your reference copy',st:'private'},
-     {name:'Six-Month Review',sub:'Unlocks at your review date',st:'private'}]},
-   {n:'02',k:'Shared',t:'The Company',files:[
-     {name:'Mission, Vision & Values',sub:'What we stand for',st:'live',doc:'mvv'},
-     {name:'What We Do',sub:'Company overview',st:'live',doc:'whatwedo'},
-     {name:'Strategy & Fundraise Status',sub:'Living page',st:'dynamic',doc:'strategy'},
-     {name:'Current State Dashboard',sub:'Live from the data room',st:'dynamic',doc:'dashboard'}]},
-   {n:'03',k:'Shared',t:'Governance & Mission',files:[
+   {n:'01',k:'Private to you',t:'Your Onboarding Packet',priv:true,files:[
+      {name:'The Mission Anchor',sub:'Our constitution, you sign onto it',st:'live',doc:'anchor'},
+      {name:'Mutual Non-Disclosure Agreement',sub:'Your signed reference copy',st:'private'},
+      {name:'Signed Engagement Letter',sub:'IP terms included',st:'private'},
+      {name:'Contractor Agreement',sub:'Placeholder, added when applicable',st:'soon'},
+      {name:'Compensation & Term Schedule',sub:'Personal to you',st:'private'},
+      {name:'Legacy Token Program',sub:'The first hundred',st:'live',doc:'legacy'},
+      {name:'Six-Month Review',sub:'Reviewed with the CEO and Advisory Council',st:'live',doc:'sixmonth'}]},
+   {n:'02',k:'Company',t:'The Company',files:[
+      {name:'Elevator Pitch',sub:'The 30 and 60 second pitch',st:'live',doc:'elevator'},
+      {name:'Mission',sub:'Why we exist',st:'live',doc:'mvv'},
+      {name:'Vision',sub:'The North Star',st:'live',doc:'mvv'},
+      {name:'Values',sub:'What we operate by',st:'live',doc:'mvv'},
+      {name:'What We Do',sub:'Company overview',st:'live',doc:'whatwedo'}]},
+    {n:'03',k:'Shared',t:'Strategy & Status',files:[
+      {name:'Strategy & Fundraise Status',sub:'Living page',st:'dynamic',doc:'strategy'},
+      {name:'Current State Dashboard',sub:'Live from the data room',st:'dynamic',doc:'dashboard'}]},
+   {n:'04',k:'Shared',t:'Governance & Mission',files:[
      {name:'CEO Commitment',sub:'Founder & CEO statement',st:'live',doc:'ceo'},
-     {name:'Decision Matrix',sub:'From the data room',st:'room'},
+     {name:'Decision Matrix',sub:'Who owns what, how decisions move',st:'live',doc:'decisionmatrix'},
      {name:"Founders' Voting Agreement",sub:'Summary',st:'soon'}]},
-   {n:'04',k:'Shared',t:'How We Work',files:[
+   {n:'05',k:'Shared',t:'How We Work',files:[
      {name:'Advisor Code of Conduct',sub:'How we carry ourselves',st:'live',doc:'conduct'},
      {name:'Communication Channels & Tools',sub:'Where we work and talk',st:'live',doc:'comms'}]},
-   {n:'05',k:'Shared',t:'Security & Confidentiality',files:[
+   {n:'06',k:'Shared',t:'Security & Confidentiality',files:[
      {name:'Security & Confidentiality',sub:'Your access boundary',st:'live',doc:'security'}]},
-   {n:'06',k:'Shared',t:'Programs',files:[
-     {name:'Legacy Token Instrument',sub:'The first hundred',st:'live',doc:'legacy'}]},
-   {n:'07',k:'Shared · deep dives',t:'Reference Library',files:[
+   {n:'07',k:'Shared',t:'Company Structure',files:[
+      {name:'Corporate Structure',sub:'Alberta entities and oversight',st:'live',doc:'corpstructure'}]},
+   {n:'08',k:'Shared · deep dives',t:'Reference Library',files:[
      {name:'Capital Structure Memorandum',sub:'From the data room',st:'room'},
      {name:'Pre-Seed Round Structure Recs',sub:'From the data room',st:'room'},
      {name:"Founders' Voting Agreement (full)",sub:'From the data room',st:'room'},
-     {name:'Full Mission Anchor',sub:'Standalone values document',st:'live',doc:'anchor'},
      {name:'Open the full data room',sub:'data.4ormfinance.com',st:'room',url:'https://data.4ormfinance.com'}]},
-   {n:'08',k:'Shared',t:'Team, Contacts & FAQ',files:[
+   {n:'09',k:'Shared',t:'Team, Contacts & FAQ',files:[
      {name:'Team & Contacts',sub:'Who to reach',st:'live',doc:'team'},
      {name:'FAQ',sub:'Common questions',st:'live',doc:'faq'},
      {name:'Advisor Directory',sub:'Opens the circle',st:'live',dir:true}]}
@@ -516,7 +522,6 @@ function go(which){
 function renderBoxes(boxes){
  document.getElementById('boxGrid').innerHTML=boxes.map((b,idx)=>`
   <div class="box${b.priv?' private':(idx%2?' alt':'')}">
-   <div class="box-tag">${b.k}</div>
    <div class="cat-pill"><span class="cp-n">${b.n}</span><span class="cp-l">${b.t}</span></div>
    <div class="cat-bar"></div>
    <ul class="files">${b.files.map((f,i)=>fileRow(b,i)).join('')}</ul>
@@ -603,6 +608,225 @@ function inroomPlaceholder(name){return `<div class="placeholder"><div class="pi
 function towritePlaceholder(name){return `<div class="placeholder"><div class="pi">&#9998;</div><h3>${name}</h3><p>This is on the gaps-to-close list. It is being written before it goes in front of the founding technical hire.</p><div class="tag">To write &middot; gap to close</div></div>`;}
 
 const DOCS={
+ welcome:`<div class="doc">${dtop('Welcome to the Team')}<div class="eyebrow-m">From the founder</div>
+  <h1 class="dh">Welcome to 4orm Finance.</h1>
+  <p class="dsub">If you are reading this, you have been chosen to become part of something that is still being built.</p>
+  ${dmeta([['From','Chad Johnston, Founder and CEO'],['For','The founding team'],['Room','Advisor'],['Class.','Confidential']])}
+  <p class="lead">We are not joining an established institution. We are building one. That matters.</p>
+  <p>Every process, every decision, every customer interaction, every line of code, every partnership, and every standard we set today becomes part of the foundation that others will inherit long after us.</p>
+  <p>You were not hired simply because you could do the job. You were invited because we believe you can help build the company.</p>
+  <p>Welcome to the team.</p>
+  <h2 class="ds"><span class="sn">01</span>We build for the long term.</h2>
+  <p>Our ambition is not to build a successful startup. It is to build a company that will still be serving people a hundred years from now.</p>
+  <p>Companies that last are not built on brilliant ideas alone. They are built by ordinary people who consistently do extraordinary work, protect one another, make hard decisions, and refuse to compromise their standards.</p>
+  <p>Culture is not something we write. Culture is what we practice every day. From this point forward, you are part of protecting it.</p>
+  <h2 class="ds"><span class="sn">02</span>We protect people.</h2>
+  <p>Business exists because of people. Before customers, before investors, before technology: people.</p>
+  <p>Exceptional businesses are built by people who know they are valued. Your health matters. Your family matters. Your character matters.</p>
+  <p>Burnout is not a badge of honor. Working hard is.</p>
+  <p>There will be seasons that demand extraordinary effort: late nights, hard problems, moments where execution takes everything we have. Those seasons are temporary.</p>
+  <p>Our goal is not to extract as much from people as possible. It is to build people who can perform at the highest level for decades. Healthy people build healthy companies.</p>
+  <h2 class="ds"><span class="sn">03</span>Family comes first.</h2>
+  <p>We never forget why we work. The people waiting for us at home matter more than any meeting, project, or deadline.</p>
+  <p>When your family genuinely needs you, they come first. Always.</p>
+  <p>We do not see this as generosity. We see it as wisdom. People who know their family is protected bring their best selves to work.</p>
+  <h2 class="ds"><span class="sn">04</span>We are an execution team.</h2>
+  <p>Ideas are everywhere. Execution is rare.</p>
+  <p>We care about what gets built. We move with urgency. We communicate clearly. We solve problems instead of admiring them. We finish what we start.</p>
+  <p>When something is broken, we fix it. When something can be improved, we improve it. When we commit, people can trust it will get done.</p>
+  <p>Our reputation will not be built by our ambitions. It will be built by our ability to execute.</p>
+  <div class="callout"><div class="cl">Great. Humble. Effective.</div><p><b>Great.</b> Be great at your craft. Never stop learning. Become exceptional.<br><b>Humble.</b> Stay humble enough to keep improving. Leave your ego at the door. Treat teammates, customers, and competitors with respect.<br><b>Effective.</b> When it is time to execute, be relentless. Quiet confidence. Precise execution. No drama. No politics. No excuses.</p></div>
+  <h2 class="ds"><span class="sn">05</span>Own the mission.</h2>
+  <p>If you see a problem, own it. If you make a mistake, own it. If you have an idea, share it.</p>
+  <p>We do not believe in blame. We believe in responsibility. Everyone here is trusted to think like an owner, because ownership creates better decisions.</p>
+  <h2 class="ds"><span class="sn">06</span>Tell the truth early.</h2>
+  <p>Truth compounds. So do small problems left unspoken.</p>
+  <p>We value honesty over comfort. We would rather hear difficult news today than easy stories tomorrow.</p>
+  <p>Speak directly, respectfully, professionally. Truth lets great teams move quickly.</p>
+  <h2 class="ds"><span class="sn">07</span>Protect the culture.</h2>
+  <p>Culture is one of the few things competitors cannot copy. Every person who joins either strengthens it or weakens it.</p>
+  <p>Protect one another. Protect the mission. Protect the standards. Protect the reputation of the company when no one is watching.</p>
+  <p>Do the right thing even when it costs more. Especially then.</p>
+  <h2 class="ds"><span class="sn">08</span>Leave the company better.</h2>
+  <p>Every person who joins 4orm should leave the company stronger than when they arrived. More capable, more disciplined, more confident. Better leaders, better teammates, better people.</p>
+  <p>That investment goes both ways. We will invest in your growth. We ask that you invest fully in ours.</p>
+  <h2 class="ds"><span class="sn">09</span>Success is shared.</h2>
+  <p>When this company succeeds, we want the people who built it to succeed alongside it. Not because it is good optics, but because it is right.</p>
+  <p>Those who help create lasting value should participate in the value they create. That philosophy shapes how we build, how we lead, and how we reward.</p>
+  <h2 class="ds"><span class="sn">10</span>Give more than you take.</h2>
+  <p>Success carries responsibility. Businesses should improve the communities they serve.</p>
+  <p>We give back. We serve. We build things that outlive us.</p>
+  <p>The measure of a company is not simply what it earns. It is what it leaves behind.</p>
+  <div class="callout"><div class="cl">The standard</div><p>We ask every member of this company to live by the same expectations: Think bigger than your role. Execute better than expected. Protect people. Protect the mission. Keep your word. Tell the truth. Stay humble. Never stop improving. Leave things better than you found them.<br>Everything else can be taught. Character cannot.</p></div>
+  <p class="lead">Welcome to 4orm Finance. We are grateful you are here. Now let us build something worthy of lasting for generations.</p>
+  <p><b>Chad Johnston</b><br>Founder and Chief Executive Officer<br>On behalf of the founding team of 4orm Finance</p>
+  ${FT}</div>`,
+ elevator:`<div class="doc">${dtop('Elevator Pitch')}<div class="eyebrow-m">Team enablement</div>
+  <h1 class="dh">Canada has the assets. It is missing the bridge. We are building it.</h1>
+  <p class="dsub">4orm is the regulated settlement layer and marketplace that connects Canada's real-world-asset issuers, custodians, and tokenization projects to institutional liquidity and the country's banks.</p>
+  ${dmeta([['For','The team'],['Use','Team enablement'],['Room','Advisor'],['Class.','Internal']])}
+  <div class="callout"><div class="cl">The frame</div><p>The question is no longer whether tokenized finance works in Canada. It is who builds the layer that makes it run.</p></div>
+  <h2 class="ds"><span class="sn">01</span>The 30-second version</h2>
+  <p>Canada has real innovation in tokenized finance, but it lives in small, disconnected pockets: credible issuers in real estate, private credit, energy, mining, and metals; tokenized-deposit infrastructure; qualified custodians. What is missing is the bridge between them and institutional capital. 4orm is that bridge. We are the regulated settlement layer and marketplace that connects Canada's asset issuers to the banks, the buy-side, and the liquidity that gives their value reach. Not another exchange. The infrastructure the whole market runs on.</p>
+  <h2 class="ds"><span class="sn">02</span>The 60-second version</h2>
+  <p>There is no shortage of good assets or good technology in Canada. There is a shortage of connection. Issuers with real value in real estate, private credit, and natural resources cannot reach institutional buyers, so their assets sit illiquid. The custodians, the tokenized deposits, and the regulation already exist, but nothing ties them together into a market.</p>
+  <p>4orm is the institutional infrastructure that lets Canada run tokenized finance at scale, safely: digital settlement, tokenized CAD deposits, real-world-asset issuance and registry, and a regulated marketplace, built end to end for Canadian rules. We do not build the assets. We build the layer that gives every issuer reach and every institution access.</p>
+  <p>The timing is not an accident. Canada has now proven tokenized settlement works: the Bank of Canada's tokenized bond trial settled end to end in central-bank money. The question moved from "if" to "who builds it." Picture Canada, the fourth-largest resource nation on earth, turning a fraction of that value into regulated, liquid instruments, without selling the asset. That is the market 4orm connects.</p>
+  <p style="font-size:.78rem;color:var(--slate)">Project Samara is directional industry proof, not a 4orm result. No regulator has reviewed, endorsed, or approved 4orm.</p>
+  <h2 class="ds"><span class="sn">03</span>One-liners you can drop anywhere</h2>
+  <ul><li>Canada has the assets and the custodians. We build the bridge to institutional liquidity.</li><li>4orm is the settlement layer that connects real-world-asset value to Canada's institutions.</li><li>Not another exchange. The infrastructure the market runs on.</li></ul>
+  <h2 class="ds"><span class="sn">04</span>How to land it &middot; Voss and Hughes</h2>
+  <ul><li><b>Start in their world.</b> Name the gap they already feel: good assets, no liquidity. Say it as a fact, then stop talking. Label it, and let the silence work.</li><li><b>Ask, do not tell.</b> "How would an issuer reach institutional buyers in Canada today?" Let the question expose the gap for them.</li><li><b>Speak with certainty.</b> State what Canada is missing as fact, not opinion. Calm authority reads as truth.</li><li><b>Future-pace the upside.</b> "Imagine a fraction of Alberta's resource base, liquid and regulated." Let them see it before you explain it.</li><li><b>Go for "that is right," not "you are right."</b> When they say the gap back to you, you have them. End on the bridge, not the features.</li></ul>
+  <div class="callout"><div class="cl">The line we all believe</div><p>We are building the layer that Canadian tokenized finance will run on.</p></div>
+  ${FT}</div>`,
+ corpstructure:`<div class="doc">${dtop('Corporate Structure')}<div class="eyebrow-m">Alberta entities and oversight</div>
+  <h1 class="dh">Corporate Structure</h1>
+  <p class="dsub">The mission and the standards, carried by a founder-held class and binding on the whole group, above the day-to-day and above any single vote.</p>
+  ${dmeta([['Jurisdiction','Alberta'],['As of','July 2026'],['Room','Advisor'],['Class.','Confidential']])}
+  <h2 class="ds"><span class="sn">01</span>Mission Anchor</h2>
+  <p><strong>Mission Anchor. Founder and Steward Class.</strong> The mission and the standards, carried by a founder-held class and binding on the whole group. Above the day-to-day, and above any single vote.</p>
+  <h2 class="ds"><span class="sn">02</span>Governance</h2>
+  <table><thead><tr><th>Layer</th><th>Description</th></tr></thead><tbody>
+    <tr><td>Board of Directors</td><td>Founder and independent directors. Investment Committee stands up on pre-seed close.</td></tr>
+    <tr><td>Advisory Council</td><td>Binding milestone review authority. Seats held by the named advisors.</td></tr>
+  </tbody></table>
+  <h2 class="ds"><span class="sn">03</span>Parent</h2>
+  <p><strong>4orm Finance.</strong> Alberta, holds the intellectual property, employs personnel, signs master agreements, and owns 100% of the operating companies.</p>
+  <h2 class="ds"><span class="sn">04</span>Operating Companies</h2>
+  <p>Each 100% owned, separately incorporated in Alberta.</p>
+  <table><thead><tr><th>Entity</th><th>Role</th><th>What it does</th><th>Regulators</th></tr></thead><tbody>
+    <tr><td>4orm Finance</td><td>Operating platform</td><td>Customer-facing services: accounts, transactions, and platform features.</td><td>FINTRAC (MSB), CSA / ASC, Bank of Canada, Privacy (AB)</td></tr>
+    <tr><td>4orm Exchange</td><td>Regulated marketplace</td><td>Listing, matching, and order routing. Centralized exchange.</td><td>CSA / ASC, CIRO, FINTRAC, AMF (QC)</td></tr>
+    <tr><td>4orm Trust</td><td>Custody &amp; settlement</td><td>Segregated custody, no rehypothecation, under a trust charter.</td><td>Alberta TBF (Trust), OSFI (if federal), FINTRAC</td></tr>
+    <tr><td>4orm Capital Markets</td><td>EMD / IFM / PM</td><td>Exempt Market Dealer, Investment Fund Manager, Portfolio Manager.</td><td>CSA / ASC, CIRO, FINTRAC, AMF (QC)</td></tr>
+    <tr><td>4orm Tokenization</td><td>Tech &amp; issuance</td><td>Smart contracts (ERC-3643), tokenization rails, issuance and verification.</td><td>CSA / ASC, FINTRAC, Privacy (AB), IP / patent</td></tr>
+  </tbody></table>
+  <div class="callout"><div class="cl">Constitutional Oversight. All Entities.</div><p>The Mission Anchor and the Founder and Steward Class bind every entity, every officer, every employee, every contractor, and every material vendor or partner, regardless of which company they touch. Customer-asset segregation, no rehypothecation, no debanking-coalition participation, no programmable-restriction infrastructure, and lawful-process-only data disclosure operate across the entire group.</p></div>
+  <h2 class="ds"><span class="sn">05</span>Notes</h2>
+  <ul>
+    <li>All subsidiaries are 100% owned by 4orm Finance and separately incorporated in Alberta to align regulator-specific licensing with the entity that holds the licence.</li>
+    <li>Trust charter to be selected at incorporation: provincial (Alberta Treasury Board and Finance) preferred for an Alberta-first build; federal (OSFI, Trust and Loan Companies Act) optional.</li>
+    <li>Capital Markets holds the Exempt Market Dealer, Investment Fund Manager, and Portfolio Manager registrations under NI 31-103. Token issuance is treated as a distribution of securities under NI 45-106 exemptions where applicable.</li>
+    <li>Future entities under consideration: a cross-border expansion holding, a foundation for education and stewardship, and a proprietary insurance entity post-Series A.</li>
+  </ul>
+  ${FT}</div>`,
+ decisionmatrix:`<div class="doc">${dtop('Decision Matrix')}<div class="eyebrow-m">Who owns what, and how decisions move</div>
+  <h1 class="dh">Decision Matrix</h1>
+  <p class="dsub">This document sets out who has authority to decide what at 4orm Finance, and how each decision moves through the organization.</p>
+  ${dmeta([['Version','15'],['As of','2026-07-08'],['Room','Advisor'],['Class.','Confidential']])}
+  <h2 class="ds"><span class="sn">01</span>Purpose</h2>
+  <p>This document sets out who has authority to decide what at 4orm Finance, and how each decision moves through the organization. It has two layers.</p>
+  <p>Layer 1 (The Covenant) is the corporate-governance framework: which decisions require Founder Consent, which require a shareholder vote (and at what threshold), which sit with the Board, and which sit with the CEO.</p>
+  <p>Layer 2 (Operational Decision Tables) documents specific operational decisions across the areas the Company works in each day. Each decision has a named Owner (accountable), named Input (consulted), and named Informed parties. The Owner has the final decision.</p>
+  <p>Where a Layer 1 tier applies to a Layer 2 decision, the tier prevails; the operational table describes how the decision gets prepared and who supports it.</p>
+  <h2 class="ds"><span class="sn">02</span>Role Key</h2>
+  <p>The Owner, Input, and Informed columns refer to the following roles under the v13 corporate structure:</p>
+  <ul>
+    <li>CEO - Chad R. Johnston. Founder, President, and Chairman of the Board through the pre-Series A stage.</li>
+    <li>CMO - Kevin Wong. Co-Founder, Go-to-Market Strategy. Owns brand, marketing, and public communication.</li>
+    <li>CTO - to be hired in Phase 1. Owns technology direction and delivery.</li>
+    <li>Head Architect - currently the role held by Zed (also an Advisory Council seat). Owns technical architecture in support of the CTO.</li>
+    <li>CCO - Chief Compliance Officer, to be hired at seed close. Owns compliance, regulatory filings, and non-judicial data-request handling.</li>
+    <li>CFO - Fractional CFO in Phase 1; full-time CFO from seed close. Owns finance, budgeting, treasury, grant applications, and SR&amp;ED.</li>
+    <li>Founding Capital Markets Advisor - Bruce Fair (via Mench Capital). Input on capital raise, investor sequencing, and bank counterparty introductions.</li>
+    <li>Advisory Council - four seats: Don Hickling (also Founding Angel), James Atherton, Dean McCall, Zed. Referred to collectively as "Advisory Council" in the Owner and Input columns.</li>
+    <li>Founders - Chad and Kevin acting together as co-founders. Referred to as "Founders" where a joint decision is expected.</li>
+    <li>Board - pre-Series A: Chad (Chairman with tie-breaking vote), Kevin, one Independent Director (mutually agreed at pre-seed close). See Layer 1 Tier 4 for expansion at seed and Series A.</li>
+  </ul>
+  <h2 class="ds"><span class="sn">03</span>Layer 1: The Covenant</h2>
+  <p>These tiers are constitutional. They prevail over any Layer 2 operational decision table.</p>
+  <h3>Tier 1 - Founder Consent Required (Chad, in writing)</h3>
+  <p>The following matters cannot proceed without Chad's specific written consent for so long as he holds not less than 5% of outstanding shares:</p>
+  <ul>
+    <li>Sale of substantially all assets or change of control.</li>
+    <li>Amendment of the Mission Anchor or any operative Mission Anchor provision.</li>
+    <li>Change of business or exit from tokenized settlement infrastructure.</li>
+    <li>Additional share issuances above 5% of outstanding shares in any 12-month period.</li>
+    <li>Amendment of the Articles of Incorporation.</li>
+    <li>Related-party transactions above $50,000 CAD.</li>
+    <li>CEO removal or replacement.</li>
+    <li>Winding-up or bankruptcy filing.</li>
+  </ul>
+  <h3>Tier 2 - Supermajority Shareholder Vote</h3>
+  <ul>
+    <li>Amendment of Articles: 75% or more shareholder vote plus Founder Consent (Tier 1).</li>
+    <li>Amendment of Mission Anchor provisions in the Shareholders' Agreement: 90% or more shareholder vote plus Founder Consent (Tier 1).</li>
+    <li>Change of business: 75% or more shareholder vote plus Founder Consent (Tier 1).</li>
+    <li>Sale of company: 66.67% or more shareholder vote plus Founder Consent (Tier 1).</li>
+    <li>CEO removal: 75% or more shareholder vote AND material cause (fraud, felony conviction, or extreme misconduct materially damaging the Company).</li>
+  </ul>
+  <h3>Tier 3 - Ordinary Shareholder Vote (majority)</h3>
+  <p>Routine shareholder matters not designated Tier 1 or Tier 2 pass by ordinary majority of votes cast, subject to the Voting Trust between Chad and Kevin (Kevin's shares are voted with Chad until earlier of Series A close or five years from incorporation).</p>
+  <h3>Tier 4 - Board Composition</h3>
+  <p>Pre-Series A composition: 3 seats. Chad (Chairman with tie-breaking vote), Kevin, one Independent Director appointed by mutual agreement of Chad and Kevin.</p>
+  <p>At seed close composition: 5 seats. Chad appoints 3 (majority, including Chairman), Kevin appoints 1, one Independent Director mutually agreed.</p>
+  <p>At Series A composition: 7 seats. Chad retains 3 (plurality), Kevin appoints 1, Lead Series A investor appoints 1, other investors appoint 1, one Independent Director mutually agreed.</p>
+  <p>Governance evolution: Chad currently holds Founder, CEO, President, and Chairman roles. The Board reviews governance structure at each major financing milestone (seed, Series A, and beyond) and adjusts to match the Company's scale, board composition, and institutional investor expectations. Separation of Chairman and CEO or Lead Independent Director designation are among the options the Board considers at each such review.</p>
+  <h3>Tier 5 - CEO Operational Authority</h3>
+  <p>The CEO has ordinary operational authority for hiring, firing, budgeting within board-approved plan, product roadmap, contracting within delegated limits, and all other day-to-day matters not reserved to the Board or the shareholders.</p>
+  <h2 class="ds"><span class="sn">04</span>Layer 2: Operational Decision Tables</h2>
+  <p>These tables document who is accountable for each operational decision, who is consulted before the decision is made, and who is informed after. The Owner has the final decision. Empty cells indicate no formal role for that decision.</p>
+  <h3>1. Product and Engineering</h3>
+  <p>Decisions about what 4orm builds, in what order, and on what infrastructure.</p>
+  <table><thead><tr><th>Decision</th><th>Owner (Accountable)</th><th>Input (Consulted)</th><th>Informed</th><th>Notes</th></tr></thead><tbody><tr><td>Product roadmap and prioritization</td><td>CTO</td><td>CEO, Head Architect, CMO</td><td>Board, Advisory Council</td><td>CTO owns weekly and quarterly roadmap; CEO signs off on strategic shifts.</td></tr><tr><td>Technical architecture (chain, ledger, settlement)</td><td>CTO</td><td>Head Architect, CEO</td><td>Board, Advisory Council</td><td>Hyperledger Besu Phase 1-3; 4orm Native Chain Phase 4. Chain abstraction layer required Phase 1.</td></tr><tr><td>MVP feature scope (Phase 1 signal)</td><td>CTO</td><td>CEO, Head Architect</td><td>Board</td><td>Categorical ledger + settlement orchestration + 2 MOU counterparties.</td></tr><tr><td>Blockchain infrastructure vendor (nodes, RPC)</td><td>CTO</td><td>Head Architect, CEO</td><td>CEO, Board</td><td>Chainstack, Alchemy, or self-hosted.</td></tr><tr><td>Custody vendor selection</td><td>CTO</td><td>CEO, Advisory Council</td><td>Board</td><td>Phase 2; qualified Canadian digital asset custodian (unnamed).</td></tr><tr><td>KYC/AML vendor selection</td><td>CTO</td><td>CEO, CCO</td><td>Board</td><td>Phase 2; iComply, Trulioo, or Sumsub.</td></tr><tr><td>Security audit provider selection</td><td>CTO</td><td>CEO</td><td>Board</td><td>Trail of Bits or ConsenSys Diligence; Phase 2 timing.</td></tr><tr><td>SPEER Engineering scope and toggle</td><td>CEO</td><td>CTO, Head Architect</td><td>Board</td><td>$317,304 contract; toggled ON/OFF via pro forma Control Panel.</td></tr><tr><td>Development platform tooling</td><td>CTO</td><td>Head Architect</td><td>CEO</td><td>GitHub Copilot, Cursor, Snyk, Datadog.</td></tr><tr><td>Cloud infrastructure (AWS Canada ca-central-1)</td><td>CTO</td><td>Head Architect</td><td>CEO</td><td>Alberta-hosted, Canadian data sovereignty.</td></tr><tr><td>Product launch timing</td><td>CEO</td><td>CTO, CMO</td><td>Board, Advisory Council</td><td>Target: product in market 12-18 months post-seed.</td></tr></tbody></table>
+  <h3>2. Capital and Fundraising</h3>
+  <p>Decisions about how, from whom, and on what terms 4orm raises capital. Governed by the Capital Raise Compensation Policy.</p>
+  <table><thead><tr><th>Decision</th><th>Owner (Accountable)</th><th>Input (Consulted)</th><th>Informed</th><th>Notes</th></tr></thead><tbody><tr><td>Pre-seed round structure and unit terms</td><td>CEO</td><td>Bruce, Advisory Council</td><td>Board, Advisory Council</td><td>See Pre-Seed Round Structure Recommendations.</td></tr><tr><td>Pre-seed unit pricing and valuation</td><td>CEO</td><td>Bruce, Advisory Council</td><td>Board</td><td>$0.60 common at $12M pre-money per current model.</td></tr><tr><td>Investor selection (lead)</td><td>CEO</td><td>Bruce, Advisory Council</td><td>Board</td><td>Target leads: BDC Seed Venture Fund, Golden Ventures, Version One, Panache.</td></tr><tr><td>Investor selection (angels and family offices)</td><td>CEO</td><td>Bruce, Advisory Council</td><td>Board</td><td>Bruce orchestrates via Mench Pool + Company Pool per Mench Advisor Agreement.</td></tr><tr><td>Term sheet negotiation</td><td>CEO</td><td>Bruce, Advisory Council</td><td>Board</td><td>Chad negotiates and closes; Bruce orchestrates.</td></tr><tr><td>Capital tranche receipt and use</td><td>CEO</td><td>CFO</td><td>Board, Advisory Council</td><td>Triggers cash retainer payments per advisor letters (Dean, Kevin).</td></tr><tr><td>Convertible note or SAFE terms</td><td>CEO</td><td>Bruce, Advisory Council</td><td>Board</td><td>Only if used; NI 45-106 accredited exemption applies.</td></tr><tr><td>Seed round timing and structure</td><td>CEO</td><td>Bruce, CTO, Advisory Council</td><td>Board, Advisory Council</td><td>Trigger: proof of architecture + 2 MOUs + Alberta Sandbox admission.</td></tr><tr><td>Grant applications (SR&amp;ED, IRAP, Alberta Innovates)</td><td>CFO</td><td>CEO, CTO</td><td>Board</td><td>SR&amp;ED enhanced 35% on first $6M R&amp;D.</td></tr><tr><td>SR&amp;ED advance financing (Boast, Easly, Venbridge)</td><td>CFO</td><td>CEO</td><td>Board</td><td>Only after fiscal year R&amp;D booked.</td></tr><tr><td>Capital-raise compensation to Bruce (via Milestone Agreement)</td><td>CEO</td><td>Bruce, Advisory Council</td><td>Board</td><td>Structured under Track C or issuer-officer path per Capital Raise Compensation Policy.</td></tr><tr><td>Capital Raise Compensation Policy amendments</td><td>CEO</td><td>Advisory Council</td><td>Board, Advisory Council</td><td>Compliance rigor with NI 31-103, ASC BO 31-536.</td></tr></tbody></table>
+  <h3>3. People and Hiring</h3>
+  <p>Decisions about who joins 4orm, in what role, and on what terms.</p>
+  <table><thead><tr><th>Decision</th><th>Owner (Accountable)</th><th>Input (Consulted)</th><th>Informed</th><th>Notes</th></tr></thead><tbody><tr><td>CTO hire</td><td>CEO</td><td>Advisory Council, Head Architect</td><td>Board</td><td>Dean McCall CTO Placement Success Fee applies (Advisory Council seat).</td></tr><tr><td>CCO hire</td><td>CEO</td><td>Advisory Council, CTO</td><td>Board</td><td>Seed close timing; part of CIRO application prep.</td></tr><tr><td>General Counsel or fractional GC engagement</td><td>CEO</td><td>Advisory Council</td><td>Board</td><td>Fractional retainer until Series A.</td></tr><tr><td>CFO transition (fractional to full-time)</td><td>CEO</td><td>CFO, Board</td><td>Board</td><td>Full-time hire at seed close.</td></tr><tr><td>Engineering hires (backend, smart contract, DevOps)</td><td>CTO</td><td>Head Architect</td><td>CEO</td><td>Post-close; per pro forma Team Roadmap.</td></tr><tr><td>Advisor grants (0.10% to 1.00% range)</td><td>CEO</td><td>Advisory Council</td><td>Board</td><td>Structure per Memorandum vesting framework: 24-month monthly, secured-at-signing tranche.</td></tr><tr><td>Advisory Council appointments (new seats)</td><td>CEO</td><td>Advisory Council</td><td>Board</td><td>0.25% per seat; 4 seats currently filled.</td></tr><tr><td>Employee equity grants (post-close)</td><td>CEO</td><td>CFO, Advisory Council</td><td>Board</td><td>Draw from Team Pool (12% / 2,400,000 shares).</td></tr><tr><td>Compensation ranges by role</td><td>CEO</td><td>CFO</td><td>Board</td><td>Aligned to pro forma OpEx assumptions.</td></tr><tr><td>Termination for cause</td><td>CEO</td><td>Advisory Council</td><td>Board</td><td>Follow Founders' Voting Agreement + Advisor Agreements for-cause definitions.</td></tr><tr><td>Termination without cause</td><td>CEO</td><td>Advisory Council, CMO</td><td>Board</td><td>Vesting floor and vested-equity treatment apply per each agreement. CMO consulted as co-founder.</td></tr><tr><td>Contractor and consultant engagements</td><td>CEO</td><td>CTO, CFO</td><td>Board</td><td>Includes SPEER Engineering, external audit, vendors.</td></tr></tbody></table>
+  <h3>4. Compliance and Regulatory</h3>
+  <p>Decisions about how 4orm engages with regulators, files, and stays compliant. Alberta-primary; ASC as primary regulator. CCO owns compliance execution.</p>
+  <table><thead><tr><th>Decision</th><th>Owner (Accountable)</th><th>Input (Consulted)</th><th>Informed</th><th>Notes</th></tr></thead><tbody><tr><td>Alberta Sandbox admission application</td><td>CCO</td><td>CEO, Advisory Council, CTO</td><td>Board, Advisory Council</td><td>Phase 1 milestone; ~$50K legal prep budgeted. Owned by CCO or legal team.</td></tr><tr><td>CIRO Digital Asset Custody Framework application</td><td>CCO</td><td>CEO, Advisory Council</td><td>Board, Advisory Council</td><td>Phase 2; ~$250K legal + $100K first-year cost. Owned by CCO or legal team.</td></tr><tr><td>Form 45-106F1 filing (ASC and OSC co-filing)</td><td>CCO</td><td>CEO, Advisory Council</td><td>Board</td><td>Within 10 days of first pre-seed distribution.</td></tr><tr><td>FINTRAC registration</td><td>CCO</td><td>CEO, Advisory Council</td><td>Board</td><td>Prior to commencing regulated activity. Legal counsel supports.</td></tr><tr><td>Legal counsel selection</td><td>CEO</td><td>CMO, Advisory Council</td><td>Board</td><td>Owner has final decision. Osler currently on file for Alberta; Fasken for BC.</td></tr><tr><td>Patent provisional filings (KYC + settlement concepts)</td><td>CEO</td><td>CTO, Advisory Council</td><td>Board</td><td>$15K Phase 1 budget; 2-3 filings via Smart &amp; Biggar or Bereskin &amp; Parr.</td></tr><tr><td>Mission Anchor Compliance Report (annual)</td><td>CEO</td><td>CCO, Advisory Council</td><td>All shareholders, public</td><td>Published 90 days after fiscal year end.</td></tr><tr><td>Non-judicial data request handling</td><td>CCO</td><td>Advisory Council</td><td>Board, Advisory Council</td><td>Notice-and-cure + judicial order required per Mission Anchor.</td></tr><tr><td>Regulator engagement (ASC, CIRO, CSA, OSC)</td><td>CCO</td><td>CEO, Advisory Council</td><td>Board</td><td>CEO is primary front-line contact; CCO owns process and prep.</td></tr><tr><td>Whistleblower report handling</td><td>CCO</td><td>Advisory Council, Board</td><td>Board</td><td>Anti-retaliation per Mission Anchor Section 8.</td></tr></tbody></table>
+  <h3>5. Partnerships and Business Development</h3>
+  <p>Decisions about bank counterparties, vendors, ecosystem partners, and strategic relationships.</p>
+  <table><thead><tr><th>Decision</th><th>Owner (Accountable)</th><th>Input (Consulted)</th><th>Informed</th><th>Notes</th></tr></thead><tbody><tr><td>Bank counterparty MOU selection (ATB, BVCU, Vancity, Servus)</td><td>CEO</td><td>Bruce, Advisory Council</td><td>Board</td><td>Phase 1 signal: 2 MOUs targeted.</td></tr><tr><td>Bank counterparty MOU negotiation</td><td>CEO</td><td>Bruce, CTO, Advisory Council</td><td>Board, Advisory Council</td><td>MOU terms are CEO-owned.</td></tr><tr><td>Custody partner selection and terms</td><td>CEO</td><td>CTO, Advisory Council</td><td>Board</td><td>Phase 2; qualified Canadian custodian.</td></tr><tr><td>EMD partnership (Atlas One or equivalent)</td><td>CEO</td><td>Bruce, Advisory Council</td><td>Board, Advisory Council</td><td>Track C capital-raise + platform-side both.</td></tr><tr><td>KYC vendor partnership terms</td><td>CTO</td><td>CEO, CCO</td><td>Board</td><td>Phase 2 seed timing.</td></tr><tr><td>Strategic partnerships (Bank of Canada, CIRO working groups)</td><td>CEO</td><td>CCO, Advisory Council</td><td>Board, Advisory Council</td><td>Regulatory alignment posture.</td></tr><tr><td>Ecosystem partnerships (Polymesh, Tetra Trust, etc.)</td><td>CEO</td><td>CTO</td><td>Board</td><td>Case-by-case; Phase 2 optionality.</td></tr><tr><td>Vendor procurement above $50K</td><td>CEO</td><td>CFO</td><td>Board</td><td>Tier 1 governance applies if related-party.</td></tr><tr><td>Vendor procurement below $50K</td><td>CEO or CTO</td><td>CFO</td><td>Board (quarterly)</td><td>Delegated authority.</td></tr></tbody></table>
+  <h3>6. Marketing, Brand, and Public Representation</h3>
+  <p>Decisions about how 4orm shows up publicly. CMO owns brand and go-to-market execution; CEO signs off on strategic and regulatory-sensitive communications.</p>
+  <table><thead><tr><th>Decision</th><th>Owner (Accountable)</th><th>Input (Consulted)</th><th>Informed</th><th>Notes</th></tr></thead><tbody><tr><td>Website content strategy (4ormfinance.com, 4ormdr.com)</td><td>CMO</td><td>CEO, Advisory Council</td><td>Board</td><td>Alberta-only registration language, no bank-partnership implications.</td></tr><tr><td>Brand identity, positioning, visual system</td><td>Founders</td><td>Advisory Council</td><td>Board</td><td>Chad and Kevin decide together.</td></tr><tr><td>Marketing campaigns and channels</td><td>CMO</td><td>CEO</td><td>Board, Advisory Council</td><td>CMO leads.</td></tr><tr><td>Data room content and structure</td><td>CEO</td><td>CMO, Bruce, Advisory Council</td><td>Board, Advisory Council</td><td>CEO owns; CMO executes.</td></tr><tr><td>Investor materials (pitch deck, one-pagers)</td><td>CEO</td><td>Bruce, CMO, Advisory Council</td><td>Board</td><td>CEO approves final content.</td></tr><tr><td>Press releases and media strategy</td><td>CMO</td><td>CEO, Advisory Council</td><td>Board</td><td>Line-opening posture: here to clear our name.</td></tr><tr><td>Public statements about regulatory posture</td><td>CMO</td><td>CCO, CEO</td><td>Board</td><td>CEO approves any statement mentioning regulators.</td></tr><tr><td>Public statements about bank counterparties</td><td>CMO</td><td>CEO, CCO</td><td>Board</td><td>CEO approves; no naming of prospective counterparties without written permission.</td></tr><tr><td>Conference and event participation</td><td>CMO</td><td>CEO</td><td>Board</td><td>Speaking slots require CEO approval.</td></tr><tr><td>Social media posture (LinkedIn, X)</td><td>CMO</td><td>CEO</td><td>Board</td><td>Founders and officers follow Mission Anchor Section 8 conduct standards.</td></tr><tr><td>Public research publication (whitepapers, KCS Briefs)</td><td>CMO</td><td>CEO</td><td>Board, Advisory Council</td><td>KCS Capital publishes; 4orm named.</td></tr></tbody></table>
+  <h3>7. Research and Market Intelligence</h3>
+  <p>Decisions about what 4orm studies, learns, and publishes.</p>
+  <table><thead><tr><th>Decision</th><th>Owner (Accountable)</th><th>Input (Consulted)</th><th>Informed</th><th>Notes</th></tr></thead><tbody><tr><td>Competitive intelligence (regulated fintech, tokenization)</td><td>CEO</td><td>CMO, Advisory Council</td><td>Board</td><td>Feeds pro forma assumptions.</td></tr><tr><td>RWA (real-world asset) structuring research</td><td>CEO</td><td>CTO, Advisory Council</td><td>Board</td><td>Advisory Council provides RWA domain input.</td></tr><tr><td>Market sizing and TAM analysis</td><td>CMO</td><td>CEO</td><td>Board</td><td>Feeds pro forma assumptions; CMO owns, CEO input, owner has final decision.</td></tr><tr><td>Regulatory horizon scanning (CIRO, CSA, FINTRAC)</td><td>CCO</td><td>CEO, Advisory Council</td><td>Board, Advisory Council</td><td>Advisory Council monitors regulatory shifts.</td></tr><tr><td>Peer and comparable analysis (Cybrid, Tetra, Fnality)</td><td>CEO</td><td>Bruce, Advisory Council</td><td>Board</td><td>Feeds pre-seed and seed pricing.</td></tr></tbody></table>
+  <h3>8. Financial and Operational</h3>
+  <p>Decisions about budgeting, banking, treasury, and office operations. CFO owns execution under CEO's Tier 5 authority.</p>
+  <table><thead><tr><th>Decision</th><th>Owner (Accountable)</th><th>Input (Consulted)</th><th>Informed</th><th>Notes</th></tr></thead><tbody><tr><td>Annual budget approval</td><td>CEO</td><td>CFO, Board</td><td>Board</td><td>Per pro forma model.</td></tr><tr><td>Budget reallocation within board-approved plan</td><td>CEO</td><td>CFO</td><td>Board (quarterly)</td><td>Tier 5 CEO authority.</td></tr><tr><td>Bank account opening</td><td>CEO</td><td>CFO</td><td>Board</td><td>First Board Meeting resolution.</td></tr><tr><td>Signing authority on cheques</td><td>CEO plus CFO or CMO</td><td>Board</td><td>Board</td><td>Two-signature policy above $10K.</td></tr><tr><td>Corporate insurance (D&amp;O, E&amp;O, Cyber)</td><td>CEO</td><td>CFO, Advisory Council</td><td>Board</td><td>$30K/half in Phase 1 per pro forma.</td></tr><tr><td>Audit and accounting firm selection (MNP, BDO, Grant Thornton)</td><td>CEO</td><td>CFO</td><td>Board</td><td>Selection pre-Series A; MNP tentative.</td></tr><tr><td>Office lease (Calgary HQ)</td><td>CEO</td><td>CFO</td><td>Board</td><td>Unit 400, 718 8 Ave SW, T2P 1H3.</td></tr><tr><td>Treasury and cash management</td><td>CFO</td><td>CEO</td><td>Board</td><td>Standard prudence; no speculation.</td></tr><tr><td>Related-party transactions above $50,000</td><td>Tier 1 governance applies</td><td>Advisory Council, Board</td><td>Board</td><td>Requires Chad written consent per Tier 1.</td></tr><tr><td>Related-party transactions below $50,000</td><td>CEO</td><td>CFO, Advisory Council</td><td>Board (quarterly)</td><td>Disclosed and delegated.</td></tr></tbody></table>
+  <h2 class="ds"><span class="sn">05</span>Advisory Council Role</h2>
+  <p>The Advisory Council (Don Hickling, James Atherton, Dean McCall, Zed) is a milestone-review body. It does not have shareholder-vote authority and does not sit on the Board. Its function is defined below.</p>
+  <h3>Milestones the Advisory Council reviews</h3>
+  <ul>
+    <li>Pre-seed close: readiness, cap table integrity, term sheet reasonableness, regulatory posture.</li>
+    <li>Alberta Sandbox admission: application readiness, regulator engagement plan.</li>
+    <li>First MOU signed with an FI counterparty: commercial terms, regulatory implications, follow-through plan.</li>
+    <li>CTO placement: final candidate presented for input; final call remains with CEO.</li>
+    <li>CIRO application filing: readiness, operational maturity, compliance stack.</li>
+    <li>Seed round close: term sheet review, dilution math, board composition changes.</li>
+    <li>Series A close: term sheet review, board composition changes, growth plan.</li>
+    <li>Any Mission Anchor amendment or interpretation dispute.</li>
+    <li>Chairman and CEO role separation timing (per Tier 4 governance evolution note).</li>
+  </ul>
+  <h3>Council decision-making protocol</h3>
+  <p>The Council convenes monthly (or on-demand for milestone reviews). Council decisions are advisory to the Board and mandatory checkpoints for the milestones enumerated above, meaning the CEO will present each milestone to the Council for review before proceeding, and will consider Council input in good faith. The Council does not have veto power; the decision remains with the CEO and, where applicable, the Board.</p>
+  <h2 class="ds"><span class="sn">06</span>How a Decision Flows</h2>
+  <p>A typical decision flows through 4orm as follows:</p>
+  <ol>
+    <li>The Owner identifies the decision from the Operational Decision Tables above.</li>
+    <li>The Owner consults the Input parties (written brief or working session).</li>
+    <li>Where a Layer 1 tier applies, the Owner escalates: Tier 1 requires Chad's written consent; Tier 2 requires a shareholder vote; Tier 4 requires a Board vote.</li>
+    <li>Where a milestone applies (Advisory Council trigger), the Owner presents to the Council for review.</li>
+    <li>The Owner makes the decision, subject to any consent or vote required. The Owner has the final decision.</li>
+    <li>The Owner informs the Informed parties in writing (weekly CEO update, monthly Council update, or quarterly Board update as appropriate).</li>
+    <li>The decision is documented, dated, and filed in the Company's decision log.</li>
+  </ol>
+  <h2 class="ds"><span class="sn">07</span>Notes</h2>
+  <ul>
+    <li>This Decision Matrix is a living document. It is updated as roles evolve (CTO hire, CCO hire at seed, Independent Director additions, Chairman and CEO role separation).</li>
+    <li>Only Bruce Fair (Founding Capital Markets Advisor via Mench Capital) is named individually in Owner and Input columns. All other individuals are referenced by role (CEO, CMO, CTO, CCO, CFO, Head Architect) or as "Advisory Council" or "Founders."</li>
+    <li>The Fractional CFO role delegates authority for financial operations within the CEO's Tier 5 authority. It transitions to full-time CFO at seed close.</li>
+    <li>The Chief Compliance Officer (CCO) is hired at seed close as part of the CIRO application preparation. Until then, CEO and Advisory Council carry compliance decisions with legal counsel support.</li>
+    <li>Recognition equity holders (Louise Royer and other founding contributors) do not appear as Owners or Inputs on operational decisions; they are informed as shareholders at ordinary intervals.</li>
+    <li>Governance evolution: Chad currently holds Founder, CEO, President, and Chairman roles. The Board reviews governance structure at each major financing milestone (seed, Series A, and beyond) and adjusts to match the Company's scale, board composition, and institutional investor expectations. Separation of Chairman and CEO or Lead Independent Director designation are among the options the Board considers at each such review.</li>
+  </ul>
+  ${FT}</div>`,
  whatis:`<div class="doc">${dtop('Why 4orm')}<div class="eyebrow-m">Start here</div>
   <h1 class="dh">Why 4orm?</h1>
   <p class="dsub">Where we come from, the gap we saw in the Canadian market, the moment Canada is in, and the network we are building to bridge it. This is the why behind everything else in this room.</p>
@@ -793,7 +1017,7 @@ const DOCS={
  mvv:`<div class="doc">${dtop('Mission, Vision & Values')}<div class="eyebrow-m">Mission, vision and values</div>
   <h1 class="dh">What we stand for.</h1>
   <p class="dsub">The 4orm mission, North Star, and values at a glance.</p>
-  ${dmeta([['Entity','4orm Finance Holdings Inc.'],['Room','Advisor'],['Full detail','Mission Anchor'],['Class.','Confidential']])}
+  ${dmeta([['Entity','4orm Finance'],['Room','Advisor'],['Full detail','Mission Anchor'],['Class.','Confidential']])}
   <div class="callout"><div class="cl">Mission</div><p>To build regulated infrastructure that lets Canadians and Canadian institutions issue, hold, move, settle, and verify assets with privacy, security, and fair access, under Canadian law, and with fewer unnecessary intermediaries between a person and what they own.</p></div>
   <div class="callout"><div class="cl">North Star</div><p>To help the Canadian financial system become independent and sovereign, and to keep the rails of the country's financial future Canadian-owned, regulated, and built to last. We build for a hundred years, not the next quarter.</p></div>
   <h2 class="ds"><span class="sn">01</span>The values we operate by</h2>
@@ -914,13 +1138,13 @@ const DOCS={
   ${FT}</div>`,
  ceo:`<div class="doc">${dtop('CEO Commitment')}<div class="eyebrow-m">Founder and CEO commitment statement</div>
   <h1 class="dh">Founder & CEO Commitment.</h1>
-  <p class="dsub">This statement records my personal commitment to 4orm Finance Inc., the company I am incorporating in Alberta and intend to lead as Founder and Chief Executive Officer. It is intended to make my commitments explicit and durable to my co-founders, to the Advisory Council, to incoming pre-seed investors, and to the team that will build the Company alongside me.</p>
+  <p class="dsub">This statement records my personal commitment to 4orm Finance, the company I am incorporating in Alberta and intend to lead as Founder and Chief Executive Officer. It is intended to make my commitments explicit and durable to my co-founders, to the Advisory Council, to incoming pre-seed investors, and to the team that will build the Company alongside me.</p>
   ${dmeta([['By','Chad R. Johnston'],['Role','Founder & CEO'],['Version','11 - Internal'],['Dated','2026-07-04']])}
   <h2 class="ds"><span class="sn">1</span>The mission I am committing to</h2>
-  <p>4orm Finance Inc. exists to help the Canadian financial system become independent and sovereign in its own self, to protect Canadians from inflationary asset erosion and currency debasement, and to build the regulated infrastructure that allows Canadians to hold, transact in, and settle against tokenized bank deposits and, in due course, other tokenized real-world assets.</p>
+  <p>4orm Finance exists to help the Canadian financial system become independent and sovereign in its own self, to protect Canadians from inflationary asset erosion and currency debasement, and to build the regulated infrastructure that allows Canadians to hold, transact in, and settle against tokenized bank deposits and, in due course, other tokenized real-world assets.</p>
   <p>I commit to that mission as the organizing principle of my role, and as the standard against which my decisions, my time, and my economic interest in the Company should be measured. The Mission Anchor in the Articles of Incorporation binds the Company; this statement binds me personally to the same standard.</p>
   <h2 class="ds"><span class="sn">2</span>Full-time, exclusive engagement</h2>
-  <p>4orm Finance Inc. is and will be my sole operating commitment. I have wound down or stepped back from every other operating role I previously held in order to dedicate my full professional capacity to this Company. For the duration of my service as Chief Executive Officer, I will not take on other operating roles or competing commitments.</p>
+  <p>4orm Finance is and will be my sole operating commitment. I have wound down or stepped back from every other operating role I previously held in order to dedicate my full professional capacity to this Company. For the duration of my service as Chief Executive Officer, I will not take on other operating roles or competing commitments.</p>
   <h2 class="ds"><span class="sn">3</span>Time and capacity</h2>
   <p>This is my full-time work, in every meaningful sense of the term. The day-to-day, the weekly cadence, and the long-horizon work, all of it. I commit to availability and presence sufficient to discharge the responsibilities of the Chief Executive Officer of a regulated Canadian enterprise.</p>
   <h2 class="ds"><span class="sn">4</span>Capital and risk borne</h2>
@@ -963,7 +1187,7 @@ const DOCS={
    <div><div class="sl"></div><div class="scap">Chad R. Johnston, Founder & CEO &middot; date</div></div>
    <div><div class="sl"></div><div class="scap">Chair, Advisory Council &middot; date</div></div>
   </div>
-  <p style="font-size:.76rem;color:var(--slate)">4orm Finance Inc. &middot; Unit 400, 718 8 Ave SW, Calgary, AB T2P 1H3 &middot; compliance@4ormfinance.com &middot; Version 11, Internal &middot; 2026-07-04</p>
+  <p style="font-size:.76rem;color:var(--slate)">4orm Finance &middot; Unit 400, 718 8 Ave SW, Calgary, AB T2P 1H3 &middot; compliance@4ormfinance.com &middot; Version 11, Internal &middot; 2026-07-04</p>
   ${FT}</div>`,
  conduct:`<div class="doc">${dtop('Advisor Code of Conduct')}<div class="eyebrow-m">Advisor code of conduct</div>
   <h1 class="dh">How we carry ourselves.</h1>
@@ -1055,131 +1279,182 @@ const DOCS={
    <li><b>The list is real.</b> It is created and tracked today. As the structure is approved, the list comes to fruition, name by name.</li>
   </ul>
   <div class="callout"><div class="cl">Where this stands</div><p>Pending securities and legal approval. The legacy token is in the research and discovery phase, being designed with counsel. This page describes our intent, not a finished instrument. It is not an offer, not a promise of payment or value, and the terms may change or may not proceed.</p></div>
-  <h2 class="ds"><span class="sn">03</span>A first of its kind</h2>
-  <p>To our knowledge, no company has built an instrument quite like this. We are in active compliance and legal discovery right now to structure it correctly, in a way that protects the people who hold these tokens, and their families, indefinitely. Getting that protection right comes before anything issues.</p>
-  <p style="font-size:.76rem;color:var(--slate)">Confidential. For information only. This document describes a program under design and is not an offer to sell or a solicitation of an offer to buy any security, token, or other instrument, in any jurisdiction, and nothing here is a promise or guarantee of value, profit, distribution, or payment. The legacy token and any profit share, trust structure, custody, transferability, and tax treatment are conceptual, subject to securities and legal review, definitive documentation, and required regulatory approvals, and may change materially or may not proceed. Any profit-share percentage and payment cadence are intended terms only and are not committed. No securities regulatory authority has reviewed, assessed, or approved this program or any securities described here. Nothing in this document is legal, tax, or financial advice. Contains forward-looking statements subject to material risk; actual outcomes may differ. 4orm Finance is not a trust company and holds no trust authorization; any trust arrangement is subject to authorization and counsel review. Backstop: this program is all or nothing. If it does not proceed, or 4orm does not succeed, no legacy tokens issue, vest, or pay out, and no one receives anything, including the founders and every contributor, with no fallback, guarantee, buyback, or alternative compensation of any kind.</p>
+  <div class="callout"><div class="cl">A first of its kind</div><p>To our knowledge, no company has built an instrument quite like this. We are in active compliance and legal discovery right now to structure it correctly, in a way that protects the people who hold these tokens, and their families, indefinitely. Getting that protection right comes before anything issues.</p></div>
+  <p style="font-size:.78rem;color:var(--slate)">Confidential. For information only. This document describes a program under design and is not an offer to sell or a solicitation of an offer to buy any security, token, or other instrument, in any jurisdiction, and nothing here is a promise or guarantee of value, profit, distribution, or payment. The legacy token and any profit share, trust structure, custody, transferability, and tax treatment are conceptual, subject to securities and legal review, definitive documentation, and required regulatory approvals, and may change materially or may not proceed. Any profit-share percentage and payment cadence are intended terms only and are not committed. No securities regulatory authority has reviewed, assessed, or approved this program or any securities described here. Nothing in this document is legal, tax, or financial advice. Contains forward-looking statements subject to material risk; actual outcomes may differ. 4orm Finance is not a trust company and holds no trust authorization; any trust arrangement is subject to authorization and counsel review. Backstop: this program is all or nothing. If it does not proceed, or 4orm does not succeed, no legacy tokens issue, vest, or pay out, and no one receives anything, including the founders and every contributor, with no fallback, guarantee, buyback, or alternative compensation of any kind.</p>
+  <h2 class="ds"><span class="sn">03</span>The 2%, and what it could mean</h2>
+  <p class="lead">A closer look at the legacy token, grounded in our model and cast forward.</p>
+  <p><b>Why the legacy token exists.</b> The legacy token is a way of doing business differently. Some people come in early and, though they do not spend a lot of time with us, they truly move the business. This is how we honor the people who believed in us at the beginning. We believe relationships should last, so we tie those relationships into what 4orm becomes, for good, and pass that on to the people they love.</p>
+  <p><b>What the 2% is measured on.</b> The legacy class is intended to share 2% of the Company's profit, paid yearly. "Profit" here means what is left after the business pays to build and run itself, our EBITDA: revenue minus development and operating costs, before financing and tax. We do not expect a profit in the early build years. In our model the Company is investing and running at a loss while it stands up the platform, and profit begins to build as the institutions come online. The honest way to read the 2% is to start the clock at the point the Company is profitable, and grow from there.</p>
+  <h3>The anchor: our own model, at year five</h3>
+  <div class="stats">
+   <div class="stat"><div class="n">~$35M</div><div class="l">Year-five EBITDA (2031, our model)</div></div>
+   <div class="stat"><div class="n">~88%</div><div class="l">Net margin at the lean build</div></div>
+   <div class="stat"><div class="n">~$700K</div><div class="l">2% legacy pool, per year</div></div>
+   <div class="stat"><div class="n">~$7,000</div><div class="l">Per 10-token holder, per year</div></div>
+  </div>
+  <p>Source: 4orm 5-year model (v13). Year five, 2031, shows about $39.5M revenue and $34.9M net profit. That profit line is effectively EBITDA. Ten tokens is 1% of the 1,000-token pool, so one holder receives 0.02% of profit.</p>
+  <h3>Casting it forward: the 2% over a century</h3>
+  <table class="dt"><thead><tr><th>Scenario</th><th>Average annual EBITDA</th><th>2% pool / year</th><th>Per holder / year</th><th>Per holder over a century</th></tr></thead><tbody>
+   <tr><td><b>Conservative</b> (hold year five)</td><td>~$35M</td><td>~$700K</td><td>~$7,000</td><td>~$665,000</td></tr>
+   <tr><td><b>Matured platform</b> (more institutions)</td><td>~$100M</td><td>~$2.0M</td><td>~$20,000</td><td>~$1.9M</td></tr>
+   <tr><td><b>The RWA rail</b> (everybody uses us)</td><td>~$500M to $1B</td><td>~$10M to $20M</td><td>~$100K to $200K</td><td>~$9.5M to $19M</td></tr>
+  </tbody></table>
+  <p>A century is roughly 95 profitable years from year five. Per-holder figures are for a 10-token holder. The RWA row is a vision, not a forecast: if 4orm becomes the regulated rail where tokenized real-world assets, natural resources, real estate, and commodities reach bank and institutional capital, the profit base is far larger. It is shown as a wide range on purpose.</p>
+  <div class="callout"><div class="cl">The idea, in one line</div><p>Even held flat at what our own model already shows, ten legacy tokens is designed to return on the order of a few thousand dollars a year, for a century, to the people who helped at the start. If the bigger vision lands, it becomes a genuine inheritance. That is what it means to honor a relationship that lasts.</p></div>
+  <p style="font-size:.78rem;color:var(--slate)">Confidential. For information only. This document is illustrative and is not an offer to sell or a solicitation to buy any security, token, or instrument, and it is not a promise or guarantee of value, profit, distribution, or payment. Figures labeled as model output are drawn from the Company's internal 5-year financial model (v13) and depend on assumptions that may not be realized; the century and RWA figures are conservative long-range illustrations and vision scenarios, not forecasts, and carry very wide uncertainty. The legacy token, the 2% profit share, the basis on which profit is measured, and any trust, custody, transferability, and tax treatment are conceptual and subject to securities and legal review, definitive documentation in the Legacy Token Instrument, and required regulatory approvals, and may change materially or may not proceed. Any distribution, if the program proceeds, is calculated on the audited basis set out in the definitive instrument, which governs and may differ from the EBITDA proxy used here. Nothing in this document is legal, tax, or financial advice. Contains forward-looking statements subject to material risk; actual outcomes may differ. If the Legacy Token Instrument does not materialize, the allocation lapses and no substitute is owed.</p>
   ${FT}</div>`,
- anchor:`<div class="doc">${dtop('The Mission Anchor')}<div class="eyebrow-m">Standalone values document</div>
+ sixmonth:`<div class="doc">${dtop('Six-Month Review')}<div class="eyebrow-m">How your advisory term is reviewed</div>
+  <h1 class="dh">The Six-Month Review</h1>
+  <p class="dsub">At six months we sit down together, look at what was promised against what was built, and decide, honestly and in both directions, whether we go further.</p>
+  ${dmeta([['For','Advisors'],['With','CEO and Advisory Council'],['When','At your six-month mark'],['Class.','Confidential']])}
+
+  <h2 class="ds"><span class="sn">01</span>Purpose</h2>
+  <p class="lead">Your advisory term runs six months. This review is the checkpoint at the end of it, where the CEO and the Advisory Council look at the work against the deliverables in your Schedule and decide, with you, what comes next.</p>
+  <p>We keep a high bar and we keep it in the open. When you joined, your Engagement Letter and your Compensation and Term Schedule named specific things you agreed to move. This review is where we measure against exactly those things, not against a vague sense of contribution. That is fairer to you and truer to us.</p>
+  <p>The review is not a performance trial and it is not a formality. It is the moment we ask the plain question out loud: did the work land, does the fit still hold, and would we fight to keep you. We ask it directly because you deserve a direct answer, and because 4orm Finance is built on candor running both ways.</p>
+  <ul>
+    <li><b>It exists so nothing is a surprise.</b> You know the standard from day one, and you see the same scorecard we do.</li>
+    <li><b>It respects your time.</b> Six months is a real commitment. This review treats it as one and gives it a proper close, whichever way it goes.</li>
+    <li><b>It is mutual.</b> You are assessing us as much as we are assessing you. A one-sided review is not a review, it is a verdict.</li>
+  </ul>
+
+  <h2 class="ds"><span class="sn">02</span>What is tracked</h2>
+  <p class="lead">We track the deliverables named in your Schedule, and only those. Your lane sets the list.</p>
+  <p>Deliverables are specific to the lane you were brought in for, whether that is capital markets, brand and marketing, or technology and talent. The Council does not grade you against another advisor's mandate. It grades you against the commitments written into your own Schedule, recorded as you go so the six-month conversation is a summary of a known record rather than a fresh audit.</p>
+  <p>Progress on each item is logged in one of a few plain states so there is no ambiguity: not started, in progress, delivered, or blocked. Where something is blocked, we note what it is waiting on and whether that is inside or outside your control, because a deliverable stalled by the company is not a deliverable you failed.</p>
+  <p>As an illustration, a capital markets advisor's tracked set might read like this:</p>
+  <ul>
+    <li><b>Introductions made.</b> Warm introductions to named investors or partners, with the introduction actually delivered, not just promised.</li>
+    <li><b>Meetings converted.</b> Introductions that became real conversations, and conversations that advanced to terms or a clear no.</li>
+    <li><b>Diligence support.</b> Materials reviewed, gaps flagged, and questions the advisor helped us answer before we were asked.</li>
+    <li><b>Judgment on the raise.</b> Candid counsel on structure, timing, and who to walk away from, weighed by whether the advice held up.</li>
+  </ul>
+  <p>A brand advisor's set would instead track narrative work, positioning delivered, and assets shipped. A technology and talent advisor's set would track the CTO and senior hiring search, candidates surfaced, and architecture guidance given. The shape is the same. The contents are yours.</p>
+  <div class="callout"><div class="cl">On recording</div><p>You see the tracker throughout the term, not only at the end. If an item is off track, that is a conversation to have in month two, not a headline saved for month six.</p></div>
+
+  <h2 class="ds"><span class="sn">03</span>How the review works</h2>
+  <p class="lead">At your six-month mark, the CEO and the Advisory Council meet with you to walk the record together.</p>
+  <p>The timing is set by your start date, not by a calendar quarter, so the review lands when your six months actually close. It is scheduled a few weeks ahead so nobody is caught short and you have time to prepare your own view.</p>
+  <p>In the room are you, the CEO, Chad Johnston, and the Advisory Council. Before the meeting, everyone reads the same short pack: your deliverables tracker with each item in its current state, a brief self-account from you on what you built and what you would do differently, and the CEO's read. Nobody walks in cold and nobody walks in guessing.</p>
+  <p>The conversation itself is not a scored form read aloud. We talk through each deliverable, then step back to the harder questions of fit and mission. The Council speaks candidly, you speak candidly, and disagreement in the room is welcome. The point is to reach a shared and honest picture before any decision is named.</p>
+  <ul>
+    <li><b>You prepare too.</b> Bring your own account of the six months, including where we got in your way. Candor both directions means you get to review us.</li>
+    <li><b>It is a conversation, not a verdict handed down.</b> The decision is named at the end, once the picture is shared, not decided before you arrive.</li>
+  </ul>
+
+  <h2 class="ds"><span class="sn">04</span>The criteria</h2>
+  <p class="lead">We weigh a handful of things, and we weigh them honestly. Deliverables are the floor. Fit and the keeper's question decide the rest.</p>
+  <ul>
+    <li><b>Deliverables met.</b> Did the commitments in your Schedule get done, to the standard we agreed, in the time we had. This is the floor, not the ceiling.</li>
+    <li><b>Quality and judgment.</b> Not just whether items closed, but whether the work was good and the counsel was sound. One sharp introduction can outweigh ten thin ones.</li>
+    <li><b>Mission alignment.</b> Whether you moved with what we are building rather than around it. 4orm Finance is a regulated settlement layer with a long horizon, and we need people who hold that line.</li>
+    <li><b>Candor and conduct.</b> Whether you told us hard truths early, took feedback straight, and made the people around you better. We are family with a high bar, and both halves of that matter.</li>
+    <li><b>The keeper's question.</b> The plain one. Would we fight to keep you. If the honest answer is yes, most other gaps are workable. If it is no, no amount of activity fixes it.</li>
+  </ul>
+  <div class="callout"><div class="cl">The keeper's question</div><p>Would we fight to keep you. We ask it out loud, of you and of ourselves, because it is the truest test we have. You should be asking the same of us.</p></div>
+
+  <h2 class="ds"><span class="sn">05</span>The decision</h2>
+  <p class="lead">Three outcomes are on the table, and each is a real and respectable result. This is a mutual decision, not a grade.</p>
+  <ul>
+    <li><b>Continue into a defined role.</b> The fit is clear and the work earned it. Your advisory term converts into a defined ongoing role, with its own scope, terms, and expectations set out fresh. This is the path we hope for and the one we build toward.</li>
+    <li><b>Extend the advisory period.</b> The signal is good but the picture is not yet complete, often because the work was blocked by timing or by us rather than by you. We agree a further defined window and the specific questions that window is meant to answer.</li>
+    <li><b>Conclude with thanks.</b> The lanes no longer line up, or the moment has passed, and the honest call is to close the term well. Said plainly and said kindly, this is a clean ending, not a fall. Many good contributions are exactly six months long.</li>
+  </ul>
+  <p>Whichever outcome, it is named to you directly in the room and confirmed in writing after, with the reasoning attached. You will never have to guess why.</p>
+
+  <h2 class="ds"><span class="sn">06</span>If we conclude</h2>
+  <p class="lead">A conclusion at six months is a completed contribution, not a failure. We off-board you the way we brought you in, with respect.</p>
+  <p>The Legacy Token Program recognizes early contributors regardless of outcome. Paid or unpaid, three days or three years, if you were here early you keep your place among the first hundred. A six-month term that concludes does not undo that place and does not diminish it. What you gave still counts, and the record still shows it.</p>
+  <p>The wind-down is straightforward. We settle any compensation owed under your Schedule, agree a clean hand-off of anything in flight, and say a proper thank you rather than a quiet exit. The door stays open for the right reason at the right time.</p>
+  <ul>
+    <li><b>Your Legacy Token place is kept.</b> Concluding the advisory term does not remove you from the early contributors we recognize.</li>
+    <li><b>IP and confidentiality continue.</b> The intellectual property terms in your Engagement Letter and your confidentiality obligations survive the end of the term. What was assigned stays assigned, and what was confidential stays confidential.</li>
+    <li><b>We stay in good standing.</b> We would rather end a term well and keep a friend than stretch a fit that has run its course.</li>
+  </ul>
+
+  <div class="callout"><div class="cl">The standard, in one line</div><p>Six months, measured against what you agreed to, decided together and said straight. Continue, extend, or conclude with thanks. Whichever it is, you will know exactly where you stand and why.</p></div>
+  ${FT}</div>`,
+ anchor:`<div class="doc">${dtop('The Mission Anchor')}<div class="eyebrow-m">Constitution of 4orm Finance</div>
   <h1 class="dh">The Mission Anchor.</h1>
-  <p class="dsub">4orm Finance Inc. Working draft for counsel and the pre-seed data room.</p>
-  ${dmeta([['Entity','4orm Finance Inc.'],['Form','Soft-law, contractual'],['Binds','Every founder and agent'],['Class.','Confidential']])}
-  <div class="callout"><div class="cl">Notice</div><p>This is a working draft prepared by the founders. The Mission Anchor stands as a standalone values document of 4orm Finance Inc. (the "Company"). It is published in full, incorporated by reference into the Founders' Voting Agreement, advisor agreements, customer terms of service, vendor agreements, and employment agreements, and is enforced through Founder self-accountability and the contractual mechanisms set out below. Counsel is invited to recommend additional contractual reinforcements as appropriate.</p></div>
-  <h2 class="ds"><span class="sn">01</span>Preamble</h2>
-  <p>4orm Finance Inc. exists to help the Canadian financial system become independent and sovereign in its own self. We work to protect Canadians from the erosion of their wealth by inflationary monetary policy, debt-financed money creation, and any system that conditions access to a Canadian's own assets on the discretion of an intermediary, a regulator, or a political authority outside of law.</p>
-  <p>We are dealer-agnostic. We are nation-loyal. We serve the people of Canada first. True North, strong and free.</p>
-  <p>We carry our work as witnesses, under God, in good faith stewardship of resources that are not ours but are entrusted to us. Our accountability runs beyond shareholders, beyond markets, beyond politics, to the Canadians we serve and to the long horizon on which their lives, their families, and their freedoms depend.</p>
-  <h2 class="ds"><span class="sn">02</span>Counsel review</h2>
-  <p>The Company has elected NOT to entrench the provisions of this Mission Anchor in the Articles of Incorporation, and NOT to use the Unanimous Shareholders' Agreement mechanism under Alberta Business Corporations Act section 146 to transfer specified director powers to a Mission Stewardship Trustee. The Company has considered those mechanisms and elected, instead, a soft-law approach.</p>
-  <p>Under that approach, this Mission Anchor stands as a published values document. It is reinforced by contractual incorporation across the Founders' Voting Agreement, every advisor and officer engagement, the Company's customer terms of service, material vendor agreements, and employee agreements. The Founders, as the board of the Company, hold themselves directly accountable for its observance. Counsel is invited to advise on additional contractual reinforcements (incorporation by reference in commercial counterparty agreements, whistleblower policies, employment templates, board charter) as appropriate.</p>
-  <p><b>Foundational doctrine.</b> Director fiduciary duty under ABCA section 122 is owed to the corporation; directors may consider stakeholders per Peoples v. Wise (2004 SCC 68) and BCE v. 1976 Debentureholders (2008 SCC 69). The Founders, sitting as the board, hold themselves to the Mission Anchor as the operative working definition of the long-term best interests of the Company.</p>
-  <p>Counterparty jurisdictions are preserved: Mench Capital Corp. and Capiche Capital remain British Columbia entities; Fasken Martineau DuMoulin LLP retains the BC side of any matter that touches British Columbia; Osler, Hoskin and Harcourt LLP retains the Alberta side. The Company itself is incorporating under the ABCA.</p>
-  <h2 class="ds"><span class="sn">03</span>The Mission</h2>
-  <p class="lead">To protect the right of Canadians to hold sound money, money that carries all of its principles intact, including the long-term storage of value, and to build the regulated infrastructure that allows Canadians to access, hold, transact in, and pass to the next generation, the full range of assets the world has to offer, on terms that respect their sovereignty, their privacy, their conscience, and their long horizon.</p>
-  <h2 class="ds"><span class="sn">04</span>The Values</h2>
-  <p>The Company holds and operates by the following ten values. Each is a permanent commitment of the Company, binding on every Founder, director, officer, employee, and agent.</p>
+  <p class="dsub">What we build, how we behave, and what we will never do. The constitution of 4orm Finance. The mission, values, culture, and commitments of 4orm Finance, an Alberta company. Binding on the founders and the team who sign onto it. An internal charter of the Company, prepared and held by the founders and the team who sign onto it.</p>
+  ${dmeta([['Prepared by','4orm Finance / Founders'],['Status','Internal'],['Category','Constitutional document'],['Updated','July 2026']])}
+  <h2 class="ds"><span class="sn">01</span>Mission</h2>
+  <p class="lead">The mission and the North Star</p>
+  <p>4orm Finance is built to strengthen Canadian financial infrastructure: to give Canadians and the institutions that serve them privacy, security, and fair, lawful access in how they hold, move, and settle assets.</p>
+  <div class="callout"><div class="cl">The mission</div><p>To build regulated infrastructure that lets Canadians and Canadian institutions issue, hold, move, settle, and verify assets with privacy, security, and fair access, under Canadian law, and with fewer unnecessary intermediaries between a person and what they own.</p></div>
+  <p><b>The North Star.</b> Beyond the product, 4orm exists to help the Canadian financial system become independent and sovereign, to protect Canadians from inflationary asset erosion, currency debasement, and arbitrary gatekeeping, and to keep the rails of the country's financial future Canadian-owned, regulated, and built to last. We are building for a hundred years, not the next quarter.</p>
+  <p>4orm Finance is an Alberta company. Under Canadian corporate law, its directors may weigh this mission and the Company's stakeholders alongside its shareholders in the decisions they make. The commitments below are binding on the people who run and build the Company.</p>
+  <h2 class="ds"><span class="sn">02</span>Values</h2>
+  <p class="lead">The values we operate by</p>
+  <p>These principles bind every founder, director, officer, employee, and partner. They define how we hire, lead, promote, reward, and part ways. They are not aspirations, they are standards.</p>
   <ul>
-   <li><b>Privacy.</b> The default state of a Canadian's affairs is their own. We design, build, and operate accordingly.</li>
-   <li><b>Autonomy.</b> The right of every Canadian to act, transact, and choose without seeking permission for lawful conduct.</li>
-   <li><b>Sovereignty.</b> Control over one's assets, identity, and consent rests with the person, not with intermediaries.</li>
-   <li><b>Honor.</b> We keep our word, and our word precedes our reputation.</li>
-   <li><b>Security.</b> The platform must be operationally, cryptographically, and procedurally sound. There is no excuse for negligence with what is entrusted to us.</li>
-   <li><b>Good Faith.</b> We deal fairly. We do not manipulate. We do not deceive.</li>
-   <li><b>Brothers' Keeper.</b> We are responsible to and for each other, our customers, our staff, our partners, and the Canadians we serve.</li>
-   <li><b>Stewardship.</b> Every resource entrusted to the Company belongs to those we serve. We hold it in trust.</li>
-   <li><b>Truth.</b> We tell the truth whether it costs us or not. We will not soften facts to spare ourselves discomfort or to please power.</li>
-   <li><b>Discipline.</b> We do the uncomfortable work. We finish what we begin. We do not negotiate with our standards.</li>
+   <li><b>01 Think Big. Execute Better.</b> Vision without execution is imagination. We set ambitious goals, think beyond today's limitations, and execute with discipline, precision, and consistency. We step into the discomfort of being misunderstood or questioned, because meaningful innovation rarely earns immediate acceptance.</li>
+   <li><b>02 Keep Canada First.</b> Canada's financial future should remain in Canadian hands. We strengthen Canada's financial infrastructure through sovereignty, resilience, and responsible innovation, reducing unnecessary dependence on outside interests while serving Canadians first.</li>
+   <li><b>03 Protect People.</b> Every decision begins with the people we serve. We act with transparency, accountability, and care, making decisions we would proudly defend in public and always within the law. Trust is not given, it is earned through every decision we make.</li>
+   <li><b>04 Serve People. Leave Politics at the Door.</b> We do not serve political agendas. We serve people. Every individual deserves fair access, respect, and the freedom to hold their own views without discrimination. Finance should unite people through opportunity, not divide them through ideology.</li>
+   <li><b>05 Principles Before Profit.</b> Capital is earned. Trust is protected. We will walk away from opportunities that require compromising our principles, regardless of their value. Reputation compounds far longer than revenue ever will.</li>
+   <li><b>06 Build. Deliver. Repeat.</b> Ideas create possibility. Execution creates impact. We develop meaningful work, and measure ourselves by results, not activity. Our goal is to make what seems complicated simple.</li>
+   <li><b>07 Truth is the Standard.</b> We communicate honestly, address difficult issues early, and take responsibility for outcomes. We own our decisions, our mistakes, and our successes.</li>
+   <li><b>08 Love on the Competition.</b> Competition challenges us to become better. We compete relentlessly while treating every competitor with professionalism, humility, and respect. A stronger Canadian financial ecosystem pushes everyone forward, and Canadians are the ones who benefit.</li>
+   <li><b>09 Run Toward Change.</b> Innovation belongs to those willing to move first. We embrace change, challenge convention, and build the future instead of waiting for it. What seems impossible today often becomes tomorrow's standard, and we intend to define it.</li>
+   <li><b>10 Protect the Mission at All Costs.</b> We are our brother's keeper. Every decision must strengthen the mission entrusted to us. We protect our purpose above convenience, popularity, and short-term gain, and steward the future with God-fearing accountability for all Canadians.</li>
   </ul>
-  <h2 class="ds"><span class="sn">05</span>The Disciplines</h2>
-  <p>The values above are operationalized through the following disciplines, which govern how the Company conducts itself in practice.</p>
+  <h2 class="ds"><span class="sn">03</span>Culture</h2>
+  <p class="lead">How the 4orm family works</p>
+  <p>Structure protects the mission; culture is what makes the mission worth protecting. We build our culture on the way the highest-performing groups actually work, and everyone who joins signs onto it.</p>
   <ul>
-   <li>We do the uncomfortable work that others avoid.</li>
-   <li>We always tell the truth, even when costly.</li>
-   <li>We let go of the outcome in order to protect the people we serve.</li>
-   <li>We steward our resources for Canadians first and for the long horizon.</li>
-   <li>We build for decades, not quarters. We do not adopt or operate against quarterly targets.</li>
-   <li>We will not sell our soul, our customers, our data, or our mission for short-term capital, valuation, or convenience.</li>
-   <li>We serve. We do not rule.</li>
+   <li><b>We hand-pick, on merit, and we are ruthlessly selective.</b> Qualified first, mission-aligned, and a genuine fit. We would rather wait than settle, because one wrong hire costs the whole team.</li>
+   <li><b>Belonging and a high bar, together.</b> From day one you know the bar is high, and that we chose you because we are confident you can clear it. Belonging and high standards are the same message here, not opposites.</li>
+   <li><b>Candor, both directions, then commit.</b> We say what we mean and surface problems early, in honest, blameless reviews. We disagree hard, and once the call is made we commit fully. Leaders go first.</li>
+   <li><b>Open door.</b> Criticism, feedback, and observation are welcome from anyone, to anyone. The best idea wins, whoever it comes from.</li>
+   <li><b>We are our brother's keeper.</b> If we see it, we own it, and we make sure it gets fixed. Nobody says 'not my job' here.</li>
+   <li><b>Clear purpose, named out loud.</b> We name and rank the few things that matter, connect them to why, and repeat them. Nobody has to guess what is important.</li>
+   <li><b>The family, and the honest question.</b> We love people on the way in, and we love people on the way out. We also ask the keeper's question honestly: would we fight to keep you? When the answer is no, we part with respect and generosity, both ways. We do not carry victims, and we do not keep score.</li>
+   <li><b>Ownership and speed.</b> Boots on, every day. We work for the team, not the other way around, and we get the scoreboard to change.</li>
   </ul>
-  <h2 class="ds"><span class="sn">06</span>Our Positive Commitments</h2>
-  <p>The Company commits to build, maintain, and offer the following to Canadians, and to do so on the terms set out in this Mission Anchor.</p>
+  <h2 class="ds"><span class="sn">04</span>Commitments</h2>
+  <p class="lead">What we build for Canadians</p>
+  <p>The Company commits to build, maintain, and offer the following, on the terms set out in this Anchor.</p>
   <ul>
-   <li><b>Asset rails.</b> Regulated infrastructure to buy, sell, move, store, and verify assets, including the principles of money: store of value, medium of exchange, unit of account, durability, divisibility, portability, fungibility, scarcity, recognizability, acceptability, and the right of redemption.</li>
-   <li><b>Fractional ownership.</b> Access to assets that have historically been gated to institutions, on a fractional, regulated, and verifiable basis.</li>
-   <li><b>Creative financing and investing.</b> Structured financing and investment products that align capital with sovereign, mission-aligned outcomes for Canadians.</li>
+   <li><b>Asset rails.</b> Regulated infrastructure to buy, sell, move, store, and verify assets, honouring the principles of money: store of value, medium of exchange, unit of account, durability, divisibility, portability, scarcity, and recognizability.</li>
+   <li><b>Fractional ownership.</b> Access to assets historically gated to institutions, on a fractional, regulated, verifiable basis.</li>
    <li><b>Custody and settlement.</b> Fiduciary, regulated custody, settlement, and clearing, with customer assets legally segregated and never rehypothecated.</li>
-   <li><b>Identity and verification.</b> Proof of what is needed without exposure of what is not. Privacy-preserving verification infrastructure.</li>
-   <li><b>Cross-border value movement.</b> Movement of value across jurisdictions without rent-seeking intermediaries and without surrender of sovereignty.</li>
-   <li><b>Lending and credit.</b> Lending against tokenized assets without forced asset surrender, without coercive default conditions, and without political conditioning of access.</li>
-   <li><b>Hedging against debasement.</b> Access to monetary anchors, including gold, silver, real estate, and other hard assets, as durable stores of value against currency erosion.</li>
-   <li><b>Generational transfer.</b> Inheritance, estate, and succession infrastructure that survives the holder and transfers cleanly across generations of a Canadian family.</li>
-   <li><b>Resilience.</b> Operational, technical, and legal resilience to keep functioning through political, regulatory, and currency shocks.</li>
-   <li><b>Education.</b> Education of Canadians on the principles of money, sovereignty, and stewardship, so the mission is durable beyond the Company.</li>
-   <li><b>Innovation.</b> Innovation with new products, systems and ideas to serve Canadians and help Canada lead the global stage of Fintech.</li>
+   <li><b>Identity and verification.</b> Proof of what is needed without exposure of what is not: privacy-preserving verification.</li>
+   <li><b>Cross-border value movement.</b> Movement of value across jurisdictions, under applicable law.</li>
+   <li><b>Lending and credit.</b> Lending against tokenized assets on fair, transparent, and lawful terms.</li>
+   <li><b>Access to stores of value.</b> Access to asset classes including gold, silver, and real estate as long-term stores of value.</li>
+   <li><b>Generational transfer, resilience, education, and innovation.</b> Inheritance and succession infrastructure that survives the holder; operational, technical, and legal resilience through political and currency shocks; education of Canadians on the principles of money; and innovation to help Canada lead on the global stage of fintech.</li>
   </ul>
-  <h2 class="ds"><span class="sn">07</span>Our Customer Protections</h2>
-  <p>The following protections are constitutional commitments of the Company. They define how the Company treats the Canadians it serves and the standards by which the Company holds itself accountable.</p>
+  <h2 class="ds"><span class="sn">05</span>The Bars</h2>
+  <p class="lead">The Absolute Bars</p>
+  <p>The following are absolute. They bind the founders, directors, officers, and employees, and they do not bend to capital, partnership, regulatory pressure, or convenience outside the law. The Founder and CEO commits to each of them personally in the CEO Commitment Statement.</p>
+  <ol>
+   <li>No participation in politically or faith-motivated account closures or extra-judicial freezes.</li>
+   <li>No sharing of customer data beyond what valid legal process or law requires. We comply with lawful orders and reporting obligations, disclose only what is compelled, and refuse informal or extra-judicial requests.</li>
+   <li>No participation in debanking coalitions, shared blacklists, or de-risking outside legal process.</li>
+   <li>No account restriction or service denial except on lawful, documented, and individualized grounds, applied on the same objective criteria to every eligible customer.</li>
+   <li>No programmable-restriction infrastructure that gives a third party conditional control over a person's own assets, accounts, or transactions.</li>
+   <li>No collection or retention of customer data beyond what is operationally necessary or required by law.</li>
+   <li>No surveillance or data monetization for advertising, profiling, social credit, or ideological assessment.</li>
+   <li>No social-credit or ideological gatekeeping, and no deplatforming for protected expression or belief.</li>
+   <li>No commingling, rehypothecation, or pledging of customer assets.</li>
+   <li>No use of quarterly earnings targets as a primary directional input.</li>
+   <li>No retaliation against any person for the principled exercise of refusal.</li>
+   <li>No surrender or weakening of any Mission Anchor provision under political, commercial, regulatory, or shareholder pressure outside the law.</li>
+  </ol>
+  <h2 class="ds"><span class="sn">06</span>Governance</h2>
+  <p class="lead">How the mission holds</p>
+  <p>The mission is held by law, by structure, and by the people who run and build the Company.</p>
   <ul>
-   <li><b>1. Politically-Neutral Service.</b> The Company serves Canadians on the basis of their identity as customers, not on the basis of their politics, faith, beliefs, or affiliations. No customer account is closed, frozen, restricted, or denied service on those grounds. We require a final court order with judicial review available before taking any restrictive action on a customer's account.</li>
-   <li><b>2. Customer Data Sovereignty.</b> Customer data belongs to the customer. The Company shares customer data, metadata, or transaction information with government, regulator, agency, or non-judicial body only on a final court order with judicial review available.</li>
-   <li><b>3. Independent Operation.</b> The Company operates as an independent Canadian financial institution accountable to its own customers and to law. We do not participate in industry-wide blacklists, coordinated de-risking initiatives, or informal arrangements among institutions to deny service.</li>
-   <li><b>4. Customer-Controlled Assets.</b> Assets held with the Company are the customer's to direct. The Company does not build or participate in infrastructure that enables third-party conditional control over a customer's own assets.</li>
-   <li><b>5. Minimum-Necessary Data.</b> The Company collects, retains, and uses customer data only to the extent operationally necessary to deliver the service or strictly required by law.</li>
-   <li><b>6. No Data Monetization.</b> Customer data is not a product. The Company does not sell, license, or share customer data for advertising, profiling, behavioural scoring, or ideological assessment.</li>
-   <li><b>7. No Social-Credit Participation.</b> The Company does not participate in social-credit, behavioural-conditioning, or ideological gatekeeping systems, whether public or private.</li>
-   <li><b>8. Freedom of Conscience.</b> Lawful expression, belief, faith, and affiliation do not impair a Canadian's access to the Company's services.</li>
-   <li><b>9. Customer Asset Integrity.</b> Customer assets are the customer's property at all times. They are legally segregated, never commingled with Company funds, never rehypothecated, and never used as collateral for the Company's operations or third-party financing. If the Company ever ceases to operate, customer assets are bankruptcy-remote and recoverable in full.</li>
-   <li><b>10. Long-Horizon Operation.</b> The Company is built for decades. It does not operate against quarterly earnings targets or short-cycle growth metrics as primary directional inputs.</li>
-   <li><b>11. Protection of Refusers.</b> Any employee, officer, director, customer, or partner who refuses to participate in conduct inconsistent with the Mission Anchor is protected from retaliation, termination, denial, or adverse action.</li>
-   <li><b>12. Mission Permanence.</b> The commitments in this Mission Anchor are permanent. They are not negotiable under political, commercial, regulatory, or shareholder pressure outside of law. The Mission Anchor may be strengthened, never weakened.</li>
+   <li><b>The law already helps.</b> 4orm Finance is an Alberta company. Under Canadian corporate law (Peoples v. Wise and BCE v. 1976 Debentureholders), its directors may lawfully weigh the mission and the Company's stakeholders in their decisions, and are not bound to maximize shareholder value. This gives mission-driven decisions real cover within the law.</li>
+   <li><b>Mission stewardship.</b> The Advisory Council, and a named Mission Steward within it, review the decisions that touch this Anchor and oversee the annual Mission Report. This is an internal governance role, not a transfer of legal control.</li>
+   <li><b>The Decision Matrix.</b> Every material decision maps to an owner, the required input, and a final authority across five tiers from Constitutional to Routine. A defined protocol governs crisis and pressure events, logged within hours, reviewed by counsel and the Mission Steward, and disclosed in an Annual Mission Report. See the Decision Matrix and Governance document.</li>
+   <li><b>The CEO Commitment.</b> The Founder and CEO binds himself personally to every bar and to a standard at least as high as any member of the team, on a decades horizon. See the Founder and CEO Commitment Statement.</li>
   </ul>
-  <h2 class="ds"><span class="sn">08</span>How we hold ourselves to this</h2>
-  <p>The Company adopts the following commitments to make the Mission Anchor durable. The mechanisms below reflect the Company's elected soft-law approach: published values, contractual incorporation across the Company's principal agreements, and direct accountability of the Founders, sitting as the board.</p>
-  <ul>
-   <li><b>1. Public Mission Anchor.</b> The Mission Anchor is published on the Company's website in full and is included in every offering document, customer-facing material, and partner agreement. Any Canadian may read it.</li>
-   <li><b>2. Founders' Personal Commitment.</b> Each Founder personally commits, in the Founders' Voting Agreement, to refuse to vote for or authorize any matter that would constitute a material deviation from this Mission Anchor. The Founders' refusal right is unconditional.</li>
-   <li><b>3. Advisor and Officer Acknowledgment.</b> Every advisor, officer, director, and material contractor signs an acknowledgment of this Mission Anchor as a condition of engagement.</li>
-   <li><b>4. Customer Terms Incorporation.</b> This Mission Anchor is incorporated by reference into the Company's customer terms of service, giving customers contractual standing to invoke its protections.</li>
-   <li><b>5. Annual Mission Anchor Disclosure.</b> No later than ninety (90) days after the end of each fiscal year, the Company publishes a Mission Anchor Compliance Report listing material requests, refusals, and pressure events of the prior year.</li>
-   <li><b>6. Customer-Asset Segregation.</b> Customer assets are at all times legally segregated, bankruptcy-remote, not rehypothecated, and not pledged as Company collateral. Segregation is operationally maintained and externally attestable.</li>
-   <li><b>7. Notice-and-Cure; Judicial-Order Requirement.</b> The Company does not freeze, restrict, close, or modify any customer account, service, or asset access in response to any non-judicial request. A final court order with judicial review available is required.</li>
-   <li><b>8. Whistleblower Protection.</b> Any employee, officer, director, contractor, advisor, or agent who reports conduct inconsistent with this Mission Anchor is protected from retaliation. Whistleblower protection is incorporated into employment, advisor, and contractor agreements.</li>
-   <li><b>9. Material-Vendor Alignment.</b> Any material vendor, partner, counterparty, or contracted service provider with access to customer data, customer assets, or customer service infrastructure must contractually align with the operative protections of this Mission Anchor.</li>
-   <li><b>10. Compensation Alignment.</b> No officer, director, employee, or advisor compensation, equity grant, bonus, or incentive is structured in a manner that rewards conduct inconsistent with this Mission Anchor.</li>
-   <li><b>11. Long-Horizon Mandate.</b> The Company does not adopt or operate against quarterly earnings targets, quarterly growth projections, or any short-cycle financial metric as a primary directional input.</li>
-   <li><b>12. Conscience Protection.</b> No employee, officer, director, customer, or partner is required to participate in any transaction, partnership, or activity that violates their faith, conscience, or principles, where alternative arrangements can be made consistent with the Company's obligations.</li>
-   <li><b>13. Values-Aligned Partnership.</b> The Company partners, contracts, and accepts capital from those who align with this Mission Anchor. Values alignment is a precondition; financial alignment is downstream.</li>
-   <li><b>14. Acquisition Discipline.</b> Any proposed sale, merger, change of control, or significant strategic transaction is evaluated against the Mission Anchor before any other consideration. The Company will not transfer control to parties whose stated mission, ownership structure, or pattern of conduct is inconsistent with this Mission Anchor.</li>
-   <li><b>15. Jurisdictional Resilience.</b> Where the law of a jurisdiction in which the Company operates is amended in a manner that would compel the Company to act inconsistently with this Mission Anchor, the Company will, to the extent legally available, withdraw the relevant service from that jurisdiction or migrate to a jurisdiction in which the protections can be maintained.</li>
-   <li><b>16. Founders' Right of First Refusal on Share Transfers.</b> Before any shareholder (including any Founder) may transfer shares to a third party, or before any shares pass to a beneficiary on death or permanent disability, the other Founders (and, secondarily, the Company) hold a right of first refusal to acquire the shares at fair market value, exercisable within ninety (90) days of notice. Any acquirer who proceeds remains bound by this Mission Anchor.</li>
-   <li><b>17. Key Person Continuity.</b> On the death or permanent disability of any Founder or Key Person, vested equity passes to the designated beneficiary, subject to the Founders' Right of First Refusal above. The beneficiary remains bound by the Mission Anchor and the Founders' Voting Agreement.</li>
-   <li><b>18. Code and Specification Transparency.</b> To the extent compatible with security and customer protection, the Company publishes the operating specifications of decisions that affect customer assets, customer data, account access, and account restrictions.</li>
-   <li><b>19. Public Standing.</b> Any Canadian customer of the Company, and any holder of equity in the Company, has standing to invoke the protections of this Mission Anchor through internal escalation, the Mission Anchor Compliance Report process, or the courts of competent jurisdiction.</li>
-   <li><b>20. Mission Permanence.</b> This Mission Anchor may be strengthened by Founder consensus. It may not be weakened. Any proposed amendment that would reduce a customer protection or structural commitment requires Founder consensus AND a publicly-posted explanation of why the change is consistent with the Mission Anchor's purpose.</li>
-  </ul>
-  <h2 class="ds"><span class="sn">09</span>How the commitment holds</h2>
-  <p>Each commitment in this Mission Anchor is a constitutional commitment of the Company. No Founder, director, officer, employee, or majority of shareholders may direct, vote for, or authorize a material deviation from any provision in this Mission Anchor.</p>
-  <p>Where a proposed action is asserted by any Founder, director, officer, employee, or customer to constitute a material deviation from this Mission Anchor, the question is referred to independent legal counsel and to the Advisory Council for review. No further vote, authorization, or implementation occurs until the question is resolved consistent with this Mission Anchor.</p>
-  <p>This Mission Anchor is held mutually by each Founder and by the Company itself. It exists for the protection of the Company, its mission, and the Canadians it serves.</p>
-  <h2 class="ds"><span class="sn">10</span>Annexes (for counsel)</h2>
-  <h3>Annex A. ABCA Provisions Referenced</h3>
-  <p>Section 122 (ABCA): director and officer fiduciary duty owed to the corporation; limit on contracting out (s. 122(3)). Section 242 (ABCA): oppression remedy; available to a complainant where the affairs of the corporation are conducted in a manner that is oppressive or unfairly prejudicial.</p>
-  <h3>Annex B. Foundational Case Law</h3>
-  <p>Peoples Department Stores Inc. (Trustee of) v. Wise, 2004 SCC 68. Directors owe a fiduciary duty to the corporation alone, and may consider the interests of shareholders, employees, suppliers, creditors, consumers, governments, and the environment. BCE Inc. v. 1976 Debentureholders, 2008 SCC 69. Directors must act as a good corporate citizen; no duty to maximize shareholder value in change-of-control or otherwise. Reference case: Federal Court ruling on the 2022 invocation of the Emergencies Act (Mosley J., January 23, 2024) held that the invocation, and the freezing of accounts under the Emergency Economic Measures Order, was unreasonable and violated the Canadian Charter of Rights and Freedoms. The case is referenced as the factual record underlying the Politically-Neutral Service and Notice-and-Cure protections in this Mission Anchor.</p>
-  <h3>Annex C. Jurisdictional Note (Alberta Incorporation; BC Coordination)</h3>
-  <p>The Company is incorporating under the Business Corporations Act (Alberta). The ABCA does not have a benefit-company regime equivalent to BCBCA Part 2.3. The Company has, as set out in the Counsel Review above, elected a soft-law approach for the Mission Anchor rather than seeking Articles entrenchment or transferring director powers to a Mission Stewardship Trustee under a Unanimous Shareholders' Agreement. Counterparty jurisdictions are preserved. Mench Capital Corp. and Capiche Capital are British Columbia entities and their regulated activity in BC remains subject to BC securities law. Fasken Martineau DuMoulin LLP retains the BC side of any matter that touches British Columbia; Osler, Hoskin and Harcourt LLP retains the Alberta side.</p>
-  <h3>Annex D. Drafting Note for Counsel</h3>
-  <p>This Mission Anchor is a working draft prepared by the founders to inform counsel's review and to publish to the data room. It is not a binding legal document in its current form. Counsel is invited to recommend contractual reinforcements consistent with the elected soft-law approach.</p>
-  <h2 class="ds"><span class="sn">11</span>Contractual incorporation mechanism (Version 11)</h2>
-  <p>In Version 11, the Mission Anchor is incorporated by reference into each of the following operative agreements. Deviation from the Mission Anchor is a material breach of each such agreement. Any shareholder or Mission Stewardship representative may sue for specific performance and may seek injunctive relief without posting bond.</p>
-  <ul>
-   <li>Shareholders' Agreement</li>
-   <li>Founders' Voting Agreement</li>
-   <li>Advisor Agreements (Mench Capital Advisor Agreement, Advisory Council seats, all advisor grants)</li>
-   <li>Employment Agreements (all officers and employees)</li>
-   <li>Vendor Agreements (material vendor contracts, including custody, banking, and technology suppliers)</li>
-  </ul>
-  <p>The soft-law posture (Articles-embedded Mission Anchor without a benefit-company statute) remains the primary approach. The contractual incorporation mechanism operates as a second, enforceable layer that binds the Company and its counterparties to the Mission Anchor as a matter of contract, in addition to the corporate-law obligations set out in the Articles.</p>
-  <p style="font-size:.76rem;color:var(--slate)">4orm Finance Inc. &middot; Unit 400, 718 8 Ave SW, Calgary, AB T2P 1H3 &middot; 1-778-363-2423 &middot; compliance@4ormfinance.com</p>
+  <h2 class="ds"><span class="sn">07</span>Amendment</h2>
+  <p>This Anchor is a standing charter, and it is not changed quietly.</p>
+  <p><b>Amendment.</b> Changes to these commitments require the approval set in the Company's governing documents and counsel review.</p>
+  <p>This document is read together with its companions: the Founder and CEO Commitment Statement, and the Decision Matrix and Governance.</p>
   ${FT}</div>`,
  team:`<div class="doc">${dtop('Team')}<div class="eyebrow-m">Team &amp; contacts</div>
   <h1 class="dh">Team &amp; contacts.</h1>

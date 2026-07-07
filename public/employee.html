@@ -177,10 +177,9 @@
  .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 24px;border-left:3px solid var(--brand);}
  .box.alt{border-left-color:var(--green);}
  .box.private{border-color:rgba(231,199,108,.34);border-left-color:var(--gold);background:rgba(231,199,108,.04);}
- .box-tag{font-size:.9rem;color:rgba(255,255,255,.85);font-weight:500;margin-bottom:12px;}
- .cat-pill{display:inline-flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:99px;padding:8px 20px 8px 13px;margin-bottom:16px;}
- .cat-pill .cp-n{font-family:var(--font-mono);font-size:1.2rem;font-weight:800;color:var(--brand);line-height:1;}
- .cat-pill .cp-l{font-family:var(--font-mono);font-size:.84rem;font-weight:700;letter-spacing:.05em;color:#fff;}
+ .cat-pill{display:inline-flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:99px;padding:10px 24px 10px 16px;margin-bottom:16px;}
+ .cat-pill .cp-n{font-family:var(--font-mono);font-size:1.4rem;font-weight:800;color:var(--brand);line-height:1;}
+ .cat-pill .cp-l{font-family:var(--font-mono);font-size:.98rem;font-weight:700;letter-spacing:.05em;color:#fff;}
  .box.alt .cat-pill .cp-n{color:var(--green);}
  .box.private .cat-pill .cp-n{color:var(--gold);}
  .cat-bar{height:3px;border-radius:99px;background:linear-gradient(90deg,var(--brand),rgba(46,107,242,.15));margin-bottom:12px;}
@@ -508,7 +507,6 @@ function go(which){
 function renderBoxes(boxes){
  document.getElementById('boxGrid').innerHTML=boxes.map((b,idx)=>`
   <div class="box${b.priv?' private':(idx%2?' alt':'')}">
-   <div class="box-tag">${b.k}</div>
    <div class="cat-pill"><span class="cp-n">${b.n}</span><span class="cp-l">${b.t}</span></div>
    <div class="cat-bar"></div>
    <ul class="files">${b.files.map((f,i)=>fileRow(b,i)).join('')}</ul>
