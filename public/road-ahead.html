@@ -127,15 +127,26 @@ footer{max-width:var(--maxw);margin:0 auto;padding:30px 22px 70px;color:#2f4256;
 .oh-topnav .ohtab.on{color:#fff;border-bottom-color:#2E6BF2;}
 .homelink{display:none !important;}
 </style>
+<style>
+.ohbar{position:fixed;top:0;left:0;right:0;z-index:99999;background:#fff;border-bottom:1px solid #E3E9F2;height:64px;}
+.ohbar .ohbar-in{max-width:1180px;margin:0 auto;padding:0 28px;height:64px;display:flex;align-items:center;gap:30px;}
+.ohbar .ohlogo{position:absolute;left:30px;top:50%;transform:translateY(-50%);height:26px;width:auto;}
+.ohbar .ohtab2{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:#5B6B84;font-weight:700;text-decoration:none;cursor:pointer;padding:8px 12px;border-radius:8px;white-space:nowrap;}
+.ohbar .ohtab2:hover{color:#142036;}
+.ohbar .ohtab2.on{color:#2E6BF2;background:rgba(46,107,242,.1);}
+.ohbar .ohsigned{margin-left:auto;display:inline-flex;align-items:center;gap:9px;padding:6px 13px;border-radius:99px;background:rgba(123,227,176,.16);border:1px solid rgba(14,138,95,.35);color:#0E8A5F;font-size:.74rem;font-weight:700;font-family:'JetBrains Mono',ui-monospace,monospace;}
+.ohbar .ohsigned .d{width:7px;height:7px;border-radius:50%;background:#19B57E;}
+.ohbar .ohsigned a{color:#142036;text-decoration:none;border-left:1px solid rgba(14,138,95,.3);padding-left:9px;margin-left:2px;}
+</style>
 </head>
 <body>
-<div class="oh-topnav" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:rgba(8,12,20,.9);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,.12);display:flex;align-items:center;gap:26px;padding:0 22px;height:46px;">
-<a class="ohtab" data-tab="documents" href="#">Documents</a>
-<a class="ohtab" data-tab="roadmap" href="road-ahead.html">Roadmap</a>
-<a class="ohtab" data-tab="ptr" href="path-to-revenue.html">Path to Revenue</a>
-<a class="ohtab" data-tab="visual" href="visual-data.html">Visual Data</a>
-<span style="margin-left:auto;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:#9fb0c8;font-family:'JetBrains Mono',ui-monospace,monospace;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#19B57E;margin-right:7px;"></span>Signed in &middot; Member access <a class="signout-link" href="#" style="color:#fff;text-decoration:none;margin-left:8px;">Sign out</a></span>
-</div>
+<header class="ohbar"><img class="ohlogo" src="assets/4orm-logo.png" alt="4orm Finance"/><div class="ohbar-in">
+<a class="ohtab2" data-tab="documents" href="#">Documents</a>
+<a class="ohtab2" data-tab="roadmap" href="road-ahead.html">Roadmap</a>
+<a class="ohtab2" data-tab="ptr" href="path-to-revenue.html">Path to Revenue</a>
+<a class="ohtab2" data-tab="visual" href="visual-data.html">Visual Data</a>
+<span class="ohsigned"><span class="d"></span>Signed in &middot; Member access<a class="signout-link" href="#">Sign out</a></span>
+</div></header>
 <a class="homelink" href="#">&#8592; 4orm home</a>
 <div class="wrap">
   <div class="hero">
@@ -179,7 +190,7 @@ footer{max-width:var(--maxw);margin:0 auto;padding:30px 22px 70px;color:#2f4256;
    ============================================================ */
 const MILESTONES = [
   { n:"", title:"You are here", when:"July 2026", status:"current",
-    desc:"Pre-seed open July 1. Incorporation completing. The 4orm family and the room coming together." },
+    desc:"Pre-seed opens August 1. Incorporation completing. The 4orm family and the room coming together." },
   { n:1, title:"Advisor and office onboarding", when:"Now - in place", status:"now",
     clabel:"Building the room", crit:["Advisor onboarding (engagement, lanes, IP)","Internal operating documentation","Data room maintained at 4ormdr.com"] },
   { n:2, title:"Go-to-market strategy", when:"Now - in place", status:"now",
@@ -235,9 +246,9 @@ const MILESTONES = [
   { n:27, title:"Seed round close", when:"2028", status:"horizon",
     clabel:"What clears the gate", crit:["$15M target at $30M pre-money","Term sheet review, dilution math","Board composition changes"] },
   { n:28, title:"Multi-institution rollout", when:"2028 to 2029", status:"horizon",
-    clabel:"Scale the network", crit:["Onboard banks and credit unions","Cross-institution settlement corridors","Savings-share gainshare scales"] },
+    clabel:"Scale the network", crit:["Onboard banks and credit unions","Cross-institution settlement corridors","Settlement volume scales across the network"] },
   { n:29, title:"RWA asset classes go live", when:"2029", status:"horizon",
-    clabel:"Eleven tokenizable classes", crit:["Real-world assets settle against tokenized cash","Each class sized with sourced fee mechanics","The expansion revenue surface ($127.1M 5-yr model)"], subs:["Real estate","Private credit","Gold"] },
+    clabel:"Eleven tokenizable classes", crit:["Real-world assets settle against tokenized cash","Each class sized with sourced fee mechanics","The expansion revenue surface (~$101.8M 5-yr platform model)"], subs:["Real estate","Private credit","Gold"] },
   { n:30, title:"Series A close", when:"2028 to 2029", status:"horizon",
     clabel:"What clears the gate", crit:["Term sheet review","Board composition changes","Growth plan"] }
 ];
@@ -246,8 +257,8 @@ const DEST = { label:"Destination", title:"Product in market - the regulated RWA
 const SUBINFO = {
   "DevEx":{t:"DevEx - build costs", d:"Development and build spend. About <span class='amt'>$492K</span> of the pre-seed - the development team (<span class='amt'>$317K</span>), chain-abstraction, smart contracts, sandbox prep and legal structuring."},
   "OpEx":{t:"OpEx - operating costs", d:"Ongoing running costs at roughly <span class='amt'>$125K/mo</span>, sized for a <span class='amt'>15-month</span> runway (about <span class='amt'>$2.6M</span> operating plus reserve)."},
-  "Pricing":{t:"Pricing - how we earn", d:"Five revenue streams (settlement, issuance, trading, custody, SaaS) plus a settlement-savings gainshare - <span class='amt'>25%</span> of the drag we remove per institution (<span class='amt'>$20.3M/yr</span> pool)."},
-  "Term sheets":{t:"Term sheets - the raise", d:"Pre-seed unit offering at a <span class='amt'>$10M</span> pre-money. Each <span class='amt'>$1,000</span> unit is one redeemable preferred, 1,000 commons and a half warrant. <span class='amt'>$3M</span> target."},
+  "Pricing":{t:"Pricing - how we earn", d:"Five revenue streams: settlement, issuance, trading, custody and SaaS - how the platform earns across the venue."},
+  "Term sheets":{t:"Term sheets - the raise", d:"Pre-seed unit offering at a <span class='amt'>$10M</span> pre-money. Each <span class='amt'>$0.50</span> unit is one Class A common share and a half warrant (<span class='amt'>$1.50</span> strike, milestone-triggered). <span class='amt'>$3M</span> target."},
   "IRAP":{t:"NRC IRAP - money in", d:"Non-dilutive government R&D funding, targeted in year one during the pre-seed. Capital in, <span class='amt'>no equity out</span>."},
   "Mitacs":{t:"Mitacs - money in", d:"Non-dilutive research grants that co-fund technical talent and internships. Capital in, <span class='amt'>no equity out</span>."},
   "SR&ED":{t:"SR and ED - money back", d:"The federal R&D tax credit - comes back as a credit against eligible development spend, directly offsetting build cost."},

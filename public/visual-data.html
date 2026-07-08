@@ -133,9 +133,9 @@
 </style>
 <link rel="stylesheet" href="assets/compliance.css" />
 <style>
-.ohbar{background:#fff;border-bottom:1px solid #E3E9F2;}
+.ohbar{background:#fff;border-bottom:1px solid #E3E9F2;position:relative;}
 .ohbar-in{max-width:1180px;margin:0 auto;padding:0 28px;height:64px;display:flex;align-items:center;gap:30px;}
-.ohlogo{height:24px;width:auto;flex:none;}
+.ohlogo{position:absolute;left:30px;top:50%;transform:translateY(-50%);height:26px;width:auto;}
 .ohtabs{display:flex;gap:22px;align-items:center;}
 .ohtab2{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:#5B6B84;font-weight:700;text-decoration:none;cursor:pointer;padding:8px 12px;border-radius:8px;white-space:nowrap;}
 .ohtab2:hover{color:#142036;}
@@ -169,7 +169,7 @@
  <div class="wrap">
  <div class="eyebrow">Visual Data</div>
  <h1>The whole room, <span class="accent">at a glance.</span></h1>
- <p class="lead">Every chart below is built from the documents in this room, primarily the five-year model v8 (June 2026). Each card names its source and links straight to it; nothing here exists that you cannot verify one click away.</p>
+ <p class="lead">Every chart below is built from the documents in this room, primarily the five-year model v14 (July 2026). Each card names its source and links straight to it; nothing here exists that you cannot verify one click away.</p>
  </div>
 </section>
 
@@ -181,12 +181,12 @@
  <div class="vd-grid">
  <div class="vd-card span2">
  <div class="stats">
- <div class="stat"><div class="n">$3M</div><div class="l">Pre-Seed round &middot; opens July 1, 2026</div></div>
+ <div class="stat"><div class="n">$3M</div><div class="l">Pre-Seed round &middot; opens August 1, 2026</div></div>
  <div class="stat g"><div class="n">$10M</div><div class="l">Pre-money valuation</div></div>
  <div class="stat gd"><div class="n">$300K</div><div class="l">Secured: $70K; signed LOI (not funded): $500K</div></div>
  <div class="stat p"><div class="n">30%</div><div class="l">BC EBC tax credit*</div></div>
  </div>
- <div class="vd-take"><b>One sentence:</b> a $3M pre-seed at $10M pre-money, opening July 1, 2026, with $70K secured plus a $500K signed LOI (not yet funded) and a BC CCPC + EBC structure intended to offer eligible BC investors a 30% tax credit, subject to verification of BC residency and program eligibility under the Small Business Venture Capital Act. TFSA / RRSP eligibility subject to qualifying investor structure; counsel review pending.</div>
+ <div class="vd-take"><b>One sentence:</b> a $3M pre-seed at $10M pre-money, opening August 1, 2026, with $70K secured plus a $500K signed LOI (not yet funded) and a BC CCPC + EBC structure intended to offer eligible BC investors a 30% tax credit, subject to verification of BC residency and program eligibility under the Small Business Venture Capital Act. TFSA / RRSP eligibility subject to qualifying investor structure; counsel review pending.</div>
  </div>
  </div>
 
@@ -205,7 +205,7 @@
  <div class="vd-take"><b>Read it this way:</b> green bars already happened; blue bars are forecasts. The thesis does not require the big forecasts, only that regulated institutions keep doing what JPM and the Bank of Canada are already doing.</div>
  </div>
  <div class="vd-card">
- <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v8 &#8599;</a></div>
+ <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v14 &#8599;</a></div>
  <div class="vd-t">Interac e-Transfer settlement pool</div>
  <div class="vt">ANNUAL VOLUME, C$B &middot; MODEL TAM INPUT</div>
  <div class="vbars">
@@ -285,66 +285,65 @@
  </div>
 
  <!-- ================= FINANCIALS ================= -->
- <div class="vd-cat"><span class="k">05</span><h2>Financial model v8</h2></div>
- <p class="vd-sub">All figures calculated in the live workbook (June 6, 2026 edition), rendered sheet by sheet in the room. CFA-built and audited.</p>
+ <div class="vd-cat"><span class="k">05</span><h2>Financial model v14</h2></div>
+ <p class="vd-sub">All figures calculated in the live workbook (v14 Final Deployed), rendered sheet by sheet in the room. CFA-built and audited. Headline: ~$101.8M platform revenue (~$104M with grants), ~$83.1M pre-tax operating income (~80% operating margin), ~$60.6M post-tax net income (~59% net margin) over five years.</p>
  <div class="vd-grid">
  <div class="vd-card span2">
- <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v8 &#8599;</a></div>
+ <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v14 &#8599;</a></div>
  <div class="vd-t">Revenue ramp, annual</div>
- <div class="vt">TOTAL REVENUE + GRANTS &middot; C$M &middot; 4 FIs + E-TRANSFER + SAVINGS SHARE</div>
+ <div class="vt">TOTAL PLATFORM REVENUE &middot; C$M &middot; 4 FIs</div>
  <div class="vbars">
  <div class="vb"><span class="val">$0</span><i style="height:2%"></i></div>
- <div class="vb"><span class="val">$6.4M</span><i style="height:16%"></i></div>
- <div class="vb"><span class="val">$19.5M</span><i style="height:49%"></i></div>
- <div class="vb"><span class="val">$27.7M</span><i style="height:69%"></i></div>
- <div class="vb"><span class="val">$33.5M</span><i style="height:84%"></i></div>
- <div class="vb"><span class="val">$40.0M</span><i style="height:100%"></i></div>
+ <div class="vb"><span class="val">$0</span><i style="height:2%"></i></div>
+ <div class="vb"><span class="val">$7.7M</span><i style="height:20%"></i></div>
+ <div class="vb"><span class="val">$23.0M</span><i style="height:59%"></i></div>
+ <div class="vb"><span class="val">$32.3M</span><i style="height:83%"></i></div>
+ <div class="vb"><span class="val">$38.8M</span><i style="height:100%"></i></div>
  </div>
  <div class="vx"><span>2026</span><span>2027</span><span>2028</span><span>2029</span><span>2030</span><span>2031</span></div>
- <div class="vd-take"><b>Why 2026 is zero:</b> the build half-year earns nothing by design. Revenue starts when ATB and Bow Valley onboard in 2027, then compounds as Vancity and Servus join in 2028. Five-year total: <b>$127.1M</b>.</div>
+ <div class="vd-take"><b>Why 2026 and 2027 are zero:</b> the build phase earns nothing by design. Revenue starts when ATB and Bow Valley onboard in 2028, then compounds as Vancity and Servus join in 2029. Five-year total: <b>~$101.8M</b> platform (~$104M with grants).</div>
  </div>
  <div class="vd-card">
- <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v8 &#8599;</a></div>
- <div class="vd-t">Where the $127.1M comes from</div>
+ <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v14 &#8599;</a></div>
+ <div class="vd-t">Where the ~$101.8M comes from</div>
  <div class="piewrap">
- <div class="pie" data-c="$127.1M&#10;5-YEAR" style="background:conic-gradient(#2E6BF2 0 130.3deg, #9AB6FF 130.3deg 256.3deg, #7BE3B0 256.3deg 326.5deg, #C49A3A 326.5deg 345.9deg, #C8B0EF 345.9deg 360deg);"></div>
+ <div class="pie" data-c="~$101.8M&#10;5-YEAR" style="background:conic-gradient(#2E6BF2 0 139.03deg, #9AB6FF 139.03deg 263.57deg, #7BE3B0 263.57deg 340.77deg, #C49A3A 340.77deg 350.73deg, #C8B0EF 350.73deg 360deg);"></div>
  <div class="plegend">
- <div class="pl"><i style="background:#2E6BF2"></i>SaaS + APIs ($25K/mo)<b>$46.0M</b></div>
- <div class="pl"><i style="background:#9AB6FF"></i>Issuance fees (0.5%)<b>$44.5M</b></div>
- <div class="pl"><i style="background:#7BE3B0"></i>Custody fees (30 bps)<b>$24.8M</b></div>
- <div class="pl"><i style="background:#C49A3A"></i>Settlement + trading + e-transfer<b>$6.9M</b></div>
- <div class="pl"><i style="background:#C8B0EF"></i>Savings share + grants<b>$5.0M</b></div>
+ <div class="pl"><i style="background:#2E6BF2"></i>Issuance fees (0.5%)<b>$39.3M</b></div>
+ <div class="pl"><i style="background:#9AB6FF"></i>SaaS + APIs ($25K/mo)<b>$35.2M</b></div>
+ <div class="pl"><i style="background:#7BE3B0"></i>Custody fees (30 bps)<b>$21.8M</b></div>
+ <div class="pl"><i style="background:#C49A3A"></i>Settlement fees (1.5 bps)<b>$2.8M</b></div>
+ <div class="pl"><i style="background:#C8B0EF"></i>Trading fees (5 bps)<b>$2.6M</b></div>
  </div>
  </div>
- <div class="vd-take"><b>The shape that matters:</b> 71% of revenue is SaaS and issuance, contracted streams, not trading speculation. Volume-based lines stay a minority through 2031.</div>
+ <div class="vd-take"><b>The shape that matters:</b> 73% of revenue is issuance and SaaS, contracted streams, not trading speculation. Volume-based lines stay a minority through 2031. Grants of ~$2.23M sit alongside, separate from platform fees.</div>
  </div>
  <div class="vd-card">
- <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v8 &#8599;</a></div>
+ <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v14 &#8599;</a></div>
  <div class="vd-t">Revenue by institution, 5-year</div>
- <div class="hrow"><span class="hlab">ATB Financial</span><span class="htrack"><span class="hfill" style="width:100%"></span></span><span class="hval">$58.7M &middot; FROM 2027</span></div>
- <div class="hrow"><span class="hlab">Vancity</span><span class="htrack"><span class="hfill" style="width:55%"></span></span><span class="hval">$32.3M &middot; FROM 2028</span></div>
- <div class="hrow"><span class="hlab">Servus</span><span class="htrack"><span class="hfill" style="width:44%"></span></span><span class="hval">$25.6M &middot; FROM 2028</span></div>
- <div class="hrow"><span class="hlab">Bow Valley CU</span><span class="htrack"><span class="hfill lt" style="width:8%"></span></span><span class="hval">$4.9M &middot; FROM 2027</span></div>
- <div class="hrow"><span class="hlab">E-Transfer + savings</span><span class="htrack"><span class="hfill purple" style="width:6%"></span></span><span class="hval">$3.4M</span></div>
- <div class="vd-take"><b>Concentration, stated plainly:</b> ATB is 47% of five-year revenue. That is why the partnership documents treat the ATB relationship as the single most important commercial asset in the plan.</div>
+ <div class="hrow"><span class="hlab">ATB Financial</span><span class="htrack"><span class="hfill" style="width:100%"></span></span><span class="hval">$51.1M &middot; FROM 2028</span></div>
+ <div class="hrow"><span class="hlab">Vancity</span><span class="htrack"><span class="hfill" style="width:51%"></span></span><span class="hval">$26.1M &middot; FROM 2029</span></div>
+ <div class="hrow"><span class="hlab">Servus</span><span class="htrack"><span class="hfill" style="width:40%"></span></span><span class="hval">$20.6M &middot; FROM 2029</span></div>
+ <div class="hrow"><span class="hlab">Bow Valley CU</span><span class="htrack"><span class="hfill lt" style="width:8%"></span></span><span class="hval">$4.1M &middot; FROM 2028</span></div>
+ <div class="vd-take"><b>Concentration, stated plainly:</b> ATB is 50% of five-year revenue. That is why the partnership documents treat the ATB relationship as the single most important commercial asset in the plan.</div>
  </div>
  <div class="vd-card">
- <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v8 &#8599;</a></div>
+ <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v14 &#8599;</a></div>
  <div class="vd-t">Net income ramp</div>
- <div class="vt">NET PROFIT (LOSS) &middot; C$M &middot; LEAN BUILD SCENARIO</div>
+ <div class="vt">NET INCOME, POST-TAX &middot; C$M &middot; LEAN BUILD SCENARIO</div>
  <div class="vbars">
- <div class="vb neg"><span class="val">($2.1M)</span><i style="height:7%"></i></div>
- <div class="vb alt"><span class="val">$2.9M</span><i style="height:9%"></i></div>
- <div class="vb alt"><span class="val">$15.5M</span><i style="height:45%"></i></div>
- <div class="vb alt"><span class="val">$23.0M</span><i style="height:67%"></i></div>
- <div class="vb alt"><span class="val">$28.2M</span><i style="height:82%"></i></div>
- <div class="vb alt"><span class="val">$34.4M</span><i style="height:100%"></i></div>
+ <div class="vb neg"><span class="val">($0.8M)</span><i style="height:3%"></i></div>
+ <div class="vb neg"><span class="val">($1.6M)</span><i style="height:6%"></i></div>
+ <div class="vb alt"><span class="val">$3.1M</span><i style="height:12%"></i></div>
+ <div class="vb alt"><span class="val">$14.1M</span><i style="height:56%"></i></div>
+ <div class="vb alt"><span class="val">$20.6M</span><i style="height:82%"></i></div>
+ <div class="vb alt"><span class="val">$25.2M</span><i style="height:100%"></i></div>
  </div>
  <div class="vx"><span>2026</span><span>2027</span><span>2028</span><span>2029</span><span>2030</span><span>2031</span></div>
- <div class="vd-take"><b>One loss year:</b> the gold bar is the build half-year. Profitable from 2027 onward; five-year net income <b>$101.9M</b> at a blended gross margin of <b>80.2%</b>.</div>
+ <div class="vd-take"><b>Two build years:</b> the gold bars are the 2026 and 2027 build phase. Profitable from 2028 onward; five-year post-tax net income about <b>~$60.6M</b>, a net margin near <b>~59%</b> (roughly 80% at the operating line, ~$83.1M pre-tax).</div>
  </div>
  <div class="vd-card">
- <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v8 &#8599;</a></div>
+ <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v14 &#8599;</a></div>
  <div class="vd-t">Lean build vs traditional build</div>
  <div class="vt">5-YEAR TOTAL EXPENSES &middot; C$M</div>
  <div class="hrow"><span class="hlab">Lean in-house build</span><span class="htrack"><span class="hfill green" style="width:74%"></span></span><span class="hval">$25.2M</span></div>
@@ -352,7 +351,7 @@
  <div class="vd-take"><b>The delta is $8.8M</b> over five years, roughly 35% lower DevEx headcount plus leaner ops. The model carries both scenarios side by side; the toggle is on the Control Panel sheet.</div>
  </div>
  <div class="vd-card">
- <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v8 &#8599;</a></div>
+ <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v14 &#8599;</a></div>
  <div class="vd-t">Non-dilutive capital, scheduled</div>
  <table class="dt">
  <thead><tr><th>Program</th><th style="width:26%">Scheduled</th></tr></thead>
@@ -386,10 +385,10 @@
  <div class="vd-src"><a href="documents/07-2-partnership-pipeline.html" target="_blank" rel="noopener">07.2 · Partnership Pipeline &#8599;</a></div>
  <div class="vd-t">Onboarding ramp</div>
  <div class="vt">REVENUE CONTRIBUTION WINDOW &middot; 2026 TO 2031</div>
- <div class="grow"><span class="hlab">ATB Financial</span><span class="gtrack"><span class="gbar" style="left:17%;width:83%"></span></span></div>
- <div class="grow"><span class="hlab">Bow Valley CU</span><span class="gtrack"><span class="gbar" style="left:17%;width:83%"></span></span></div>
- <div class="grow"><span class="hlab">Vancity CU</span><span class="gtrack"><span class="gbar alt" style="left:33%;width:67%"></span></span></div>
- <div class="grow"><span class="hlab">Servus CU</span><span class="gtrack"><span class="gbar alt" style="left:33%;width:67%"></span></span></div>
+ <div class="grow"><span class="hlab">ATB Financial</span><span class="gtrack"><span class="gbar" style="left:33%;width:67%"></span></span></div>
+ <div class="grow"><span class="hlab">Bow Valley CU</span><span class="gtrack"><span class="gbar" style="left:33%;width:67%"></span></span></div>
+ <div class="grow"><span class="hlab">Vancity CU</span><span class="gtrack"><span class="gbar alt" style="left:50%;width:50%"></span></span></div>
+ <div class="grow"><span class="hlab">Servus CU</span><span class="gtrack"><span class="gbar alt" style="left:50%;width:50%"></span></span></div>
  <div class="gaxis"><span>2026</span><span>2027</span><span>2028</span><span>2029</span><span>2030</span><span>2031</span></div>
  <div class="vd-take"><b>Half-ramp first:</b> each institution contributes at 50% in its first two quarters, full run-rate after. No revenue is booked before a partner is live.</div>
  </div>
@@ -403,7 +402,7 @@
  <div class="vd-src"><a href="path-to-revenue.html">Path to Revenue page &#8599;</a></div>
  <div class="vd-t">Where the build stands, workstream by workstream</div>
  <div class="hrow"><span class="hlab">Marketing &amp; web</span><span class="htrack"><span class="hfill green" style="width:80%"></span></span><span class="hval">80%</span></div>
- <div class="hrow"><span class="hlab">Capital &amp; pre-seed</span><span class="htrack"><span class="hfill" style="width:45%"></span></span><span class="hval">45% &middot; OPENS JUL 1</span></div>
+ <div class="hrow"><span class="hlab">Capital &amp; pre-seed</span><span class="htrack"><span class="hfill" style="width:45%"></span></span><span class="hval">45% &middot; OPENS AUG 1</span></div>
  <div class="hrow"><span class="hlab">Legal &amp; corporate</span><span class="htrack"><span class="hfill" style="width:40%"></span></span><span class="hval">40%</span></div>
  <div class="hrow"><span class="hlab">Team &amp; talent</span><span class="htrack"><span class="hfill" style="width:38%"></span></span><span class="hval">38%</span></div>
  <div class="hrow"><span class="hlab">BD &amp; go-to-market</span><span class="htrack"><span class="hfill" style="width:30%"></span></span><span class="hval">30% &middot; ATB LIVE</span></div>
@@ -469,7 +468,7 @@
 <p><em>FINTRAC.</em> 4orm Finance will register with FINTRAC as required prior to commencing regulated activity. FINTRAC registration is not an endorsement.</p>
  </div>
  <div class="famfooter-legal">
- <span>&copy; 2026 4orm Finance Holdings Inc. &middot; Calgary, AB &middot; Vancouver &middot; Edmonton &middot; Privacy Officer: Chad Johnston, Founder &middot; compliance@4ormfinance.com</span>
+ <span>&copy; 2026 4orm Finance &middot; Calgary, AB &middot; Vancouver &middot; Edmonton &middot; Privacy Officer: Chad Johnston, Founder &middot; compliance@4ormfinance.com</span>
  <span><a href="privacy.html">Privacy</a><a href="#">Terms</a><a href="mailto:compliance@4ormfinance.com">compliance@4ormfinance.com</a></span>
  </div>
  </div>
