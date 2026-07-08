@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Visual Data · 4orm Finance Data Room</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+ :root { --brand:#2E6BF2; --lt:#9AB6FF; --green:#7BE3B0; --gold:#E7C76C; --gold2:#C49A3A; --purple:#C8B0EF;
+ --bg:#0B1220; --card:rgba(255,255,255,.05); --line:rgba(255,255,255,.12);
+ --t1:#fff; --t2:rgba(255,255,255,.78); --t3:rgba(255,255,255,.5);
+ --ink:#142036; --ink2:#46556E; --ink3:#5E6E88; --track:#EFF3FA; --hair:#D7DEEA;
+ --font-sans:'Inter',system-ui,sans-serif; --font-mono:'JetBrains Mono',ui-monospace,monospace; --maxw:1200px; }
+ * { margin:0; padding:0; box-sizing:border-box; }
+ body { font-family:var(--font-sans); background:var(--bg); color:var(--t2); min-height:100vh; display:flex; flex-direction:column; }
+ .nav { background:#fff; border-bottom:1px solid #E3E9F2; position:sticky; top:0; z-index:60; }
+ .nav-inner { max-width:var(--maxw); margin:0 auto; min-height:46px; padding:3px 28px; display:flex; align-items:center; justify-content:space-between; overflow:visible; }
+ .brand-logo { height:122px; margin:-38px 0; }
+ .nav-links { display:flex; align-items:center; gap:40px; margin-left:auto; flex-wrap:nowrap; }
+ .nav-links a { color:#46556E; font-size:.95rem; font-weight:600; padding:7px 11px; text-decoration:none; border-radius:8px; white-space:nowrap; flex-shrink:0; }
+ .nav-links a:hover { background:#EAF1FE; color:#142036; }
+ .nav-links a.on { color:#142036; background:#EAF1FE; }
+ .nav-signed { display:inline-flex; align-items:center; gap:11px; padding:7px 15px; border-radius:99px; background:rgba(123,227,176,.16); border:1px solid rgba(14,138,95,.35); color:#0E8A5F; font-size:.82rem; font-weight:700; white-space:nowrap; flex-shrink:0; }
+ .nav-signed .dot { width:7px; height:7px; border-radius:50%; background:#19B57E; box-shadow:0 0 0 0 rgba(25,181,126,.55); animation:signed-pulse 2s ease-in-out infinite; }
+ @keyframes signed-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(25,181,126,.55); } 50% { box-shadow:0 0 0 8px rgba(25,181,126,0); } }
+ .nav-links .nav-signed a { color:#142036; text-decoration:none; border-left:1px solid rgba(14,138,95,.3); padding:0 0 0 12px; border-radius:0; font-weight:700; font-size:.82rem; }
+ .nav-links .nav-signed a:hover { background:none; color:var(--brand); }
+ @media (max-width:760px){ .brand-logo { height:100px; margin:-27px 0; } }
+ .wrap { max-width:var(--maxw); margin:0 auto; padding:0 28px; }
+ .hero { background:linear-gradient(180deg,#1F3CA8 0%,#15233F 26%,#0B1220 100%); padding:46px 0 30px; }
+ .eyebrow { font-family:var(--font-mono); font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gold); font-weight:800; margin-bottom:10px; }
+ h1 { color:var(--t1); font-size:2.2rem; letter-spacing:-.02em; margin-bottom:12px; }
+ h1 .accent { color:var(--gold); }
+ .lead { max-width:58em; line-height:1.65; font-size:.98rem; }
+ main { flex:1; }
+ .pagefoot { border-top:1px solid var(--line); }
+ .pagefoot .wrap { padding:14px 28px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; font-family:var(--font-mono); font-size:.64rem; letter-spacing:.12em; color:var(--t3); text-transform:uppercase; }
+ .pagefoot .conf { color:var(--gold2); }
+
+ /* ---------- dashboard layout ---------- */
+ .vd-cat { display:flex; align-items:baseline; gap:14px; margin:44px 0 6px; padding-top:22px; border-top:1px solid var(--line); }
+ .vd-cat:first-of-type { border-top:none; padding-top:8px; }
+ .vd-cat h2 { color:var(--t1); font-size:1.25rem; letter-spacing:-.01em; }
+ .vd-cat .k { font-family:var(--font-mono); font-size:.66rem; letter-spacing:.16em; color:var(--lt); font-weight:700; }
+ .vd-sub { color:var(--t3); font-size:.86rem; margin-bottom:16px; max-width:62em; line-height:1.6; }
+ .vd-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+ .vd-grid .span2 { grid-column:1 / -1; }
+ @media (max-width:900px){ .vd-grid { grid-template-columns:1fr; } .vd-grid .span2 { grid-column:auto; } }
+ .vd-card { background:#F7FAFF; border:1px solid var(--line); border-radius:14px; padding:18px 20px 16px; display:flex; flex-direction:column; }
+ .vd-src { margin-bottom:4px; }
+ .vd-src a { font-family:var(--font-mono); font-size:.6rem; letter-spacing:.1em; text-transform:uppercase; font-weight:700; color:var(--brand); text-decoration:none; }
+ .vd-src a:hover { text-decoration:underline; }
+ .vd-t { color:var(--ink); font-weight:800; font-size:1.02rem; letter-spacing:-.01em; margin-bottom:12px; }
+ .vd-take { margin-top:auto; padding-top:12px; font-size:.8rem; color:var(--ink2); line-height:1.55; border-top:1px dashed var(--hair); }
+ .vd-take b { color:var(--ink); }
+
+ /* ---------- chart components (light cards) ---------- */
+ .vt { font-family:var(--font-mono); font-size:.58rem; letter-spacing:.14em; text-transform:uppercase; color:var(--ink3); font-weight:700; margin-bottom:10px; }
+
+ /* horizontal bars */
+ .hrow { display:flex; align-items:center; gap:9px; margin-bottom:7px; }
+ .hlab { width:130px; font-size:.74rem; color:var(--ink); font-weight:600; flex-shrink:0; text-align:right; line-height:1.25; }
+ .htrack { flex:1; height:14px; background:var(--track); border-radius:4px; position:relative; overflow:hidden; }
+ .hfill { position:absolute; top:0; bottom:0; border-radius:4px; background:var(--brand); }
+ .hfill.lt { background:var(--lt); } .hfill.green { background:var(--green); } .hfill.gold { background:var(--gold2); } .hfill.purple { background:var(--purple); }
+ .hval { width:118px; font-family:var(--font-mono); font-size:.62rem; color:var(--ink2); flex-shrink:0; }
+
+ /* vertical bars */
+ .vbars { display:flex; align-items:flex-end; gap:12px; height:170px; padding:4px 4px 0; }
+ .vb { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; min-width:0; }
+ .vb .val { font-family:var(--font-mono); font-size:.6rem; font-weight:700; color:var(--ink); margin-bottom:4px; white-space:nowrap; }
+ .vb i { display:block; width:100%; max-width:54px; background:linear-gradient(180deg,var(--brand),#1B4ABE); border-radius:5px 5px 0 0; }
+ .vb.alt i { background:linear-gradient(180deg,var(--green),#0E8A5F); }
+ .vb.neg .val { color:#B4541F; }
+ .vb.neg i { background:linear-gradient(180deg,#F2DFA7,#C49A3A); border-radius:0 0 5px 5px; }
+ .vx { display:flex; gap:12px; padding:6px 4px 0; border-top:2px solid var(--ink); margin-top:0; }
+ .vx span { flex:1; text-align:center; font-family:var(--font-mono); font-size:.6rem; letter-spacing:.06em; color:var(--ink3); font-weight:700; }
+
+ /* pies */
+ .piewrap { display:flex; align-items:center; gap:22px; flex-wrap:wrap; }
+ .pie { width:158px; height:158px; border-radius:50%; position:relative; flex-shrink:0; }
+ .pie::after { content:attr(data-c); position:absolute; inset:34px; background:#F7FAFF; border-radius:50%;
+ display:grid; place-items:center; text-align:center; font-family:var(--font-mono); font-size:.6rem; font-weight:700; color:var(--ink); letter-spacing:.04em; white-space:pre-line; }
+ .plegend { flex:1; min-width:200px; }
+ .plegend .pl { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--track); font-size:.78rem; color:var(--ink2); }
+ .plegend .pl:last-child { border-bottom:none; }
+ .plegend i { width:11px; height:11px; border-radius:3px; flex-shrink:0; }
+ .plegend b { color:var(--ink); margin-left:auto; font-family:var(--font-mono); font-size:.68rem; font-weight:700; padding-left:10px; white-space:nowrap; }
+
+ /* tables */
+ table.dt { width:100%; border-collapse:collapse; }
+ table.dt th { font-family:var(--font-mono); font-size:.58rem; letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); text-align:left; border-bottom:2px solid var(--ink); padding:0 10px 7px 0; }
+ table.dt td { font-size:.8rem; color:var(--ink2); border-bottom:1px solid var(--hair); padding:8px 10px 8px 0; line-height:1.5; vertical-align:top; }
+ table.dt td:first-child { color:var(--ink); font-weight:600; }
+ table.dt td.num { font-family:var(--font-mono); font-size:.7rem; white-space:nowrap; color:var(--ink); }
+ table.dt tr.tot td { font-weight:800; color:var(--ink); border-top:2px solid var(--ink); border-bottom:none; }
+
+ /* steps timeline */
+ .steps { display:flex; margin:8px 0 4px; }
+ .step { flex:1; position:relative; padding-right:6px; }
+ .step::before { content:''; position:absolute; top:4px; left:12px; right:0; height:2px; background:var(--hair); }
+ .step:last-child::before { display:none; }
+ .step .dot { width:10px; height:10px; border-radius:50%; background:var(--brand); position:relative; z-index:1; margin-bottom:6px; }
+ .step.open .dot { background:#fff; border:2px solid var(--gold2); }
+ .step .sl { font-family:var(--font-mono); font-size:.52rem; letter-spacing:.05em; color:var(--brand); font-weight:700; text-transform:uppercase; }
+ .step.open .sl { color:var(--gold2); }
+ .step .sd2 { font-size:.64rem; color:var(--ink2); line-height:1.4; margin-top:2px; padding-right:4px; }
+
+ /* stacked status */
+ .stk { flex:1; height:14px; border-radius:4px; overflow:hidden; display:flex; background:var(--track); }
+ .stk i { display:block; height:100%; }
+ .stk .sd { background:var(--green); } .stk .sa { background:var(--lt); } .stk .sn { background:#F2DFA7; }
+ .legend { display:flex; flex-wrap:wrap; gap:12px; margin-top:8px; font-family:var(--font-mono); font-size:.56rem; letter-spacing:.06em; color:var(--ink3); }
+ .legend i { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:4px; vertical-align:-1px; }
+
+ /* gantt */
+ .grow { display:flex; align-items:center; gap:9px; margin-bottom:7px; }
+ .gtrack { flex:1; height:16px; background:var(--track); border-radius:4px; position:relative; }
+ .gbar { position:absolute; top:2px; bottom:2px; border-radius:3px; background:var(--brand); }
+ .gbar.alt { background:var(--lt); }
+ .gaxis { display:flex; margin-left:139px; margin-right:0; }
+ .gaxis span { flex:1; font-family:var(--font-mono); font-size:.56rem; color:var(--ink3); font-weight:700; }
+
+ /* big stat strip */
+ .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+ @media (max-width:760px){ .stats { grid-template-columns:1fr 1fr; } }
+ .stat { background:#fff; border:1px solid var(--hair); border-radius:10px; padding:13px 14px; }
+ .stat .n { font-family:var(--font-mono); font-size:1.25rem; font-weight:700; color:var(--brand); letter-spacing:-.02em; }
+ .stat.g .n { color:#0E8A5F; } .stat.gd .n { color:var(--gold2); } .stat.p .n { color:#7C5DB8; }
+ .stat .l { font-family:var(--font-mono); font-size:.56rem; letter-spacing:.1em; text-transform:uppercase; color:var(--ink3); font-weight:700; margin-top:4px; line-height:1.45; }
+</style>
+<link rel="stylesheet" href="assets/compliance.css" />
+</head>
+<body>
+
+<!-- Raise status banner (locked dual-light pattern) -->
+<div class="sbx-banner gold" role="status" aria-label="Pre-seed raise: opening July 1, 2026, 90-day window"><span class="raise-status"><span class="status-dots" aria-hidden="true"><span class="status-dot dot-amber-lit"></span><span class="status-dot dot-green-dim"></span></span><span><b>Pre-Seed</b> &middot; Opening July 1, 2026 &middot; 90-day window</span></span></div>
+<!-- Accredited-investor legend (NI 45-106 s.2.3 + CP 45-106CP s.1.9) -->
+<div class="ai-legend" role="region" aria-label="Accredited investor legend">
+<strong>For accredited investors only.</strong> Information on this website is for accredited investors as defined in National Instrument 45-106. It is not an offer to sell or solicitation of an offer to buy securities. No securities regulatory authority has assessed the merits of any securities described herein. See <a href="#">Terms</a> and the legal information below.
+</div>
+
+<header class="nav">
+ <div class="nav-inner">
+ <a class="brand" href="data-room.html"><img class="brand-logo" src="assets/4orm-logo.png" alt="4orm Finance" /></a>
+ <nav class="nav-links">
+ <a class="ohtab" data-tab="documents" href="#">Documents</a>
+ <a class="ohtab" data-tab="roadmap" href="road-ahead.html">Roadmap</a>
+ <a class="ohtab" data-tab="ptr" href="path-to-revenue.html">Path to Revenue</a>
+ <a class="ohtab" data-tab="visual" href="visual-data.html">Visual Data</a>
+ <span class="nav-signed"><span class="dot"></span>Signed in &middot; Member access<a class="signout-link" href="#">Sign out</a></span>
+ </nav>
+ </div>
+</header>
+
+<main>
+<section class="hero">
+ <div class="wrap">
+ <div class="eyebrow">Visual Data</div>
+ <h1>The whole room, <span class="accent">at a glance.</span></h1>
+ <p class="lead">Every chart below is built from the documents in this room, primarily the five-year model v8 (June 2026). Each card names its source and links straight to it; nothing here exists that you cannot verify one click away.</p>
+ </div>
+</section>
+
+<div class="wrap">
+
+ <!-- ================= THE RAISE ================= -->
+ <div class="vd-cat"><span class="k">01</span><h2>The raise</h2></div>
+ <p class="vd-sub">The headline numbers an investor needs before anything else.</p>
+ <div class="vd-grid">
+ <div class="vd-card span2">
+ <div class="stats">
+ <div class="stat"><div class="n">$3M</div><div class="l">Pre-Seed round &middot; opens July 1, 2026</div></div>
+ <div class="stat g"><div class="n">$10M</div><div class="l">Pre-money valuation</div></div>
+ <div class="stat gd"><div class="n">$300K</div><div class="l">Secured: $70K; signed LOI (not funded): $500K</div></div>
+ <div class="stat p"><div class="n">30%</div><div class="l">BC EBC tax credit*</div></div>
+ </div>
+ <div class="vd-take"><b>One sentence:</b> a $3M pre-seed at $10M pre-money, opening July 1, 2026, with $70K secured plus a $500K signed LOI (not yet funded) and a BC CCPC + EBC structure intended to offer eligible BC investors a 30% tax credit, subject to verification of BC residency and program eligibility under the Small Business Venture Capital Act. TFSA / RRSP eligibility subject to qualifying investor structure; counsel review pending.</div>
+ </div>
+ </div>
+
+ <!-- ================= MARKET ================= -->
+ <div class="vd-cat"><span class="k">02</span><h2>Market</h2></div>
+ <p class="vd-sub">What is proven, what is forecast, and the wedge 4orm actually enters through.</p>
+ <div class="vd-grid">
+ <div class="vd-card">
+ <div class="vd-src"><a href="documents/02-2-mckinsey-base-case.html" target="_blank" rel="noopener">02.2 · McKinsey Base Case &#8599;</a></div>
+ <div class="vd-t">Tokenization: proven scale vs forecasts</div>
+ <div class="vt">US$ &middot; LOG-STYLE COMPARISON, NOT TO SCALE</div>
+ <div class="hrow"><span class="hlab">BoC Samara (proven)</span><span class="htrack"><span class="hfill green" style="width:14%"></span></span><span class="hval">C$100M settled</span></div>
+ <div class="hrow"><span class="hlab">JPM Kinexys (live)</span><span class="htrack"><span class="hfill green" style="width:58%"></span></span><span class="hval">$3T+ processed</span></div>
+ <div class="hrow"><span class="hlab">McKinsey 2030 base (excl. stablecoins)</span><span class="htrack"><span class="hfill" style="width:66%"></span></span><span class="hval">$2T tokenized RWA</span></div>
+ <div class="hrow"><span class="hlab">BCG + ADDX 2030</span><span class="htrack"><span class="hfill lt" style="width:100%"></span></span><span class="hval">$16T tokenized RWA</span></div>
+ <div class="vd-take"><b>Read it this way:</b> green bars already happened; blue bars are forecasts. The thesis does not require the big forecasts, only that regulated institutions keep doing what JPM and the Bank of Canada are already doing.</div>
+ </div>
+ <div class="vd-card">
+ <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v8 &#8599;</a></div>
+ <div class="vd-t">Interac e-Transfer settlement pool</div>
+ <div class="vt">ANNUAL VOLUME, C$B &middot; MODEL TAM INPUT</div>
+ <div class="vbars">
+ <div class="vb"><span class="val">554</span><i style="height:72%"></i></div>
+ <div class="vb"><span class="val">577</span><i style="height:75%"></i></div>
+ <div class="vb"><span class="val">625</span><i style="height:81%"></i></div>
+ <div class="vb"><span class="val">665</span><i style="height:86%"></i></div>
+ <div class="vb"><span class="val">715</span><i style="height:93%"></i></div>
+ <div class="vb"><span class="val">770</span><i style="height:100%"></i></div>
+ </div>
+ <div class="vx"><span>2026</span><span>2027</span><span>2028</span><span>2029</span><span>2030</span><span>2031</span></div>
+ <div class="vd-take"><b>The wedge:</b> the model assumes 4orm captures a maximum of 0.03% of this pool by 2031, worth $0.7M cumulative. Even the smallest bar is half a trillion dollars a year.</div>
+ </div>
+ </div>
+
+ <!-- ================= PRODUCT ================= -->
+ <div class="vd-cat"><span class="k">03</span><h2>Product architecture</h2></div>
+ <p class="vd-sub">The deposit-token lifecycle the platform operates, and how much of it is designed versus deliberately gated.</p>
+ <div class="vd-grid">
+ <div class="vd-card span2">
+ <div class="vd-src"><a href="documents/03-2-lifecycle-architecture.html" target="_blank" rel="noopener">03.2 · End-to-End Lifecycle Architecture &#8599;</a></div>
+ <div class="vd-t">One deposit, end to end</div>
+ <div class="steps">
+ <div class="step"><div class="dot"></div><div class="sl">1 Deposit</div><div class="sd2">Fiat deposited with a regulated FI</div></div>
+ <div class="step"><div class="dot"></div><div class="sl">2 KYC / AML</div><div class="sd2">FI verifies; recorded in core banking</div></div>
+ <div class="step"><div class="dot"></div><div class="sl">3 Issuance</div><div class="sd2">Token minted 1:1 against the deposit</div></div>
+ <div class="step"><div class="dot"></div><div class="sl">4 Lock &amp; mint</div><div class="sd2">Locked in platform escrow on source chain</div></div>
+ <div class="step"><div class="dot"></div><div class="sl">5 Transfer</div><div class="sd2">Provider moves message + value</div></div>
+ <div class="step"><div class="dot"></div><div class="sl">6 Unlock &amp; mint</div><div class="sd2">Verified, minted on destination</div></div>
+ <div class="step"><div class="dot"></div><div class="sl">7 Utilization</div><div class="sd2">Lending, payments, onchain apps</div></div>
+ <div class="step open"><div class="dot"></div><div class="sl">8 Redemption</div><div class="sd2">Burned; FI releases fiat back</div></div>
+ </div>
+ <div class="vd-take"><b>The control story:</b> settlement finality requires treasury + custody + canonical ledger confirmation together. Blockchain confirmation alone is never institutional finality. The slide-by-slide visual walkthrough is in the Product folder.</div>
+ </div>
+ <div class="vd-card span2">
+ <div class="vd-src"><a href="documents/03-2-lifecycle-architecture.html" target="_blank" rel="noopener">03.2 · End-to-End Lifecycle Architecture &#8599;</a></div>
+ <div class="vd-t">Designed vs deliberately open</div>
+ <div class="vt">SPECIFICATION STATUS ACROSS THE DESIGN</div>
+ <div class="hrow"><span class="hlab">Lifecycle mechanics</span><span class="stk"><i class="sd" style="width:88%"></i><i class="sn" style="width:12%"></i></span><span class="hval">DESIGNED</span></div>
+ <div class="hrow"><span class="hlab">Operational controls</span><span class="stk"><i class="sd" style="width:80%"></i><i class="sn" style="width:20%"></i></span><span class="hval">DESIGNED</span></div>
+ <div class="hrow"><span class="hlab">Product definition</span><span class="stk"><i class="sd" style="width:25%"></i><i class="sn" style="width:75%"></i></span><span class="hval">OPEN &middot; WITH COUNSEL</span></div>
+ <div class="hrow"><span class="hlab">Policy specificity</span><span class="stk"><i class="sd" style="width:30%"></i><i class="sn" style="width:70%"></i></span><span class="hval">OPEN &middot; KYC/AML SET</span></div>
+ <div class="hrow"><span class="hlab">Interop mechanics</span><span class="stk"><i class="sd" style="width:35%"></i><i class="sn" style="width:65%"></i></span><span class="hval">OPEN &middot; LATER PHASE</span></div>
+ <div class="legend"><span><i style="background:#7BE3B0"></i>DESIGNED</span><span><i style="background:#F2DFA7"></i>UNSPECIFIED, GATED TO BUILD PHASE WITH COUNSEL</span></div>
+ <div class="vd-take"><b>Why the yellow is a feature:</b> legal wrapper, instrument classification, and redemption rights are regulatory decisions. Deciding them with Fasken and Capiche during the build is the compliant order of operations.</div>
+ </div>
+ </div>
+
+ <!-- ================= TEAM ================= -->
+ <div class="vd-cat"><span class="k">04</span><h2>Team</h2></div>
+ <p class="vd-sub">Eleven people, three layers, every regulated domain covered by someone who has done it before.</p>
+ <div class="vd-grid">
+ <div class="vd-card">
+ <div class="vd-src"><a href="documents/04-1-team-advisory.html" target="_blank" rel="noopener">04.1 · Team, Advisory &amp; Legal Counsel &#8599;</a></div>
+ <div class="vd-t">Team composition</div>
+ <div class="piewrap">
+ <div class="pie" data-c="9&#10;PEOPLE" style="background:conic-gradient(#2E6BF2 0 120deg, #C49A3A 120deg 200deg, #7BE3B0 200deg 360deg);"></div>
+ <div class="plegend">
+ <div class="pl"><i style="background:#2E6BF2"></i>Founders, full-time build<b>3</b></div>
+ <div class="pl"><i style="background:#C49A3A"></i>Securities law firms<b>2</b></div>
+ <div class="pl"><i style="background:#7BE3B0"></i>Domain advisors<b>4</b></div>
+ </div>
+ </div>
+ <div class="vd-take"><b>Not ornamental:</b> each advisor owns an active roadmap workstream, from the CFA-audited model to the bank-grade systems architecture.</div>
+ </div>
+ <div class="vd-card">
+ <div class="vd-src"><a href="documents/04-1-team-advisory.html" target="_blank" rel="noopener">04.1 · Team, Advisory &amp; Legal Counsel &#8599;</a></div>
+ <div class="vd-t">Domain coverage, years of relevant experience</div>
+ <div class="hrow"><span class="hlab">Securities law</span><span class="htrack"><span class="hfill" style="width:90%"></span></span><span class="hval">45+ COMBINED</span></div>
+ <div class="hrow"><span class="hlab">Compliance</span><span class="htrack"><span class="hfill" style="width:44%"></span></span><span class="hval">22 YRS &middot; CCO x3</span></div>
+ <div class="hrow"><span class="hlab">Systems architecture</span><span class="htrack"><span class="hfill" style="width:40%"></span></span><span class="hval">20 YRS &middot; REGULATED</span></div>
+ <div class="hrow"><span class="hlab">Capital markets</span><span class="htrack"><span class="hfill" style="width:50%"></span></span><span class="hval">25 YRS &middot; $500M+</span></div>
+ <div class="hrow"><span class="hlab">Real assets</span><span class="htrack"><span class="hfill lt" style="width:36%"></span></span><span class="hval">18 YRS &middot; ENERGY</span></div>
+ <div class="hrow"><span class="hlab">Growth &amp; brand</span><span class="htrack"><span class="hfill lt" style="width:44%"></span></span><span class="hval">22 YRS</span></div>
+ <div class="vd-take"><b>The honest gap:</b> senior engineering and compliance leadership in full-time seats. Funded as a use of proceeds; recruiting is live.</div>
+ </div>
+ </div>
+
+ <!-- ================= FINANCIALS ================= -->
+ <div class="vd-cat"><span class="k">05</span><h2>Financial model v8</h2></div>
+ <p class="vd-sub">All figures calculated in the live workbook (June 6, 2026 edition), rendered sheet by sheet in the room. CFA-built and audited.</p>
+ <div class="vd-grid">
+ <div class="vd-card span2">
+ <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v8 &#8599;</a></div>
+ <div class="vd-t">Revenue ramp, annual</div>
+ <div class="vt">TOTAL REVENUE + GRANTS &middot; C$M &middot; 4 FIs + E-TRANSFER + SAVINGS SHARE</div>
+ <div class="vbars">
+ <div class="vb"><span class="val">$0</span><i style="height:2%"></i></div>
+ <div class="vb"><span class="val">$6.4M</span><i style="height:16%"></i></div>
+ <div class="vb"><span class="val">$19.5M</span><i style="height:49%"></i></div>
+ <div class="vb"><span class="val">$27.7M</span><i style="height:69%"></i></div>
+ <div class="vb"><span class="val">$33.5M</span><i style="height:84%"></i></div>
+ <div class="vb"><span class="val">$40.0M</span><i style="height:100%"></i></div>
+ </div>
+ <div class="vx"><span>2026</span><span>2027</span><span>2028</span><span>2029</span><span>2030</span><span>2031</span></div>
+ <div class="vd-take"><b>Why 2026 is zero:</b> the build half-year earns nothing by design. Revenue starts when ATB and Bow Valley onboard in 2027, then compounds as Vancity and Servus join in 2028. Five-year total: <b>$127.1M</b>.</div>
+ </div>
+ <div class="vd-card">
+ <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v8 &#8599;</a></div>
+ <div class="vd-t">Where the $127.1M comes from</div>
+ <div class="piewrap">
+ <div class="pie" data-c="$127.1M&#10;5-YEAR" style="background:conic-gradient(#2E6BF2 0 130.3deg, #9AB6FF 130.3deg 256.3deg, #7BE3B0 256.3deg 326.5deg, #C49A3A 326.5deg 345.9deg, #C8B0EF 345.9deg 360deg);"></div>
+ <div class="plegend">
+ <div class="pl"><i style="background:#2E6BF2"></i>SaaS + APIs ($25K/mo)<b>$46.0M</b></div>
+ <div class="pl"><i style="background:#9AB6FF"></i>Issuance fees (0.5%)<b>$44.5M</b></div>
+ <div class="pl"><i style="background:#7BE3B0"></i>Custody fees (30 bps)<b>$24.8M</b></div>
+ <div class="pl"><i style="background:#C49A3A"></i>Settlement + trading + e-transfer<b>$6.9M</b></div>
+ <div class="pl"><i style="background:#C8B0EF"></i>Savings share + grants<b>$5.0M</b></div>
+ </div>
+ </div>
+ <div class="vd-take"><b>The shape that matters:</b> 71% of revenue is SaaS and issuance, contracted streams, not trading speculation. Volume-based lines stay a minority through 2031.</div>
+ </div>
+ <div class="vd-card">
+ <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v8 &#8599;</a></div>
+ <div class="vd-t">Revenue by institution, 5-year</div>
+ <div class="hrow"><span class="hlab">ATB Financial</span><span class="htrack"><span class="hfill" style="width:100%"></span></span><span class="hval">$58.7M &middot; FROM 2027</span></div>
+ <div class="hrow"><span class="hlab">Vancity</span><span class="htrack"><span class="hfill" style="width:55%"></span></span><span class="hval">$32.3M &middot; FROM 2028</span></div>
+ <div class="hrow"><span class="hlab">Servus</span><span class="htrack"><span class="hfill" style="width:44%"></span></span><span class="hval">$25.6M &middot; FROM 2028</span></div>
+ <div class="hrow"><span class="hlab">Bow Valley CU</span><span class="htrack"><span class="hfill lt" style="width:8%"></span></span><span class="hval">$4.9M &middot; FROM 2027</span></div>
+ <div class="hrow"><span class="hlab">E-Transfer + savings</span><span class="htrack"><span class="hfill purple" style="width:6%"></span></span><span class="hval">$3.4M</span></div>
+ <div class="vd-take"><b>Concentration, stated plainly:</b> ATB is 47% of five-year revenue. That is why the partnership documents treat the ATB relationship as the single most important commercial asset in the plan.</div>
+ </div>
+ <div class="vd-card">
+ <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v8 &#8599;</a></div>
+ <div class="vd-t">Net income ramp</div>
+ <div class="vt">NET PROFIT (LOSS) &middot; C$M &middot; LEAN BUILD SCENARIO</div>
+ <div class="vbars">
+ <div class="vb neg"><span class="val">($2.1M)</span><i style="height:7%"></i></div>
+ <div class="vb alt"><span class="val">$2.9M</span><i style="height:9%"></i></div>
+ <div class="vb alt"><span class="val">$15.5M</span><i style="height:45%"></i></div>
+ <div class="vb alt"><span class="val">$23.0M</span><i style="height:67%"></i></div>
+ <div class="vb alt"><span class="val">$28.2M</span><i style="height:82%"></i></div>
+ <div class="vb alt"><span class="val">$34.4M</span><i style="height:100%"></i></div>
+ </div>
+ <div class="vx"><span>2026</span><span>2027</span><span>2028</span><span>2029</span><span>2030</span><span>2031</span></div>
+ <div class="vd-take"><b>One loss year:</b> the gold bar is the build half-year. Profitable from 2027 onward; five-year net income <b>$101.9M</b> at a blended gross margin of <b>80.2%</b>.</div>
+ </div>
+ <div class="vd-card">
+ <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v8 &#8599;</a></div>
+ <div class="vd-t">Lean build vs traditional build</div>
+ <div class="vt">5-YEAR TOTAL EXPENSES &middot; C$M</div>
+ <div class="hrow"><span class="hlab">Lean in-house build</span><span class="htrack"><span class="hfill green" style="width:74%"></span></span><span class="hval">$25.2M</span></div>
+ <div class="hrow"><span class="hlab">Traditional build</span><span class="htrack"><span class="hfill gold" style="width:100%"></span></span><span class="hval">$34.0M</span></div>
+ <div class="vd-take"><b>The delta is $8.8M</b> over five years, roughly 35% lower DevEx headcount plus leaner ops. The model carries both scenarios side by side; the toggle is on the Control Panel sheet.</div>
+ </div>
+ <div class="vd-card">
+ <div class="vd-src"><a href="documents/05-1-five-year-model.html" target="_blank" rel="noopener">05.1 · Five-Year Model v8 &#8599;</a></div>
+ <div class="vd-t">Non-dilutive capital, scheduled</div>
+ <table class="dt">
+ <thead><tr><th>Program</th><th style="width:26%">Scheduled</th></tr></thead>
+ <tr><td>NRC IRAP + Digital Supercluster</td><td class="num">$1,000,000</td></tr>
+ <tr><td>SR&amp;ED tax credits (35% of R&amp;D)</td><td class="num">$430,000</td></tr>
+ <tr><td>Alberta Innovates + PrairiesCan</td><td class="num">$500,000</td></tr>
+ <tr><td>Innovative Solutions Canada + Mitacs</td><td class="num">$300,000</td></tr>
+ <tr class="tot"><td>Total flowing into the P&amp;L</td><td class="num">$2,230,000</td></tr>
+ </table>
+ <div class="vd-take"><b>Context:</b> $2.23M of scheduled non-dilutive capital is 74% of the size of the $3M round itself, from 170+ programs already mapped.</div>
+ </div>
+ </div>
+
+ <!-- ================= PARTNERS ================= -->
+ <div class="vd-cat"><span class="k">07</span><h2>Partner institutions</h2></div>
+ <p class="vd-sub">The four financial institutions the model is built on, sized from their own annual reports.</p>
+ <div class="vd-grid">
+ <div class="vd-card">
+ <div class="vd-src"><a href="documents/05-5-model-source-documentation.html" target="_blank" rel="noopener">05.5 · Model Source Documentation &#8599;</a></div>
+ <div class="vd-t">The institution base</div>
+ <table class="dt">
+ <thead><tr><th>Institution</th><th class="num">Deposits</th><th class="num">Lending</th><th class="num">AUA</th></tr></thead>
+ <tr><td>ATB Financial</td><td class="num">$43.3B</td><td class="num">$29.1B</td><td class="num">$37.2B</td></tr>
+ <tr><td>Vancity CU</td><td class="num">$25.0B</td><td class="num">$18.0B</td><td class="num">$30.0B</td></tr>
+ <tr><td>Servus CU</td><td class="num">$20.0B</td><td class="num">$15.0B</td><td class="num">$20.0B</td></tr>
+ <tr><td>Bow Valley CU</td><td class="num">$2.0B</td><td class="num">$1.2B</td><td class="num">$1.5B</td></tr>
+ </table>
+ <div class="vd-take"><b>The model touches 1% to 5%</b> of these bases over five years, never more. ATB figures are sourced line by line from its FY2025 annual report.</div>
+ </div>
+ <div class="vd-card">
+ <div class="vd-src"><a href="documents/07-2-partnership-pipeline.html" target="_blank" rel="noopener">07.2 · Partnership Pipeline &#8599;</a></div>
+ <div class="vd-t">Onboarding ramp</div>
+ <div class="vt">REVENUE CONTRIBUTION WINDOW &middot; 2026 TO 2031</div>
+ <div class="grow"><span class="hlab">ATB Financial</span><span class="gtrack"><span class="gbar" style="left:17%;width:83%"></span></span></div>
+ <div class="grow"><span class="hlab">Bow Valley CU</span><span class="gtrack"><span class="gbar" style="left:17%;width:83%"></span></span></div>
+ <div class="grow"><span class="hlab">Vancity CU</span><span class="gtrack"><span class="gbar alt" style="left:33%;width:67%"></span></span></div>
+ <div class="grow"><span class="hlab">Servus CU</span><span class="gtrack"><span class="gbar alt" style="left:33%;width:67%"></span></span></div>
+ <div class="gaxis"><span>2026</span><span>2027</span><span>2028</span><span>2029</span><span>2030</span><span>2031</span></div>
+ <div class="vd-take"><b>Half-ramp first:</b> each institution contributes at 50% in its first two quarters, full run-rate after. No revenue is booked before a partner is live.</div>
+ </div>
+ </div>
+
+ <!-- ================= PATH TO REVENUE ================= -->
+ <div class="vd-cat"><span class="k">PTR</span><h2>Path to revenue</h2></div>
+ <p class="vd-sub">Build progress by workstream, mirroring the live tracker on the Path to Revenue page.</p>
+ <div class="vd-grid">
+ <div class="vd-card span2">
+ <div class="vd-src"><a href="path-to-revenue.html">Path to Revenue page &#8599;</a></div>
+ <div class="vd-t">Where the build stands, workstream by workstream</div>
+ <div class="hrow"><span class="hlab">Marketing &amp; web</span><span class="htrack"><span class="hfill green" style="width:80%"></span></span><span class="hval">80%</span></div>
+ <div class="hrow"><span class="hlab">Capital &amp; pre-seed</span><span class="htrack"><span class="hfill" style="width:45%"></span></span><span class="hval">45% &middot; OPENS JUL 1</span></div>
+ <div class="hrow"><span class="hlab">Legal &amp; corporate</span><span class="htrack"><span class="hfill" style="width:40%"></span></span><span class="hval">40%</span></div>
+ <div class="hrow"><span class="hlab">Team &amp; talent</span><span class="htrack"><span class="hfill" style="width:38%"></span></span><span class="hval">38%</span></div>
+ <div class="hrow"><span class="hlab">BD &amp; go-to-market</span><span class="htrack"><span class="hfill" style="width:30%"></span></span><span class="hval">30% &middot; ATB LIVE</span></div>
+ <div class="hrow"><span class="hlab">Product &amp; engineering</span><span class="htrack"><span class="hfill lt" style="width:24%"></span></span><span class="hval">24%</span></div>
+ <div class="hrow"><span class="hlab">Investor pipeline</span><span class="htrack"><span class="hfill lt" style="width:24%"></span></span><span class="hval">24%</span></div>
+ <div class="hrow"><span class="hlab">Grants &amp; non-dilutive</span><span class="htrack"><span class="hfill lt" style="width:20%"></span></span><span class="hval">20%</span></div>
+ <div class="hrow"><span class="hlab">Compliance &amp; regulatory</span><span class="htrack"><span class="hfill gold" style="width:18%"></span></span><span class="hval">18% &middot; FILINGS AHEAD</span></div>
+ <div class="vd-take"><b>Honest reading:</b> the storefront is nearly done, the raise machinery is structured, and the deep build (product, compliance) is funded by this round. That is the correct order for a regulated platform, and it is the same story the 30-60-90 plan tells in detail.</div>
+ </div>
+ </div>
+
+ <!-- ================= CORPORATE ================= -->
+ <div class="vd-cat"><span class="k">08</span><h2>Corporate structure</h2></div>
+ <p class="vd-sub">The founding cap table and the control design behind it. Full memorandum in document 08.1, workbook in 08.2.</p>
+ <div class="vd-grid">
+ <div class="vd-card">
+ <div class="vd-src"><a href="documents/08-1-capital-structure-memorandum.html" target="_blank" rel="noopener">08.1 &middot; Capital Structure Memorandum &#8599;</a></div>
+ <div class="vd-t">Ownership at founding</div>
+ <div class="piewrap">
+ <div class="pie" data-c="20M&#10;SHARES" style="background:conic-gradient(#2E6BF2 0 251.28deg, #7BE3B0 251.28deg 287.28deg, #C8B0EF 287.28deg 330.48deg, #9AB6FF 330.48deg 360deg);"></div>
+ <div class="plegend">
+ <div class="pl"><i style="background:#2E6BF2"></i>Chad R. Johnston (Class A)<b>69.8%</b></div>
+ <div class="pl"><i style="background:#7BE3B0"></i>Kevin Wong (Class A)<b>10%</b></div>
+ <div class="pl"><i style="background:#C8B0EF"></i>Team pool (Class A)<b>12%</b></div>
+ <div class="pl"><i style="background:#9AB6FF"></i>Advisors and founding holders (Class A)<b>8.2%</b></div>
+ </div>
+ </div>
+ <div class="vd-take"><b>Founder tax-basis pricing:</b> 20M common at $0.001. The pre-seed adds investors at $10M pre-money, diluting everyone pro-rata to a 13% investor stake at close.</div>
+ </div>
+ <div class="vd-card">
+ <div class="vd-src"><a href="documents/08-1-capital-structure-memorandum.html" target="_blank" rel="noopener">08.1 &middot; Capital Structure Memorandum &#8599;</a></div>
+ <div class="vd-t">CEO voting control across rounds</div>
+ <div class="vt">CHAD ALONE &middot; TIERED SUPER-VOTING (CLASS A 10:1)</div>
+ <div class="hrow"><span class="hlab">Founding</span><span class="htrack"><span class="hfill" style="width:83%"></span></span><span class="hval">~83.0%</span></div>
+ <div class="hrow"><span class="hlab">Post pre-seed</span><span class="htrack"><span class="hfill" style="width:81%"></span></span><span class="hval">~81.3%</span></div>
+ <div class="hrow"><span class="hlab">Series A</span><span class="htrack"><span class="hfill" style="width:77%"></span></span><span class="hval">~76.6%</span></div>
+ <div class="hrow"><span class="hlab">Series B</span><span class="htrack"><span class="hfill" style="width:73%"></span></span><span class="hval">~72.8%</span></div>
+ <div class="hrow"><span class="hlab">Series C</span><span class="htrack"><span class="hfill lt" style="width:69%"></span></span><span class="hval">~68.5% &middot; ECON ~24%</span></div>
+ <div class="vd-take"><b>Dilution insurance:</b> without super-voting the CEO loses a voting majority by Series A. The 10:1 tier holds control through Series C, sunsetting to 6:1 at Year 10. The Mission Anchor (08.4) sits above the sunset.</div>
+ </div>
+ </div>
+
+ <div style="height:50px"></div>
+</div>
+</main>
+
+<!-- ============================================ FAMILY FOOTER + LEGAL -->
+<section class="famfooter">
+ <div class="famfooter-in">
+ <div class="famfooter-head"><div><div class="famfooter-eye">4orm Finance family</div><h3>Four surfaces, <span class="key">one settlement layer.</span></h3></div></div>
+ <div class="famfooter-grid">
+ <a href="https://4ormfinance.com" target="_blank" rel="noopener" class="famtile f1"><span class="lab">01 &middot; Hub</span><span class="name">4orm Finance</span><span class="desc">Regulated settlement finality for Canadian capital markets.</span><span class="link">4ormfinance.com &#8599;</span></a>
+ <a href="https://4ormex.com" target="_blank" rel="noopener" class="famtile f2"><span class="lab">02 &middot; Exchange</span><span class="name">4ormEx</span><span class="desc">Institutional trading venue. Delivery-versus-payment settlement finality.</span><span class="link">4ormex.com &#8599;</span></a>
+ <a href="https://www.4ormedc.com" target="_blank" rel="noopener" class="famtile f4"><span class="lab">04 &middot; Demo</span><span class="name">4orm Demo Exchange</span><span class="desc">Guided walkthrough. KYC to settlement finality, in 8 min.</span><span class="link">4ormedc.com &#8599;</span></a>
+ <a href="https://kcs-capital.com" target="_blank" rel="noopener" class="famtile f5"><span class="lab">Sister &middot; Developer</span><span class="name">KCS Capital</span><span class="desc">Independent technology and research firm.</span><span class="link">kcs-capital.com &#8599;</span></a>
+ </div>
+ <div class="legal-block">
+<h4>Important legal information</h4>
+<p><em>Accredited investors only.</em> The securities referenced on this website are being offered only to "accredited investors" as defined in National Instrument 45-106. This is not an offer to sell or a solicitation of an offer to buy securities in any jurisdiction where such offer is not permitted. No securities regulatory authority has assessed the merits of any securities described on this website.</p>
+<p><em>Forward-looking statements.</em> This website contains forward-looking statements within the meaning of applicable Canadian securities laws, including statements about 4orm Finance's planned operations, regulatory pathway, market opportunity, partnership pipeline, and capital raise. Forward-looking statements are based on assumptions current as of the date stated and are subject to material risks and uncertainties, including the receipt of required regulatory approvals. Actual results may differ materially. 4orm Finance disclaims any obligation to update forward-looking statements except as required by law.</p>
+<p><em>No affiliation or endorsement.</em> References to third-party companies, products, and services are for market-context and educational purposes only and do not imply any partnership, endorsement, sponsorship, or affiliation. All third-party names, trademarks, and logos are the property of their respective owners. 4orm Finance is not affiliated with the Bank of Canada, OSFI, the CSA (or its member regulators including OSC, AMF, BCSC, ASC), CIRO, FINTRAC, or any other regulator. No regulator has reviewed, endorsed, or approved 4orm Finance, its planned platform, or any securities described on this website. 4orm Finance is informed by, but not a participant in, the Bank of Canada's Project Samara experiment (Staff Analytical Paper 2026-8) and the CSA Project Tokenization initiative.</p>
+<p><em>Proposed entity.</em> "4orm Trust Co (proposed)" is a proposed future Canadian trust company subsidiary. 4orm Finance does not currently carry on trust business and is not authorized under the Trust and Loan Companies Act. Use of "Trust Co" is subject to receipt of OSFI letters patent or equivalent provincial authorization.</p>
+<p><em>FINTRAC.</em> 4orm Finance will register with FINTRAC as required prior to commencing regulated activity. FINTRAC registration is not an endorsement.</p>
+ </div>
+ <div class="famfooter-legal">
+ <span>&copy; 2026 4orm Finance Holdings Inc. &middot; Calgary, AB &middot; Vancouver &middot; Edmonton &middot; Privacy Officer: Chad Johnston, Founder &middot; compliance@4ormfinance.com</span>
+ <span><a href="privacy.html">Privacy</a><a href="#">Terms</a><a href="mailto:compliance@4ormfinance.com">compliance@4ormfinance.com</a></span>
+ </div>
+ </div>
+</section>
+
+<footer class="pagefoot"><div class="wrap">
+ <span>4ORM FINANCE &middot; PRE-SEED DATA ROOM</span>
+ <span class="conf">CONFIDENTIAL &middot; NOT FOR DISTRIBUTION</span>
+</div></footer>
+
+<!-- ============================================ COOKIE CONSENT (Quebec Law 25) -->
+<div class="cookie-banner" id="cookieBanner" role="dialog" aria-label="Cookie consent">
+<div class="cookie-banner-in">
+<div class="cookie-text"><strong>Cookies and tracking.</strong> 4orm Finance uses cookies and similar technologies. Essential cookies are required for the site to function. Analytics and marketing cookies are off by default and only enabled with your consent. See our <a href="privacy.html">Privacy Policy</a>.</div>
+<div class="cookie-acts">
+<button class="cookie-btn reject" id="cookieReject" type="button">Reject all</button>
+<button class="cookie-btn custom" id="cookieCustom" type="button">Customize</button>
+<button class="cookie-btn accept" id="cookieAccept" type="button">Accept all</button>
+</div>
+</div>
+<div class="cookie-customize" id="cookieCustomize">
+<div class="cookie-pref"><input type="checkbox" id="prefEssential" checked disabled aria-describedby="prefEssentialDesc"><label for="prefEssential"><strong>Essential</strong><span id="prefEssentialDesc">Required for the site to function (session, security, preferences). Always on.</span></label></div>
+<div class="cookie-pref"><input type="checkbox" id="prefAnalytics" aria-describedby="prefAnalyticsDesc"><label for="prefAnalytics"><strong>Analytics</strong><span id="prefAnalyticsDesc">First-party analytics to understand site usage. No personal data shared externally.</span></label></div>
+<div class="cookie-pref"><input type="checkbox" id="prefMarketing" aria-describedby="prefMarketingDesc"><label for="prefMarketing"><strong>Marketing</strong><span id="prefMarketingDesc">Third-party marketing trackers. Off until you opt in.</span></label></div>
+<div style="margin-top:12px;text-align:right"><button class="cookie-btn accept" id="cookieSavePrefs" type="button">Save my preferences</button></div>
+</div>
+</div>
+<script>
+(function(){
+ var KEY='fourm_cookie_consent_v1';
+ var banner=document.getElementById('cookieBanner');
+ var bA=document.getElementById('cookieAccept'),bR=document.getElementById('cookieReject'),bC=document.getElementById('cookieCustom'),bS=document.getElementById('cookieSavePrefs');
+ var panel=document.getElementById('cookieCustomize'),pA=document.getElementById('prefAnalytics'),pM=document.getElementById('prefMarketing');
+ function save(c){try{localStorage.setItem(KEY,JSON.stringify(Object.assign({ts:Date.now()},c)));}catch(e){} if(banner)banner.classList.remove('show');
+ /* Phase 2: load analytics/marketing scripts conditionally on c.analytics / c.marketing here. */}
+ function existing(){try{return JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){return null;}}
+ if(!existing()&&banner){banner.classList.add('show');}
+ if(bA)bA.addEventListener('click',function(){save({essential:true,analytics:true,marketing:true});});
+ if(bR)bR.addEventListener('click',function(){save({essential:true,analytics:false,marketing:false});});
+ if(bC)bC.addEventListener('click',function(){panel.classList.toggle('show');});
+ if(bS)bS.addEventListener('click',function(){save({essential:true,analytics:pA.checked,marketing:pM.checked});});
+})();
+</script>
+
+<script>(function(){
+ var o=(new URLSearchParams(location.search).get('o')||'advisor');
+ if(!/^(advisor|employee|engineering)$/.test(o))o='advisor';
+ var q='?o='+o, file=location.pathname.split('/').pop();
+ var map={documents:'',roadmap:'road-ahead.html',ptr:'path-to-revenue.html',visual:'visual-data.html'};
+ document.querySelectorAll('[data-tab]').forEach(function(a){var t=a.getAttribute('data-tab');
+  a.href=(t==='documents')?(o+'.html'):(map[t]+q);
+  if(map[t]===file)a.classList.add('on');
+ });
+ var b=document.querySelector('.brand'); if(b)b.href=o+'.html';
+ var so=document.querySelector('.signout-link'); if(so)so.href='index.html';
+})();</script>
+</body>
+</html>

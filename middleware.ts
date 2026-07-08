@@ -23,9 +23,10 @@ const isRoom = createRouteMatcher([
   '/engineering.html',
 ]);
 const isDocuments = createRouteMatcher(['/documents/(.*)']);
+const isDataRoom = createRouteMatcher(['/road-ahead.html','/path-to-revenue.html','/visual-data.html']);
 
 const gated = clerkMiddleware(async (auth, req) => {
-  if (isRoom(req) || isDocuments(req)) {
+  if (isRoom(req) || isDocuments(req) || isDataRoom(req)) {
     const { userId, redirectToSignIn, sessionClaims } = await auth();
 
     // 1) Must be signed in (Google, restricted to the 4ormfinance.com domain in
@@ -62,6 +63,9 @@ export const config = {
     '/employee.html',
     '/engineering.html',
     '/documents/:path*',
+    '/road-ahead.html',
+    '/path-to-revenue.html',
+    '/visual-data.html',
     '/(api|trpc)(.*)',
   ],
 };

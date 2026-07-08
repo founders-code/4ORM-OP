@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Path to Revenue · 4orm Finance Data Room</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+ :root { --brand:#2E6BF2; --brand-50:#EAF1FE; --gold:#E7C76C; --gold2:#C49A3A; --green:#7BE3B0; --greend:#0E8A5F;
+ --bg:#0B1220; --bg2:#0E1626; --card:rgba(255,255,255,.05); --line:rgba(255,255,255,.12);
+ --t1:#fff; --t2:rgba(255,255,255,.78); --t3:rgba(255,255,255,.5);
+ --font-sans:'Inter',system-ui,sans-serif; --font-mono:'JetBrains Mono',ui-monospace,monospace; --maxw:1200px; }
+ * { margin:0; padding:0; box-sizing:border-box; }
+ body { font-family:var(--font-sans); background:var(--bg); color:var(--t2); }
+ a { color:inherit; }
+
+ /* white menu, matching the member page */
+ .nav { background:#fff; border-bottom:1px solid #E3E9F2; position:sticky; top:0; z-index:60; }
+ .nav-inner { max-width:var(--maxw); margin:0 auto; min-height:46px; padding:3px 28px; display:flex; align-items:center; justify-content:space-between; overflow:visible; }
+ .brand-logo { height:122px; margin:-38px 0; }
+ .nav-links { display:flex; align-items:center; gap:40px; margin-left:auto; flex-wrap:nowrap; }
+ .nav-links a { color:#46556E; font-size:.95rem; font-weight:600; padding:7px 11px; text-decoration:none; border-radius:8px; white-space:nowrap; flex-shrink:0; }
+ .nav-links a:hover { background:#EAF1FE; color:#142036; }
+ .nav-links a.on { color:#142036; background:#EAF1FE; }
+ .nav-signed { display:inline-flex; align-items:center; gap:11px; padding:7px 15px; border-radius:99px; background:rgba(123,227,176,.16); border:1px solid rgba(14,138,95,.35); color:#0E8A5F; font-size:.82rem; font-weight:700; white-space:nowrap; flex-shrink:0; }
+ .nav-signed .dot { width:7px; height:7px; border-radius:50%; background:#19B57E; box-shadow:0 0 0 0 rgba(25,181,126,.55); animation:signed-pulse 2s ease-in-out infinite; }
+ @keyframes signed-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(25,181,126,.55); } 50% { box-shadow:0 0 0 8px rgba(25,181,126,0); } }
+ .nav-links .nav-signed a { color:#142036; text-decoration:none; border-left:1px solid rgba(14,138,95,.3); padding:0 0 0 12px; border-radius:0; font-weight:700; font-size:.82rem; }
+ .nav-links .nav-signed a:hover { background:none; color:var(--brand); }
+ @media (max-width:760px){ .brand-logo { height:100px; margin:-27px 0; } .nav-links a { font-size:.82rem; padding:6px 6px; } }
+
+ .wrap { max-width:var(--maxw); margin:0 auto; padding:0 28px; }
+
+ /* hero */
+ .hero { background:linear-gradient(180deg,#1F3CA8 0%,#15233F 26%,#0B1220 100%); padding:46px 0 34px; }
+ .eyebrow { font-family:var(--font-mono); font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gold); font-weight:800; margin-bottom:10px; }
+ h1 { color:var(--t1); font-size:2.2rem; letter-spacing:-.02em; margin-bottom:12px; }
+ h1 .accent { color:var(--gold); }
+ .lead { max-width:62em; line-height:1.65; font-size:.98rem; }
+ .overall { display:flex; align-items:center; gap:18px; margin:22px 0 6px; flex-wrap:wrap; }
+ .opct { font-family:var(--font-mono); font-size:2.6rem; font-weight:700; color:var(--t1); }
+ .obar { flex:1; min-width:220px; height:10px; border-radius:99px; background:rgba(255,255,255,.10); overflow:hidden; }
+ .obar i { display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#2E6BF2,#9AB6FF); }
+ .asof { font-family:var(--font-mono); font-size:.68rem; letter-spacing:.12em; color:var(--t3); text-transform:uppercase; }
+
+ /* section nav */
+ .secnav { position:sticky; top:46px; z-index:50; background:rgba(11,18,32,.94); backdrop-filter:blur(10px); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+ .secnav .wrap { display:flex; gap:4px; overflow-x:auto; padding-top:8px; padding-bottom:8px; }
+ .secnav a { font-family:var(--font-mono); font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:var(--t3); text-decoration:none; padding:7px 11px; border-radius:99px; white-space:nowrap; }
+ .secnav a:hover { color:var(--t1); background:rgba(255,255,255,.08); }
+
+ h2.sect { color:var(--t1); font-size:1.4rem; letter-spacing:-.01em; margin:46px 0 6px; }
+ h2.sect .accent { color:var(--gold); }
+ .sect-sub { color:var(--t3); font-size:.88rem; margin-bottom:18px; max-width:60em; line-height:1.6; }
+
+ /* workstream cards grid */
+ .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+ @media (max-width:980px){ .grid { grid-template-columns:1fr 1fr; } }
+ @media (max-width:640px){ .grid { grid-template-columns:1fr; } }
+ .vcard { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px; text-decoration:none; transition:transform .15s,border-color .15s; }
+ .vcard:hover { transform:translateY(-2px); border-color:rgba(154,182,255,.45); }
+ .vcard .vn { color:var(--t1); font-weight:800; font-size:.98rem; margin-bottom:2px; }
+ .vcard .vs { font-family:var(--font-mono); font-size:.62rem; letter-spacing:.08em; color:var(--t3); text-transform:uppercase; margin-bottom:10px; }
+ .vbar { height:7px; border-radius:99px; background:rgba(255,255,255,.10); overflow:hidden; margin-bottom:7px; }
+ .vbar i { display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#2E6BF2,#9AB6FF); }
+ .vpct { font-family:var(--font-mono); font-size:.78rem; font-weight:700; color:#9AB6FF; }
+
+ /* vertical detail */
+ .vert { border-top:1px solid var(--line); padding-top:34px; margin-top:40px; }
+ .vhead { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:4px; }
+ .vhead h3 { color:var(--t1); font-size:1.25rem; letter-spacing:-.01em; }
+ .vhead .vpct { font-size:1rem; }
+ .vstage { font-family:var(--font-mono); font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; color:var(--t3); margin-bottom:12px; }
+ .bench { border-left:3px solid var(--gold2); background:rgba(231,199,108,.07); border-radius:0 10px 10px 0; padding:12px 16px; font-size:.86rem; line-height:1.65; margin:12px 0 18px; }
+ .bench b { color:var(--gold); }
+ .cols { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+ @media (max-width:900px){ .cols { grid-template-columns:1fr; } }
+ .col h4 { font-family:var(--font-mono); font-size:.66rem; letter-spacing:.16em; text-transform:uppercase; margin-bottom:10px; }
+ .col.done h4 { color:var(--green); } .col.active h4 { color:#9AB6FF; } .col.todo h4 { color:var(--gold); }
+ .chk { border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+ .col.done .chk { background:rgba(123,227,176,.10); border:1px solid rgba(123,227,176,.32); }
+ .col.active .chk { background:rgba(154,182,255,.10); border:1px solid rgba(154,182,255,.35); }
+ .col.todo .chk { background:rgba(231,199,108,.08); border:1px solid rgba(231,199,108,.30); }
+ .chk .t { font-weight:700; font-size:.82rem; color:var(--t1); display:flex; gap:7px; }
+ .chk .t .m { flex-shrink:0; font-family:var(--font-mono); }
+ .col.done .t .m { color:var(--green); } .col.active .t .m { color:#9AB6FF; } .col.todo .t .m { color:var(--gold); }
+ .chk .d { font-size:.76rem; color:var(--t3); line-height:1.55; margin-top:4px; }
+ .facts { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+ .fact { font-size:.74rem; background:rgba(154,182,255,.08); border:1px solid rgba(154,182,255,.25); color:var(--t2); border-radius:99px; padding:5px 12px; }
+ .fact b { color:#9AB6FF; }
+
+ /* capital value */
+ table.cv { width:100%; border-collapse:collapse; margin:12px 0; }
+ table.cv th { font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--t3); text-align:left; padding:0 10px 8px 0; border-bottom:1px solid rgba(255,255,255,.25); }
+ table.cv td { font-size:.82rem; padding:9px 10px 9px 0; border-bottom:1px solid var(--line); vertical-align:top; line-height:1.55; }
+ table.cv td:first-child { color:var(--t1); font-weight:700; }
+ table.cv td.num { font-family:var(--font-mono); white-space:nowrap; color:#9AB6FF; }
+ table.cv tr.grp td { font-family:var(--font-mono); font-size:.64rem; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); padding-top:16px; border-bottom:1px solid rgba(255,255,255,.25); }
+ table.cv tr.sub td, table.cv tr.tot td { font-weight:800; color:var(--t1); }
+ table.cv tr.tot td { border-top:1px solid rgba(255,255,255,.4); border-bottom:none; }
+ .cv-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:14px 0; }
+ @media (max-width:760px){ .cv-stats { grid-template-columns:1fr 1fr; } }
+ .cv-stat { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+ .cv-stat .k { font-family:var(--font-mono); font-size:1.25rem; font-weight:700; color:var(--gold); }
+ .cv-stat .l { font-size:.7rem; color:var(--t3); margin-top:4px; line-height:1.5; }
+ .foot-note { font-size:.76rem; color:var(--t3); line-height:1.65; margin-top:12px; max-width:70em; }
+
+ /* wins */
+ .win { display:flex; gap:14px; padding:10px 0; border-bottom:1px solid var(--line); align-items:baseline; }
+ .win .dt { font-family:var(--font-mono); font-size:.7rem; color:var(--t3); flex-shrink:0; width:92px; }
+ .win .vt { font-family:var(--font-mono); font-size:.6rem; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:#9AB6FF; background:rgba(154,182,255,.1); border:1px solid rgba(154,182,255,.3); border-radius:99px; padding:2px 9px; flex-shrink:0; }
+ .win .tx { font-size:.84rem; line-height:1.6; }
+
+ .pagefoot { border-top:1px solid var(--line); margin-top:56px; }
+ .pagefoot .wrap { padding:14px 28px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; font-family:var(--font-mono); font-size:.64rem; letter-spacing:.12em; color:var(--t3); text-transform:uppercase; }
+ .pagefoot .conf { color:var(--gold2); }
+</style>
+<link rel="stylesheet" href="assets/compliance.css" />
+</head>
+<body>
+
+<!-- Raise status banner (locked dual-light pattern) -->
+<div class="sbx-banner gold" role="status" aria-label="Pre-seed raise: opening July 1, 2026, 90-day window"><span class="raise-status"><span class="status-dots" aria-hidden="true"><span class="status-dot dot-amber-lit"></span><span class="status-dot dot-green-dim"></span></span><span><b>Pre-Seed</b> &middot; Opening July 1, 2026 &middot; 90-day window</span></span></div>
+<!-- Accredited-investor legend (NI 45-106 s.2.3 + CP 45-106CP s.1.9) -->
+<div class="ai-legend" role="region" aria-label="Accredited investor legend">
+<strong>For accredited investors only.</strong> Information on this website is for accredited investors as defined in National Instrument 45-106. It is not an offer to sell or solicitation of an offer to buy securities. No securities regulatory authority has assessed the merits of any securities described herein. See <a href="#">Terms</a> and the legal information below.
+</div>
+
+<header class="nav">
+ <div class="nav-inner">
+ <a class="brand" href="data-room.html"><img class="brand-logo" src="assets/4orm-logo.png" alt="4orm Finance" /></a>
+ <nav class="nav-links">
+ <a class="ohtab" data-tab="documents" href="#">Documents</a>
+ <a class="ohtab" data-tab="roadmap" href="road-ahead.html">Roadmap</a>
+ <a class="ohtab" data-tab="ptr" href="path-to-revenue.html">Path to Revenue</a>
+ <a class="ohtab" data-tab="visual" href="visual-data.html">Visual Data</a>
+ <span class="nav-signed"><span class="dot"></span>Signed in &middot; Member access<a class="signout-link" href="#">Sign out</a></span>
+ </nav>
+ </div>
+</header>
+
+<section class="hero">
+ <div class="wrap">
+ <div class="eyebrow">Path to Revenue</div>
+ <h1>The path to revenue, <span class="accent">workstream by workstream.</span></h1>
+ <p class="lead" id="overallNote"></p>
+ <div class="overall">
+ <span class="opct" id="overallPct"></span>
+ <div class="obar"><i id="overallBar"></i></div>
+ </div>
+ <div class="asof" id="asOf"></div>
+ </div>
+</section>
+
+<div class="secnav"><div class="wrap" id="secNav"></div></div>
+
+<div class="wrap">
+ <h2 class="sect">Nine workstreams, <span class="accent">at a glance.</span></h2>
+ <p class="sect-sub">Completion by workstream against the path to an operating, regulated exchange. Click any card to jump to its full checkpoint list.</p>
+ <div class="grid" id="vGrid"></div>
+
+ <div id="verticals"></div>
+
+ <h2 class="sect" id="capital-value">Capital in, <span class="accent">value out.</span></h2>
+ <p class="sect-sub" id="cvLead"></p>
+ <div class="cv-stats" id="cvStats"></div>
+ <table class="cv"><tbody id="cvRows"></tbody></table>
+ <p class="foot-note" id="cvFoot"></p>
+
+ <h2 class="sect" id="weekly-wins">Weekly <span class="accent">wins.</span></h2>
+ <p class="sect-sub">One line per win, newest first. The cadence is the point.</p>
+ <div id="winsList"></div>
+</div>
+
+<!-- ============================================ FAMILY FOOTER + LEGAL -->
+<section class="famfooter">
+ <div class="famfooter-in">
+ <div class="famfooter-head"><div><div class="famfooter-eye">4orm Finance family</div><h3>Four surfaces, <span class="key">one settlement layer.</span></h3></div></div>
+ <div class="famfooter-grid">
+ <a href="https://4ormfinance.com" target="_blank" rel="noopener" class="famtile f1"><span class="lab">01 &middot; Hub</span><span class="name">4orm Finance</span><span class="desc">Regulated settlement finality for Canadian capital markets.</span><span class="link">4ormfinance.com &#8599;</span></a>
+ <a href="https://4ormex.com" target="_blank" rel="noopener" class="famtile f2"><span class="lab">02 &middot; Exchange</span><span class="name">4ormEx</span><span class="desc">Institutional trading venue. Delivery-versus-payment settlement finality.</span><span class="link">4ormex.com &#8599;</span></a>
+ <a href="https://www.4ormedc.com" target="_blank" rel="noopener" class="famtile f4"><span class="lab">04 &middot; Demo</span><span class="name">4orm Demo Exchange</span><span class="desc">Guided walkthrough. KYC to settlement finality, in 8 min.</span><span class="link">4ormedc.com &#8599;</span></a>
+ <a href="https://kcs-capital.com" target="_blank" rel="noopener" class="famtile f5"><span class="lab">Sister &middot; Developer</span><span class="name">KCS Capital</span><span class="desc">Independent technology and research firm.</span><span class="link">kcs-capital.com &#8599;</span></a>
+ </div>
+ <div class="legal-block">
+<h4>Important legal information</h4>
+<p><em>Accredited investors only.</em> The securities referenced on this website are being offered only to "accredited investors" as defined in National Instrument 45-106. This is not an offer to sell or a solicitation of an offer to buy securities in any jurisdiction where such offer is not permitted. No securities regulatory authority has assessed the merits of any securities described on this website.</p>
+<p><em>Forward-looking statements.</em> This website contains forward-looking statements within the meaning of applicable Canadian securities laws, including statements about 4orm Finance's planned operations, regulatory pathway, market opportunity, partnership pipeline, and capital raise. Forward-looking statements are based on assumptions current as of the date stated and are subject to material risks and uncertainties, including the receipt of required regulatory approvals. Actual results may differ materially. 4orm Finance disclaims any obligation to update forward-looking statements except as required by law.</p>
+<p><em>No affiliation or endorsement.</em> References to third-party companies, products, and services are for market-context and educational purposes only and do not imply any partnership, endorsement, sponsorship, or affiliation. All third-party names, trademarks, and logos are the property of their respective owners. 4orm Finance is not affiliated with the Bank of Canada, OSFI, the CSA (or its member regulators including OSC, AMF, BCSC, ASC), CIRO, FINTRAC, or any other regulator. No regulator has reviewed, endorsed, or approved 4orm Finance, its planned platform, or any securities described on this website. 4orm Finance is informed by, but not a participant in, the Bank of Canada's Project Samara experiment (Staff Analytical Paper 2026-8) and the CSA Project Tokenization initiative.</p>
+<p><em>Proposed entity.</em> "4orm Trust Co (proposed)" is a proposed future Canadian trust company subsidiary. 4orm Finance does not currently carry on trust business and is not authorized under the Trust and Loan Companies Act. Use of "Trust Co" is subject to receipt of OSFI letters patent or equivalent provincial authorization.</p>
+<p><em>FINTRAC.</em> 4orm Finance will register with FINTRAC as required prior to commencing regulated activity. FINTRAC registration is not an endorsement.</p>
+ </div>
+ <div class="famfooter-legal">
+ <span>&copy; 2026 4orm Finance Holdings Inc. &middot; Calgary, AB &middot; Vancouver &middot; Edmonton &middot; Privacy Officer: Chad Johnston, Founder &middot; compliance@4ormfinance.com</span>
+ <span><a href="privacy.html">Privacy</a><a href="#">Terms</a><a href="mailto:compliance@4ormfinance.com">compliance@4ormfinance.com</a></span>
+ </div>
+ </div>
+</section>
+
+<footer class="pagefoot"><div class="wrap">
+ <span>4ORM FINANCE &middot; PRE-SEED DATA ROOM</span>
+ <span class="conf">CONFIDENTIAL &middot; NOT FOR DISTRIBUTION</span>
+</div></footer>
+
+<script src="assets/roadmap-data.js"></script>
+<script>
+(function () {
+ var D = DATA;
+ document.getElementById('overallNote').textContent = D.overallNote;
+ document.getElementById('overallPct').textContent = D.overallPct + '%';
+ document.getElementById('overallBar').style.width = D.overallPct + '%';
+ document.getElementById('asOf').textContent = 'PROGRESS TO FIRST REVENUE · UPDATED ' + D.updated.toUpperCase() + ' · SOURCE: KCS / 4ORM PROGRESS ROADMAP';
+
+ var nav = document.getElementById('secNav');
+ function navLink(href, label) {
+ var a = document.createElement('a'); a.href = href; a.textContent = label; nav.appendChild(a);
+ }
+
+ var grid = document.getElementById('vGrid');
+ var verts = document.getElementById('verticals');
+ var stateMeta = { done: ['done', '✓', 'Done'], active: ['active', '→', 'Now'], todo: ['todo', '◇', 'Next'] };
+
+ D.verticals.forEach(function (v) {
+ navLink('#v-' + v.id, v.short || v.name);
+ var card = document.createElement('a');
+ card.className = 'vcard'; card.href = '#v-' + v.id;
+ card.innerHTML = '<div class="vn">' + v.name + '</div><div class="vs">' + v.stage + '</div>' +
+ '<div class="vbar"><i style="width:' + v.pct + '%"></i></div><span class="vpct">' + v.pct + '%</span>';
+ grid.appendChild(card);
+
+ var sec = document.createElement('section');
+ sec.className = 'vert'; sec.id = 'v-' + v.id;
+ var cols = { done: [], active: [], todo: [] };
+ (v.checkpoints || []).forEach(function (c) { (cols[c.state] || cols.todo).push(c); });
+ function colHtml(state) {
+ var meta = stateMeta[state];
+ var items = cols[state].map(function (c) {
+ return '<div class="chk"><div class="t"><span class="m">' + meta[1] + '</span><span>' + c.t + '</span></div>' +
+ (c.d ? '<div class="d">' + c.d + '</div>' : '') + '</div>';
+ }).join('');
+ return '<div class="col ' + meta[0] + '"><h4>' + meta[2] + ' · ' + cols[state].length + '</h4>' + (items || '<div class="chk"><div class="d">Nothing here yet.</div></div>') + '</div>';
+ }
+ var facts = (v.facts || []).map(function (f) { return '<span class="fact">' + f + '</span>'; }).join('');
+ sec.innerHTML = '<div class="vhead"><h3>' + v.name + '</h3><span class="vpct">' + v.pct + '%</span></div>' +
+ '<div class="vstage">' + v.stage + '</div>' +
+ (v.benchmark ? '<div class="bench">' + v.benchmark.note + '</div>' : '') +
+ '<div class="cols">' + colHtml('done') + colHtml('active') + colHtml('todo') + '</div>' +
+ (facts ? '<div class="facts">' + facts + '</div>' : '');
+ verts.appendChild(sec);
+ });
+ navLink('#capital-value', 'Capital → Value');
+ navLink('#weekly-wins', 'Weekly Wins');
+
+ /* capital in, value out */
+ var cv = D.capitalValue;
+ document.getElementById('cvLead').textContent = cv.lead + ' (As of ' + cv.asOf + '.)';
+ document.getElementById('cvStats').innerHTML = cv.stats.map(function (s) {
+ return '<div class="cv-stat"><div class="k">' + s.k + '</div><div class="l">' + s.l + '</div></div>';
+ }).join('');
+ var rows = ['<tr><th style="width:26%">ITEM</th><th>DETAIL</th><th style="width:12%">CONSERVATIVE</th><th style="width:12%">HEADLINE</th></tr>'];
+ cv.groups.forEach(function (g) {
+ rows.push('<tr class="grp"><td colspan="4">' + g.title + '</td></tr>');
+ g.rows.forEach(function (r) {
+ rows.push('<tr><td>' + r.item + '</td><td>' + r.detail + '</td><td class="num">' + r.cons + '</td><td class="num">' + r.head + '</td></tr>');
+ });
+ rows.push('<tr class="sub"><td colspan="2">' + g.subtotal.label + '</td><td class="num">' + g.subtotal.cons + '</td><td class="num">' + g.subtotal.head + '</td></tr>');
+ });
+ rows.push('<tr class="tot"><td colspan="2">' + cv.total.label + '</td><td class="num">' + cv.total.cons + '</td><td class="num">' + cv.total.head + '</td></tr>');
+ document.getElementById('cvRows').innerHTML = rows.join('');
+ document.getElementById('cvFoot').textContent = cv.foot;
+
+ /* weekly wins */
+ var vNames = {};
+ D.verticals.forEach(function (v) { vNames[v.id] = v.short || v.name; });
+ document.getElementById('winsList').innerHTML = D.wins.map(function (w) {
+ return '<div class="win"><span class="dt">' + w.date + '</span><span class="vt">' + (vNames[w.vertical] || w.vertical) + '</span><span class="tx">' + w.text + '</span></div>';
+ }).join('');
+})();
+</script>
+<!-- ============================================ COOKIE CONSENT (Quebec Law 25) -->
+<div class="cookie-banner" id="cookieBanner" role="dialog" aria-label="Cookie consent">
+<div class="cookie-banner-in">
+<div class="cookie-text"><strong>Cookies and tracking.</strong> 4orm Finance uses cookies and similar technologies. Essential cookies are required for the site to function. Analytics and marketing cookies are off by default and only enabled with your consent. See our <a href="privacy.html">Privacy Policy</a>.</div>
+<div class="cookie-acts">
+<button class="cookie-btn reject" id="cookieReject" type="button">Reject all</button>
+<button class="cookie-btn custom" id="cookieCustom" type="button">Customize</button>
+<button class="cookie-btn accept" id="cookieAccept" type="button">Accept all</button>
+</div>
+</div>
+<div class="cookie-customize" id="cookieCustomize">
+<div class="cookie-pref"><input type="checkbox" id="prefEssential" checked disabled aria-describedby="prefEssentialDesc"><label for="prefEssential"><strong>Essential</strong><span id="prefEssentialDesc">Required for the site to function (session, security, preferences). Always on.</span></label></div>
+<div class="cookie-pref"><input type="checkbox" id="prefAnalytics" aria-describedby="prefAnalyticsDesc"><label for="prefAnalytics"><strong>Analytics</strong><span id="prefAnalyticsDesc">First-party analytics to understand site usage. No personal data shared externally.</span></label></div>
+<div class="cookie-pref"><input type="checkbox" id="prefMarketing" aria-describedby="prefMarketingDesc"><label for="prefMarketing"><strong>Marketing</strong><span id="prefMarketingDesc">Third-party marketing trackers. Off until you opt in.</span></label></div>
+<div style="margin-top:12px;text-align:right"><button class="cookie-btn accept" id="cookieSavePrefs" type="button">Save my preferences</button></div>
+</div>
+</div>
+<script>
+(function(){
+ var KEY='fourm_cookie_consent_v1';
+ var banner=document.getElementById('cookieBanner');
+ var bA=document.getElementById('cookieAccept'),bR=document.getElementById('cookieReject'),bC=document.getElementById('cookieCustom'),bS=document.getElementById('cookieSavePrefs');
+ var panel=document.getElementById('cookieCustomize'),pA=document.getElementById('prefAnalytics'),pM=document.getElementById('prefMarketing');
+ function save(c){try{localStorage.setItem(KEY,JSON.stringify(Object.assign({ts:Date.now()},c)));}catch(e){} if(banner)banner.classList.remove('show');
+ /* Phase 2: load analytics/marketing scripts conditionally on c.analytics / c.marketing here. */}
+ function existing(){try{return JSON.parse(localStorage.getItem(KEY)||'null');}catch(e){return null;}}
+ if(!existing()&&banner){banner.classList.add('show');}
+ if(bA)bA.addEventListener('click',function(){save({essential:true,analytics:true,marketing:true});});
+ if(bR)bR.addEventListener('click',function(){save({essential:true,analytics:false,marketing:false});});
+ if(bC)bC.addEventListener('click',function(){panel.classList.toggle('show');});
+ if(bS)bS.addEventListener('click',function(){save({essential:true,analytics:pA.checked,marketing:pM.checked});});
+})();
+</script>
+
+<script>(function(){
+ var o=(new URLSearchParams(location.search).get('o')||'advisor');
+ if(!/^(advisor|employee|engineering)$/.test(o))o='advisor';
+ var q='?o='+o, file=location.pathname.split('/').pop();
+ var map={documents:'',roadmap:'road-ahead.html',ptr:'path-to-revenue.html',visual:'visual-data.html'};
+ document.querySelectorAll('[data-tab]').forEach(function(a){var t=a.getAttribute('data-tab');
+  a.href=(t==='documents')?(o+'.html'):(map[t]+q);
+  if(map[t]===file)a.classList.add('on');
+ });
+ var b=document.querySelector('.brand'); if(b)b.href=o+'.html';
+ var so=document.querySelector('.signout-link'); if(so)so.href='index.html';
+})();</script>
+</body>
+</html>

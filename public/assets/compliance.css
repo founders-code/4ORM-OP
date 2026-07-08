@@ -1,0 +1,116 @@
+/* =====================================================================
+   4orm Data Room — compliance components (v2)
+   Grafted from 4orm-finance-v52 (site.css), self-contained with literal
+   values so it layers on top of the data room's existing styles without
+   overriding the bespoke member-page layout.
+   Components: raise-status banner, accredited-investor legend, cookie
+   consent banner, consolidated legal block, family footer, self-cert gate.
+   ===================================================================== */
+
+/* ----- RAISE STATUS BANNER (locked dual-light pattern across the family) ----- */
+.sbx-banner { text-align: center; padding: 8px 28px; font-size: .8rem; line-height: 1.4;
+  font-family: 'Inter', system-ui, sans-serif; border-bottom: 1px solid rgba(20,32,54,.12); }
+.sbx-banner.gold { background: linear-gradient(90deg, #FBF1DC, #FFF8EC, #FBF1DC); color: #5A4A22; }
+.sbx-banner.gold b { color: #8A6D1F; }
+.raise-status { display: inline-flex; align-items: center; gap: 8px; }
+.raise-status .status-dots { display: inline-flex; align-items: center; gap: 6px; margin-right: 4px; }
+.raise-status .status-dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: middle; }
+.raise-status .dot-amber-lit { background: #C49A3A; box-shadow: 0 0 0 0 rgba(196,154,58,.65); animation: dot-amber-pulse 2.4s ease-in-out infinite; }
+.raise-status .dot-green-dim { background: #7BE3B0; opacity: .28; }
+@keyframes dot-amber-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(196,154,58,.55); } 50% { box-shadow: 0 0 0 6px rgba(196,154,58,0); } }
+@media (prefers-reduced-motion: reduce) { .raise-status .dot-amber-lit { animation: none; } }
+
+/* ----- ACCREDITED-INVESTOR LEGEND (NI 45-106 s.2.3 + CP 45-106CP s.1.9) ----- */
+.ai-legend { background: #15233F; color: rgba(255,255,255,.85); border-bottom: 1px solid rgba(255,255,255,.10);
+  font-size: .76rem; line-height: 1.55; padding: 10px 28px; text-align: center; font-weight: 500;
+  font-family: 'Inter', system-ui, sans-serif; }
+.ai-legend strong { color: #FFD9A8; font-weight: 700; }
+.ai-legend a { color: rgba(255,217,168,.85); text-decoration: underline; text-underline-offset: 2px; }
+.ai-legend a:hover { color: #FFD9A8; }
+@media (max-width: 760px){ .ai-legend { padding: 9px 16px; font-size: .72rem; } }
+
+/* ----- CONSOLIDATED LEGAL DISCLAIMERS BLOCK ----- */
+.legal-block { margin: 0 auto; max-width: 1200px; padding: 24px 26px;
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.10); border-radius: 12px;
+  font-size: .82rem; line-height: 1.65; color: rgba(255,255,255,.78); font-family: 'Inter', system-ui, sans-serif; }
+.legal-block h4 { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .72rem; letter-spacing: .14em;
+  text-transform: uppercase; color: #FFD9A8; font-weight: 800; margin: 0 0 12px; }
+.legal-block p { margin: 0 0 12px; color: rgba(255,255,255,.78); font-size: .82rem; line-height: 1.65; }
+.legal-block p:last-child { margin-bottom: 0; }
+.legal-block em { color: #FFD9A8; font-style: normal; font-weight: 700; }
+
+/* ----- FAMILY FOOTER BLOCK ----- */
+.famfooter { background: linear-gradient(180deg, #15233F 0%, #0B1220 100%); color: #fff; padding: 56px 28px 40px;
+  border-top: 1px solid rgba(255,255,255,.06); font-family: 'Inter', system-ui, sans-serif; }
+.famfooter-in { max-width: 1200px; margin: 0 auto; }
+.famfooter-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 28px; }
+.famfooter-eye { font-size: .74rem; text-transform: uppercase; letter-spacing: .18em; color: #FFD9A8; font-weight: 800; }
+.famfooter h3 { font-size: 1.6rem; color: #fff; margin: 8px 0 0; letter-spacing: -.01em; line-height: 1.15; }
+.famfooter h3 .key { color: #FFD9A8; }
+.famfooter-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+@media (max-width: 920px){ .famfooter-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 500px){ .famfooter-grid { grid-template-columns: 1fr; } }
+.famtile { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.14); border-radius: 12px;
+  padding: 18px 18px 16px; display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: inherit;
+  position: relative; overflow: hidden; transition: transform .2s, border-color .2s, background .2s; }
+.famtile:hover { transform: translateY(-3px); border-color: rgba(255,255,255,.32); background: rgba(255,255,255,.10); }
+.famtile::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--ft, #FFD9A8); }
+.famtile.f1 { --ft: #FFD9A8; } .famtile.f2 { --ft: #2E6BF2; } .famtile.f3 { --ft: #9AB6FF; } .famtile.f4 { --ft: #7BE3B0; } .famtile.f5 { --ft: #C49A3A; }
+.famtile .lab { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .62rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--ft); }
+.famtile .name { font-size: 1rem; font-weight: 800; color: #fff; letter-spacing: -.005em; }
+.famtile .desc { font-size: .82rem; color: rgba(255,255,255,.65); line-height: 1.5; }
+.famtile .link { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .68rem; font-weight: 800; letter-spacing: .12em; color: var(--ft); margin-top: 6px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,.14); }
+.famfooter-legal { margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,.10);
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; font-size: .8rem; color: rgba(255,255,255,.55); line-height: 1.6; }
+.famfooter-legal a { color: rgba(255,255,255,.75); margin-left: 14px; text-decoration: none; }
+.famfooter-legal a:hover { color: #fff; }
+
+/* ----- COOKIE CONSENT BANNER (Quebec Law 25) ----- */
+.cookie-banner { position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999; background: #0B1220; color: #fff;
+  border-top: 2px solid #FFD9A8; padding: 18px 28px; box-shadow: 0 -12px 40px rgba(0,0,0,.5); display: none;
+  font-family: 'Inter', system-ui, sans-serif; }
+.cookie-banner.show { display: block; animation: cookieRise .3s ease; }
+@keyframes cookieRise { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.cookie-banner-in { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; }
+@media (max-width: 760px){ .cookie-banner-in { grid-template-columns: 1fr; gap: 14px; } }
+.cookie-text { font-size: .9rem; line-height: 1.55; color: rgba(255,255,255,.86); }
+.cookie-text strong { color: #FFD9A8; }
+.cookie-text a { color: #FFD9A8; text-decoration: underline; text-underline-offset: 2px; }
+.cookie-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.cookie-btn { font-family: inherit; font-weight: 700; font-size: .82rem; padding: 9px 16px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: all .15s; white-space: nowrap; }
+.cookie-btn.accept { background: #FFD9A8; color: #0B1220; border-color: #FFD9A8; }
+.cookie-btn.accept:hover { background: #FFE6C0; }
+.cookie-btn.reject { background: transparent; color: #fff; border-color: rgba(255,255,255,.32); }
+.cookie-btn.reject:hover { background: rgba(255,255,255,.08); }
+.cookie-btn.custom { background: rgba(255,255,255,.06); color: rgba(255,255,255,.85); border-color: rgba(255,255,255,.20); }
+.cookie-btn.custom:hover { background: rgba(255,255,255,.12); }
+.cookie-customize { display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.10); max-width: 1200px; margin-left: auto; margin-right: auto; }
+.cookie-customize.show { display: block; }
+.cookie-pref { display: flex; align-items: center; gap: 14px; padding: 10px 0; border-bottom: 1px dashed rgba(255,255,255,.08); font-size: .86rem; }
+.cookie-pref:last-child { border-bottom: none; }
+.cookie-pref label { flex: 1; cursor: pointer; }
+.cookie-pref label strong { color: #fff; display: block; }
+.cookie-pref label span { color: rgba(255,255,255,.6); font-size: .78rem; }
+.cookie-pref input { width: 18px; height: 18px; accent-color: #FFD9A8; }
+.cookie-pref input:disabled { opacity: .5; }
+
+/* ----- ACCREDITED-INVESTOR SELF-CERTIFICATION GATE (Phase 1 static; Form 45-106F9-style) ----- */
+.selfcert-overlay { position: fixed; inset: 0; z-index: 10000; background: rgba(8,13,24,.92);
+  backdrop-filter: blur(4px); display: none; align-items: flex-start; justify-content: center;
+  overflow-y: auto; padding: 40px 18px; font-family: 'Inter', system-ui, sans-serif; }
+.selfcert-overlay.show { display: flex; }
+.selfcert-card { background: #0F1A30; border: 1px solid rgba(255,255,255,.14); border-radius: 16px;
+  max-width: 640px; width: 100%; padding: 30px 32px; color: rgba(255,255,255,.86); box-shadow: 0 24px 70px rgba(0,0,0,.55); }
+.selfcert-card .sc-eye { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .64rem; letter-spacing: .18em;
+  text-transform: uppercase; color: #FFD9A8; font-weight: 800; }
+.selfcert-card h2 { color: #fff; font-size: 1.5rem; line-height: 1.2; margin: 8px 0 6px; letter-spacing: -.01em; }
+.selfcert-card .sc-sub { font-size: .9rem; line-height: 1.6; color: rgba(255,255,255,.7); margin-bottom: 18px; }
+.selfcert-check { display: flex; gap: 12px; padding: 12px 0; border-top: 1px dashed rgba(255,255,255,.12); font-size: .86rem; line-height: 1.5; }
+.selfcert-check input { width: 18px; height: 18px; margin-top: 2px; accent-color: #2E6BF2; flex-shrink: 0; }
+.selfcert-check label { cursor: pointer; }
+.selfcert-acts { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.selfcert-btn { font-family: inherit; font-weight: 800; font-size: .9rem; padding: 12px 22px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; }
+.selfcert-btn.go { background: #2E6BF2; color: #fff; }
+.selfcert-btn.go:disabled { opacity: .4; cursor: not-allowed; }
+.selfcert-btn.leave { background: transparent; color: rgba(255,255,255,.7); border-color: rgba(255,255,255,.25); text-decoration: none; }
+.selfcert-fine { font-size: .72rem; color: rgba(255,255,255,.45); line-height: 1.55; margin-top: 16px; }
