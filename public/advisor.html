@@ -150,9 +150,18 @@
  .cd.ev-exec{background:rgba(255,217,168,.26);border:1px solid rgba(255,217,168,.6);color:#fff;font-weight:700;}
  .cd.ev-oneonone{background:rgba(123,227,176,.24);border:1px solid rgba(123,227,176,.55);color:#fff;font-weight:700;}
  .cd.ev-review{background:rgba(231,199,108,.24);border:1px solid rgba(231,199,108,.55);color:#fff;font-weight:700;}
- .cal-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;font-size:.7rem;color:var(--t3);}
- .cal-legend span{display:inline-flex;align-items:center;gap:6px;}
- .cal-legend i{width:11px;height:11px;border-radius:4px;display:inline-block;}
+ .cal-legend{margin-top:16px;display:flex;flex-direction:column;gap:8px;}
+ .leg-row{display:flex;align-items:center;gap:11px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02);}
+ .leg-dot{width:10px;height:10px;border-radius:3px;flex:none;}
+ .leg-dot.ev-council{background:rgba(46,107,242,.75);}
+ .leg-dot.ev-exec{background:var(--peach);}
+ .leg-dot.ev-oneonone{background:var(--green);}
+ .leg-dot.ev-review{background:rgba(231,199,108,.85);}
+ .leg-txt{display:flex;flex-direction:column;gap:1px;min-width:0;}
+ .leg-name{font-size:.76rem;font-weight:700;color:#fff;line-height:1.2;}
+ .leg-sub{font-size:.62rem;color:var(--t3);}
+ .leg-when{margin-left:auto;font-family:var(--font-mono);font-size:.66rem;color:var(--lt);white-space:nowrap;text-align:right;}
+ .leg-tz{font-size:.62rem;color:var(--t3);margin-top:2px;padding-left:2px;}
 
  .links{display:flex;flex-direction:column;gap:9px;}
  .lrow{display:flex;align-items:center;gap:10px;padding:7px 11px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--line);text-decoration:none;transition:background .14s,border-color .14s;cursor:pointer;}
@@ -352,12 +361,7 @@
      <div class="cal-nav"><button onclick="calMove(-1)">&lsaquo;</button><span class="mlabel" id="calLabel">Month</span><button onclick="calMove(1)">&rsaquo;</button></div>
     </div>
     <table class="cal"><thead><tr><th>S</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th></tr></thead><tbody id="calBody"></tbody></table>
-    <div class="cal-legend">
-     <span><i style="background:rgba(46,107,242,.5)"></i>Advisory Council &middot; 1st Mon</span>
-     <span><i style="background:var(--peach)"></i>Exec call &middot; Tue 10am</span>
-     <span><i style="background:var(--green)"></i>1:1 CEO &middot; Thu 11am</span>
-     <span><i style="background:rgba(231,199,108,.6)"></i>6-month review</span>
-    </div>
+    <div class="cal-legend" id="calLegend"></div>
    </div>
    <div class="panel">
     <div class="panel-h"><span class="ph-t">Links &amp; contacts</span></div>
@@ -521,6 +525,7 @@ function go(which){
  document.getElementById('daysRev').innerHTML='';
  renderBoxes(P.boxes);
  renderCal();
+ renderLegend();
  window.scrollTo({top:0,behavior:'smooth'});
 }
 function renderBoxes(boxes){
@@ -579,9 +584,25 @@ let calY, calM;
 (function(){const n=new Date();calY=n.getFullYear();calM=n.getMonth();})();
 function firstMonday(y,m){const d=new Date(y,m,1);while(d.getDay()!==1)d.setDate(d.getDate()+1);return d.getDate();}
 function calMove(n){calM+=n;if(calM<0){calM=11;calY--;}if(calM>11){calM=0;calY++;}renderCal();}
+const MEETINGS=[
+ {dow:1,h:10,m:0,name:'Ops Launch Pad',sub:'Full team',cls:'ev-council'},
+ {dow:2,h:10,m:0,name:'Executive Advisors War Room',sub:'Advisors',cls:'ev-exec'}
+];
+const ONEONONE={'dean@4ormfinance.com':{dow:4,h:10,m:0,name:'Your 1:1 with the CEO',sub:'Weekly with Chad',cls:'ev-oneonone'}};
+function tzOffset(inst,tz){var u=new Date(inst.toLocaleString('en-US',{timeZone:'UTC'}));var z=new Date(inst.toLocaleString('en-US',{timeZone:tz}));return z.getTime()-u.getTime();}
+function zonedInstant(y,mo,d,H,M,tz){var asUTC=Date.UTC(y,mo,d,H,M,0);var off=tzOffset(new Date(asUTC),tz);return new Date(asUTC-off);}
+function meetingInstant(dow,H,M){var n=new Date();var d=new Date(n.getFullYear(),n.getMonth(),n.getDate());var gu=0;while(d.getDay()!==dow&&gu<14){d.setDate(d.getDate()+1);gu++;}return zonedInstant(d.getFullYear(),d.getMonth(),d.getDate(),H,M,'America/Los_Angeles');}
+function meetingWhen(m){var inst=meetingInstant(m.dow,m.h,m.m);var wd=new Date(inst).toLocaleString(undefined,{weekday:'long'});var tm=new Date(inst).toLocaleString(undefined,{hour:'numeric',minute:'2-digit',timeZoneName:'short'});return wd+'s &middot; '+tm;}
+function renderLegend(){
+ var rows=MEETINGS.slice(); var oo=ONEONONE[CURRENT_EMAIL]; if(oo)rows.push(oo);
+ var html=rows.map(function(m){return '<div class="leg-row"><span class="leg-dot '+m.cls+'"></span><span class="leg-txt"><span class="leg-name">'+m.name+'</span><span class="leg-sub">'+m.sub+'</span></span><span class="leg-when">'+meetingWhen(m)+'</span></div>';}).join('');
+ if(current==='advisor'){html+='<div class="leg-row"><span class="leg-dot ev-review"></span><span class="leg-txt"><span class="leg-name">Six-Month Review</span><span class="leg-sub">At your six-month mark</span></span><span class="leg-when">Your review date</span></div>';}
+ html+='<div class="leg-tz">Times shown in your local timezone.</div>';
+ var el=document.getElementById('calLegend'); if(el)el.innerHTML=html;
+}
 function renderCal(){
  const first=new Date(calY,calM,1), start=first.getDay(), dim=new Date(calY,calM+1,0).getDate();
- const today=new Date(), council=firstMonday(calY,calM);
+ const today=new Date(); const mmap={}; MEETINGS.forEach(function(m){mmap[m.dow]=m.cls;}); var oo=ONEONONE[CURRENT_EMAIL]; if(oo)mmap[oo.dow]=oo.cls;
  const rev=window.REVIEW_DATE?new Date(window.REVIEW_DATE):(function(){var r=new Date(firstLogin);r.setMonth(r.getMonth()+6);return r;})();
  document.getElementById('calLabel').textContent=first.toLocaleDateString('en-US',{month:'long',year:'numeric'});
  let cells=[],day=1;
@@ -589,9 +610,7 @@ function renderCal(){
   if(i<start||day>dim){cells.push('<td><div class="cd muted"></div></td>');continue;}
   const dow=new Date(calY,calM,day).getDay();
   let cls='cd';
-  if(day===council)cls+=' ev-council';
-  else if(dow===2)cls+=' ev-exec';
-  else if(dow===4)cls+=' ev-oneonone';
+  if(mmap[dow])cls+=' '+mmap[dow];
   if(current==='advisor' && calY===rev.getFullYear() && calM===rev.getMonth() && day===rev.getDate())cls='cd ev-review';
   if(calY===today.getFullYear()&&calM===today.getMonth()&&day===today.getDate())cls+=' today';
   cells.push(`<td><div class="${cls}">${day}</div></td>`);day++;
@@ -1832,7 +1851,7 @@ renderCal();
   var pk=window.CLERK_PK||"";
   if(pk){ var fapi=""; try{ fapi=atob(pk.replace(/^pk_(live|test)_/,"")).replace(/\$+$/,""); }catch(e){} 
     if(fapi){ var s=document.createElement("script"); s.src="https://"+fapi+"/npm/@clerk/clerk-js@5/dist/clerk.browser.js"; s.async=true; s.crossOrigin="anonymous"; s.setAttribute("data-clerk-publishable-key",pk);
-      s.onload=function(){ window.Clerk.load().then(function(){ var u=window.Clerk.user; if(u){ var nm=u.fullName||u.firstName||(u.primaryEmailAddress&&u.primaryEmailAddress.emailAddress)||""; if(nm){ var el=document.getElementById("userName"); if(el) el.textContent=nm; } var em=(u.primaryEmailAddress&&u.primaryEmailAddress.emailAddress)||""; CURRENT_EMAIL=em.toLowerCase(); if(CURRENT_EMAIL&&PRIVATE_DOCS[CURRENT_EMAIL]){ try{ renderBoxes(PORTALS[CURRENT].boxes); }catch(e){} } if(CURRENT==="advisor" && u.createdAt){ var cr=new Date(u.createdAt); var rv=new Date(cr); rv.setMonth(rv.getMonth()+6); window.REVIEW_DATE=rv; var dd=Math.max(0,Math.ceil((rv-new Date())/86400000)); var drx=document.getElementById("daysRev"); if(drx) drx.innerHTML="<b>"+dd+"</b> days to review"; try{ renderCal(); }catch(e){} } } }); };
+      s.onload=function(){ window.Clerk.load().then(function(){ var u=window.Clerk.user; if(u){ var nm=u.fullName||u.firstName||(u.primaryEmailAddress&&u.primaryEmailAddress.emailAddress)||""; if(nm){ var el=document.getElementById("userName"); if(el) el.textContent=nm; } var em=(u.primaryEmailAddress&&u.primaryEmailAddress.emailAddress)||""; CURRENT_EMAIL=em.toLowerCase(); if(CURRENT_EMAIL&&PRIVATE_DOCS[CURRENT_EMAIL]){ try{ renderBoxes(PORTALS[CURRENT].boxes); }catch(e){} } if(CURRENT==="advisor" && u.createdAt){ var cr=new Date(u.createdAt); var rv=new Date(cr); rv.setMonth(rv.getMonth()+6); window.REVIEW_DATE=rv; var dd=Math.max(0,Math.ceil((rv-new Date())/86400000)); var drx=document.getElementById("daysRev"); if(drx) drx.innerHTML="<b>"+dd+"</b> days to review"; try{ renderCal(); renderLegend(); }catch(e){} } } }); };
       document.head.appendChild(s); } }
 })();
 </script>
