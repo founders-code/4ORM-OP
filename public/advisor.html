@@ -259,7 +259,7 @@
  .dcard .dl .k{font-family:var(--font-mono);font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);width:34px;flex:none;}
 
  /* Swiss reading page */
- .doc{max-width:740px;margin:0 auto;background:#fff;padding:52px 60px 64px;color:var(--ink);}
+ .doc{max-width:960px;margin:0 auto;background:#fff;padding:52px 60px 64px;color:var(--ink);}
  @media(max-width:640px){.doc{padding:34px 24px;}}
  .doc-top{border-top:2.5px solid var(--ink);padding-top:11px;display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--slate);font-weight:700;}
  .doc-top .conf{color:var(--gold2);}
@@ -453,20 +453,22 @@ const PORTALS={
       {name:'The Mission Anchor',sub:'Our constitution, you sign onto it',st:'live',doc:'anchor'},
       {name:'Mutual Non-Disclosure Agreement',sub:'Your signed reference copy',st:'private'},
       {name:'Signed Engagement Letter',sub:'IP terms included',st:'private'},
-      {name:'Contractor Agreement',sub:'Placeholder, added when applicable',st:'soon'},
       {name:'Compensation & Term Schedule',sub:'Personal to you',st:'private'},
       {name:'Legacy Token Program',sub:'The first hundred',st:'live',doc:'legacy'},
-      {name:'Six-Month Review',sub:'Reviewed with the CEO and Advisory Council',st:'live',doc:'sixmonth'}]},
+      {name:'Six-Month Review',sub:'Reviewed with the CEO and Advisory Council',st:'live',doc:'sixmonth'},
+      {name:'Contractor Agreement',sub:'[pending 6-month review]',st:'soon'}]},
    {n:'02',k:'Company',t:'The Company',files:[
       {name:'Elevator Pitch',sub:'The 30 and 60 second pitch',st:'live',doc:'elevator'},
-      {name:'Mission',sub:'Why we exist',st:'live',doc:'mvv'},
-      {name:'Vision',sub:'The North Star',st:'live',doc:'mvv'},
-      {name:'Values',sub:'What we operate by',st:'live',doc:'mvv'},
+      {name:'Mission',sub:'Why we exist',st:'live',doc:'mission'},
+      {name:'Vision',sub:'The future we are building',st:'live',doc:'vision'},
+      {name:'Values',sub:'The ten we operate by',st:'live',doc:'values'},
       {name:'What We Do',sub:'Company overview',st:'live',doc:'whatwedo'}]},
     {n:'03',k:'Shared',t:'Strategy & Status',files:[
       {name:'Strategy & Fundraise Status',sub:'Living page',st:'dynamic',doc:'strategy'},
       {name:'Current State Dashboard',sub:'Live from the data room',st:'dynamic',doc:'dashboard'}]},
    {n:'04',k:'Shared',t:'Governance & Mission',files:[
+     {name:'The Mission Anchor',sub:'Our constitution, full document',st:'live',doc:'anchor'},
+     {name:'Vision, Mission & Values',sub:'One-pager',st:'live',doc:'mvv'},
      {name:'CEO Commitment',sub:'Founder & CEO statement',st:'live',doc:'ceo'},
      {name:'Decision Matrix',sub:'Who owns what, how decisions move',st:'live',doc:'decisionmatrix'},
      {name:"Founders' Voting Agreement",sub:'Summary',st:'soon'}]},
@@ -491,6 +493,9 @@ const PORTALS={
 
 const BADGE={live:['b-live','Live'],private:['b-private','Private'],dynamic:['b-dyn','Live'],room:['b-room','Data room'],inroom:['b-room','In room'],towrite:['b-soon','To write'],soon:['b-soon','Soon']};
 const FICO={private:'priv',dynamic:'dyn',room:'room',inroom:'room'};
+const PRIVATE_DOCS={'dean@4ormfinance.com':{'Mutual Non-Disclosure Agreement':'documents/private/dean-mnda.pdf','Signed Engagement Letter':'documents/private/dean-engagement-letter.pdf','Compensation & Term Schedule':'documents/private/dean-comp-schedule.pdf'}};
+var CURRENT_EMAIL='';
+function hasPrivateDoc(name){return CURRENT_EMAIL&&PRIVATE_DOCS[CURRENT_EMAIL]&&PRIVATE_DOCS[CURRENT_EMAIL][name];}
 
 let current='advisor';
 function enter(which){
@@ -528,10 +533,10 @@ function renderBoxes(boxes){
   </div>`).join('');
 }
 function fileRow(box,i){
- const f=box.files[i]; const bd=BADGE[f.st]||BADGE.soon; const ic=FICO[f.st]||'';
+ const f=box.files[i]; let bd=BADGE[f.st]||BADGE.soon; let ic=FICO[f.st]||''; const signed=(f.st==='private'&&hasPrivateDoc(f.name)); if(signed){bd=['b-live','Signed'];ic='';}
  const cls=(f.st==='soon'||f.st==='towrite')?'frow soon':'frow';
  return `<li><a class="${cls}" onclick='openFile(${JSON.stringify(f).replace(/'/g,"&#39;")})'>
-   <span class="fico ${ic}">${f.st==='private'?'&#128274;':(f.st==='room'?'DR':(f.st==='inroom'?'E':(f.st==='dynamic'?'&#9679;':'DOC')))}</span>
+   <span class="fico ${ic}">${f.st==='private'?(signed?'&#10003;':'&#128274;'):(f.st==='room'?'DR':(f.st==='inroom'?'E':(f.st==='dynamic'?'&#9679;':'DOC')))}</span>
    <span class="fmeta"><span class="fname">${f.name}</span><span class="fsub">${f.sub}</span></span>
    <span class="fbadge ${bd[0]}">${bd[1]}</span></a></li>`;
 }
@@ -539,7 +544,7 @@ function openFile(f){
  if(f.dir){openDir();return;}
  if(f.url){ext(f.url);return;}
  if(f.st==='room'){openModalDoc(f.name, roomPlaceholder(f.name));return;}
- if(f.st==='private'){openModalDoc(f.name, privatePlaceholder(f.name));return;}
+ if(f.st==='private'){var pd=hasPrivateDoc(f.name); if(pd){ext(pd);return;} openModalDoc(f.name, privatePlaceholder(f.name));return;}
  if(f.st==='inroom'){openModalDoc(f.name, inroomPlaceholder(f.name));return;}
  if(f.st==='towrite'){openModalDoc(f.name, towritePlaceholder(f.name));return;}
  if(f.st==='soon'){openModalDoc(f.name, soonPlaceholder(f.name));return;}
@@ -709,6 +714,9 @@ const DOCS={
     <li>Capital Markets holds the Exempt Market Dealer, Investment Fund Manager, and Portfolio Manager registrations under NI 31-103. Token issuance is treated as a distribution of securities under NI 45-106 exemptions where applicable.</li>
     <li>Future entities under consideration: a cross-border expansion holding, a foundation for education and stewardship, and a proprietary insurance entity post-Series A.</li>
   </ul>
+    <h2 class="ds"><span class="sn">06</span>The structure at a glance</h2>
+  <p>The full corporate structure on a single page.</p>
+  <img src="documents/corp-structure-diagram.png" alt="4orm Finance corporate structure, Alberta" style="width:100%;height:auto;border:1px solid var(--line);border-radius:8px;margin:10px 0 4px;background:#fff;">
   ${FT}</div>`,
  decisionmatrix:`<div class="doc">${dtop('Decision Matrix')}<div class="eyebrow-m">Who owns what, and how decisions move</div>
   <h1 class="dh">Decision Matrix</h1>
@@ -827,6 +835,67 @@ const DOCS={
     <li>Governance evolution: Chad currently holds Founder, CEO, President, and Chairman roles. The Board reviews governance structure at each major financing milestone (seed, Series A, and beyond) and adjusts to match the Company's scale, board composition, and institutional investor expectations. Separation of Chairman and CEO or Lead Independent Director designation are among the options the Board considers at each such review.</li>
   </ul>
   ${FT}</div>`,
+ vision:`<div class="doc">${dtop('Vision')}<div class="eyebrow-m">The future we are building</div>
+  <h1 class="dh">Your Vision</h1>
+  <p class="dsub">The Canada we are building toward, and 4orm's place in it.</p>
+  ${dmeta([['Entity','4orm Finance'],['Room','Advisor'],['Horizon','A hundred years'],['Class.','Confidential']])}
+  <div class="callout"><div class="cl">The vision</div><p>A Canada where finance is backed by real assets, and where the value locked in the country's real estate, resources, and enterprise can be owned, moved, and traded by everyone the market reaches, on rails that are Canadian-owned, regulated, and built to last.</p></div>
+  <h2 class="ds"><span class="sn">01</span>The bridge Canada is missing</h2>
+  <p class="lead">Canada already has the assets, the custodians, and the regulation. What it does not have is the layer that ties them into one liquid market. We are building that layer: the regulated settlement rail and marketplace for real-world assets in Canada.</p>
+  <p>Interoperability is the whole point. A settlement layer is only worth building if value can move across the entire system, so ours is designed to connect every side of the market rather than wall off a corner of it:</p>
+  <ul>
+   <li><b>Institutions.</b> The banks, asset managers, and buy-side that hold Canada's institutional liquidity and carry its regulatory burden.</li>
+   <li><b>Tokenized projects.</b> The issuers and platforms already tokenizing real-world value, given reach and a regulated venue to settle into.</li>
+   <li><b>Municipalities.</b> Local governments able to turn real assets and future revenue into regulated, liquid instruments.</li>
+   <li><b>Governments.</b> Provincial and federal participants, connected to a rail built for Canadian law and oversight.</li>
+   <li><b>Exchanges.</b> Regulated venues that list, match, and trade tokenized value on shared infrastructure.</li>
+   <li><b>Custodians and issuers.</b> Qualified custody and credible issuers across real estate, private credit, energy, mining, and metals, tied into one interoperable network.</li>
+  </ul>
+  <h2 class="ds"><span class="sn">02</span>Finance backed by real things</h2>
+  <p>We see a future where finance is stably backed by real assets rather than by abstraction, and where the value that sits illiquid today can be fractionally owned, bought, sold, and traded on transparent, regulated markets.</p>
+  <p>In that future an asset does not have to be sold to be put to work. A fraction of it becomes a regulated, liquid instrument that reaches institutional capital, so value already sitting in this country can fund growth, service debt, and open opportunity for Canadians, on terms that respect their sovereignty, their privacy, and their long horizon.</p>
+  <div class="callout"><div class="cl">Where it leads</div><p>Picture Canada, the fourth-largest resource nation on earth, turning a fraction of that value into regulated, liquid instruments without selling the asset. That is the market 4orm exists to connect.</p></div>
+  ${FT}</div>`,
+ mission:`<div class="doc">${dtop('Mission')}<div class="eyebrow-m">Why we exist</div>
+  <h1 class="dh">Your Mission</h1>
+  <p class="dsub">What 4orm is here to do, and the standard we hold ourselves to while we do it.</p>
+  ${dmeta([['Entity','4orm Finance'],['Room','Advisor'],['Full detail','Mission Anchor'],['Class.','Confidential']])}
+  <div class="callout"><div class="cl">The mission</div><p>To build the regulated infrastructure that lets Canadians and Canadian institutions issue, hold, move, settle, and verify assets with privacy, security, and fair access, under Canadian law, and with fewer unnecessary intermediaries between a person and what they own.</p></div>
+  <h2 class="ds"><span class="sn">01</span>What we are here to do</h2>
+  <p class="lead">Most of finance sits between a person and what they own. Our mission is to take that distance out: to build rails where value can be issued, held, moved, settled, and verified directly, safely, and within Canadian law.</p>
+  <p>That means regulated infrastructure first, not another product bolted onto someone else's system. Privacy is the default, access is fair, custody is real, and the person on the other end keeps control of what is theirs. We are building the plumbing that a sound financial system runs on, and we are building it to be Canadian.</p>
+  <h2 class="ds"><span class="sn">02</span>The North Star</h2>
+  <p>Beyond the product, 4orm exists to help the Canadian financial system become independent and sovereign: to protect Canadians from inflationary asset erosion, currency debasement, and arbitrary gatekeeping, and to keep the rails of the country's financial future Canadian-owned, regulated, and built to last. We are building for a hundred years, not the next quarter.</p>
+  <p>4orm Finance is an Alberta company. Under Canadian corporate law its directors may weigh this mission and the Company's stakeholders alongside its shareholders, and the commitments that carry the mission are binding on the people who run and build the Company. They are set out in full in the Mission Anchor.</p>
+  <div class="callout"><div class="cl">In one line</div><p>Build the regulated rails that give Canadians and Canadian institutions direct, private, lawful control over the assets they own.</p></div>
+  ${FT}</div>`,
+ values:`<div class="doc">${dtop('Values')}<div class="eyebrow-m">The values we operate by</div>
+  <h1 class="dh">Your Values</h1>
+  <p class="dsub">Ten standards that decide how we hire, lead, reward, and part ways. Not posters on a wall, the way we actually work.</p>
+  ${dmeta([['Entity','4orm Finance'],['Room','Advisor'],['Full detail','Mission Anchor'],['Class.','Confidential']])}
+  <p class="lead">These principles bind every founder, director, officer, employee, and partner. They are not aspirations, they are the bar. If a decision does not square with these, it is the decision that changes.</p>
+  <h2 class="ds"><span class="sn">01</span>Think Big. Execute Better.</h2>
+  <p>Vision without execution is imagination. We set ambitious goals, think past today's limits, and execute with discipline, precision, and consistency. We are willing to be misunderstood or questioned, because meaningful innovation rarely earns immediate acceptance.</p>
+  <h2 class="ds"><span class="sn">02</span>Keep Canada First.</h2>
+  <p>Canada's financial future should stay in Canadian hands. We strengthen the country's financial infrastructure through sovereignty, resilience, and responsible innovation, reducing needless dependence on outside interests while serving Canadians first.</p>
+  <h2 class="ds"><span class="sn">03</span>Protect People.</h2>
+  <p>Every decision begins with the people we serve. We act with transparency, accountability, and care, and we make decisions we would proudly defend in public and always within the law. Trust is not given, it is earned in every decision we make.</p>
+  <h2 class="ds"><span class="sn">04</span>Serve People. Leave Politics at the Door.</h2>
+  <p>We do not serve political agendas. We serve people. Every individual deserves fair access, respect, and the freedom to hold their own views without discrimination. Finance should unite people through opportunity, not divide them through ideology.</p>
+  <h2 class="ds"><span class="sn">05</span>Principles Before Profit.</h2>
+  <p>Capital is earned. Trust is protected. We walk away from opportunities that require compromising our principles, whatever they are worth. Reputation compounds far longer than revenue ever will.</p>
+  <h2 class="ds"><span class="sn">06</span>Build. Deliver. Repeat.</h2>
+  <p>Ideas create possibility. Execution creates impact. We do meaningful work and measure ourselves by results, not activity, and our aim is to make what seems complicated simple.</p>
+  <h2 class="ds"><span class="sn">07</span>Truth is the Standard.</h2>
+  <p>We communicate honestly, raise hard issues early, and take responsibility for outcomes. We own our decisions, our mistakes, and our successes.</p>
+  <h2 class="ds"><span class="sn">08</span>Love on the Competition.</h2>
+  <p>Competition makes us better. We compete relentlessly while treating every competitor with professionalism, humility, and respect. A stronger Canadian financial ecosystem moves everyone forward, and Canadians are the ones who benefit.</p>
+  <h2 class="ds"><span class="sn">09</span>Run Toward Change.</h2>
+  <p>Innovation belongs to those willing to move first. We embrace change, challenge convention, and build the future instead of waiting for it. What seems impossible today often becomes tomorrow's standard, and we intend to define it.</p>
+  <h2 class="ds"><span class="sn">10</span>Protect the Mission at All Costs.</h2>
+  <p>We are our brother's keeper. Every decision must strengthen the mission entrusted to us. We protect our purpose above convenience, popularity, and short-term gain, and steward the future with accountability for all Canadians.</p>
+  <div class="callout"><div class="cl">Where this lives</div><p>These ten values come from the Mission Anchor, where they sit alongside our culture, the Absolute Bars, and how the mission is governed.</p></div>
+  ${FT}</div>`,
  whatis:`<div class="doc">${dtop('Why 4orm')}<div class="eyebrow-m">Start here</div>
   <h1 class="dh">Why 4orm?</h1>
   <p class="dsub">Where we come from, the gap we saw in the Canadian market, the moment Canada is in, and the network we are building to bridge it. This is the why behind everything else in this room.</p>
@@ -869,7 +938,21 @@ const DOCS={
    <li><b>Candor, both directions.</b> We say what we mean, we surface problems early, and we want the same from you. The first time we disagree is a good sign, not an awkward one.</li>
    <li><b>Clear priorities.</b> We will tell you the few things that matter most and where we want your help, in writing, and we will keep them in front of you. You will not have to guess.</li>
   </ul>
-  <h2 class="ds"><span class="sn">2</span>The path from here</h2>
+    <h2 class="ds"><span class="sn">2</span>The values we operate by</h2>
+  <p>How we work is set by ten values. They are not posters on a wall, they are the standards we hire, lead, reward, and part ways by. The full detail lives in the Mission Anchor.</p>
+  <ul>
+   <li><b>Think Big. Execute Better.</b> Ambitious goals, executed with discipline, precision, and consistency.</li>
+   <li><b>Keep Canada First.</b> Canada's financial future in Canadian hands.</li>
+   <li><b>Protect People.</b> Every decision begins with the people we serve.</li>
+   <li><b>Serve People. Leave Politics at the Door.</b> We serve people, not political agendas.</li>
+   <li><b>Principles Before Profit.</b> We walk away from anything that costs us our principles.</li>
+   <li><b>Build. Deliver. Repeat.</b> Measured by results, not activity.</li>
+   <li><b>Truth is the Standard.</b> Honest, early, and accountable for outcomes.</li>
+   <li><b>Love on the Competition.</b> Compete relentlessly, treat every rival with respect.</li>
+   <li><b>Run Toward Change.</b> We build the future instead of waiting for it.</li>
+   <li><b>Protect the Mission at All Costs.</b> We are our brother's keeper, for generations.</li>
+  </ul>
+  <h2 class="ds"><span class="sn">3</span>The path from here</h2>
   <p>One clear sequence, with a single decision point at six months.</p>
   <ol>
    <li><b>First contact.</b> We sign a mutual NDA before sharing anything substantive, and send a short overview so you see who we are first.</li>
@@ -879,7 +962,7 @@ const DOCS={
    <li><b>A decision at six months.</b> If you came in for a role and it has worked, we offer it. If you came in to advise, you continue as an advisor on the same terms.</li>
   </ol>
   <p>Six months is a longer runway than a typical trial. That is on purpose. It gives the relationship real time to prove itself before either of us commits to more.</p>
-  <h2 class="ds"><span class="sn">3</span>What you will receive and sign</h2>
+  <h2 class="ds"><span class="sn">4</span>What you will receive and sign</h2>
   <p>Everything you will see from us, what each document is for, and when it arrives.</p>
   <h3>Before we start</h3>
   <table class="dt"><thead><tr><th>Document</th><th>What it is for</th><th>When</th></tr></thead><tbody>
@@ -906,11 +989,11 @@ const DOCS={
    <tr><td><b>Six-month review</b></td><td>A short, two-way conversation against the priorities set on day one.</td><td>Six months</td></tr>
    <tr><td><b>Offer or continuation</b></td><td>An offer letter if you are joining the team, with your tokens or equity converting on terms already in your Schedule, or a note confirming you continue as an advisor.</td><td>Six months</td></tr>
   </tbody></table>
-  <h2 class="ds"><span class="sn">4</span>The six-month conversation</h2>
+  <h2 class="ds"><span class="sn">5</span>The six-month conversation</h2>
   <p>What happens at six months depends only on why you joined, and we decide it together.</p>
   <p><b>If you came in for a role.</b> The six months act as a real working run-in. If the fit and contribution are there, we extend an offer, and your advisory tokens or equity convert into your employee package on terms already written into your Schedule, so there is nothing to renegotiate. If it is not the right fit, we can part cleanly or continue as advisor.</p>
   <p><b>If you came in to advise.</b> We confirm the engagement continues on the same terms. No conversion, no role, unless you want one later.</p>
-  <h2 class="ds"><span class="sn">5</span>Questions you may have</h2>
+  <h2 class="ds"><span class="sn">6</span>Questions you may have</h2>
   <p>You are an experienced operator, so you are probably already asking some of these. Here are straight answers before you have to ask.</p>
   <h3>Ten legacy tokens out of how many?</h3>
   <p>The fully diluted denominator and the share your tokens represent are stated in your Compensation and Terms Schedule, in writing, before you sign. We do not leave that to a later conversation.</p>
@@ -922,7 +1005,7 @@ const DOCS={
   <p>Acceleration on a change of control is one of the terms we settle with you in the Schedule, in writing, up front.</p>
   <h3>Is the six-month gate a way to take my introductions and move on?</h3>
   <p>No. Your economics are pinned before you sign, and the recognition for anything you bring in survives independently of the engagement. The six-month decision is about the work, not a reset of your terms.</p>
-  <h2 class="ds"><span class="sn">6</span>What we ask of you</h2>
+  <h2 class="ds"><span class="sn">7</span>What we ask of you</h2>
   <p>To make this work, here is what we count on from you.</p>
   <ul>
    <li>Engage at the cadence we agree, and protect that time.</li>
@@ -1014,10 +1097,11 @@ const DOCS={
   <p>The direction is already proven abroad by the UK Regulated Liability Network and Fnality, and at home by the Bank of Canada's Project Samara. None of them is building the neutral, bank-integrated, Canadian-dollar layer that connects them. JPMorgan's Kinexys proves the demand but is single-bank and US-dollar-first; a rival will not settle title through a competitor. The real contest for the neutral Canadian-dollar quadrant is the domestic incumbent, TMX and CDS. That gap is the opportunity, and it is ours to take.</p>
   <p style="font-size:.8rem;color:var(--slate)">This brief is an onboarding summary for 4orm advisors. It draws on materials held in full in the 4orm data room and does not constitute an offer to sell securities. Figures and positioning are current as of July 2026; where this summary and the source documents differ, the source documents govern.</p>
   ${FT}</div>`,
- mvv:`<div class="doc">${dtop('Mission, Vision & Values')}<div class="eyebrow-m">Mission, vision and values</div>
+ mvv:`<div class="doc">${dtop('Vision, Mission & Values')}<div class="eyebrow-m">Vision, mission and values</div>
   <h1 class="dh">What we stand for.</h1>
-  <p class="dsub">The 4orm mission, North Star, and values at a glance.</p>
+  <p class="dsub">The 4orm vision, mission, North Star, and the ten values, on one page.</p>
   ${dmeta([['Entity','4orm Finance'],['Room','Advisor'],['Full detail','Mission Anchor'],['Class.','Confidential']])}
+  <div class="callout"><div class="cl">Vision</div><p>To build the regulated settlement layer for Canada's real-world-asset marketplace, the common rail that connects institutions, tokenized projects, municipalities, governments, exchanges, custodians, and issuers, toward a future where finance is stably backed by real assets and those assets can be fractionally owned, bought, sold, and traded.</p></div>
   <div class="callout"><div class="cl">Mission</div><p>To build regulated infrastructure that lets Canadians and Canadian institutions issue, hold, move, settle, and verify assets with privacy, security, and fair access, under Canadian law, and with fewer unnecessary intermediaries between a person and what they own.</p></div>
   <div class="callout"><div class="cl">North Star</div><p>To help the Canadian financial system become independent and sovereign, and to keep the rails of the country's financial future Canadian-owned, regulated, and built to last. We build for a hundred years, not the next quarter.</p></div>
   <h2 class="ds"><span class="sn">01</span>The values we operate by</h2>
@@ -1498,7 +1582,7 @@ renderCal();
   var pk=window.CLERK_PK||"";
   if(pk){ var fapi=""; try{ fapi=atob(pk.replace(/^pk_(live|test)_/,"")).replace(/\$+$/,""); }catch(e){} 
     if(fapi){ var s=document.createElement("script"); s.src="https://"+fapi+"/npm/@clerk/clerk-js@5/dist/clerk.browser.js"; s.async=true; s.crossOrigin="anonymous"; s.setAttribute("data-clerk-publishable-key",pk);
-      s.onload=function(){ window.Clerk.load().then(function(){ var u=window.Clerk.user; if(u){ var nm=u.fullName||u.firstName||(u.primaryEmailAddress&&u.primaryEmailAddress.emailAddress)||""; if(nm){ var el=document.getElementById("userName"); if(el) el.textContent=nm; } if(CURRENT==="advisor" && u.createdAt){ var cr=new Date(u.createdAt); var rv=new Date(cr); rv.setMonth(rv.getMonth()+6); window.REVIEW_DATE=rv; var dd=Math.max(0,Math.ceil((rv-new Date())/86400000)); var drx=document.getElementById("daysRev"); if(drx) drx.innerHTML="<b>"+dd+"</b> days to review"; try{ renderCal(); }catch(e){} } } }); };
+      s.onload=function(){ window.Clerk.load().then(function(){ var u=window.Clerk.user; if(u){ var nm=u.fullName||u.firstName||(u.primaryEmailAddress&&u.primaryEmailAddress.emailAddress)||""; if(nm){ var el=document.getElementById("userName"); if(el) el.textContent=nm; } var em=(u.primaryEmailAddress&&u.primaryEmailAddress.emailAddress)||""; CURRENT_EMAIL=em.toLowerCase(); if(CURRENT_EMAIL&&PRIVATE_DOCS[CURRENT_EMAIL]){ try{ renderBoxes(PORTALS[CURRENT].boxes); }catch(e){} } if(CURRENT==="advisor" && u.createdAt){ var cr=new Date(u.createdAt); var rv=new Date(cr); rv.setMonth(rv.getMonth()+6); window.REVIEW_DATE=rv; var dd=Math.max(0,Math.ceil((rv-new Date())/86400000)); var drx=document.getElementById("daysRev"); if(drx) drx.innerHTML="<b>"+dd+"</b> days to review"; try{ renderCal(); }catch(e){} } } }); };
       document.head.appendChild(s); } }
 })();
 </script>
