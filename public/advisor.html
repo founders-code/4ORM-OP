@@ -104,6 +104,8 @@
  .daysrev:empty{display:none;}
  .daysrev b{font-size:.98rem;color:#0E8A5F;font-weight:700;}
  .daysrev::before{content:'';width:8px;height:8px;border-radius:50%;background:#19B57E;animation:breathe 2.6s ease-in-out infinite;}
+.revdate{font-family:var(--font-mono);font-size:.6rem;font-weight:600;letter-spacing:.04em;color:rgba(14,138,95,.85);}
+.revdate:empty{display:none;}
  @keyframes breathe{0%,100%{box-shadow:0 0 0 0 rgba(25,181,126,.5);}50%{box-shadow:0 0 0 9px rgba(25,181,126,0);}}
  .userbox{display:flex;flex-direction:column;align-items:flex-end;gap:3px;line-height:1.15;}
  .userbox .uname{font-family:var(--font-sans);font-size:.84rem;font-weight:700;color:var(--ink);}
@@ -336,7 +338,7 @@
   <div class="nav-inner">
    <div class="nav-brand" onclick="signout()"><img class="navmark" src="data:image/png;base64,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" alt="4orm Finance" /><span class="nb-t"><small id="navSub">Advisor Office</small></span></div>
    <div class="nav-right">
-    <div class="userbox"><span class="uname" id="userName"></span><span class="daysrev" id="daysRev"></span></div>
+    <div class="userbox"><span class="uname" id="userName"></span><span class="daysrev" id="daysRev"></span><span class="revdate" id="revDate"></span></div>
     <span class="nav-signed"><span class="dot"></span><a onclick="signout()">Sign out</a></span>
    </div>
   </div>
@@ -460,7 +462,8 @@ const PORTALS={
       {name:'Signed Engagement Letter',sub:'IP terms included',st:'private'},
       {name:'Compensation & Term Schedule',sub:'Personal to you',st:'private'},
       {name:'Legacy Token Program',sub:'The first hundred',st:'live',doc:'legacy'},
-      {name:'Six-Month Review',sub:'Reviewed with the CEO and Advisory Council',st:'live',doc:'sixmonth'}]},
+      {name:'Six-Month Review',sub:'Reviewed with the CEO and Advisory Council',st:'live',doc:'sixmonth'},
+      {name:'Contractor Agreement',sub:'[pending 6-month review]',st:'soon'}]},
    {n:'02',k:'Company',t:'The Company',files:[
       {name:'Elevator Pitch',sub:'The 30 and 60 second pitch',st:'live',doc:'elevator'},
       {name:'Mission',sub:'Why we exist',st:'live',doc:'mission'},
@@ -593,10 +596,11 @@ function tzOffset(inst,tz){var u=new Date(inst.toLocaleString('en-US',{timeZone:
 function zonedInstant(y,mo,d,H,M,tz){var asUTC=Date.UTC(y,mo,d,H,M,0);var off=tzOffset(new Date(asUTC),tz);return new Date(asUTC-off);}
 function meetingInstant(dow,H,M){var n=new Date();var d=new Date(n.getFullYear(),n.getMonth(),n.getDate());var gu=0;while(d.getDay()!==dow&&gu<14){d.setDate(d.getDate()+1);gu++;}return zonedInstant(d.getFullYear(),d.getMonth(),d.getDate(),H,M,'America/Los_Angeles');}
 function meetingWhen(m){var inst=meetingInstant(m.dow,m.h,m.m);var wd=new Date(inst).toLocaleString(undefined,{weekday:'long'});var tm=new Date(inst).toLocaleString(undefined,{hour:'numeric',minute:'2-digit',timeZoneName:'short'});return wd+'s &middot; '+tm;}
+function reviewDateStr(){var r=window.REVIEW_DATE?new Date(window.REVIEW_DATE):(function(){var d=new Date(firstLogin);d.setMonth(d.getMonth()+6);return d;})();return r.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});}
 function renderLegend(){
  var rows=MEETINGS.slice(); var oo=ONEONONE[CURRENT_EMAIL]; if(oo)rows.push(oo);
  var html=rows.map(function(m){return '<div class="leg-row"><span class="leg-dot '+m.cls+'"></span><span class="leg-txt"><span class="leg-name">'+m.name+'</span><span class="leg-sub">'+m.sub+'</span></span><span class="leg-when">'+meetingWhen(m)+'</span></div>';}).join('');
- if(current==='advisor'){html+='<div class="leg-row"><span class="leg-dot ev-review"></span><span class="leg-txt"><span class="leg-name">Six-Month Review</span><span class="leg-sub">At your six-month mark</span></span><span class="leg-when">Your review date</span></div>';}
+ if(current==='advisor'){html+='<div class="leg-row"><span class="leg-dot ev-review"></span><span class="leg-txt"><span class="leg-name">Six-Month Review</span><span class="leg-sub">At your six-month mark</span></span><span class="leg-when"><span style="color:#fff;font-weight:700">'+reviewDateStr()+'</span> &middot; Your review date</span></div>';}
  html+='<div class="leg-tz">Times shown in your local timezone.</div>';
  var el=document.getElementById('calLegend'); if(el)el.innerHTML=html;
 }
@@ -683,6 +687,7 @@ const DOCS={
   <div class="callout"><div class="cl">The standard</div><p>We ask every member of this company to live by the same expectations: Think bigger than your role. Execute better than expected. Protect people. Protect the mission. Keep your word. Tell the truth. Stay humble. Never stop improving. Leave things better than you found them.<br>Everything else can be taught. Character cannot.</p></div>
   <p class="lead">Welcome to 4orm Finance. We are grateful you are here. Now let us build something worthy of lasting for generations.</p>
   <p><b>Chad Johnston</b><br>Founder and Chief Executive Officer<br>On behalf of the founding team of 4orm Finance</p>
+  <p><b>Kevin Wong</b><br>Co-Founder and Strategy Advisor</p>
   ${FT}</div>`,
  elevator:`<div class="doc">${dtop('Elevator Pitch')}<div class="eyebrow-m">Team enablement</div>
   <h1 class="dh">Canada has the assets. It is missing the bridge. We are building it.</h1>
@@ -1201,14 +1206,14 @@ const DOCS={
   <p class="dsub">The bar is high here, and we picked you because we are confident you can clear it. Welcome to the team. This is the companion to your engagement letter. It lays out exactly how we work together, the path from here, and every document you will see from us, so nothing about the process is a surprise.</p>
   ${dmeta([['Prepared by','4orm Finance / KCS'],['Sent with','Your engagement letter'],['Decision point','Six months'],['Class.','Confidential']])}
   <h2 class="ds"><span class="sn">1</span>How we work</h2>
-  <p>We are a high-performance team, and we are deliberate about how we operate. Three things shape working with us, and you will feel each of them from the start.</p>
+  <p class="lead">We are a high-performance team, and we are deliberate about how we operate. Three things shape working with us, and you will feel each of them from the start.</p>
   <ul>
    <li><b>A high bar, and belief in you.</b> We hold a high standard, and we are open about it. We also chose you on purpose. Those are the same message here, not opposites.</li>
    <li><b>Candor, both directions.</b> We say what we mean, we surface problems early, and we want the same from you. The first time we disagree is a good sign, not an awkward one.</li>
    <li><b>Clear priorities.</b> We will tell you the few things that matter most and where we want your help, in writing, and we will keep them in front of you. You will not have to guess.</li>
   </ul>
     <h2 class="ds"><span class="sn">2</span>The values we operate by</h2>
-  <p>How we work is set by ten values. They are not posters on a wall, they are the standards we hire, lead, reward, and part ways by. The full detail lives in the Mission Anchor.</p>
+  <p class="lead">How we work is set by ten values. They are not posters on a wall, they are the standards we hire, lead, reward, and part ways by. The full detail lives in the Mission Anchor.</p>
   <ul>
    <li><b>Think Big. Execute Better.</b> Ambitious goals, executed with discipline, precision, and consistency.</li>
    <li><b>Keep Canada First.</b> Canada's financial future in Canadian hands.</li>
@@ -1222,17 +1227,15 @@ const DOCS={
    <li><b>Protect the Mission at All Costs.</b> We are our brother's keeper, for generations.</li>
   </ul>
   <h2 class="ds"><span class="sn">3</span>The path from here</h2>
-  <p>One clear sequence, with a single decision point at six months.</p>
-  <ol>
-   <li><b>First contact.</b> We sign a mutual NDA before sharing anything substantive, and send a short overview so you see who we are first.</li>
-   <li><b>Engagement.</b> You receive this companion, your Advisor Engagement Letter, and a Compensation and Terms Schedule with every term filled in. The engagement letter includes the intellectual property terms, so one signature settles the engagement, your terms, and IP together. We settle the details with you before you sign.</li>
-   <li><b>Onboarding.</b> In your first week or two we give you the context you need, a single point of contact, access, and an agreed cadence.</li>
-   <li><b>A check-in at 90 days.</b> A short, two-way read against the priorities we set on day one.</li>
-   <li><b>A decision at six months.</b> If you came in for a role and it has worked, we offer it. If you came in to advise, you continue as an advisor on the same terms.</li>
-  </ol>
+  <p class="lead">One clear sequence, with a single decision point at six months.</p>
+  <div class="callout"><div class="cl">First contact</div><p>We sign a mutual NDA before sharing anything substantive, and send a short overview so you see who we are first.</p></div>
+  <div class="callout"><div class="cl">Engagement</div><p>You receive this companion, your Advisor Engagement Letter, and a Compensation and Terms Schedule with every term filled in. The engagement letter includes the intellectual property terms, so one signature settles the engagement, your terms, and IP together. We settle the details with you before you sign.</p></div>
+  <div class="callout"><div class="cl">Onboarding</div><p>In your first week or two we give you the context you need, a single point of contact, access, and an agreed cadence.</p></div>
+  <div class="callout"><div class="cl">A check-in at 90 days</div><p>A short, two-way read against the priorities we set on day one.</p></div>
+  <div class="callout"><div class="cl">A decision at six months</div><p>If you came in for a role and it has worked, we offer it. If you came in to advise, you continue as an advisor on the same terms.</p></div>
   <p>Six months is a longer runway than a typical trial. That is on purpose. It gives the relationship real time to prove itself before either of us commits to more.</p>
   <h2 class="ds"><span class="sn">4</span>What you will receive and sign</h2>
-  <p>Everything you will see from us, what each document is for, and when it arrives.</p>
+  <p class="lead">Everything you will see from us, what each document is for, and when it arrives.</p>
   <h3>Before we start</h3>
   <table class="dt"><thead><tr><th>Document</th><th>What it is for</th><th>When</th></tr></thead><tbody>
    <tr><td><b>Mutual NDA</b></td><td>Protects what we share with you and what you share with us. Fully two-sided.</td><td>First contact</td></tr>
@@ -1242,7 +1245,7 @@ const DOCS={
   <table class="dt"><thead><tr><th>Document</th><th>What it is for</th><th>When</th></tr></thead><tbody>
    <tr><td><b>Advisor Engagement Letter</b></td><td>Your scope, time, term, confidentiality, and how either of us can end it. It also includes the intellectual property terms, so work you create for us belongs to the company and anything you bring in and keep is listed inside the letter. One signature covers all of it.</td><td>At engagement</td></tr>
    <tr><td><b>Compensation and Terms Schedule</b></td><td>Everything about your compensation in one place: your tokens and the share they represent, how distributions are worked out, any equity and its vesting, what happens if the company is sold, and notice periods. All agreed before you sign.</td><td>At engagement</td></tr>
-   <tr><td><b>Legacy Token Instrument</b></td><td>The definitive document behind the legacy tokens. No backstop. If the Legacy Token Instrument does not materialize, the legacy token allocation lapses; no substitute equity or cash compensation is owed by the Company.</td><td>At engagement</td></tr>
+   <tr><td><b>Token instrument</b></td><td>The definitive document behind the tokens. Until it is finalized, your Schedule guarantees a defined equity or cash equivalent as a backstop.</td><td>At engagement</td></tr>
   </tbody></table>
   <h3>Your first weeks</h3>
   <table class="dt"><thead><tr><th>Document</th><th>What it is for</th><th>When</th></tr></thead><tbody>
@@ -1259,30 +1262,30 @@ const DOCS={
    <tr><td><b>Offer or continuation</b></td><td>An offer letter if you are joining the team, with your tokens or equity converting on terms already in your Schedule, or a note confirming you continue as an advisor.</td><td>Six months</td></tr>
   </tbody></table>
   <h2 class="ds"><span class="sn">5</span>The six-month conversation</h2>
-  <p>What happens at six months depends only on why you joined, and we decide it together.</p>
-  <p><b>If you came in for a role.</b> The six months act as a real working run-in. If the fit and contribution are there, we extend an offer, and your advisory tokens or equity convert into your employee package on terms already written into your Schedule, so there is nothing to renegotiate. If it is not the right fit, we can part cleanly or continue as advisor.</p>
-  <p><b>If you came in to advise.</b> We confirm the engagement continues on the same terms. No conversion, no role, unless you want one later.</p>
+  <p class="lead">What happens at six months depends only on why you joined, and we decide it together.</p>
+  <div class="callout"><div class="cl">If you came in for a role</div><p>The six months act as a real working run-in. If the fit and contribution are there, we extend an offer, and your advisory tokens or equity convert into your employee package on terms already written into your Schedule, so there is nothing to renegotiate. If it is not the right fit, we can part cleanly or continue as advisor.</p></div>
+  <div class="callout"><div class="cl">If you came in to advise</div><p>We confirm the engagement continues on the same terms. No conversion, no role, unless you want one later.</p></div>
   <h2 class="ds"><span class="sn">6</span>Questions you may have</h2>
-  <p>You are an experienced operator, so you are probably already asking some of these. Here are straight answers before you have to ask.</p>
+  <p class="lead">You are an experienced operator, so you are probably already asking some of these. Here are straight answers before you have to ask.</p>
   <h3>Ten legacy tokens out of how many?</h3>
   <p>The fully diluted denominator and the share your tokens represent are stated in your Compensation and Terms Schedule, in writing, before you sign. We do not leave that to a later conversation.</p>
   <h3>What are distributions actually paid on?</h3>
   <p>On a defined base set out in the Schedule, not on a number that can be managed down to nothing. The method is written down.</p>
-  <h3>The Legacy Token Instrument does not exist yet. What am I relying on?</h3>
-  <p>No backstop. If the Legacy Token Instrument does not materialize, the legacy token allocation lapses; no substitute equity or cash compensation is owed by the Company.</p>
+  <h3>The token instrument does not exist yet. What am I relying on?</h3>
+  <p>Until the definitive instrument is finalized, the Schedule carries a backstop that converts your allocation to a defined equity or cash equivalent. You are not signing a placeholder.</p>
   <h3>What if the company is sold during the first year?</h3>
   <p>Acceleration on a change of control is one of the terms we settle with you in the Schedule, in writing, up front.</p>
   <h3>Is the six-month gate a way to take my introductions and move on?</h3>
   <p>No. Your economics are pinned before you sign, and the recognition for anything you bring in survives independently of the engagement. The six-month decision is about the work, not a reset of your terms.</p>
   <h2 class="ds"><span class="sn">7</span>What we ask of you</h2>
-  <p>To make this work, here is what we count on from you.</p>
+  <p class="lead">To make this work, here is what we count on from you.</p>
   <ul>
    <li>Engage at the cadence we agree, and protect that time.</li>
    <li>Be candid early. If something is unclear, off track, or you do not know, say so.</li>
    <li>Move the priorities we set together, and tell us when they should change.</li>
    <li>Hold the confidence we place in you, and treat what you learn here as confidential.</li>
   </ul>
-  <p>In return: clarity, straight feedback, a real stake in what we are building, and a team that is glad you are here.</p>
+  <div class="callout"><div class="cl">In return</div><p>clarity, straight feedback, a real stake in what we are building, and a team that is glad you are here.</p></div>
   ${FT}</div>`,
  howto:`<div class="doc">${dtop('Orientation')}<div class="eyebrow-m">How to use this room</div>
   <h1 class="dh">How to use this room.</h1>
@@ -1494,23 +1497,23 @@ const DOCS={
   <p class="dsub">This statement records my personal commitment to 4orm Finance, the company I am incorporating in Alberta and intend to lead as Founder and Chief Executive Officer. It is intended to make my commitments explicit and durable to my co-founders, to the Advisory Council, to incoming pre-seed investors, and to the team that will build the Company alongside me.</p>
   ${dmeta([['By','Chad R. Johnston'],['Role','Founder & CEO'],['Version','11 - Internal'],['Dated','2026-07-04']])}
   <h2 class="ds"><span class="sn">1</span>The mission I am committing to</h2>
-  <p>4orm Finance exists to help the Canadian financial system become independent and sovereign in its own self, to protect Canadians from inflationary asset erosion and currency debasement, and to build the regulated infrastructure that allows Canadians to hold, transact in, and settle against tokenized bank deposits and, in due course, other tokenized real-world assets.</p>
-  <p>I commit to that mission as the organizing principle of my role, and as the standard against which my decisions, my time, and my economic interest in the Company should be measured. The Mission Anchor in the Articles of Incorporation binds the Company; this statement binds me personally to the same standard.</p>
+  <div class="callout"><div class="cl">The mission</div><p>4orm Finance exists to help the Canadian financial system become independent and sovereign in its own self, to protect Canadians from inflationary asset erosion and currency debasement, and to build the regulated infrastructure that allows Canadians to hold, transact in, and settle against tokenized bank deposits and, in due course, other tokenized real-world assets.</p></div>
+  <p class="lead">I commit to that mission as the organizing principle of my role, and as the standard against which my decisions, my time, and my economic interest in the Company should be measured. The Mission Anchor in the Articles of Incorporation binds the Company; this statement binds me personally to the same standard.</p>
   <h2 class="ds"><span class="sn">2</span>Full-time, exclusive engagement</h2>
-  <p>4orm Finance is and will be my sole operating commitment. I have wound down or stepped back from every other operating role I previously held in order to dedicate my full professional capacity to this Company. For the duration of my service as Chief Executive Officer, I will not take on other operating roles or competing commitments.</p>
+  <p class="lead">4orm Finance is and will be my sole operating commitment. I have wound down or stepped back from every other operating role I previously held in order to dedicate my full professional capacity to this Company. For the duration of my service as Chief Executive Officer, I will not take on other operating roles or competing commitments.</p>
   <h2 class="ds"><span class="sn">3</span>Time and capacity</h2>
-  <p>This is my full-time work, in every meaningful sense of the term. The day-to-day, the weekly cadence, and the long-horizon work, all of it. I commit to availability and presence sufficient to discharge the responsibilities of the Chief Executive Officer of a regulated Canadian enterprise.</p>
+  <p class="lead">This is my full-time work, in every meaningful sense of the term. The day-to-day, the weekly cadence, and the long-horizon work, all of it. I commit to availability and presence sufficient to discharge the responsibilities of the Chief Executive Officer of a regulated Canadian enterprise.</p>
   <h2 class="ds"><span class="sn">4</span>Capital and risk borne</h2>
-  <p>I have funded the Company's pre-incorporation work personally and brought in its first outside capital. I commit to continuing to bear personal financial risk on the Company's behalf where appropriate and within reason, including by absorbing dilution and by continuing to align my compensation to Company outcomes rather than to short-cycle personal returns.</p>
+  <p class="lead">I have funded the Company's pre-incorporation work personally and brought in its first outside capital. I commit to continuing to bear personal financial risk on the Company's behalf where appropriate and within reason, including by absorbing dilution and by continuing to align my compensation to Company outcomes rather than to short-cycle personal returns.</p>
   <h2 class="ds"><span class="sn">5</span>Fiduciary standards</h2>
-  <p>I commit to the standards of care, loyalty, candour, and good faith owed by a director and officer to the Company and its shareholders under applicable law. On incorporation of the Company under the Business Corporations Act (Alberta), I commit to the specific fiduciary duties of directors and officers under that statute.</p>
+  <p class="lead">I commit to the standards of care, loyalty, candour, and good faith owed by a director and officer to the Company and its shareholders under applicable law. On incorporation of the Company under the Business Corporations Act (Alberta), I commit to the specific fiduciary duties of directors and officers under that statute.</p>
   <h2 class="ds"><span class="sn">6</span>Accountability on the same terms as my co-founders</h2>
-  <p>I subject my own equity to the same reverse-vesting framework that governs the rest of the founding team, four-year quarterly vest with a one-year cliff, quarterly KPIs, with the secured carve-out and time-served credit documented in the capital structure workbook. My 69.80% (13,960,000 Class A common shares) is not exempt from the same accountability standard I ask of others.</p>
+  <div class="callout"><div class="cl">Held to my own standard</div><p>I subject my own equity to the same reverse-vesting framework that governs the rest of the founding team, four-year quarterly vest with a one-year cliff, quarterly KPIs, with the secured carve-out and time-served credit documented in the capital structure workbook. My 69.80% (13,960,000 Class A common shares) is not exempt from the same accountability standard I ask of others.</p></div>
   <h2 class="ds"><span class="sn">7</span>Control on the same class as my co-founders</h2>
-  <p>In Version 11 of the capital structure, I hold my 69.80% as Class A common with a 1:1 voting mechanic, the same class and vote as every other shareholder. I do not hold a differential voting class. The Control Preservation Framework (Founder Consent Rights, Board Composition Rights, CEO Tenure Protection, the Voting Trust with Kevin, Supermajority Thresholds, and contractual Mission Anchor incorporation) protects the mission of the Company through contract and governance, not through a differential voting class.</p>
+  <p class="lead">In Version 11 of the capital structure, I hold my 69.80% as Class A common with a 1:1 voting mechanic, the same class and vote as every other shareholder. I do not hold a differential voting class. The Control Preservation Framework (Founder Consent Rights, Board Composition Rights, CEO Tenure Protection, the Voting Trust with Kevin, Supermajority Thresholds, and contractual Mission Anchor incorporation) protects the mission of the Company through contract and governance, not through a differential voting class.</p>
   <p>I commit to exercising the authority granted by the Control Preservation Framework in service of the Mission Anchor, and not for personal control unmoored from the mission or the Company's long-term integrity.</p>
   <h2 class="ds"><span class="sn">8</span>Mission Anchor adherence</h2>
-  <p>I commit, personally and explicitly, to every commitment of the Mission Anchor as set out in the Articles of Incorporation, including each of the following Absolute Bars:</p>
+  <p class="lead">I commit, personally and explicitly, to every commitment of the Mission Anchor as set out in the Articles of Incorporation, including each of the following Absolute Bars:</p>
   <ul>
    <li><b>8.1</b> No participation in account closures, freezes, restrictions, or service denials directed against any Canadian for lawful political expression, faith, belief, association, or affiliation, and no action on extra-judicial freeze instructions absent a final court order with judicial review available.</li>
    <li><b>8.2</b> No sharing of customer data, content, metadata, or transaction information with any government, regulator, agency, or non-judicial body absent a final court order with judicial review available.</li>
@@ -1525,17 +1528,17 @@ const DOCS={
    <li><b>8.11</b> No retaliation against any person for the principled exercise of refusal under the Mission Anchor.</li>
    <li><b>8.12</b> No surrender, waiver, suspension, or weakening of any provision of the Mission Anchor under political, commercial, regulatory, or shareholder pressure outside of law.</li>
   </ul>
-  <p>These are not aspirations. They are the operating standard of the Company, and they apply to me as plainly as they apply to any officer, director, employee, or agent of the Company. I will refuse to direct, vote for, or authorize any action inconsistent with any of them, and I will exercise my refusal right under the Founders' Voting Agreement and my Founder Consent Rights to that end.</p>
+  <div class="callout"><div class="cl">Not aspirations</div><p>These are not aspirations. They are the operating standard of the Company, and they apply to me as plainly as they apply to any officer, director, employee, or agent of the Company. I will refuse to direct, vote for, or authorize any action inconsistent with any of them, and I will exercise my refusal right under the Founders' Voting Agreement and my Founder Consent Rights to that end.</p></div>
   <h2 class="ds"><span class="sn">9</span>Horizon</h2>
-  <p>My commitment is multi-year and runs through the full arc of the Company's growth, from incorporation through pre-seed, seed, Series A, and beyond. I am not building this for the next milestone or the next round.</p>
+  <p class="lead">My commitment is multi-year and runs through the full arc of the Company's growth, from incorporation through pre-seed, seed, Series A, and beyond. I am not building this for the next milestone or the next round.</p>
   <h2 class="ds"><span class="sn">10</span>What I commit not to do</h2>
-  <ul>
+  <ol>
    <li>I will not take on other operating roles or competing commitments during my service as Chief Executive Officer.</li>
    <li>I will not compromise the Mission Anchor for capital, partnerships, or expediency.</li>
    <li>I will not act in ways that prioritize personal economic interest over the Company's long-term integrity.</li>
    <li>I will not avoid the difficult conversations, with co-founders, investors, regulators, partners, or the team, that the role requires.</li>
    <li>I will not ask of any co-founder, employee, or advisor a standard of commitment I am not first prepared to hold myself.</li>
-  </ul>
+  </ol>
   <div class="sig">
    <div><div class="sl"></div><div class="scap">Chad R. Johnston, Founder & CEO &middot; date</div></div>
    <div><div class="sl"></div><div class="scap">Chair, Advisory Council &middot; date</div></div>
@@ -1589,25 +1592,25 @@ const DOCS={
   ${dmeta([['Access','Deep, gated'],['Under','Mutual NDA'],['Private','Per advisor'],['Class.','Confidential']])}
   <p class="lead">As an executive advisor you get deep access. This page is the boundary: what you can see, what stays private, and what we count on from you. It sits under the Mutual NDA you signed.</p>
   <h2 class="ds"><span class="sn">01</span>What you can access</h2>
+  <p class="lead">The full data room: cap table structure, financials, the business plan, and the model.</p>
   <ul>
-   <li>The full data room: cap table structure, financials, the business plan, and the model.</li>
    <li>The live Path to Revenue and roadmap.</li>
    <li>Company documents, governance, and the reference library in this room.</li>
   </ul>
   <h2 class="ds"><span class="sn">02</span>What stays private</h2>
+  <p class="lead">Every other advisor's personal compensation and signed agreements.</p>
   <ul>
-   <li>Every other advisor's personal compensation and signed agreements.</li>
    <li>Your own compensation schedule, private to you, in your folder only.</li>
    <li>Anything a founder or counsel flags as restricted.</li>
   </ul>
   <h2 class="ds"><span class="sn">03</span>What we count on from you</h2>
+  <p class="lead">Hold everything in confidence, indefinitely, under the Mutual NDA.</p>
   <ul>
-   <li>Hold everything in confidence, indefinitely, under the Mutual NDA.</li>
    <li>No forwarding, no screenshots, no copying Company data to personal systems beyond the minimum needed to do the work.</li>
    <li>Return or surrender all Company data when your engagement ends.</li>
    <li>Report any suspected breach or loss immediately to compliance@4ormfinance.com.</li>
-   <li>The Mission Anchor's data bars apply to you: privacy is the default, and customer data is never monetized or shared outside lawful process.</li>
   </ul>
+  <div class="callout"><div class="cl">Privacy is the default</div><p>The Mission Anchor's data bars apply to you: privacy is the default, and customer data is never monetized or shared outside lawful process.</p></div>
   ${FT}</div>`,
  legacy:`<div class="doc">${dtop('Legacy Token Program')}<div class="eyebrow-m">The first hundred</div>
   <h1 class="dh">The first hundred.</h1>
@@ -1624,7 +1627,6 @@ const DOCS={
    <li><b>Your name on the list.</b> The moment you help, you are on it. Paid or unpaid, three days or three years, it does not matter. One hundred names, and no more.</li>
    <li><b>Ten tokens each.</b> One thousand legacy tokens in total, ten to each of the first hundred. That is the entire pool, allocated to the people who showed up first.</li>
    <li><b>A share of the profit, every year.</b> The legacy class is intended to receive 2% of 4orm Finance net profit annually, indefinitely, divided across the tokens and paid out yearly. Ten tokens is one percent of the pool, and at the scale 4orm is built for, it is designed to become a genuine inheritance over time, not a one-time bonus.</li>
-   <li><b>No backstop.</b> If the Legacy Token Instrument does not materialize, the legacy token allocation lapses; no substitute equity or cash compensation is owed by the Company.</li>
   </ul>
   <h2 class="ds"><span class="sn">02</span>Built to outlast you</h2>
   <ul>
@@ -1632,9 +1634,9 @@ const DOCS={
    <li><b>Passed to your family.</b> We are designing custody so tokens can be held securely and transferred to loved ones and family over time. A legacy in the real sense, not a slogan.</li>
    <li><b>The list is real.</b> It is created and tracked today. As the structure is approved, the list comes to fruition, name by name.</li>
   </ul>
-  <div class="callout"><div class="cl">Where this stands</div><p>Pending securities and legal approval. The legacy token is in the research and discovery phase, being designed with counsel. This page describes our intent, not a finished instrument. It is not an offer, not a promise of payment or value, and the terms may change or may not proceed. No backstop. If the Legacy Token Instrument does not materialize, the legacy token allocation lapses; no substitute equity or cash compensation is owed by the Company.</p></div>
+  <div class="callout"><div class="cl">Where this stands</div><p>Pending securities and legal approval. The legacy token is in the research and discovery phase, being designed with counsel. This page describes our intent, not a finished instrument. It is not an offer, not a promise of payment or value, and the terms may change or may not proceed.</p></div>
   <div class="callout"><div class="cl">A first of its kind</div><p>To our knowledge, no company has built an instrument quite like this. We are in active compliance and legal discovery right now to structure it correctly, in a way that protects the people who hold these tokens, and their families, indefinitely. Getting that protection right comes before anything issues.</p></div>
-  <p style="font-size:.78rem;color:var(--slate)">Confidential. For information only. This document describes a program under design and is not an offer to sell or a solicitation of an offer to buy any security, token, or other instrument, in any jurisdiction, and nothing here is a promise or guarantee of value, profit, distribution, or payment. The legacy token and any profit share, trust structure, custody, transferability, and tax treatment are conceptual, subject to securities and legal review, definitive documentation, and required regulatory approvals, and may change materially or may not proceed. Any profit-share percentage and payment cadence are intended terms only and are not committed. No securities regulatory authority has reviewed, assessed, or approved this program or any securities described here. Nothing in this document is legal, tax, or financial advice. Contains forward-looking statements subject to material risk; actual outcomes may differ. 4orm Finance is not a trust company and holds no trust authorization; any trust arrangement is subject to authorization and counsel review. No backstop. If the Legacy Token Instrument does not materialize, the legacy token allocation lapses; no substitute equity or cash compensation is owed by the Company.</p>
+  <p style="font-size:.78rem;color:var(--slate)">Confidential. For information only. This document describes a program under design and is not an offer to sell or a solicitation of an offer to buy any security, token, or other instrument, in any jurisdiction, and nothing here is a promise or guarantee of value, profit, distribution, or payment. The legacy token and any profit share, trust structure, custody, transferability, and tax treatment are conceptual, subject to securities and legal review, definitive documentation, and required regulatory approvals, and may change materially or may not proceed. Any profit-share percentage and payment cadence are intended terms only and are not committed. No securities regulatory authority has reviewed, assessed, or approved this program or any securities described here. Nothing in this document is legal, tax, or financial advice. Contains forward-looking statements subject to material risk; actual outcomes may differ. 4orm Finance is not a trust company and holds no trust authorization; any trust arrangement is subject to authorization and counsel review. Backstop: this program is all or nothing. If it does not proceed, or 4orm does not succeed, no legacy tokens issue, vest, or pay out, and no one receives anything, including the founders and every contributor, with no fallback, guarantee, buyback, or alternative compensation of any kind.</p>
   <h2 class="ds"><span class="sn">03</span>The 2%, and what it could mean</h2>
   <p class="lead">A closer look at the legacy token, grounded in our model and cast forward.</p>
   <p><b>Why the legacy token exists.</b> The legacy token is a way of doing business differently. Some people come in early and, though they do not spend a lot of time with us, they truly move the business. This is how we honor the people who believed in us at the beginning. We believe relationships should last, so we tie those relationships into what 4orm becomes, for good, and pass that on to the people they love.</p>
@@ -1655,7 +1657,7 @@ const DOCS={
   </tbody></table>
   <p>A century is roughly 95 profitable years from year five. Per-holder figures are for a 10-token holder. The RWA row is a vision, not a forecast: if 4orm becomes the regulated rail where tokenized real-world assets, natural resources, real estate, and commodities reach bank and institutional capital, the profit base is far larger. It is shown as a wide range on purpose.</p>
   <div class="callout"><div class="cl">The idea, in one line</div><p>Even held flat at what our own model already shows, ten legacy tokens is designed to return on the order of a few thousand dollars a year, for a century, to the people who helped at the start. If the bigger vision lands, it becomes a genuine inheritance. That is what it means to honor a relationship that lasts.</p></div>
-  <p style="font-size:.78rem;color:var(--slate)">Confidential. For information only. This document is illustrative and is not an offer to sell or a solicitation to buy any security, token, or instrument, and it is not a promise or guarantee of value, profit, distribution, or payment. Figures labeled as model output are drawn from the Company's internal 5-year financial model (v13) and depend on assumptions that may not be realized; the century and RWA figures are conservative long-range illustrations and vision scenarios, not forecasts, and carry very wide uncertainty. The legacy token, the 2% profit share, the basis on which profit is measured, and any trust, custody, transferability, and tax treatment are conceptual and subject to securities and legal review, definitive documentation in the Legacy Token Instrument, and required regulatory approvals, and may change materially or may not proceed. Any distribution, if the program proceeds, is calculated on the audited basis set out in the definitive instrument, which governs and may differ from the EBITDA proxy used here. Nothing in this document is legal, tax, or financial advice. Contains forward-looking statements subject to material risk; actual outcomes may differ. No backstop. If the Legacy Token Instrument does not materialize, the legacy token allocation lapses; no substitute equity or cash compensation is owed by the Company.</p>
+  <p style="font-size:.78rem;color:var(--slate)">Confidential. For information only. This document is illustrative and is not an offer to sell or a solicitation to buy any security, token, or instrument, and it is not a promise or guarantee of value, profit, distribution, or payment. Figures labeled as model output are drawn from the Company's internal 5-year financial model (v13) and depend on assumptions that may not be realized; the century and RWA figures are conservative long-range illustrations and vision scenarios, not forecasts, and carry very wide uncertainty. The legacy token, the 2% profit share, the basis on which profit is measured, and any trust, custody, transferability, and tax treatment are conceptual and subject to securities and legal review, definitive documentation in the Legacy Token Instrument, and required regulatory approvals, and may change materially or may not proceed. Any distribution, if the program proceeds, is calculated on the audited basis set out in the definitive instrument, which governs and may differ from the EBITDA proxy used here. Nothing in this document is legal, tax, or financial advice. Contains forward-looking statements subject to material risk; actual outcomes may differ. If the Legacy Token Instrument does not materialize, the allocation lapses and no substitute is owed.</p>
   ${FT}</div>`,
  sixmonth:`<div class="doc">${dtop('Six-Month Review')}<div class="eyebrow-m">How your advisory term is reviewed</div>
   <h1 class="dh">The Six-Month Review</h1>
@@ -1718,7 +1720,7 @@ const DOCS={
 
   <h2 class="ds"><span class="sn">06</span>If we conclude</h2>
   <p class="lead">A conclusion at six months is a completed contribution, not a failure. We off-board you the way we brought you in, with respect.</p>
-  <p>The Legacy Token Program recognizes early contributors regardless of outcome. Paid or unpaid, three days or three years, if you were here early you keep your place among the first hundred. A six-month term that concludes does not undo that place and does not diminish it. What you gave still counts, and the record still shows it. No backstop. If the Legacy Token Instrument does not materialize, the legacy token allocation lapses; no substitute equity or cash compensation is owed by the Company.</p>
+  <p>The Legacy Token Program recognizes early contributors regardless of outcome. Paid or unpaid, three days or three years, if you were here early you keep your place among the first hundred. A six-month term that concludes does not undo that place and does not diminish it. What you gave still counts, and the record still shows it.</p>
   <p>The wind-down is straightforward. We settle any compensation owed under your Schedule, agree a clean hand-off of anything in flight, and say a proper thank you rather than a quiet exit. The door stays open for the right reason at the right time.</p>
   <ul>
     <li><b>Your Legacy Token place is kept.</b> Concluding the advisory term does not remove you from the early contributors we recognize.</li>
@@ -1827,13 +1829,13 @@ const DOCS={
   <p class="dsub">Quick answers to the questions advisors ask first.</p>
   ${dmeta([['Audience','Advisors'],['Updated','Living page'],['Ask','office@4ormfinance.com'],['Class.','Confidential']])}
   <h2 class="ds"><span class="sn">01</span>What do I get access to?</h2>
-  <p>Once your Mutual NDA and Advisor Engagement Letter are both executed, you get this office plus <b>full access to the investor data room</b>: cap table structure, financials, and the business plan.</p>
+  <p class="lead">Once your Mutual NDA and Advisor Engagement Letter are both executed, you get this office plus <b>full access to the investor data room</b>: cap table structure, financials, and the business plan.</p>
   <h2 class="ds"><span class="sn">02</span>Can other advisors see my agreement or comp?</h2>
-  <p>No. Your signed letter and personal compensation schedule live in <b>your private folder</b> and are visible only to you.</p>
+  <div class="callout"><div class="cl">Private to you</div><p>No. Your signed letter and personal compensation schedule live in <b>your private folder</b> and are visible only to you.</p></div>
   <h2 class="ds"><span class="sn">03</span>What is the six-month clock?</h2>
-  <p>Your review date is six months from your first login. You start as an advisor; at the review we define the ongoing role together.</p>
+  <p class="lead">Your review date is six months from your first login. You start as an advisor; at the review we define the ongoing role together.</p>
   <h2 class="ds"><span class="sn">04</span>Who do I contact?</h2>
-  <p>Capital and raise questions go to Bruce on capital markets. Everything else, reach the office at office@4ormfinance.com or open the directory.</p>
+  <p class="lead">Capital and raise questions go to Bruce on capital markets. Everything else, reach the office at office@4ormfinance.com or open the directory.</p>
   ${FT}</div>`,
 }
 
@@ -1852,7 +1854,7 @@ renderCal();
   var pk=window.CLERK_PK||"";
   if(pk){ var fapi=""; try{ fapi=atob(pk.replace(/^pk_(live|test)_/,"")).replace(/\$+$/,""); }catch(e){} 
     if(fapi){ var s=document.createElement("script"); s.src="https://"+fapi+"/npm/@clerk/clerk-js@5/dist/clerk.browser.js"; s.async=true; s.crossOrigin="anonymous"; s.setAttribute("data-clerk-publishable-key",pk);
-      s.onload=function(){ window.Clerk.load().then(function(){ var u=window.Clerk.user; if(u){ var nm=u.fullName||u.firstName||(u.primaryEmailAddress&&u.primaryEmailAddress.emailAddress)||""; if(nm){ var el=document.getElementById("userName"); if(el) el.textContent=nm; } var em=(u.primaryEmailAddress&&u.primaryEmailAddress.emailAddress)||""; CURRENT_EMAIL=em.toLowerCase(); if(CURRENT_EMAIL&&PRIVATE_DOCS[CURRENT_EMAIL]){ try{ renderBoxes(PORTALS[CURRENT].boxes); }catch(e){} } if(CURRENT==="advisor" && u.createdAt){ var cr=new Date(u.createdAt); var rv=new Date(cr); rv.setMonth(rv.getMonth()+6); window.REVIEW_DATE=rv; var dd=Math.max(0,Math.ceil((rv-new Date())/86400000)); var drx=document.getElementById("daysRev"); if(drx) drx.innerHTML="<b>"+dd+"</b> days to review"; try{ renderCal(); renderLegend(); }catch(e){} } } }); };
+      s.onload=function(){ window.Clerk.load().then(function(){ var u=window.Clerk.user; if(u){ var nm=u.fullName||u.firstName||(u.primaryEmailAddress&&u.primaryEmailAddress.emailAddress)||""; if(nm){ var el=document.getElementById("userName"); if(el) el.textContent=nm; } var em=(u.primaryEmailAddress&&u.primaryEmailAddress.emailAddress)||""; CURRENT_EMAIL=em.toLowerCase(); if(CURRENT_EMAIL&&PRIVATE_DOCS[CURRENT_EMAIL]){ try{ renderBoxes(PORTALS[CURRENT].boxes); }catch(e){} } if(CURRENT==="advisor" && u.createdAt){ var cr=new Date(u.createdAt); var rv=new Date(cr); rv.setMonth(rv.getMonth()+6); window.REVIEW_DATE=rv; var dd=Math.max(0,Math.ceil((rv-new Date())/86400000)); var drx=document.getElementById("daysRev"); if(drx) drx.innerHTML="<b>"+dd+"</b> days to review"; var rvd=document.getElementById("revDate"); if(rvd) rvd.textContent=reviewDateStr(); try{ renderCal(); renderLegend(); }catch(e){} } } }); };
       document.head.appendChild(s); } }
 })();
 </script>
