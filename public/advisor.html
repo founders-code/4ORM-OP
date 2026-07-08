@@ -236,7 +236,7 @@
  /* ============================ MODALS ============================ */
  .modal{position:fixed;inset:0;z-index:2000;background:rgba(4,8,18,.8);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:3vh 3vw;}
  .modal.open{display:flex;}
- .m-dialog{width:min(920px,100%);height:min(92vh,100%);display:flex;flex-direction:column;border-radius:14px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.14);}
+ .m-dialog{width:min(1360px,96vw);height:min(92vh,100%);display:flex;flex-direction:column;border-radius:14px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.14);}
  .m-bar{background:#000;min-height:54px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:6px 20px;flex-shrink:0;}
  .m-title{font-family:var(--font-mono);font-size:.74rem;letter-spacing:.1em;color:rgba(255,255,255,.85);text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
  .m-x{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:8px;font-size:1.05rem;line-height:1;padding:8px 13px;cursor:pointer;}
@@ -259,7 +259,7 @@
  .dcard .dl .k{font-family:var(--font-mono);font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);width:34px;flex:none;}
 
  /* Swiss reading page */
- .doc{max-width:960px;margin:0 auto;background:#fff;padding:52px 60px 64px;color:var(--ink);}
+ .doc{max-width:1240px;margin:0 auto;background:#fff;padding:52px 60px 64px;color:var(--ink);}
  @media(max-width:640px){.doc{padding:34px 24px;}}
  .doc-top{border-top:2.5px solid var(--ink);padding-top:11px;display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--slate);font-weight:700;}
  .doc-top .conf{color:var(--gold2);}
@@ -466,12 +466,11 @@ const PORTALS={
     {n:'03',k:'Shared',t:'Strategy & Status',files:[
       {name:'Strategy & Fundraise Status',sub:'Living page',st:'dynamic',doc:'strategy'},
       {name:'Current State Dashboard',sub:'Live from the data room',st:'dynamic',doc:'dashboard'}]},
-   {n:'04',k:'Shared',t:'Governance & Mission',files:[
+   {n:'04',k:'Shared',t:'Governance',files:[
      {name:'The Mission Anchor',sub:'Our constitution, full document',st:'live',doc:'anchor'},
-     {name:'Vision, Mission & Values',sub:'One-pager',st:'live',doc:'mvv'},
      {name:'CEO Commitment',sub:'Founder & CEO statement',st:'live',doc:'ceo'},
      {name:'Decision Matrix',sub:'Who owns what, how decisions move',st:'live',doc:'decisionmatrix'},
-     {name:"Founders' Voting Agreement",sub:'Summary',st:'soon'}]},
+     {name:"Founders' Voting Agreement",sub:'Full agreement',st:'live',doc:'votingagreement'}]},
    {n:'05',k:'Shared',t:'How We Work',files:[
      {name:'Advisor Code of Conduct',sub:'How we carry ourselves',st:'live',doc:'conduct'},
      {name:'Communication Channels & Tools',sub:'Where we work and talk',st:'live',doc:'comms'}]},
@@ -480,9 +479,9 @@ const PORTALS={
    {n:'07',k:'Shared',t:'Company Structure',files:[
       {name:'Corporate Structure',sub:'Alberta entities and oversight',st:'live',doc:'corpstructure'}]},
    {n:'08',k:'Shared · deep dives',t:'Reference Library',files:[
-     {name:'Capital Structure Memorandum',sub:'From the data room',st:'room'},
+     {name:'Capital Structure Memorandum',sub:'Cap table and control framework',st:'live',doc:'capmemo'},
      {name:'Pre-Seed Round Structure Recs',sub:'From the data room',st:'room'},
-     {name:"Founders' Voting Agreement (full)",sub:'From the data room',st:'room'},
+     {name:"Founders' Voting Agreement (full)",sub:'The operative agreement',st:'live',doc:'votingagreement'},
      {name:'Open the full data room',sub:'data.4ormfinance.com',st:'room',url:'https://data.4ormfinance.com'}]},
    {n:'09',k:'Shared',t:'Team, Contacts & FAQ',files:[
      {name:'Team & Contacts',sub:'Who to reach',st:'live',doc:'team'},
@@ -895,6 +894,257 @@ const DOCS={
   <h2 class="ds"><span class="sn">10</span>Protect the Mission at All Costs.</h2>
   <p>We are our brother's keeper. Every decision must strengthen the mission entrusted to us. We protect our purpose above convenience, popularity, and short-term gain, and steward the future with accountability for all Canadians.</p>
   <div class="callout"><div class="cl">Where this lives</div><p>These ten values come from the Mission Anchor, where they sit alongside our culture, the Absolute Bars, and how the mission is governed.</p></div>
+  ${FT}</div>`,
+ capmemo:`<div class="doc">${dtop('Capital Structure Memorandum')}<div class="eyebrow-m">Cap table, control, unit structure, vesting</div>
+  <h1 class="dh">Capital Structure Memorandum</h1>
+  <p class="dsub">4orm Finance is being incorporated in Alberta under the Business Corporations Act (Alberta) as Canada's regulated settlement layer for tokenized bank deposits and cash-leg wedge infrastructure.</p>
+  ${dmeta([['Version','14'],['As of','2026-07-08'],['Room','Advisor'],['Class.','Confidential']])}
+
+  <h2 class="ds"><span class="sn">01</span>Introduction</h2>
+  <p>4orm Finance is being incorporated in Alberta under the Business Corporations Act (Alberta) as Canada's regulated settlement layer for tokenized bank deposits and cash-leg wedge infrastructure. This memorandum sets out the capital structure of the Company at incorporation: the founding cap table, the Control Preservation Framework binding the Founders, the pre-seed unit offering structure, and the vesting framework applied to each grant.</p>
+  <p>Version 14 supersedes v13 on raise size and unit structure. The founding cap table (v13) is unchanged. The pre-seed unit structure has been updated to reflect the confirmed terms: 3,000,000 Units at $0.50 per Unit for initial gross proceeds of $1,500,000, each Unit comprising one Class A common share and one-half whole warrant exercisable at $1.50 per share, with milestone-triggered warrant exercise. Full warrant exercise would generate up to an additional $2,250,000, for total potential capital of $3,750,000.</p>
+  <h3 class="dh3">Key facts</h3>
+  <ul>
+    <li>Founding shares: 20,000,000 Class A common issued at $0.001 per share (founder tax-basis pricing).</li>
+    <li>Share class: single class of Class A common (1:1 voting) for all holders. No differential voting class.</li>
+    <li>Team pool: 12.00% of founding shares (2,400,000), reserved for non-founder hires within the pre-seed standard range of 10 to 15%.</li>
+    <li>Pre-seed offering: 3,000,000 Units at $0.50 per Unit at $10M pre-money valuation.</li>
+    <li>Unit composition: 1 Class A common share + 1/2 whole warrant (whole-warrant exercise price $1.50).</li>
+    <li>Warrant trigger: milestone-based (institutional MOU with a bank counterparty, Alberta Sandbox acceptance, or Board-defined events).</li>
+    <li>Total potential capital: $3,750,000 ($1,500,000 initial + up to $2,250,000 contingent on warrant exercise).</li>
+    <li>Standard shareholder protections: ROFR, pre-emptive, drag/tag, broad-based weighted-average anti-dilution.</li>
+  </ul>
+
+  <h2 class="ds"><span class="sn">02</span>Founding Cap Table</h2>
+  <p>20,000,000 founding common shares issued at $0.001 per share. All holders receive Class A common with a 1:1 voting multiple. The table below shows ownership at founding (pre-money).</p>
+  <table>
+    <thead><tr><th>Holder</th><th>Role</th><th>Shares</th><th>% of Founding</th></tr></thead>
+    <tbody>
+      <tr><td>Chad R. Johnston</td><td>Founder, CEO, President, Chairman</td><td>13,940,000</td><td>69.70%</td></tr>
+      <tr><td>Kevin Wong</td><td>Co-Founder, Go-to-Market Strategy</td><td>2,000,000</td><td>10.00%</td></tr>
+      <tr><td>Team Pool (unallocated)</td><td>Reserve for non-founder hires</td><td>2,400,000</td><td>12.00%</td></tr>
+      <tr><td>Bruce Fair (via Mench Capital)</td><td>Founding Capital Markets Advisor</td><td>800,000</td><td>4.00%</td></tr>
+      <tr><td>Sam Mraiheen</td><td>Founding contributor (recognition)</td><td>200,000</td><td>1.00%</td></tr>
+      <tr><td>Don Hickling</td><td>Founding Angel</td><td>200,000</td><td>1.00%</td></tr>
+      <tr><td>Miika Makela</td><td>Capital Strategy Advisor</td><td>200,000</td><td>1.00%</td></tr>
+      <tr><td>Don Hickling (Council seat)</td><td>Advisory Council</td><td>50,000</td><td>0.25%</td></tr>
+      <tr><td>James Atherton</td><td>Advisory Council</td><td>50,000</td><td>0.25%</td></tr>
+      <tr><td>Dean McCall</td><td>Advisory Council</td><td>50,000</td><td>0.25%</td></tr>
+      <tr><td>Zed</td><td>Advisory Council / Head Architect</td><td>50,000</td><td>0.25%</td></tr>
+      <tr><td>Angelo Aquino</td><td>Domain Advisor (RWA)</td><td>20,000</td><td>0.10%</td></tr>
+      <tr><td>Dean Hesse</td><td>Domain Advisor (Research)</td><td>20,000</td><td>0.10%</td></tr>
+      <tr><td>Louise Royer</td><td>Founding contributor (recognition)</td><td>20,000</td><td>0.10%</td></tr>
+      <tr><td>TOTAL</td><td></td><td>20,000,000</td><td>100.00%</td></tr>
+    </tbody>
+  </table>
+  <p class="note">Founder holdings - combined Chad and Kevin bloc: 15,940,000 shares = 79.70% at incorporation. Kevin retains full economic and voting rights over his shares; there is no voting trust or irrevocable proxy. Coordination between the Founders is through the Voting Alignment Covenant in the Founders' Voting Agreement v14 §3.</p>
+  <p class="note">Recognition-equity holders - Sam Mraiheen (1.00%) and Louise Royer (0.10%) hold founding recognition equity with no operational role. They are treated as ordinary shareholders and receive shareholder communications on the ordinary cadence.</p>
+
+  <h2 class="ds"><span class="sn">03</span>Pre-Seed Unit Structure</h2>
+  <p>The pre-seed round is a unit offering at $10M pre-money valuation. The Company is offering up to 3,000,000 Units at $0.50 per Unit for aggregate initial gross proceeds of $1,500,000. Each Unit comprises one (1) Class A common share and one-half (1/2) whole warrant to purchase one (1) additional Class A common share at $1.50 per share. Warrants are milestone-triggered. Full exercise would generate up to $2,250,000 in additional gross proceeds, bringing total potential capital in to $3,750,000.</p>
+  <h3 class="dh3">Pre-Seed Unit Economics</h3>
+  <table>
+    <thead><tr><th>Component</th><th>Ratio / Strike</th><th>Price</th><th>Quantity</th><th>Gross Proceeds</th><th>Dilution</th></tr></thead>
+    <tbody>
+      <tr><td>Class A common share</td><td>1 per Unit</td><td>$0.50</td><td>3,000,000</td><td>$1,500,000</td><td>13%</td></tr>
+      <tr><td>Half warrant (whole strike $1.50)</td><td>0.5 per Unit @ $1.50</td><td>$1.50</td><td>1,500,000</td><td>$2,250,000</td><td>23%</td></tr>
+      <tr><td>Total potential capital</td><td></td><td></td><td></td><td>$3,750,000</td><td></td></tr>
+    </tbody>
+  </table>
+  <p class="note">Pre-money share count 20,000,000. Post-share subscription 23,000,000 shares outstanding. Post-warrant exercise 24,500,000 shares outstanding. Implied post-money at share subscription $11,500,000. Implied post-money at full warrant exercise $36,750,000. Warrant triggers include an executed institutional MOU with a bank counterparty and Alberta Financial Regulatory Sandbox acceptance, and are being finalized by the Board.</p>
+
+  <h2 class="ds"><span class="sn">04</span>Control Preservation Framework</h2>
+  <p>The Company preserves founder control through the following contractual mechanisms in the Founders' Voting Agreement v14 and Articles of Incorporation:</p>
+  <ul>
+    <li>Voting Alignment Covenant (FVA §3): Founders consult before voting on Covered Matters and try to reach a common position; free will preserved for each.</li>
+    <li>Founder Consent Rights (Chad, FVA §5): eight enumerated matters requiring Chad's specific written consent while he holds at least 5% of outstanding shares.</li>
+    <li>Co-Founder Consultation Rights (Kevin, FVA §6): five enumerated matters requiring prior consultation with Kevin; sale of Company requires his written consent.</li>
+    <li>Phased Board Composition (FVA §7): 2 → 3 → 5 → 7 seats through Series A, with Chad as Chairman with tie-breaking vote at all stages.</li>
+    <li>CEO Tenure Protection (FVA §8): Chad removable only by 75% shareholder vote AND material cause.</li>
+    <li>Co-Founder Role Protection (FVA §9): Kevin removable from Board seat or role only by 75% shareholder vote AND material cause.</li>
+    <li>Supermajority Thresholds (FVA §11): 75% Articles / 90% Mission Anchor / 66.67% sale of Company, plus Founder Consent and Kevin Consent where applicable.</li>
+    <li>Mission Anchor Contractual Incorporation: incorporated by reference into all operative agreements; either Founder may invoke a Pause where a material Mission Anchor deviation is asserted.</li>
+    <li>Standard Economic Protections: ROFR, pre-emptive, anti-dilution, drag/tag per the Shareholders' Agreement.</li>
+  </ul>
+
+  <h2 class="ds"><span class="sn">05</span>Vesting Framework</h2>
+  <p>All founder and advisor share grants are subject to reverse vesting in the corresponding Reverse Vesting Agreement:</p>
+  <ul>
+    <li>Founders (Chad, Kevin): 4-year monthly vesting with a 1-year cliff commencing on incorporation. 500,000 Kevin shares vest at the Cliff Date; the remainder vest monthly at approximately 41,667 shares per month for 36 months.</li>
+    <li>Bruce Fair (Founding Capital Markets Advisor): 24-month monthly vesting with secured-at-signing carve-out per the Mench Capital Advisor Agreement.</li>
+    <li>Advisory Council seats (Don, James, Dean McCall, Zed): 24-month monthly vesting with secured-at-signing carve-out per each Advisor Agreement.</li>
+    <li>Domain Advisors (Angelo, Dean Hesse), Capital Strategy Advisor (Miika): 24-month monthly vesting with secured-at-signing carve-out.</li>
+    <li>Founding contributors (Sam Mraiheen, Louise Royer): recognition equity; vesting per each individual grant letter.</li>
+    <li>Team pool (2,400,000 shares): granted from ESOP as employees are hired, subject to 4-year monthly vesting with 1-year cliff on individual grant terms.</li>
+  </ul>
+  <p class="note">Quarterly KPI Checkpoints are established by the Board for each Founder and reviewed each quarter (FVA v14 §10). Checkpoints are informational; they do not gate vesting.</p>
+
+  <h2 class="ds"><span class="sn">06</span>Team Pool and Hiring Roadmap</h2>
+  <p>12.00% of founding shares (2,400,000 Class A common) is reserved for non-founder hires across the multi-entity Canadian regulated enterprise. Per-role allocations follow Carta hire-number medians for regulated fintech pre-seed. The team pool sits within the standard pre-seed range of 10 to 15%.</p>
+
+  <h2 class="ds"><span class="sn">07</span>Regulatory Framework</h2>
+  <p>Securities: NI 45-106 accredited investor exemption for the pre-seed unit offering. NI 31-103 registration analysis on capital-raise compensation (per the Capital-Raise Compensation Policy; issuer-officer carve-out under CP 31-103CP s.1.3). The Alberta Securities Commission is the primary regulator; Osler (Alberta) and Fasken (BC) are external counsel.</p>
+  <p>Corporate: Alberta Business Corporations Act (ABCA). Articles of Incorporation incorporate the Mission Anchor by reference and set the single Class A common share class. Bylaws follow the standard Alberta corporate framework.</p>
+
+  <h2 class="ds"><span class="sn">08</span>Referenced Documents</h2>
+  <ul>
+    <li>Founders' Voting Agreement v14 - voting alignment covenant, Founder Consent Rights, Board Composition, CEO Tenure Protection, Mission Anchor stewardship</li>
+    <li>Co-Founder Agreement (Chad and Kevin) - individual co-founder relationship, roles, vesting, IP assignment</li>
+    <li>Reverse Vesting Agreements (each Founder and each Advisor) - vesting terms and clawback</li>
+    <li>Mission Anchor v14 - constitutional commitments</li>
+    <li>Decision Matrix v16 - operational authority, Board Approvals master list, Board Reporting Cadence</li>
+    <li>Capital Structure Workbook v14 (xlsx) - full cap table, benchmark matrix, pre-seed unit structure tab, vesting schedules</li>
+    <li>Equity Rationale v14 - position-by-position rationale for each holder's allocation</li>
+    <li>Capital Raise Compensation Policy v14 - compliance framework for capital-raise compensation</li>
+    <li>Mench Capital Advisor Agreement v14 - Bruce Fair's advisor engagement</li>
+    <li>Dean McCall Advisory Engagement Letter - CTO Placement Success Fee framework</li>
+    <li>Advisor Agreement Template v14 - standard advisor engagement</li>
+    <li>5-Year Pro Forma v14 - financial model with SPEER toggle</li>
+  </ul>
+  ${FT}</div>`,
+ votingagreement:`<div class="doc">${dtop('Founders Voting Agreement')}<div class="eyebrow-m">Voting trust, consent rights, board, CEO tenure</div>
+  <h1 class="dh">Founders' Voting Agreement</h1>
+  <p class="dsub">This Founders' Voting Agreement is the operative agreement between the founders of 4orm Finance governing how they coordinate their shareholder voting rights, appoint directors, and preserve the constitutional commitments of the Company set out in the Mission Anchor.</p>
+  ${dmeta([['Version','13'],['As of','2026-07-08'],['Room','Advisor'],['Class.','Confidential']])}
+  <p>This Founders' Voting Agreement is the operative agreement between the founders of 4orm Finance governing how they coordinate their shareholder voting rights, appoint directors, and preserve the constitutional commitments of the Company set out in the Mission Anchor. It is executed between the Founders and the Company at incorporation. Any inconsistency between this Agreement and the Articles of Incorporation is resolved in favour of the Articles; any inconsistency between this Agreement and the Shareholders' Agreement is resolved in favour of the Shareholders' Agreement.</p>
+  <p>THIS FOUNDERS' VOTING AGREEMENT (this "Agreement") is made effective as of the [Effective Date], by and among:</p>
+  <p>CHAD R. JOHNSTON, an individual ("Chad" or the "CEO");</p>
+  <p>KEVIN WONG, an individual ("Kevin");</p>
+  <p>(Chad and Kevin together, the "Founders"), and</p>
+  <p>4ORM FINANCE, a corporation incorporated under the Business Corporations Act (Alberta) (the "Company").</p>
+  <h2 class="ds">Recitals</h2>
+  <p>A. The Founders are the two largest holders of the issued and outstanding Class A common shares (each carrying one vote per share) in the capital of the Company. Chad holds 13,940,000 shares (69.70%) and Kevin holds 2,000,000 shares (10.00%), together representing a combined bloc of 79.70% of outstanding shares at incorporation.</p>
+  <p>B. The Founders have agreed to coordinate the exercise of their voting rights through a Voting Trust and through the Founder Consent Rights, Board Composition Rights, CEO Tenure Protection, Supermajority Thresholds, and Mission Anchor Contractual Incorporation set out in this Agreement (together, the "Control Preservation Framework").</p>
+  <p>C. This Agreement is intended to operate in coordination with the Articles of Incorporation (including the Mission Anchor provisions), the Shareholders' Agreement, and the individual Reverse Vesting Agreements executed by each Founder.</p>
+  <p>D. The Company's equity structure is a single class of Class A common (1:1 voting) for all holders. The Company does not use a differential voting share class. Control preservation is achieved through the mechanisms set out in this Agreement, not through a super-voting share class.</p>
+  <p>E. The Mission Anchor is a constitutional commitment of the Company shared equally by each of the Founders. The Mission Anchor is incorporated by reference into this Agreement and the Company's other operative agreements, and no term of this Agreement authorizes a material deviation from the Mission Anchor.</p>
+  <p>NOW THEREFORE, in consideration of the mutual covenants set out below and other good and valuable consideration, the receipt and sufficiency of which is acknowledged, the parties agree as follows:</p>
+  <h2 class="ds"><span class="sn">01</span>Definitions</h2>
+  <p>1.1 In this Agreement, the following terms have the following meanings:</p>
+  <p>(a) "Articles" means the Articles of Incorporation of the Company, as amended from time to time.</p>
+  <p>(b) "Class A Shares" means the Class A common shares of the Company carrying a one-to-one (1:1) voting multiple, being the single class of common issued by the Company.</p>
+  <p>(c) "Control Preservation Framework" means the framework of contractual and governance mechanisms set out in Section 3 (Founder Consent Rights), Section 4 (Board Composition Rights), Section 5 (CEO Tenure Protection), Section 6 (Voting Trust), Section 7 (Supermajority Thresholds), and Section 8 (Mission Anchor Contractual Incorporation).</p>
+  <p>(d) "Covered Matters" has the meaning set out in Section 2.1.</p>
+  <p>(e) "Departure Event" means, with respect to any Founder, the date on which such Founder ceases to be an active executive officer, director, or substantive contributor to the Company by reason of resignation, termination, death, or permanent disability.</p>
+  <p>(f) "Independent Director" means a person who is not employed by the Company, is not a Founder or a person related to a Founder, does not receive consulting or advisory fees from the Company exceeding sixty thousand dollars ($60,000 CAD) per calendar year, and has relevant industry experience in banking, fintech, regulatory practice, or a related field.</p>
+  <p>(g) "Mission Anchor" means the Mission Anchor of the Company, a standalone values and commitments document published by the Company and incorporated by reference into the Company's operative agreements, including this Agreement, the Shareholders' Agreement, the Advisor Agreements, the Vendor Agreements, and the Employment Agreements.</p>
+  <p>(h) "Shareholders' Agreement" means the Shareholders' Agreement of the Company that the Company may enter into from time to time, incorporating the Control Preservation Framework provisions of this Agreement.</p>
+  <p>(i) "Subject Shares" means, with respect to any Founder, all Class A Shares of the Company now or hereafter beneficially owned or controlled by such Founder, including any Shares issued pursuant to a share dividend, stock split, or share reorganization.</p>
+  <p>(j) "Voting Trust" means the trust arrangement between the Founders set out in Section 6.</p>
+  <p>(k) "Voting Trust Termination Date" means the earlier of (a) the closing of the Company's Series A financing, and (b) the fifth anniversary of the date of this Agreement.</p>
+  <h2 class="ds"><span class="sn">02</span>Covered Matters and Voting Covenants</h2>
+  <p>2.1 "Covered Matters" means each of the following matters when submitted to a vote of the shareholders of the Company:</p>
+  <p>(a) the sale, merger, amalgamation, plan of arrangement, or other disposition of the Company or all or substantially all of its assets;</p>
+  <p>(b) any issuance of equity securities of the Company, including in connection with any financing round (pre-seed, seed, Series A, Series B, or otherwise);</p>
+  <p>(c) the election or removal of any director of the Company;</p>
+  <p>(d) any amendment to the Articles or the bylaws of the Company, including without limitation any amendment to the Mission Anchor provisions or any change of the authorized share structure;</p>
+  <p>(e) any voluntary dissolution, winding-up, or commencement of proceedings under any insolvency or restructuring statute by the Company;</p>
+  <p>(f) any amendment, waiver, or termination of this Agreement; and</p>
+  <p>(g) any other matter expressly designated as a "Covered Matter" in the Shareholders' Agreement.</p>
+  <p>2.2 Voting Trust (from the Effective Date to the Voting Trust Termination Date)</p>
+  <p>Kevin covenants and agrees to vote, or cause to be voted, all of Kevin's Subject Shares on each Covered Matter in the same manner as Chad votes his Subject Shares. Kevin retains all economic rights in respect of Kevin's Subject Shares; only the exercise of voting rights on Covered Matters is subject to this Section 2.2.</p>
+  <p>2.3 Post-Trust Voting (on and after the Voting Trust Termination Date)</p>
+  <p>From and after the Voting Trust Termination Date, each Covered Matter shall require the affirmative vote of both Founders, counted by person and not by share, in addition to any shareholder-level threshold that may separately apply under the Articles or the Shareholders' Agreement.</p>
+  <p>2.4 Routine Matters</p>
+  <p>Matters that do not constitute Covered Matters, including without limitation routine operational matters and any matter expressly delegated to the Board or to management under the Shareholders' Agreement, are not subject to Section 2.2 or Section 2.3 and are decided in the ordinary course.</p>
+  <p>2.5 Irrevocable Proxy</p>
+  <p>As security for the voting covenants in Section 2.2, Kevin hereby grants to the CEO an irrevocable proxy, coupled with an interest, to vote all of Kevin's Subject Shares on each Covered Matter through and until the Voting Trust Termination Date. The proxy under this Section 2.5 automatically terminates on the Voting Trust Termination Date.</p>
+  <p>2.6 Accountability of the CEO</p>
+  <p>The Voting Trust is intended in part as a coordination mechanism, not as a mechanism to insulate the CEO from accountability. The CEO acknowledges that the CEO's exercise of the aggregated voting bloc under the Voting Trust is subject to (a) the CEO's fiduciary duty to the Company under section 122 of the Business Corporations Act (Alberta) as a director and officer, (b) the Mission Anchor commitments of the Company, and (c) Kevin's refusal right under Section 2.8.</p>
+  <p>2.7 Voting Trust Termination</p>
+  <p>On the Voting Trust Termination Date, Section 2.2 and Section 2.5 automatically cease to have effect and Kevin's voting rights on Covered Matters are governed thereafter by Section 2.3.</p>
+  <p>2.8 Mission Anchor as Absolute Bar</p>
+  <p>The Mission Anchor is a constitutional commitment of the Company, made at incorporation, shared equally by each of the Founders. The provisions of this Agreement, including the voting direction in Section 2.2 and the both-founders majority in Section 2.3, do not authorize, and shall not be interpreted to authorize, any Covered Matter that would constitute a material deviation from the Mission Anchor.</p>
+  <p>Each Founder, equally, holds an unconditional right to refuse to direct, vote for, or otherwise authorize any matter that, in such Founder's good-faith judgment, would constitute a material deviation from the Mission Anchor. Such refusal by any Founder is not a breach of this Agreement.</p>
+  <p>Where a proposed Covered Matter is asserted by any Founder to constitute a material deviation from the Mission Anchor, the question shall be paused. The matter shall be examined by the Board against the commitments in the Mission Anchor, and shall proceed only if it can be reconciled with the Mission Anchor. If it cannot, it shall not proceed.</p>
+  <h2 class="ds"><span class="sn">03</span>Founder Consent Rights</h2>
+  <p>3.1 For so long as Chad holds not less than five percent (5%) of the issued and outstanding shares of the Company, the following matters require Chad's specific written consent, in each case independent of any shareholder or Board vote that may also be required:</p>
+  <p>(a) the sale of substantially all assets of the Company or any change of control transaction;</p>
+  <p>(b) any amendment of the Mission Anchor or any operative Mission Anchor provision (whether in the Articles, the Shareholders' Agreement, or any incorporating agreement);</p>
+  <p>(c) any change of business or any exit from tokenized settlement infrastructure as the Company's principal business;</p>
+  <p>(d) the issuance of additional shares of any class in excess of five percent (5%) of the then-outstanding shares in any rolling twelve (12) month period, other than pursuant to a Board-approved equity incentive plan or a bona fide financing round approved by the Board;</p>
+  <p>(e) any amendment of the Articles of Incorporation of the Company;</p>
+  <p>(f) any related-party transaction with a value in excess of fifty thousand dollars ($50,000 CAD), whether in a single transaction or a series of related transactions;</p>
+  <p>(g) the removal or replacement of the Chief Executive Officer; and</p>
+  <p>(h) any voluntary winding-up, dissolution, or bankruptcy filing by the Company.</p>
+  <p>3.2 The Founder Consent Rights in Section 3.1 are personal to Chad, are not transferable other than to a wholly owned holding entity of Chad, and terminate automatically upon the earlier of (a) the closing of an initial public offering of the Company's securities, and (b) Chad ceasing to hold not less than five percent (5%) of the issued and outstanding shares of the Company.</p>
+  <h2 class="ds"><span class="sn">04</span>Board Composition Rights</h2>
+  <p>4.1 At incorporation</p>
+  <p>The Board shall consist of two (2) directors: Chad and Kevin. Chad shall be designated as Chairman of the Board with a tie-breaking vote on any Board matter that would otherwise be deadlocked.</p>
+  <p>4.2 At pre-seed close</p>
+  <p>Immediately following the final closing of the Company's pre-seed financing, the Board shall expand to three (3) directors. The third seat shall be filled by an Independent Director appointed by mutual agreement of Chad and Kevin. Chad shall retain his designation as Chairman.</p>
+  <p>4.3 At seed close</p>
+  <p>Immediately following the closing of the Company's seed financing, the Board shall expand to five (5) directors. Chad shall have the right to appoint three (3) directors (a majority, including Chad as Chairman). Kevin shall have the right to appoint one (1) director. The remaining one (1) director shall be an Independent Director appointed by mutual agreement of Chad and Kevin.</p>
+  <p>4.4 At Series A</p>
+  <p>Immediately upon the closing of the Company's Series A financing, the Board shall expand to seven (7) directors. Chad shall retain three (3) seats (a plurality, including Chad as Chairman). Kevin shall retain one (1) seat. The lead Series A investor shall have the right to appoint one (1) director. The other Series A investors, collectively, shall have the right to appoint one (1) director. The remaining one (1) director shall be an Independent Director appointed by mutual agreement of Chad and Kevin.</p>
+  <p>4.5 Removal and Replacement</p>
+  <p>A director appointed by any party under this Section 4 may only be removed or replaced by that party. An Independent Director appointed by mutual agreement may only be removed or replaced by mutual agreement of Chad and Kevin.</p>
+  <p>4.6 Governance evolution</p>
+  <p>Chad currently holds Founder, CEO, President, and Chairman roles. The Board reviews governance structure at each major financing milestone (seed, Series A, and beyond) and adjusts to match the Company's scale, board composition, and institutional investor expectations. Separation of Chairman and CEO or Lead Independent Director designation are among the options the Board considers at each such review.</p>
+  <h2 class="ds"><span class="sn">05</span>CEO Tenure Protection</h2>
+  <p>5.1 Chad may only be removed as Chief Executive Officer by:</p>
+  <p>(a) the affirmative vote of shareholders holding not less than seventy-five percent (75%) of the outstanding shares of the Company; AND</p>
+  <p>(b) material cause, being (i) fraud, (ii) conviction of a felony or indictable offence, or (iii) extreme misconduct materially damaging the Company.</p>
+  <p>5.2 For the avoidance of doubt, poor performance, strategic disagreement, personality conflicts, and differences of view on business direction are NOT material cause for the purposes of this Section 5.</p>
+  <h2 class="ds"><span class="sn">06</span>Voting Trust</h2>
+  <p>6.1 Kevin agrees, as set out in Section 2.2, to vote all of his Subject Shares in accordance with Chad's direction on all Covered Matters until the Voting Trust Termination Date.</p>
+  <p>6.2 Combined bloc under the Voting Trust: 79.70% at incorporation (Chad's 69.70% plus Kevin's 10.00%), reducing on a fully diluted basis as new shares are issued in each financing round. Kevin retains full economic rights in respect of Kevin's Subject Shares; only voting on Covered Matters is subject to trust.</p>
+  <p>6.3 The Voting Trust is subject to Kevin's refusal right under Section 2.8 (Mission Anchor as Absolute Bar).</p>
+  <h2 class="ds"><span class="sn">07</span>Supermajority Thresholds</h2>
+  <p>7.1 The following matters require the supermajority shareholder vote set out below, in addition to any Founder Consent required under Section 3:</p>
+  <p>(a) Amendment of the Articles: affirmative vote of seventy-five percent (75%) or more of outstanding shares.</p>
+  <p>(b) Amendment of Mission Anchor provisions in the Shareholders' Agreement: affirmative vote of ninety percent (90%) or more of outstanding shares.</p>
+  <p>(c) Change of business: affirmative vote of seventy-five percent (75%) or more of outstanding shares.</p>
+  <p>(d) Sale of company: affirmative vote of sixty-six and two-thirds percent (66.67%) or more of outstanding shares plus Chad's Founder Consent under Section 3.1(a).</p>
+  <p>(e) CEO removal: as set out in Section 5.</p>
+  <h2 class="ds"><span class="sn">08</span>Mission Anchor Contractual Incorporation</h2>
+  <p>8.1 The Mission Anchor is incorporated by reference into this Agreement, the Shareholders' Agreement, the Advisor Agreements (including the Mench Capital Advisor Agreement), the Employment Agreements, and the Vendor Agreements of the Company. A material deviation from the Mission Anchor by any party is a material breach of the applicable agreement.</p>
+  <p>8.2 Any shareholder of the Company may sue for specific performance of the Mission Anchor and may seek injunctive relief without posting bond, in respect of any actual or threatened material deviation from the Mission Anchor.</p>
+  <h2 class="ds"><span class="sn">09</span>Standard Economic Protections</h2>
+  <p>(a) Right of First Refusal (ROFR): on share transfers, as set out in the Shareholders' Agreement.</p>
+  <p>(b) Pre-emptive Rights: Chad and Kevin shall each have the right to maintain pro-rata ownership on any new issuance, subject to Section 3.1(d).</p>
+  <p>(c) Anti-dilution: broad-based weighted-average, as set out in the Series Pre-Seed Preferred terms (if any preferred is issued) and any subsequent priced round.</p>
+  <p>(d) Drag-along: Chad may compel a sale, subject to Section 7.1(d) and to the Mission Anchor.</p>
+  <p>(e) Tag-along: Minority holders may co-sell on a sale by a controlling shareholder, as set out in the Shareholders' Agreement.</p>
+  <h2 class="ds"><span class="sn">10</span>Term and Termination</h2>
+  <p>10.1 This Agreement shall come into effect on the Effective Date and shall continue in effect for so long as the Company remains a private company that has not completed an initial public offering, subject to Section 10.2.</p>
+  <p>10.2 This Agreement shall terminate automatically upon the earliest to occur of:</p>
+  <p>(a) the closing of an initial public offering of the Company's securities;</p>
+  <p>(b) the closing of a sale of the Company or all or substantially all of its assets; and</p>
+  <p>(c) the unanimous written agreement of the Founders to terminate this Agreement.</p>
+  <p>10.3 Section 11 (Departure) and the proxy granted in Section 2.5 shall cease to apply with respect to any individual Founder upon a Departure Event applicable to that Founder.</p>
+  <h2 class="ds"><span class="sn">11</span>Departure</h2>
+  <p>11.1 Upon a Departure Event applicable to any Founder:</p>
+  <p>(a) the voting covenants in Sections 2.2 and 2.3 shall cease to apply to such Founder; and</p>
+  <p>(b) the irrevocable proxy granted by such Founder pursuant to Section 2.5 shall terminate automatically and without further action.</p>
+  <p>11.2 Nothing in this Section 11 shall affect (a) any vested shares retained by the departing Founder pursuant to the corresponding Reverse Vesting Agreement, or (b) the treatment of any secured-at-signing tranche as set out in that Reverse Vesting Agreement.</p>
+  <h2 class="ds"><span class="sn">12</span>Remedies</h2>
+  <p>12.1 The Founders acknowledge and agree that monetary damages would not be an adequate remedy for any breach of this Agreement, and that any breach by a Founder of the voting covenants set out in Sections 2.2 or 2.3, or of the Founder Consent Rights set out in Section 3, would result in irreparable harm to the Company and to the other Founder. Accordingly, the non-breaching parties shall be entitled to specific performance and injunctive relief in respect of any actual or threatened breach.</p>
+  <p>12.2 The non-breaching parties shall not be required to post any bond or other security in connection with any application for specific performance or injunctive relief.</p>
+  <h2 class="ds"><span class="sn">13</span>Miscellaneous</h2>
+  <p>13.1 Governing Law. This Agreement shall be governed by and construed in accordance with the laws of the Province of Alberta and the federal laws of Canada applicable therein.</p>
+  <p>13.2 Attornment. The parties irrevocably attorn to the exclusive jurisdiction of the courts of the Province of Alberta.</p>
+  <p>13.3 Notices. All notices shall be in writing and shall be deemed validly given upon personal delivery, by recognized overnight courier, or by email to the addresses of record of each party.</p>
+  <p>13.4 Entire Agreement. This Agreement, together with the Articles, the Shareholders' Agreement, the Mission Anchor, and the individual Reverse Vesting Agreements, constitutes the entire agreement between the parties on its subject and replaces any prior understanding, and may be amended only in writing signed by both Founders and the Company.</p>
+  <p>13.5 Amendment. This Agreement may be amended only by a written instrument signed by all of the Founders and the Company.</p>
+  <p>13.6 Severability. If any provision of this Agreement is held to be invalid or unenforceable, that provision shall be severed and the remaining provisions shall continue in full force and effect.</p>
+  <p>13.7 Successors and Assigns. This Agreement shall enure to the benefit of and be binding upon the parties and their respective heirs, executors, administrators, successors, and permitted assigns.</p>
+  <p>13.8 Counterparts and Electronic Execution. This Agreement may be executed in any number of counterparts and by electronic signature, each of which when so executed shall be deemed an original and together shall constitute one and the same agreement.</p>
+  <h2 class="ds">Execution</h2>
+  <p>IN WITNESS WHEREOF, the parties have executed this Agreement as of the Effective Date.</p>
+  <table class="dtbl">
+    <tbody>
+      <tr>
+        <td>FOUNDER<br>_______________________________________<br>Chad R. Johnston<br>Founder, Chief Executive Officer, and Chairman<br>Date: _____________________</td>
+        <td>FOUNDER<br>_______________________________________<br>Kevin Wong<br>Co-Founder, Go-to-Market Strategy<br>Date: _____________________</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>4ORM FINANCE</p>
+  <p>_______________________________________</p>
+  <p>By: Chad R. Johnston</p>
+  <p>Title: President and Chief Executive Officer</p>
+  <p>Date: _____________________</p>
   ${FT}</div>`,
  whatis:`<div class="doc">${dtop('Why 4orm')}<div class="eyebrow-m">Start here</div>
   <h1 class="dh">Why 4orm?</h1>
