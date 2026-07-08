@@ -303,7 +303,7 @@
 .ohtabbar{background:#fff;border-bottom:1px solid #E3E9F2;}
 .ohtabbar-in{max-width:var(--maxw);margin:0 auto;padding:0 28px;display:flex;gap:26px;align-items:center;height:46px;}
 .ohtab2{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--slate);font-weight:700;text-decoration:none;cursor:pointer;padding:8px 12px;border-radius:8px;white-space:nowrap;}
-.ohlogo{height:24px;width:auto;flex:none;}
+.ohlogo{position:absolute;left:30px;top:50%;transform:translateY(-50%);height:26px;width:auto;}
 .ohtabs{display:flex;gap:22px;align-items:center;}
 .ohtab2:hover{color:var(--ink);}
 .ohtab2.on{color:var(--brand);background:rgba(46,107,242,.1);}
@@ -616,7 +616,7 @@ const DOCS={
  eng_starthere:`<div class="doc">${dtop('E0 / Start Here')}<div class="eyebrow-m">Engineering room &middot; Read this first</div>
   <h1 class="dh">Start Here.</h1>
   <p class="dsub">The front door to the 4orm engineering room. What we are building, the three rules that cannot be broken, the reading order, and where every technical document lives.</p>
-  ${dmeta([['Prepared by','4orm Finance Holdings Inc.'],['Audience','Founding CTO / Eng team'],['Stage','Pre-seed · Sandbox-first'],['Updated','July 2026']])}
+  ${dmeta([['Prepared by','4orm Finance'],['Audience','Founding CTO / Eng team'],['Stage','Pre-seed · Sandbox-first'],['Updated','July 2026']])}
   <h2 class="ds"><span class="sn">1.0</span>What 4orm is, before you touch a spec</h2>
   <p class="lead">4orm is building Canada's neutral, regulated settlement layer for tokenized real-world assets. The product is interoperability and settlement finality: moving the pieces of a transfer together so an asset changes hands once, cleanly, under supervision. It is not a token, not a coin, and not a real-estate platform.</p>
   <p>Three things travel with any transfer, and 4orm moves all three:</p>
