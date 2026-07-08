@@ -87,9 +87,9 @@
  #app{display:none;}
  #app.on{display:block;}
  .nav{background:#fff;border-bottom:1px solid #E3E9F2;position:sticky;top:0;z-index:60;}
- .nav-inner{max-width:var(--maxw);margin:0 auto;min-height:76px;padding:11px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+ .nav-inner{max-width:var(--maxw);margin:0 auto;min-height:82px;padding:12px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
  .nav-brand{display:flex;align-items:center;gap:11px;text-decoration:none;cursor:pointer;}
- .nav-brand .navmark{height:49px;width:auto;display:block;}
+ .nav-brand .navmark{height:56px;width:auto;display:block;}
  .nav-brand .nb-t{font-weight:800;color:var(--ink);font-size:1rem;line-height:1.05;}
  .nav-brand .nb-t small{display:block;font-family:var(--font-mono);font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);}
  .pillnav{display:flex;gap:30px;}
@@ -133,7 +133,7 @@
  /* top row: calendar + links */
  .toprow{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:-18px;position:relative;z-index:5;padding-bottom:8px;}
  @media(max-width:900px){.toprow{grid-template-columns:1fr;}}
- .panel{background:#0E1626;border:1px solid var(--line);border-radius:16px;padding:20px 22px;box-shadow:0 20px 50px rgba(0,0,0,.3);}
+ .panel{background:#0E1626;border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:0 20px 50px rgba(0,0,0,.3);}
  .panel-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
  .panel-h .ph-t{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);font-weight:700;}
  .cal-nav{display:flex;align-items:center;gap:10px;}
@@ -142,8 +142,8 @@
  .cal-nav .mlabel{font-size:.82rem;font-weight:700;color:#fff;min-width:120px;text-align:center;}
  table.cal{width:100%;border-collapse:collapse;}
  table.cal th{font-family:var(--font-mono);font-size:.56rem;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);font-weight:700;padding:6px 0;}
- table.cal td{text-align:center;padding:3px;}
- .cd{width:100%;aspect-ratio:1;max-width:38px;margin:0 auto;display:grid;place-items:center;border-radius:8px;font-size:.82rem;color:var(--t2);position:relative;}
+ table.cal td{text-align:center;padding:2px;}
+ .cd{width:100%;aspect-ratio:1;max-width:33px;margin:0 auto;display:grid;place-items:center;border-radius:7px;font-size:.73rem;color:var(--t2);position:relative;}
  .cd.muted{color:rgba(255,255,255,.2);}
  .cd.today{outline:1px solid var(--peach);color:#fff;font-weight:700;}
  .cd.ev-council{background:rgba(46,107,242,.34);border:1px solid rgba(46,107,242,.6);color:#fff;font-weight:700;}
@@ -154,8 +154,8 @@
  .cal-legend span{display:inline-flex;align-items:center;gap:6px;}
  .cal-legend i{width:11px;height:11px;border-radius:4px;display:inline-block;}
 
- .links{display:flex;flex-direction:column;gap:9px;}
- .lrow{display:flex;align-items:center;gap:10px;padding:7px 11px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--line);text-decoration:none;transition:background .14s,border-color .14s;cursor:pointer;}
+ .links{display:flex;flex-direction:column;gap:7px;}
+ .lrow{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--line);text-decoration:none;transition:background .14s,border-color .14s;cursor:pointer;}
  .lrow:hover{background:rgba(46,107,242,.16);border-color:var(--brand);}
  .lrow .li{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:none;}
  .lrow .lmeta{min-width:0;flex:1;display:flex;align-items:center;justify-content:space-between;gap:16px;}
@@ -363,6 +363,7 @@
     <div class="panel-h"><span class="ph-t">Links &amp; contacts</span></div>
     <div class="links">
      <a class="lrow" onclick="ext('https://us06web.zoom.us/j/7783632424')"><span class="li" style="background:#2D8CFF"><svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M4 7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7zm14 3 3.5-2.3A.6.6 0 0 1 22 8v8a.6.6 0 0 1-.9.5L18 14v-4z"/></svg></span><span class="lmeta"><span class="ll">Company Zoom</span><span class="lv gold">Join the 4orm room</span></span><span class="lgo">&#8599;</span></a>
+     <a class="lrow" onclick="ext('https://app.clickup.com/9017569224/home')"><span class="li" style="background:#7B68EE"><svg width="13" height="13" viewBox="0 0 24 24" fill="#fff"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg></span><span class="lmeta"><span class="ll">ClickUp</span><span class="lv">Team workspace and tasks</span></span><span class="lgo">&#8599;</span></a>
      <a class="lrow" href="tel:+17783632423"><span class="li" style="background:rgba(154,182,255,.2);color:var(--lt)"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.4 0 .8-.3 1l-2.2 2.2z"/></svg></span><span class="lmeta"><span class="ll">CEO &middot; Chad Johnston</span><span class="lv">778-363-2423</span></span><span class="lgo">&#8599;</span></a>
      <a class="lrow" onclick="openDir()"><span class="li" style="background:rgba(255,217,168,.2);color:var(--peach)"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-4 0-8 2-8 5v1h16v-1c0-3-4-5-8-5z"/></svg></span><span class="lmeta"><span class="ll">Directory</span><span class="lv">The circle, name and contact</span></span><span class="lgo">&#8599;</span></a>
      <a class="lrow" href="mailto:office@4ormfinance.com"><span class="li" style="background:rgba(154,182,255,.2);color:var(--lt)"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm9 7 8-5H4l8 5zm0 2L4 9v8h16V9l-8 5z"/></svg></span><span class="lmeta"><span class="ll">Office email</span><span class="lv">office@4ormfinance.com</span></span><span class="lgo">&#8599;</span></a>
