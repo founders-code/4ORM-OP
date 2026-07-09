@@ -529,7 +529,7 @@ function signout(){
 function go(which){
  current=which;
  const P=PORTALS[which];
- document.getElementById('navSub').textContent=P.eyebrow;
+ var _ns=document.getElementById('navSub'); if(_ns){_ns.textContent=P.eyebrow;}
  document.getElementById('userName').textContent='';
  document.getElementById('pEye').textContent=P.eyebrow;
  document.getElementById('pTitle').innerHTML=P.title;
@@ -1323,7 +1323,7 @@ const DOCS={
    <li><b>Term.</b> Indefinite, subject to corporate continuation and counsel review on transferability and successor rights.</li>
    <li><b>Eligibility.</b> First 100 contributors who helped the Company prior to pre-seed close. Eligibility recognized in writing.</li>
    <li><b>Separate from equity.</b> Legacy Token participation is a profit-share recognition, not an equity grant. Holders may also separately hold equity on the Cap Table.</li>
-   <li><b>Securities classification.</b> To be confirmed. Counsel to determine whether the Legacy Token is a security under BC and Canadian securities law (SOFI / Howey-equivalent / BC Notice 47-722). Distribution mechanics and any required prospectus exemptions to be confirmed.</li>
+   <li><b>Securities classification.</b> To be confirmed. Counsel to determine whether the Legacy Token is a security under Alberta and Canadian securities law (SOFI / Howey-equivalent). Distribution mechanics and any required prospectus exemptions to be confirmed.</li>
   </ul>
   <h2 class="ds"><span class="sn">07</span>Benchmark matrix</h2>
   <p class="lead">Each element: the 4orm choice against a market benchmark, with an assessment flag.</p>
@@ -1344,7 +1344,7 @@ const DOCS={
    <tr><td>16</td><td>Preferred redemption</td><td>n/a - v14 single-class Class A common; no preferred</td><td>Legacy from v13 unit structure</td><td>Removed at v14</td></tr>
    <tr><td>17</td><td>Investor protections</td><td>1x non-participating liquidation pref; broad-based weighted-average anti-dilution; pro-rata</td><td>Market standard</td><td>In line</td></tr>
    <tr><td>18</td><td>Securities exemptions</td><td>NI 45-106 accredited investor exemption</td><td>Most common; private-issuer cap at 50 holders</td><td>Confirm exemption strategy with counsel</td></tr>
-   <tr><td>19</td><td>Capital-raise compensation</td><td>No cash commission or success fee tied to capital raised. Time-vested service equity; non-capital milestone bonuses. Issuer-officer carve-out under CP 31-103CP s.1.3</td><td>NI 31-103 dealer registration; BC Instrument 32-513 revocation effective April 30, 2019</td><td>In line; full Capital-Raise Compensation Policy adopted</td></tr>
+   <tr><td>19</td><td>Capital-raise compensation</td><td>No cash commission or success fee tied to capital raised. Time-vested service equity; non-capital milestone bonuses. Issuer-officer carve-out under CP 31-103CP s.1.3</td><td>NI 31-103 dealer registration</td><td>In line; full Capital-Raise Compensation Policy adopted</td></tr>
    <tr><td>20</td><td>Mission Anchor</td><td>Mission Anchor (standalone) + Founders' Voting Agreement refusal right (no Articles entrenchment, no Unanimous Shareholders' Agreement device per Founder decision)</td><td>Patagonia and Anthropic LTBT precedents reviewed; soft-law approach adopted</td><td>Counsel review of contractual reinforcements (advisor / customer / vendor / employment) recommended</td></tr>
   </tbody></table>
   <p style="font-size:.78rem;color:var(--slate)">Confidential. Internal capital-structure workbook, v14. Figures are drawn from the 4orm Finance capital structure workbook and are subject to definitive documentation, counsel review, and required regulatory approvals. The Legacy Token is a placeholder concept subject to securities review and is not an offer to sell or a solicitation of an offer to buy any security, token, or instrument, and nothing here is a promise or guarantee of value, profit, distribution, or payment. Nothing in this document is legal, tax, or financial advice.</p>
@@ -1762,7 +1762,7 @@ const DOCS={
   <ul>
    <li><b>Architecture to execution-ready.</b> Finalizing the build pack for partners, regulators, and engineering, on a roughly 90-day target.</li>
    <li><b>Full-time technical team.</b> Recruiting the founding engineering bench: a founding CTO, a principal engineer, and a security and compliance architect.</li>
-   <li><b>Opening the raise.</b> The $3M pre-seed opens August 1, 2026; the BC tax-credit application and subscription documents are in progress.</li>
+   <li><b>Opening the raise.</b> The $3M pre-seed opens August 1, 2026; the subscription documents are in progress.</li>
    <li><b>Institutional conversion.</b> A second ATB meeting and a due-diligence package, with the first outreach batch live across the mapped list.</li>
    <li><b>Regulatory filings.</b> Mapping the FINTRAC and sandbox pathway, with a compliance review underway alongside counsel.</li>
    <li><b>Non-dilutive capital.</b> First grant applications (SR&ED and fastest-fit programs) being prepared.</li>
@@ -1783,7 +1783,7 @@ const DOCS={
   <ul>
    <li><b>Round.</b> $3M pre-seed at a $10M pre-money, opens August 1, 2026.</li>
    <li><b>Commitments.</b> Roughly $500K in LOIs and soft commitments, about $70K received to date.</li>
-   <li><b>Structure.</b> Incorporation, the BC tax-credit eligibility, and subscription documents are in progress and nearly complete.</li>
+   <li><b>Structure.</b> Incorporation in Alberta and the subscription documents are in progress and nearly complete.</li>
   </ul>
   <h2 class="ds"><span class="sn">02</span>The strategy</h2>
   <ul>

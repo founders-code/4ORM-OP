@@ -156,9 +156,9 @@ const DATA = {
         {state:"done", t:"Capiche Capital retained", d:"$10K retainer; financing platform + subscription docs."},
         {state:"done", t:"Pitch deck built", d:"Finalized institutional pitch deck."},
         {state:"active", t:"Round sized at $3M", d:"Valuation $10M; $3M Pre-Seed confirmed as the build scope firmed up."},
-        {state:"active", t:"EBC application (BC CCPC)", d:"30% BC tax credit + TFSA/RRSP eligibility; ~6-15 working days to full investor eligibility."},
+        {state:"active", t:"Alberta incorporation (ABCA)", d:"Incorporated in Alberta; TFSA/RRSP eligibility being set up; investor subscription in process."},
         {state:"active", t:"Subscription documents", d:"Drafting via Capiche."},
-        {state:"todo", t:"Formally open the $3M pre-seed round", d:"Opens August 1, 2026, once docs + EBC land."},
+        {state:"todo", t:"Formally open the $3M pre-seed round", d:"Opens August 1, 2026, once docs land."},
         {state:"todo", t:"Final pitch deck v2.0 + investor ROI section", d:"Refreshed with the revised valuation."},
         {state:"todo", t:"Close pre-seed", d:"Target 30-60 days."}
       ],
@@ -167,7 +167,7 @@ const DATA = {
         "Valuation: <b>$10M</b>",
         "Committed: <b>$50K</b> angel ($44K in) + <b>$250K</b> 1st pre-seed",
         "Capital efficiency: <b>2.6-6.3×</b> per $1 ($111-264K value)",
-        "Vehicle: <b>BC CCPC</b> + EBC 30% credit",
+        "Vehicle: <b>Alberta corporation</b> (ABCA)",
         "Close target: <b>30-60 days</b>"
       ]
     },
@@ -306,14 +306,14 @@ const DATA = {
         {state:"active", t:"Initial Coin Offering (ICO) strategy", d:"ICO strategy development in place - not yet completed."},
         {state:"active", t:"Shareholder agreement", d:"Super-voting clauses (with sunset); drag-along + buyback; in review."},
         {state:"active", t:"Founder protections", d:"Reverse-vesting agreements; in review."},
-        {state:"active", t:"Incorporation + registration", d:"BC CCPC for EBC; federal incorporation + AB extra-provincial registration."},
+        {state:"active", t:"Incorporation + registration", d:"Alberta incorporation under the Business Corporations Act (Alberta)."},
         {state:"active", t:"TFSA / RRSP eligibility - in process", d:"Trust accounts being set up so investors can subscribe via registered accounts."},
         {state:"active", t:"Subscription agreements - in process", d:"Being drafted for the pre-seed close."},
         {state:"todo", t:"Privacy charter", d:"Values-based / lawful-resistance language."},
         {state:"todo", t:"Track incorporation completion", d:"Gating item for the raise mechanics."}
       ],
       facts:[
-        "Entity: <b>BC CCPC</b> (EBC eligible)",
+        "Entity: <b>Alberta corporation</b> (ABCA)",
         "Firms: <b>Capiche</b> + <b>CFA</b> + <b>Fasken</b>",
         "Legal cost saved: ~<b>$85K</b> vs Osler",
         "Capital in → value out: <b>$44K → $111-264K</b>",
