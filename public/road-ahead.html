@@ -47,6 +47,9 @@ a{color:inherit;text-decoration:none;}
 .roadwrap{position:relative;margin:2px auto 0;max-width:var(--maxw);touch-action:pan-y;}
 #risingSun{position:fixed;z-index:-1;right:4%;top:122vh;width:360px;height:360px;border-radius:50%;pointer-events:none;
   background:radial-gradient(circle,#fff6cf 0%,#ffd35c 32%,rgba(255,171,61,.5) 52%,rgba(255,171,61,0) 72%);}
+#settingMoon{position:fixed;z-index:-1;left:5%;top:6vh;width:112px;height:112px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.92),rgba(255,255,255,0) 42%),radial-gradient(circle at 66% 60%,#c3ccdb 0 6%,transparent 7%),radial-gradient(circle at 44% 72%,#c3ccdb 0 4%,transparent 5%),radial-gradient(circle at 62% 32%,#cdd6e4 0 5%,transparent 6%),radial-gradient(circle,#eef2f8 0%,#d3dbe8 62%,#b4c0d2 100%);
+  box-shadow:0 0 46px 10px rgba(190,214,255,.28);}
 .zoomctl{position:fixed;right:16px;bottom:16px;z-index:20;display:flex;flex-direction:column;gap:6px;}
 .zoomctl button{width:40px;height:40px;border-radius:10px;border:1px solid #2c3f57;background:rgba(14,22,33,.82);color:#EAF0F7;font-size:18px;font-weight:700;cursor:pointer;line-height:1;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
 .zoomctl button:hover{background:rgba(30,45,66,.95);}
@@ -163,6 +166,7 @@ footer{max-width:var(--maxw);margin:0 auto;padding:30px 22px 70px;color:#2f4256;
   </div>
 </div>
 
+<div id="settingMoon"></div>
 <div id="risingSun"></div>
 <div class="roadwrap"><svg class="road" id="road" xmlns="http://www.w3.org/2000/svg"></svg></div>
 <div class="zoomctl"><button id="zin" title="Zoom in">+</button><button id="zout" title="Zoom out">&#8722;</button><button id="zfit" title="Fit the whole road">&#9633;</button></div>
@@ -441,14 +445,16 @@ const LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAADICAYAAADGFbfi
   }
   // rising sun - climbs the screen as you scroll
   const risingSun=document.getElementById("risingSun");
+  const settingMoon=document.getElementById("settingMoon");
   function updateSun(){
-    if(!risingSun) return;
     const f=window.scrollY/Math.max(1,document.documentElement.scrollHeight-window.innerHeight);
     let t=(f-0.32)/0.68; t=Math.max(0,Math.min(1,t));
-    risingSun.style.top=(122 - t*94)+"vh";
+    if(risingSun) risingSun.style.top=(122 - t*94)+"vh";
+    // moon sets down the left as the sun rises
+    if(settingMoon){ settingMoon.style.top=(6 + t*118)+"vh"; settingMoon.style.opacity=(1 - t*0.7).toFixed(3); }
   }
-  // pinch / ctrl-scroll zoom on the whole road (default one click zoomed out)
-  let zoom=0.85;
+  // pinch / ctrl-scroll zoom on the whole road (lands zoomed out to show the full road)
+  let zoom=0.7;
   function applyZoom(){
     svg.style.transformOrigin="top center";
     svg.style.transform="scale("+zoom+")";
