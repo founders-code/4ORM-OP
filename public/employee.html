@@ -502,7 +502,7 @@ function signout(){
 function go(which){
  current=which;
  const P=PORTALS[which];
- document.getElementById('navSub').textContent=P.eyebrow;
+ var _ns=document.getElementById('navSub'); if(_ns){_ns.textContent=P.eyebrow;}
  document.getElementById('userName').textContent='';
  document.getElementById('pEye').textContent=P.eyebrow;
  document.getElementById('pTitle').innerHTML=P.title;
