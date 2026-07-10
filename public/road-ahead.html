@@ -450,8 +450,8 @@ const LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAADICAYAAADGFbfi
     const f=window.scrollY/Math.max(1,document.documentElement.scrollHeight-window.innerHeight);
     let t=(f-0.32)/0.68; t=Math.max(0,Math.min(1,t));
     if(risingSun) risingSun.style.top=(122 - t*94)+"vh";
-    // moon sets down the left as the sun rises
-    if(settingMoon){ settingMoon.style.top=(6 + t*118)+"vh"; settingMoon.style.opacity=(1 - t*0.7).toFixed(3); }
+    // moon sets down the left, fully gone by the Technical Discovery / first MOU column (~42% down)
+    if(settingMoon){ var mt=Math.max(0,Math.min(1, f/0.42)); settingMoon.style.top=(6 + mt*122)+"vh"; settingMoon.style.opacity=(1 - mt).toFixed(3); }
   }
   // pinch / ctrl-scroll zoom on the whole road (lands zoomed out to show the full road)
   let zoom=0.7;
