@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Filing Room &middot; 4orm Finance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+ :root { --brand:#2E6BF2; --brand-50:#EAF1FE; --gold:#E7C76C; --gold2:#C49A3A; --green:#7BE3B0; --greend:#0E8A5F;
+  --bg:#0B1220; --bg2:#0E1626; --card:rgba(255,255,255,.05); --line:rgba(255,255,255,.12);
+  --t1:#fff; --t2:rgba(255,255,255,.78); --t3:rgba(255,255,255,.5);
+  --font-sans:'Inter',system-ui,sans-serif; --font-mono:'JetBrains Mono',ui-monospace,monospace; --maxw:1200px; }
+ *{box-sizing:border-box;} html,body{margin:0;}
+ body{font-family:var(--font-sans);background:var(--bg);color:var(--t2);-webkit-font-smoothing:antialiased;}
+ .wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px;}
+ a{color:inherit;}
+ /* header */
+ .ohbar{background:#fff;border-bottom:1px solid #E3E9F2;position:relative;}
+ .ohbar-in{max-width:1180px;margin:0 auto;padding:0 28px;height:64px;display:flex;align-items:center;gap:30px;}
+ .ohlogo{position:absolute;left:48px;top:50%;transform:translateY(-50%);height:40px;width:auto;}
+ .ohtabs{display:flex;gap:22px;align-items:center;flex-wrap:wrap;}
+ .ohtab2{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:#5B6B84;font-weight:700;text-decoration:none;cursor:pointer;padding:8px 12px;border-radius:8px;white-space:nowrap;}
+ .ohtab2:hover{color:#142036;}
+ .ohtab2.on{color:#2E6BF2;background:rgba(46,107,242,.1);}
+ .ohsigned{margin-left:auto;display:inline-flex;align-items:center;gap:9px;padding:6px 13px;border-radius:99px;background:rgba(123,227,176,.16);border:1px solid rgba(14,138,95,.35);color:#0E8A5F;font-size:.74rem;font-weight:700;font-family:var(--font-mono);}
+ .ohsigned .d{width:7px;height:7px;border-radius:50%;background:#19B57E;}
+ .ohsigned a{color:#142036;text-decoration:none;border-left:1px solid rgba(14,138,95,.3);padding-left:9px;margin-left:2px;}
+ /* hero */
+ .hero{background:linear-gradient(180deg,#1F3CA8 0%,#15233F 26%,#0B1220 100%);padding:44px 0 30px;}
+ .eyebrow{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:800;margin-bottom:10px;}
+ .hero h1{color:var(--t1);font-size:2rem;line-height:1.1;margin:0 0 12px;font-weight:800;letter-spacing:-.01em;}
+ .accent{color:var(--gold);}
+ .lead{max-width:60em;line-height:1.65;font-size:.98rem;color:var(--t2);}
+ /* layout */
+ .cols{display:grid;grid-template-columns:1.15fr .85fr;gap:22px;margin:26px auto 10px;}
+ @media(max-width:880px){.cols{grid-template-columns:1fr;}}
+ .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;}
+ .card h2{font-size:1.02rem;color:var(--t1);margin:0 0 4px;font-weight:700;}
+ .card .sub{font-size:.82rem;color:var(--t3);margin:0 0 16px;}
+ /* dropzone */
+ .drop{border:1.5px dashed rgba(255,255,255,.28);border-radius:14px;padding:34px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;}
+ .drop:hover,.drop.over{border-color:var(--green);background:rgba(123,227,176,.06);}
+ .drop .ic{font-size:1.9rem;}
+ .drop .big{color:var(--t1);font-weight:700;font-size:1rem;margin:8px 0 4px;}
+ .drop .small{font-size:.8rem;color:var(--t3);}
+ .noterow{margin-top:14px;}
+ .noterow label{display:block;font-family:var(--font-mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:6px;}
+ input[type=text]{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:9px;color:var(--t1);font-family:var(--font-sans);font-size:.9rem;padding:11px 13px;}
+ input[type=text]:focus{outline:none;border-color:var(--brand);}
+ /* result */
+ .res{margin-top:18px;border-top:1px solid var(--line);padding-top:18px;display:none;}
+ .res.show{display:block;}
+ .res .fn{font-size:.86rem;color:var(--t2);margin-bottom:12px;word-break:break-all;}
+ .res .fn b{color:var(--t1);}
+ .dest{background:rgba(46,107,242,.1);border:1px solid rgba(46,107,242,.35);border-radius:12px;padding:15px 16px;}
+ .dest .lab{font-family:var(--font-mono);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:7px;}
+ .dest .path{color:var(--t1);font-weight:700;font-size:1rem;line-height:1.4;}
+ .dest .drive{font-family:var(--font-mono);font-size:.66rem;color:#9AB6FF;margin-top:4px;}
+ .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+ .chip{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;font-weight:700;padding:5px 10px;border-radius:99px;}
+ .chip.hi{background:rgba(123,227,176,.16);color:#7BE3B0;} .chip.mid{background:rgba(231,199,108,.16);color:var(--gold);} .chip.lo{background:rgba(255,255,255,.08);color:var(--t3);}
+ .chip.layer{background:rgba(154,182,255,.14);color:#9AB6FF;}
+ .why{font-size:.78rem;color:var(--t3);margin-top:10px;line-height:1.5;}
+ .why b{color:var(--t2);}
+ .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+ .btn{font-family:var(--font-sans);font-weight:700;font-size:.82rem;padding:10px 16px;border-radius:9px;cursor:pointer;border:1px solid transparent;text-decoration:none;display:inline-flex;align-items:center;gap:7px;}
+ .btn.primary{background:var(--brand);color:#fff;} .btn.primary:hover{background:#255ce0;}
+ .btn.ghost{background:transparent;border-color:var(--line);color:var(--t2);} .btn.ghost:hover{border-color:var(--t3);color:var(--t1);}
+ .btn[disabled]{opacity:.45;cursor:not-allowed;}
+ .override{margin-top:14px;}
+ .override label{display:block;font-family:var(--font-mono);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:6px;}
+ select{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:9px;color:var(--t1);font-family:var(--font-sans);font-size:.86rem;padding:10px 12px;}
+ select:focus{outline:none;border-color:var(--brand);}
+ .permnote{margin-top:14px;font-size:.78rem;padding:11px 13px;border-radius:10px;background:rgba(231,199,108,.1);border:1px solid rgba(231,199,108,.3);color:var(--gold);line-height:1.5;display:none;}
+ .permnote.show{display:block;}
+ /* search */
+ .searchbox{position:relative;}
+ .sresults{margin-top:14px;display:flex;flex-direction:column;gap:8px;max-height:340px;overflow:auto;}
+ .srow{display:flex;align-items:center;gap:12px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02);text-decoration:none;transition:border-color .15s,background .15s;}
+ .srow:hover{border-color:rgba(46,107,242,.5);background:rgba(46,107,242,.06);}
+ .srow .sp{flex:1;min-width:0;}
+ .srow .sn{color:var(--t1);font-weight:600;font-size:.86rem;}
+ .srow .sd{font-family:var(--font-mono);font-size:.62rem;color:var(--t3);margin-top:2px;}
+ .srow .go{color:#9AB6FF;font-size:.9rem;flex:none;}
+ .searchhint{font-size:.78rem;color:var(--t3);margin-top:12px;}
+ /* engine explainer */
+ .engine{margin:8px auto 40px;}
+ details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 20px;}
+ summary{cursor:pointer;padding:16px 0;color:var(--t1);font-weight:700;font-size:.95rem;list-style:none;}
+ summary::-webkit-details-marker{display:none;}
+ summary::before{content:"+ ";color:var(--brand);font-weight:800;}
+ details[open] summary::before{content:"\2212  ";}
+ .layer{border-top:1px solid var(--line);padding:16px 0;}
+ .layer h4{margin:0 0 4px;color:var(--t1);font-size:.9rem;}
+ .layer h4 span{font-family:var(--font-mono);font-size:.6rem;color:var(--green);letter-spacing:.08em;margin-left:8px;}
+ .layer p{margin:0;font-size:.85rem;line-height:1.6;color:var(--t2);}
+ .layer.l2 h4 span{color:var(--gold);} .layer.l3 h4 span{color:#9AB6FF;}
+ .pagefoot{border-top:1px solid var(--line);margin-top:20px;}
+ .pagefoot .wrap{padding:14px 28px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-family:var(--font-mono);font-size:.64rem;letter-spacing:.12em;color:var(--t3);text-transform:uppercase;}
+ .pagefoot .conf{color:var(--gold2);}
+</style>
+</head>
+<body>
+
+<header class="ohbar"><div class="ohbar-in">
+ <img class="ohlogo" src="assets/4orm-header-logo.png" alt="4orm Finance"/>
+ <nav class="ohtabs">
+  <a class="ohtab2" data-tab="documents" href="#">Documents</a>
+  <a class="ohtab2" data-tab="roadmap" href="road-ahead.html">Roadmap</a>
+  <a class="ohtab2" data-tab="ptr" href="path-to-revenue.html">Path to Revenue</a>
+  <a class="ohtab2" data-tab="visual" href="visual-data.html">Visual Data</a>
+  <a class="ohtab2 on" data-tab="filing" href="filing.html">Filing Room</a>
+ </nav>
+ <span class="ohsigned"><span class="d"></span>Signed in &middot; Member access<a class="signout-link" href="index.html">Sign out</a></span>
+</div></header>
+
+<section class="hero"><div class="wrap">
+ <div class="eyebrow">Filing Room</div>
+ <h1>Drop a document. <span class="accent">We'll tell you where it files.</span></h1>
+ <p class="lead">Drop any file below with a one-line note. The router reads the name and note against the 4orm Drive taxonomy and shows exactly which Shared Drive and folder it belongs in, so nothing ends up in the wrong place. You can file it straight to Drive, override the folder, or search the taxonomy for where something already lives.</p>
+</div></section>
+
+<div class="wrap">
+ <div class="cols">
+
+  <!-- LEFT: drop + classify -->
+  <div class="card">
+   <h2>Drop a document</h2>
+   <p class="sub">Nothing leaves your browser at this step. The name and note are read locally.</p>
+   <div class="drop" id="drop">
+    <div class="ic">&#128228;</div>
+    <div class="big">Drag a file here, or click to choose</div>
+    <div class="small">PDF, image, Word, Excel &mdash; any everyday document</div>
+    <input type="file" id="file" style="display:none"/>
+   </div>
+   <div class="noterow">
+    <label for="note">One-line note (optional, helps the router)</label>
+    <input type="text" id="note" placeholder="e.g. ATB invoice for March, or NDA with Servus"/>
+   </div>
+
+   <div class="res" id="res">
+    <div class="fn" id="fn"></div>
+    <div class="dest">
+     <div class="lab">Files to</div>
+     <div class="path" id="destPath"></div>
+     <div class="drive" id="destDrive"></div>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="why" id="why"></div>
+    <div class="permnote" id="permnote"></div>
+    <div class="override">
+     <label for="ov">Not right? Send it somewhere else</label>
+     <select id="ov"></select>
+    </div>
+    <div class="actions">
+     <a class="btn primary" id="fileBtn" href="#">File it to Drive</a>
+     <a class="btn ghost" id="openBtn" target="_blank" rel="noopener">Open the folder in Drive &#8599;</a>
+    </div>
+   </div>
+  </div>
+
+  <!-- RIGHT: search -->
+  <div class="card">
+   <h2>Find where something lives</h2>
+   <p class="sub">Search the taxonomy and jump straight to the folder in Google Drive.</p>
+   <div class="searchbox">
+    <input type="text" id="search" placeholder="Search folders: invoice, cap table, sandbox, brand&hellip;"/>
+   </div>
+   <div class="sresults" id="sresults"></div>
+   <div class="searchhint" id="searchhint">Type to search all six Shared Drives. You can also open Drive and browse it directly.</div>
+  </div>
+
+ </div>
+
+ <div class="engine">
+  <details>
+   <summary>How the router decides where a document goes</summary>
+   <div class="layer l1">
+    <h4>Layer 1 &mdash; name and note <span>free &middot; instant &middot; nothing leaves Google</span></h4>
+    <p>Deterministic keyword rules run on the filename and your one-line note. "ATB Invoice March.pdf" routes to Finance / Invoices with no reading required. This handles the clear majority of everyday documents at zero cost, and it is the layer running live on this page.</p>
+   </div>
+   <div class="layer l2">
+    <h4>Layer 2 &mdash; read the contents <span>OCR &middot; stays inside Google</span></h4>
+    <p>When the name says nothing ("IMG_2039.pdf"), the text is read. Google Drive OCRs uploads automatically and Google Document AI extracts vendor, date, amount, and document type off a receipt, invoice, or contract, all inside your own Google Cloud. The extracted text is fed back into the Layer 1 rules.</p>
+   </div>
+   <div class="layer l3">
+    <h4>Layer 3 &mdash; judgment on the ambiguous ones <span>a model, in-boundary for sensitive</span></h4>
+    <p>When rules plus extracted text are still not confident, the text goes to a model that classifies it into the taxonomy. Sovereign and confidential material (legal, cap table, incorporation) runs on Gemini via Google Vertex, inside Google's trust boundary. The model only ever suggests; a human approves anything sovereign or confidential. Anything still unsure routes to the drive's <b>_INBOX</b> for the weekly human sweep.</p>
+   </div>
+   <div class="layer">
+    <p style="color:var(--t3)">Layers 2 and 3 run server-side in your Google Apps Script Web App (<b>02_RoutingRules.gs</b>). Paste that endpoint into the config at the top of this page's script and the "File it to Drive" button sends the document through the full pipeline. Until then, this page previews the destination and links you into Drive to file it yourself.</p>
+   </div>
+  </details>
+ </div>
+
+</div>
+
+<footer class="pagefoot"><div class="wrap">
+ <span>4orm Finance &middot; Filing Room</span>
+ <span class="conf">Member access &middot; Confidential</span>
+</div></footer>
+
+<script>
+/* ============================ CONFIG ============================ */
+/* Paste your Google Apps Script Web App URL here to enable one-click filing.
+   Leave blank to run in preview-only mode (recommended until the .gs is deployed). */
+var APPS_SCRIPT_ENDPOINT = "";
+/* Base Google Drive URL to open for "Open the folder" / search deep-links.
+   Point at the 4orm Drive root once created; the folder name is appended as a search. */
+var DRIVE_BASE = "https://drive.google.com/drive/u/0/search?q=";
+
+/* ============================ TAXONOMY ============================ */
+/* Six Shared Drives (per the Drive Blueprint v1). r=restricted access tier. */
+var DRIVES = {
+ SD1:{name:"4orm — Company", tier:"all"},
+ SD2:{name:"4orm — Operations", tier:"all"},
+ SD3:{name:"4orm — Corporate, Legal & IP", tier:"restricted"},
+ SD4:{name:"4orm — Regulatory & Compliance", tier:"restricted"},
+ SD5:{name:"4orm — Finance", tier:"restricted"},
+ SD6:{name:"4orm — Capital & Investors", tier:"restricted"}
+};
+/* Folder paths available in each drive (for the override dropdown + search). */
+var FOLDERS = {
+ SD1:["10 Mission, Vision & Standards","20 Brand / 21 Logos & Marks","20 Brand / 22 Brand Guidelines","20 Brand / 23 Typography & Colour","20 Brand / 24 Brand Assets Library","30 Policies & Handbook / 31 Company Policies","30 Policies & Handbook / 32 Employee & Contractor Handbook","30 Policies & Handbook / 33 Security & Data Policies","40 Internal Comms","50 Training & Enablement / 51 Onboarding","50 Training & Enablement / 53 Process & How-To Library","60 Org & Directory","_INBOX"],
+ SD2:["10 Product / 11 Product Definition & Vision","10 Product / 12 Requirements & Specs","10 Product / 13 Roadmap","10 Product / 14 Research & Discovery","10 Product / 15 Design & UX","20 Engineering / 21 Architecture & Settlement Layer Design","20 Engineering / 22 Technical Specs","20 Engineering / 23 Security & Infrastructure","20 Engineering / 24 Integrations (Banking, Sandbox)","30 White Paper & Technical Writing","40 Go-to-Market / 41 Marketing","40 Go-to-Market / 42 Content","40 Go-to-Market / 43 Website","40 Go-to-Market / 44 Social & Channels","50 Partnerships & BD / 51 Banks & Credit Unions","50 Partnerships & BD / 52 Partner Pipeline & Contacts","50 Partnerships & BD / 53 Partner Agreements (working)","60 Projects / 61 Active Projects","70 Meetings & Transcripts","_INBOX"],
+ SD3:["10 Incorporation & Formation / 11 Articles & Certificate","10 Incorporation & Formation / 12 Founder & Formation Documents","20 Minute Book & Governance / 21 Directors' Resolutions","20 Minute Book & Governance / 22 Shareholder Resolutions","20 Minute Book & Governance / 23 Registers","30 Board & Advisory Board / 32 Board Decks","40 Cap Table & Equity / 41 Cap Table (current)","40 Cap Table & Equity / 42 Share Issuances & Certificates","40 Cap Table & Equity / 44 SAFE / Convertible / Unit Records","50 Contracts Register / 51 Customer & Commercial","50 Contracts Register / 52 Vendor & Supplier","50 Contracts Register / 53 Partner & Channel","50 Contracts Register / 54 NDAs (executed)","60 Corporate Structure / 61 Capital Structure Memoranda","60 Corporate Structure / 63 Mission Anchor / Control Framework","70 Intellectual Property Vault / 71 IP Register","70 Intellectual Property Vault / 73 Trademarks","70 Intellectual Property Vault / 76 IP Assignments","70 Intellectual Property Vault / 77 Domains & Digital Assets","80 People & Talent (HR only)","_INBOX"],
+ SD4:["10 Regulatory Strategy / 11 Jurisdiction & Licensing Map","10 Regulatory Strategy / 12 Regulatory Roadmap","20 Securities / 21 Exemptions & Filings","20 Securities / 22 Regulator Correspondence","30 Sandbox & Innovation / 31 Sandbox Application & Program","30 Sandbox & Innovation / 32 Crown / Provincial Engagement","40 AML / KYC Program / 41 Program & Policy","40 AML / KYC Program / 42 Client KYC Records","50 Licensing & Registration","60 Regulator Correspondence (master log)","70 Deposit & Banking Regulation","80 Compliance Log & Attestations","_INBOX"],
+ SD5:["10 Model & Pro Forma / 11 Financial Model (current)","10 Model & Pro Forma / 12 Pro Forma","10 Model & Pro Forma / 13 Projections & Scenarios","20 Accounting & Bookkeeping / 21 Monthly Close","20 Accounting & Bookkeeping / 22 Financial Statements","30 Banking / 31 Bank Accounts & Statements","40 Receipts & Expenses / 41 Deposits","40 Receipts & Expenses / 42 Contractors","40 Receipts & Expenses / 43 Advisors","40 Receipts & Expenses / 44 Website & Software","40 Receipts & Expenses / 45 Credit Card","40 Receipts & Expenses / 46 Receipt Images","50 Invoices","60 Proposals & Quotes","70 Payroll & Contractor Pay","80 Tax / 81 Corporate Tax (CRA)","80 Tax / 82 GST / HST","80 Tax / 83 SR&ED / Credits","90 Budget & Spend Tracking","_INBOX"],
+ SD6:["10 Data Room / 11 Corporate","10 Data Room / 12 Financials","10 Data Room / 13 Product & Technology","10 Data Room / 14 Regulatory","10 Data Room / 15 Market & Traction","10 Data Room / 16 Team","10 Data Room / 17 Legal & Contracts","20 Fundraise - Pre-Seed / 21 Round Terms & Unit Structure","20 Fundraise - Pre-Seed / 22 Pitch Deck & Materials","20 Fundraise - Pre-Seed / 23 White Paper & Summary","20 Fundraise - Pre-Seed / 24 Subscription & Closing Documents","20 Fundraise - Pre-Seed / 25 Cap-Raise Tracker","30 Investor Pipeline & CRM / 31 Company Pool","30 Investor Pipeline & CRM / 32 Mench Pool","30 Investor Pipeline & CRM / 33 Outreach & Correspondence","40 Advisors / 41 Advisor Agreements & IP Assignments","40 Advisors / 43 Per-Advisor Folders","50 Investor & LP Reporting / 51 Updates & Letters","_INBOX"]
+};
+
+/* ============================ ROUTING RULES (Layer 1) ============================ */
+/* First match wins. kw = keywords tried against filename + note (lowercased). */
+var RULES = [
+ {kw:["invoice"], d:"SD5", p:"50 Invoices"},
+ {kw:["deposit slip","deposit"], d:"SD5", p:"40 Receipts & Expenses / 41 Deposits"},
+ {kw:["receipt","expense"], d:"SD5", p:"40 Receipts & Expenses / 46 Receipt Images"},
+ {kw:["credit card","visa statement","mastercard"], d:"SD5", p:"40 Receipts & Expenses / 45 Credit Card"},
+ {kw:["payroll","paystub","contractor pay","remittance"], d:"SD5", p:"70 Payroll & Contractor Pay"},
+ {kw:["proforma","pro forma","projection","5-year model","five-year model","financial model"], d:"SD5", p:"10 Model & Pro Forma / 11 Financial Model (current)"},
+ {kw:["bank statement","bank account","void cheque","void check"], d:"SD5", p:"30 Banking / 31 Bank Accounts & Statements"},
+ {kw:["proposal","quote","estimate"], d:"SD5", p:"60 Proposals & Quotes"},
+ {kw:["sr&ed","sred"], d:"SD5", p:"80 Tax / 83 SR&ED / Credits"},
+ {kw:["gst","hst"], d:"SD5", p:"80 Tax / 82 GST / HST"},
+ {kw:["cra","corporate tax","t2 ","tax return"], d:"SD5", p:"80 Tax / 81 Corporate Tax (CRA)"},
+ {kw:["financial statement","balance sheet","income statement"], d:"SD5", p:"20 Accounting & Bookkeeping / 22 Financial Statements"},
+ {kw:["budget","spend tracking"], d:"SD5", p:"90 Budget & Spend Tracking"},
+
+ {kw:["cap table","capitalization"], d:"SD3", p:"40 Cap Table & Equity / 41 Cap Table (current)"},
+ {kw:["safe","convertible","unit certificate","warrant","subscription unit"], d:"SD3", p:"40 Cap Table & Equity / 44 SAFE / Convertible / Unit Records"},
+ {kw:["share certificate","share issuance"], d:"SD3", p:"40 Cap Table & Equity / 42 Share Issuances & Certificates"},
+ {kw:["articles","certificate of incorporation","incorporation"], d:"SD3", p:"10 Incorporation & Formation / 11 Articles & Certificate"},
+ {kw:["directors resolution","director resolution"], d:"SD3", p:"20 Minute Book & Governance / 21 Directors' Resolutions"},
+ {kw:["shareholder resolution"], d:"SD3", p:"20 Minute Book & Governance / 22 Shareholder Resolutions"},
+ {kw:["resolution","minute book","minutes"], d:"SD3", p:"20 Minute Book & Governance / 23 Registers"},
+ {kw:["board deck","board pre-read","board meeting"], d:"SD3", p:"30 Board & Advisory Board / 32 Board Decks"},
+ {kw:["nda","non-disclosure","mutual non"], d:"SD3", p:"50 Contracts Register / 54 NDAs (executed)"},
+ {kw:["capital structure memo","capital structure memorandum"], d:"SD3", p:"60 Corporate Structure / 61 Capital Structure Memoranda"},
+ {kw:["mission anchor","control framework"], d:"SD3", p:"60 Corporate Structure / 63 Mission Anchor / Control Framework"},
+ {kw:["ip assignment","assignment of ip","invention assignment"], d:"SD3", p:"70 Intellectual Property Vault / 76 IP Assignments"},
+ {kw:["patent","provisional"], d:"SD3", p:"70 Intellectual Property Vault / 71 IP Register"},
+ {kw:["trademark"], d:"SD3", p:"70 Intellectual Property Vault / 73 Trademarks"},
+ {kw:["domain"], d:"SD3", p:"70 Intellectual Property Vault / 77 Domains & Digital Assets"},
+ {kw:["vendor agreement","supplier agreement"], d:"SD3", p:"50 Contracts Register / 52 Vendor & Supplier"},
+
+ {kw:["subscription agreement","subscription","closing","cheque received","funds received"], d:"SD6", p:"20 Fundraise - Pre-Seed / 24 Subscription & Closing Documents"},
+ {kw:["round terms","unit structure","term sheet"], d:"SD6", p:"20 Fundraise - Pre-Seed / 21 Round Terms & Unit Structure"},
+ {kw:["pitch deck","investor deck"], d:"SD6", p:"20 Fundraise - Pre-Seed / 22 Pitch Deck & Materials"},
+ {kw:["white paper","whitepaper","executive summary"], d:"SD6", p:"20 Fundraise - Pre-Seed / 23 White Paper & Summary"},
+ {kw:["cap-raise","cap raise","raise tracker"], d:"SD6", p:"20 Fundraise - Pre-Seed / 25 Cap-Raise Tracker"},
+ {kw:["advisor agreement","advisory agreement"], d:"SD6", p:"40 Advisors / 41 Advisor Agreements & IP Assignments"},
+ {kw:["lp update","investor update","investor letter","lp letter"], d:"SD6", p:"50 Investor & LP Reporting / 51 Updates & Letters"},
+ {kw:["investor","pipeline","outreach"], d:"SD6", p:"30 Investor Pipeline & CRM / 33 Outreach & Correspondence"},
+ {kw:["data room"], d:"SD6", p:"10 Data Room / 11 Corporate"},
+
+ {kw:["45-106","exemption","prospectus","securities filing"], d:"SD4", p:"20 Securities / 21 Exemptions & Filings"},
+ {kw:["sandbox"], d:"SD4", p:"30 Sandbox & Innovation / 31 Sandbox Application & Program"},
+ {kw:["crown","provincial engagement","samara"], d:"SD4", p:"30 Sandbox & Innovation / 32 Crown / Provincial Engagement"},
+ {kw:["aml","kyc","know your client","anti-money"], d:"SD4", p:"40 AML / KYC Program / 41 Program & Policy"},
+ {kw:["asc","osfi","csa","ciro","fintrac","regulator"], d:"SD4", p:"20 Securities / 22 Regulator Correspondence"},
+ {kw:["deposit guarantee","dgsi","deposit insurance"], d:"SD4", p:"70 Deposit & Banking Regulation"},
+ {kw:["licensing","registration"], d:"SD4", p:"50 Licensing & Registration"},
+
+ {kw:["logo","wordmark","brand mark"], d:"SD1", p:"20 Brand / 21 Logos & Marks"},
+ {kw:["brand guideline","style guide"], d:"SD1", p:"20 Brand / 22 Brand Guidelines"},
+ {kw:["policy","handbook"], d:"SD1", p:"30 Policies & Handbook / 31 Company Policies"},
+ {kw:["onboarding","new joiner"], d:"SD1", p:"50 Training & Enablement / 51 Onboarding"},
+ {kw:["org chart","directory"], d:"SD1", p:"60 Org & Directory"},
+ {kw:["mission","vision","values","standards"], d:"SD1", p:"10 Mission, Vision & Standards"},
+
+ {kw:["requirements","spec","specification"], d:"SD2", p:"10 Product / 12 Requirements & Specs"},
+ {kw:["roadmap"], d:"SD2", p:"10 Product / 13 Roadmap"},
+ {kw:["architecture","settlement layer","smart contract","protocol"], d:"SD2", p:"20 Engineering / 21 Architecture & Settlement Layer Design"},
+ {kw:["integration","banking integration"], d:"SD2", p:"20 Engineering / 24 Integrations (Banking, Sandbox)"},
+ {kw:["technical writing"], d:"SD2", p:"30 White Paper & Technical Writing"},
+ {kw:["marketing"], d:"SD2", p:"40 Go-to-Market / 41 Marketing"},
+ {kw:["content","blog","article"], d:"SD2", p:"40 Go-to-Market / 42 Content"},
+ {kw:["website","landing page"], d:"SD2", p:"40 Go-to-Market / 43 Website"},
+ {kw:["social","linkedin","twitter"], d:"SD2", p:"40 Go-to-Market / 44 Social & Channels"},
+ {kw:["credit union","bank partner","partner pipeline"], d:"SD2", p:"50 Partnerships & BD / 51 Banks & Credit Unions"},
+ {kw:["meeting","transcript","minutes of meeting","call notes"], d:"SD2", p:"70 Meetings & Transcripts"},
+ {kw:["research","market comparable","discovery"], d:"SD2", p:"10 Product / 14 Research & Discovery"},
+
+ /* last-resort catch-all for generic contracts: only fires if nothing above matched */
+ {kw:["engagement letter","contract","agreement","msa","sow"], d:"SD3", p:"50 Contracts Register / 51 Customer & Commercial"}
+];
+
+/* ============================ CLASSIFIER ============================ */
+function classify(filename, note){
+ var hay = ((filename||"") + " " + (note||"")).toLowerCase().replace(/[_\-]+/g," ");
+ for(var i=0;i<RULES.length;i++){
+  var r=RULES[i];
+  for(var k=0;k<r.kw.length;k++){
+   if(hay.indexOf(r.kw[k])>-1){
+    return {drive:r.d, path:r.p, conf:"high", layer:1, matched:r.kw[k]};
+   }
+  }
+ }
+ // No keyword hit: Layer 1 cannot decide. Suggest the Company inbox for the sweep.
+ return {drive:"SD1", path:"_INBOX", conf:"low", layer:1, matched:null};
+}
+
+/* ============================ PERMISSIONS ============================ */
+/* Office context (?o=) sets what the person can file directly.
+   Restricted drives require a manager to approve; suggestions go to _INBOX. */
+var OFFICE = (function(){var o=(new URLSearchParams(location.search).get('o')||'advisor');return /^(advisor|employee|engineering)$/.test(o)?o:'advisor';})();
+var CAN_FILE = { // drives this office can file into directly
+ advisor:["SD1","SD2","SD6"],
+ employee:["SD1","SD2"],
+ engineering:["SD1","SD2"]
+};
+function canFileTo(drive){ return (CAN_FILE[OFFICE]||[]).indexOf(drive)>-1; }
+
+/* ============================ UI ============================ */
+var drop=document.getElementById('drop'), fileInput=document.getElementById('file'),
+    note=document.getElementById('note'), res=document.getElementById('res'),
+    ov=document.getElementById('ov'), current={filename:"",result:null};
+
+// build override dropdown once
+(function(){
+ var html="";
+ Object.keys(DRIVES).forEach(function(dk){
+  html+='<optgroup label="'+DRIVES[dk].name+(DRIVES[dk].tier==="restricted"?" (restricted)":"")+'">';
+  FOLDERS[dk].forEach(function(p){ html+='<option value="'+dk+'||'+p+'">'+p+'</option>'; });
+  html+='</optgroup>';
+ });
+ ov.innerHTML=html;
+})();
+
+function driveLabel(dk){ return dk+" · "+DRIVES[dk].name; }
+function openUrl(dk,p){ var leaf=p.split(" / ").pop(); return DRIVE_BASE+encodeURIComponent(leaf); }
+
+function render(r){
+ current.result=r;
+ document.getElementById('fn').innerHTML = current.filename?('Document: <b>'+current.filename+'</b>'):'From your note';
+ document.getElementById('destPath').textContent = r.path;
+ document.getElementById('destDrive').textContent = driveLabel(r.drive);
+ // chips
+ var cc = r.conf==="high"?["hi","High confidence"]:(r.conf==="mid"?["mid","Medium confidence"]:["lo","Needs a closer read"]);
+ var chips='<span class="chip '+cc[0]+'">'+cc[1]+'</span><span class="chip layer">Layer '+r.layer+' · '+(r.layer===1?"name + note":"contents")+'</span>';
+ document.getElementById('chips').innerHTML=chips;
+ // why
+ var why;
+ if(r.matched){ why='Matched on <b>"'+r.matched+'"</b> in the name or note. '; }
+ else { why='No keyword matched, so Layer 1 cannot place it. '; }
+ if(r.conf==="low"){ why+='Once the Apps Script backend is connected, Layer 2 (OCR / Document AI) reads the contents and Layer 3 (Vertex / Gemini) makes the call. For now it is parked in the Company <b>_INBOX</b> for the weekly sweep.'; }
+ else { why+='You can accept this, or override the folder below.'; }
+ document.getElementById('why').innerHTML=why;
+ // permission note
+ var pn=document.getElementById('permnote');
+ if(!canFileTo(r.drive)){
+  pn.classList.add('show');
+  pn.innerHTML='This lands in a <b>restricted drive</b> ('+DRIVES[r.drive].name+'). As '+OFFICE+', you can suggest it &mdash; it routes to that drive’s <b>_INBOX</b> and a manager approves the final filing.';
+ } else { pn.classList.remove('show'); pn.innerHTML=''; }
+ // set override to match
+ ov.value=r.drive+'||'+r.path;
+ // buttons
+ document.getElementById('openBtn').href=openUrl(r.drive,r.path);
+ var fb=document.getElementById('fileBtn');
+ if(APPS_SCRIPT_ENDPOINT){ fb.removeAttribute('disabled'); fb.textContent='File it to Drive'; }
+ else { fb.setAttribute('disabled','disabled'); fb.textContent='Connect Drive to file (preview mode)'; }
+ res.classList.add('show');
+}
+
+function runClassify(){
+ var r=classify(current.filename, note.value);
+ render(r);
+}
+
+// drag + drop
+['dragenter','dragover'].forEach(function(e){drop.addEventListener(e,function(ev){ev.preventDefault();drop.classList.add('over');});});
+['dragleave','drop'].forEach(function(e){drop.addEventListener(e,function(ev){ev.preventDefault();drop.classList.remove('over');});});
+drop.addEventListener('drop',function(ev){ if(ev.dataTransfer.files&&ev.dataTransfer.files[0]){ current.file=ev.dataTransfer.files[0]; current.filename=current.file.name; runClassify(); }});
+drop.addEventListener('click',function(){fileInput.click();});
+fileInput.addEventListener('change',function(){ if(fileInput.files[0]){ current.file=fileInput.files[0]; current.filename=fileInput.files[0].name; runClassify(); }});
+note.addEventListener('input',function(){ if(current.filename||note.value){ runClassify(); }});
+
+// override
+ov.addEventListener('change',function(){
+ var parts=ov.value.split('||'); var r={drive:parts[0],path:parts[1],conf:"mid",layer:1,matched:current.result?current.result.matched:null};
+ render(r);
+});
+
+// file it
+document.getElementById('fileBtn').addEventListener('click',function(e){
+ e.preventDefault();
+ if(!APPS_SCRIPT_ENDPOINT || !current.file){ return; }
+ var parts=ov.value.split('||');
+ var rd=new FileReader();
+ rd.onload=function(){
+  fetch(APPS_SCRIPT_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+   filename:current.filename, note:note.value, drive:parts[0], path:parts[1], data:rd.result
+  })}).then(function(x){return x.json();}).then(function(j){
+   alert('Filed to '+parts[0]+' / '+parts[1]+(j&&j.url?('\n'+j.url):''));
+  }).catch(function(){ alert('Could not reach the filing endpoint. Check the Apps Script URL.'); });
+ };
+ rd.readAsDataURL(current.file);
+});
+
+/* ============================ SEARCH ============================ */
+var ALL=[];
+Object.keys(FOLDERS).forEach(function(dk){ FOLDERS[dk].forEach(function(p){ ALL.push({drive:dk,path:p}); }); });
+var searchEl=document.getElementById('search'), sres=document.getElementById('sresults'), shint=document.getElementById('searchhint');
+searchEl.addEventListener('input',function(){
+ var q=searchEl.value.trim().toLowerCase();
+ if(!q){ sres.innerHTML=''; shint.style.display='block'; return; }
+ shint.style.display='none';
+ var hits=ALL.filter(function(x){ return (x.path+' '+DRIVES[x.drive].name).toLowerCase().indexOf(q)>-1; }).slice(0,24);
+ if(!hits.length){ sres.innerHTML='<div class="searchhint" style="display:block">No folder matches. Try a broader word, or open Drive to browse.</div>'; return; }
+ sres.innerHTML=hits.map(function(x){
+  return '<a class="srow" href="'+openUrl(x.drive,x.path)+'" target="_blank" rel="noopener"><span class="sp"><span class="sn">'+x.path+'</span><span class="sd">'+driveLabel(x.drive)+(DRIVES[x.drive].tier==="restricted"?" · restricted":"")+'</span></span><span class="go">&#8599;</span></a>';
+ }).join('');
+});
+
+/* ============================ NAV (?o=) ============================ */
+(function(){
+ var o=OFFICE, q='?o='+o, file=location.pathname.split('/').pop();
+ var map={documents:'',roadmap:'road-ahead.html',ptr:'path-to-revenue.html',visual:'visual-data.html',filing:'filing.html'};
+ document.querySelectorAll('[data-tab]').forEach(function(a){
+  var t=a.getAttribute('data-tab');
+  a.href=(t==='documents')?(o+'.html'):(map[t]+q);
+  a.classList.toggle('on', map[t]===file);
+ });
+ var so=document.querySelector('.signout-link'); if(so)so.href='index.html';
+})();
+</script>
+</body>
+</html>

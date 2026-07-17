@@ -148,6 +148,7 @@ footer{max-width:var(--maxw);margin:0 auto;padding:30px 22px 70px;color:#2f4256;
 <a class="ohtab2" data-tab="roadmap" href="road-ahead.html">Roadmap</a>
 <a class="ohtab2" data-tab="ptr" href="path-to-revenue.html">Path to Revenue</a>
 <a class="ohtab2" data-tab="visual" href="visual-data.html">Visual Data</a>
+<a class="ohtab2" data-tab="filing" href="filing.html">Filing Room</a>
 <span class="ohsigned"><span class="d"></span>Signed in &middot; Member access<a class="signout-link" href="#">Sign out</a></span>
 </div></header>
 <a class="homelink" href="#">&#8592; 4orm home</a>
@@ -480,11 +481,12 @@ const LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAADICAYAAADGFbfi
  var o=(new URLSearchParams(location.search).get('o')||'advisor');
  if(!/^(advisor|employee|engineering)$/.test(o))o='advisor';
  var q='?o='+o, file=location.pathname.split('/').pop();
- var map={documents:'',roadmap:'road-ahead.html',ptr:'path-to-revenue.html',visual:'visual-data.html'};
+ var map={documents:'',roadmap:'road-ahead.html',ptr:'path-to-revenue.html',visual:'visual-data.html',filing:'filing.html'};
  document.querySelectorAll('[data-tab]').forEach(function(a){var t=a.getAttribute('data-tab');
   a.href=(t==='documents')?(o+'.html'):(map[t]+q);
   if(map[t]===file)a.classList.add('on');
  });
+  if(o==='engineering'){var ft=document.querySelector('[data-tab="filing"]'); if(ft)ft.style.display='none';} /*hideFilingForEng*/
  var so=document.querySelector('.signout-link'); if(so)so.href='index.html';
 })();</script>
 <script>(function(){var bar=document.querySelector(".ohbar");if(!bar)return;var last=0;window.addEventListener("scroll",function(){var y=window.scrollY||document.documentElement.scrollTop||0;if(y>90&&y>last+4){bar.style.transform="translateY(-100%)";}else if(y<last-4||y<=90){bar.style.transform="translateY(0)";}last=y;},{passive:true});})();</script>

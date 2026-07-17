@@ -23,7 +23,7 @@ const isRoom = createRouteMatcher([
   '/engineering.html',
 ]);
 const isDocuments = createRouteMatcher(['/documents/(.*)']);
-const isDataRoom = createRouteMatcher(['/road-ahead.html','/path-to-revenue.html','/visual-data.html']);
+const isDataRoom = createRouteMatcher(['/road-ahead.html','/path-to-revenue.html','/visual-data.html','/filing.html']);
 
 const gated = clerkMiddleware(async (auth, req) => {
   if (isRoom(req) || isDocuments(req) || isDataRoom(req)) {
@@ -66,6 +66,7 @@ export const config = {
     '/road-ahead.html',
     '/path-to-revenue.html',
     '/visual-data.html',
+    '/filing.html',
     '/(api|trpc)(.*)',
   ],
 };

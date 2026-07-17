@@ -328,6 +328,7 @@
 .ohtabs{display:flex;gap:22px;align-items:center;}
 .ohtab2:hover{color:var(--ink);}
 .ohtab2.on{color:var(--brand);background:rgba(46,107,242,.1);}
+.placeholder .tag.nl{color:#C8991F;}.placeholder .nl-note{margin-top:16px;font-size:.92rem;font-weight:700;color:#C8991F;}.fbadge.b-nl{background:rgba(231,199,108,.16);color:#B4881C;}
 </style>
 <script src="config.js"></script>
 </head>
@@ -355,7 +356,7 @@
 <div id="app">
  <header class="nav">
   <div class="nav-inner">
-   <img class="ohlogo" src="assets/4orm-header-logo.png" alt="4orm Finance"/><nav class="ohtabs"><span class="ohtab2 on">Documents</span><a class="ohtab2" href="road-ahead.html?o=advisor">Roadmap</a><a class="ohtab2" href="path-to-revenue.html?o=advisor">Path to Revenue</a><a class="ohtab2" href="visual-data.html?o=advisor">Visual Data</a></nav>
+   <img class="ohlogo" src="assets/4orm-header-logo.png" alt="4orm Finance"/><nav class="ohtabs"><span class="ohtab2 on">Documents</span><a class="ohtab2" href="road-ahead.html?o=advisor">Roadmap</a><a class="ohtab2" href="path-to-revenue.html?o=advisor">Path to Revenue</a><a class="ohtab2" href="visual-data.html?o=advisor">Visual Data</a><a class="ohtab2" href="filing.html?o=advisor">Filing Room</a></nav>
    <div class="nav-right">
     <div class="userbox"><span class="uname" id="userName"></span><span class="daysrev" id="daysRev"></span><span class="revdate" id="revDate"></span></div>
     <span class="nav-signed"><span class="dot"></span><a onclick="signout()">Sign out</a></span>
@@ -482,7 +483,7 @@ const PORTALS={
       {name:'Mutual Non-Disclosure Agreement',sub:'Your signed reference copy',st:'private'},
       {name:'Signed Engagement Letter',sub:'IP terms included',st:'private'},
       {name:'Compensation & Term Schedule',sub:'Personal to you',st:'private'},
-      {name:'Legacy Token Program',sub:'The first hundred',st:'live',doc:'legacy'},
+      {name:'Legacy Token Program',sub:'The first hundred',st:'notlive',doc:'legacy'},
       {name:'Six-Month Review',sub:'Reviewed with the CEO and Advisory Council',st:'live',doc:'sixmonth'},
       {name:'Contractor Agreement',sub:'[pending 6-month review]',st:'soon'}]},
    {n:'02',k:'Company',t:'The Company',files:[
@@ -492,8 +493,8 @@ const PORTALS={
       {name:'Values',sub:'The ten we operate by',st:'live',doc:'values'},
       {name:'What We Do',sub:'Company overview',st:'live',doc:'whatwedo'}]},
     {n:'03',k:'Shared',t:'Strategy & Status',files:[
-      {name:'Strategy & Fundraise Status',sub:'Living page',st:'dynamic',doc:'strategy'},
-      {name:'Current State Dashboard',sub:'Live from the data room',st:'dynamic',doc:'dashboard'}]},
+      {name:'Strategy & Fundraise Status',sub:'Living page',st:'notlive',doc:'strategy'},
+      {name:'Current State Dashboard',sub:'Live from the data room',st:'notlive',doc:'dashboard'}]},
    {n:'04',k:'Shared',t:'Governance',files:[
      {name:'The Mission Anchor',sub:'Our constitution, full document',st:'live',doc:'anchor'},
      {name:'CEO Commitment',sub:'Founder & CEO statement',st:'live',doc:'ceo'},
@@ -507,10 +508,10 @@ const PORTALS={
    {n:'07',k:'Shared',t:'Company Structure',files:[
       {name:'Corporate Structure',sub:'Alberta entities and oversight',st:'live',doc:'corpstructure'}]},
    {n:'08',k:'Shared · deep dives',t:'Reference Library',files:[
-      {name:'Capital Structure (v14)',sub:'Cap table and unit structure',st:'live',doc:'captable'},
-      {name:'5-Year Model (v14)',sub:'The financial model',st:'live',doc:'fivemodel'},
-     {name:'Capital Structure Memorandum',sub:'Cap table and control framework',st:'live',doc:'capmemo'},
-     {name:'Pre-Seed Round Structure Recs',sub:'From the data room',st:'room'},
+      {name:'Capital Structure (v14)',sub:'Cap table and unit structure',st:'notlive',doc:'captable'},
+      {name:'5-Year Model (v14)',sub:'The financial model',st:'notlive',doc:'fivemodel'},
+     {name:'Capital Structure Memorandum',sub:'Cap table and control framework',st:'notlive',doc:'capmemo'},
+     {name:'Pre-Seed Round Structure Recs',sub:'From the data room',st:'notlive'},
      {name:"Founders' Voting Agreement (full)",sub:'The operative agreement',st:'live',doc:'votingagreement'},
      {name:'Open the full data room',sub:'data.4ormfinance.com',st:'room',url:'https://data.4ormfinance.com'}]},
    {n:'09',k:'Shared',t:'Team, Contacts & FAQ',files:[
@@ -520,7 +521,7 @@ const PORTALS={
   ]}
 };
 
-const BADGE={live:['b-live','Live'],private:['b-private','Private'],dynamic:['b-dyn','Live'],room:['b-room','Data room'],inroom:['b-room','In room'],towrite:['b-soon','To write'],soon:['b-soon','Soon']};
+const BADGE={notlive:['b-nl','Not live'],live:['b-live','Live'],private:['b-private','Private'],dynamic:['b-dyn','Live'],room:['b-room','Data room'],inroom:['b-room','In room'],towrite:['b-soon','To write'],soon:['b-soon','Soon']};
 const FICO={private:'priv',dynamic:'dyn',room:'room',inroom:'room'};
 const PRIVATE_DOCS={'dean@4ormfinance.com':{'Mutual Non-Disclosure Agreement':'documents/private/dean-mnda.pdf','Signed Engagement Letter':'documents/private/dean-engagement-letter.pdf','Compensation & Term Schedule':'documents/private/dean-comp-schedule.pdf'}};
 var CURRENT_EMAIL='';
@@ -578,6 +579,7 @@ function openFile(f){
  if(f.st==='inroom'){openModalDoc(f.name, inroomPlaceholder(f.name));return;}
  if(f.st==='towrite'){openModalDoc(f.name, towritePlaceholder(f.name));return;}
  if(f.st==='soon'){openModalDoc(f.name, soonPlaceholder(f.name));return;}
+ if(f.st==='notlive'){openModalDoc(f.name, notlivePlaceholder(f.name));return;}
  if(f.doc && DOCS[f.doc]){openModalDoc(f.name, DOCS[f.doc]);return;}
  openModalDoc(f.name, soonPlaceholder(f.name));
 }
@@ -652,6 +654,7 @@ const FT='<div class="doc-foot"><span>4orm Finance &middot; Operations</span><sp
 function dtop(l){return `<div class="doc-top"><span>4ORM FINANCE &middot; KCS CAPITAL</span><span>${l} &middot; <span class="conf">CONFIDENTIAL</span></span></div><div class="doc-mark"></div>`;}
 function dmeta(c){return '<div class="dmeta">'+c.map(x=>`<div><div class="l">${x[0]}</div><div class="v">${x[1]}</div></div>`).join('')+'</div>';}
 function bar(label,pct){return `<div style="display:flex;align-items:center;gap:10px;margin:7px 0"><span style="font-size:.82rem;width:170px;color:var(--ink);flex:none">${label}</span><span style="flex:1;height:8px;background:var(--cloud);border-radius:99px;overflow:hidden"><span style="display:block;height:100%;width:${pct}%;background:var(--brand)"></span></span><span style="font-family:var(--font-mono);font-size:.72rem;color:var(--slate);width:34px;text-align:right;flex:none">${pct}%</span></div>`;}
+function notlivePlaceholder(name){return `<div class="placeholder"><div class="pi" style="background:rgba(231,199,108,.16);color:#C8991F">&#9788;</div><h3>${name}</h3><p>This document is not live yet.</p><div class="nl-note">Available here when it is live.</div><div class="tag nl">Not live yet</div></div>`;}
 function soonPlaceholder(name){return `<div class="placeholder"><div class="pi">&#9998;</div><h3>${name}</h3><p>This place card is ready. The document will render here in the 4orm Document Standard once it is supplied.</p><div class="tag">Place card &middot; to be supplied</div></div>`;}
 function privatePlaceholder(name){return `<div class="placeholder"><div class="pi">&#128274;</div><h3>${name}</h3><p>This lives in your private folder and is visible only to you. Your signed copy is placed here after execution.</p><p>No other advisor can see this item.</p><div class="tag">Private &middot; per advisor</div></div>`;}
 function roomPlaceholder(name){return `<div class="placeholder"><div class="pi">&#128193;</div><h3>${name}</h3><p>This document is maintained in the investor data room. As a gated advisor you have full access.</p><p><a href="https://data.4ormfinance.com" target="_blank" rel="noopener" style="color:#2E6BF2;font-weight:700;text-decoration:none">Open it in the data room &#8599;</a></p><div class="tag">From the data room</div></div>`;}
@@ -944,113 +947,7 @@ const DOCS={
   <p>We are our brother's keeper. Every decision must strengthen the mission entrusted to us. We protect our purpose above convenience, popularity, and short-term gain, and steward the future with accountability for all Canadians.</p>
   <div class="callout"><div class="cl">Where this lives</div><p>These ten values come from the Mission Anchor, where they sit alongside our culture, the Absolute Bars, and how the mission is governed.</p></div>
   ${FT}</div>`,
- capmemo:`<div class="doc">${dtop('Capital Structure Memorandum')}<div class="eyebrow-m">Cap table, control, unit structure, vesting</div>
-  <h1 class="dh">Capital Structure Memorandum</h1>
-  <p class="dsub">4orm Finance is being incorporated in Alberta under the Business Corporations Act (Alberta) as Canada's regulated settlement layer for tokenized bank deposits and cash-leg wedge infrastructure.</p>
-  ${dmeta([['Version','14'],['As of','2026-07-08'],['Room','Advisor'],['Class.','Confidential']])}
-
-  <h2 class="ds"><span class="sn">01</span>Introduction</h2>
-  <p>4orm Finance is being incorporated in Alberta under the Business Corporations Act (Alberta) as Canada's regulated settlement layer for tokenized bank deposits and cash-leg wedge infrastructure. This memorandum sets out the capital structure of the Company at incorporation: the founding cap table, the Control Preservation Framework binding the Founders, the pre-seed unit offering structure, and the vesting framework applied to each grant.</p>
-  <p>Version 14 supersedes v13 on raise size and unit structure. The founding cap table (v13) is unchanged. The pre-seed unit structure has been updated to reflect the confirmed terms: 3,000,000 Units at $0.50 per Unit for initial gross proceeds of $1,500,000, each Unit comprising one Class A common share and one-half whole warrant exercisable at $1.50 per share, with milestone-triggered warrant exercise. Full warrant exercise would generate up to an additional $2,250,000, for total potential capital of $3,750,000.</p>
-  <h3 class="dh3">Key facts</h3>
-  <ul>
-    <li>Founding shares: 20,000,000 Class A common issued at $0.001 per share (founder tax-basis pricing).</li>
-    <li>Share class: single class of Class A common (1:1 voting) for all holders. No differential voting class.</li>
-    <li>Team pool: 12.00% of founding shares (2,400,000), reserved for non-founder hires within the pre-seed standard range of 10 to 15%.</li>
-    <li>Pre-seed offering: 3,000,000 Units at $0.50 per Unit at $10M pre-money valuation.</li>
-    <li>Unit composition: 1 Class A common share + 1/2 whole warrant (whole-warrant exercise price $1.50).</li>
-    <li>Warrant trigger: milestone-based (institutional MOU with a bank counterparty, Alberta Sandbox acceptance, or Board-defined events).</li>
-    <li>Total potential capital: $3,750,000 ($1,500,000 initial + up to $2,250,000 contingent on warrant exercise).</li>
-    <li>Standard shareholder protections: ROFR, pre-emptive, drag/tag, broad-based weighted-average anti-dilution.</li>
-  </ul>
-
-  <h2 class="ds"><span class="sn">02</span>Founding Cap Table</h2>
-  <p>20,000,000 founding common shares issued at $0.001 per share. All holders receive Class A common with a 1:1 voting multiple. The table below shows ownership at founding (pre-money).</p>
-  <table>
-    <thead><tr><th>Holder</th><th>Role</th><th>Shares</th><th>% of Founding</th></tr></thead>
-    <tbody>
-      <tr><td>Chad R. Johnston</td><td>Founder, CEO, President, Chairman</td><td>13,940,000</td><td>69.70%</td></tr>
-      <tr><td>Kevin Wong</td><td>Co-Founder, Go-to-Market Strategy</td><td>2,000,000</td><td>10.00%</td></tr>
-      <tr><td>Team Pool (unallocated)</td><td>Reserve for non-founder hires</td><td>2,400,000</td><td>12.00%</td></tr>
-      <tr><td>Bruce Fair (via Mench Capital)</td><td>Founding Capital Markets Advisor</td><td>800,000</td><td>4.00%</td></tr>
-      <tr><td>Sam Mraiheen</td><td>Founding contributor (recognition)</td><td>200,000</td><td>1.00%</td></tr>
-      <tr><td>Don Hickling</td><td>Founding Angel</td><td>200,000</td><td>1.00%</td></tr>
-      <tr><td>Miika Makela</td><td>Capital Strategy Advisor</td><td>200,000</td><td>1.00%</td></tr>
-      <tr><td>Don Hickling (Council seat)</td><td>Advisory Council</td><td>50,000</td><td>0.25%</td></tr>
-      <tr><td>James Atherton</td><td>Advisory Council</td><td>50,000</td><td>0.25%</td></tr>
-      <tr><td>Dean McCall</td><td>Advisory Council</td><td>50,000</td><td>0.25%</td></tr>
-      <tr><td>Zed</td><td>Advisory Council / Head Architect</td><td>50,000</td><td>0.25%</td></tr>
-      <tr><td>Angelo Aquino</td><td>Domain Advisor (RWA)</td><td>20,000</td><td>0.10%</td></tr>
-      <tr><td>Dean Hesse</td><td>Domain Advisor (Research)</td><td>20,000</td><td>0.10%</td></tr>
-      <tr><td>Louise Royer</td><td>Founding contributor (recognition)</td><td>20,000</td><td>0.10%</td></tr>
-      <tr><td>TOTAL</td><td></td><td>20,000,000</td><td>100.00%</td></tr>
-    </tbody>
-  </table>
-  <p class="note">Founder holdings - combined Chad and Kevin bloc: 15,940,000 shares = 79.70% at incorporation. Kevin retains full economic and voting rights over his shares; there is no voting trust or irrevocable proxy. Coordination between the Founders is through the Voting Alignment Covenant in the Founders' Voting Agreement v14 §3.</p>
-  <p class="note">Recognition-equity holders - Sam Mraiheen (1.00%) and Louise Royer (0.10%) hold founding recognition equity with no operational role. They are treated as ordinary shareholders and receive shareholder communications on the ordinary cadence.</p>
-
-  <h2 class="ds"><span class="sn">03</span>Pre-Seed Unit Structure</h2>
-  <p>The pre-seed round is a unit offering at $10M pre-money valuation. The Company is offering up to 3,000,000 Units at $0.50 per Unit for aggregate initial gross proceeds of $1,500,000. Each Unit comprises one (1) Class A common share and one-half (1/2) whole warrant to purchase one (1) additional Class A common share at $1.50 per share. Warrants are milestone-triggered. Full exercise would generate up to $2,250,000 in additional gross proceeds, bringing total potential capital in to $3,750,000.</p>
-  <h3 class="dh3">Pre-Seed Unit Economics</h3>
-  <table>
-    <thead><tr><th>Component</th><th>Ratio / Strike</th><th>Price</th><th>Quantity</th><th>Gross Proceeds</th><th>Dilution</th></tr></thead>
-    <tbody>
-      <tr><td>Class A common share</td><td>1 per Unit</td><td>$0.50</td><td>3,000,000</td><td>$1,500,000</td><td>13%</td></tr>
-      <tr><td>Half warrant (whole strike $1.50)</td><td>0.5 per Unit @ $1.50</td><td>$1.50</td><td>1,500,000</td><td>$2,250,000</td><td>23%</td></tr>
-      <tr><td>Total potential capital</td><td></td><td></td><td></td><td>$3,750,000</td><td></td></tr>
-    </tbody>
-  </table>
-  <p class="note">Pre-money share count 20,000,000. Post-share subscription 23,000,000 shares outstanding. Post-warrant exercise 24,500,000 shares outstanding. Implied post-money at share subscription $11,500,000. Implied post-money at full warrant exercise $36,750,000. Warrant triggers include an executed institutional MOU with a bank counterparty and Alberta Financial Regulatory Sandbox acceptance, and are being finalized by the Board.</p>
-
-  <h2 class="ds"><span class="sn">04</span>Control Preservation Framework</h2>
-  <p>The Company preserves founder control through the following contractual mechanisms in the Founders' Voting Agreement v14 and Articles of Incorporation:</p>
-  <ul>
-    <li>Voting Alignment Covenant (FVA §3): Founders consult before voting on Covered Matters and try to reach a common position; free will preserved for each.</li>
-    <li>Founder Consent Rights (Chad, FVA §5): eight enumerated matters requiring Chad's specific written consent while he holds at least 5% of outstanding shares.</li>
-    <li>Co-Founder Consultation Rights (Kevin, FVA §6): five enumerated matters requiring prior consultation with Kevin; sale of Company requires his written consent.</li>
-    <li>Phased Board Composition (FVA §7): 2 → 3 → 5 → 7 seats through Series A, with Chad as Chairman with tie-breaking vote at all stages.</li>
-    <li>CEO Tenure Protection (FVA §8): Chad removable only by 75% shareholder vote AND material cause.</li>
-    <li>Co-Founder Role Protection (FVA §9): Kevin removable from Board seat or role only by 75% shareholder vote AND material cause.</li>
-    <li>Supermajority Thresholds (FVA §11): 75% Articles / 90% Mission Anchor / 66.67% sale of Company, plus Founder Consent and Kevin Consent where applicable.</li>
-    <li>Mission Anchor Contractual Incorporation: incorporated by reference into all operative agreements; either Founder may invoke a Pause where a material Mission Anchor deviation is asserted.</li>
-    <li>Standard Economic Protections: ROFR, pre-emptive, anti-dilution, drag/tag per the Shareholders' Agreement.</li>
-  </ul>
-
-  <h2 class="ds"><span class="sn">05</span>Vesting Framework</h2>
-  <p>All founder and advisor share grants are subject to reverse vesting in the corresponding Reverse Vesting Agreement:</p>
-  <ul>
-    <li>Founders (Chad, Kevin): 4-year monthly vesting with a 1-year cliff commencing on incorporation. 500,000 Kevin shares vest at the Cliff Date; the remainder vest monthly at approximately 41,667 shares per month for 36 months.</li>
-    <li>Bruce Fair (Founding Capital Markets Advisor): 24-month monthly vesting with secured-at-signing carve-out per the Mench Capital Advisor Agreement.</li>
-    <li>Advisory Council seats (Don, James, Dean McCall, Zed): 24-month monthly vesting with secured-at-signing carve-out per each Advisor Agreement.</li>
-    <li>Domain Advisors (Angelo, Dean Hesse), Capital Strategy Advisor (Miika): 24-month monthly vesting with secured-at-signing carve-out.</li>
-    <li>Founding contributors (Sam Mraiheen, Louise Royer): recognition equity; vesting per each individual grant letter.</li>
-    <li>Team pool (2,400,000 shares): granted from ESOP as employees are hired, subject to 4-year monthly vesting with 1-year cliff on individual grant terms.</li>
-  </ul>
-  <p class="note">Quarterly KPI Checkpoints are established by the Board for each Founder and reviewed each quarter (FVA v14 §10). Checkpoints are informational; they do not gate vesting.</p>
-
-  <h2 class="ds"><span class="sn">06</span>Team Pool and Hiring Roadmap</h2>
-  <p>12.00% of founding shares (2,400,000 Class A common) is reserved for non-founder hires across the multi-entity Canadian regulated enterprise. Per-role allocations follow Carta hire-number medians for regulated fintech pre-seed. The team pool sits within the standard pre-seed range of 10 to 15%.</p>
-
-  <h2 class="ds"><span class="sn">07</span>Regulatory Framework</h2>
-  <p>Securities: NI 45-106 accredited investor exemption for the pre-seed unit offering. NI 31-103 registration analysis on capital-raise compensation (per the Capital-Raise Compensation Policy; issuer-officer carve-out under CP 31-103CP s.1.3). The Alberta Securities Commission is the primary regulator; Osler (Alberta) and Fasken (BC) are external counsel.</p>
-  <p>Corporate: Alberta Business Corporations Act (ABCA). Articles of Incorporation incorporate the Mission Anchor by reference and set the single Class A common share class. Bylaws follow the standard Alberta corporate framework.</p>
-
-  <h2 class="ds"><span class="sn">08</span>Referenced Documents</h2>
-  <ul>
-    <li>Founders' Voting Agreement v14 - voting alignment covenant, Founder Consent Rights, Board Composition, CEO Tenure Protection, Mission Anchor stewardship</li>
-    <li>Co-Founder Agreement (Chad and Kevin) - individual co-founder relationship, roles, vesting, IP assignment</li>
-    <li>Reverse Vesting Agreements (each Founder and each Advisor) - vesting terms and clawback</li>
-    <li>Mission Anchor v14 - constitutional commitments</li>
-    <li>Decision Matrix v16 - operational authority, Board Approvals master list, Board Reporting Cadence</li>
-    <li>Capital Structure Workbook v14 (xlsx) - full cap table, benchmark matrix, pre-seed unit structure tab, vesting schedules</li>
-    <li>Equity Rationale v14 - position-by-position rationale for each holder's allocation</li>
-    <li>Capital Raise Compensation Policy v14 - compliance framework for capital-raise compensation</li>
-    <li>Mench Capital Advisor Agreement v14 - Bruce Fair's advisor engagement</li>
-    <li>Dean McCall Advisory Engagement Letter - CTO Placement Success Fee framework</li>
-    <li>Advisor Agreement Template v14 - standard advisor engagement</li>
-    <li>5-Year Pro Forma v14 - financial model with SPEER toggle</li>
-  </ul>
-  ${FT}</div>`,
+ capmemo:`${notlivePlaceholder('Capital Structure Memorandum')}`,
  votingagreement:`<div class="doc">${dtop('Founders Voting Agreement')}<div class="eyebrow-m">v14 - Voting Alignment Covenant</div>
   <h1 class="dh">Founders' Voting Agreement</h1>
   <p class="dsub">This Founders' Voting Agreement is the operative agreement between the founders of 4orm Finance governing how they coordinate and align their shareholder voting rights, appoint directors, and preserve the constitutional commitments of the Company set out in the Mission Anchor.</p>
@@ -1197,233 +1094,8 @@ const DOCS={
   <p>Title: President and Chief Executive Officer</p>
   <p>Date: _____________________</p>
   ${FT}</div>`,
- captable:`<div class="doc">${dtop('Capital Structure')}<div class="eyebrow-m">v14 workbook</div>
-  <h1 class="dh">Capital Structure.</h1>
-  <p class="dsub">The v14 founding capital structure of 4orm Finance: a single-class Class A common cap table, the pre-seed unit offering, the team pool, vesting by holder, the Legacy Token concept, and how each choice benchmarks against the market.</p>
-  ${dmeta([['Version','v14'],['As of','2026-07-08'],['Room','Advisor'],['Class.','Confidential']])}
-  <div class="stats">
-   <div class="stat"><div class="n">20,000,000</div><div class="l">Founding Class A common shares</div></div>
-   <div class="stat"><div class="n">$10M</div><div class="l">Pre-money valuation</div></div>
-   <div class="stat"><div class="n">$0.50</div><div class="l">Unit price at pre-seed</div></div>
-   <div class="stat"><div class="n">$3.75M</div><div class="l">Raise ceiling with milestone warrants</div></div>
-  </div>
-  <h2 class="ds"><span class="sn">01</span>Founding cap table</h2>
-  <p class="lead">4orm Finance, Version 14, a single class of Class A common at one vote per share, dated 2026-07-06 with a v14 update on 2026-07-08.</p>
-  <table class="dt"><thead><tr><th>Holder</th><th>Class</th><th>Vote</th><th>Shares</th><th>%</th></tr></thead><tbody>
-   <tr><td>Chad R. Johnston</td><td>Class A</td><td>1:1</td><td>13,940,000</td><td>69.70%</td></tr>
-   <tr><td>Kevin Wong (Co-Founder, Go-to-Market Strategy)</td><td>Class A</td><td>1:1</td><td>2,000,000</td><td>10.00%</td></tr>
-   <tr><td>Bruce Fair (Founding Capital Markets Advisor via Mench)</td><td>Class A</td><td>1:1</td><td>800,000</td><td>4.00%</td></tr>
-   <tr><td>Sam Mraiheen (Founding contributor, passive)</td><td>Class A</td><td>1:1</td><td>200,000</td><td>1.00%</td></tr>
-   <tr><td>Don Hickling (Founding Angel)</td><td>Class A</td><td>1:1</td><td>200,000</td><td>1.00%</td></tr>
-   <tr><td>Miika Makela (Capital Strategy Advisor)</td><td>Class A</td><td>1:1</td><td>200,000</td><td>1.00%</td></tr>
-   <tr><td>Don Hickling (Advisory Council seat)</td><td>Class A</td><td>1:1</td><td>50,000</td><td>0.25%</td></tr>
-   <tr><td>James Atherton (Advisory Council seat)</td><td>Class A</td><td>1:1</td><td>50,000</td><td>0.25%</td></tr>
-   <tr><td>Dean McCall (Advisory Council seat)</td><td>Class A</td><td>1:1</td><td>50,000</td><td>0.25%</td></tr>
-   <tr><td>Zed (Advisory Council seat / Head Architect)</td><td>Class A</td><td>1:1</td><td>50,000</td><td>0.25%</td></tr>
-   <tr><td>Angelo Aquino</td><td>Class A</td><td>1:1</td><td>20,000</td><td>0.10%</td></tr>
-   <tr><td>Dean Hesse</td><td>Class A</td><td>1:1</td><td>20,000</td><td>0.10%</td></tr>
-   <tr><td>Louise Royer</td><td>Class A</td><td>1:1</td><td>20,000</td><td>0.10%</td></tr>
-   <tr><td>Team Pool (unallocated)</td><td>Class A</td><td>1:1</td><td>2,400,000</td><td>12.00%</td></tr>
-   <tr><td><b>TOTAL</b></td><td></td><td></td><td><b>20,000,000</b></td><td><b>100%</b></td></tr>
-  </tbody></table>
-  <h2 class="ds"><span class="sn">02</span>Share class structure</h2>
-  <table class="dt"><thead><tr><th>Class</th><th>Notes</th></tr></thead><tbody>
-   <tr><td>Class A common (1:1)</td><td>Single class. All holders one vote per share. Includes Chad, Kevin, Bruce, Don, Sam, advisors, team pool, and any other holder.</td></tr>
-   <tr><td>Series Pre-Seed Preferred</td><td>Legacy from v13 unit structure. v14 uses single-class Class A common at pre-seed (no preferred). Row retained for future series preferred use.</td></tr>
-  </tbody></table>
-  <div class="callout"><div class="cl">Founder voting bloc</div><p>Chad and Kevin hold a combined 79.70% of the vote at incorporation. In v14 this bloc is secured by the Founders Voting Agreement (the Voting Alignment Covenant); there is no voting trust and no proxy. The workbook's legacy "Voting Trust" label is superseded by the covenant approach.</p></div>
-  <h2 class="ds"><span class="sn">03</span>Pre-seed unit structure</h2>
-  <p class="lead">$10M pre-money. $3M working target: $1.5M initial subscription, up to $3.75M with milestone-triggered warrants. Unit = 1 Class A common + 1/2 whole warrant at a $1.50 strike. Opens Aug 1, 2026.</p>
-  <table class="dt"><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>
-   <tr><td>Pre-money valuation</td><td>$10,000,000</td></tr>
-   <tr><td>Founders common shares</td><td>20,000,000</td></tr>
-   <tr><td>Common share price (pre-seed)</td><td>$0.50</td></tr>
-   <tr><td>Unit price</td><td>$0.50</td></tr>
-   <tr><td>Preferred face value per unit (redeemable)</td><td>$0.00</td></tr>
-   <tr><td>Common value per unit (at $0.50)</td><td>$0.50</td></tr>
-   <tr><td>Common shares per unit</td><td>1</td></tr>
-   <tr><td>Warrants per unit (whole-warrant basis)</td><td>0.5</td></tr>
-   <tr><td>Common shares per whole warrant</td><td>1</td></tr>
-   <tr><td>Warrant exercise price</td><td>$1.50</td></tr>
-   <tr><td>Target raise</td><td>$1,500,000</td></tr>
-   <tr><td>Units issued (target)</td><td>3,000,000</td></tr>
-   <tr><td>Preferred shares issued</td><td>0</td></tr>
-   <tr><td>Common shares issued (at close)</td><td>3,000,000</td></tr>
-   <tr><td>Whole warrants issued</td><td>1,500,000</td></tr>
-   <tr><td>Potential common shares from warrant exercise</td><td>1,500,000</td></tr>
-   <tr><td>Total commons post-close (no warrants)</td><td>23,000,000</td></tr>
-   <tr><td>Total commons fully-diluted (warrants exercised)</td><td>24,500,000</td></tr>
-   <tr><td>Pre-seed common dilution (no warrants)</td><td>13.04%</td></tr>
-   <tr><td>Pre-seed common dilution (FD, warrants exercised)</td><td>18.37%</td></tr>
-   <tr><td>Post-money valuation</td><td>$11,500,000</td></tr>
-  </tbody></table>
-  <div class="callout"><div class="cl">Warrant triggers and architecture</div><p>Warrants are milestone-triggered (bank MOU, Alberta Sandbox acceptance, or Board-defined events). v14 uses single-class Class A common (no preferred at pre-seed). Corporate architecture: 4orm Finance (parent, Alberta ABCA) with operating subsidiaries stood up as regulatory milestones warrant.</p></div>
-  <h2 class="ds"><span class="sn">04</span>Team pool allocation</h2>
-  <p class="lead">Pool = 12.00% = 2,400,000 shares Class A common. Version 11, aligned with the pre-seed standard of 10 to 15%.</p>
-  <table class="dt"><thead><tr><th>Role</th><th>Function</th><th>% Founders</th><th>Shares</th><th>Vesting</th></tr></thead><tbody>
-   <tr><td>CTO</td><td>Tech leadership; smart contracts, infra architecture</td><td>2.00%</td><td>400,000</td><td>4-yr monthly, 1-yr cliff, quarterly KPIs</td></tr>
-   <tr><td>CCO (Chief Compliance Officer)</td><td>Six-regulator compliance execution</td><td>1.50%</td><td>300,000</td><td>4-yr monthly, 1-yr cliff, quarterly KPIs</td></tr>
-   <tr><td>Head of Regulatory Affairs</td><td>CIRO, CSA, OSFI, FINTRAC, BoC, FSRA, AMF relationships</td><td>1.00%</td><td>200,000</td><td>4-yr monthly, 1-yr cliff, quarterly KPIs</td></tr>
-   <tr><td>Head of Risk &amp; Settlement Ops</td><td>Operational settlement, custody, counterparty risk</td><td>0.75%</td><td>150,000</td><td>4-yr monthly, 1-yr cliff, quarterly KPIs</td></tr>
-   <tr><td>VP Engineering</td><td>Engineering management, team leadership</td><td>1.00%</td><td>200,000</td><td>4-yr monthly, 1-yr cliff, quarterly KPIs</td></tr>
-   <tr><td>Head of Institutional Sales</td><td>Schedule I banks, credit unions, EMDs</td><td>1.00%</td><td>200,000</td><td>4-yr monthly, 1-yr cliff, quarterly KPIs</td></tr>
-   <tr><td>Lead Programmer / Sr. Smart Contract Engineer</td><td>ERC-3643 specialist</td><td>0.50%</td><td>100,000</td><td>4-yr monthly, 1-yr cliff, quarterly KPIs</td></tr>
-   <tr><td>Security / DevSecOps Lead</td><td>HSM, KYC integration, cybersecurity</td><td>0.50%</td><td>100,000</td><td>4-yr monthly, 1-yr cliff, quarterly KPIs</td></tr>
-   <tr><td>Senior Product Manager</td><td>Six institutional personas; lifecycle ownership</td><td>0.50%</td><td>100,000</td><td>4-yr monthly, 1-yr cliff, quarterly KPIs</td></tr>
-   <tr><td>Head of Custody Operations</td><td>Within 4orm Trust Co</td><td>0.50%</td><td>100,000</td><td>4-yr monthly, 1-yr cliff, quarterly KPIs</td></tr>
-   <tr><td>Fractional CFO</td><td>Part-time CFO during pre-seed/seed</td><td>0.50%</td><td>100,000</td><td>24-month monthly vest</td></tr>
-   <tr><td>Front End Engineer</td><td>Customer-facing surfaces</td><td>0.25%</td><td>50,000</td><td>4-yr monthly, 1-yr cliff, quarterly KPIs</td></tr>
-   <tr><td>Back End Engineer</td><td>Platform services</td><td>0.25%</td><td>50,000</td><td>4-yr monthly, 1-yr cliff, quarterly KPIs</td></tr>
-   <tr><td>Designer / UX Lead</td><td>Multiple surfaces shipped</td><td>0.25%</td><td>50,000</td><td>4-yr monthly, 1-yr cliff, quarterly KPIs</td></tr>
-   <tr><td>Buffer for unanticipated hires / Seed pool refresh</td><td>Senior reserves; Seed refresh capacity</td><td>0.75%</td><td>150,000</td><td>Buffer sized to preserve 12.00% total. Advisory Council seats moved to Cap Table.</td></tr>
-   <tr><td><b>TOTAL POOL</b></td><td></td><td><b>12.00%</b></td><td><b>2,400,000</b></td><td></td></tr>
-  </tbody></table>
-  <h2 class="ds"><span class="sn">05</span>Vesting schedules</h2>
-  <p class="lead">Monthly vesting with quarterly KPIs. Founders and team pool: 48-month monthly, 1-year cliff. Bruce, Miika, Angelo, Dean Hesse, Advisory Council: 24-month monthly, no cliff. Louise and Sam: fully vested at incorporation. Amounts are cumulative shares vested at the end of the period stated, with percentages of total shares.</p>
-  <table class="dt"><thead><tr><th>Holder</th><th>Total shares</th><th>Signing</th><th>End M12</th><th>End M24</th><th>End M48</th></tr></thead><tbody>
-   <tr><td>Chad R. Johnston</td><td>13,940,000</td><td>4,265,000 (31%)</td><td>6,683,750 (48%)</td><td>9,102,500 (65%)</td><td>13,940,000 (100%)</td></tr>
-   <tr><td>Kevin Wong</td><td>2,000,000</td><td>600,000 (30%)</td><td>950,000 (48%)</td><td>1,300,000 (65%)</td><td>2,000,000 (100%)</td></tr>
-   <tr><td>Bruce Fair (Founding Advisor, Capital Markets Advisor)</td><td>800,000</td><td>400,000 (50%)</td><td>600,000 (75%)</td><td>800,000 (100%)</td><td>800,000 (100%)</td></tr>
-   <tr><td>Don Hickling (Founding Angel)</td><td>200,000</td><td>100,000 (50%)</td><td>150,000 (75%)</td><td>200,000 (100%)</td><td>200,000 (100%)</td></tr>
-   <tr><td>Miika Makela (Capital Strategy Advisor)</td><td>200,000</td><td>50,000 (25%)</td><td>125,000 (62%)</td><td>200,000 (100%)</td><td>200,000 (100%)</td></tr>
-   <tr><td>Sam Mraiheen (Founding contributor, passive)</td><td>200,000</td><td>200,000 (100%)</td><td>200,000 (100%)</td><td>200,000 (100%)</td><td>200,000 (100%)</td></tr>
-   <tr><td>Angelo Aquino (RWA Advisor)</td><td>20,000</td><td>5,000 (25%)</td><td>12,500 (62%)</td><td>20,000 (100%)</td><td>20,000 (100%)</td></tr>
-   <tr><td>Dean Hesse (Research Advisor)</td><td>20,000</td><td>5,000 (25%)</td><td>12,500 (62%)</td><td>20,000 (100%)</td><td>20,000 (100%)</td></tr>
-   <tr><td>Louise Royer</td><td>20,000</td><td>20,000 (100%)</td><td>20,000 (100%)</td><td>20,000 (100%)</td><td>20,000 (100%)</td></tr>
-   <tr><td>Don Hickling (Advisory Council)</td><td>50,000</td><td>12,500 (25%)</td><td>31,250 (62%)</td><td>50,000 (100%)</td><td>50,000 (100%)</td></tr>
-   <tr><td>Dean McCall (Advisory Council)</td><td>50,000</td><td>12,500 (25%)</td><td>31,250 (62%)</td><td>50,000 (100%)</td><td>50,000 (100%)</td></tr>
-   <tr><td>James Atherton (Advisory Council)</td><td>50,000</td><td>12,500 (25%)</td><td>31,250 (62%)</td><td>50,000 (100%)</td><td>50,000 (100%)</td></tr>
-   <tr><td>zahiruddin sandeela (Advisory Council, Architecture Path)</td><td>50,000</td><td>12,500 (25%)</td><td>31,250 (62%)</td><td>50,000 (100%)</td><td>50,000 (100%)</td></tr>
-  </tbody></table>
-  <h2 class="ds"><span class="sn">06</span>Legacy Token</h2>
-  <p class="lead">Placeholder, subject to securities review. The concept is 2% of post-tax net income annually, distributed to Legacy Token pool holders indefinitely.</p>
-  <p>The v14 5-year model (with atomic settlement removed) shows approximately $101.8M revenue, approximately $83.1M pre-tax operating profit, and approximately $60.6M post-tax net income at a 27% blended tax rate. A 2% pool is approximately $1.21M distributable over 5 years: per-holder at 23 named holders is approximately $52.7K over 5 years; at a 40 pool cap it is approximately $30.3K per holder over 5 years. Securities review is required for the permanent distribution obligation.</p>
-  <div class="stats">
-   <div class="stat"><div class="n">2%</div><div class="l">Of post-tax net income, paid annually</div></div>
-   <div class="stat"><div class="n">~$1.21M</div><div class="l">Distributable over 5 years</div></div>
-   <div class="stat"><div class="n">~$52.7K</div><div class="l">Per holder over 5 years (23 named)</div></div>
-   <div class="stat"><div class="n">~$30.3K</div><div class="l">Per holder over 5 years (40 cap)</div></div>
-  </div>
-  <table class="dt"><thead><tr><th>#</th><th>Name</th><th>Role / Relationship</th><th>Status</th></tr></thead><tbody>
-   <tr><td>1</td><td>Chad R. Johnston</td><td>CEO / Co-Founder</td><td>Placeholder</td></tr>
-   <tr><td>2</td><td>Sam Mraiheen</td><td>Founding contributor (passive)</td><td>Placeholder</td></tr>
-   <tr><td>3</td><td>Kevin Wong</td><td>Co-Founder (Strategy)</td><td>Placeholder</td></tr>
-   <tr><td>4</td><td>Bruce Fair</td><td>Founding Advisor + Capital Markets Advisor</td><td>Placeholder</td></tr>
-   <tr><td>5</td><td>Don Hickling</td><td>Founding Angel + Bridge Lender</td><td>Placeholder</td></tr>
-   <tr><td>6</td><td>Miika Makela</td><td>Capital Strategy Advisor</td><td>Placeholder</td></tr>
-   <tr><td>7</td><td>Angelo Aquino</td><td>RWA Advisor</td><td>Placeholder</td></tr>
-   <tr><td>8</td><td>Dean Hesse</td><td>Research Advisor</td><td>Placeholder</td></tr>
-   <tr><td>9</td><td>Mike Stephens</td><td>Securities Tech Legal Advisor (Fasken)</td><td>Placeholder</td></tr>
-   <tr><td>10</td><td>Matthew Burgoyne</td><td>Blockchain Legal Advisor (Osler)</td><td>Placeholder</td></tr>
-   <tr><td>11</td><td>James Atherton</td><td>Corporate Counsel (Capiche Law)</td><td>Placeholder</td></tr>
-   <tr><td>12</td><td>Steve Osmand</td><td>Contributor (to confirm role)</td><td>Placeholder</td></tr>
-   <tr><td>13</td><td>Krisztina Giran</td><td>Contributor (to confirm role)</td><td>Placeholder</td></tr>
-   <tr><td>14</td><td>Perry Kundert</td><td>Contributor (to confirm role)</td><td>Placeholder</td></tr>
-   <tr><td>15</td><td>Randy Lewis</td><td>Contributor (to confirm role)</td><td>Placeholder</td></tr>
-   <tr><td>16</td><td>Brad Hollingsworth</td><td>Contributor (to confirm role)</td><td>Placeholder</td></tr>
-   <tr><td>17</td><td>Sean Henstock</td><td>Contributor (to confirm role)</td><td>Placeholder</td></tr>
-   <tr><td>18</td><td>Marlin Kroeker</td><td>Contributor (to confirm role)</td><td>Placeholder</td></tr>
-   <tr><td>19</td><td>Carmen Ramstead</td><td>Contributor (to confirm role)</td><td>Placeholder</td></tr>
-   <tr><td>20</td><td>Jake Johnston</td><td>Contributor (to confirm role)</td><td>Placeholder</td></tr>
-   <tr><td>21</td><td>Louise Royer</td><td>Contributor (to confirm role)</td><td>Placeholder</td></tr>
-   <tr><td>22</td><td>zahiruddin sandeela</td><td>Advisory Council (Architecture Path)</td><td>Placeholder</td></tr>
-   <tr><td>23</td><td>Dean McCall</td><td>Advisory</td><td>Placeholder</td></tr>
-  </tbody></table>
-  <p>Named holders occupy 23 of 100 slots; the remainder are open. Profit-share mechanic (concept):</p>
-  <ul>
-   <li><b>Pool.</b> 2% of the Company's net profit, calculated on an annual basis after audited financial statements.</li>
-   <li><b>Distribution.</b> Pro-rata across all confirmed Legacy Token holders for that fiscal year (currently 1 of 100 is approximately 0.02% of net profit per holder; with 100 holders, approximately 0.02% each).</li>
-   <li><b>Term.</b> Indefinite, subject to corporate continuation and counsel review on transferability and successor rights.</li>
-   <li><b>Eligibility.</b> First 100 contributors who helped the Company prior to pre-seed close. Eligibility recognized in writing.</li>
-   <li><b>Separate from equity.</b> Legacy Token participation is a profit-share recognition, not an equity grant. Holders may also separately hold equity on the Cap Table.</li>
-   <li><b>Securities classification.</b> To be confirmed. Counsel to determine whether the Legacy Token is a security under Alberta and Canadian securities law (SOFI / Howey-equivalent). Distribution mechanics and any required prospectus exemptions to be confirmed.</li>
-  </ul>
-  <h2 class="ds"><span class="sn">07</span>Benchmark matrix</h2>
-  <p class="lead">Each element: the 4orm choice against a market benchmark, with an assessment flag.</p>
-  <table class="dt"><thead><tr><th>#</th><th>Area</th><th>4orm choice</th><th>Market benchmark</th><th>Assessment</th></tr></thead><tbody>
-   <tr><td>1</td><td>Jurisdiction</td><td>Alberta ABCA (incorporation jurisdiction)</td><td>CBCA vs ABCA vs BCBCA functionally similar</td><td>In line; soft-law Mission Anchor approach (no Benefit Company regime in Alberta)</td></tr>
-   <tr><td>2</td><td>Founders shares</td><td>20,000,000 commons at $0.001</td><td>Standard founder tax-basis pricing</td><td>In line</td></tr>
-   <tr><td>3</td><td>Founder split</td><td>Chad 69.70% / Kevin 10% / Bruce 4% / Sam 1% / Don 1% Angel + 0.25% Council / Miika 1% / James 0.25% / Dean McCall 0.25% / Zed 0.25% / Angelo 0.1% / Dean Hesse 0.1% / Louise Royer 0.1% / Team Pool 12%</td><td>Carta 2024: lead founder ~44% balanced 3-person teams</td><td>Chad anchored above median (originator, sole capital); partner spread reflects role differentiation</td></tr>
-   <tr><td>4</td><td>Share classes</td><td>Class A 1:1 control (Chad only); Class A 1:1 common (all others). Two classes only.</td><td>US tech 1:1 common for founder; single control class is modern norm</td><td>In line; clean two-class structure consistent with Shopify and modern founder-share precedents</td></tr>
-   <tr><td>7</td><td>Founder vesting</td><td>4-yr monthly vest, 1-yr cliff for partners. Chad ~12% secured + 6-mo credit. Quarterly KPIs.</td><td>Market standard; monthly cadence preferred over quarterly or annual</td><td>Monthly cadence supports tighter KPI alignment</td></tr>
-   <tr><td>8</td><td>Bruce schedule</td><td>4% Founding Advisor and Capital Markets Advisor; 2% (400K) secured + 2% (400K) on 24-mo monthly</td><td>Advisor median 0.24%; top 10% over 1%; senior capital-markets advisor with operational scope justifies premium</td><td>Above top-decile advisor benchmark; reflects dual Founding Advisor / Capital Markets Advisor role; aligned with CP 31-103CP s.1.3 issuer-officer carve-out</td></tr>
-   <tr><td>9</td><td>Miika schedule</td><td>1% Capital Strategy Advisor; 0.25% (50K) secured + 0.75% (150K) on 24-mo monthly</td><td>Advisor median 0.24%; top 10% over 1%; capital strategy advisor with named scope</td><td>Above median; reflects defined Capital Strategy advisor role; CP 31-103CP s.1.3 issuer-officer carve-out applies</td></tr>
-   <tr><td>10</td><td>Angelo and Dean schedule</td><td>0.1% each (20,000 shares); 0.025% (5K) secured + 0.075% (15K) on 24-mo monthly</td><td>Advisor median 0.24%; standard advisor grants for domain advisors</td><td>In line; carved from Chad allocation as RWA Advisor and Research Advisor</td></tr>
-   <tr><td>11</td><td>Don Founding Angel</td><td>1% via discounted entry + granted; separate from pre-seed</td><td>Standard angel discount; granted portion vesting</td><td>In line</td></tr>
-   <tr><td>12</td><td>Advisory Council</td><td>8 members at 0.25% each = 2.00% total. 4 named on Cap Table: Don Hickling, James Atherton, Dean McCall, Zed. 4 open seats remain inside the team pool. Zed can grow to 1.00% as Head of Architecture if/when transition to operational role.</td><td>Advisor median 0.24%; FAST 0.25 to 1%</td><td>Above median; binding milestone-review authority justifies</td></tr>
-   <tr><td>13</td><td>Team pool</td><td>12% pool (founders-basis).</td><td>Pre-seed pool 10% to 15%; regulated/deep-tech 15%+</td><td>Above standard pre-seed range; multi-entity Canadian regulated fintech hiring need supports; substantial buffer for hires and Seed pool refresh</td></tr>
-   <tr><td>14</td><td>Pre-seed structure</td><td>Unit offering: $0.50/unit = 1 Class A common + 0.5 whole warrant ($1.50 strike); milestone-triggered; $3M working target ($1.5M initial floor, $3.75M ceiling)</td><td>~20% of pre-seed deals priced; SAFE common; unit structures rare in pure tech</td><td>Milestone-triggered warrants defensible; single-class common cleaner than v13 preferred structure</td></tr>
-   <tr><td>15</td><td>Pre-seed valuation</td><td>$10M pre / $3M target / 13.04% dilution at close (18.37% FD)</td><td>2026 pre-seed median ~$5 to 6M pre-money</td><td>Above median; multi-entity regulated platform supports premium</td></tr>
-   <tr><td>16</td><td>Preferred redemption</td><td>n/a - v14 single-class Class A common; no preferred</td><td>Legacy from v13 unit structure</td><td>Removed at v14</td></tr>
-   <tr><td>17</td><td>Investor protections</td><td>1x non-participating liquidation pref; broad-based weighted-average anti-dilution; pro-rata</td><td>Market standard</td><td>In line</td></tr>
-   <tr><td>18</td><td>Securities exemptions</td><td>NI 45-106 accredited investor exemption</td><td>Most common; private-issuer cap at 50 holders</td><td>Confirm exemption strategy with counsel</td></tr>
-   <tr><td>19</td><td>Capital-raise compensation</td><td>No cash commission or success fee tied to capital raised. Time-vested service equity; non-capital milestone bonuses. Issuer-officer carve-out under CP 31-103CP s.1.3</td><td>NI 31-103 dealer registration</td><td>In line; full Capital-Raise Compensation Policy adopted</td></tr>
-   <tr><td>20</td><td>Mission Anchor</td><td>Mission Anchor (standalone) + Founders' Voting Agreement refusal right (no Articles entrenchment, no Unanimous Shareholders' Agreement device per Founder decision)</td><td>Patagonia and Anthropic LTBT precedents reviewed; soft-law approach adopted</td><td>Counsel review of contractual reinforcements (advisor / customer / vendor / employment) recommended</td></tr>
-  </tbody></table>
-  <p style="font-size:.78rem;color:var(--slate)">Confidential. Internal capital-structure workbook, v14. Figures are drawn from the 4orm Finance capital structure workbook and are subject to definitive documentation, counsel review, and required regulatory approvals. The Legacy Token is a placeholder concept subject to securities review and is not an offer to sell or a solicitation of an offer to buy any security, token, or instrument, and nothing here is a promise or guarantee of value, profit, distribution, or payment. Nothing in this document is legal, tax, or financial advice.</p>
-  ${FT}</div>`,
- fivemodel:`<div class="doc">${dtop('5-Year Model')}<div class="eyebrow-m">v14 Final Deployed</div>
-  <h1 class="dh">The 5-Year Model.</h1>
-  <p class="dsub">The full v14 financial model for 4orm Finance, read straight from the deployed workbook: five active revenue streams across four financial institutions, in semi-annual periods, all figures CAD.</p>
-  ${dmeta([['Version','v14 Final Deployed'],['Updated','2026-07-08'],['Room','Advisor'],['Class.','Confidential']])}
-  <div class="stats">
-   <div class="stat"><div class="n">~$101.8M</div><div class="l">Platform revenue, five years (CAD)</div></div>
-   <div class="stat"><div class="n">~$104.0M</div><div class="l">Revenue with non-dilutive grants</div></div>
-   <div class="stat"><div class="n">~$83.1M</div><div class="l">Pre-tax operating profit, EBITDA-equivalent, near 80% margin</div></div>
-   <div class="stat"><div class="n">~$60.6M</div><div class="l">Post-tax net at 27% blended tax, near 59% net margin</div></div>
-  </div>
-  <h2 class="ds"><span class="sn">01</span>Five-year P&amp;L</h2>
-  <p class="lead">The model runs in semi-annual periods from the second half of 2026 through the end of 2031. The 2026 column reflects a half year only, and no revenue is booked until the first institution comes online in 2028. Values below are in CAD millions, and figures in parentheses are losses.</p>
-  <table class="dt"><thead><tr><th>Line item (CAD M)</th><th>2026</th><th>2027</th><th>2028</th><th>2029</th><th>2030</th><th>2031</th><th>5-yr total</th></tr></thead><tbody>
-   <tr><td>Platform revenue</td><td>-</td><td>-</td><td>7.70</td><td>22.99</td><td>32.33</td><td>38.79</td><td>101.81</td></tr>
-   <tr><td>Non-dilutive grants</td><td>-</td><td>0.36</td><td>0.78</td><td>0.68</td><td>0.27</td><td>0.15</td><td>2.23</td></tr>
-   <tr><td>Total revenue + grants</td><td>-</td><td>0.36</td><td>8.48</td><td>23.67</td><td>32.60</td><td>38.94</td><td>104.04</td></tr>
-   <tr><td>DevEx (build costs)</td><td>0.29</td><td>0.27</td><td>0.80</td><td>0.28</td><td>0.11</td><td>0.08</td><td>1.83</td></tr>
-   <tr><td>OpEx (ongoing)</td><td>0.50</td><td>1.70</td><td>3.47</td><td>4.21</td><td>4.58</td><td>4.68</td><td>19.13</td></tr>
-   <tr><td>Total expenses</td><td>0.79</td><td>1.97</td><td>4.27</td><td>4.49</td><td>4.69</td><td>4.76</td><td>20.97</td></tr>
-   <tr><td><b>Operating profit (pre-tax)</b></td><td>(0.79)</td><td>(1.61)</td><td>4.21</td><td>19.18</td><td>27.91</td><td>34.18</td><td><b>83.07</b></td></tr>
-  </tbody></table>
-  <div class="callout"><div class="cl">Reading the margin</div><p>The operating profit line above is a pre-tax, EBITDA-equivalent figure: revenue plus grants, less development and operating costs, before financing and tax. On revenue plus grants of 104.04M, the 83.07M operating profit is a margin near 80%. That headline is an operating margin, not a net margin. Applying a 27% blended tax to the 83.07M gives roughly 60.6M in post-tax net income, a net margin near 59% on platform revenue. The model turns cumulatively profitable during 2028 after an early build period of losses.</p></div>
-  <h2 class="ds"><span class="sn">02</span>Revenue streams</h2>
-  <p class="lead">Revenue is built from five active fee streams, each priced on a defined base and split with the partner institution. The 4orm share is the portion the platform retains. A sixth stream is reserved and is currently off, contributing zero in every period.</p>
-  <table class="dt"><thead><tr><th>Stream</th><th>Fee rate</th><th>4orm share</th><th>5-yr revenue (CAD)</th></tr></thead><tbody>
-   <tr><td>Settlement</td><td>1.5 bps of settlement volume</td><td>30%</td><td>$2.82M</td></tr>
-   <tr><td>Issuance</td><td>0.5% of issuance volume</td><td>60%</td><td>$39.32M</td></tr>
-   <tr><td>Trading</td><td>5 bps of trading volume</td><td>100%</td><td>$2.62M</td></tr>
-   <tr><td>Custody</td><td>30 bps of custody AUA</td><td>40%</td><td>$21.83M</td></tr>
-   <tr><td>SaaS + APIs</td><td>$300,000 per enterprise client, per year</td><td>80%</td><td>$35.22M</td></tr>
-   <tr><td>Reserved 6th stream</td><td>Value-based pricing on verified settlement savings</td><td>Off</td><td>$0.00</td></tr>
-   <tr><td><b>Total</b></td><td></td><td></td><td><b>$101.81M</b></td></tr>
-  </tbody></table>
-  <div class="callout"><div class="cl">Scope note</div><p>The Atomic Settlement Savings Share has been removed from scope. The workbook keeps a placeholder row for a reserved sixth revenue stream, but it is toggled off and carries zero across all periods, so it does not contribute to any figure on this page. Revenue is driven by four institutions coming online in sequence: ATB Financial and Bow Valley Credit Union in 2028, then Vancity Credit Union and Servus Credit Union in 2029.</p></div>
-  <h2 class="ds"><span class="sn">03</span>Non-dilutive capital</h2>
-  <p class="lead">The model layers in grant and tax-credit income across the five years. This non-dilutive stack totals 2.23M CAD over the plan and flows into the revenue-plus-grants line above.</p>
-  <table class="dt"><thead><tr><th>Program</th><th>5-yr total (CAD)</th></tr></thead><tbody>
-   <tr><td>Alberta Innovates FinTech Sandbox</td><td>$250,000</td></tr>
-   <tr><td>NRC IRAP</td><td>$500,000</td></tr>
-   <tr><td>SR&amp;ED Tax Credits</td><td>$430,000</td></tr>
-   <tr><td>Digital Supercluster</td><td>$500,000</td></tr>
-   <tr><td>Innovative Solutions Canada</td><td>$150,000</td></tr>
-   <tr><td>PrairiesCan</td><td>$250,000</td></tr>
-   <tr><td>Mitacs</td><td>$150,000</td></tr>
-   <tr><td>Alberta Enterprise Accelerate Fund IV</td><td>$0</td></tr>
-   <tr><td><b>Total non-dilutive capital</b></td><td><b>$2,230,000</b></td></tr>
-  </tbody></table>
-  <table class="dt"><thead><tr><th>Grant income by year (CAD M)</th><th>2026</th><th>2027</th><th>2028</th><th>2029</th><th>2030</th><th>2031</th><th>5-yr total</th></tr></thead><tbody>
-   <tr><td>Non-dilutive grants</td><td>-</td><td>0.36</td><td>0.78</td><td>0.68</td><td>0.27</td><td>0.15</td><td>2.23</td></tr>
-  </tbody></table>
-  <div class="callout"><div class="cl">How to treat it</div><p>The non-dilutive stack materially extends runway and reduces future dilution. It is best read as upside to the base plan and is not counted inside the $3M pre-seed use of proceeds. Most of these programs require documented eligible research activity in the tax year, so the larger claims build as the platform is developed.</p></div>
-  <h2 class="ds"><span class="sn">04</span>Method and margin</h2>
-  <p class="lead">A short note on how the numbers on this page are constructed, so they can be read with confidence.</p>
-  <ul>
-   <li><b>Periods.</b> The model is semi-annual, spanning eleven half-year periods from the second half of 2026 through the second half of 2031. The 2026 annual column is a single half year.</li>
-   <li><b>Institutions.</b> Four financial institutions drive revenue: ATB Financial and Bow Valley Credit Union onboard in 2028, Vancity Credit Union and Servus Credit Union in 2029. Each contributes across all five active streams.</li>
-   <li><b>Streams.</b> Five active streams are live: Settlement, Issuance, Trading, Custody, and SaaS plus APIs. A sixth stream is reserved and switched off, and the Atomic Settlement Savings Share has been removed from scope.</li>
-   <li><b>Margin framing.</b> The workbook's roughly 80% figure is a pre-tax operating, or EBITDA-equivalent, margin, not a net margin. Post-tax net at a 27% blended rate is close to 59% of platform revenue, or roughly 60.6M CAD on 83.07M of pre-tax operating profit.</li>
-   <li><b>Currency and rounding.</b> All figures are CAD. Per-year values are shown in millions and rounded for readability, while the five-year totals reflect the workbook to the dollar.</li>
-  </ul>
-  <p style="font-size:.78rem;color:var(--slate)">Confidential. For information only. Figures are drawn from the 4orm Finance internal 5-year financial model, version 14 Final Deployed, and depend on assumptions that may not be realized, including the timing and scale of institutional onboarding, fee volumes, grant eligibility, and tax treatment. Post-tax figures apply an assumed 27% blended tax rate for illustration and are not tax advice. This document is not an offer to sell or a solicitation to buy any security, and nothing here is a promise or guarantee of revenue, profit, or value. Contains forward-looking statements subject to material risk; actual outcomes may differ.</p>
-  ${FT}</div>`,
+ captable:`${notlivePlaceholder('Capital Structure')}`,
+ fivemodel:`${notlivePlaceholder('5-Year Model')}`,
  whatis:`<div class="doc">${dtop('Why 4orm')}<div class="eyebrow-m">Start here</div>
   <h1 class="dh">Why 4orm?</h1>
   <p class="dsub">4orm did not begin with technology. It began with people.</p>
@@ -1782,52 +1454,8 @@ const DOCS={
   </ul>
   <p style="font-size:.78rem;color:var(--slate)">Confidential. For discussion with prospective 4orm family members and, where noted, accredited investors under NI 45-106. Not an offer to sell or buy securities; no regulator has assessed any securities described here. Contains forward-looking statements subject to material risk, including required regulatory approvals; actual results may differ. Financial figures are management estimates. 4orm is not affiliated with or endorsed by any regulator; Project Samara is directional industry proof, not a 4orm result. 4orm Trust Co is proposed, not yet authorized.</p>
   ${FT}</div>`,
- strategy:`<div class="doc">${dtop('Strategy & Fundraise Status')}<div class="eyebrow-m">Strategy and fundraise status</div>
-  <h1 class="dh">Where we are right now.</h1>
-  <p class="dsub">The raise, the commitments, and the strategy, kept current. This is a living page, the figures update as they move.</p>
-  ${dmeta([['Round','$3M pre-seed'],['Pre-money','$10M'],['Opens','August 1, 2026'],['Class.','Confidential']])}
-  <div class="stats">
-   <div class="stat"><div class="n">$3M</div><div class="l">Pre-seed target, $10M pre-money</div></div>
-   <div class="stat"><div class="n">~$500K</div><div class="l">In letters of intent / soft commitments</div></div>
-   <div class="stat"><div class="n">~$70K</div><div class="l">In the door to date</div></div>
-   <div class="stat"><div class="n">Almost</div><div class="l">Corporate structure complete</div></div>
-  </div>
-  <h2 class="ds"><span class="sn">01</span>The raise</h2>
-  <ul>
-   <li><b>Round.</b> $3M pre-seed at a $10M pre-money, opens August 1, 2026.</li>
-   <li><b>Commitments.</b> Roughly $500K in LOIs and soft commitments, about $70K received to date.</li>
-   <li><b>Structure.</b> Incorporation in Alberta and the subscription documents are in progress and nearly complete.</li>
-  </ul>
-  <h2 class="ds"><span class="sn">02</span>The strategy</h2>
-  <ul>
-   <li><b>The wedge.</b> The cash leg, a tokenized bank deposit, settling delivery-versus-payment with legal finality.</li>
-   <li><b>The MVP.</b> Connect institutions first, then pull in tokenization projects that need our rails.</li>
-   <li><b>The build-up.</b> Revenue from partners funds our own development team, tokenization engine, and smart-contract work.</li>
-  </ul>
-  <div class="callout"><div class="cl">Living document</div><p>Update the figures and status as they change; the live tracker is the Path to Revenue in the data room.</p></div>
-  ${FT}</div>`,
- dashboard:`<div class="doc">${dtop('Current State')}<div class="eyebrow-m">Current state</div>
-  <h1 class="dh">Progress at a glance.</h1>
-  <p class="dsub">The 4orm build, mirrored from the live data room tracker. This page mirrors the live Path to Revenue and roadmap in the data room. We are roughly a third of the way to an operating, regulated exchange, and moving every week.</p>
-  ${dmeta([['Progress','37% to revenue'],['Workstreams','9 weekly'],['Institutions','191 mapped'],['Value','2.6-6.3x per $1']])}
-  <div class="stats">
-   <div class="stat"><div class="n">37%</div><div class="l">Progress to first revenue</div></div>
-   <div class="stat"><div class="n">9</div><div class="l">Workstreams tracked weekly</div></div>
-   <div class="stat"><div class="n">191</div><div class="l">Canadian institutions mapped</div></div>
-   <div class="stat"><div class="n">2.6-6.3x</div><div class="l">Value per $1 deployed</div></div>
-  </div>
-  <h2 class="ds"><span class="sn">01</span>Nine workstreams</h2>
-  ${bar('Marketing & web',80)}
-  ${bar('Legal & structure',48)}
-  ${bar('Capital & pre-seed',45)}
-  ${bar('Team & advisory',38)}
-  ${bar('Business development',30)}
-  ${bar('Product & engineering',24)}
-  ${bar('Investor pipeline',24)}
-  ${bar('Grants, non-dilutive',20)}
-  ${bar('Compliance & regulatory',18)}
-  <div class="callout"><div class="cl">Snapshot</div><p>Snapshot values shown here are from the data room roadmap. Wire this page to pull the live Path to Revenue and weekly wins from data.4ormfinance.com so it stays current on its own.</p></div>
-  ${FT}</div>`,
+ strategy:`${notlivePlaceholder('Strategy & Fundraise Status')}`,
+ dashboard:`${notlivePlaceholder('Current State')}`,
  ceo:`<div class="doc">${dtop('CEO Commitment')}<div class="eyebrow-m">Founder and CEO commitment statement</div>
   <h1 class="dh">Founder & CEO Commitment.</h1>
   <p class="dsub">This statement records my personal commitment to 4orm Finance, the company I am incorporating in Alberta and intend to lead as Founder and Chief Executive Officer. It is intended to make my commitments explicit and durable to my co-founders, to the Advisory Council, to incoming pre-seed investors, and to the team that will build the Company alongside me.</p>
@@ -1948,52 +1576,7 @@ const DOCS={
   </ul>
   <div class="callout"><div class="cl">Privacy is the default</div><p>The Mission Anchor's data bars apply to you: privacy is the default, and customer data is never monetized or shared outside lawful process.</p></div>
   ${FT}</div>`,
- legacy:`<div class="doc">${dtop('Legacy Token Program')}<div class="eyebrow-m">The first hundred</div>
-  <h1 class="dh">The first hundred.</h1>
-  <p class="dsub">Legacy tokens for the people who help build 4orm. Most people help build a thing and are forgotten. Not here. The first one hundred people who help get 4orm off the ground, paid or unpaid, whether they are with us for three days or three years, have their name added to a permanent list, and each receives ten legacy tokens. This is how we tie the people who mattered at the start into what 4orm becomes, for good, and pass it on to the people they love.</p>
-  ${dmeta([['Total pool','1,000 tokens'],['Contributors','First 100'],['Each','10 tokens'],['Profit share','2% net, yearly']])}
-  <div class="stats">
-   <div class="stat"><div class="n">1,000</div><div class="l">Legacy tokens in total</div></div>
-   <div class="stat"><div class="n">100</div><div class="l">Founding contributors on the list</div></div>
-   <div class="stat"><div class="n">10</div><div class="l">Tokens per person</div></div>
-   <div class="stat"><div class="n">2%</div><div class="l">Of net profit, paid yearly to the legacy class</div></div>
-  </div>
-  <h2 class="ds"><span class="sn">01</span>How it works</h2>
-  <ul>
-   <li><b>Your name on the list.</b> The moment you help, you are on it. Paid or unpaid, three days or three years, it does not matter. One hundred names, and no more.</li>
-   <li><b>Ten tokens each.</b> One thousand legacy tokens in total, ten to each of the first hundred. That is the entire pool, allocated to the people who showed up first.</li>
-   <li><b>A share of the profit, every year.</b> The legacy class is intended to receive 2% of 4orm Finance net profit annually, indefinitely, divided across the tokens and paid out yearly. Ten tokens is one percent of the pool, and at the scale 4orm is built for, it is designed to become a genuine inheritance over time, not a one-time bonus.</li>
-  </ul>
-  <h2 class="ds"><span class="sn">02</span>Built to outlast you</h2>
-  <ul>
-   <li><b>Held in trust.</b> We are working to place the legacy tokens in a trust, for tax efficiency and to protect the people who hold them.</li>
-   <li><b>Passed to your family.</b> We are designing custody so tokens can be held securely and transferred to loved ones and family over time. A legacy in the real sense, not a slogan.</li>
-   <li><b>The list is real.</b> It is created and tracked today. As the structure is approved, the list comes to fruition, name by name.</li>
-  </ul>
-  <div class="callout"><div class="cl">Where this stands</div><p>Pending securities and legal approval. The legacy token is in the research and discovery phase, being designed with counsel. This page describes our intent, not a finished instrument. It is not an offer, not a promise of payment or value, and the terms may change or may not proceed.</p></div>
-  <div class="callout"><div class="cl">A first of its kind</div><p>To our knowledge, no company has built an instrument quite like this. We are in active compliance and legal discovery right now to structure it correctly, in a way that protects the people who hold these tokens, and their families, indefinitely. Getting that protection right comes before anything issues.</p></div>
-  <p style="font-size:.78rem;color:var(--slate)">Confidential. For information only. This document describes a program under design and is not an offer to sell or a solicitation of an offer to buy any security, token, or other instrument, in any jurisdiction, and nothing here is a promise or guarantee of value, profit, distribution, or payment. The legacy token and any profit share, trust structure, custody, transferability, and tax treatment are conceptual, subject to securities and legal review, definitive documentation, and required regulatory approvals, and may change materially or may not proceed. Any profit-share percentage and payment cadence are intended terms only and are not committed. No securities regulatory authority has reviewed, assessed, or approved this program or any securities described here. Nothing in this document is legal, tax, or financial advice. Contains forward-looking statements subject to material risk; actual outcomes may differ. 4orm Finance is not a trust company and holds no trust authorization; any trust arrangement is subject to authorization and counsel review. Backstop: this program is all or nothing. If it does not proceed, or 4orm does not succeed, no legacy tokens issue, vest, or pay out, and no one receives anything, including the founders and every contributor, with no fallback, guarantee, buyback, or alternative compensation of any kind.</p>
-  <h2 class="ds"><span class="sn">03</span>The 2%, and what it could mean</h2>
-  <p class="lead">A closer look at the legacy token, grounded in our model and cast forward.</p>
-  <p><b>Why the legacy token exists.</b> The legacy token is a way of doing business differently. Some people come in early and, though they do not spend a lot of time with us, they truly move the business. This is how we honor the people who believed in us at the beginning. We believe relationships should last, so we tie those relationships into what 4orm becomes, for good, and pass that on to the people they love.</p>
-  <p><b>What the 2% is measured on.</b> The legacy class is intended to share 2% of the Company's post-tax net income, paid yearly. "Profit" here means the bottom line: what is left after the business pays to build and run itself and after tax, the figure the audited statements report. We do not expect a profit in the early build years. In our model the Company is investing and running at a loss while it stands up the platform, and profit begins to build as the institutions come online. The honest way to read the 2% is to start the clock at the point the Company is profitable, and grow from there.</p>
-  <h3>The anchor: our own model, over five years</h3>
-  <div class="stats">
-   <div class="stat"><div class="n">~$60.6M</div><div class="l">Post-tax net income over the 5-year model (v14)</div></div>
-   <div class="stat"><div class="n">~59%</div><div class="l">Net margin, with about 80% pre-tax operating margin</div></div>
-   <div class="stat"><div class="n">~$1.21M</div><div class="l">2% legacy pool over the five years</div></div>
-   <div class="stat"><div class="n">~$10.5K</div><div class="l">Per 10-token holder, per year, at 23 named holders</div></div>
-  </div>
-  <p>Source: 4orm 5-year model (v14). Over the five years the model shows about $101.8M in platform revenue, about $104M including grants, and about $60.6M in post-tax net income at a 27% tax rate, a net margin of about 59 percent. The roughly 80 percent figure some documents cite is the pre-tax operating margin, not the net margin. Two percent of that post-tax net income is about $1.21M, distributed across the legacy pool over the five years.</p>
-  <h3>Casting it forward: what the 2% shares out</h3>
-  <table class="dt"><thead><tr><th>Basis</th><th>2% pool over five years</th><th>Per holder over five years</th><th>Per holder / year</th></tr></thead><tbody>
-   <tr><td><b>23 named holders</b> (the list today)</td><td>~$1.21M</td><td>~$52,700</td><td>~$10,500</td></tr>
-   <tr><td><b>40-slot cap</b> (if the pool is shared wider)</td><td>~$1.21M</td><td>~$30,300</td><td>~$6,000</td></tr>
-  </tbody></table>
-  <p>The per-holder figure depends on how many people ultimately share the 2% pool: about $52,700 each over the five years across the 23 named holders on the list today, or about $30,300 each if the pool is shared across a 40-slot cap. These figures sit on the five-year model only. If 4orm grows well beyond the five-year plan, and it is built to, the base the 2% is measured on grows with it, but we are not going to put a number on that here.</p>
-  <div class="callout"><div class="cl">The idea, in one line</div><p>On our own five-year model, ten legacy tokens is designed to return on the order of several thousand dollars a year to the people who helped at the start. If the bigger vision lands, it becomes a genuine inheritance. That is what it means to honor a relationship that lasts.</p></div>
-  <p style="font-size:.78rem;color:var(--slate)">Confidential. For information only. This document is illustrative and is not an offer to sell or a solicitation to buy any security, token, or instrument, and it is not a promise or guarantee of value, profit, distribution, or payment. Figures labeled as model output are drawn from the Company's internal 5-year financial model (v14) and depend on assumptions that may not be realized; the forward figures are illustrations, not forecasts, and carry very wide uncertainty. The legacy token, the 2% profit share, the basis on which profit is measured, and any trust, custody, transferability, and tax treatment are conceptual and subject to securities and legal review, definitive documentation in the Legacy Token Instrument, and required regulatory approvals, and may change materially or may not proceed. Any distribution, if the program proceeds, is calculated on the audited basis set out in the definitive instrument, which governs and may differ from the post-tax net income basis used here. Nothing in this document is legal, tax, or financial advice. Contains forward-looking statements subject to material risk; actual outcomes may differ. If the Legacy Token Instrument does not materialize, the allocation lapses and no substitute is owed.</p>
-  ${FT}</div>`,
+ legacy:`${notlivePlaceholder('Legacy Token Program')}`,
  sixmonth:`<div class="doc">${dtop('Six-Month Review')}<div class="eyebrow-m">How your advisory term is reviewed</div>
   <h1 class="dh">The Six-Month Review</h1>
   <p class="dsub">At six months we sit down together, look at what was promised against what was built, and decide, honestly and in both directions, whether we go further.</p>
