@@ -313,6 +313,7 @@
 .ohtabs{display:flex;gap:22px;align-items:center;}
 .ohtab2:hover{color:var(--ink);}
 .ohtab2.on{color:var(--brand);background:rgba(46,107,242,.1);}
+.placeholder .tag.nl{color:#C8991F;}.placeholder .nl-note{margin-top:16px;font-size:.92rem;font-weight:700;color:#C8991F;}.fbadge.b-nl{background:rgba(231,199,108,.16);color:#B4881C;}
 </style>
 <script src="config.js"></script>
 </head>
@@ -340,7 +341,7 @@
 <div id="app">
  <header class="nav">
   <div class="nav-inner">
-   <img class="ohlogo" src="assets/4orm-header-logo.png" alt="4orm Finance"/><nav class="ohtabs"><span class="ohtab2 on">Documents</span><a class="ohtab2" href="road-ahead.html?o=employee">Roadmap</a><a class="ohtab2" href="path-to-revenue.html?o=employee">Path to Revenue</a><a class="ohtab2" href="visual-data.html?o=employee">Visual Data</a></nav>
+   <img class="ohlogo" src="assets/4orm-header-logo.png" alt="4orm Finance"/><nav class="ohtabs"><span class="ohtab2 on">Documents</span><a class="ohtab2" href="road-ahead.html?o=employee">Roadmap</a><a class="ohtab2" href="path-to-revenue.html?o=employee">Path to Revenue</a><a class="ohtab2" href="visual-data.html?o=employee">Visual Data</a><a class="ohtab2" href="filing.html?o=employee">Filing Room</a></nav>
    <div class="nav-right">
     <div class="userbox"><span class="uname" id="userName"></span><span class="daysrev" id="daysRev"></span></div>
     <span class="nav-signed"><span class="dot"></span><a onclick="signout()">Sign out</a></span>
@@ -472,7 +473,7 @@ const PORTALS={
    {n:'02',k:'Shared',t:'The Company',files:[
      {name:'Mission, Vision & Values',sub:'One-pager',st:'soon'},
      {name:'What We Do',sub:'One-pager',st:'soon'},
-     {name:'Current State Dashboard',sub:'Live from the data room',st:'dynamic',doc:'dashboard'}]},
+     {name:'Current State Dashboard',sub:'Live from the data room',st:'notlive',doc:'dashboard'}]},
    {n:'03',k:'Shared',t:'Policies',files:[
      {name:'Employee Handbook',sub:'Coming soon',st:'soon'},
      {name:'Code of Conduct',sub:'Coming soon',st:'soon'},
@@ -492,7 +493,7 @@ const PORTALS={
   ]}
 };
 
-const BADGE={live:['b-live','Live'],private:['b-private','Private'],dynamic:['b-dyn','Live'],room:['b-room','Data room'],inroom:['b-room','In room'],towrite:['b-soon','To write'],soon:['b-soon','Soon']};
+const BADGE={notlive:['b-nl','Not live'],live:['b-live','Live'],private:['b-private','Private'],dynamic:['b-dyn','Live'],room:['b-room','Data room'],inroom:['b-room','In room'],towrite:['b-soon','To write'],soon:['b-soon','Soon']};
 const FICO={private:'priv',dynamic:'dyn',room:'room',inroom:'room'};
 
 let current='advisor';
@@ -546,6 +547,7 @@ function openFile(f){
  if(f.st==='inroom'){openModalDoc(f.name, inroomPlaceholder(f.name));return;}
  if(f.st==='towrite'){openModalDoc(f.name, towritePlaceholder(f.name));return;}
  if(f.st==='soon'){openModalDoc(f.name, soonPlaceholder(f.name));return;}
+ if(f.st==='notlive'){openModalDoc(f.name, notlivePlaceholder(f.name));return;}
  if(f.doc && DOCS[f.doc]){openModalDoc(f.name, DOCS[f.doc]);return;}
  openModalDoc(f.name, soonPlaceholder(f.name));
 }
@@ -604,6 +606,7 @@ const FT='<div class="doc-foot"><span>4orm Finance &middot; Operations</span><sp
 function dtop(l){return `<div class="doc-top"><span>4ORM FINANCE &middot; KCS CAPITAL</span><span>${l} &middot; <span class="conf">CONFIDENTIAL</span></span></div><div class="doc-mark"></div>`;}
 function dmeta(c){return '<div class="dmeta">'+c.map(x=>`<div><div class="l">${x[0]}</div><div class="v">${x[1]}</div></div>`).join('')+'</div>';}
 function bar(label,pct){return `<div style="display:flex;align-items:center;gap:10px;margin:7px 0"><span style="font-size:.82rem;width:170px;color:var(--ink);flex:none">${label}</span><span style="flex:1;height:8px;background:var(--cloud);border-radius:99px;overflow:hidden"><span style="display:block;height:100%;width:${pct}%;background:var(--brand)"></span></span><span style="font-family:var(--font-mono);font-size:.72rem;color:var(--slate);width:34px;text-align:right;flex:none">${pct}%</span></div>`;}
+function notlivePlaceholder(name){return `<div class="placeholder"><div class="pi" style="background:rgba(231,199,108,.16);color:#C8991F">&#9788;</div><h3>${name}</h3><p>This document is not live yet.</p><div class="nl-note">Available here when it is live.</div><div class="tag nl">Not live yet</div></div>`;}
 function soonPlaceholder(name){return `<div class="placeholder"><div class="pi">&#9998;</div><h3>${name}</h3><p>This place card is ready. The document will render here in the 4orm Document Standard once it is supplied.</p><div class="tag">Place card &middot; to be supplied</div></div>`;}
 function privatePlaceholder(name){return `<div class="placeholder"><div class="pi">&#128274;</div><h3>${name}</h3><p>This lives in your private folder and is visible only to you. Your signed copy is placed here after execution.</p><p>No other advisor can see this item.</p><div class="tag">Private &middot; per advisor</div></div>`;}
 function roomPlaceholder(name){return `<div class="placeholder"><div class="pi">&#128193;</div><h3>${name}</h3><p>This document is maintained in the investor data room. As a gated advisor you have full access.</p><p><a href="https://data.4ormfinance.com" target="_blank" rel="noopener" style="color:#2E6BF2;font-weight:700;text-decoration:none">Open it in the data room &#8599;</a></p><div class="tag">From the data room</div></div>`;}
@@ -659,28 +662,7 @@ const DOCS={
   </ul>
   <div class="callout"><div class="cl">Your six-month clock</div><p>Advisors start as advisor and adviser. The banner at the top counts down to your review date, six months from your first login, when we define the ongoing role together.</p></div>
   ${FT}</div>`,
- dashboard:`<div class="doc">${dtop('Current State')}<div class="eyebrow-m">Current state</div>
-  <h1 class="dh">Progress at a glance.</h1>
-  <p class="dsub">The 4orm build, mirrored from the live data room tracker. This page mirrors the live Path to Revenue and roadmap in the data room. We are roughly a third of the way to an operating, regulated exchange, and moving every week.</p>
-  ${dmeta([['Progress','37% to revenue'],['Workstreams','9 weekly'],['Institutions','191 mapped'],['Value','2.6-6.3x per $1']])}
-  <div class="stats">
-   <div class="stat"><div class="n">37%</div><div class="l">Progress to first revenue</div></div>
-   <div class="stat"><div class="n">9</div><div class="l">Workstreams tracked weekly</div></div>
-   <div class="stat"><div class="n">191</div><div class="l">Canadian institutions mapped</div></div>
-   <div class="stat"><div class="n">2.6-6.3x</div><div class="l">Value per $1 deployed</div></div>
-  </div>
-  <h2 class="ds"><span class="sn">01</span>Nine workstreams</h2>
-  ${bar('Marketing & web',80)}
-  ${bar('Legal & structure',48)}
-  ${bar('Capital & pre-seed',45)}
-  ${bar('Team & advisory',38)}
-  ${bar('Business development',30)}
-  ${bar('Product & engineering',24)}
-  ${bar('Investor pipeline',24)}
-  ${bar('Grants, non-dilutive',20)}
-  ${bar('Compliance & regulatory',18)}
-  <div class="callout"><div class="cl">Snapshot</div><p>Snapshot values shown here are from the data room roadmap. Wire this page to pull the live Path to Revenue and weekly wins from data.4ormfinance.com so it stays current on its own.</p></div>
-  ${FT}</div>`,
+ dashboard:`${notlivePlaceholder('Current State')}`,
  team:`<div class="doc">${dtop('Team')}<div class="eyebrow-m">Team &amp; contacts</div>
   <h1 class="dh">Team &amp; contacts.</h1>
   <p class="dsub">Your first points of contact. Reach out any time; you are never guessing where to go.</p>

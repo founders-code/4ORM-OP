@@ -146,6 +146,7 @@
 <a class="ohtab2" data-tab="roadmap" href="road-ahead.html">Roadmap</a>
 <a class="ohtab2" data-tab="ptr" href="path-to-revenue.html">Path to Revenue</a>
 <a class="ohtab2" data-tab="visual" href="visual-data.html">Visual Data</a>
+<a class="ohtab2" data-tab="filing" href="filing.html">Filing Room</a>
 </nav>
 <span class="ohsigned"><span class="d"></span>Signed in &middot; Member access<a class="signout-link" href="index.html">Sign out</a></span>
 </div></header>
@@ -326,11 +327,12 @@
  var o=(new URLSearchParams(location.search).get('o')||'advisor');
  if(!/^(advisor|employee|engineering)$/.test(o))o='advisor';
  var q='?o='+o, file=location.pathname.split('/').pop();
- var map={documents:'',roadmap:'road-ahead.html',ptr:'path-to-revenue.html',visual:'visual-data.html'};
+ var map={documents:'',roadmap:'road-ahead.html',ptr:'path-to-revenue.html',visual:'visual-data.html',filing:'filing.html'};
  document.querySelectorAll('[data-tab]').forEach(function(a){var t=a.getAttribute('data-tab');
   a.href=(t==='documents')?(o+'.html'):(map[t]+q);
   if(map[t]===file)a.classList.add('on');
  });
+  if(o==='engineering'){var ft=document.querySelector('[data-tab="filing"]'); if(ft)ft.style.display='none';} /*hideFilingForEng*/
  var b=document.querySelector('.brand'); if(b)b.href=o+'.html';
  var so=document.querySelector('.signout-link'); if(so)so.href='index.html';
 })();</script>
