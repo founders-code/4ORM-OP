@@ -24,9 +24,14 @@ const isRoom = createRouteMatcher([
 ]);
 const isDocuments = createRouteMatcher(['/documents/(.*)']);
 const isDataRoom = createRouteMatcher(['/road-ahead.html','/path-to-revenue.html','/visual-data.html','/filing.html']);
+// Chad's private space. Sign-in is the gate; there is no separate room role.
+const isControlRoom = createRouteMatcher([
+  '/control-room',
+  '/control-room.html',
+]);
 
 const gated = clerkMiddleware(async (auth, req) => {
-  if (isRoom(req) || isDocuments(req) || isDataRoom(req)) {
+  if (isRoom(req) || isDocuments(req) || isDataRoom(req) || isControlRoom(req)) {
     const { userId, redirectToSignIn, sessionClaims } = await auth();
 
     // 1) Must be signed in (Google, restricted to the 4ormfinance.com domain in
@@ -67,6 +72,8 @@ export const config = {
     '/path-to-revenue.html',
     '/visual-data.html',
     '/filing.html',
+    '/control-room',
+    '/control-room.html',
     '/(api|trpc)(.*)',
   ],
 };
