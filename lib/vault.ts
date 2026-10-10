@@ -1,4 +1,5 @@
 import { clerkClient } from '@clerk/nextjs/server';
+import { env } from './env.mjs';
 import { openSeal, seal } from './seal.mjs';
 import { ROOM_EMAIL } from './room';
 
@@ -44,8 +45,8 @@ export async function loadCredsFor(userId: string) {
   const bag = await readBag(userId);
   return {
     googleRefresh: bag.googleRefresh || process.env.GOOGLE_REFRESH_TOKEN || '',
-    ghlKey: bag.ghlKey || process.env.GHL_API_KEY || process.env.GOHIGHLEVEL_API_KEY || '',
-    ghlLocation: bag.ghlLocation || process.env.GHL_LOCATION_ID || process.env.GOHIGHLEVEL_LOCATION_ID || '',
+    ghlKey: bag.ghlKey || env('GHL_API_KEY') || env('GOHIGHLEVEL_API_KEY'),
+    ghlLocation: bag.ghlLocation || env('GHL_LOCATION_ID') || env('GOHIGHLEVEL_LOCATION_ID'),
   };
 }
 

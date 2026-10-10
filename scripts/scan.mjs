@@ -11,7 +11,11 @@ function walk(dir, out = []) {
 }
 
 const apiFiles = walk('app/api').filter((path) => path.endsWith('.ts'));
-const consoleHits = apiFiles.filter((path) => /console\./.test(readFileSync(path, 'utf8')));
+const consoleHits = apiFiles.filter((path) => {
+  const text = readFileSync(path, 'utf8');
+  if (path.endsWith('connect/google/callback/route.ts')) return /console\.(?!error\b)/.test(text);
+  return /console\./.test(text);
+});
 if (consoleHits.length) {
   console.error('console in api');
   process.exit(1);

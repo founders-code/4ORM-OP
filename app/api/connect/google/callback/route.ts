@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { env } from '@/lib/env.mjs';
 import { readState } from '@/lib/oauth-state.mjs';
 import { fail } from '@/lib/log';
 import { requestOrigin } from '@/lib/public-origin';
@@ -20,8 +21,8 @@ export async function GET(req: Request) {
     if (!session || !stateUser || stateUser !== session.userId || !code) {
       return NextResponse.redirect(back);
     }
-    const clientId = process.env.GOOGLE_CLIENT_ID || '';
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+    const clientId = env('GOOGLE_CLIENT_ID');
+    const clientSecret = env('GOOGLE_CLIENT_SECRET');
     if (!clientId || !clientSecret) return NextResponse.redirect(back);
     const body = new URLSearchParams({
       code,
@@ -35,7 +36,10 @@ export async function GET(req: Request) {
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       body,
     });
-    if (!res.ok) return NextResponse.redirect(back);
+    if (!res.ok) {
+      console.error('google_token', res.status, await res.text());
+      return NextResponse.redirect(back);
+    }
     const json = (await res.json()) as { refresh_token?: string };
     if (json.refresh_token) {
       const saved = await saveGoogleRefresh(session.userId, json.refresh_token);
