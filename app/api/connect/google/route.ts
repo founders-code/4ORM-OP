@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { signState } from '@/lib/oauth-state.mjs';
 import { fail } from '@/lib/log';
+import { requestOrigin } from '@/lib/public-origin';
 import { openBoard } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -10,15 +11,6 @@ const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/drive',
 ].join(' ');
-
-const HOSTS = new Set(['www.4ormop.com', '4ormop.com', '4orm-op.vercel.app', 'localhost:3000']);
-
-export function requestOrigin(req: Request) {
-  const host = (req.headers.get('x-forwarded-host') || req.headers.get('host') || '').split(',')[0].trim().toLowerCase();
-  if (!HOSTS.has(host)) return null;
-  const proto = host.startsWith('localhost') ? 'http' : 'https';
-  return `${proto}://${host}`;
-}
 
 export async function GET(req: Request) {
   try {
