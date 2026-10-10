@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/ensure-secrets.mjs && next build",
     "start": "next start",
-    "check": "node --test scripts/secure.test.mjs && node scripts/scan.mjs"
+    "check": "node scripts/ensure-secrets.mjs && node --test scripts/secure.test.mjs && node scripts/scan.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^5.7.5",

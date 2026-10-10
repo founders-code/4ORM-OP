@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { allowArea, allowPriority, allowStatus, tokenOk, windowKey } from '@/lib/guard.mjs';
 import { getSql } from '@/lib/db';
 import { fail } from '@/lib/log';
+import { ingestToken } from '@/lib/secrets';
 import { roomOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,7 @@ function denied() {
 }
 
 export async function POST(req: Request) {
-  if (!tokenOk(req.headers.get('x-ingest-token'), process.env.INGEST_TOKEN)) return denied();
+  if (!tokenOk(req.headers.get('x-ingest-token'), ingestToken())) return denied();
   try {
     const sql = await getSql();
     if (!sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });

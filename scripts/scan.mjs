@@ -24,7 +24,7 @@ if (star.length) {
 }
 
 const page = readFileSync('public/control-room.html', 'utf8');
-if (/\/api\/(ingest|mcp|cron)/.test(page) || /INGEST_TOKEN|CRON_SECRET|GOOGLE_|GHL_|DATABASE_URL/.test(page)) {
+if (/\/api\/(ingest|mcp|cron)/.test(page) || /INGEST_TOKEN|CRON_SECRET|GOOGLE_|GHL_|DATABASE_URL|refresh_token|client_secret/.test(page)) {
   console.error('secret or internal route in the page');
   process.exit(1);
 }

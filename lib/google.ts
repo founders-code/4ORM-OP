@@ -1,8 +1,15 @@
+import { createHash } from 'crypto';
+import { currentCreds } from './creds';
+
 type Token = { access: string; exp: number };
-let token: Token | null = null;
+const tokens = new Map<string, Token>();
+
+function refreshToken() {
+  return currentCreds().googleRefresh || process.env.GOOGLE_REFRESH_TOKEN || '';
+}
 
 function configured() {
-  return !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN);
+  return !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && refreshToken());
 }
 
 export function googleConfigured() {
@@ -10,12 +17,15 @@ export function googleConfigured() {
 }
 
 async function accessToken() {
-  if (!configured()) return null;
-  if (token && token.exp > Date.now() + 30_000) return token.access;
+  const refresh = refreshToken();
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !refresh) return null;
+  const key = createHash('sha256').update(refresh).digest('hex');
+  const cached = tokens.get(key);
+  if (cached && cached.exp > Date.now() + 30_000) return cached.access;
   const body = new URLSearchParams({
-    client_id: process.env.GOOGLE_CLIENT_ID || '',
-    client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
-    refresh_token: process.env.GOOGLE_REFRESH_TOKEN || '',
+    client_id: process.env.GOOGLE_CLIENT_ID,
+    client_secret: process.env.GOOGLE_CLIENT_SECRET,
+    refresh_token: refresh,
     grant_type: 'refresh_token',
   });
   const res = await fetch('https://oauth2.googleapis.com/token', {
@@ -26,8 +36,9 @@ async function accessToken() {
   if (!res.ok) return null;
   const json = (await res.json()) as { access_token?: string; expires_in?: number };
   if (!json.access_token) return null;
-  token = { access: json.access_token, exp: Date.now() + (json.expires_in || 3000) * 1000 };
-  return token.access;
+  const next = { access: json.access_token, exp: Date.now() + (json.expires_in || 3000) * 1000 };
+  tokens.set(key, next);
+  return next.access;
 }
 
 async function gfetch(url: string, init?: RequestInit) {

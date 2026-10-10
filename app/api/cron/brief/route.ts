@@ -1,16 +1,19 @@
 import { NextResponse } from 'next/server';
 import { getSql } from '@/lib/db';
+import { withCreds } from '@/lib/creds';
 import { isBriefHour, tokenOk, windowKey } from '@/lib/guard.mjs';
 import { fail } from '@/lib/log';
+import { cronSecret, ingestToken } from '@/lib/secrets';
 import { roomOwner } from '@/lib/session';
 import { calendarPayload, ingestMail, syncCalendar, syncGhl, writeBrief } from '@/lib/sync';
+import { loadCredsFor } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   const header = req.headers.get('authorization') || '';
   const presented = header.slice(0, 7).toLowerCase() === 'bearer ' ? header.slice(7).trim() : '';
-  if (!tokenOk(presented, process.env.CRON_SECRET)) {
+  if (!tokenOk(presented, cronSecret())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   if (!isBriefHour()) return NextResponse.json({ ok: true });
@@ -26,16 +29,21 @@ export async function GET(req: Request) {
       RETURNING owner_id
     `;
     if (!claimed.length) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const mail = await ingestMail(sql, ownerId, true);
-    await syncCalendar(sql, ownerId, true);
-    await syncGhl(sql, ownerId, true);
+    const creds = await loadCredsFor(ownerId);
+    const mail = await withCreds(creds, async () => {
+      const pulled = await ingestMail(sql, ownerId, true);
+      await syncCalendar(sql, ownerId, true);
+      await syncGhl(sql, ownerId, true);
+      return pulled;
+    });
+    const token = ingestToken();
     const host = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || '';
-    if (host && process.env.INGEST_TOKEN && mail.items.length) {
+    if (host && token && mail.items.length) {
       await fetch(`https://${host}/api/ingest`, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          'x-ingest-token': process.env.INGEST_TOKEN,
+          'x-ingest-token': token,
         },
         body: JSON.stringify({ items: mail.items }),
       });
