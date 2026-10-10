@@ -83,6 +83,48 @@ async function migrate(sql: Sql) {
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS contacts_owner_source_uq
     ON contacts (owner_id, source, source_id)
     WHERE source_id IS NOT NULL`;
+  await sql`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS type text DEFAULT 'other'`;
+  await sql`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS tier text DEFAULT 'B'`;
+  await sql`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS stage text DEFAULT 'new'`;
+  await sql`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS next_action text`;
+  await sql`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS next_date timestamptz`;
+  await sql`UPDATE contacts SET type = 'other' WHERE type IS NULL`;
+  await sql`UPDATE contacts SET tier = 'B' WHERE tier IS NULL`;
+  await sql`UPDATE contacts SET stage = 'new' WHERE stage IS NULL OR stage = ''`;
+  await sql`
+    DO $$ BEGIN
+      ALTER TABLE contacts ADD CONSTRAINT contacts_type_check CHECK (type IN ('vc','business','grant_reg','other'));
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$
+  `;
+  await sql`
+    DO $$ BEGIN
+      ALTER TABLE contacts ADD CONSTRAINT contacts_tier_check CHECK (tier IN ('A','B','C'));
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$
+  `;
+  await sql`CREATE TABLE IF NOT EXISTS owner_settings (
+    owner_id text PRIMARY KEY,
+    runway_weeks int
+  )`;
+  await sql`CREATE TABLE IF NOT EXISTS note_cats (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id text NOT NULL,
+    name text NOT NULL,
+    parent_id uuid REFERENCES note_cats(id) ON DELETE CASCADE,
+    depth int NOT NULL CHECK (depth BETWEEN 0 AND 2),
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`;
+  await sql`CREATE TABLE IF NOT EXISTS notes (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id text NOT NULL,
+    cat_id uuid REFERENCES note_cats(id) ON DELETE CASCADE,
+    title text NOT NULL,
+    body text,
+    color text NOT NULL DEFAULT 'yellow',
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+  )`;
   await sql`CREATE TABLE IF NOT EXISTS folders (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id text NOT NULL,
