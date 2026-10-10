@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { claimBudget } from '@/lib/db';
+import { withCreds } from '@/lib/creds';
 import { moveEvent } from '@/lib/google';
 import { fail } from '@/lib/log';
 import { openBoard } from '@/lib/session';
 import { calendarPayload } from '@/lib/sync';
+import { loadCredsFor } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +26,8 @@ export async function POST(req: Request) {
     if (!(await claimBudget(session.sql, session.userId, 'google_calendar', 1))) {
       return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
     }
-    const moved = await moveEvent(id, start, dur);
+    const creds = await loadCredsFor(session.userId);
+    const moved = await withCreds(creds, () => moveEvent(id, start, dur));
     if (!moved) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
     const next = events.map((event) => (event.id === id ? { ...event, start } : event));
     await session.sql`

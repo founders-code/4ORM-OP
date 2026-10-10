@@ -19,7 +19,7 @@ async function mark(sql: Sql, ownerId: string, source: string, status: string, d
 
 export async function syncCalendar(sql: Sql, ownerId: string, force = false) {
   if (!googleConfigured()) {
-    await mark(sql, ownerId, 'calendar', 'unavailable', 'Calendar is not connected.');
+    await mark(sql, ownerId, 'calendar', 'not_connected', 'Not connected.');
     return;
   }
   const prior = await sql`SELECT synced_at FROM sync_state WHERE owner_id = ${ownerId} AND source = 'calendar'`;
@@ -60,7 +60,7 @@ export async function calendarPayload(sql: Sql, ownerId: string) {
 
 export async function syncDrive(sql: Sql, ownerId: string, force = false) {
   if (!googleConfigured()) {
-    await mark(sql, ownerId, 'drive', 'unavailable', 'Drive is not connected.');
+    await mark(sql, ownerId, 'drive', 'not_connected', 'Not connected.');
     return;
   }
   const prior = await sql`SELECT fetched_at FROM drive_cache WHERE owner_id = ${ownerId}`;
@@ -83,7 +83,7 @@ export async function syncDrive(sql: Sql, ownerId: string, force = false) {
 
 export async function syncGhl(sql: Sql, ownerId: string, force = false) {
   if (!ghlConfigured()) {
-    await mark(sql, ownerId, 'ghl', 'unavailable', 'GoHighLevel is not connected.');
+    await mark(sql, ownerId, 'ghl', 'not_connected', 'Not connected.');
     return;
   }
   if (!force && (await isFresh(sql, ownerId, 'ghl'))) return;
@@ -132,7 +132,7 @@ async function isFresh(sql: Sql, ownerId: string, source: string) {
 export async function ingestMail(sql: Sql, ownerId: string, force = false) {
   const empty = { titles: [] as string[], items: [] as Array<Record<string, string>> };
   if (!googleConfigured()) {
-    await mark(sql, ownerId, 'gmail', 'unavailable', 'Mail is not connected.');
+    await mark(sql, ownerId, 'gmail', 'not_connected', 'Not connected.');
     return empty;
   }
   if (!force && (await isFresh(sql, ownerId, 'gmail'))) return empty;

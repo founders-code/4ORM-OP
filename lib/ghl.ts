@@ -1,7 +1,9 @@
+import { currentCreds } from './creds';
+
 const BASE = 'https://services.leadconnectorhq.com';
 
 function configured() {
-  return !!(process.env.GHL_API_KEY || process.env.GOHIGHLEVEL_API_KEY);
+  return !!(currentCreds().ghlKey || process.env.GHL_API_KEY || process.env.GOHIGHLEVEL_API_KEY);
 }
 
 export function ghlConfigured() {
@@ -9,11 +11,11 @@ export function ghlConfigured() {
 }
 
 function key() {
-  return process.env.GHL_API_KEY || process.env.GOHIGHLEVEL_API_KEY || '';
+  return currentCreds().ghlKey || process.env.GHL_API_KEY || process.env.GOHIGHLEVEL_API_KEY || '';
 }
 
 function locationId() {
-  return process.env.GHL_LOCATION_ID || process.env.GOHIGHLEVEL_LOCATION_ID || '';
+  return currentCreds().ghlLocation || process.env.GHL_LOCATION_ID || process.env.GOHIGHLEVEL_LOCATION_ID || '';
 }
 
 async function ghl(path: string) {
@@ -43,7 +45,7 @@ export async function listContacts() {
   const json = (await ghl(`/contacts/?locationId=${loc}&limit=50`)) as {
     contacts?: Array<Record<string, unknown>>;
   } | null;
-  if (!json) return { status: configured() ? ('unavailable' as const) : ('unavailable' as const), contacts: [] as GhlContact[] };
+  if (!json) return { status: 'unavailable' as const, contacts: [] as GhlContact[] };
   const contacts = (json.contacts || []).slice(0, 50).map((row) => ({
     id: String(row.id || ''),
     name: String(row.contactName || `${row.firstName || ''} ${row.lastName || ''}`).trim() || 'Contact',

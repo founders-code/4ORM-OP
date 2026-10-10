@@ -1,12 +1,17 @@
 import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
 import { CEILINGS, BUDGET_WINDOW_MS } from './guard.mjs';
+import { rememberDatabaseUrl, savedDatabaseUrl } from './vault';
 
 type Sql = NeonQueryFunction<false, false>;
 
 let ready: Promise<Sql> | null = null;
 
-export function databaseUrl() {
-  return process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
+export async function databaseUrl() {
+  const envUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
+  if (envUrl) return envUrl;
+  const saved = await savedDatabaseUrl();
+  if (saved) rememberDatabaseUrl(saved);
+  return saved;
 }
 
 async function migrate(sql: Sql) {
@@ -142,8 +147,12 @@ async function migrate(sql: Sql) {
   )`;
 }
 
+export function resetSql() {
+  ready = null;
+}
+
 export async function getSql(): Promise<Sql | null> {
-  const url = databaseUrl();
+  const url = await databaseUrl();
   if (!url) return null;
   if (!ready) {
     const sql = neon(url);

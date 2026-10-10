@@ -18,7 +18,8 @@ function asList(value: unknown): unknown[] {
 
 const WORD: Record<string, { state: string; word: string }> = {
   connected: { state: 'ok', word: 'Connected' },
-  reached_empty: { state: 'ok', word: 'Reached, empty' },
+  reached_empty: { state: 'ok', word: 'Reached, nothing today' },
+  not_connected: { state: 'off', word: 'Not connected' },
   stale: { state: 'warn', word: 'Stale' },
   unavailable: { state: 'off', word: 'Unavailable' },
 };
@@ -28,11 +29,11 @@ function tone(status: string | undefined) {
 }
 
 const INTEGRATIONS = [
-  { source: 'gmail', nm: 'Gmail', feeds: 'Mail that becomes tasks', color: '#D6334E', ic: '@', scopes: 'read' },
-  { source: 'calendar', nm: 'Google Calendar', feeds: 'Calendar tab, drag to reschedule', color: '#2E6BF2', ic: '#', scopes: 'read · write' },
-  { source: 'drive', nm: 'Google Drive', feeds: 'Documents and Drive, one folder tree', color: '#0E8A5F', ic: 'D', scopes: 'read · write' },
-  { source: 'ghl', nm: 'GoHighLevel', feeds: 'Pipeline, reminders, contacts', color: '#8A5200', ic: 'G', scopes: 'read' },
-  { source: 'brief', nm: 'Morning brief', feeds: 'Weekday 6:00 America/Edmonton', color: '#1B7BB5', ic: '*', scopes: 'scheduled' },
+  { source: 'gmail', nm: 'Gmail', feeds: 'Mail that becomes tasks', color: '#D6334E', ic: '@', scopes: 'read', action: 'google' },
+  { source: 'calendar', nm: 'Google Calendar', feeds: 'Calendar tab, drag to reschedule', color: '#2E6BF2', ic: '#', scopes: 'read · write', action: 'google' },
+  { source: 'drive', nm: 'Google Drive', feeds: 'Documents and Drive, one folder tree', color: '#0E8A5F', ic: 'D', scopes: 'read · write', action: 'google' },
+  { source: 'ghl', nm: 'GoHighLevel', feeds: 'Pipeline, reminders, contacts', color: '#8A5200', ic: 'G', scopes: 'read', action: 'ghl' },
+  { source: 'brief', nm: 'Morning brief', feeds: 'Weekday 6:00 America/Edmonton', color: '#1B7BB5', ic: '*', scopes: 'scheduled', action: '' },
 ];
 
 type Folder = {
@@ -68,6 +69,40 @@ async function quiet(job: Promise<unknown>) {
   } catch {
     /* a source that throws stays on its last status word */
   }
+}
+
+export function idleBoard(needsDatabase: boolean) {
+  const off = { state: 'off', word: 'Not connected' };
+  return {
+    sourcesReached: false,
+    needsDatabase,
+    signals: [
+      { nm: 'Morning brief', state: 'off', word: 'Unavailable', sub: 'No brief for today' },
+      { nm: 'Overdue', state: 'ok', word: 'None', sub: 'Nothing past due' },
+      ...INTEGRATIONS.filter((item) => item.action).map((item) => ({ nm: item.nm, ...off, sub: 'Not connected' })),
+    ],
+    brief: { headline: 'Sources unavailable.', summary: 'Mail, calendar, and GoHighLevel could not be reached.', top3: [] },
+    pipeline: [],
+    integrations: INTEGRATIONS.map((item) => ({
+      nm: item.nm,
+      feeds: item.feeds,
+      state: 'off',
+      word: 'Not connected',
+      sync: 'Not run',
+      color: item.color,
+      ic: item.ic,
+      scopes: item.scopes,
+      action: item.action,
+    })),
+    plugins: pluginStatus(),
+    items: [],
+    contacts: [],
+    categories: [],
+    links: [],
+    events: [],
+    folders: [],
+    drives: [],
+  };
 }
 
 export async function loadBoard(sql: Sql, ownerId: string) {
@@ -182,6 +217,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
   }));
 
   return {
+    needsDatabase: false,
     sourcesReached: reached || open.length > 0,
     signals,
     brief,
@@ -199,6 +235,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
         color: item.color,
         ic: item.ic,
         scopes: item.scopes,
+        action: item.action,
       };
     }),
     plugins: pluginStatus(),

@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { claimBudget } from '@/lib/db';
+import { withCreds } from '@/lib/creds';
 import { driveWrite } from '@/lib/google';
 import { fail } from '@/lib/log';
 import { openBoard } from '@/lib/session';
+import { loadCredsFor } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,7 +87,8 @@ export async function POST(req: Request) {
     if (!(await claimBudget(session.sql, session.userId, 'google_drive', weight))) {
       return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
     }
-    const written = (await driveWrite(action, { name, parentId, id })) as { id?: string; name?: string; webViewLink?: string } | null;
+    const creds = await loadCredsFor(session.userId);
+    const written = (await withCreds(creds, () => driveWrite(action, { name, parentId, id }))) as { id?: string; name?: string; webViewLink?: string } | null;
     if (!written) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
     if (action === 'rename') {
       const node = findNode(tree, id);

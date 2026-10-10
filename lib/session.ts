@@ -1,7 +1,8 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { getSql, ownerForEmail, rememberOwner } from './db';
+import { ROOM_EMAIL } from './room';
 
-const ROOM_EMAIL = 'chad@4ormfinance.com';
+export { ROOM_EMAIL };
 
 export async function openBoard() {
   const { userId } = await auth();
