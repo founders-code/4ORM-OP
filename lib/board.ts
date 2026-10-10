@@ -102,6 +102,9 @@ export function idleBoard(needsDatabase: boolean) {
     events: [],
     folders: [],
     drives: [],
+    noteCats: [],
+    notes: [],
+    runwayWeeks: null,
   };
 }
 
@@ -120,7 +123,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
     LIMIT 200
   `;
   const contacts = await sql`
-    SELECT id, name, company, role, email, phone, area, notes
+    SELECT id, name, company, role, email, phone, area, notes, type, tier, stage, next_action, next_date, last_touch
     FROM contacts
     WHERE owner_id = ${ownerId}
     ORDER BY name
@@ -150,6 +153,15 @@ export async function loadBoard(sql: Sql, ownerId: string) {
     SELECT source, status, detail, synced_at FROM sync_state WHERE owner_id = ${ownerId}
   `;
   const cached = await sql`SELECT tree FROM drive_cache WHERE owner_id = ${ownerId}`;
+  const noteCats = await sql`
+    SELECT id, name, parent_id, depth FROM note_cats WHERE owner_id = ${ownerId} ORDER BY name
+  `;
+  const notes = await sql`
+    SELECT id, cat_id, title, body, color, updated_at FROM notes WHERE owner_id = ${ownerId} ORDER BY updated_at DESC LIMIT 400
+  `;
+  const settings = await sql`
+    SELECT runway_weeks FROM owner_settings WHERE owner_id = ${ownerId} LIMIT 1
+  `;
   const events = await calendarPayload(sql, ownerId);
 
   const bySource = new Map<string, { status: string; detail: string; synced_at: string | null }>();
@@ -258,7 +270,28 @@ export async function loadBoard(sql: Sql, ownerId: string) {
       phone: String(row.phone || ''),
       area: String(row.area || 'other'),
       notes: String(row.notes || ''),
+      type: String(row.type || 'other'),
+      tier: String(row.tier || 'B'),
+      stage: String(row.stage || 'new'),
+      nextAction: String(row.next_action || ''),
+      nextDate: row.next_date ? new Date(String(row.next_date)).getTime() : null,
+      lastTouch: row.last_touch ? new Date(String(row.last_touch)).getTime() : null,
     })),
+    noteCats: noteCats.map((row) => ({
+      id: String(row.id),
+      name: String(row.name),
+      parentId: row.parent_id ? String(row.parent_id) : null,
+      depth: Number(row.depth) || 0,
+    })),
+    notes: notes.map((row) => ({
+      id: String(row.id),
+      catId: row.cat_id ? String(row.cat_id) : null,
+      title: String(row.title || ''),
+      body: String(row.body || ''),
+      color: String(row.color || 'yellow'),
+      updatedAt: row.updated_at ? new Date(String(row.updated_at)).getTime() : null,
+    })),
+    runwayWeeks: settings[0]?.runway_weeks == null ? null : Number(settings[0].runway_weeks),
     categories: categories.map((row) => ({
       name: String(row.name),
       subs: asList(row.subs).map(String),

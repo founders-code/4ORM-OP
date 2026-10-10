@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'fs';
-import { tokenOk, allowArea, isBriefHour, windowKey, CEILINGS } from '../lib/guard.mjs';
+import { tokenOk, allowArea, allowStage, allowContactType, allowTier, allowNoteColor, isBriefHour, windowKey, CEILINGS } from '../lib/guard.mjs';
 import { openSeal, seal } from '../lib/seal.mjs';
 import { readState, signState } from '../lib/oauth-state.mjs';
 
@@ -16,6 +16,17 @@ test('token gate rejects a missing or wrong secret', () => {
 test('area names come from the allowlist', () => {
   assert.equal(allowArea('legal'), 'legal');
   assert.equal(allowArea('legal; drop table'), null);
+});
+
+test('pipeline and note values come from the allowlist', () => {
+  assert.equal(allowStage('meeting'), 'meeting');
+  assert.equal(allowStage('Closed Won'), null);
+  assert.equal(allowContactType('grant_reg'), 'grant_reg');
+  assert.equal(allowContactType('investor'), null);
+  assert.equal(allowTier('A'), 'A');
+  assert.equal(allowTier('D'), null);
+  assert.equal(allowNoteColor('yellow'), 'yellow');
+  assert.equal(allowNoteColor('red;'), null);
 });
 
 test('brief hour is 06:00 America/Edmonton on a weekday', () => {
