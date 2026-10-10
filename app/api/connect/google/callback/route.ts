@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readState } from '@/lib/oauth-state.mjs';
 import { fail } from '@/lib/log';
-import { requestOrigin } from '../route';
+import { requestOrigin } from '@/lib/public-origin';
 import { openBoard } from '@/lib/session';
 import { saveGoogleRefresh } from '@/lib/vault';
 
