@@ -1,9 +1,10 @@
 import { currentCreds } from './creds';
+import { env } from './env.mjs';
 
 const BASE = 'https://services.leadconnectorhq.com';
 
 function configured() {
-  return !!(currentCreds().ghlKey || process.env.GHL_API_KEY || process.env.GOHIGHLEVEL_API_KEY);
+  return !!(currentCreds().ghlKey.trim() || env('GHL_API_KEY') || env('GOHIGHLEVEL_API_KEY'));
 }
 
 export function ghlConfigured() {
@@ -11,11 +12,11 @@ export function ghlConfigured() {
 }
 
 function key() {
-  return currentCreds().ghlKey || process.env.GHL_API_KEY || process.env.GOHIGHLEVEL_API_KEY || '';
+  return (currentCreds().ghlKey || env('GHL_API_KEY') || env('GOHIGHLEVEL_API_KEY')).trim();
 }
 
 function locationId() {
-  return currentCreds().ghlLocation || process.env.GHL_LOCATION_ID || process.env.GOHIGHLEVEL_LOCATION_ID || '';
+  return (currentCreds().ghlLocation || env('GHL_LOCATION_ID') || env('GOHIGHLEVEL_LOCATION_ID')).trim();
 }
 
 async function ghl(path: string) {

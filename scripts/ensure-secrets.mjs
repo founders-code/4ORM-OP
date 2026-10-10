@@ -1,5 +1,6 @@
 import { randomBytes } from 'crypto';
 import { writeFileSync, existsSync, readFileSync } from 'fs';
+import { env } from '../lib/env.mjs';
 
 const path = new URL('../lib/generated-secrets.mjs', import.meta.url);
 
@@ -12,8 +13,8 @@ function readBaked() {
 }
 
 const baked = readBaked();
-const ingestToken = process.env.INGEST_TOKEN || baked.ingestToken || randomBytes(32).toString('base64url');
-const cronSecret = process.env.CRON_SECRET || baked.cronSecret || randomBytes(32).toString('base64url');
+const ingestToken = env('INGEST_TOKEN') || baked.ingestToken || randomBytes(32).toString('base64url');
+const cronSecret = env('CRON_SECRET') || baked.cronSecret || randomBytes(32).toString('base64url');
 
 const body = process.env.INGEST_TOKEN && process.env.CRON_SECRET
   ? 'export const ingestToken = "";\nexport const cronSecret = "";\n'

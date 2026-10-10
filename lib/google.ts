@@ -1,5 +1,6 @@
 import { createHash } from 'crypto';
 import { currentCreds } from './creds';
+import { env } from './env.mjs';
 
 type Token = { access: string; exp: number };
 const tokens = new Map<string, Token>();
@@ -9,7 +10,7 @@ function refreshToken() {
 }
 
 function configured() {
-  return !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && refreshToken());
+  return !!(env('GOOGLE_CLIENT_ID') && env('GOOGLE_CLIENT_SECRET') && refreshToken());
 }
 
 export function googleConfigured() {
@@ -18,13 +19,15 @@ export function googleConfigured() {
 
 async function accessToken() {
   const refresh = refreshToken();
-  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !refresh) return null;
+  const clientId = env('GOOGLE_CLIENT_ID');
+  const clientSecret = env('GOOGLE_CLIENT_SECRET');
+  if (!clientId || !clientSecret || !refresh) return null;
   const key = createHash('sha256').update(refresh).digest('hex');
   const cached = tokens.get(key);
   if (cached && cached.exp > Date.now() + 30_000) return cached.access;
   const body = new URLSearchParams({
-    client_id: process.env.GOOGLE_CLIENT_ID,
-    client_secret: process.env.GOOGLE_CLIENT_SECRET,
+    client_id: clientId,
+    client_secret: clientSecret,
     refresh_token: refresh,
     grant_type: 'refresh_token',
   });

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { env } from '@/lib/env.mjs';
 import { signState } from '@/lib/oauth-state.mjs';
 import { fail } from '@/lib/log';
 import { requestOrigin } from '@/lib/public-origin';
@@ -17,9 +18,9 @@ export async function GET(req: Request) {
     const session = await openBoard();
     const origin = requestOrigin(req);
     if (!session || !origin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const clientId = process.env.GOOGLE_CLIENT_ID || '';
+    const clientId = env('GOOGLE_CLIENT_ID');
     const secret = process.env.CLERK_SECRET_KEY || '';
-    if (!clientId || !process.env.GOOGLE_CLIENT_SECRET || !secret) {
+    if (!clientId || !env('GOOGLE_CLIENT_SECRET') || !secret) {
       return NextResponse.redirect(new URL('/control-room', origin));
     }
     const state = signState(session.userId, secret);
