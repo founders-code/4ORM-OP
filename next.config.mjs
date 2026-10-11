@@ -7,6 +7,8 @@ const nextConfig = {
     return [
       { source: '/', destination: '/index.html' },
       { source: '/control-room', destination: '/control-room.html' },
+      { source: '/terms-of-service', destination: '/terms-of-service.html' },
+      { source: '/privacy-policy', destination: '/privacy-policy.html' },
     ];
   },
 };

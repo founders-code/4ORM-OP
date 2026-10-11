@@ -29,8 +29,16 @@ const isControlRoom = createRouteMatcher([
   '/control-room',
   '/control-room.html',
 ]);
+// Legal pages are public. Members read them before they sign in.
+const isPublicPage = createRouteMatcher([
+  '/terms-of-service',
+  '/terms-of-service.html',
+  '/privacy-policy',
+  '/privacy-policy.html',
+]);
 
 const gated = clerkMiddleware(async (auth, req) => {
+  if (isPublicPage(req)) return NextResponse.next();
   if (isRoom(req) || isDocuments(req) || isDataRoom(req) || isControlRoom(req)) {
     const { userId, redirectToSignIn, sessionClaims } = await auth();
 
@@ -74,6 +82,10 @@ export const config = {
     '/filing.html',
     '/control-room',
     '/control-room.html',
+    '/terms-of-service',
+    '/terms-of-service.html',
+    '/privacy-policy',
+    '/privacy-policy.html',
     '/(api|trpc)(.*)',
   ],
 };
