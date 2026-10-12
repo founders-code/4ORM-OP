@@ -37,6 +37,7 @@ async function migrate(sql: Sql) {
     ON items (owner_id, source, source_id)
     WHERE source_id IS NOT NULL`;
   await sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS source text DEFAULT 'manual'`;
+  await sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS category text`;
   await sql`
     DO $$
     DECLARE r record;
@@ -140,6 +141,19 @@ async function migrate(sql: Sql) {
     color text NOT NULL DEFAULT 'yellow',
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
+  )`;
+  await sql`CREATE TABLE IF NOT EXISTS zoom_notes (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id text NOT NULL,
+    note_id text NOT NULL,
+    note_date date,
+    title text NOT NULL,
+    attendees jsonb NOT NULL DEFAULT '[]',
+    summary jsonb NOT NULL DEFAULT '[]',
+    stats jsonb NOT NULL DEFAULT '[]',
+    sources jsonb NOT NULL DEFAULT '[]',
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (owner_id, note_id)
   )`;
   await sql`CREATE TABLE IF NOT EXISTS folders (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

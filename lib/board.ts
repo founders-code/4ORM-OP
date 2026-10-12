@@ -1,5 +1,6 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { ROADMAP } from './roadmap.mjs';
+import { listZoomNotes, seedZoomNotes } from './zoom-notes';
 import { syncCalendar, syncDrive, syncGhl, calendarMeta, ingestMail } from './sync';
 
 type Sql = NeonQueryFunction<false, false>;
@@ -105,6 +106,7 @@ export function idleBoard(needsDatabase: boolean) {
     drives: [],
     noteCats: [],
     notes: [],
+    zoomNotes: [],
     runwayWeeks: null,
     calendarUntil: null,
   };
@@ -113,26 +115,36 @@ export function idleBoard(needsDatabase: boolean) {
 async function seedRoadmap(sql: Sql, ownerId: string) {
   const payload = JSON.stringify(ROADMAP);
   await sql`
-    INSERT INTO items (owner_id, title, area, status, priority, due, owner, source)
+    INSERT INTO items (owner_id, title, area, status, priority, due, owner, source, category)
     SELECT ${ownerId}, x.title, x.area, 'open', x.priority,
            (x.due::date + time '12:00') AT TIME ZONE 'America/Edmonton',
-           x.owner, 'roadmap'
-    FROM jsonb_to_recordset(${payload}::jsonb) AS x(title text, area text, priority text, due text, owner text)
+           x.owner, 'roadmap', x.category
+    FROM jsonb_to_recordset(${payload}::jsonb) AS x(title text, area text, priority text, due text, owner text, category text)
     WHERE NOT EXISTS (
       SELECT 1 FROM items WHERE owner_id = ${ownerId} AND source = 'roadmap'
     )
+  `;
+  await sql`
+    UPDATE items AS i
+    SET category = x.category
+    FROM jsonb_to_recordset(${payload}::jsonb) AS x(title text, category text)
+    WHERE i.owner_id = ${ownerId}
+      AND i.source = 'roadmap'
+      AND i.title = x.title
+      AND COALESCE(i.category, '') = ''
   `;
 }
 
 export async function loadBoard(sql: Sql, ownerId: string) {
   await seedRoadmap(sql, ownerId);
+  await seedZoomNotes(sql, ownerId);
   await quiet(ingestMail(sql, ownerId));
   await quiet(syncCalendar(sql, ownerId));
   await quiet(syncDrive(sql, ownerId));
   await quiet(syncGhl(sql, ownerId));
 
   const items = await sql`
-    SELECT id, title, area, status, priority, due, owner, source
+    SELECT id, title, area, status, priority, due, owner, source, category
     FROM items
     WHERE owner_id = ${ownerId}
       AND (snooze_until IS NULL OR snooze_until <= now())
@@ -277,7 +289,9 @@ export async function loadBoard(sql: Sql, ownerId: string) {
       due: row.due ? new Date(String(row.due)).getTime() : null,
       owner: String(row.owner || ''),
       source: String(row.source || 'manual'),
+      category: row.category ? String(row.category) : '',
     })),
+    zoomNotes: await listZoomNotes(sql, ownerId),
     contacts: contacts.map((row) => ({
       id: String(row.id),
       name: String(row.name),
