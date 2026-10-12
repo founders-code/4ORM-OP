@@ -168,7 +168,9 @@ test('the control room page does not carry secrets', () => {
   assert.equal(page.includes('Connect Google'), true);
   assert.equal(page.includes('Connect GoHighLevel'), true);
   assert.equal(/DATABASE_URL|INGEST_TOKEN|CRON_SECRET|GOOGLE_|GHL_|refresh_token|client_secret/.test(page), false);
-  assert.equal(page.includes('CEO - Form Intelligence'), true);
+  assert.equal(page.includes('4orm Intelligence'), true);
+  assert.equal(page.includes('CEO - next three moves'), true);
+  assert.equal(page.includes('Form Intelligence'), false);
   assert.equal(/Atherton/.test(page), false);
   assert.equal(/\/api\/(ingest|mcp|cron)/.test(page), false);
 });
