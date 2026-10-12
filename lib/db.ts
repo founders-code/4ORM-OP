@@ -218,6 +218,62 @@ async function migrate(sql: Sql) {
     calls int NOT NULL DEFAULT 0,
     PRIMARY KEY (owner_id, vendor, window_start)
   )`;
+  await sql`CREATE TABLE IF NOT EXISTS ceo_moves (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id text NOT NULL,
+    rank int NOT NULL CHECK (rank BETWEEN 1 AND 3),
+    text text NOT NULL,
+    principle text NOT NULL,
+    why_now text,
+    area text,
+    suggested_due timestamptz,
+    status text NOT NULL DEFAULT 'open',
+    snooze_until timestamptz,
+    source_key text,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`;
+  await sql`ALTER TABLE ceo_moves ADD COLUMN IF NOT EXISTS source_key text`;
+  await sql`
+    DO $$ BEGIN
+      ALTER TABLE ceo_moves ADD CONSTRAINT ceo_moves_status_check CHECK (status IN ('open','done','snoozed'));
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$
+  `;
+  await sql`CREATE TABLE IF NOT EXISTS ceo_decisions (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id text NOT NULL,
+    move_id uuid,
+    context text,
+    options text,
+    evidence text,
+    case_against text,
+    decision text,
+    owner text,
+    review_date timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`;
+  await sql`CREATE TABLE IF NOT EXISTS ceo_lamps (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id text NOT NULL,
+    key text NOT NULL,
+    state text NOT NULL,
+    label text,
+    detail text,
+    computed_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (owner_id, key)
+  )`;
+  await sql`
+    DO $$ BEGIN
+      ALTER TABLE ceo_lamps ADD CONSTRAINT ceo_lamps_state_check CHECK (state IN ('green','amber','red','unknown'));
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$
+  `;
+  await sql`CREATE TABLE IF NOT EXISTS ceo_weights (
+    owner_id text NOT NULL,
+    key text NOT NULL,
+    boost int NOT NULL,
+    PRIMARY KEY (owner_id, key)
+  )`;
 }
 
 export function resetSql() {
