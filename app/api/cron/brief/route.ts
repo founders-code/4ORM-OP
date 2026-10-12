@@ -5,6 +5,7 @@ import { isBriefHour, tokenOk, windowKey } from '@/lib/guard.mjs';
 import { fail } from '@/lib/log';
 import { cronSecret, ingestToken } from '@/lib/secrets';
 import { roomOwner } from '@/lib/session';
+import { refreshCeo } from '@/lib/ceo';
 import { calendarPayload, ingestMail, syncCalendar, syncGhl, writeBrief } from '@/lib/sync';
 import { loadCredsFor } from '@/lib/vault';
 
@@ -55,6 +56,11 @@ export async function GET(req: Request) {
       .map((event) => String(event.title || ''))
       .filter(Boolean);
     await writeBrief(sql, ownerId, [...mail.titles, ...eventTitles], ['gmail', 'calendar', 'ghl']);
+    try {
+      await refreshCeo(sql, ownerId);
+    } catch {
+      fail('ceo_failed');
+    }
     return NextResponse.json({ ok: true });
   } catch {
     fail('brief_failed');
