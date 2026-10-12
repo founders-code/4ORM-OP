@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { allowArea, allowPriority, allowStatus } from '@/lib/guard.mjs';
+import { allowArea, allowPriority, allowStatus, parseDue } from '@/lib/guard.mjs';
 import { fail } from '@/lib/log';
 import { openBoard } from '@/lib/session';
 
@@ -15,8 +15,10 @@ export async function POST(req: Request) {
     const area = allowArea(String(body?.area || 'other'));
     const priority = allowPriority(String(body?.priority || 'normal'));
     if (!title || !area || !priority) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
-    const due = body?.due ? new Date(Number(body.due)) : null;
-    const dueIso = due && !Number.isNaN(due.getTime()) ? due.toISOString() : null;
+    const hasDue = body && Object.prototype.hasOwnProperty.call(body, 'due');
+    const parsed = hasDue ? parseDue(body.due) : { ok: true, iso: null };
+    if (!parsed.ok) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    const dueIso = parsed.iso;
     const rows = await session.sql`
       INSERT INTO items (owner_id, title, area, status, priority, due, source)
       VALUES (${session.userId}, ${title}, ${area}, 'new', ${priority}, ${dueIso}, 'manual')
@@ -46,16 +48,25 @@ export async function PATCH(req: Request) {
     if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
     const body = await req.json().catch(() => null);
     const id = String(body?.id || '');
-    const status = allowStatus(String(body?.status || ''));
-    if (!/^[0-9a-f-]{36}$/i.test(id) || !status) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
-    const owner = body?.owner == null ? null : String(body.owner).slice(0, 80);
-    const due = body?.due == null ? null : new Date(Number(body.due));
-    const dueIso = due && !Number.isNaN(due.getTime()) ? due.toISOString() : null;
+    const has = (key: string) => !!body && Object.prototype.hasOwnProperty.call(body, key);
+    const setStatus = has('status');
+    const setPriority = has('priority');
+    const setOwner = has('owner');
+    const setDue = has('due');
+    const status = setStatus ? allowStatus(String(body?.status || '')) : null;
+    const priority = setPriority ? allowPriority(String(body?.priority || '')) : null;
+    const parsed = setDue ? parseDue(body?.due) : { ok: true, iso: null };
+    if (!/^[0-9a-f-]{36}$/i.test(id) || (setStatus && !status) || (setPriority && !priority) || !parsed.ok || (!setStatus && !setPriority && !setOwner && !setDue)) {
+      return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    }
+    const owner = setOwner ? String(body?.owner ?? '').slice(0, 80) : '';
+    const dueIso = parsed.iso;
     const rows = await session.sql`
       UPDATE items
-      SET status = ${status},
-          owner = COALESCE(${owner}, owner),
-          due = COALESCE(${dueIso}, due),
+      SET status = CASE WHEN ${setStatus} THEN ${status} ELSE status END,
+          priority = CASE WHEN ${setPriority} THEN ${priority} ELSE priority END,
+          owner = CASE WHEN ${setOwner} THEN ${owner} ELSE owner END,
+          due = CASE WHEN ${setDue} THEN ${dueIso}::timestamptz ELSE due END,
           updated_at = now()
       WHERE id = ${id} AND owner_id = ${session.userId}
       RETURNING id

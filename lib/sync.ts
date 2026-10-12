@@ -1,5 +1,5 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
-import { allowArea, allowPriority, allowStatus } from './guard.mjs';
+import { allowArea, allowPriority, allowStatus, visibleCalendarWindow } from './guard.mjs';
 import { claimBudget } from './db';
 import { listEvents, listDriveTree, recentMail, googleConfigured, DRIVE_CALLS } from './google';
 import { listContacts, listPipeline, listReminders, ghlConfigured } from './ghl';
@@ -7,6 +7,50 @@ import { listContacts, listPipeline, listReminders, ghlConfigured } from './ghl'
 type Sql = NeonQueryFunction<false, false>;
 
 const FRESH_MS = 10 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+type CalEvent = { id: string; start: number; dur: number; title: string; color: string };
+
+function asEvents(value: unknown): CalEvent[] {
+  const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+  if (!Array.isArray(parsed)) return [];
+  return parsed
+    .map((event) => {
+      const row = event as Record<string, unknown>;
+      const id = String(row.id || '');
+      if (!id) return null;
+      return {
+        id,
+        start: Number(row.start) || 0,
+        dur: Number(row.dur) || 30,
+        title: String(row.title || ''),
+        color: '#2E6BF2',
+      };
+    })
+    .filter((event): event is CalEvent => !!event);
+}
+
+async function pullEvents(sql: Sql, ownerId: string, timeMin: string, timeMax: string) {
+  const events: CalEvent[] = [];
+  let pageToken = '';
+  let status: 'unavailable' | 'connected' | 'reached_empty' | 'stale' = 'reached_empty';
+  for (let page = 0; page < 3; page += 1) {
+    if (!(await claimBudget(sql, ownerId, 'google_calendar', 1))) {
+      return { status: 'stale' as const, events, complete: false };
+    }
+    const result = await listEvents(timeMin, timeMax, pageToken);
+    if (result.status === 'unavailable') {
+      return { status: events.length ? ('connected' as const) : ('unavailable' as const), events, complete: false };
+    }
+    status = result.events.length ? 'connected' : result.status;
+    for (const event of result.events) {
+      if (event) events.push(event);
+    }
+    pageToken = result.nextPageToken || '';
+    if (!pageToken) return { status, events, complete: true };
+  }
+  return { status, events, complete: !pageToken };
+}
 
 async function mark(sql: Sql, ownerId: string, source: string, status: string, detail: string) {
   await sql`
@@ -22,40 +66,69 @@ export async function syncCalendar(sql: Sql, ownerId: string, force = false) {
     await mark(sql, ownerId, 'calendar', 'not_connected', 'Not connected.');
     return;
   }
+  const window = visibleCalendarWindow();
   const prior = await sql`SELECT synced_at FROM sync_state WHERE owner_id = ${ownerId} AND source = 'calendar'`;
+  const cached = await sql`SELECT window_end FROM calendar_cache WHERE owner_id = ${ownerId}`;
   const age = prior[0]?.synced_at ? Date.now() - new Date(String(prior[0].synced_at)).getTime() : FRESH_MS + 1;
-  if (!force && age < FRESH_MS) return;
-  if (!(await claimBudget(sql, ownerId, 'google_calendar', 1))) {
+  const covered = cached[0]?.window_end ? new Date(String(cached[0].window_end)).getTime() >= window.end.getTime() - 1000 : false;
+  if (!force && age < FRESH_MS && covered) return;
+  const result = await pullEvents(sql, ownerId, window.start.toISOString(), window.end.toISOString());
+  if (result.status === 'stale' || (result.status !== 'unavailable' && !result.complete)) {
     await mark(sql, ownerId, 'calendar', 'stale', 'Calendar refresh is waiting on the rate ceiling.');
     return;
   }
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(start.getTime() + 14 * 24 * 60 * 60 * 1000);
-  const result = await listEvents(start.toISOString(), end.toISOString());
-  await mark(sql, ownerId, 'calendar', result.status, result.events.length ? `${result.events.length} events` : 'No events in this fortnight.');
+  await mark(sql, ownerId, 'calendar', result.status, result.events.length ? `${result.events.length} events` : 'No events in this range.');
   if (result.status !== 'unavailable') {
     await sql`
-      INSERT INTO calendar_cache (owner_id, events, fetched_at)
-      VALUES (${ownerId}, ${JSON.stringify(result.events)}::jsonb, now())
-      ON CONFLICT (owner_id) DO UPDATE SET events = EXCLUDED.events, fetched_at = now()
+      INSERT INTO calendar_cache (owner_id, events, fetched_at, window_end)
+      VALUES (${ownerId}, ${JSON.stringify(result.events)}::jsonb, now(), ${window.end.toISOString()})
+      ON CONFLICT (owner_id) DO UPDATE SET events = EXCLUDED.events, fetched_at = now(), window_end = EXCLUDED.window_end
     `;
   }
 }
 
-export async function calendarPayload(sql: Sql, ownerId: string) {
-  const rows = await sql`SELECT events FROM calendar_cache WHERE owner_id = ${ownerId}`;
-  const events = rows[0]?.events;
-  if (Array.isArray(events)) return events;
-  if (typeof events === 'string') {
-    try {
-      const parsed = JSON.parse(events);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
+export async function calendarMeta(sql: Sql, ownerId: string) {
+  const rows = await sql`SELECT events, window_end FROM calendar_cache WHERE owner_id = ${ownerId}`;
+  let events: CalEvent[] = [];
+  try {
+    events = asEvents(rows[0]?.events);
+  } catch {
+    events = [];
   }
-  return [];
+  const until = rows[0]?.window_end ? new Date(String(rows[0].window_end)).getTime() : null;
+  return { events, until: until && !Number.isNaN(until) ? until : null };
+}
+
+export async function calendarPayload(sql: Sql, ownerId: string) {
+  return (await calendarMeta(sql, ownerId)).events;
+}
+
+export async function extendCalendar(sql: Sql, ownerId: string, fromMs: number, toMs: number) {
+  const span = toMs - fromMs;
+  if (!Number.isFinite(fromMs) || !Number.isFinite(toMs) || span < 60 * 1000 || span > 21 * DAY_MS || toMs > Date.now() + 180 * DAY_MS) {
+    return { ok: false as const };
+  }
+  const meta = await calendarMeta(sql, ownerId);
+  if (meta.until && toMs <= meta.until + 1000) {
+    return { ok: true as const, events: meta.events, until: meta.until };
+  }
+  if (!googleConfigured()) return { ok: true as const, events: meta.events, until: meta.until };
+  const result = await pullEvents(sql, ownerId, new Date(fromMs).toISOString(), new Date(toMs).toISOString());
+  if (result.status === 'unavailable' || result.status === 'stale' || !result.complete) return { ok: false as const };
+  const byId = new Map<string, CalEvent>();
+  for (const event of meta.events) byId.set(event.id, event);
+  for (const event of result.events) byId.set(event.id, event);
+  const merged = [...byId.values()];
+  const untilIso = new Date(toMs).toISOString();
+  await sql`
+    INSERT INTO calendar_cache (owner_id, events, fetched_at, window_end)
+    VALUES (${ownerId}, ${JSON.stringify(merged)}::jsonb, now(), ${untilIso})
+    ON CONFLICT (owner_id) DO UPDATE SET
+      events = EXCLUDED.events,
+      fetched_at = now(),
+      window_end = GREATEST(COALESCE(calendar_cache.window_end, EXCLUDED.window_end), EXCLUDED.window_end)
+  `;
+  return { ok: true as const, events: merged, until: toMs };
 }
 
 export async function syncDrive(sql: Sql, ownerId: string, force = false) {

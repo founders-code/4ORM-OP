@@ -55,20 +55,21 @@ async function gfetch(url: string, init?: RequestInit) {
   return res.json();
 }
 
-export async function listEvents(timeMin: string, timeMax: string) {
-  if (!configured()) return { status: 'unavailable' as const, events: [] };
+export async function listEvents(timeMin: string, timeMax: string, pageToken = '') {
+  if (!configured()) return { status: 'unavailable' as const, events: [], nextPageToken: '' };
   const cal = encodeURIComponent(process.env.GOOGLE_CALENDAR_ID || 'chad@4ormfinance.com');
   const q = new URLSearchParams({
     timeMin,
     timeMax,
     singleEvents: 'true',
     orderBy: 'startTime',
-    maxResults: '80',
+    maxResults: '250',
   });
+  if (pageToken) q.set('pageToken', pageToken);
   const json = (await gfetch(
     `https://www.googleapis.com/calendar/v3/calendars/${cal}/events?${q}`,
-  )) as { items?: Array<Record<string, unknown>> } | null;
-  if (!json) return { status: 'unavailable' as const, events: [] };
+  )) as { items?: Array<Record<string, unknown>>; nextPageToken?: string } | null;
+  if (!json) return { status: 'unavailable' as const, events: [], nextPageToken: '' };
   const items = json.items || [];
   const events = items
     .map((ev) => {
@@ -86,7 +87,11 @@ export async function listEvents(timeMin: string, timeMax: string) {
       };
     })
     .filter(Boolean);
-  return { status: events.length ? ('connected' as const) : ('reached_empty' as const), events };
+  return {
+    status: events.length ? ('connected' as const) : ('reached_empty' as const),
+    events,
+    nextPageToken: String(json.nextPageToken || ''),
+  };
 }
 
 export async function moveEvent(id: string, startMs: number, durMin: number) {
