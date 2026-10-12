@@ -4,10 +4,38 @@ import { withCreds } from '@/lib/creds';
 import { moveEvent } from '@/lib/google';
 import { fail } from '@/lib/log';
 import { openBoard } from '@/lib/session';
-import { calendarPayload } from '@/lib/sync';
+import { calendarPayload, extendCalendar } from '@/lib/sync';
 import { loadCredsFor } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
+
+function shapeEvents(events: Array<{ id: string; start: number; dur: number; title: string }>) {
+  return events.map((event) => ({
+    id: event.id,
+    start: event.start,
+    dur: event.dur,
+    title: event.title,
+    color: '#2E6BF2',
+  }));
+}
+
+export async function GET(req: Request) {
+  try {
+    const session = await openBoard();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    const url = new URL(req.url);
+    const from = Date.parse(url.searchParams.get('from') || '');
+    const to = Date.parse(url.searchParams.get('to') || '');
+    const creds = await loadCredsFor(session.userId);
+    const result = await withCreds(creds, () => extendCalendar(session.sql!, session.userId, from, to));
+    if (!result.ok) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    return NextResponse.json({ events: shapeEvents(result.events), calendarUntil: result.until });
+  } catch {
+    fail('calendar_failed');
+    return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+  }
+}
 
 export async function POST(req: Request) {
   try {

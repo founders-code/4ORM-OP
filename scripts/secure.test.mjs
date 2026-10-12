@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'fs';
-import { tokenOk, allowArea, allowStage, allowContactType, allowTier, allowNoteColor, isBriefHour, windowKey, CEILINGS } from '../lib/guard.mjs';
+import { tokenOk, allowArea, allowStage, allowContactType, allowTier, allowNoteColor, isBriefHour, windowKey, CEILINGS, parseDue, visibleCalendarWindow } from '../lib/guard.mjs';
 import { openSeal, seal } from '../lib/seal.mjs';
 import { readState, signState } from '../lib/oauth-state.mjs';
 
@@ -56,6 +56,24 @@ test('oauth state is bound to the signed-in user', () => {
   assert.equal(readState(state, 'other-secret', 1_000), null);
   assert.equal(readState(state.replace('user_1', 'user_2'), 'state-secret', 1_000), null);
   assert.equal(readState(state, 'state-secret', 1_000 + 11 * 60 * 1000), null);
+});
+
+test('due values accept an ISO string, an epoch, or null', () => {
+  assert.equal(parseDue(null).iso, null);
+  assert.equal(parseDue('').iso, null);
+  assert.equal(parseDue('2026-10-11T18:00:00.000Z').iso, '2026-10-11T18:00:00.000Z');
+  assert.equal(parseDue(1_760_200_800_000).iso, new Date(1_760_200_800_000).toISOString());
+  assert.equal(parseDue('not-a-date').ok, false);
+});
+
+test('the calendar window starts on Sunday and covers six weeks', () => {
+  const sunday = new Date('2026-10-11T18:00:00Z');
+  const wednesday = new Date('2026-10-14T18:00:00Z');
+  const fromSunday = visibleCalendarWindow(sunday);
+  const fromWednesday = visibleCalendarWindow(wednesday);
+  assert.equal(fromSunday.start.toISOString(), '2026-10-11T06:00:00.000Z');
+  assert.equal(fromSunday.end.toISOString(), '2026-11-22T07:00:00.000Z');
+  assert.equal(fromWednesday.start.toISOString(), fromSunday.start.toISOString());
 });
 
 test('the control room page does not carry secrets', () => {

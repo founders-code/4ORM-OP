@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { allowArea, allowContactType, allowStage, allowTier } from '@/lib/guard.mjs';
+import { allowArea, allowContactType, allowStage, allowTier, parseDue } from '@/lib/guard.mjs';
 import { fail } from '@/lib/log';
 import { openBoard } from '@/lib/session';
 
@@ -17,8 +17,8 @@ function text(value: unknown, max: number) {
 
 function when(value: unknown) {
   if (value == null || value === '') return null;
-  const date = new Date(Number(value));
-  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+  const parsed = parseDue(value);
+  return parsed.ok ? parsed.iso : undefined;
 }
 
 function shape(row: Record<string, unknown>) {
@@ -89,7 +89,7 @@ export async function PATCH(req: Request) {
     const email = text(body?.email, 180);
     const phone = text(body?.phone, 40);
     const notes = text(body?.notes, 500);
-    const nextAction = text(body?.nextAction, 180);
+    const nextAction = text(present(body, 'next_action') && !present(body, 'nextAction') ? body?.next_action : body?.nextAction, 180);
     const area = present(body, 'area') ? allowArea(String(body?.area || '')) : null;
     const type = present(body, 'type') ? allowContactType(String(body?.type || '')) : null;
     const tier = present(body, 'tier') ? allowTier(String(body?.tier || '')) : null;
@@ -97,13 +97,13 @@ export async function PATCH(req: Request) {
     if ((present(body, 'name') && !name) || (present(body, 'area') && !area) || (present(body, 'type') && !type) || (present(body, 'tier') && !tier) || (present(body, 'stage') && !stage)) {
       return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     }
-    const setNext = present(body, 'nextDate');
-    const nextDate = setNext ? when(body?.nextDate) : null;
+    const setNext = present(body, 'nextDate') || present(body, 'next_date');
+    const nextDate = setNext ? when(present(body, 'next_date') && !present(body, 'nextDate') ? body?.next_date : body?.nextDate) : null;
     if (setNext && nextDate === undefined) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const setTouch = present(body, 'lastTouch');
     const lastTouch = setTouch ? when(body?.lastTouch) : null;
     if (setTouch && lastTouch === undefined) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
-    const flags = ['name', 'company', 'role', 'email', 'phone', 'area', 'notes', 'type', 'tier', 'stage', 'nextAction', 'nextDate', 'lastTouch'];
+    const flags = ['name', 'company', 'role', 'email', 'phone', 'area', 'notes', 'type', 'tier', 'stage', 'nextAction', 'next_action', 'nextDate', 'next_date', 'lastTouch'];
     if (!flags.some((key) => present(body, key))) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const rows = await session.sql`
       UPDATE contacts SET
@@ -117,7 +117,7 @@ export async function PATCH(req: Request) {
         type = CASE WHEN ${present(body, 'type')} THEN ${type} ELSE type END,
         tier = CASE WHEN ${present(body, 'tier')} THEN ${tier} ELSE tier END,
         stage = CASE WHEN ${present(body, 'stage')} THEN ${stage} ELSE stage END,
-        next_action = CASE WHEN ${present(body, 'nextAction')} THEN ${nextAction} ELSE next_action END,
+        next_action = CASE WHEN ${present(body, 'nextAction') || present(body, 'next_action')} THEN ${nextAction} ELSE next_action END,
         next_date = CASE WHEN ${setNext} THEN ${nextDate}::timestamptz ELSE next_date END,
         last_touch = CASE WHEN ${setTouch} THEN ${lastTouch}::timestamptz ELSE last_touch END
       WHERE id = ${id} AND owner_id = ${session.userId}

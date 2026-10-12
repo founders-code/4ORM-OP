@@ -170,6 +170,7 @@ async function migrate(sql: Sql) {
     events jsonb NOT NULL,
     fetched_at timestamptz NOT NULL DEFAULT now()
   )`;
+  await sql`ALTER TABLE calendar_cache ADD COLUMN IF NOT EXISTS window_end timestamptz`;
   await sql`CREATE TABLE IF NOT EXISTS room_owner (
     email text PRIMARY KEY,
     owner_id text NOT NULL

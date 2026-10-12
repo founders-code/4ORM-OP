@@ -1,5 +1,5 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
-import { syncCalendar, syncDrive, syncGhl, calendarPayload, ingestMail } from './sync';
+import { syncCalendar, syncDrive, syncGhl, calendarMeta, ingestMail } from './sync';
 
 type Sql = NeonQueryFunction<false, false>;
 
@@ -105,6 +105,7 @@ export function idleBoard(needsDatabase: boolean) {
     noteCats: [],
     notes: [],
     runwayWeeks: null,
+    calendarUntil: null,
   };
 }
 
@@ -162,7 +163,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
   const settings = await sql`
     SELECT runway_weeks FROM owner_settings WHERE owner_id = ${ownerId} LIMIT 1
   `;
-  const events = await calendarPayload(sql, ownerId);
+  const calendar = await calendarMeta(sql, ownerId);
 
   const bySource = new Map<string, { status: string; detail: string; synced_at: string | null }>();
   for (const row of states) {
@@ -302,13 +303,14 @@ export async function loadBoard(sql: Sql, ownerId: string) {
       cat: String(row.category || ''),
       sub: String(row.sub || ''),
     })),
-    events: (events as Array<Record<string, unknown>>).map((event) => ({
-      id: String(event.id || ''),
-      start: Number(event.start) || 0,
-      dur: Number(event.dur) || 30,
-      title: String(event.title || ''),
+    events: calendar.events.map((event) => ({
+      id: event.id,
+      start: event.start,
+      dur: event.dur,
+      title: event.title,
       color: '#2E6BF2',
     })),
+    calendarUntil: calendar.until,
     folders,
     drives: folders.map((folder) => ({ id: folder.id, name: folder.name, folders: folder.children, files: folder.docs })),
   };
