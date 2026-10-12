@@ -124,6 +124,7 @@ async function migrate(sql: Sql) {
     owner_id text PRIMARY KEY,
     runway_weeks int
   )`;
+  await sql`ALTER TABLE owner_settings ADD COLUMN IF NOT EXISTS zoom_seed_version text`;
   await sql`CREATE TABLE IF NOT EXISTS note_cats (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id text NOT NULL,
@@ -155,6 +156,10 @@ async function migrate(sql: Sql) {
     created_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE (owner_id, note_id)
   )`;
+  await sql`ALTER TABLE zoom_notes ADD COLUMN IF NOT EXISTS solo boolean NOT NULL DEFAULT false`;
+  await sql`ALTER TABLE zoom_notes ADD COLUMN IF NOT EXISTS others jsonb NOT NULL DEFAULT '[]'::jsonb`;
+  await sql`ALTER TABLE zoom_notes ADD COLUMN IF NOT EXISTS intel jsonb NOT NULL DEFAULT '[]'::jsonb`;
+  await sql`ALTER TABLE zoom_notes ADD COLUMN IF NOT EXISTS improve jsonb NOT NULL DEFAULT '[]'::jsonb`;
   await sql`CREATE TABLE IF NOT EXISTS folders (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id text NOT NULL,
@@ -268,6 +273,20 @@ async function migrate(sql: Sql) {
     EXCEPTION WHEN duplicate_object THEN NULL;
     END $$
   `;
+  await sql`CREATE TABLE IF NOT EXISTS plugins (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id text NOT NULL,
+    slug text NOT NULL,
+    name text NOT NULL,
+    info text,
+    connected boolean NOT NULL DEFAULT false,
+    status text,
+    credential text,
+    color text,
+    ic text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (owner_id, slug)
+  )`;
   await sql`CREATE TABLE IF NOT EXISTS ceo_weights (
     owner_id text NOT NULL,
     key text NOT NULL,

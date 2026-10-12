@@ -1,5 +1,6 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { ROADMAP } from './roadmap.mjs';
+import { idlePlugins, listPlugins } from './plugins';
 import { listZoomNotes, seedZoomNotes } from './zoom-notes';
 import { syncCalendar, syncDrive, syncGhl, calendarMeta, ingestMail } from './sync';
 
@@ -96,7 +97,7 @@ export function idleBoard(needsDatabase: boolean) {
       scopes: item.scopes,
       action: item.action,
     })),
-    plugins: pluginStatus(),
+    plugins: idlePlugins(),
     items: [],
     contacts: [],
     categories: [],
@@ -279,7 +280,10 @@ export async function loadBoard(sql: Sql, ownerId: string) {
         action: item.action,
       };
     }),
-    plugins: pluginStatus(),
+    plugins: await listPlugins(sql, ownerId, new Map([
+      ...[...bySource.entries()].map(([key, row]) => [key, row.status] as [string, string]),
+      ...(briefs[0] ? [['brief', 'connected'] as [string, string]] : []),
+    ])),
     items: items.map((row) => ({
       id: String(row.id),
       title: String(row.title),
@@ -346,39 +350,3 @@ export async function loadBoard(sql: Sql, ownerId: string) {
   };
 }
 
-/** Status words only. Keys stay in the server environment and are never returned. */
-function pluginStatus() {
-  const named = process.env.THIRD_MODEL_NAME?.trim();
-  const thirdOn = !!(named && process.env.THIRD_MODEL_KEY);
-  const rows = [
-    ['anthropic', 'Anthropic', 'Model layer', 'A', '#C9785B', 'ANTHROPIC_API_KEY'],
-    ['openai', 'OpenAI', 'Model layer', 'O', '#0E8A5F', 'OPENAI_API_KEY'],
-    ['perplexity', 'Perplexity', 'Search', 'P', '#1B7BB5', 'PERPLEXITY_API_KEY'],
-    ['riverside', 'Riverside', 'Recording', 'R', '#D6334E', 'RIVERSIDE_API_KEY'],
-    ['vercel', 'Vercel', 'Hosting', 'V', '#111111', 'VERCEL_TOKEN'],
-    ['cursor', 'Cursor', 'Editor', 'C', '#2E6BF2', 'CURSOR_API_KEY'],
-  ] as const;
-  const namedRow = (id: string, nm: string, kind: string, ic: string, color: string, on: boolean, word: string, desc: string) => ({
-    id,
-    nm,
-    kind,
-    ic,
-    color,
-    on,
-    word,
-    desc,
-    report: [
-      ['Status', word],
-      ['Credential', on ? 'Present on the server' : 'Not set'],
-    ],
-  });
-  return [
-    namedRow('anthropic', rows[0][1], rows[0][2], rows[0][3], rows[0][4], !!process.env[rows[0][5]], process.env[rows[0][5]] ? 'Connected' : 'Not connected', process.env[rows[0][5]] ? 'A server credential is present.' : 'No server credential is set.'),
-    namedRow('openai', rows[1][1], rows[1][2], rows[1][3], rows[1][4], !!process.env[rows[1][5]], process.env[rows[1][5]] ? 'Connected' : 'Not connected', process.env[rows[1][5]] ? 'A server credential is present.' : 'No server credential is set.'),
-    namedRow('third', named || 'Third model', 'Confirm which provider', '3', '#8A5200', thirdOn, thirdOn ? 'Connected' : 'Confirm provider', 'The third model layer stays unwired until the provider is named.'),
-    ...rows.slice(2).map((row) => {
-      const on = !!process.env[row[5]];
-      return namedRow(row[0], row[1], row[2], row[3], row[4], on, on ? 'Connected' : 'Not connected', on ? 'A server credential is present.' : 'No server credential is set.');
-    }),
-  ];
-}

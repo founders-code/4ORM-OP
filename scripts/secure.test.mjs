@@ -75,18 +75,23 @@ test('roadmap seed is seventeen dated items with allowed fields', () => {
   }
 });
 
-test('zoom notes seed is a dated transcript library', () => {
+test('zoom notes seed captures what other people said', () => {
   const notes = JSON.parse(readFileSync(new URL('../zoom_notes_seed.json', import.meta.url), 'utf8'));
-  assert.equal(notes.length, 42);
+  assert.equal(notes.length, 43);
   for (const note of notes) {
     assert.match(note.noteId, /^[A-Za-z0-9_-]+$/);
     assert.match(note.date, /^\d{4}-\d{2}-\d{2}$/);
     assert.equal(note.title.trim().length > 0, true);
+    assert.equal(typeof note.solo, 'boolean');
     assert.equal(Array.isArray(note.attendees), true);
-    assert.equal(Array.isArray(note.summary), true);
-    assert.equal(Array.isArray(note.stats), true);
+    assert.equal(Array.isArray(note.others), true);
+    assert.equal(Array.isArray(note.intel), true);
+    assert.equal(Array.isArray(note.improve), true);
     assert.equal(Array.isArray(note.sources), true);
-    assert.equal(/\bAI\b/.test(note.title), false);
+    assert.equal(note.improve.length > 0, true);
+    if (note.solo) assert.equal(note.others.length, 0);
+    assert.equal(/AI company/i.test(note.title), false);
+    assert.equal(/[\u2013\u2014]/.test(JSON.stringify(note)), false);
   }
 });
 
@@ -163,7 +168,7 @@ test('the control room page does not carry secrets', () => {
   assert.equal(page.includes('Connect Google'), true);
   assert.equal(page.includes('Connect GoHighLevel'), true);
   assert.equal(/DATABASE_URL|INGEST_TOKEN|CRON_SECRET|GOOGLE_|GHL_|refresh_token|client_secret/.test(page), false);
-  assert.equal(page.includes('CEO - next three moves'), true);
+  assert.equal(page.includes('CEO - Form Intelligence'), true);
   assert.equal(/Atherton/.test(page), false);
   assert.equal(/\/api\/(ingest|mcp|cron)/.test(page), false);
 });
