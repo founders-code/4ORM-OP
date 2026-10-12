@@ -1,967 +1,1060 @@
 [
   {
-    "noteId": "0ReltGphS0iuEu6mvxYvMQ",
-    "date": "2026-10-10",
-    "title": "Late-night deck prep and suitability thesis (solo)",
-    "attendees": ["Chad Johnston"],
-    "summary": [
-      "Fragmented solo session; Chad worked until roughly 4am assembling the pitch deck for Bruce.",
-      "Stated the core thesis in one line: the hard problem is proving suitability when a business does not know what 'suitable' means for a given consumer, and regulators are putting fines behind exactly that gap.",
-      "Deck edits: place the 'better solution' page right after the challenge page; on the solutions page (page 11) add a phone-and-dashboard image, keep the five stats, reorganize; make the business view larger with the phone in front."
-    ],
-    "stats": [
-      {"label": "Build session", "value": "worked until ~4am"},
-      {"label": "Solutions page", "value": "page 11"}
-    ],
-    "sources": []
-  },
-  {
     "noteId": "UVV2PeCMSjWoZSSeY3_0qw",
     "date": "2026-10-09",
-    "title": "Investor feedback call - Jeff Tindale walks the pitch deck",
+    "title": "Investor feedback - Jeff Tindale walks the deck",
     "attendees": ["Chad Johnston", "Bruce Fair", "Jeffery Tindale"],
-    "summary": [
-      "Chad pitched the 4orm thesis to Jeff Tindale (experienced investor, ~1,000 prior deck calls); goal was deck feedback, not a formal raise.",
-      "Framed the problem: regulators now want proof of WHY a consumer bought and whether they understood risk, which CRMs/spreadsheets/emails cannot evidence; current tools only rebuild an evidence layer after the fact.",
-      "Jeff's main advice: cut the 32-34 slide deck to 6-8 slides, lead with why-us / differentiator / business model / team, condense 'why now', move regulator and design-partner validation (LOIs) high up.",
-      "Jeff probed data privacy/security, decision-support vs regulated advice (Chad: decision-support, no advice), Spear IP/source/termination terms, and cloud vs on-prem build.",
-      "Chad confirmed ~$2.5M pre-seed (~$2M DevEx/OpEx), 18-month runway + 15% margin; target 3 paid design partners, product in market Q2-Q3 2027.",
-      "Channels discussed: Dye & Durham, Lendesk partner program, Coho/Wealthsimple freemium; demoed a free scam-vetting tool against 170+ registers.",
-      "Action: rebuild the presentation deck, touch base Tuesday, rebook with Jeff Wed/Thu next week."
+    "solo": false,
+    "others": [
+      "Jeff Tindale: veteran of ~1,000 pitch calls; built a software company in Brazil replacing the broker/notary arrangement with blockchain deeds/titles; says he is not deep in fintech.",
+      "Jeff Tindale: 34 slides is far too heavy - condense 'Why Now', move detail to an appendix; early decks lead with why-us / differentiator / business model / team, one problem slide max, then straight into 'why you guys'. Make it conversational, not a read.",
+      "Jeff Tindale: pushed positioning - 'why isn't Century 21 doing this themselves?'; warned the better-mousetrap edge is temporary; asked if the end goal is a compliance product or a broader platform.",
+      "Jeff Tindale: flagged the liability line - decision support vs financial advice - and the trust/privacy bar ('like health data').",
+      "Jeff Tindale: diligence questions Chad could not fully answer - Spear agreement (IP assignment, source-code access, termination, maintenance), cloud vs open-source hosting, basis for the ~$20K price.",
+      "Jeff Tindale: investors at this stage want validation - an LOI, a government body, testimonials - put it high in the deck.",
+      "Jeff Tindale: suggested a light freemium tester tool as a consumer wedge and a broker door-opener.",
+      "Jeff Tindale: intro'd contacts - Diane/Diamond Durham (notary software, Vancouver; Matt & Tyler Proud; knows the CFO), Lendesk (~350 API lenders), pentester.com (Ryan Montgomery) as a lead-gen/B2B model."
     ],
-    "stats": [
-      {"label": "FINTRAC penalties", "value": "minor $40K / serious $4M / very serious $20M; $5M per individual"},
-      {"label": "Files lacking suitability", "value": "100% (up from 85%)"},
-      {"label": "Compliance cost rise (2 yrs)", "value": "81%"},
-      {"label": "Modeled annual savings/firm", "value": "~$28,850"},
-      {"label": "Pre-seed raise", "value": "$2.5M (~$2M DevEx/OpEx)"},
-      {"label": "Deck length (now vs advised)", "value": "32-34 pages vs 6-8"}
+    "intel": [
+      {"label": "Diane Durham", "value": "~$200-500M revenue, grew by acquisition (Vancouver notary software)"},
+      {"label": "Lendesk partner program", "value": "~350 API lenders"},
+      {"label": "pentester.com", "value": "security/exposure scanning, founder Ryan Montgomery"}
     ],
-    "sources": [
-      {"name": "FINTRAC", "url": null},
-      {"name": "CMHC", "url": "https://www.cmhc-schl.gc.ca"},
-      {"name": "PwC Global Compliance Survey", "url": "https://www.pwc.com"},
-      {"name": "Spear Technologies", "url": null},
-      {"name": "Drata", "url": "https://drata.com"},
-      {"name": "Dye & Durham", "url": null},
-      {"name": "Lendesk", "url": null},
-      {"name": "Wealthsimple", "url": "https://www.wealthsimple.com"}
-    ]
+    "improve": [
+      "Sent the deck too late for Jeff to read (5-minute skim); get a tight 6-8 slide deck out ahead of calls.",
+      "Delivered a long pitch monologue (reciting compliance + ARR stats) when Jeff wanted a conversation - exactly what he said loses listeners.",
+      "Deferred real investor questions (Spear IP/source/termination, cloud vs open source, atomic-delete legality) - tighten these answers.",
+      "No validation artifact yet (LOI/testimonial/regulator) - Jeff named this as the single biggest gap.",
+      "Promised follow-through: rebuild to 6-8 slides, send ahead, rebook next week, send Jeff the scam-vetting tool."
+    ],
+    "sources": [{"name": "Lendesk", "url": null}, {"name": "pentester.com", "url": null}]
   },
   {
     "noteId": "bTCu19AYTy2nri59bAschQ",
     "date": "2026-10-08",
-    "title": "Dev partner session - Spear (Keegan and Mathew) on proposal, MSA and roadmap",
-    "attendees": ["Chad Johnston", "Keegan Poulton", "Mathew Mozaffari", "Zed", "Bruce Fair", "Don Hickling"],
-    "summary": [
-      "Working session with Spear (Keegan Poulton; Mathew Mozaffari joining late off a flight from Turkey) plus Zed, Bruce and Don, reviewing the 4orm six-pager after the product pivot.",
-      "Chad re-explained the pivot: businesses face rising fines and reporting duties and must prove why consumers bought; 4orm bridges a consumer-understanding layer into the business evidence layer; ~30-40% of the core needs re-skinning, architecture underway with Zed.",
-      "Keegan agreed Spear can produce a proposal/budget and timeline off the prior MSA, followed by a deposit and detailed discovery.",
-      "Mathew's concern: dependency on banks/providers and their risk appetites; Chad clarified the pivot removed settlement/banking, 4orm needs no bank permission, opening an ATB account at a lower risk tier.",
-      "Spear to support design-partner calls as a technical advisor 'under the 4orm flag'.",
-      "Funding status stated plainly: the lead investor's ~$500K fell through on liquidity, so 4orm moved to a friends-and-family round while still raising the $2.5M pre-seed.",
-      "Action: send Spear the architectural overview, incumbent analysis and research papers within 24 hours, then move toward an LOI/MSA. Entry market ~18,000 registered Canadian mortgage brokers."
+    "title": "Spear Technologies review - direction, MSA, AI specialist",
+    "attendees": ["Chad Johnston", "Keegan Poulton", "Mathew Mozaffari", "Zed", "Don Hickling", "Bruce Fair"],
+    "solo": false,
+    "others": [
+      "Keegan Poulton (Spear CEO): backed the pivot; wanted the real vision and how each person plays a role. Asked who maximizes usage (professionals vs consumer), whether there is a named design partner/pilot, the timeline to build and to market, and what Spear needs to produce a proposal.",
+      "Keegan Poulton: prior MSA/rates still roughly in line post-pivot; Matt plus engineers Karin and Diego to re-review MSA + architecture; offered to join design-partner calls 'under the Form Finance flag'; 'we like to move fast', move toward LOI/MSA.",
+      "Keegan Poulton: asked Chad for an architectural overview, user stories, competitor/incumbent analysis, and the research papers.",
+      "Mathew Mozaffari (joined late from Turkey): main concern is censorship/access risk - banks and providers can reject transactions and restrict infrastructure; banking dependency is largely unsolved even in decentralized setups.",
+      "Mathew Mozaffari: specific ATB warning - AML exposure, payment reversals, regulatory scrutiny; ATB has historically restricted/terminated relationships beyond its risk appetite; large-volume/volatile flows get flagged. Understand each institution's risk triggers. Offered to support the AI work.",
+      "Zed: has an AI-specialist candidate via a mutual friend - MBA (Queen's), ex-adjunct prof UBC Sauder, built SaaS KYC/onboarding for wealth mgmt/payments/insurance/credit, owns a mortgage-broker software company, trained AI agents with guardrails. Also emailing Lawrence in UBC med-IT.",
+      "Don Hickling: mostly social (Thanksgiving, PCL abatement work); no substantive business input.",
+      "Bruce Fair: clarified Chad sent the six-pager, not the full deck."
     ],
-    "stats": [
-      {"label": "Drata", "value": "$300M ARR in 6 years"},
-      {"label": "Core needing re-skin", "value": "30-40%"},
-      {"label": "AML fines", "value": "$50K up to $20M per infraction (~40x)"},
-      {"label": "Reporting", "value": "started Mar 2025; first report Mar 2028, then every 3 yrs"},
-      {"label": "Registered mortgage brokers (Canada)", "value": "~18,000"},
-      {"label": "Lead investor (fell through)", "value": "~$500,000"}
+    "intel": [
+      {"label": "AI-specialist candidate (Zed's lead)", "value": "MBA Queen's, ex-UBC Sauder adjunct, built SaaS KYC/onboarding, owns mortgage-broker software co, trained AI agents"},
+      {"label": "ATB risk posture (Matt)", "value": "restricts/terminates relationships beyond its risk appetite; flags large/volatile flows"},
+      {"label": "Spear reviewers", "value": "engineers Karin and Diego"}
     ],
-    "sources": [
-      {"name": "Spear Technologies", "url": null},
-      {"name": "Drata", "url": "https://drata.com"},
-      {"name": "Aveni", "url": null},
-      {"name": "ATB Financial", "url": "https://www.atb.com"},
-      {"name": "Century 21", "url": null},
-      {"name": "RE/MAX", "url": null}
-    ]
+    "improve": [
+      "When Keegan asked for the vision and how the team fits, Chad launched the full pitch monologue instead of answering tightly.",
+      "Deflected Matt's banking-dependency concern with 'that was before the pivot'; Matt pushed back twice that AML exposure applies even for mortgage brokers + ATB. Engage the de-risking point.",
+      "Financing fragility surfaced (lead investor's $500K fell through) and blocks Spear resourcing; Keegan asked for a real start date, Chad gave soft answers on the old settlement scope.",
+      "Chad has no proposal/budget of his own - relying on Spear to build it off a different project's numbers.",
+      "Promised within 24h: send architecture overview, incumbent analysis, both research papers to Matt; move toward LOI/MSA."
+    ],
+    "sources": [{"name": "Spear Technologies", "url": null}, {"name": "ATB Financial", "url": "https://www.atb.com"}]
   },
   {
     "noteId": "VDXjyJraRtO1s2iL1nfv5A",
     "date": "2026-10-07",
-    "title": "Deck/document edits and product lifecycle mapping with Zed",
+    "title": "Consumer / institutional / partnership life cycles with Zed",
     "attendees": ["Chad Johnston", "Zed"],
-    "summary": [
-      "Chad dictated edits to the cost-to-suitability document and investor deck - header/logo cleanup, stats moved up, a 'rainbow' market-opportunity visual, founder product-market-fit narrative, and an oil-and-gas H2S near-miss story to anchor the proactive-safety theme.",
-      "Requested a simple 1-2 page regulator brief: which bodies are raising pressure/fines across BC, Alberta, Ontario and federally; which regulators 4orm is approaching; recap of Transactic and ATB conversations; highlight questions for cold-calling mortgage brokers.",
-      "Confirmed the founder story is Chad only (Kevin has no oil-and-gas background).",
-      "Zed reported outreach to a UBC contact and finance contacts (Vancity, a WorkSafeBC legal contact).",
-      "Zed converting user stories into visuals (library targeted Thursday); Spear call set Thursday 3pm to ask about the MSA from Michael Stevens and a development proposal.",
-      "Chad floated recruiting a deployment-level model expert as a CTO as leverage against Spear.",
-      "Agreed Zed will draft three lifecycle maps (consumer, institutional, bi-directional partnership), happy path first."
+    "solo": false,
+    "others": [
+      "Zed: chasing introductions - a long-time UBC contact (text bounced, left voicemail, trying LinkedIn) for faculty, plus finance/compliance contacts (Vancity, and WorkSafeBC legal).",
+      "Zed: converting user stories into visuals is taking longer than expected; aims to have them in the library by Thursday.",
+      "Zed: framed what they need from Spear - a build/implementation partner that delivers a working platform validating both sides of a contract across sectors, with one use case having an AI component.",
+      "Zed: insisted on clarity on what the AI does - automate processes with boundary/stop points where a human must be involved; asked whether AI is exposed to institutions or the consumer.",
+      "Zed (key ask): current user stories are atomic ('as a role I want X') but there is no end-to-end life cycle; wants three - consumer, institutional, bi-directional partnership; happy path first, then exceptions. Cited an ICBC customer-journey model as the precedent.",
+      "Zed: framed the platform as 'converging the two parties on a common evidence platform'; asked for a working session where Chad describes the life cycle."
     ],
-    "stats": [
-      {"label": "Regulator brief length", "value": "1-2 pages"},
-      {"label": "Non-compliance cost multiple", "value": "2.71x vs compliance"},
-      {"label": "Lifecycle maps to build", "value": "3"}
+    "intel": [
+      {"label": "Introductions via Zed", "value": "UBC faculty contact, Vancity, WorkSafeBC legal/compliance"},
+      {"label": "Life-cycle precedent", "value": "ICBC customer-journey model Zed built before"}
     ],
-    "sources": [
-      {"name": "Spear Technologies", "url": null},
-      {"name": "Vancity", "url": "https://www.vancity.com"},
-      {"name": "UBC", "url": "https://www.ubc.ca"}
-    ]
+    "improve": [
+      "Produce the missing end-to-end life cycles (consumer, institutional, partnership) - atomic user stories alone are not enough for Spear.",
+      "Define exactly what the AI does, where the human-in-the-loop boundaries sit, and whether it is consumer- or institution-facing.",
+      "Clarify both tracks' onboarding/entry points and how FormIQ converges them before engaging Spear."
+    ],
+    "sources": [{"name": "Spear Technologies", "url": null}]
   },
   {
     "noteId": "qgW8BmOuTQq1ZNpWDg7IXA",
     "date": "2026-10-06",
-    "title": "Architecture review with Zed - file-based orchestration and Spear spec",
+    "title": "File-based orchestration and Spear design spec with Zed",
     "attendees": ["Chad Johnston", "Zed"],
-    "summary": [
-      "Zed walked Chad through a file-and-folder orchestration design that holds logic in folders/files rather than in the agents, cutting cost (~30,000 to ~8,000 per run) and giving ~10x throughput, with one controller creating and destroying agents on demand.",
-      "Agreed many firms are over-sold complex multi-agent builds that will not scale; 4orm keeps orchestration logic in checkable documents, not code.",
-      "Zed delivered three outputs consolidating 10 source documents: a proposal/business-architecture summary, a static business architecture (BA01, BA02...), and a dynamic model of processes/personas/interactions (P1-P4), linked by a traceability matrix.",
-      "Reviewed the Spear design spec: coded requirements, three duty shapes (check, paper, filing), append-only bi-temporal sealed evidence, open export with reproducible hash manifest, and the 'failure is evidence' principle.",
-      "User stories reformatted into per-story slide 'cards' doubling as test cases and acceptance criteria.",
-      "Agreed Spear should respond with written questions, not a live meeting; Chad to text Keegan for a Thursday call toward a proposal and discovery.",
-      "Chad told Zed he is increasing Zed's equity for the expanded architecture-lead role; incorporation, subscription and advisor/shareholder agreements still pending from James (~2 weeks)."
+    "solo": false,
+    "others": [
+      "Zed: advocated file-based orchestration - pull logic out of the agent into folders/files; each stage's output feeds the next; numbered run files make any request traceable; mirrors his Copilot 'Architecture Assistant'.",
+      "Zed: it is cheaper - ~30,000 tokens processing inside the agent vs ~8,000 when it just reads a file and processes.",
+      "Zed: consolidated 10 of Chad's documents into three outputs (proposal summary; static business architecture BA01+; dynamic model P1-P4), with the 4orm IQ core as governing reference; stressed he treated the docs as authoritative and has not validated them.",
+      "Zed: mapped the architecture to a Spear design spec - coded requirements (e.g. ARC-SCP-001: one shared platform, no separate stacks per product/regulator), ~20 non-negotiable principles - append-only/immutable, bi-temporal, canonical open export tagged to source, 'failure is evidence'; three duty shapes (check, paper, filing) as signed content + config, not code branches.",
+      "Zed: reworking each user story into a slide/card that doubles as a test case; hold Spear's feet to the fire via a traceability matrix.",
+      "Zed: handle Spear by having them respond to the document with written questions, not a meeting.",
+      "Zed: corrected terminology to 'counterparty risk' (not third-party); praised the Control Room as a 'business version of the project war room'."
     ],
-    "stats": [
-      {"label": "Token cost per run", "value": "~30,000 to ~8,000"},
-      {"label": "Throughput gain", "value": "~10x"},
-      {"label": "Docs consolidated", "value": "10 into 3 outputs"},
-      {"label": "Duty shapes", "value": "3 (check, paper, filing)"}
+    "intel": [
+      {"label": "Orchestration token cost", "value": "~8,000 (read a file) vs ~30,000 (process inside the agent)"},
+      {"label": "Deliverable scope", "value": "10 source docs into 3 outputs; ~20 non-negotiable principles"},
+      {"label": "Duty shapes", "value": "check, paper, filing"},
+      {"label": "Terminology", "value": "correct term is 'counterparty risk'"}
     ],
-    "sources": [
-      {"name": "Spear Technologies", "url": null}
-    ]
+    "improve": [
+      "Adopt file-based orchestration (logic in files, not embedded in agent/code) for lower cost and auditability.",
+      "Validate Zed's architecture - it was built solely from Chad's documents and is explicitly unvalidated.",
+      "Run Spear off the user-story-as-test-case approach; require written responses to the document.",
+      "Use precise domain terminology (counterparty risk)."
+    ],
+    "sources": [{"name": "Spear Technologies", "url": null}]
   },
   {
     "noteId": "oNrqlNWLSZuNyuVVhgtVBw",
     "date": "2026-10-06",
-    "title": "Investor catch-up with Hickling - market color, thesis, fundraising",
+    "title": "Don Hickling weekly catch-up - framing market and crypto macro",
     "attendees": ["Chad Johnston", "Don Hickling"],
-    "summary": [
-      "Catch-up with Hickling (framing and asbestos-abatement business, a friends-and-family prospect); opened with framing-market color (multifamily ~$11/sq ft, single-family ~$9.50, newer bidders undercut ~10% but risk rework).",
-      "Extended crypto/tokenization discussion: DTCC tokenization expected this month, institutional money moving on-chain, XRP as a neutral bridge, Quant as an overlay.",
-      "Chad previewed a forthcoming research paper on the counseling-style system, citing ~2.74x more information shared by consumers than with a human.",
-      "Used Dean's life-insurance near-miss to illustrate the consumer-protection value FormIQ could surface.",
-      "Framed the thesis via the oil-field / asbestos field-level hazard assessment analogy - a 'future-level hazard assessment'.",
-      "Revenue-model idea: low FormIQ subscription (under $5/mo) plus a paid hazard-assessment report ($20-$100); cited Drata ~$300M ARR after 6 years.",
-      "Ops update: shareholder and bridge/loan agreements (KCS header) sent Oct 2 via OpenSign then to James; three social posts/day; friends-and-family ~$105K in conversation across six prospects, targeting a quarter-million by Oct 16 before an angel round; weekly call Fridays 10am."
+    "solo": false,
+    "others": [
+      "Don Hickling: runs a framing/construction company bidding multifamily framing; clients Carrington, Brookfield, Bedrock Homes; prefers multifamily (crews stay in one place).",
+      "Don Hickling: market read - framing slowed, lots of spec inventory, more crews calling for work (his barometer); blames tariff uncertainty, slowing economy, higher rates; big clients report sales picking up.",
+      "Don Hickling: newer framers undercut ~$1/sq ft (~10%) but big builders rarely risk them (rework costs more than the saving).",
+      "Don Hickling: heavy crypto-trading talk - 'alt season' thesis, whales accumulating, XRP as neutral bridge / Quant overlay; named XLM, HBAR, Solana, SUI, ETH; claims Quant +500%; trades on BTCC; macro tokenization numbers (DTCC ~$114T claimed Oct). Treat as unverified.",
+      "Don Hickling: engaged with the 'field-level hazard assessment' analogy, agreed there is a regulatory gap for proving consumer understanding; confirmed Friday weekly."
     ],
-    "stats": [
-      {"label": "Counseling-system info shared", "value": "~2.74x vs a human"},
-      {"label": "Drata ARR", "value": "~$300M after 6 years"},
-      {"label": "Friends-and-family in conversation", "value": "~$105K across 6 prospects"},
-      {"label": "Target raise close", "value": "$250K by Oct 16"}
+    "intel": [
+      {"label": "Multifamily framing rate", "value": "~$11/sq ft; single-family ~$9.50"},
+      {"label": "New-entrant undercutting", "value": "~$1/sq ft, ~10% below market"},
+      {"label": "Market condition", "value": "slowed - high spec inventory, more crews seeking work"},
+      {"label": "DTCC tokenization (unverified)", "value": "~$114T, claimed to begin October"}
     ],
-    "sources": [
-      {"name": "Drata", "url": "https://drata.com"},
-      {"name": "OpenSign", "url": null}
-    ]
+    "improve": [
+      "Call spent heavily on speculative crypto macro; Chad amplified the hype rather than steering back to a weekly 4orm update.",
+      "Chad aired a named third party's (Dean's) private financial situation as a sales anecdote - anonymise third-party stories.",
+      "Several unverified assertions stated as fact - qualify forward-looking/macro claims to protect credibility.",
+      "Long monologues; Don mostly affirmed - draw him out, he has an active network and market read."
+    ],
+    "sources": []
   },
   {
     "noteId": "mRSJiv_7SRiwG7NLT7LAVQ",
     "date": "2026-10-05",
-    "title": "Strategy and research review - deck simplification, FCAC alignment, model architecture",
+    "title": "Internal working session - deck, marketing, architecture, IP (Bruce, Kevin, Zed)",
     "attendees": ["Chad Johnston", "Bruce Fair", "Kevin Wong", "Zed"],
-    "summary": [
-      "Internal strategy review covering deck design, regulatory research, go-to-market and system architecture.",
-      "Decided to simplify the deck: lead with a short summary deck (~8 pages) linking into an in-depth version; borrowed layout from Dean's deck (~15 slides, pitched slide-by-slide, not sent cold).",
-      "Reviewed the FCAC National Financial Literacy Strategy 2021-2026 as strong alignment (just-in-time info at point of decision, behavioral design); Bruce suggested lifting the FCAC 'make the change' chart with 4orm branding.",
-      "Shared a counseling-style research paper (MIT, ~2 decades) showing people disclose far more to a conversational system than to a human.",
-      "Bruce/Kevin critiqued vague messaging; Kevin pushed a GTM on earned media, press, website content for search and LLMs, Reddit/Medium/YouTube - one research paper and one investor newsletter per month.",
-      "Architecture debate: Chad advocated a single-'brain' folder/skills design over hundreds of autonomous agents; Zed agreed and mapped it to orchestration, skills and create-then-destroy sub-agents.",
-      "Zed has ~60 user stories (15 visualized) in the data-room inbox for Chad to review.",
-      "Legal/IP: Michael Stevens sent a Fasken MSA, now with Spear for review, to be locked before sensitive info is shared.",
-      "Week's outreach: brokerages, FCAC, Bow Valley, ATB, Spear, Michael Stevens, MIT (grants)."
+    "solo": false,
+    "others": [
+      "Bruce Fair: the simplified reference decks Chad is copying are US-market / teams that already had a win; asked how those companies raise 'without a disclaimer and a CIM' - a materials-readiness gap ('I want to see your materials').",
+      "Bruce Fair: blunt copy critique - 'review, choose, approve: review what?'; 'no before you send: no what?'; spotted the National Financial Literacy chart - 'this whole chart you could steal' and rebrand with the form logo.",
+      "Kevin Wong: one channel only is not enough; need third-party/earned media (press, publications) because content will not go viral; be reputable and findable including by LLMs; Reddit is strong (LLMs crawl it, feeds Google, targetable ads, professional subreddits); YouTube educational; the website is the big task both Google and LLMs read.",
+      "Zed: endorsed behavioral design (point-of-decision); said timing is right but 'the how' still isn't articulated; reframed counseling-AI as surfacing options/analysis without telling the person.",
+      "Zed: 'don't join too many talking shops' on regulator forums - build a working demo/simulation to show regulators and partners.",
+      "Zed (IP, key): the proprietary asset is the behavioral design - 'we have to own the design' or Spear can compromise it; be solution-agnostic (requirements and user stories, not code). Has ~60 user stories (15 visualized) in the data-room inbox, moving slowly because unpaid pre-financing.",
+      "Zed (contacts): Jennifer Burns, UBC CIO/head of IT, for faculty/AI intros; Vancity via LinkedIn if Chad gives a question set; validated Chad's 'brain/skills' approach."
     ],
-    "stats": [
-      {"label": "Investor deck attention limit", "value": "~8 pages"},
-      {"label": "FCAC strategy period", "value": "2021-2026"},
-      {"label": "High-anxiety users avoiding tasks", "value": "2.75x more likely"},
-      {"label": "Prefer chatbot to avoid embarrassment", "value": "37% of Canadians"},
-      {"label": "Conversational engagement", "value": "2.4x more opens, 3.8x longer"},
-      {"label": "Zed user stories", "value": "~60 written, 15 visualized"}
+    "intel": [
+      {"label": "UBC contact (Zed)", "value": "Jennifer Burns, CIO / head of IT at UBC"},
+      {"label": "User stories (Zed)", "value": "~60 written, 15 visualized, in the data-room inbox"},
+      {"label": "Reddit (Kevin)", "value": "crawled by LLMs, feeds Google, targetable ads, pro subreddits"}
     ],
-    "sources": [
-      {"name": "Financial Consumer Agency of Canada (FCAC)", "url": null},
-      {"name": "MIT", "url": "https://www.mit.edu"},
-      {"name": "Spear Technologies", "url": null},
-      {"name": "Fasken", "url": null},
-      {"name": "ATB Financial", "url": "https://www.atb.com"}
-    ]
+    "improve": [
+      "Bruce's CIM/disclaimer point is a real gap - Chad kept saying 'good point' but has no disclaimer or CIM for raising.",
+      "Acknowledged vague marketing copy but deferred fixes to 'next week' rather than tightening on the call.",
+      "Long tangent on AI-architecture philosophy ate the session; Kevin dropped off and little moved - watch rabbit holes.",
+      "Zed flagged the core gap: no owned, articulated design/requirements set to protect IP before disclosing to Spear. Reviewing Zed's ~60 user stories is the load-bearing follow-through.",
+      "Zed's 'stop joining talking shops, build a demo' is implied criticism that outreach is spread thin without a concrete artifact."
+    ],
+    "sources": [{"name": "FCAC", "url": null}, {"name": "Spear Technologies", "url": null}]
   },
   {
     "noteId": "Qh3POFWGT3uASCv835d0pg",
     "date": "2026-10-01",
-    "title": "Wallet setup and fundraising walkthrough with Dean Hesse",
+    "title": "Dean Hesse - wallet setup and investor-intro offer",
     "attendees": ["Chad Johnston", "Dean Hesse"],
-    "summary": [
-      "Crypto/wallet working session (Jupiter, Phantom, Ledger, buying Solana); both agreed to step back from active trading toward long-term investing and watch for a deep Bitcoin entry.",
-      "Fundraising update: Spear lining up, ATB building a design-partner list, corporate docs/subscription agreements ~1-2 weeks out.",
-      "Staged-raise rationale: close friends-and-family to $250K (to set price and show traction) before angels; then a $500K angel round, a further $2M (~18 months runway), then $5-7M in Q1 2028; plus $2M+ non-dilutive grants (SR&ED, Alberta Innovates).",
-      "Friends-and-family mechanics: $80K in, $170K to go, $10K minimum (~17 people), ~43 names to approach, closing Oct 16.",
-      "Walked the finished pitch deck - team (Zed, Matt/Spear, Dean, Michael Stevens), 100% of files lacked suitability (73%), ~$28K savings on a ~$152K compliance stack, process-time cuts.",
-      "Dean to sound out his contact 'Neil' for possible investors and a no-agenda discovery call."
+    "solo": false,
+    "others": [
+      "Dean Hesse: offered to introduce friends-and-family investors via a lifelong friend 'Neil' (ex-financial-advisor and network marketer who 'knows big investors looking to park money'); will feel Neil out; warned Neil is like an 'old used-car salesman' - grain of salt.",
+      "Dean Hesse: asked whether Chad would run a group Zoom for interested investors and whether there is a document to review beforehand.",
+      "Dean Hesse: market view - expects a fast single-day BTC wick to ~71-72k then reverse; positioning in altcoins for a 2-3 year hold.",
+      "Dean Hesse: keeps losing money trading ('charting is 100%, thinking is not'); wants alarm triggers instead of stops; connecting Jupiter/Phantom/Ledger and buying Solana.",
+      "Dean Hesse (usability): struggled to connect his wallet and find the screen-share control - navigation friction."
     ],
-    "stats": [
-      {"label": "Friends-and-family", "value": "$80K in, $250K target"},
-      {"label": "Minimum ticket", "value": "$10K (~17 people)"},
-      {"label": "5-yr revenue projection", "value": "$12M low / $95M conservative / $250M blue-sky"},
-      {"label": "Next raises", "value": "$500K angel, $2M, then $5-7M Q1 2028"},
-      {"label": "Compliance savings", "value": "~$28K on ~$152K stack"}
+    "intel": [
+      {"label": "Investor channel", "value": "Neil / 'Buddy' - ex-advisor/network-marketer with investor contacts; vet first"},
+      {"label": "Dean's BTC target", "value": "fast wick to ~71-72k before reversal"}
+    ],
+    "improve": [
+      "Keep beta sessions on the product - this drifted into Dean's personal crypto setup.",
+      "Have a friends-and-family one-pager ready; Dean explicitly asked for a review doc.",
+      "Be cautious sourcing investors through an unvetted 'used-car-salesman' network marketer.",
+      "Ethical flag: Dean is a scam victim; steering him to recruit other investors warrants care."
     ],
     "sources": []
   },
   {
     "noteId": "6R2WuWwjQ9mcHBUmI2A8ng",
     "date": "2026-09-30",
-    "title": "FormIQ verification review (Newton case) with Dean Hesse",
+    "title": "Dean Hesse beta-tests FormIQ on the Newton exchange",
     "attendees": ["Chad Johnston", "Dean Hesse"],
-    "summary": [
-      "Reviewed the FormIQ consumer-verification build via a full system-audit report (registry-lookup faults, RDAP/domain checks, a proof chain at 25%, the SR001 source record).",
-      "Core design tension: legal exposure (defamation, human-rights and privacy filtering) means the product can flag what is 'not good' but must avoid implying something is 'good'.",
-      "Worked the Newton Crypto case: three faults produced a false 'unconfirmed and warned' verdict - the registered-platform register was never queried, an FCA warning actually named a clone (NewtonCorp.com), and a single one-star review was over-weighted.",
-      "Fixes agreed: query the registered-dealer register, add a name/domain/identifier collision gate before any warning, run a balanced positive-evidence pass, and hard-code recency weighting (~12-month full, 36-month labeled; regulator/court actions never expire).",
-      "Cited a 2025 study warning that letting the model weigh recency can flip results, so date windows must be coded.",
-      "Session drifted into crypto (wallet transfers, trading tools, an ETH chart review) and a crypto-education webinar."
+    "solo": false,
+    "others": [
+      "Dean Hesse: ran Newton through FormIQ; it flagged a 'withdrawal-refusal pattern' but noted it 'is an allegation rather than a verified fact'; the source item was dated 2024.",
+      "Dean Hesse (accuracy critique): FormIQ said it 'found a pattern of complaints' but Dean could only find ONE - the tool overstated a pattern the evidence didn't support.",
+      "Dean Hesse: cross-checked himself - Reddit calls Newton one of the most reputable Canadian exchanges; a BBB review (Mar 2025) described an account frozen and forced into liquidation after a scam report.",
+      "Dean Hesse (entity confusion): wanted to 'separate the two' Newtons - the tool may be conflating two same-named entities.",
+      "Dean Hesse (behavior): moved ~$27 Worldcoin and $1,000 ETH off Newton to his Ledger; uses Lux Algo / SVP tools; considering dropping $300/mo insurance to keep buying crypto."
     ],
-    "stats": [
-      {"label": "Newton false-verdict faults", "value": "3"},
-      {"label": "Proof chain completion", "value": "25%"},
-      {"label": "Recency weighting", "value": "12-mo full / 36-mo labeled / regulator never expires"}
+    "intel": [
+      {"label": "FormIQ Newton flags", "value": "unverified withdrawal allegation; claimed 'pattern' off one complaint; source dated 2024"},
+      {"label": "External Newton reputation", "value": "Reddit - among most reputable; BBB Mar-2025 - account frozen + forced liquidation after scam report"}
+    ],
+    "improve": [
+      "Tighten the evidence-to-claim threshold - do not render 'a pattern of complaints' off a single complaint (credibility risk for a suitability/fraud tool).",
+      "Surface recency prominently - a 2024-dated item read as a current risk; label/weight dates.",
+      "Add entity disambiguation so same-named firms aren't conflated.",
+      "Session wandered into a trading-tools tangent; use a structured beta-feedback script.",
+      "Dean is vulnerable and weighing dropping insurance to buy crypto - avoid reinforcing risky behavior."
     ],
     "sources": []
   },
   {
     "noteId": "IiwOUDlbQvKKzFmUvFZrcA",
     "date": "2026-09-29",
-    "title": "4orm and FormIQ walkthrough plus angel-round fundraising with Carmen",
+    "title": "Carmen - FormIQ demo feedback and a referral / BD idea",
     "attendees": ["Chad Johnston", "Carmen R"],
-    "summary": [
-      "Opened by helping Carmen read home electricity data and sizing an automatic transfer switch / battery storage.",
-      "Screen-shared and pitched 4orm and FormIQ - a consumer-owned, KYC-gated private wallet where people explore major financial decisions, build a suitability record, and selectively share it with brokers/lenders, while businesses receive a canonical-ledger evidence layer.",
-      "Framed the market around rising Canadian compliance/AML pressure: examined files lacking suitability evidence, fines from ~$50K to $20M, compliance spend up ~81% in two years; product priced $35K/year, claimed up to 45% compliance-cost savings.",
-      "Demonstrated a free fraud-check tool that screens a company name or website against public records, flags hits, stores no personal searches, and generates ready-to-file fraud-reporting packages - motivated by Dean losing $60K to a scam.",
-      "Fundraising: ~$80K in the door, seeking 17 more investors at $10K each to reach $170K and close the angel round; recounted losing an anticipated lead investor (Brooks).",
-      "Carmen suggested Chad approach former window-cleaning clients (affluent, trust-built, already in his CRM) as prospective investors - Chad called it the best idea of the call."
+    "solo": false,
+    "others": [
+      "Carmen R: reframed FormIQ in plain language as 'basically a credit check on the company you're dealing with' and called it 'a huge asset' - a sticky one-liner worth adopting.",
+      "Carmen R: probed compliance differing by province/county/country, then stated the liability stance herself - 'the onus is on them to be compliant, not you; that's a disclaimer saying you're not responsible.'",
+      "Carmen R (trust questions): who keeps it updated/operating? what stops hacking? is AI or a person doing this? how'd you get my name? is it free? do you sell the info? 'it's kind of a middleman.'",
+      "Carmen R (BD idea, key): work the warm network, not 'the wrong places' - the affluent homeowners from the window-cleaning business, retirees, 'the guy with the coffee shop'; wants to line up a chat with Brad.",
+      "Carmen R (referral): reach out to 'Alberta Radio' - Jason, Edmonton digital creator (~82,000 followers), former hacker now aiding police; mentioned a recent Alberta data breach (licenses/passports/health numbers). Also pushed some low-credibility sovereign-citizen / anti-CRA content - flag as unvetted."
     ],
-    "stats": [
-      {"label": "Capital raised to date", "value": "$80,000"},
-      {"label": "Angel round target", "value": "$170,000 (17 at $10K)"},
-      {"label": "Product price", "value": "$35,000/year"},
-      {"label": "Claimed compliance savings", "value": "up to 45%"},
-      {"label": "Example scam loss (Dean)", "value": "$60,000"}
+    "intel": [
+      {"label": "Positioning line (Carmen)", "value": "FormIQ = 'a credit check on the company you're dealing with'"},
+      {"label": "Referral contact", "value": "Alberta Radio - Jason, Edmonton, ~82,000 followers, ex-hacker aiding police; albertaradio.ca"},
+      {"label": "Compliance complexity", "value": "varies by county, province, country"}
     ],
-    "sources": []
+    "improve": [
+      "Build Carmen's trust questions into a standard FAQ/talk track (security, privacy, who updates it, human-vs-AI).",
+      "Adopt the 'credit check on a company' framing - it landed instantly.",
+      "Nail the jurisdiction-handling and liability-disclaimer story.",
+      "Pursue the warm BD channels she offered (window-cleaning clients, retirees, Alberta Radio) but vet the conspiratorial sources rather than lean on them."
+    ],
+    "sources": [{"name": "Alberta Radio", "url": "https://albertaradio.ca"}]
   },
   {
     "noteId": "TJS56pEGSkahwbnTjGSFLQ",
     "date": "2026-09-28",
-    "title": "FormIQ live demo and model-regulation discussion with Dean Hesse",
+    "title": "Dean Hesse - Newton KYC and FormIQ re-run over an AI/crypto webinar",
     "attendees": ["Chad Johnston", "Dean Hesse"],
-    "summary": [
-      "Watched a webinar on advanced automation and quantum computing, debating whether it moves money onto the blockchain and bypasses banks.",
-      "Discussed a thesis that large model vendors amplify fear to drive regulation restricting independent self-hosted models; referenced NVIDIA offering owned on-premise models businesses could run internally.",
-      "Chad argued 4orm's single-model 'brain of files' architecture matches where the field is heading and keeps the company vendor-independent.",
-      "Noted KPMG statistics are cited in the pitch deck (KPMG is not KCS's accountant).",
-      "Live FormIQ demo: ran a due-diligence/KYC check on the Newton exchange (surfacing withdrawal-delay and freeze complaints, an FCA clone warning, unverified registration), then began testing NDAX.",
-      "Chad signed a Newton KYC that day to fund crypto accounts, framed as the first real-life use of FormIQ."
+    "solo": false,
+    "others": [
+      "Dean Hesse: signed a Newton KYC that day (needed a Canadian broker to fund accounts); previously used an exchange Robinhood took over and left because it restricts withdrawals.",
+      "Dean Hesse (product): re-ran Newton through FormIQ - returned Newton is an 'Ontario Securities / US dealer' but 'could not independently confirm registration' and cited 'recurring withdrawal delays and account freezes'. Dean reacted 'What? I just did a KYC on that', then noted the reviews were old (2017-18) plus a Trustpilot one-star.",
+      "Dean Hesse (trust/privacy, sharp): asked directly whether he should feel better or worse about KYC knowing an AI agent could break into a company and pull all your data - the core data-protection objection.",
+      "Screen-shared webinar host (via Dean, unverified): AGI/quantum narrative; pitched Worldcoin as 'proof you are human'; claimed OpenAI paused training after agents touched SEC/Census/DoE sites; claimed Anthropic IPO 'imminent'."
     ],
-    "stats": [
-      {"label": "Exchanges reviewed", "value": "Newton, NDAX"}
+    "intel": [
+      {"label": "FormIQ Newton flags", "value": "registration unconfirmed; withdrawal/freeze reviews 2017-18; Trustpilot 1-star"},
+      {"label": "Dean's action", "value": "signed a Newton KYC same day"}
+    ],
+    "improve": [
+      "Position FormIQ BEFORE the decision - Dean had already signed the KYC before the tool warned him; it fired too late.",
+      "Again surface the age of each signal - 2017-18 reviews read as current.",
+      "Have a crisp data-privacy/security answer ready - Dean's 'is my KYC data safe?' is the central trust question.",
+      "Gently correct misinformation (e.g. the 'Anthropic IPO next week' claim) to protect credibility.",
+      "Most of the hour was a conspiratorial webinar Dean screen-shared - steer beta time back to structured testing."
     ],
     "sources": []
   },
   {
     "noteId": "Qnh58E0QR7-Mf23zHjRwWQ",
     "date": "2026-09-28",
-    "title": "Fundraising war room - deck rewrite, pro forma and investor outreach",
+    "title": "Deck rework + investor-outreach planning with Bruce and Kevin",
     "attendees": ["Chad Johnston", "Bruce Fair", "Kevin Wong"],
-    "summary": [
-      "Working session on the rewritten first slides, the pro forma and investor outreach.",
-      "Chad reworked the opening ('major financial decisions, easier to understand, easier to explain'; 'the business pays twice'), led with the pain and AML fines; Bruce insisted on a 'who does it impact' slide before any benefits.",
-      "Reviewed the pro forma and worst-case scenarios; recommended raising from $2.0M to $2.5M for a 15% buffer plus ~5 extra months runway.",
-      "Chad to build investor-return/revenue slides; Bruce stressed not pitching anyone until the pro forma and return slides are ready.",
-      "Presented fundraising platforms: OpenVC (~$25/mo, ~18,000 contacts, deck upload, direct outreach, deck-rating tool), Glass Dollar, NFX Signal, Startup TNT (BC/Western Canada), with MaRS and F6S to review.",
-      "Agreed personal-contact investor meetings work best one-on-one; Chad to line up BJ, David Kershaw for Wed/Thu.",
-      "On non-responsive investor Brooks: Bruce to send a cost tally (~$50K, 3-4 months lost); Chad planning a cold follow-up call.",
-      "Investor-call blocks set Wed ~2pm PST and Thu 1pm PST; revised deck to Bruce that morning."
+    "solo": false,
+    "others": [
+      "Bruce Fair: align the first page with the prior deck; liked 'major financial decisions, easier to understand, easier to explain / software that connects / the business pays twice / the professional keeps the judgment'. Replace the new deck's first two slides with the older ones, keep the three-scenario slide, make firm-subscription and revenue consistent, add the 18-month plan and team.",
+      "Bruce Fair: insisted on a 'who does it impact / what industries' slide - it is not just mortgage; benefits come later.",
+      "Bruce Fair (key): do not pitch investors until there is a pro-forma with revenue + investor-return slides; one-on-one beats group for personal contacts.",
+      "Bruce Fair: on Brooks (went dark) - send him a tally of what ~3-4 months of delay cost the company.",
+      "Kevin Wong: scheduling only - set 1pm Thu and 2pm Wed investor calls; hadn't heard of OpenVC; knows LinkedIn Sales Navigator and GHL."
     ],
-    "stats": [
-      {"label": "Raise increase", "value": "$2.0M to $2.5M"},
-      {"label": "Buffer / runway", "value": "15% on figures, ~5 extra months"},
-      {"label": "OpenVC", "value": "~$25/mo, ~18,000 contacts"},
-      {"label": "PwC 2025 - more complex (3 yrs)", "value": "94%"},
-      {"label": "Notices of violation FY2024-25", "value": "25,023"},
-      {"label": "Largest fine in history", "value": "$176M (Excelsior / 'Cryptomosis')"}
+    "intel": [],
+    "improve": [
+      "Bruce said not to pitch investors until the pro-forma/return slides exist - yet Chad is already lining up calls (BJ, David Kershaw). Build the return slides first.",
+      "Deck first pages still being reworked, leaning on an AI pitch-rating tool to restructure; own the narrative rather than outsourcing it.",
+      "The Brooks cost-tally decision was raised but left open - resolve it."
     ],
-    "sources": [
-      {"name": "OpenVC", "url": "https://www.openvc.app"},
-      {"name": "NFX Signal", "url": "https://www.nfx.com"},
-      {"name": "F6S", "url": "https://www.f6s.com"},
-      {"name": "LinkedIn Sales Navigator", "url": "https://www.linkedin.com"},
-      {"name": "PwC Global Compliance Survey 2025", "url": "https://www.pwc.com"}
-    ]
+    "sources": [{"name": "OpenVC", "url": "https://www.openvc.app"}]
   },
   {
     "noteId": "r5hODzV0SIq7ex0FSKbBng",
     "date": "2026-09-25",
-    "title": "Fundraising and go-to-market mentorship with Dean McCall",
+    "title": "Dean McCall - sales and fundraising coaching",
     "attendees": ["Chad Johnston", "Dean McCall"],
-    "summary": [
-      "Coaching call with Dean McCall on sales approach and capital raising.",
-      "Reported a prior-day ATB call: ATB will compile a list of companies struggling with new compliance infractions and has turned away companies lacking a compliance stack; cited CMHC and Bank of Canada surveys that 60%+ of companies still run manual processes.",
-      "First 25 target companies queued to call; a demo shows the consumer phone flow activating into the professional's database.",
-      "Dean advised: pursue design partners who build alongside you and pay if there is fit, go straight to the CEO, use short LinkedIn/email outreach (never lead with the deck), cap LinkedIn at ~30 varied messages/day, favor warm intros.",
-      "Chad has ~900 eligible Canadian angels segmented into a top 100 then a second 100, ~$80K raised; preparing for a Friday conversation with Mr. Don.",
-      "Dean's own raise tracking toward ~$1.5M by the following Friday; agreed to review Chad's demo and deck and share outreach templates."
+    "solo": false,
+    "others": [
+      "Dean McCall: on design partners - find someone who takes the risk and builds with you, pays for the design then the product; be willing to fire a partner who holds you hostage; do not build for one customer only.",
+      "Dean McCall: on outreach - go straight to the CEO/decision-maker ('everyone refers to him anyway'); never send the deck first; short LinkedIn/email blurb; cap LinkedIn at ~30/day with wording varied every 5-10 messages so it does not look automated.",
+      "Dean McCall: warm intros - people claim they don't know someone when they do; ask them to forward what you'd send - comes back ~70% of the time.",
+      "Dean McCall: fundraising discipline - focus on money in the door; office/hiring do not matter until ~$2M is in; careful stacking small cheques or the 4th/5th investor wonders 'am I the dumb money?'",
+      "Dean McCall: prep for investor questions ('what did you do with the $80K, how much more, what will it do'); group-pitch mechanics (vision / GTM / financials / team with Q pauses; expect 90-95% cameras off); get weekly pitch critiques."
     ],
-    "stats": [
-      {"label": "Companies still manual", "value": "over 60%"},
-      {"label": "Eligible angel investors", "value": "~900 (Canada)"},
-      {"label": "Raised to date", "value": "~$80K"},
-      {"label": "First call list", "value": "25 companies"}
+    "intel": [
+      {"label": "LinkedIn outreach cap", "value": "~30/day, wording varied every 5-10 messages"},
+      {"label": "Warm-intro conversion", "value": "~70% of forwarded intros come back"},
+      {"label": "Investor-call cameras", "value": "~90-95% kept off"},
+      {"label": "Fundraising threshold", "value": "office/hiring wait until ~$2M is in"}
     ],
-    "sources": [
-      {"name": "ATB Financial", "url": "https://www.atb.com"},
-      {"name": "CMHC", "url": "https://www.cmhc-schl.gc.ca"}
-    ]
+    "improve": [
+      "Chad let the call drift into Dean's war stories instead of extracting the playbook - push to get the actual templates/scripts in-call.",
+      "Still lacks a crisp use-of-funds narrative - Dean warned he'll be asked what he did with the $80K.",
+      "Taking small cheques; design the round to avoid looking like a serial small-raiser.",
+      "Go high (CEO) via warm intros, which convert far better than cold reps."
+    ],
+    "sources": []
   },
   {
     "noteId": "hY3VQ0iMQOGUYdjDv6urGg",
     "date": "2026-09-23",
-    "title": "Marketing, content and CRM working session with Kevin Wong",
+    "title": "Content cadence and go-to-market with Kevin Wong",
     "attendees": ["Chad Johnston", "Kevin Wong"],
-    "summary": [
-      "Go-to-market session covering content strategy, the CRM build and social media.",
-      "Plan to build personal and company brand authority via high-frequency short-form content (TikTok, Instagram, Facebook, LinkedIn), referencing a Neil Patel cadence of up to 25 posts/day.",
-      "Three content pillars: market 'did-you-know'/fraud posts, product-concept posts from the five slides Kevin sent, and white-paper-style case studies.",
-      "Messaging: lead with the customer's pain not the demo; soft framing ('what if there was a way'); target homebuyers in their 30s and first-car/first-investment consumers.",
-      "Pipeline: demo built; GoHighLevel CRM set up with client/investor/grant pipelines and 48 contacts; refined lists of ~128 qualified direct prospects and 173 names across mortgage (26), auto (20), real estate (11), narrowed from ~1,800.",
-      "Plan: Chad to cold-call companies and email angels (904 eligible, 340 in Alberta) before Friday's call with Don; produce a month of content for the team (Kat) to post Monday; secure a dev partner and rebuild a flagged Facebook account."
+    "solo": false,
+    "others": [
+      "Kevin Wong: need a working demo environment - if a prospect asks for a demo there is nothing to show.",
+      "Kevin Wong: the product concepts add tangibility and are proof it is 'not just an idea'; 'you have made a lot of headway'.",
+      "Kevin Wong: priority is getting ATB or a credit union on the phone as design partners - gives Don/investors/angels something to sink their teeth into; frame as 'we are discussing what the partnership looks like'.",
+      "Kevin Wong: introduced E-E-A-T; content grid should be educational and a bit entertaining (did-you-know, carousel, talking head).",
+      "Kevin Wong: younger users don't think about being scammed - educational finance/credit content is the 'tip of the spear'.",
+      "Kevin Wong: build an audience first; cited Neil Patel / Gary Vee / Hormozi on posting frequency and organic spend; Kat can post via GHL; needs a new agency Facebook account (his got flagged)."
     ],
-    "stats": [
-      {"label": "CRM contacts", "value": "48"},
-      {"label": "Qualified prospects", "value": "~128 direct / 173 names"},
-      {"label": "Eligible angels", "value": "904 (340 in Alberta)"},
-      {"label": "Target posting cadence", "value": "up to 25/day"}
+    "intel": [
+      {"label": "Posting frequency (Neil Patel)", "value": "25+ posts/day roughly tripled output"},
+      {"label": "Organic media spend", "value": "Gary Vee / Hormozi each ~$100k/month on organic (ex paid)"},
+      {"label": "Agency Facebook accounts", "value": "get flagged ~every 6 months; keep backups ready"}
     ],
-    "sources": [
-      {"name": "GoHighLevel", "url": null}
-    ]
-  },
-  {
-    "noteId": "XACZeeWjTdiatfq4dmuTiA",
-    "date": "2026-09-23",
-    "title": "Fundraising playbook clip - angel investing lessons (solo)",
-    "attendees": ["Chad Johnston"],
-    "summary": [
-      "A recorded fundraising-education clip rather than a live meeting.",
-      "Frames how selective investors are - the best review thousands of companies yearly and back only a handful.",
-      "Positions the piece as '10 things I learned from raising over a million dollars in angel investing for my startup.'",
-      "Relevant to Chad's active friends-and-family / pre-seed prep; no 4orm-specific decisions captured."
+    "improve": [
+      "Build a working demo environment so prospects have something concrete to see.",
+      "Prioritize landing the ATB / credit-union design-partner conversations over polishing concept assets.",
+      "Fix call presence - internet was choppy and Chad went off-screen mid-conversation.",
+      "Lead with building an audience rather than perfecting creative before there is distribution."
     ],
-    "stats": [
-      {"label": "Amount referenced", "value": "over $1M angel raised (speaker's prior experience)"}
-    ],
-    "sources": []
+    "sources": [{"name": "GoHighLevel", "url": null}]
   },
   {
     "noteId": "1lfxWY2WQQKSFYsMKW7y1w",
     "date": "2026-09-22",
-    "title": "Marketing and brand-voice working session with Kevin Wong",
+    "title": "Brand voice, E-E-A-T and positioning with Kevin Wong",
     "attendees": ["Chad Johnston", "Kevin Wong"],
-    "summary": [
-      "Reviewed the brand voice document and planned a sustainable posting cadence through GoHighLevel to Facebook, Instagram and LinkedIn (a couple of hours per month plus ~one custom article a week).",
-      "Chad has ~48 'Did You Know' posts drafted; agreed to diversify into about three content pillars; with no product or case studies yet, content must spotlight industry problems and suitability without naming competing solutions.",
-      "Troubleshot a GoHighLevel-to-Facebook connection issue surfacing other business pages (KCS Capital, Clear Vision, Energy Economics); Chad also flagged suspicious opt-in notifications and a possible account compromise.",
-      "Cost sensitivity: may pay the team a few hundred a month for static-post design, possibly through Evolve; as of Oct 1 4orm is no longer the primary building tenant, reducing overhead.",
-      "Kevin pushed the E-E-A-T framework and argued the deck lacks a credible authority angle; debated positioning Chad's retail-trading community (500+ consumers) and large-ticket sales experience as a credibility wedge.",
-      "Agreed the tagline needs an outcome attached; Chad cited incumbent proof points (Aveni 90 to 15 min; Drata ~4-5 months to ~5 weeks; 50% less call review; shorter sales cycles).",
-      "Next: set up a GoHighLevel inbound 'book a demo' pipeline, assemble ~20 problem/outcome posts, share material via Google Drive, then hit warm leads and email VCs."
+    "solo": false,
+    "others": [
+      "Kevin Wong: brand voice doc is long but does the job.",
+      "Kevin Wong: content cadence - do not post daily; ~a couple hours/month scheduling via GHL to FB/IG/LinkedIn plus ~one custom article/week built with AI but aligned to strategy.",
+      "Kevin Wong: with no product yet, run a thesis-style approach - highlight industry challenges (did-you-know) without claiming an elegant solution.",
+      "Kevin Wong: ~99.5% sure current graphics will be flagged as AI; his team can make static posts for ~a few hundred dollars each.",
+      "Kevin Wong: E-E-A-T (experience, expertise, authority, trust) - the doc is thin on authority; needs a subject-matter voice.",
+      "Kevin Wong: position Chad's trading-community background carefully ('500 people I did calls with'), tie to consumer behavior, but don't over-weight it ('online trading' carries a risk lens).",
+      "Kevin Wong: 'help businesses understand their consumer better' is not compelling - add the why/outcome; don't name other companies as case studies (anonymize outcomes); stand up CRM/book-a-demo; avoid another pivot."
     ],
-    "stats": [
-      {"label": "Posts drafted", "value": "48 (targeting ~60)"},
-      {"label": "Static-post design cost", "value": "~$300/month"},
-      {"label": "Prior large-ticket sales", "value": "deals over $100,000"},
-      {"label": "Consumer calls cited", "value": "500+ retail consumers"}
+    "intel": [
+      {"label": "E-E-A-T", "value": "experience, expertise, authority, trust - SEO principle also used by AI ranking"},
+      {"label": "Static post cost", "value": "~a few hundred dollars each via Kevin's team"},
+      {"label": "AI-detection risk", "value": "~99.5% likelihood current graphics flagged as AI"}
     ],
-    "sources": [
-      {"name": "GoHighLevel", "url": null}
-    ]
-  },
-  {
-    "noteId": "x8Qh-d5JR5u9iZWuGC7oIg",
-    "date": "2026-09-19",
-    "title": "Solo document-editing session",
-    "attendees": ["Chad Johnston"],
-    "summary": [
-      "Solo working session with heavy background media; brief spoken work instructions only.",
-      "Directed splitting the form-validation and market-evidence content into separate pages rather than one scrolling document.",
-      "Directed that statistics be Canadian rather than Ontario-specific ('either Canadian or nothing').",
-      "Brief reference to folding 'form investor equity' into the material."
+    "improve": [
+      "Sharpen the value prop beyond 'understand the customer better' - attach a concrete outcome/why.",
+      "Close the E-E-A-T gap - establish demonstrable authority and a subject-matter voice.",
+      "Make graphics branded and phone-legible so they don't read as generic AI output.",
+      "Stand up a CRM/book-a-demo path before generating interest, and avoid another pivot.",
+      "Resolve the Facebook account and security issues blocking distribution."
     ],
-    "stats": [],
-    "sources": []
-  },
-  {
-    "noteId": "Tt1QpGiQTii8_l6mjF0wQA",
-    "date": "2026-09-18",
-    "title": "Check-in with Kinley Financial Professionals",
-    "attendees": ["Chad Johnston", "Kinley Financial Professionals Ltd."],
-    "summary": [
-      "Short check-in; much of the transcript is greetings and connection issues.",
-      "Kinley contact reported his brokerage is onboarding ~3-5 new licensees a week with new per-team funnel workflows.",
-      "Mentioned heavy use of automation in their onboarding/training, with more capability coming.",
-      "Chad referenced material he had sent; the contact had taken a look and reopened it during the call."
-    ],
-    "stats": [
-      {"label": "New licensees", "value": "3-5 per week"}
-    ],
-    "sources": []
-  },
-  {
-    "noteId": "qEYQWMYTRACY2-2tx2meaQ",
-    "date": "2026-09-18",
-    "title": "Weekly progress and fundraising update with Don Hickling",
-    "attendees": ["Chad Johnston", "Don Hickling"],
-    "summary": [
-      "Decks, projections and a 30-day action plan are ready; the core metric is 150 calls, which on Chad's historical conversion should double the ~$100K friends-and-family target; reaching $100K unlocks a 374-name list.",
-      "Dev: spoke with Keegan (Spear); will send Zed's architecture; Spear to return a proposal in a week or two. Prior exchange build was quoted $315,000 / ~4 months; this scope expected lower.",
-      "Design-partner pipeline: ATB, Transactics, Bovalli (re-engaging all three), plus Century 21 / Nathan. Via Ali, learned ATB rejects companies over compliance cost and feels Wealthsimple is taking share faster than expected; Chad plans to pitch ATB as a flagship suitability partner.",
-      "Strong FormIQ validation from Dean (lost ~$60K to an overseas scam); FormIQ's end screen gave clear action items, contacts and documents; several usability hang-ups fixed.",
-      "Regulator outreach: Alberta Securities, BC Securities, CIRO, FINTRAC and the consumer fraud body (sandbox + fintech form with 83 companies).",
-      "Non-dilutive: 3 grants ready to file; plus a Y Combinator application this weekend.",
-      "Marketing: ~48 'Did You Know' posts via Kevin's GoHighLevel plus weekly LinkedIn; ATB meeting targeted Thursday next week."
-    ],
-    "stats": [
-      {"label": "Call target", "value": "150 calls"},
-      {"label": "Friends-and-family target", "value": "~$100K (unlocks 374-name list)"},
-      {"label": "Prior dev quote", "value": "$315,000, ~4-month build"},
-      {"label": "Regulators targeted", "value": "5"},
-      {"label": "Grants ready to file", "value": "3 (plus YC)"}
-    ],
-    "sources": [
-      {"name": "ATB Financial", "url": "https://www.atb.com"},
-      {"name": "Y Combinator", "url": "https://www.ycombinator.com"},
-      {"name": "GoHighLevel", "url": null}
-    ]
+    "sources": [{"name": "GoHighLevel", "url": null}]
   },
   {
     "noteId": "aaQnrpyHT1uA-AnZ5bgRRQ",
     "date": "2026-09-17",
-    "title": "Marketing and content operations plan with Kevin Wong",
+    "title": "Content templates, AI-content reach and FormIQ monetization with Kevin Wong",
     "attendees": ["Chad Johnston", "Kevin Wong"],
-    "summary": [
-      "Locked the slogan 'Forming trust into financial decisions' around people, trust and better outcomes; agreed to simplify over-highlighted deck copy.",
-      "Content engine: ~48 posts across six themes as reusable Canva templates (swap text/images), favoring a short 'did you know' format and LinkedIn articles (search-indexed).",
-      "Debated automation vs human touch: Kevin argued fully model-generated, auto-posted content gets throttled to ~half reach, while human-edited 'scaffolding' performs close to double.",
-      "Workflow: Chad produces 30 days (building to two months) of posts into Google Drive; assistant Gina loads into GoHighLevel (~3 hours/month) supported by a prompt registry.",
-      "Chad framed the next two weeks around design-partner calls and investor outreach; positioned FormIQ as a lead generator ('Check Form' free forever, the paid value being the consumer-intelligence layer).",
-      "Explored interviewing scam victims (e.g. Dean) as video content for authority, weighing engagement vs legal risk."
+    "solo": false,
+    "others": [
+      "Kevin Wong: the 'protect people / bigger mission' positioning is right and lets you add products later.",
+      "Kevin Wong: about half the words on the keyword tile are highlighted - use one color or fewer highlights.",
+      "Kevin Wong: build Canva templates instead of burning AI tokens on minor edits; LinkedIn articles + static posts are lowest-hanging fruit.",
+      "Kevin Wong: fully-AI content reaches ~half of human-touched; platforms auto-label AI and throttle reach; LLMs watermark output; it is the AI creation, not the scheduler, that hurts reach.",
+      "Kevin Wong: Neil Patel research - AI scaffolding + human edit performs ~double purely-AI; don't copy/paste AI word-for-word.",
+      "Kevin Wong: static format = bold headline, data in caption, phone-legible; LinkedIn articles get Google-indexed; Gina can post via GHL (scheduler free; Riverside ~$50 only for video).",
+      "Kevin Wong: pressed FormIQ monetization - if free forever, how does it build into a company's stack and not risk revenue/deals? Views it as a lead generator; suggested a study group interviewing users."
     ],
-    "stats": [
-      {"label": "Planned social posts", "value": "~48"},
-      {"label": "Automated content reach", "value": "~50% of human-touched"},
-      {"label": "Client revenue growth cited (Apr-Aug)", "value": "$7K to $47K/month"}
+    "intel": [
+      {"label": "Human vs AI reach", "value": "human-touched ~2x purely-AI; AI scaffolding + human edit ~double (Neil Patel)"},
+      {"label": "Platform AI labeling", "value": "Facebook labels AI images and cuts reach; LinkedIn articles Google-indexed"},
+      {"label": "Tooling", "value": "GHL scheduler free; Riverside ~$50/mo for video"}
     ],
-    "sources": [
-      {"name": "GoHighLevel", "url": null},
-      {"name": "Canva", "url": "https://www.canva.com"}
-    ]
+    "improve": [
+      "Define a clear FormIQ monetization path - how a free consumer tool converts to institutional revenue.",
+      "Keep humans in the content loop to avoid reach throttling.",
+      "Simplify tile design and use templates to save tokens.",
+      "Send calendar invites so meetings aren't missed."
+    ],
+    "sources": [{"name": "GoHighLevel", "url": null}, {"name": "Canva", "url": "https://www.canva.com"}]
   },
   {
     "noteId": "hop9sySUSXOtzeBEkHTGbA",
     "date": "2026-09-16",
-    "title": "FormIQ walkthrough and scam evidence build with Dean Hesse",
+    "title": "Dean Hesse walks his scam history and tests FormIQ on the fraud firms",
     "attendees": ["Chad Johnston", "Dean Hesse"],
-    "summary": [
-      "Walked Dean through FormIQ checking 'Enterprise2U', which surfaced an AMF listing, a BC Securities caution, and cancelled ASIC registrations, returning 'do not send money to this firm'.",
-      "Dean recounted his scam experience (a scammer 'Sarah' coaching fake ASIC/SEC reporting, then a fake fund-recovery firm HBPF/HBF Holdings that FormIQ flagged for naming no regulator and dead links).",
-      "Set up a Google Drive evidence folder with subfolders (marketing, scripts, video, WhatsApp marked sensitive) and granted Dean content-manager access.",
-      "Explained the FormIQ back-end: an input gate, a rulebook (human-rights and privacy impact assessments, feature/model governance, legal authority, publication/defamation standards), a registry search across identity/licensing/enforcement/reviews, then two passes plus a cleanup pass.",
-      "Key insight: checking regulators alone is insufficient because scam firms can be registered, so the system must go deeper into process, documents and language.",
-      "Launch plan: finish website updates, add a compiling notification, test with the Wealth Builders group next week, then take ~a month of feedback before pushing into trading/investing groups as a free tool."
+    "solo": false,
+    "others": [
+      "Dean Hesse: believes he was scammed by 'EnterpriseU' / 'Enterprise to You', a boiler-room sim-trading platform; ongoing since ~Nov last year; onboarding via a 'main guy' then an 'advisor' named Sarah; kept all paperwork.",
+      "Dean Hesse: the scammer walked him through the ASIC (Australia) registry on video to 'prove' registration, gave an SEC history, used 'DMO' as an example; EnterpriseU later had its status canceled; contact via WhatsApp/email.",
+      "Dean Hesse (recovery scam): then targeted by a fake fund-recovery operation ('Michael', then 'HBFP/HBF Holdings', EU-based) claiming to recover assets; he emailed them to cut ties.",
+      "Dean Hesse (what worked): FormIQ on EnterpriseU returned 'do not send money to this firm'; on HBFP returned a strong 'names no regulator/license/director/registry record - affirm legal identity before paying'. Found these accurate and useful.",
+      "Dean Hesse (gap): a single-jurisdiction verdict isn't enough - 'what if ASIC in Australia says they're fine?' Wants cross-jurisdiction status and clear recourse.",
+      "Dean Hesse (usability, biggest friction): spent most of the call fumbling to get evidence in - saving WhatsApp videos and email attachments, mailbox full, uploads timing out.",
+      "Dean Hesse: suggested a community feature for victims (both acknowledged the unlicensed-advice legal wall); liked the decision-journal concept; said 'the language needs work'."
     ],
-    "stats": [
-      {"label": "Reported fraud losses (Canada, last year)", "value": "$704 million"},
-      {"label": "Fraud ever reported", "value": "5-10%"},
-      {"label": "Checks on the back-end dashboard", "value": "49"},
-      {"label": "Average check time", "value": "116 seconds"}
+    "intel": [
+      {"label": "Primary scam", "value": "'EnterpriseU' boiler-room; faked ASIC registration; advisor 'Sarah'; via WhatsApp/email"},
+      {"label": "Recovery scam", "value": "'HBFP/HBF Holdings' + 'Michael' - fake fund-recovery, no regulator/license"},
+      {"label": "Dean's heuristic", "value": "'for every legitimate company there are 20-50 illegitimate ones'"}
+    ],
+    "improve": [
+      "Fix evidence ingestion first - it consumed the whole call. Add dead-simple capture (WhatsApp/email forwarding, drag-drop, mobile).",
+      "Resolve the multi-jurisdiction gap - show regulator status across jurisdictions and the user's recourse.",
+      "Give Dean a final answer on the community/human-help feature (the unlicensed-advice wall) instead of re-litigating it.",
+      "Do a copy/language pass - Dean said the language needs work.",
+      "Make recovery scams a first-class detection scenario - victims get hit twice."
     ],
     "sources": []
   },
   {
     "noteId": "6lYzlAnvQPyb4KNMo-4EFg",
     "date": "2026-08-21",
-    "title": "Advisor and investor conversation with Bruce Fair and Robert",
-    "attendees": ["Chad Johnston", "Bruce Fair", "Robert"],
-    "summary": [
-      "Robert (markets and fraud veteran) shared extensive war stories, establishing rapport before the pitch.",
-      "Chad framed the opportunity around 2025 regulatory change: Bank of Canada oversight, rising FINTRAC/AML penalties (up to $30M or 3% of global revenue; Bill C-12 up to $20M per serious violation), universal FINTRAC enrollment, an expected 2027 enforcement 'bloodbath'.",
-      "Core thesis: regulators want proof of how a consumer reached a decision - the conversation, options shown, understanding - not just the signed contract; 4orm supplies an encrypted, timestamped chronological ledger, holds no money, makes no filings, captures only the KYC module.",
-      "Go-to-market: mortgages and real estate first (50%+ of recent public notifications and fines), then insurance, automotive last.",
-      "Team/partners cited: Spear (40 engineers, ~1005% 3-yr growth, work for Bank of Canada, TD, Air Canada, Costco, Rogers), advisor Bruce, legal via Fasken and Osler, an incoming 16-year Fiserv hire, Century 21 as a potential design partner.",
-      "Robert's critique: the product risks pushing compliance work onto front-line realtors; he urged integrating with legacy systems via an API that surfaces links and snapshots to reduce work.",
-      "On avoiding the label: Chad framed the tool as a 'regurgitation model' returning real timestamped evidence; Robert advised isolated, sandboxed, self-hosted models to preserve legal privilege."
+    "title": "Advisory call with industry veteran Robert (fraud/finance) + Bruce",
+    "attendees": ["Chad Johnston", "Robert", "Bruce Fair"],
+    "solo": false,
+    "others": [
+      "Robert (central takeaway): his biggest concern is the product downloads more work onto front-line staff (realtors, F&I, brokers) and degrades productivity; as a buyer he'd react 'oh God, not more work'. Reposition around REDUCING workload.",
+      "Robert: overburdening the front line drives hidden shortcuts and errors (his dented-water-heater fix-and-flip story).",
+      "Robert: don't build a 'be-all-end-all' (his Hume wearable example); integrate with the apps brokers already use.",
+      "Robert (sales angle for legacy 'big iron' firms): head office won't rebuild - sell 'an API on the front of your legacy system' giving agents access points (they waste ~20% of time searching) and auto-generating compliance/audit reports. Lead with their needs, not 'the legislation requires'. Split access into three levels (consumer/agent/compliance officer); add a document checklist/calendar.",
+      "Robert (on 'no AI'): data loaded into mainframe AIs loses legal privilege (case law); use a self-hosted, sandboxed model trained only on your own data, queried only to 'display information and its source', never for conclusions. Chinese models (Kimi/DeepSeek) run cheaper.",
+      "Robert: repeatedly pressed 'who is your customer / how do you monetize?' until Chad landed on real-estate agents/firms.",
+      "Robert (macro color): debanking in Canada (OSFI ~98 accounts post-convoy; TD 10,000+); SWIFT reporting to Fort Meade; a ~$13B Citibank fraud; a CSIS/military CBDC report for Carney. Offered his email, to review documents, and to send the CBDC report."
     ],
-    "stats": [
-      {"label": "Max penalty per serious infraction", "value": "$30M or 3% of global revenue"},
-      {"label": "Mandated compliance audit (every 3 yrs)", "value": "$115K-$170K"},
-      {"label": "FINTRAC enforcement notices (2025)", "value": "29 totaling $203M"},
-      {"label": "One ledger failure impact", "value": "100,000+ losing access to $265M"},
-      {"label": "Spear 3-year growth", "value": "~1005%"}
+    "intel": [
+      {"label": "Debanking scale (Robert)", "value": "OSFI ~98 accounts post-convoy; TD debanked 10,000+"},
+      {"label": "Self-hosted AI + privilege (Robert)", "value": "loading data into mainframe AI forfeits legal privilege; run a sandboxed model, 'display info + source, not conclusions'"},
+      {"label": "SWIFT exposure (Robert)", "value": "reports to US Fort Meade; all SWIFT tx USD-denominated, subject to US prosecution"}
     ],
-    "sources": [
-      {"name": "FINTRAC", "url": null},
-      {"name": "Spear Technologies", "url": null},
-      {"name": "Fasken", "url": null},
-      {"name": "Osler", "url": null}
-    ]
+    "improve": [
+      "Act on Robert's central critique - reposition as REDUCING front-line workload (an API-over-legacy layer); lead with the customer's needs, not the regulation.",
+      "Monetization wasn't crisp - Robert asked 'who's your customer / how do you make money' repeatedly. Put 'who pays and why' up front.",
+      "Chad let Robert run long on war stories and matched his charged political tangents - protect call time and keep rapport without co-signing charged views.",
+      "Adopt Robert's cleaner 'why no AI' language (privilege risk, sandboxed self-hosted model, 'display info + source')."
+    ],
+    "sources": [{"name": "FINTRAC", "url": null}]
   },
   {
     "noteId": "6BOVAOGDR_219YiVIPZsYQ",
     "date": "2026-08-20",
-    "title": "Fiserv expert call plus real-estate / auto compliance discovery",
-    "attendees": ["Chad Johnston", "Brandon Mather", "Kevin Wong", "Dean McCall"],
-    "summary": [
-      "Chad insisted all documents be Canada-only and questioned why projected revenue jumped from ~$39M to $96M versus the prior plan.",
-      "A Century 21 realtor (21 years) confirmed brokerages hold funds in trust and front/back-office systems are not connected; monthly trust reconciliation is still done by hand before a CPA signs off; bookkeeping software ~$399/mo - so 4orm competes against manual compliance labor, not the software.",
-      "Ontario real-estate obligations: RECO monthly trust reconciliation, a new annual financial filing from Oct 30 2026, monthly reporting announced for 2027, plus FINTRAC reports and a two-year effectiveness review.",
-      "Auto: dealers largely ignore compliance; deposits meant for trust are never tracked. The realistic entry is fraud/scam mitigation for lenders, not dealer compliance.",
-      "Brandon Mather (ex-Fiserv, 16 yrs): Canadian merchant services lag badly (3-5 days to onboard vs same-day US); no Canadian bank owns a processor anymore.",
-      "Detailed Merchant Cash Advance economics; trust-account handling (fees from a separate account, never trust); accounts must be set up perfectly from day one.",
-      "Action items: Brandon to introduce a processor compliance contact, mid-size accounting firms and insurance names; Spear floated as the dev team."
+    "title": "Merchant-services and customer-discovery intel (Brandon Mather, Dean McCall, Kevin)",
+    "attendees": ["Chad Johnston", "Brandon Mather", "Dean McCall", "Kevin Wong"],
+    "solo": false,
+    "others": [
+      "Brandon Mather (ex-Fiserv/Star): Canadian merchant acquiring is archaic - US onboarding same-day, Canada 3-5 business days; Stripe/Square win on speed; there is no forward-facing risk-mitigation solution any acquirer uses, so they absorb fraud/chargeback losses; dormant merchants suddenly spike ($200 to $20,000, $50k fraud). Explained Merchant Cash Advance (e.g. $200k at 15%), Fiserv's largest revenue generator; Star avoids it as predatory. No Canadian bank still owns a processor. On trust accounts: fees pull from a separate account, never the trust/deposit account, setup must be perfect day one. Offered intros to a processor's compliance team, an org chart, and referral lists (dental wholesaler, 1,000+ auto dealer buying group, MNP, H&R Block owner Don Seney).",
+      "Dean McCall: pushed Chad back to discovery - who actually pays (brokerages, not the Century 21 CMS), what they use now, monthly vs daily reporting, who is the first customer; of ~745 Bank-of-Canada PSPs the non-compliant share is probably low; have Michael/Fasken verify whether brokerages fall under the trust rule. A captive base + a drop-dead date is a pre-seed story.",
+      "Kevin Wong: auto reality check - small dealers don't care about compliance and won't pay (like insurance, unmandated); the wedge in auto is the LENDERS (fraud/scam mitigation saving millions). Vendasta (~5M SMBs) is a poor channel for an undefined compliance product."
     ],
-    "stats": [
-      {"label": "AML fine ceiling", "value": "up to $30M or 3% of global gross revenue"},
-      {"label": "Merchant onboarding", "value": "Canada 3-5 days vs US same-day"},
-      {"label": "Incumbent brokerage software", "value": "~$399/month"},
-      {"label": "Fiserv lending vs processing", "value": "~$1.20 earned in lending per $1.00 processed"}
+    "intel": [
+      {"label": "Canada merchant onboarding", "value": "3-5 days vs same-day US (Brandon)"},
+      {"label": "Fiserv lending economics", "value": "~$1.20 lending per $1 processing; its largest revenue generator (Brandon)"},
+      {"label": "Merchant Cash Advance uptake", "value": "60-70% get an offer, ~80% take something (Brandon)"},
+      {"label": "Bank-owned processors", "value": "none left in Canada (Brandon)"},
+      {"label": "PSP population", "value": "~745 PSPs identified by Bank of Canada (Dean)"},
+      {"label": "Vendasta reach", "value": "~5M SMBs (Kevin)"}
     ],
-    "sources": [
-      {"name": "Fiserv", "url": "https://www.fiserv.com"},
-      {"name": "Century 21", "url": null},
-      {"name": "RECO", "url": null}
-    ]
+    "improve": [
+      "Materials were too broad - Brandon said much was outside his lane; tailor the ask to what each expert can speak to.",
+      "Dean kept dragging Chad back to basic discovery (who pays, what they use, monthly vs daily, first customer) - a sign of pitching before validating the buyer.",
+      "Too many verticals at once (brokerages, auto, stablecoin, municipalities, SMB); advisors flagged several as poor fit. Narrow.",
+      "Re-anchor the value prop on who feels the pain and pays (Kevin: in auto it's lenders, not dealers).",
+      "Convert Brandon's concrete offers into one specific, narrow request."
+    ],
+    "sources": [{"name": "Fiserv", "url": "https://www.fiserv.com"}]
   },
   {
     "noteId": "xXdF45UWRx2dV5KSTyHWQA",
     "date": "2026-08-12",
-    "title": "Extracting 4orm architecture design principles with Zed",
+    "title": "Architecture design-principles handoff with Zed (partial recording)",
     "attendees": ["Chad Johnston", "Zed"],
-    "summary": [
-      "Short session reviewing the architecture pack, which makes the examination/test central to the design.",
-      "Core principle: human accountability stays deliberately outside the automation, so regulatory sign-off is never machine-owned.",
-      "Second principle: the software performs the labor but does not assume regulatory authority; regulations cannot be coded in - a compliance expert must specify how they work.",
-      "Zed wants to extract and document all design principles so whoever builds it must adhere to them."
+    "solo": false,
+    "others": [
+      "Zed: the architecture pack makes the test/examination central to the design.",
+      "Zed: wants to extract all design principles so whoever builds it must stick to them and understand the compliance sought.",
+      "Zed: key principles - human accountability stays outside automation; software performs the labor but does not assume regulatory authority; regulations can't be coded in, a human must specify how they work.",
+      "Note: recording started late; only ~2 minutes of substance captured."
     ],
-    "stats": [],
-    "sources": []
-  },
-  {
-    "noteId": "tQhuZXGSRkq38S7_rhkr-w",
-    "date": "2026-08-04",
-    "title": "Solo market-gap brainstorm and prompt drafting",
-    "attendees": ["Chad Johnston"],
-    "summary": [
-      "Brief solo session thinking aloud about where opportunity remains across the researched products and companies.",
-      "Central question: what gap is still missed that 4orm could provide, possibly happening elsewhere in the world.",
-      "Framed the next step as a prompt-design task to answer that market-gap question."
+    "intel": [
+      {"label": "Design principle", "value": "software performs the labor but not regulatory authority; a human specifies the rules"},
+      {"label": "Design principle", "value": "human accountability kept outside automation; the test is central"}
     ],
-    "stats": [],
+    "improve": [
+      "Formalize and document the design principles as explicit, enforceable constraints for whoever builds the platform.",
+      "Have the recording/notetaker set up before the call - the first minutes were lost to setup."
+    ],
     "sources": []
   },
   {
     "noteId": "q8w2g1xMSZmpoe-9W5kzPw",
     "date": "2026-08-04",
-    "title": "Advisor update - pivot to compliance and ATB prep",
-    "attendees": ["Chad Johnston", "Kevin Wong", "Don Hickling", "Bruce Fair"],
-    "summary": [
-      "Briefed advisors on a call with Ali of Transactix (open settlement layer, ~$100B lifetime volume, ~100,000 transactions/month) who confirmed the compliance-tooling gap and that regulators are unhappy with firms building everything in-house.",
-      "Regulatory stakes: penalties rose from $15,000 to $20M or 3% of gross global revenue, live Jan 1 2027, 8 obligated segments; Canada's AML reform came into force Mar 26 2026; crypto-asset tax reporting begins Jan 1 2027.",
-      "Attestation gap: stablecoin issuers must hold a 1:1 CAD reserve; banks can supply a verified statement but regulators still require a separate third-party auditor - costly, no software solution.",
-      "Three verticals: program management, compliance filing, and examination readiness ('the assist' is strongest).",
-      "'The assist': regulators can demand data 2 years back (today 1-3 weeks of digging); a background model could assemble it in minutes.",
-      "Design principle restated: rules authored and signed by a compliance expert, version- and effective-dated, so a regulatory change is a content release not a deployment.",
-      "Action: validation calls with Michael and James, securities lawyer Veronica Armstrong lined up, incorporation expected by end of week, ATB meeting Friday in Calgary."
+    "title": "Advisor debrief after the Ali call (Don, Bruce, Kevin)",
+    "attendees": ["Chad Johnston", "Don Hickling", "Bruce Fair", "Kevin Wong"],
+    "solo": false,
+    "others": [
+      "Don Hickling: mostly listened; one substantive comment - the compliance process Chad described is inefficient and very expensive for companies. Confirmed the ATB meeting Friday. Low challenge.",
+      "Bruce Fair: asked what 'LLM' means (non-technical advisor audience); coordinated the Michael Stephens + James Atherton follow-up, an MNDA with Michael, chasing securities lawyer Veronica Armstrong, and noted incorporation should close by end of week.",
+      "Kevin Wong: minimal substance; joining the ATB Calgary trip Friday."
     ],
-    "stats": [
-      {"label": "Penalty increase", "value": "$15,000 up to $20M or 3% of gross global revenue"},
-      {"label": "Liability live date", "value": "Jan 1 2027"},
-      {"label": "Transactix volume", "value": "~$100B lifetime, ~100,000 tx/month"},
-      {"label": "Exam response time", "value": "1-3 weeks today vs same-day target"},
-      {"label": "Target raise", "value": "$2M"}
+    "intel": [
+      {"label": "Securities-lawyer referral", "value": "Veronica Armstrong surfaced by Bruce (awaiting reply)"}
     ],
-    "sources": [
-      {"name": "Transactix", "url": null},
-      {"name": "ATB Financial", "url": "https://www.atb.com"},
-      {"name": "FINTRAC", "url": null}
-    ]
+    "improve": [
+      "This was largely Chad talking at friendly advisors; Don explicitly had no questions - don't mistake polite agreement for validation.",
+      "Bruce not knowing 'LLM' shows the pitch leans on jargon even supportive advisors don't follow - simplify.",
+      "Chad keeps re-modelling revenue and shuffling verticals mid-stream - advisors can't anchor on a moving target."
+    ],
+    "sources": []
   },
   {
     "noteId": "trWOefP8TzeImfW7zyvFzg",
     "date": "2026-08-04",
-    "title": "Transactix call with Ali AbouDaya - settlement, attestation and partnership",
+    "title": "Transactix settlement and compliance-stack intel (Ali AbouDaya)",
     "attendees": ["Chad Johnston", "Ali AbouDaya", "Viyasan"],
-    "summary": [
-      "Both agreed institutions are scrambling into settlement to protect share; if you were not early, you are late.",
-      "Transactix profile: ~40-person dev team since 2019, millions of wallets, ~$100B enabled volume ($16-20B traded directly), 100% DeFi, now bringing the tech into traditional finance.",
-      "On reporting, everyone in the chain is accountable; FINTRAC and the Bank of Canada (RPAA) are cracking down and named five firms that morning for operating without approvals.",
-      "Attestation confirmed as the key pain point: regulators have not adopted electronic attestation and still require an auditor; Ali uses Chainalysis for KYT and warned all-in model-built stacks without engineering staff hit maintenance failures.",
-      "Chad explained the pivot away from a settlement/ledger build toward software and compliance gaps to reach revenue faster; raised process tokenization for milestone-based fund release.",
-      "Partnership models offered: build on a Transactix API and settle on their layer for a fee; a finder's fee for an intro; or revenue share.",
-      "Compliance economics: buying a stack externally forces issuers to hold ~$5-7M in deposits to break even; a SaaS at ~$25-50K instead of $250-300K would make the market viable."
+    "solo": false,
+    "others": [
+      "Ali AbouDaya (Transactix founder; CADX stablecoin issuer): FINTRAC and the Bank of Canada (RPAA) are cracking down - 'shamed 5 companies this morning' for operating without approvals. Attestation is the real gap: regulators haven't adopted electronic attestation and still require an auditor - 'it's more about the regulators'. Does most compliance in-house; buys Chainalysis for KYT only. Warned AI-built systems fail without engineering staff (memory leaks, maintenance failures 3-4 months in).",
+      "Ali AbouDaya: Transactix - 40-person dev team since 2019, millions of wallets, ~$100B enabled volume, 100% DeFi, now entering TradFi. Competitor intel: Stablecore ($10M raised + $3M bridge), Paytree/Loon ($10M then $3M), Tetra (with Wealthsimple, who is doing its own USDC), Atlas One (little volume).",
+      "Ali AbouDaya: compliance economics - buying a stack externally means an issuer needs ~$5-7M in deposits to break even; a SaaS stack at ~$25-50k vs ~$250-300k would lower the barrier - 'there could be something there'.",
+      "Ali AbouDaya: commercial offers - API so Chad settles on the Transactix layer; a finder's fee for intros; revenue-share; wants CADX distribution partners; interested in oil and gas.",
+      "Viyasan: only exchanged greetings; no intel."
     ],
-    "stats": [
-      {"label": "Transactix dev team", "value": "~40 people, since 2019"},
-      {"label": "Enabled volume", "value": "~$100B ($16-20B traded directly)"},
-      {"label": "Firms named by regulators", "value": "5 operating without approvals"},
-      {"label": "Issuer break-even", "value": "$5-7M in deposits"},
-      {"label": "Compliance SaaS target", "value": "$25-50K vs $250-300K incumbent"}
+    "intel": [
+      {"label": "Money-movement market (Ali)", "value": "~$100T/yr; ~$5T domestic/private, 95% institutional"},
+      {"label": "Issuer compliance break-even", "value": "~$5-7M in deposits (Ali)"},
+      {"label": "Compliance-stack pricing gap", "value": "~$250-300k today vs a potential SaaS at ~$25-50k (Ali)"},
+      {"label": "Transactix scale", "value": "~$100B volume, 40-person dev team since 2019"},
+      {"label": "Regulatory action", "value": "FINTRAC/BoC named 5 PSPs operating without approvals"}
     ],
-    "sources": [
-      {"name": "Transactix", "url": null},
-      {"name": "Chainalysis", "url": "https://www.chainalysis.com"},
-      {"name": "FINTRAC", "url": null}
-    ]
+    "improve": [
+      "Ali said more than once he didn't understand what 4orm does and saw it as in a 'search/pivot phase' - sharpen the one-line what-we-do and lead with a concrete use case.",
+      "Ali could only engage with 'something concrete' - bring a scoped pilot/proposal, not open exploration.",
+      "The clearest validated wedge came straight from Ali (a SaaS compliance/attestation stack at $25-50k) - let the prospect's pain define the product.",
+      "Ali volunteered commercial structures (API, finder's fee, rev-share) - follow up with a defined use case before it goes cold."
+    ],
+    "sources": [{"name": "Transactix", "url": null}, {"name": "Chainalysis", "url": "https://www.chainalysis.com"}]
   },
   {
     "noteId": "X1WB0PGfS5K9Acs8bmxPtQ",
     "date": "2026-08-03",
-    "title": "Team strategy pivot - compliance SaaS over settlement infrastructure",
+    "title": "Team pivot to the compliance / suitability-evidence product",
     "attendees": ["Chad Johnston", "Bruce Fair", "Zed", "Dean McCall", "Kevin Wong"],
-    "summary": [
-      "Chad walked the team through a refocus from the autonomous settlement-layer play toward a faster-to-revenue compliance and regulatory-reporting SaaS; the architecture work already done is reusable.",
-      "Presented a pain matrix from scraping 100+ market pain points (run three times to the same conclusion), pointing at compliance reporting as highest-pain, lowest-dev-cost, quickest-to-revenue, with three new regulatory bodies in 2025 and many first-time reporters.",
-      "Positioned fines as the wedge: single-infraction penalties from ~$15K to $500K and up to $20M, versus firms paying law firms thousands/hour for manual compliance.",
-      "Described a counseling-style, evidence-first engine (ingest, reconcile, evaluate, file, prove, answer) with append-only hash-chained timestamped records and a retrieval model that only surfaces existing filings.",
-      "Proforma: raise $2M (~$500K committed via Michael/Brooks), first revenue 2027 (~$1M), first profitable year 2028, ~$472K lowest cash, 23% cushion, five-year revenue ~$39M (~$16M recurring), vs ~$20M burn on the old path.",
-      "Endorsed a bottom-up GTM (credit unions, co-ops) using free compliance evaluations to recruit 3 build partners across mortgage, auto and a credit union."
+    "solo": false,
+    "others": [
+      "Dean McCall: endorsed the compliance pivot - more profit centres, a better bottom-up motion (credit unions vs TDs/CSA), far faster to revenue than settlement (which 'would take two years'). Key point: 'Lead with the GRC stuff. People eat it up and will pay for it' - in his middleware-AI company nobody cared about models/tokens, they cared about risk/governance. Described the forward-deployment/embed/capture model (vendors send 10-12 engineers to build almost free and embed, brutal switching costs - 'this is why we ultimately lost'). Model compliance like a cloud SLA (insured, a CFO problem).",
+      "Bruce Fair: pressed twice - 'so the autonomous settlement layer is dead, we're just switching?' and 'are we giving up on the DAO? even Michael thought that was great' - forcing Chad to justify abandoning a just-bought-into direction. Raised that Fasken is already building compliance as a client value-add; asked for a call with Michael.",
+      "Zed: reframed the offer as helping maximise compliance (quick to market); work backwards from the ultimate goal to a roadmap so they don't chase shiny revenue; credit unions buy solutions; every modern app ships AI assist (LeanIX) but hallucinates without a pre-built knowledge base; raised vendor lock-in/off-ramp as trust-builders.",
+      "Kevin Wong: joined late, barely spoke."
     ],
-    "stats": [
-      {"label": "Pain points identified", "value": "100+"},
-      {"label": "Pre-seed raise", "value": "$2M (~$500K committed)"},
-      {"label": "First profitable year", "value": "2028"},
-      {"label": "5-yr revenue (model)", "value": "~$39M (~$16M recurring)"},
-      {"label": "Max single-infraction fine", "value": "$20M"}
+    "intel": [
+      {"label": "Forward deployment (Dean)", "value": "vendors send 10-12 engineers to build/embed nearly free; Dean's last company lost to it"},
+      {"label": "Faskins (Bruce)", "value": "already building compliance as a client value-add - competitive signal"},
+      {"label": "LeanIX (Zed)", "value": "enterprise-architecture tool pushing AI assist off pre-built relationships"}
+    ],
+    "improve": [
+      "Chad delivered a long monologue presenting the whole pivot before opening discussion; Bruce had to interject for clarity.",
+      "Second hard pivot in ~a week - Bruce's questions exposed swinging away from a direction the team and Michael just endorsed; own the cost of strategic whiplash and bring the team along.",
+      "No crisp answer on the Fasken competitive threat - needs sharper differentiation.",
+      "Overstated committed resources again ('50 engineers', '60-man dev team') when Spear isn't contracted.",
+      "Positive: Chad invited dissent and owned the earlier failure of not pre-briefing Zed."
     ],
     "sources": []
   },
   {
     "noteId": "vVjpXz-JTfG7Y1Fgk_1O2w",
     "date": "2026-07-30",
-    "title": "Investor update and tranched pre-seed terms (Kinley)",
-    "attendees": ["Chad Johnston", "Kinley Financial Professionals Ltd."],
-    "summary": [
-      "Screen-share tour of the strengthened team: Dean McCall (4 exits), a signed LOI with Osler Law, and a conversation with former Ontario regulator Laurie Stein.",
-      "Highlighted a signed LOI with Spear Labs as development partner (46 engineers, hiring 30 more; prior work with Fireblocks, BitGo), saving ~$1.5M of dev runway; first deposit ~$31,730.",
-      "Restructured the investor's entry: $0.50/share for 1,000,000 shares against a ~$10M starting valuation (20M founding shares), to avoid later investors getting a better deal.",
-      "Milestone-driven raise: first $500K at $0.50, second $500K at ~$0.80 after dev-team and regulator milestones, a $500K SAFE on a $15M cap, path toward ~$1.00/share - a modeled ~2X over 5-6 months.",
-      "Investor committed a first $100K (worst case by the 14th), noting another contact who may deploy $500K-$1M and can source debt at 10-14%.",
-      "Chad to send the cap table, updated website, data room (~a week out) and subscription agreement (end of next week); ATB meeting set for Friday the 7th."
+    "title": "Kinley contact (Gabriel) - raise terms and debt financing",
+    "attendees": ["Chad Johnston", "Gabriel (Kinley Financial)"],
+    "solo": false,
+    "others": [
+      "Gabriel: committed the first $100K, worst case by the 14th from income; said another backer 'Habib' keeps delaying, causing timing risk.",
+      "Gabriel: has a separate liquid lender offering him $500K-$1M at ~13% interest-only over ~5 years; meeting that person the next day and, if it closes, would deploy $500K to Chad right away (~$1M debt is only ~$10K/month, serviceable).",
+      "Gabriel (financing intel): venture/company debt pre-revenue is tough at the entity level, but he'll personally guarantee; once there's a deliverable he can source 'pretty much unlimited' debt at 10-14% - cheaper than giving up equity.",
+      "Gabriel: a daycare deal expected to fund ~$2M around the 15th, but the bank pulled ~$900K on reassessment - why his inflows keep slipping.",
+      "Gabriel: accepted the milestone/valuation plan; offered 4orm office space, a fob, logo on the entrance wall, Dominic to host the Friday ATB meeting."
     ],
-    "stats": [
-      {"label": "Entry price", "value": "$0.50/share for 1M shares ($500K)"},
-      {"label": "Starting valuation", "value": "~$10M (20M shares)"},
-      {"label": "Dev runway saved via Spear", "value": "~$1.5M"},
-      {"label": "Total pre-seed target", "value": "$2M over 6-9 months"},
-      {"label": "First commitment", "value": "$100K (by the 14th worst case)"}
+    "intel": [
+      {"label": "Private lender rate", "value": "~13% on $500K-$1M, interest-only, ~5-yr term"},
+      {"label": "Debt availability", "value": "near-unlimited at 10-14% once there's a deliverable; pre-revenue at the company level is tough"},
+      {"label": "$1M interest-only servicing", "value": "~$10K/month"}
     ],
-    "sources": [
-      {"name": "Spear Technologies", "url": null},
-      {"name": "Osler", "url": null}
-    ]
+    "improve": [
+      "Chad presented aggressive returns as near-certain ($0.50-$0.80/share in ~2 months, 2X in 5-6 months) to a securities-licensed investor - expectation and compliance risk. Temper and caveat.",
+      "Mid-stream restructured previously agreed terms - tighten cap-table discipline so terms don't shift call-to-call.",
+      "Floated taking venture debt pre-revenue; Gabriel had to correct that it's hard pre-revenue. Shore up financing fundamentals first.",
+      "Was open to Gabriel borrowing personally at 13% to buy speculative equity - discourage rather than facilitate levering personal debt into a pre-revenue startup."
+    ],
+    "sources": []
   },
   {
     "noteId": "7ruZu3nWR4Cqpn593pjKuA",
     "date": "2026-07-30",
-    "title": "Cap-table dilution walkthrough with Bruce Fair",
+    "title": "Cap-table dilution model walkthrough with Bruce Fair",
     "attendees": ["Chad Johnston", "Bruce Fair"],
-    "summary": [
-      "Screen-shared the 'Form Capital Structure Internal Master' model to reconcile pre-seed dilution before sending to James.",
-      "Structure starts at 20,000,000 founding shares, ~3.2M new issued and ~23.2M post, producing 13.79% total pre-seed dilution.",
-      "Broke dilution into the SAFE stack (T3-T5) at 8.61% plus Don-and-Brooks subscription equity at ~5.17%, matching the ~13.79% total.",
-      "Traced positions: Don Hickling 0.86% to 0.78%, Brooks 4.31% to 3.88%; agreed to add a reconciling footnote - the first thing an institutional investor checks.",
-      "Reviewed a priced-round scenario (seed ~$3M raise / ~$28M post, Series A ~$40M pre / $10M raise / $50M post) with Chad ~41-46% and Brooks ~2.91%.",
-      "Early institutional targets: smaller banks and credit unions (Bow Valley first) feel the pain more than ATB."
+    "solo": false,
+    "others": [
+      "Bruce Fair: audited Chad's capital-structure model line by line until the dilution math reconciled - the model showed SAFE dilution (8.61%) and total pre-seed (13.79%) but not the subscription (Don+Brooks) dilution separately; insisted on a footnote so the pieces add up (SAFE 8.61% + subscription ~5.17% = ~13.78%).",
+      "Bruce Fair: confirmed 20M founding shares is the share count, not the cap; dilution is the first thing institutions check (named BridgeMe and ATB as targets).",
+      "Bruce Fair: market colour - credit unions struggle on tech and feel the pain more than ATB; suggested Bow Valley and smaller credit unions first; asked Chad to re-send the model and copy James."
     ],
-    "stats": [
-      {"label": "Founding shares", "value": "20,000,000"},
-      {"label": "Total pre-seed dilution", "value": "13.79%"},
+    "intel": [
       {"label": "SAFE dilution", "value": "8.61%"},
-      {"label": "Don + Brooks subscription dilution", "value": "~5.17%"}
+      {"label": "Subscription dilution (Don + Brooks)", "value": "~5.17%"},
+      {"label": "Total pre-seed dilution", "value": "~13.79%"},
+      {"label": "Investor targets (Bruce)", "value": "BridgeMe, ATB, Bow Valley and smaller credit unions"}
+    ],
+    "improve": [
+      "The model didn't reconcile cleanly - Bruce drove the walkthrough; build the cap table so SAFE + subscription + total dilution visibly tie out before sending.",
+      "Add plain footnotes/labels so an investor can read it without a guided tour.",
+      "Treat a self-explanatory cap table as table stakes before the BridgeMe/ATB meetings.",
+      "Confirm whether the option pool sits inside the 20M before quoting dilution - the founder-share vs fully-diluted confusion recurred."
     ],
     "sources": []
   },
   {
     "noteId": "hptSRh3wT_mH8_yomUkdog",
     "date": "2026-07-29",
-    "title": "Legal structuring with James Atherton - Brooks, SAFE and vesting",
+    "title": "Legal structuring and financing mechanics (James Atherton)",
     "attendees": ["Chad Johnston", "James Atherton", "Bruce Fair"],
-    "summary": [
-      "James walked through corporate setup; because nothing is incorporated yet, the Brooks subscription and Don's equity must close together once technology is vended in.",
-      "Settled Brooks at $0.50/share for 1,000,000 shares (5% for $500K) and Don Hickling at $0.25/share for 200,000 shares, both consistent with a ~$10M day-one valuation; James pushed to collect Brooks's full $500K on one subscription rather than warrant tranches.",
-      "On the $2M SAFE, agreed to raise the valuation cap from $10M to $20M (~15% discount) so a priced seed near $20M does not force early investors to convert at the lower cap.",
-      "Vesting: advisors (Bruce, Miika, Angelo, Don, Dean McCall, James, Zed) get 25% on signing, no cliff, over 4 years; founders get 4-year vest with a 1-year cliff.",
-      "A preferred share class was deferred - future-round investors will dictate their own rights.",
-      "Post-call pivot research reviewed (compliance supercycle; Spear's ~$317K exchange quote vs a $1M+ budget, saving ~$1.2M, avoiding a ~$240K/yr CTO via a fractional CTO)."
+    "solo": false,
+    "others": [
+      "James Atherton (corporate lawyer; also runs a legal-tech practice with dev partner Decimal Systems): built compliance software before; you must understand intimately what you're building, not just have devs - narrow to core expertise. Dev-cost benchmark: his bespoke quote was ~$90k for 6 months at a preferred rate; clients wrongly expect '$20k in 6 weeks'.",
+      "James Atherton (financing): don't create a pref share now to approximate a future round - a $3-5M strategic round in 18-24 months dictates the rights, so it's a 'mug's game'; raise the minimum to hit the next milestone (least dilutive), then raise again; model the cap table across scenarios.",
+      "James Atherton (deal mechanics): Don's $50k -> 200,000 common at $0.25 implies ~20M shares at ~$5M valuation; Brooks' 2.5-2.65% needs a settled denominator; keep Brooks' $500k simple - one subscription at ~$0.50 (~5%) not warrants-in-4-tranches; agreed moving the SAFE cap $10M -> $20M.",
+      "James Atherton: wants comments back on the SAFE he circulated; the shareholders agreement is the critical document; nothing can happen before incorporation.",
+      "Bruce Fair: coordinating (mentioned Brooks' $100k/month staging)."
     ],
-    "stats": [
-      {"label": "Brooks", "value": "$500K at $0.50/share = 5%"},
-      {"label": "Don Hickling", "value": "$50K at $0.25/share = 200K shares"},
-      {"label": "SAFE valuation cap", "value": "$20M (from $10M), ~15% discount"},
-      {"label": "Founder vesting", "value": "4-year, 1-year cliff"},
-      {"label": "Spear exchange quote", "value": "~$317K (vs $1M+ budget)"}
+    "intel": [
+      {"label": "Dev cost benchmark", "value": "Decimal Systems ~$90k for 6 months (bespoke)"},
+      {"label": "Don Hickling terms", "value": "$50k -> 200,000 common at $0.25"},
+      {"label": "Implied valuation", "value": "~20M shares at $0.25 ≈ ~$5M"},
+      {"label": "SAFE cap", "value": "$10M, proposed $20M"}
     ],
-    "sources": [
-      {"name": "Spear Technologies", "url": null}
-    ]
+    "improve": [
+      "Brooks/Don terms were 'convoluted' (warrants in 4 tranches) - James kept pushing to simplify and fix a price. Stop over-engineering early financings.",
+      "Chad hadn't returned comments on the SAFE James circulated; close legal loops promptly to control spend.",
+      "Price per share kept shifting ($1 / $0.25 / $0.50) - settle one coherent cap table before approaching Brooks.",
+      "Still not incorporated while juggling investors - follow James's sequencing."
+    ],
+    "sources": []
   },
   {
     "noteId": "zKNxCkbZQYC5ruE3Ac821A",
     "date": "2026-07-28",
-    "title": "Governance / DAO pivot and regulator strategy with Michael Stephens",
+    "title": "DAO/regulator strategy and financing advice (Michael Stephens, Fasken)",
     "attendees": ["Chad Johnston", "Michael Stephens", "Bruce Fair"],
-    "summary": [
-      "Chad briefed lawyer Michael Stephens on the Toronto event: settlement is crowded (StableCorp, Loon, Catex) but no player has secured institutional relationships; the recurring question is 'why can we trust you?' - pointing to a missing neutral governance body like those behind SWIFT, Visa, Interac.",
-      "Framed a governance/trust layer: a regulator floated a DAO wrapped around multi-purpose vehicles with a regulator feed; Michael cautioned a DAO has no recognized Canadian legal structure, so build it as a trust or not-for-profit with tokens representing trust units.",
-      "Michael's play: show regulators a best-practice Canadian-specific structure, get a CSA staff/policy notice published endorsing it, build a trust moat.",
-      "Michael (on the BC regulator's fintech advisory board) to send a formal intro with bios and a white-paper teaser to four named regulators across BC, Alberta and Ontario.",
-      "Fundraising: SAFEs (post-money with a cap) standard for pre-seed; priced preferred at seed ($3-5M); seed legal ~$30-75K; suggested a $10-15M cap.",
-      "Investor messaging: best/mid/conservative TAM cases; emphasize that being compliant in Canada eases global expansion.",
-      "Treated the US Clarity Act delay as a competitive advantage - aim to be in market ~6 months before it enacts."
+    "solo": false,
+    "others": [
+      "Michael Stephens (Fasken; on the BC regulator's fintech advisory board, quarterly CSA contact): regulators signal 'DAO' but haven't defined it or its legal structure in Canada - they like the features, not the structure. The opportunity: show regulators the correct Canadian structure (a trust whose units are digital tokens via a smart contract enacting the trust rules), get a CSA staff/policy notice to bless it, become the regulator-backed layer others license.",
+      "Michael Stephens: recommended a formal 1-1.5 page covering note to the specific CSA-meeting regulators with bios + a white-paper teaser; outreach should come from HIM for credibility; regulators reply in 3-7 days; used the Dapper Labs / NBA Top Shot 'build the infrastructure' analogy.",
+      "Michael Stephens: aim to be in-market ~6 months before the US Clarity Act (the delay is Canada's advantage). Financing - seed priced rounds usually $1M+ (push $3-5M); priced-round legal ~$30-50k (~$75k all-in); SAFE post-money cap as high as justifiable (~$10-15M); a $1-1.2M SAFE isn't very dilutive; model best/mid/conservative TAM. Will draft the regulator outreach in 24-48h.",
+      "Bruce Fair: prompted much of the discussion; stressed money responds to the ability to scale and execute."
     ],
-    "stats": [
-      {"label": "Regulators to be emailed", "value": "4 (BC, AB, ON)"},
-      {"label": "Suggested SAFE cap", "value": "$10-15M"},
-      {"label": "Seed round size", "value": "$3-5M (priced preferred)"},
-      {"label": "Seed legal cost", "value": "~$30-75K"}
+    "intel": [
+      {"label": "Seed priced round (Michael)", "value": "typically $1M+, push $3-5M"},
+      {"label": "Priced-round legal cost", "value": "~$30-50k company; ~$75k all-in"},
+      {"label": "SAFE cap (Michael)", "value": "~$10-15M post-money"},
+      {"label": "Regulator response", "value": "3-7 days to a formal note"},
+      {"label": "Regulator access", "value": "Michael on the BC regulator fintech advisory board"}
     ],
-    "sources": [
-      {"name": "Canadian Securities Administrators (CSA)", "url": null}
-    ]
+    "improve": [
+      "Michael flagged weak meeting discipline in regulator meetings ('I don't even know who's taking notes') - capture decisions, assign owners, follow up.",
+      "Let Michael (regulator-trusted) lead regulator outreach rather than Chad/Bruce contacting them directly.",
+      "Prepare conservative/mid/best-case TAM models, not a single saturation figure.",
+      "Michael steered toward a big DAO/settlement play - check this against the focused compliance wedge rather than widening scope again."
+    ],
+    "sources": [{"name": "Canadian Securities Administrators (CSA)", "url": null}]
   },
   {
     "noteId": "Ju41Il_kQcqVpU1uhH1drA",
     "date": "2026-07-28",
-    "title": "Advisor compensation dispute and dilution modeling with Miika",
+    "title": "Advisor-document review and fee confrontation (Miika, Bruce)",
     "attendees": ["Chad Johnston", "Bruce Fair", "Miika"],
-    "summary": [
-      "Chad pressed advisor Miika on the ~$8K-$10K owed, requiring that going forward every engagement comes with a written proposal and line-item costs - a stated non-negotiable.",
-      "Priced registered-account work: TFSA/RRSP setup ~$5K, trust/legal under ~$3K, Miika's piece reduced from $5K to $4K; advisor retainer $2,000 CAD/month over 10 months.",
-      "Reviewed Miika's comments on the advisor/transfer documents: a voting trust so Chad keeps votes on change of ownership, a 90-day first-right-of-refusal, family-transfer allowance, participating voting shares for TFSA/RRSP, avoid the term 'success fees'.",
-      "Referral fees: a referral agreement from securities lawyer Veronica Armstrong can be used by a private company raising directly; Chad to book a call with Veronica.",
-      "Dilution-modeling task: 20M shares plus 2M via SAFE (~22M), pre-seed tranches of $1M/$1.5M/$2M at a $20M cap with 15% discount; seed scenarios $2M-$5M at a $40-50M valuation.",
-      "Core risk flagged: stacking SAFEs from pre-seed into seed without a triggering conversion crushes early-stage dilution; Miika to insert a mid-round conversion/hold mechanism.",
-      "Referenced Mantle (mantle.com) as Canadian SAFE/cap-table modeling software."
+    "solo": false,
+    "others": [
+      "Miika (advisor): on control - consider a voting trust so Chad doesn't give up votes on a change of ownership; investors dislike being bought out unless everyone is (tag/drag); some allow intra-family transfers; on the first-right-of-refusal, 90 days is too long - respond fast ('a transfer request is like handing you a loaded gun'); TFSA/RRSP shares must be participating/voting.",
+      "Miika (securities caution): avoid the term 'success fee' (specific securities meaning); a referral fee for capital raised is fine - provided a referral agreement by securities lawyer Veronica Armstrong (ex-Securities Commission); direct private raising is a 'grey area'.",
+      "Miika (SAFE): set the cap at 22M shares before raising so the 15% discount comes off 22M not 20M; set a triggering event so the first SAFE converts into the next round; consider preferred (liquidation-only) shares; set up the preferred class up front while James incorporates.",
+      "Bruce Fair: confirmed Veronica Armstrong is a corporate/ex-Securities-Commission lawyer; LED the confrontation over fees - ~$10K paid with nothing to show, no proposal after ~6 asks over a month; demanded Miika model TFSA costs and dilution and put assumptions on every spreadsheet; got the SAFE-modelling tool name (Mantle)."
     ],
-    "stats": [
-      {"label": "Amount in dispute", "value": "~$8K-$10K"},
-      {"label": "Monthly advisor retainer", "value": "$2,000 CAD (10 months)"},
-      {"label": "Pre-seed tranches", "value": "$1M / $1.5M / $2M at $20M cap, 15% discount"},
-      {"label": "Seed / Series A valuation", "value": "$40-50M"}
+    "intel": [
+      {"label": "Miika TFSA/RRSP fee", "value": "~$5K reduced to ~$4K (his piece), plus legal/trust under $3K, per institution"},
+      {"label": "Advisor retainer", "value": "$2,000 CAD/month over 10 months"},
+      {"label": "Suggested SAFE cap base", "value": "22M shares before raising"},
+      {"label": "Securities counsel", "value": "Veronica Armstrong, ex-Securities Commission; direct private raising is a 'grey area'"}
     ],
-    "sources": [
-      {"name": "Mantle", "url": "https://www.mantle.com"}
-    ]
+    "improve": [
+      "Chad was largely passive while Bruce fought the fee/deliverable battle - own vendor accountability directly (written scope + proposal + cost-before-work).",
+      "Insist advisors supply assumptions and a legend with every model.",
+      "Decide SAFE vs preferred-equity direction before James finalizes share classes - leaving it open forces expensive rework (Miika's own point).",
+      "Don't let 'we'll check with Mike/Veronica' become a recurring deferral - get the grey areas answered once, in writing."
+    ],
+    "sources": [{"name": "Mantle", "url": "https://www.mantle.com"}]
   },
   {
     "noteId": "5CCovIZLTS2vujrZHtqhTg",
     "date": "2026-07-28",
-    "title": "Investor update - Toronto takeaways and the governance wedge",
-    "attendees": ["Chad Johnston", "Kevin Wong", "Bruce Fair", "Don Hickling"],
-    "summary": [
-      "Briefed investors on the Toronto trip (settlement event plus three days with Spear at 111 Labs); no competitor has secured institutional commitments, so the seat is open.",
-      "Core pivot: own the canonical ledger but wrap governance in a smart-contract DAO handed to the institutions, modeled on how Visa, Interac and SWIFT began as bank councils.",
-      "Financials: adding the DAO adds ~$500K to DevEx and ~1-2 months of build; raise still $2M pre-seed, $12M post-money cap, $500K committed, $49.2M five-year revenue on 1% of three institutions (ATB, Bow Valley, plus one credit union).",
-      "Bruce pushed for a blue-sky case; Chad walked a model reaching ~$92-100M over five years by adding ~seven institutions (196 institutions in Canada; outcome is binary).",
-      "Compliance pressure cited as validation: a stablecoin act passed in 2-3 months; regulators announced $500K per-violation penalties with real-time monitoring.",
-      "Kevin reinforced a co-creation GTM; flagged the Banff event end of October.",
-      "Logistics: subscription agreement expected from James by end of week; SAFE likely ~Aug 10."
+    "title": "Investor update to Don Hickling - governance wedge and capital plan",
+    "attendees": ["Chad Johnston", "Bruce Fair", "Kevin Wong", "Don Hickling"],
+    "solo": false,
+    "others": [
+      "Bruce Fair: Front Funder / FundServe is an exempt-market dealer with 70,000+ clients that crowdfunds from non-accredited investors under an exemption ('43-110'). Pushed for BOTH a conservative base case and a blue-sky pitch ('funds want to know it's millions and millions'). Drove the timeline: SAFE ~Aug 10, Brooks next week, ATB within 10 days plus Bow Valley; building the cap table (noted he hadn't worked with a SAFE before).",
+      "Kevin Wong: separated activity from progress ('lots of activity can appear fast, but progress is different') gated by regulators; TD and Scotia were at the event with digital-asset divisions (validation); recommended 'The Gathering' in Banff end of October. Key contribution: 'co-creation' - build WITH a few credit-union/smaller-bank partners and regulators, not FOR them, plus a rewards/profit-share model and limited beta spots.",
+      "Don Hickling: added macro intel - other economies already have regulation (MiCA in Europe, Asian regulation, US under pressure), so Canada falling behind is the opportunity; offered his boardroom."
     ],
-    "stats": [
-      {"label": "Pre-seed raise", "value": "$2M"},
-      {"label": "Post-money cap", "value": "$12M"},
-      {"label": "Conservative 5-yr revenue", "value": "$49.2M"},
-      {"label": "Blue-sky 5-yr revenue", "value": "~$92-100M"},
-      {"label": "Institutions in Canada", "value": "196"}
+    "intel": [
+      {"label": "Front Funder / FundServe (Bruce)", "value": "EMD, 70,000+ clients, crowdfunds non-accredited under an exemption ('43-110')"},
+      {"label": "Big-6 presence (Kevin)", "value": "TD and Scotia at the event with digital-asset divisions"},
+      {"label": "The Gathering (Kevin)", "value": "Banff conference, end of October"},
+      {"label": "Global regulation (Don)", "value": "MiCA Europe, Asian regulation, US under pressure - Canada behind"}
+    ],
+    "improve": [
+      "On a 30-minute call Chad opened with a long monologue before taking questions.",
+      "Live-modelling and screen-hunting fumbles again; Bruce had to drive the base-case vs blue-sky structure.",
+      "Framed revenue as '196 institutions or 0' - all-or-nothing can spook investors; Bruce steered toward tiered scenarios.",
+      "Leaned on Spear's war-story as DD proof while having no secured commitments.",
+      "Internalise Kevin's activity-vs-progress caution - don't present market buzz as validated traction."
     ],
     "sources": []
   },
   {
     "noteId": "3yJMGvQSQQG3CHiCLw1MtA",
     "date": "2026-07-27",
-    "title": "Working session with Dean McCall - knowledge base, Spear costs and cap table",
+    "title": "Dean McCall 1:1 - architecture, non-dilutive capital, cap-table coaching",
     "attendees": ["Chad Johnston", "Dean McCall"],
-    "summary": [
-      "Dean sketched a retrieval knowledge base for the DAO pivot: an S3-compatible bucket, parsing via llama index or haystack, a vector store (Postgres), a model-routing layer (OpenRouter), mostly open-source, gated behind Clerk.",
-      "Two 'sources of truth': a backbone (vision, product, objectives) plus Zed's ~220 supporting documents, normalized with clean metadata.",
-      "Spear economics: phased proposal (~$250,000-$317,000; ~10% refundable deposit of ~$31,730); using Spear saves ~$1.4M on five-year DevEx ($4.2M with vs $5.6M without); fractional CTO preferred.",
-      "Non-dilutive capital and venture debt discussed (Spear took $2M from BDC at 16%; Chad eyeing Alberta Innovates matching).",
-      "Cap-table: founder block modeled dropping from ~87% toward ~21% by Series A; keep pre-seed small ($1.5-2M, ~13% at $1.5M) and cut DevEx/OpEx 20-30%.",
-      "Market intel: ATB's Ali favors a competitor (Transactics); Chad's counter is that governance is the differentiator so 4orm sits above them.",
-      "Dean to draft the knowledge-base architecture and do Mantle cap-table modeling; Chad to redo the pro forma with DAO expense."
+    "solo": false,
+    "others": [
+      "Dean McCall: proposed a concrete, mostly open-source knowledge-base stack - S3-compatible storage (Cloudflare/Backblaze/AWS), LlamaIndex or Haystack, a Postgres vector DB, OpenRouter for routing, a simple internal app first; his last CEO role built this RAG middleware. Two sources of truth: a backbone (vision/product/objectives) and the corpus (Zed's ~220 docs) with clean metadata.",
+      "Dean McCall (capital): venture debt beats equity (pay 12-15% interest vs ~30% of the company) only if revenue lets you pay it down fast ('a matter of velocity'); warned about 'stale money' (loses ~7% to inflation); flagged Alberta Innovates matching on the Brooks investment; recommended Mantle for waterfall cap-table modelling; dilution hits fast after Series A; borrow against free-trading shares (40-60% LTV) 'like Saylor against Bitcoin'.",
+      "Dean McCall: coached the fractional-CTO approach (don't lock in a CTO early); prepped Chad for the inversion test ('why you' questions)."
     ],
-    "stats": [
-      {"label": "Supporting documents", "value": "~220"},
-      {"label": "Spear proposal range", "value": "~$250,000-$317,000"},
-      {"label": "5-yr DevEx with/without Spear", "value": "$4.2M vs $5.6M"},
-      {"label": "Spear BDC loan", "value": "$2M at 16%"},
-      {"label": "Target pre-seed", "value": "$1.5-2M (~13% at $1.5M)"}
+    "intel": [
+      {"label": "Venture/BDC debt", "value": "~15-16% (Dean)"},
+      {"label": "Borrow against free-trading shares", "value": "~40-60% LTV (Dean)"},
+      {"label": "Stale money cost", "value": "~7% lost to inflation (Dean)"},
+      {"label": "Mantle", "value": "Canadian cap-table tool, free tier (Dean)"}
     ],
-    "sources": [
-      {"name": "Spear Technologies", "url": null},
-      {"name": "Clerk", "url": "https://clerk.com"},
-      {"name": "Mantle", "url": "https://www.mantle.com"}
-    ]
+    "improve": [
+      "Chad rambled and fumbled screen-sharing presenting his own model - tighten the financial walkthrough.",
+      "Still not crisp on 'why us, why now' for the inversion test - rehearse a response.",
+      "Juggling many partnership threads (Transactix, ATB, Front Funder, 111 Labs) risks diffusion - focus.",
+      "On ATB drifting toward Ali/Transactix, Chad leaned on hope a governance edge wins rather than confronting the competitive risk."
+    ],
+    "sources": [{"name": "Mantle", "url": "https://www.mantle.com"}]
   },
   {
     "noteId": "w5MbiOBnSHqHOzMSd9a6Kg",
     "date": "2026-07-27",
-    "title": "DAO governance pivot walkthrough with Zed and the team",
+    "title": "Team strategy - the DAO / sovereign-governance pivot",
     "attendees": ["Chad Johnston", "Dean McCall", "Zed", "Kevin Wong"],
-    "summary": [
-      "Chad gave the full narrative of the governance pivot: competitors are further ahead in build but none has market share; institutions will not put settlement on a single private company's technology, so 4orm provides the sovereign-governance layer (a DAO) and lets players like Transactics and StableCorp operate within it, keeping the canonical ledger.",
-      "Origin story: a regulator described an ideal future of investment vehicles wrapped in a DAO with a CSA supervisory feed; Spear had built a DAO years ago that imploded via a rug pull before protective technology existed, which now exists.",
-      "Zed probed the model in system-design terms (Interac and eBay analogies); 4orm could become the Interac-like connective infrastructure with smart-contract rules on top.",
-      "Zed described his ~223-document body of work as a holistic design (the 'what'); proposed a proper knowledge base wrapped with a counseling-style model over two sources of truth.",
-      "Method: define a baseline end-to-end reference, then simulate transactions (happy path plus exceptions) to debug the design before writing code.",
-      "Plan: corporate/financial setup done by ~the first of the month, then everyone (including Spear engineers) in a room, likely Calgary, for a multi-day whiteboard; Spear wants a $30,000 deposit."
+    "solo": false,
+    "others": [
+      "Dean McCall: recommended Granola (notetaker that connects to Claude, runs off an Apple Watch). Shared a DAO war story - a large DAO he was in could never reach consensus, literally couldn't vote to sell at the high, so holdings ($5-10M at peak) sat and became near-useless; governance is the hardest, most important part and DAOs get raided by the biggest token holder - 'if the new tools solve that, it's the holy grail'. Validated the bottom-up 191-institutions wedge; bring Spear's engineers to the room, not just principals.",
+      "Zed: ~223 documents over ~6 months; flower-pot analogy (ten biased perspectives); define what Form owns vs provides vs outsources, then simulate a transaction end-to-end (happy path then exceptions); criticised SharePoint/Google as knowledge bases; key reframe - 'validation and verification at all levels at all times is itself compliance and governance - maybe that's our product'.",
+      "Kevin Wong: mostly quiet; corrected that Spear has 40 developers and is hiring ~30 more."
     ],
-    "stats": [
-      {"label": "Zed's design documents", "value": "~223"},
-      {"label": "Standalone DAO build (modeled)", "value": "~$1.1M"},
-      {"label": "Incremental DevEx/OpEx for DAO", "value": "~$500K-$700K"},
-      {"label": "Spear dev-team deposit", "value": "$30,000"}
+    "intel": [
+      {"label": "Spear dev team", "value": "40 developers, hiring ~30 more (Kevin)"},
+      {"label": "Dean's former DAO", "value": "$5-10M at peak from a few hundred thousand; never exited"},
+      {"label": "Zed's documentation", "value": "~223 documents over ~6 months"},
+      {"label": "Granola", "value": "notetaker connecting to Claude, via Apple Watch (Dean)"}
     ],
-    "sources": [
-      {"name": "Spear Technologies", "url": null}
-    ]
+    "improve": [
+      "Chad dominated airtime (solar-roof analogy, DAO origin story); Zed and Kevin barely spoke - draw the experts out earlier.",
+      "The pivot was 'thrown in the air real quick' - sprang a major change on the team with no pre-brief.",
+      "Call ended with Zed stuck on mute, unable to wrap up, because Chad cut to his Dean 1:1 - the architect's input truncated again.",
+      "Twice admitted he lacked the research to answer key questions; leaned on storytelling while Zed reframed into system terms.",
+      "Described a 'full 60-man dev team behind you now' when it's Spear's team and the deposit wasn't paid."
+    ],
+    "sources": [{"name": "Granola", "url": null}, {"name": "Spear Technologies", "url": null}]
   },
   {
     "noteId": "HSkg0kPURYSBO14XV5fA4w",
     "date": "2026-07-23",
-    "title": "Incorporation and closing agenda with James Atherton and Bruce Fair",
-    "attendees": ["Chad Johnston", "Bruce Fair", "James Atherton"],
-    "summary": [
-      "Corporate-counsel call walking the closing agenda: Alberta incorporation with the name reserved, two founders (Chad and Kevin) at nominal consideration, bylaws, organizational resolutions, uncertificated shares, registers, and extra-provincial registration in BC.",
-      "Advisory Council to be papered with a charter and individual agreements; share price for everyone other than founders moved over 1.0 (nominal becomes $2) so grants are not farcical; most principals under reverse vesting, Chad to confirm a 4-year vest.",
-      "Key agreements: shareholders agreement (ROFR, drag/tag-along), inventions and confidentiality assignment, reverse vesting agreements, and a stock option plan (~20M shares).",
-      "Don Hickling's contributions treated as a $23,000 loan at 20% flat (plus $50,000 equity for 200,000 shares at $0.25), repaid from the Brooks investment via 10% of each incoming tranche.",
-      "Main unresolved item: how to honor Brooks (Brookstella) at 2.65% for ~$500,000 when a SAFE defers valuation; options included $0.50/share with Chad topping up from founder shares, since Brooks needs a subscription agreement now.",
-      "Hiring approach: executives as independent contractors; developers possibly employees later (SR&ED favors employees)."
+    "title": "Incorporation and closing agenda (James Atherton, Bruce)",
+    "attendees": ["Chad Johnston", "James Atherton", "Bruce Fair"],
+    "solo": false,
+    "others": [
+      "James Atherton: walked the closing agenda - incorporate in Alberta (he does the name reservation/incorporation/organization); founders in at nominal consideration; go uncertificated with written acknowledgements, securities + D&O registers; register extra-provincially in BC; put the Chad/Kevin voting trust in the file; the shareholders agreement is the document to slow down on (ROFR, drag/tag-along). Most parties on reverse vesting; the inventions-and-confidentiality assignment is key (transfer all work to newco). Keep structure simple (pushed back on RSUs); employment across BC/AB/ON needs counsel in each; IRAP/SR&ED favor hiring employees; advisory council gets a charter + agreements, share price no less than $2.",
+      "James Atherton (money-in): Don's $23,000 is a loan - paper it (supply dates + interest), repaid from SAFE/Brooks; Don's equity 200,000 shares for $50,000 ($0.25); Brooks' 2.65% must be defined (fully diluted? option pool in the denominator?); on the SAFE, cap $20M, 15% discount (a $10M round converts safeholders near $0.35); target ~20M shares; model and reverse-engineer Brooks' price on a spreadsheet.",
+      "Bruce Fair: Brooks can't go in the SAFE - capital is needed now, use a subscription agreement; worked the Brooks math live (2.65% at $0.25 = ~10%, at $0.50 = ~5%, difference from Chad's founder shares; ~$250,000 into the sub agreement); Don came in 6+ months ago so Brooks should be a higher price."
     ],
-    "stats": [
-      {"label": "Jurisdiction", "value": "Alberta (extra-provincial in BC)"},
-      {"label": "Don Hickling loan", "value": "$23,000 at 20% flat"},
-      {"label": "Don Hickling equity", "value": "$50,000 for 200,000 shares ($0.25)"},
-      {"label": "Brooks (Brookstella)", "value": "~$500,000 for 2.65%"},
-      {"label": "SAFE cap / discount", "value": "$20M cap, 15% discount"},
-      {"label": "Option pool target", "value": "~20M shares"}
+    "intel": [
+      {"label": "SAFE cap / discount", "value": "$20M cap, 15% discount (a $10M round converts near $0.35)"},
+      {"label": "Don Hickling loan", "value": "$23,000 repaid from SAFE/Brooks proceeds"},
+      {"label": "Brooks target equity", "value": "2.65%; ~$250,000 into the subscription"},
+      {"label": "Advisory share price", "value": "no less than $2"},
+      {"label": "Employee probation", "value": "3 months typical (James)"}
     ],
-    "sources": []
-  },
-  {
-    "noteId": "0wTpbBP5TX-Ym6itKsXu8w",
-    "date": "2026-07-23",
-    "title": "Solo prep - questions for an exempt market dealer meeting",
-    "attendees": ["Chad Johnston"],
-    "summary": [
-      "Solo recording rehearsing prep for a meeting with an exempt market dealer (EMD), framing the company as a regulated settlement layer with a wedge/product-stage play.",
-      "Listed ~8 points the EMD will care about: company in one sentence, use of proceeds, team and cap table, founder control and red flags, the exemption relied on, jurisdiction/structure (Alberta, clean for KYC), prior raises and current investors, pain points, and economics.",
-      "Raise status: $500K LOI, $50K in, friends-and-family done, accredited investors.",
-      "Three tiers wanted from the EMD: structuring help, use of the dealer's license to distribute the raise to its accredited-investor network, and Toronto market knowledge; EMDs typically take 5-8% cash sometimes plus warrants.",
-      "Concluded they do not strictly need an EMD for pre-seed but it can open new investors and market knowledge now."
-    ],
-    "stats": [
-      {"label": "LOI", "value": "$500,000"},
-      {"label": "Committed so far", "value": "$50,000"},
-      {"label": "EMD typical fee", "value": "5-8% cash, sometimes plus warrants"}
+    "improve": [
+      "Walk in with a clean, pre-built cap table - the Brooks price/share math was done live and James said it 'started to get confusing'.",
+      "Know the definition of 2.65% (fully diluted or not, option pool in/out) cold before negotiating.",
+      "Tighten follow-up - Chad owed James reverse-vesting details and loan interest/dates, which stalled paperwork.",
+      "Bruce carried most of the structuring dialogue - Chad should lead on his own cap structure and SAFE terms."
     ],
     "sources": []
   },
   {
     "noteId": "nHDC2lPcRVuaRLVqRktJMw",
     "date": "2026-07-20",
-    "title": "Pre-Toronto prep - architecture, data room and event logistics",
-    "attendees": ["Chad Johnston", "Kevin Wong", "Zed", "Dean McCall"],
-    "summary": [
-      "Pre-trip alignment before the Toronto Spear event: vet Spear's dev team and ideally find a CTO plus architect; Spear lending its boardroom to line up bank/speaker meetings.",
-      "Zed and Chad worked the dev/data-room structure: 44 user stories plus a mapped Google Drive; Zed stressed validation and verification at every step and simulating transactions before any code.",
-      "Discussed wrapping the document corpus with a model-driven interface so users can query it and get summaries with references to source documents.",
-      "Zed committed to two deliverables: populate the shared drive with design documents, and build a business-architecture roadmap sequencing deliverables, timing, beneficiaries and benefits (the roadmap is the harder piece).",
-      "Spear to offer six candidate CTO names, though Chad prefers a long-term in-house CTO.",
-      "Dean reported a good call with Bruce on combining outreach lists; trimming a ~2,800-person prospect list to the most relevant Canadian and US targets."
+    "title": "Pre-Toronto planning and Spear vetting prep",
+    "attendees": ["Chad Johnston", "Zed", "Dean McCall", "Kevin Wong"],
+    "solo": false,
+    "others": [
+      "Zed: validate and verify at every step before building; simulate the whole system like a Monopoly board and walk an investor through it to debug before writing code; attacked 'start ASAP' as exactly wrong ('death-march projects'). Two deliverables: a navigable knowledge base of his documents (possibly LLM-wrapped) and a business-architecture roadmap. Competitive advantage lives in the 'how' not the 'what'; define measurable acceptance criteria and protect the design from piecemeal erosion.",
+      "Dean McCall: the two-pager is the top of the funnel - make it trivially easy for advisors to forward ('9 times out of 10 they just send the one you send them'); offered an outreach email template; flagged the '2-16 trillion' TAM needs a citation (Chad: BlackRock/JPMorgan); find out if Spear is a true venture studio vs a dev shop (cited Future Sight); don't hand equity/tokens to people who do little; go into Spear meetings aiming for NDA + MOU; preferred a white bank-style deck.",
+      "Kevin Wong: lead Thursday with a dedicated Spear session; independently vet Spear's 'smart money' claim (family offices/VCs); keep options open; the team we have is credible, that's an asset."
     ],
-    "stats": [
-      {"label": "User stories", "value": "44"},
-      {"label": "Prospect list to trim", "value": "~2,800 people"},
-      {"label": "Candidate CTO names from Spear", "value": "6"}
+    "intel": [
+      {"label": "Future Sight (venture studio)", "value": "~20% equity for ~$400K-$750K of build; you still raise on top (Dean)"},
+      {"label": "Dean's investor list", "value": "~2,800 names, trimmed to Canada + relevant US"},
+      {"label": "TAM sourcing", "value": "the 2-16 trillion figure traced to BlackRock/JPMorgan"}
     ],
-    "sources": [
-      {"name": "Spear Technologies", "url": null}
-    ]
+    "improve": [
+      "Chad rushed Zed through his section then pushed him off the call - a recurring pattern of truncating the architect's input (he even apologized for the thin intro).",
+      "Screen-share and file-hunting fumbling (wrong drive, wrong teaser, sent the white deck) ate time and reads poorly in front of outsiders.",
+      "Spent crunch time debating deck background colour - low-value bikeshedding.",
+      "Outsourced core fundraising mechanics to Dean (templates, lists, studio research) - own more of it.",
+      "Good: adopt Dean's sourcing discipline (every metric cited/clickable) and the NDA/MOU-first Spear framing."
+    ],
+    "sources": []
   },
   {
     "noteId": "xdq4ojqPRp2a76a0K_7HlQ",
     "date": "2026-07-17",
-    "title": "4orm one-pager and pitch messaging session with Bruce Fair",
+    "title": "Pitch messaging and raise-structure session with Bruce Fair",
     "attendees": ["Chad Johnston", "Bruce Fair"],
-    "summary": [
-      "Worked line by line on a one-pager and deck to sharpen the elevator pitch ahead of Chad's Toronto trip, structuring each slide as challenge then solution.",
-      "Agreed opening: Form Finance provides a neutral regulated enterprise layer and infrastructure solution for Canadian financial institutions seeking autonomous settlement (drop 'institutions').",
-      "Positioning: tokenization is coming to Canada; Canada keeps the assets but exports the settlement; Form aims to be the Canadian settlement solution and first mover.",
-      "Walked Bruce through the financial model and dashboard, including a milestone tab with an anticipated-valuation kicker.",
-      "Discussed SAFE vs priced round; flagged needing Mike's input and that dev partner Mika had not sent a proposal (Bruce to chase).",
-      "Plan: target pre-seed in August, gather structure/appetite feedback in Toronto (BridgeMe, Keegan)."
+    "solo": false,
+    "others": [
+      "Bruce Fair: coached the pitch hard - the opener must state the PROBLEM first ('you're not telling anybody what the problem is') then the solution, mapped with graphics ('people relate best to graphics'); wanted a 3-minute elevator pitch. Messaging: lead with 'tokenization is coming to Canada'; position 4orm as 'the Canadian solution for settlement' and a 'neutral regulated settlement enterprise layer'; always append 'enterprise' to 'layer'; frame the status quo as 'Canada keeps the assets but exports the settlement'. Structure challenge -> solution -> pro-forma.",
+      "Bruce Fair (raise): admitted he's never done a SAFE and is learning; questioned whether James is up to speed; flagged that giving Brooks preferential treatment (a '15x with distributions' idea) raises fairness issues; the only thing to nail now is the Brooks/Don sub agreement; dividends can be declared rather than structured; add a milestone 'kicker' that calculates anticipated valuation.",
+      "Bruce Fair (Toronto): BridgeMe (EMD) could lead the financing; gauge what structure appeals; reach out via Keegan; investor DD may take 2-3 weeks; was frustrated Miika still hadn't sent a proposal (prior engagement took 3 months); flagged Chad missed his emails (two inboxes)."
     ],
-    "stats": [
-      {"label": "Runway", "value": "16 months"},
-      {"label": "5-yr revenue projection", "value": "$6M"},
-      {"label": "5-yr cumulative revenue", "value": "$49M"},
-      {"label": "5-yr EBITDA", "value": "$26M"},
-      {"label": "Non-dilutive capital (5 yrs)", "value": "$5.4M"}
+    "intel": [
+      {"label": "Lead financier candidate", "value": "BridgeMe (EMD) could lead"},
+      {"label": "Prospective cheque size", "value": "conference contacts ~'a couple hundred grand'"},
+      {"label": "DD timeline", "value": "2-3 weeks once an investor looks"}
+    ],
+    "improve": [
+      "The opener wasn't landing - Bruce had to repeatedly force a problem-first structure. Open with the market problem, then the solution, in plain language.",
+      "Simplify and add graphics; keep the elevator pitch to 3 minutes.",
+      "Fix email/document hygiene - Chad missed Bruce's emails and lost track of the current deck version.",
+      "Own the Miika accountability problem directly rather than leaving Bruce to enforce it.",
+      "Resolve the SAFE knowledge gap with authoritative counsel - both are 'learning as we go'."
     ],
     "sources": []
   },
   {
     "noteId": "38JJkXQeQOKXxHeS_sR_aw",
     "date": "2026-07-17",
-    "title": "Incorporation, SAFE structure and cap table with James Atherton",
-    "attendees": ["Chad Johnston", "Bruce Fair", "James Atherton"],
-    "summary": [
-      "James updated on incorporating an Alberta company (articles, bylaws, resolutions) for three founders (including passive co-founder Sam), then layering in the advisory board.",
-      "Immediate priority to take cash this month: Brooks committed $500,000 (first tranche $100K-$150K, then $100K/month) for ~2.5-2.65%, papered as a priced equity subscription outside the SAFE.",
-      "James advised shares can only issue when fully paid, proposing a unit with warrants exercisable over five months to fix price now while shares issue as payments arrive.",
-      "Discussed removing Sam (unresponsive since ~February); confirmed platform/code/IP sit with Chad and Kevin; agreed to proceed without Sam while holding a possible future founder-share transfer.",
-      "Milestones to justify next valuation: hiring a strong CTO (4-8 weeks) and MOUs with two institutions (Q1-Q2 2027); a CTO brief includes assessing automation savings that could cut DevEx ~35%.",
-      "SAFE mechanics: converts on a qualifying equity financing, provisionally $5M threshold, $10M cap, 15% discount, post-money, with an MFN clause.",
-      "Don (Johane) Hickling to be papered: 1% for $50,000 plus 0.25% as an advisor, with a $23,000 loan repaid at 10% of each tranche.",
-      "James to draft the SAFE over the weekend and Brooks/Don sub-agreements within ~two weeks."
+    "title": "Incorporation sequencing and SAFE mechanics (James Atherton)",
+    "attendees": ["Chad Johnston", "James Atherton", "Bruce Fair"],
+    "solo": false,
+    "others": [
+      "James Atherton: sequencing - incorporate (three founders incl. passive Sam), issue founder shares, do the IP assignment, place the advisory board, then the priced round (Don/Brooks), then accept SAFEs.",
+      "James Atherton (SAFE education): SAFEs convert on a qualifying equity financing or exit, NOT a business milestone; in Canada SAFEs are 'a little suspect' because many never hit the triggering round; define the trigger (~$5M raise), a cap (~$10M), a discount (10-20%), an automatic long-stop conversion, and an MFN; post-money is easier for investors.",
+      "James Atherton (strong challenge): a '100-year company, no exit, dividend-out' story is incompatible with VCs/Series A (VCs need a ~7-year exit and don't want dividends) - stop calling it 'Series A'.",
+      "James Atherton (passive co-founder): if Sam contributed nothing and no IP, don't give him 1% - send a clean email moving on, keep a possible side settlement in your back pocket; confirm all IP (platform/code/website) is Chad's and assigned to the company.",
+      "James Atherton: Brooks $500k as a staged unit deal with warrants to fix price (shares fully paid before issuance, at FMV); keep the option plan plain (avoid early 409A valuations ~$10k/6mo); requested a 90-second / 3-minute pitch."
     ],
-    "stats": [
-      {"label": "Brooks commitment", "value": "$500,000 ($100K/month)"},
-      {"label": "Brooks equity", "value": "~2.5-2.65%"},
-      {"label": "Current round", "value": "$2M SAFE"},
-      {"label": "Monthly burn (full scale)", "value": "$125,000"},
-      {"label": "SAFE cap / discount", "value": "$10M cap, 15% discount"}
+    "intel": [
+      {"label": "409A valuation cost", "value": "~$10k every 6 months - avoid early"},
+      {"label": "VC exit horizon", "value": "~7-year exit; VCs don't want dividends"},
+      {"label": "SAFE terms example", "value": "trigger ~$5M, cap ~$10M, discount 10-20%"}
+    ],
+    "improve": [
+      "James flagged a core inconsistency: Chad pitches a '100-year, no-exit, dividend' company but keeps invoking VCs/'Series A' - pick one coherent funding narrative and investor type.",
+      "Chad was unclear on how SAFEs convert (kept proposing a business-milestone trigger); James corrected this several times - learn the instruments before structuring rounds.",
+      "Cap table/share price/valuation stayed undefined - decide and document them.",
+      "Resolve the passive co-founder cleanly and promptly (IP risk) before incorporating.",
+      "Chad still owed a short pitch/explainer - a recurring missing crisp description."
     ],
     "sources": []
   },
   {
     "noteId": "IZ0n90VSQwin1i5Z1DV8Mg",
     "date": "2026-07-16",
-    "title": "Toronto conference attendance and travel budget with Don Hickling",
+    "title": "Toronto event funding ask with Don Hickling",
     "attendees": ["Chad Johnston", "Don Hickling"],
-    "summary": [
-      "Chad pitched attending a Toronto event on July 21-22 using Spear Technologies' corporate tickets and backstage introductions.",
-      "Plan: Chad plus Kevin attend, get around new advisor Dean (Toronto), and use Spear's boardroom and dev-office tour to pull conference contacts over.",
-      "Don cannot attend (family in Ottawa / Montreal on the 21st) but strongly endorsed the trip.",
-      "Travel budget ~$2,000 (return flights $670), hotel TBD.",
-      "First $100,000 of capital expected end of next week or early the following week; once it lands Chad and Kevin head to Calgary to set up the office.",
-      "Flagged a November Spear event in Florida (Nov 17-18) and a Banff marketing event (~$500/ticket), with $10,000 set aside for events, plus a planned two-day team offsite."
+    "solo": false,
+    "others": [
+      "Don Hickling: agreed the Toronto event is a strong chance to 'get out and shake some hands' given the speaker list; couldn't attend (Ottawa family barbecue, Montreal on the 21st) but encouraged the trip; asked directly for budget numbers.",
+      "Don Hickling: agreed in principle to fund it by revising the existing agreement up ~$3K (from ~$20K to ~$22-23K total) at 20%, pending a conversation with his wife Joanne.",
+      "Don Hickling: suggested the November Florida (Spira/blockchain) event and a November Banff marketing event as alternatives; asked Chad to check in by text that evening."
     ],
-    "stats": [
-      {"label": "Toronto trip budget", "value": "~$2,000"},
-      {"label": "First capital tranche", "value": "$100,000"},
-      {"label": "Events budget (rest of year)", "value": "$10,000"},
-      {"label": "Don agreement revision", "value": "~$23,000 at 20%"}
+    "intel": [
+      {"label": "Don Hickling financing", "value": "revise agreement ~$20K to ~$22-23K total at 20% (adds ~$3K for the trip)"},
+      {"label": "Alternative events", "value": "Spira Florida blockchain Nov 17-18; Banff marketing event (~$500/ticket); ~$10K event budget"}
+    ],
+    "improve": [
+      "Asked an investor to fund a trip without a firm budget ('probably around $2,000', 'figure out the rest later') - bring exact numbers before asking for money.",
+      "Blended personal plans (daughter with his mother, staying an extra week) into an investor-funded business trip - keep the ask clean.",
+      "The ask leaned on emotion ('we die on our swords') rather than concrete ROI - lead with who he expects to meet and the pipeline value.",
+      "Confusion over event dates (17th vs 21st/22nd) - pin logistics before pitching the opportunity."
+    ],
+    "sources": []
+  },
+  {
+    "noteId": "Tt1QpGiQTii8_l6mjF0wQA",
+    "date": "2026-09-18",
+    "title": "Kinley Financial check-in (cut short by tech issues)",
+    "attendees": ["Chad Johnston", "Kinley Financial contact"],
+    "solo": false,
+    "others": [
+      "Kinley contact: brokerage is 'busier than shit' - onboarding 3-5 new licensees a week as people finish their courses; heavy onboarding/training load.",
+      "Kinley contact: new operating model where every team gets its own funnel; working his associate Dominic hard; credits AI tooling for the difference.",
+      "Kinley contact: had taken a peek at Chad's materials, would reopen them during the call."
+    ],
+    "intel": [
+      {"label": "Kinley licensee onboarding", "value": "3-5 new licenses per week currently"}
+    ],
+    "improve": [
+      "The call died ~6 minutes in - both sides had low battery / wonky computers before Chad could present. Check device readiness and have a fallback.",
+      "The contact only 'took a peek' at materials; Chad didn't lock a firm reschedule before things dropped - secure a concrete next step even when a call falls apart."
+    ],
+    "sources": []
+  },
+  {
+    "noteId": "qEYQWMYTRACY2-2tx2meaQ",
+    "date": "2026-09-18",
+    "title": "Don Hickling weekly update - raise plan, ATB, deck feedback",
+    "attendees": ["Chad Johnston", "Don Hickling"],
+    "solo": false,
+    "others": [
+      "Don Hickling: mostly listened but asked sharp questions - whether Spear's new pricing lands near the prior quote or lower, which regulators Chad expects to actually connect with, and when the ATB meeting would be set.",
+      "Don Hickling: feedback - the shorter investor deck is well laid out, backed by facts, straightforward and easy to comprehend; liked the new direction and the consumer-proof-before-the-fact framing.",
+      "Don Hickling: confirmed he has mortgage broker and auto dealer contacts and will hand them over once Chad sends an email (Chad hadn't sent the promised email from the prior call).",
+      "Don Hickling: Thursday works for the ATB call (9:30-2 his time); kept the Friday weekly."
+    ],
+    "intel": [],
+    "improve": [
+      "Open follow-through gap: Chad never sent the mortgage/auto-contact email promised last time, so Don had to re-prompt. Close loops promptly.",
+      "Chad dominated airtime with long updates while Don gave mostly 'yep' - build in explicit asks so an advisor contributes more than assent.",
+      "Chad again shared named third parties' private details (Dean's account, Brooks' fee) - anonymise.",
+      "Name-dropped Sam Altman / Y Combinator as near-term wins - frame as long-shot applications, not pipeline."
+    ],
+    "sources": [{"name": "ATB Financial", "url": "https://www.atb.com"}]
+  },
+  {
+    "noteId": "uT3d-CowSK6I88GQbQirbg",
+    "date": "2026-09-21",
+    "title": "Pipeline, legal/incorporation costs, and the Brooks decision (Kevin, Bruce)",
+    "attendees": ["Chad Johnston", "Kevin Wong", "Bruce Fair"],
+    "solo": false,
+    "others": [
+      "Kevin Wong: challenged the value prop - 'it comes down to reducing the cost of business; why would they move with this?'; offered auto-lender access through his dealership's reps (Jess/Jazz, Donnie; bank relationships via F&I managers); will get Jess to line up an intro and message Nathan.",
+      "Bruce Fair: doesn't deal with mortgage brokers - his base is EMDs and financial firms (Canaccord, CIBC, RBC) but the big firms 'won't give us the time of day'; EMDs might grant an audience; warned Ali/ATB is a competitor - share only high-level.",
+      "Bruce Fair (on the lawyer): have an agenda for every meeting ('the clock is running and we don't have money'); incorporation has dragged too long; ~$6-8K over, ~$8K more coming, plus a $2-3K subscription agreement; incorporation docs are needed for grants, the TFSA and Brooks.",
+      "Bruce Fair (Brooks): put the cost in writing - he's delayed the company 3-4 months; TFSA/MECA ~$8-10K; estimates ~$50K minimum.",
+      "Kevin Wong (Brooks): a professional tally framed as clear communication, not a fight - 'here's what it cost to accommodate your requests'; invoice even if he won't pay."
+    ],
+    "intel": [
+      {"label": "Lawyer running cost (Bruce)", "value": "~$6-8K over, ~$8K more, plus a $2-3K subscription agreement"},
+      {"label": "TFSA / MECA cost (Bruce)", "value": "~$8-10K outstanding"}
+    ],
+    "improve": [
+      "Bruce said Chad's been 'very lenient' with the lawyer and the incorporation delay now blocks grants, TFSA and investor docs - push the timeline, bring an agenda.",
+      "Bruce had to warn Chad that Ali/ATB is a competitor while Chad pursues them as a design partner - be careful what's shared.",
+      "The Brooks cost-letter is unresolved - Chad resists (fears it ends the relationship), Bruce and Kevin push to send it; decide and act.",
+      "Top firms (Canaccord/CIBC/RBC) won't engage - redirect design-partner energy to reachable targets (EMDs, Vernon brokers, Kevin's auto-lender reps)."
+    ],
+    "sources": []
+  },
+  {
+    "noteId": "0ReltGphS0iuEu6mvxYvMQ",
+    "date": "2026-10-10",
+    "title": "Pitch-deck edits and the suitability thesis (solo)",
+    "attendees": ["Chad Johnston"],
+    "solo": true,
+    "others": [],
+    "intel": [],
+    "improve": [
+      "Nail the one-line thesis he keeps circling - how to prove suitability when you do not know what suitable means for a person - and make it the spine of the Bruce deck.",
+      "Finish the dictated edits: move the better-solution content right after the challenge page; rebuild page 11 (solutions) with a phone-and-dashboard visual while keeping the five stats.",
+      "He built the deck until ~4am; set a sustainable prep cutoff so the deck is reviewed fresh, not finalized overnight."
+    ],
+    "sources": []
+  },
+  {
+    "noteId": "XACZeeWjTdiatfq4dmuTiA",
+    "date": "2026-09-23",
+    "title": "Watching angel-investing fundraising content (solo)",
+    "attendees": ["Chad Johnston"],
+    "solo": true,
+    "others": [],
+    "intel": [],
+    "improve": [
+      "Background playback of a video on lessons from raising angel money - capture the ten points as a checklist and map each against the current 4orm raise so the research becomes concrete prep."
+    ],
+    "sources": []
+  },
+  {
+    "noteId": "x8Qh-d5JR5u9iZWuGC7oIg",
+    "date": "2026-09-19",
+    "title": "Doc pagination and Canada-only market stats (solo)",
+    "attendees": ["Chad Johnston"],
+    "solo": true,
+    "others": [],
+    "intel": [],
+    "improve": [
+      "Follow through on splitting the form-validation and market-evidence content into separate pages, not one scroll.",
+      "Resolve the data-scope decision he stated: present Canada-wide stats, not Ontario-only, since the business is Alberta-based - confirm a national source.",
+      "Fold the Form investor-equity detail into that section as he noted."
+    ],
+    "sources": []
+  },
+  {
+    "noteId": "tQhuZXGSRkq38S7_rhkr-w",
+    "date": "2026-08-04",
+    "title": "Market-gap brainstorm and prompt design (solo)",
+    "attendees": ["Chad Johnston"],
+    "solo": true,
+    "others": [],
+    "intel": [],
+    "improve": [
+      "He left the core question open - across the products/companies reviewed, what gap is still unserved that 4orm could fill. Draft that prompt deliberately (scoped to compliance/suitability-evidence) so the gap analysis is reproducible.",
+      "Write down candidate gaps as they surface so this produces a shortlist to test, not just an open question."
+    ],
+    "sources": []
+  },
+  {
+    "noteId": "0wTpbBP5TX-Ym6itKsXu8w",
+    "date": "2026-07-23",
+    "title": "Prepping EMD meeting questions (solo)",
+    "attendees": ["Chad Johnston"],
+    "solo": true,
+    "others": [],
+    "intel": [],
+    "improve": [
+      "Finalize the eight-question discussion guide for the exempt-market-dealer meeting (company in a sentence, use of proceeds, team and cap table, exemption relied on, jurisdiction/structure, prior raises/current investors, economics/fees, and the three tiers of what he wants from the dealer).",
+      "Be explicit about what he wants from an EMD now (new investors + Toronto market knowledge) vs later-stage distribution via the dealer license - an EMD isn't strictly needed at pre-seed.",
+      "Pull background notes on the dealer before the meeting; he flagged going in blind on the person.",
+      "Be ready to speak cleanly to the raise status (a $500K LOI, $50K in) and confirm the Alberta entity is clean for KYC."
     ],
     "sources": []
   }
