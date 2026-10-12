@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'fs';
 import { tokenOk, allowArea, allowPriority, allowStage, allowStatus, allowContactType, allowTier, allowNoteColor, isBriefHour, windowKey, CEILINGS, parseDue, visibleCalendarWindow } from '../lib/guard.mjs';
-import { ROADMAP } from '../lib/roadmap.mjs';
+import { ROADMAP, ROAD_CATEGORIES } from '../lib/roadmap.mjs';
+import { organizeText } from '../lib/organize.mjs';
 import { openSeal, seal } from '../lib/seal.mjs';
 import { readState, signState } from '../lib/oauth-state.mjs';
 
@@ -65,11 +66,34 @@ test('roadmap seed is seventeen dated items with allowed fields', () => {
   for (const row of ROADMAP) {
     assert.equal(allowArea(row.area), row.area);
     assert.equal(allowPriority(row.priority), row.priority);
+    assert.equal(ROAD_CATEGORIES.includes(row.category), true);
     assert.match(row.due, /^\d{4}-\d{2}-\d{2}$/);
     assert.equal(/[\u2013\u2014]/.test(row.title + row.owner), false);
     assert.equal(/\bAI\b/.test(row.title), false);
     assert.equal(row.title.trim().length > 0, true);
   }
+});
+
+test('zoom notes seed is a dated transcript library', () => {
+  const notes = JSON.parse(readFileSync(new URL('../zoom_notes_seed.json', import.meta.url), 'utf8'));
+  assert.equal(notes.length, 42);
+  for (const note of notes) {
+    assert.match(note.noteId, /^[A-Za-z0-9_-]+$/);
+    assert.match(note.date, /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(note.title.trim().length > 0, true);
+    assert.equal(Array.isArray(note.attendees), true);
+    assert.equal(Array.isArray(note.summary), true);
+    assert.equal(Array.isArray(note.stats), true);
+    assert.equal(Array.isArray(note.sources), true);
+    assert.equal(/\bAI\b/.test(note.title), false);
+  }
+});
+
+test('a dump organizes into a title and sentence lines', () => {
+  const row = organizeText('Call Bruce tomorrow. Send the deck after.');
+  assert.equal(row.title, 'Call Bruce tomorrow.');
+  assert.equal(row.body, '- Send the deck after.');
+  assert.equal(organizeText('   '), null);
 });
 
 test('due values accept an ISO string, an epoch, or null', () => {

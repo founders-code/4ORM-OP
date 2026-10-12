@@ -15,6 +15,7 @@ function shapeItem(row: Record<string, unknown>) {
     due: row.due ? new Date(String(row.due)).getTime() : null,
     owner: String(row.owner || ''),
     source: String(row.source || 'manual'),
+    category: row.category ? String(row.category) : '',
   };
 }
 
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
     const rows = await session.sql`
       INSERT INTO items (owner_id, title, area, status, priority, due, source)
       VALUES (${session.userId}, ${title}, ${area}, 'new', ${priority}, ${dueIso}, 'manual')
-      RETURNING id, title, area, status, priority, due, owner, source
+      RETURNING id, title, area, status, priority, due, owner, source, category
     `;
     return NextResponse.json(shapeItem(rows[0] as Record<string, unknown>));
   } catch {
@@ -78,7 +79,7 @@ export async function PATCH(req: Request) {
           due = CASE WHEN ${setDue} THEN ${dueIso}::timestamptz ELSE due END,
           updated_at = now()
       WHERE id = ${id} AND owner_id = ${session.userId}
-      RETURNING id, title, area, status, priority, due, owner, source
+      RETURNING id, title, area, status, priority, due, owner, source, category
     `;
     if (!rows.length) return NextResponse.json({ error: 'Unavailable' }, { status: 404 });
     return NextResponse.json(shapeItem(rows[0] as Record<string, unknown>));
