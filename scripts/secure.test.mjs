@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'fs';
-import { tokenOk, allowArea, allowStage, allowContactType, allowTier, allowNoteColor, isBriefHour, windowKey, CEILINGS, parseDue, visibleCalendarWindow } from '../lib/guard.mjs';
+import { tokenOk, allowArea, allowPriority, allowStage, allowStatus, allowContactType, allowTier, allowNoteColor, isBriefHour, windowKey, CEILINGS, parseDue, visibleCalendarWindow } from '../lib/guard.mjs';
+import { ROADMAP } from '../lib/roadmap.mjs';
 import { openSeal, seal } from '../lib/seal.mjs';
 import { readState, signState } from '../lib/oauth-state.mjs';
 
@@ -56,6 +57,19 @@ test('oauth state is bound to the signed-in user', () => {
   assert.equal(readState(state, 'other-secret', 1_000), null);
   assert.equal(readState(state.replace('user_1', 'user_2'), 'state-secret', 1_000), null);
   assert.equal(readState(state, 'state-secret', 1_000 + 11 * 60 * 1000), null);
+});
+
+test('roadmap seed is seventeen dated items with allowed fields', () => {
+  assert.equal(ROADMAP.length, 17);
+  assert.equal(allowStatus('open'), 'open');
+  for (const row of ROADMAP) {
+    assert.equal(allowArea(row.area), row.area);
+    assert.equal(allowPriority(row.priority), row.priority);
+    assert.match(row.due, /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(/[\u2013\u2014]/.test(row.title + row.owner), false);
+    assert.equal(/\bAI\b/.test(row.title), false);
+    assert.equal(row.title.trim().length > 0, true);
+  }
 });
 
 test('due values accept an ISO string, an epoch, or null', () => {

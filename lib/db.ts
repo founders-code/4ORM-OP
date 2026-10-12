@@ -20,7 +20,7 @@ async function migrate(sql: Sql) {
     owner_id text NOT NULL,
     title text NOT NULL,
     area text NOT NULL CHECK (area IN ('investors','outreach','legal','dev','send','follow_up','other')),
-    status text NOT NULL DEFAULT 'new' CHECK (status IN ('new','doing','waiting','done','dropped')),
+    status text NOT NULL DEFAULT 'new' CHECK (status IN ('new','doing','waiting','done','dropped','open')),
     priority text NOT NULL DEFAULT 'normal' CHECK (priority IN ('urgent','high','normal','low')),
     due timestamptz,
     snooze_until timestamptz,
@@ -36,6 +36,22 @@ async function migrate(sql: Sql) {
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS items_owner_source_uq
     ON items (owner_id, source, source_id)
     WHERE source_id IS NOT NULL`;
+  await sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS source text DEFAULT 'manual'`;
+  await sql`
+    DO $$
+    DECLARE r record;
+    BEGIN
+      FOR r IN
+        SELECT conname FROM pg_constraint
+        WHERE conrelid = 'items'::regclass
+          AND contype = 'c'
+          AND pg_get_constraintdef(oid) ILIKE '%status%'
+      LOOP
+        EXECUTE format('ALTER TABLE items DROP CONSTRAINT %I', r.conname);
+      END LOOP;
+      ALTER TABLE items ADD CONSTRAINT items_status_check CHECK (status IN ('new','doing','waiting','done','dropped','open'));
+    END $$
+  `;
   await sql`CREATE TABLE IF NOT EXISTS daily_brief (
     owner_id text NOT NULL,
     brief_date date NOT NULL,
