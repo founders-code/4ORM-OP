@@ -1,4 +1,5 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
+import { ROADMAP } from './roadmap.mjs';
 import { syncCalendar, syncDrive, syncGhl, calendarMeta, ingestMail } from './sync';
 
 type Sql = NeonQueryFunction<false, false>;
@@ -109,7 +110,22 @@ export function idleBoard(needsDatabase: boolean) {
   };
 }
 
+async function seedRoadmap(sql: Sql, ownerId: string) {
+  const payload = JSON.stringify(ROADMAP);
+  await sql`
+    INSERT INTO items (owner_id, title, area, status, priority, due, owner, source)
+    SELECT ${ownerId}, x.title, x.area, 'open', x.priority,
+           (x.due::date + time '12:00') AT TIME ZONE 'America/Edmonton',
+           x.owner, 'roadmap'
+    FROM jsonb_to_recordset(${payload}::jsonb) AS x(title text, area text, priority text, due text, owner text)
+    WHERE NOT EXISTS (
+      SELECT 1 FROM items WHERE owner_id = ${ownerId} AND source = 'roadmap'
+    )
+  `;
+}
+
 export async function loadBoard(sql: Sql, ownerId: string) {
+  await seedRoadmap(sql, ownerId);
   await quiet(ingestMail(sql, ownerId));
   await quiet(syncCalendar(sql, ownerId));
   await quiet(syncDrive(sql, ownerId));
