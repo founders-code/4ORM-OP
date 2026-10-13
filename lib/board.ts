@@ -3,7 +3,6 @@ import { ROADMAP } from './roadmap.mjs';
 import { idlePlugins, listPlugins } from './plugins';
 import { listZoomNotes, seedZoomNotes } from './zoom-notes';
 import { fail } from './log';
-import { listCommitments, listNews, listPlans, newsCategories, syncCommitments } from './war';
 import { syncCalendar, syncDrive, syncGhl, calendarMeta, ingestMail } from './sync';
 
 type Sql = NeonQueryFunction<false, false>;
@@ -68,23 +67,6 @@ function asFolders(nodes: Array<Record<string, unknown>> | undefined): Folder[] 
   }));
 }
 
-async function quiet(job: Promise<unknown>) {
-  try {
-    await job;
-  } catch {
-    /* a source that throws stays on its last status word */
-  }
-}
-
-async function soft<T>(code: string, job: Promise<T>, fallback: T): Promise<T> {
-  try {
-    return await job;
-  } catch (err) {
-    fail(code, err);
-    return fallback;
-  }
-}
-
 export function idleBoard(needsDatabase: boolean) {
   const off = { state: 'off', word: 'Not connected' };
   return {
@@ -121,7 +103,22 @@ export function idleBoard(needsDatabase: boolean) {
     zoomNotes: [],
     runwayWeeks: null,
     calendarUntil: null,
+    reads: { database: needsDatabase ? 'failed' : 'ok' },
   };
+}
+
+type Row = Record<string, unknown>;
+
+async function read<T>(reads: Record<string, 'ok' | 'failed'>, name: string, job: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    const value = await job();
+    reads[name] = 'ok';
+    return value;
+  } catch (err) {
+    fail(`board_${name}`, err);
+    reads[name] = 'failed';
+    return fallback;
+  }
 }
 
 async function seedRoadmap(sql: Sql, ownerId: string) {
@@ -147,83 +144,88 @@ async function seedRoadmap(sql: Sql, ownerId: string) {
   `;
 }
 
-async function readWaiting(sql: Sql, ownerId: string) {
-  const rows = await sql`
-    SELECT id, waiting_on, plan_of
-    FROM items
-    WHERE owner_id = ${ownerId}
-      AND (snooze_until IS NULL OR snooze_until <= now())
-    ORDER BY updated_at DESC
-    LIMIT 200
-  `;
-  const waiting = new Map<string, { waitingOn: string; planOf: string }>();
-  for (const row of rows as Array<Record<string, unknown>>) {
-    waiting.set(String(row.id), {
-      waitingOn: row.waiting_on ? String(row.waiting_on) : '',
-      planOf: row.plan_of ? String(row.plan_of) : '',
-    });
-  }
-  return waiting;
-}
-
 export async function loadBoard(sql: Sql, ownerId: string) {
-  await seedRoadmap(sql, ownerId);
-  await seedZoomNotes(sql, ownerId);
-  await quiet(ingestMail(sql, ownerId));
-  await quiet(syncCalendar(sql, ownerId));
-  await quiet(syncDrive(sql, ownerId));
-  await quiet(syncGhl(sql, ownerId));
+  const reads: Record<string, 'ok' | 'failed'> = {};
+  await read(reads, 'roadmap', () => seedRoadmap(sql, ownerId), undefined);
+  await read(reads, 'zoomSeed', () => seedZoomNotes(sql, ownerId), undefined);
+  await read(reads, 'mail', () => ingestMail(sql, ownerId), undefined);
+  await read(reads, 'calendarSync', () => syncCalendar(sql, ownerId), undefined);
+  await read(reads, 'driveSync', () => syncDrive(sql, ownerId), undefined);
+  await read(reads, 'ghl', () => syncGhl(sql, ownerId), undefined);
 
-  const items = await sql`
-    SELECT id, title, area, status, priority, due, owner, source, category
-    FROM items
-    WHERE owner_id = ${ownerId}
-      AND (snooze_until IS NULL OR snooze_until <= now())
-    ORDER BY updated_at DESC
-    LIMIT 200
-  `;
-  const waiting = await soft('board_waiting', readWaiting(sql, ownerId), new Map<string, { waitingOn: string; planOf: string }>());
-  const contacts = await sql`
-    SELECT id, name, company, role, email, phone, area, notes, type, tier, stage, next_action, next_date, last_touch
-    FROM contacts
-    WHERE owner_id = ${ownerId}
-    ORDER BY name
-    LIMIT 200
-  `;
-  const categories = await sql`
-    SELECT name, subs FROM link_categories WHERE owner_id = ${ownerId} ORDER BY name
-  `;
-  const links = await sql`
-    SELECT title, url, category, sub FROM links WHERE owner_id = ${ownerId} ORDER BY created_at DESC LIMIT 200
-  `;
+  const items = await read(reads, 'items', async () => {
+    const rows = await sql`
+      SELECT id, title, area, status, priority, due, owner, source, category
+      FROM items
+      WHERE owner_id = ${ownerId}
+        AND (snooze_until IS NULL OR snooze_until <= now())
+      ORDER BY updated_at DESC
+      LIMIT 200
+    `;
+    return rows as Row[];
+  }, []);
+  const contacts = await read(reads, 'contacts', async () => {
+    const rows = await sql`
+      SELECT id, name, company, role, email, phone, area, notes, type, tier, stage, next_action, next_date, last_touch
+      FROM contacts
+      WHERE owner_id = ${ownerId}
+      ORDER BY name
+      LIMIT 200
+    `;
+    return rows as Row[];
+  }, []);
+  const categories = await read(reads, 'categories', async () => {
+    const rows = await sql`SELECT name, subs FROM link_categories WHERE owner_id = ${ownerId} ORDER BY name`;
+    return rows as Row[];
+  }, []);
+  const links = await read(reads, 'links', async () => {
+    const rows = await sql`
+      SELECT title, url, category, sub FROM links WHERE owner_id = ${ownerId} ORDER BY created_at DESC LIMIT 200
+    `;
+    return rows as Row[];
+  }, []);
   const today = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Edmonton',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
   }).format(new Date());
-  const briefs = await sql`
-    SELECT headline, summary, top_three
-    FROM daily_brief
-    WHERE owner_id = ${ownerId} AND brief_date = ${today}
-  `;
-  const stages = await sql`
-    SELECT stage, count, detail FROM pipeline_stages WHERE owner_id = ${ownerId} ORDER BY stage
-  `;
-  const states = await sql`
-    SELECT source, status, detail, synced_at FROM sync_state WHERE owner_id = ${ownerId}
-  `;
-  const cached = await sql`SELECT tree FROM drive_cache WHERE owner_id = ${ownerId}`;
-  const noteCats = await sql`
-    SELECT id, name, parent_id, depth FROM note_cats WHERE owner_id = ${ownerId} ORDER BY name
-  `;
-  const notes = await sql`
-    SELECT id, cat_id, title, body, color, updated_at FROM notes WHERE owner_id = ${ownerId} ORDER BY updated_at DESC LIMIT 400
-  `;
-  const settings = await sql`
-    SELECT runway_weeks FROM owner_settings WHERE owner_id = ${ownerId} LIMIT 1
-  `;
-  const calendar = await calendarMeta(sql, ownerId);
+  const briefs = await read(reads, 'brief', async () => {
+    const rows = await sql`
+      SELECT headline, summary, top_three
+      FROM daily_brief
+      WHERE owner_id = ${ownerId} AND brief_date = ${today}
+    `;
+    return rows as Row[];
+  }, []);
+  const stages = await read(reads, 'pipeline', async () => {
+    const rows = await sql`SELECT stage, count, detail FROM pipeline_stages WHERE owner_id = ${ownerId} ORDER BY stage`;
+    return rows as Row[];
+  }, []);
+  const states = await read(reads, 'integrations', async () => {
+    const rows = await sql`SELECT source, status, detail, synced_at FROM sync_state WHERE owner_id = ${ownerId}`;
+    return rows as Row[];
+  }, []);
+  const cached = await read(reads, 'drives', async () => {
+    const rows = await sql`SELECT tree FROM drive_cache WHERE owner_id = ${ownerId}`;
+    return rows as Row[];
+  }, []);
+  const noteCats = await read(reads, 'noteCats', async () => {
+    const rows = await sql`SELECT id, name, parent_id, depth FROM note_cats WHERE owner_id = ${ownerId} ORDER BY name`;
+    return rows as Row[];
+  }, []);
+  const notes = await read(reads, 'notes', async () => {
+    const rows = await sql`
+      SELECT id, cat_id, title, body, color, updated_at FROM notes WHERE owner_id = ${ownerId} ORDER BY updated_at DESC LIMIT 400
+    `;
+    return rows as Row[];
+  }, []);
+  const settings = await read(reads, 'settings', async () => {
+    const rows = await sql`SELECT runway_weeks FROM owner_settings WHERE owner_id = ${ownerId} LIMIT 1`;
+    return rows as Row[];
+  }, []);
+  const calendar = await read(reads, 'events', () => calendarMeta(sql, ownerId), { events: [], until: null });
+  const zoomNotes = await read(reads, 'zoomNotes', () => listZoomNotes(sql, ownerId), []);
 
   const bySource = new Map<string, { status: string; detail: string; synced_at: string | null }>();
   for (const row of states) {
@@ -311,10 +313,10 @@ export async function loadBoard(sql: Sql, ownerId: string) {
         action: item.action,
       };
     }),
-    plugins: await listPlugins(sql, ownerId, new Map([
+    plugins: await read(reads, 'plugins', () => listPlugins(sql, ownerId, new Map([
       ...[...bySource.entries()].map(([key, row]) => [key, row.status] as [string, string]),
       ...(briefs[0] ? [['brief', 'connected'] as [string, string]] : []),
-    ])),
+    ])), idlePlugins()),
     items: items.map((row) => ({
       id: String(row.id),
       title: String(row.title),
@@ -325,18 +327,10 @@ export async function loadBoard(sql: Sql, ownerId: string) {
       owner: String(row.owner || ''),
       source: String(row.source || 'manual'),
       category: row.category ? String(row.category) : '',
-      waitingOn: waiting.get(String(row.id))?.waitingOn || '',
-      planOf: waiting.get(String(row.id))?.planOf || '',
+      waitingOn: '',
+      planOf: '',
     })),
-    zoomNotes: await (async () => {
-      const notes = await listZoomNotes(sql, ownerId);
-      await soft('board_commitments_sync', syncCommitments(sql, ownerId, notes), undefined);
-      return notes;
-    })(),
-    plans: await soft('board_plans', listPlans(sql, ownerId), []),
-    commitments: await soft('board_commitments', listCommitments(sql, ownerId), []),
-    news: await soft('board_news', listNews(sql, ownerId), []),
-    newsCategories: await soft('board_news_categories', newsCategories(sql, ownerId), []),
+    zoomNotes,
     contacts: contacts.map((row) => ({
       id: String(row.id),
       name: String(row.name),
@@ -388,6 +382,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
     calendarUntil: calendar.until,
     folders,
     drives: folders.map((folder) => ({ id: folder.id, name: folder.name, folders: folder.children, files: folder.docs })),
+    reads: { ...reads, folders: reads.drives || 'failed' },
   };
 }
 
