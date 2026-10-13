@@ -236,6 +236,11 @@ test('the control room page does not carry secrets', () => {
   assert.equal(page.includes('id="pkgGrid"'), true);
   assert.equal(page.includes('Prepare send'), true);
   assert.equal(page.includes('Stages from GoHighLevel'), true);
+  assert.equal(page.includes('id="docView"'), true);
+  assert.equal(page.includes('Open in Drive'), true);
+  assert.equal(page.includes('id="v-znotes"'), true);
+  assert.equal(page.includes('#v-znotes{background:#0E141C'), true);
+  assert.equal(page.includes('data-doc-url'), true);
   assert.equal(page.includes('control-room-war.js'), true);
   const warjs = readFileSync(new URL('../public/control-room-war.js', import.meta.url), 'utf8');
   assert.equal(/Atherton|example\.com/.test(warjs), false);
