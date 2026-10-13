@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'fs';
-import { tokenOk, allowArea, allowPriority, allowStage, allowStatus, allowContactType, allowTier, allowNoteColor, isBriefHour, windowKey, CEILINGS, parseDue, visibleCalendarWindow } from '../lib/guard.mjs';
+import { tokenOk, allowArea, allowPriority, allowStage, allowStatus, allowContactType, allowTier, allowNoteColor, isBriefHour, windowKey, CEILINGS, parseDue, visibleCalendarWindow, inferContactCategory } from '../lib/guard.mjs';
 import { ROADMAP, ROAD_CATEGORIES } from '../lib/roadmap.mjs';
 import { DEFAULT_WEIGHTS, computeLamps, pickMoves, readProfileFacts } from '../lib/ceo-score.mjs';
 import { extractCommitments, fallbackPlan, zoneOf, NEWS_CATEGORIES } from '../lib/war.mjs';
@@ -180,6 +180,15 @@ test('cash of 100 lights runway and spend red and every ranked move is returned'
   assert.equal(quiet.some((move) => move.principle === 'P4'), true);
 });
 
+test('contact categories come from the company and role text', () => {
+  assert.equal(inferContactCategory('North Capital Ventures'), 'vc');
+  assert.equal(inferContactCategory('Fasken LLP'), 'regulator');
+  assert.equal(inferContactCategory('Century 21'), 'business');
+  assert.equal(inferContactCategory('Alberta Innovates grant'), 'grant');
+  assert.equal(inferContactCategory('Advisory board'), 'board');
+  assert.equal(inferContactCategory('Neighborhood cafe'), 'other');
+});
+
 test('the control room page does not carry secrets', () => {
   const page = readFileSync(new URL('../public/control-room.html', import.meta.url), 'utf8');
   assert.equal(page.includes('Connect Google'), true);
@@ -203,6 +212,10 @@ test('the control room page does not carry secrets', () => {
   assert.equal(page.includes('Waiting on us'), true);
   assert.equal(page.includes("You said you'd do it"), true);
   assert.equal(page.includes('Waiting on others'), true);
+  assert.equal(page.includes('Nothing urgent on the desk'), true);
+  assert.equal(page.includes('data-v="cal"'), false);
+  assert.equal(page.includes('id="navToggle"'), true);
+  assert.equal(page.includes('id="peopleFilter"'), true);
   assert.equal(page.includes('control-room-war.js'), true);
   const warjs = readFileSync(new URL('../public/control-room-war.js', import.meta.url), 'utf8');
   assert.equal(/Atherton|example\.com/.test(warjs), false);

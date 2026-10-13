@@ -6,7 +6,7 @@ import { fail } from '@/lib/log';
 import { cronSecret, ingestToken } from '@/lib/secrets';
 import { roomOwner } from '@/lib/session';
 import { refreshCeo } from '@/lib/ceo';
-import { calendarPayload, ingestMail, syncCalendar, syncGhl, writeBrief } from '@/lib/sync';
+import { ingestMail, syncCalendar, syncGhl, writeBrief } from '@/lib/sync';
 import { loadCredsFor } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
@@ -49,13 +49,29 @@ export async function GET(req: Request) {
         body: JSON.stringify({ items: mail.items }),
       });
     }
-    const events = (await calendarPayload(sql, ownerId)) as Array<{ title?: string; start?: number }>;
-    const soon = Date.now() + 36 * 60 * 60 * 1000;
-    const eventTitles = events
-      .filter((event) => Number(event.start) >= Date.now() && Number(event.start) <= soon)
-      .map((event) => String(event.title || ''))
-      .filter(Boolean);
-    await writeBrief(sql, ownerId, [...mail.titles, ...eventTitles], ['gmail', 'calendar', 'ghl']);
+    const open = await sql`
+      SELECT title, due
+      FROM items
+      WHERE owner_id = ${ownerId}
+        AND status NOT IN ('done', 'dropped')
+        AND due IS NOT NULL
+      ORDER BY due
+      LIMIT 40
+    `;
+    const today = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Edmonton',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+    const lines = (open as Array<{ title?: string; due?: string }>).flatMap((row) => {
+      const due = row.due ? new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Edmonton', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(String(row.due))) : '';
+      if (!due || !row.title) return [];
+      if (due < today) return [`Overdue - ${String(row.title)}`];
+      if (due === today) return [`Due today - ${String(row.title)}`];
+      return [];
+    });
+    await writeBrief(sql, ownerId, lines, ['items']);
     try {
       await refreshCeo(sql, ownerId);
     } catch {

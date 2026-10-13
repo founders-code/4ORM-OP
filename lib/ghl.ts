@@ -19,17 +19,24 @@ function locationId() {
   return (currentCreds().ghlLocation || env('GHL_LOCATION_ID') || env('GOHIGHLEVEL_LOCATION_ID')).trim();
 }
 
-async function ghl(path: string) {
+async function ghl(path: string, init?: { method?: string; body?: string }) {
   if (!configured() || !locationId()) return null;
-  const res = await fetch(`${BASE}${path}`, {
-    headers: {
-      authorization: `Bearer ${key()}`,
-      version: '2021-07-28',
-      accept: 'application/json',
-    },
-  });
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    const res = await fetch(`${BASE}${path}`, {
+      method: init?.method || 'GET',
+      headers: {
+        authorization: `Bearer ${key()}`,
+        version: '2021-07-28',
+        accept: 'application/json',
+        ...(init?.body ? { 'content-type': 'application/json' } : {}),
+      },
+      body: init?.body,
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
 }
 
 export type GhlContact = {
@@ -69,7 +76,10 @@ export async function listPipeline() {
       if (stage.id && stage.name) names.set(stage.id, stage.name);
     }
   }
-  const json = (await ghl(`/opportunities/search?location_id=${loc}&limit=100`)) as {
+  const json = (await ghl('/opportunities/search', {
+    method: 'POST',
+    body: JSON.stringify({ locationId: locationId(), limit: 100 }),
+  })) as {
     opportunities?: Array<Record<string, unknown>>;
   } | null;
   if (!json) return { status: 'unavailable' as const, stages: [] as Array<{ stage: string; count: number; detail: string }> };

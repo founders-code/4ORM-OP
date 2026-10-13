@@ -25,6 +25,25 @@ export async function POST(req: Request) {
       `;
       return NextResponse.json({ name });
     }
+    if (kind === 'delete-category') {
+      const name = cleanName(body?.name);
+      if (!name) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+      await session.sql`
+        UPDATE links
+        SET category = 'Uncategorized', sub = ''
+        WHERE owner_id = ${session.userId} AND category = ${name}
+      `;
+      await session.sql`
+        INSERT INTO link_categories (owner_id, name, subs)
+        VALUES (${session.userId}, 'Uncategorized', '{}')
+        ON CONFLICT (owner_id, name) DO NOTHING
+      `;
+      await session.sql`
+        DELETE FROM link_categories
+        WHERE owner_id = ${session.userId} AND name = ${name} AND name <> 'Uncategorized'
+      `;
+      return NextResponse.json({ name, moved: 'Uncategorized' });
+    }
     if (kind === 'subcategory') {
       const name = cleanName(body?.name);
       const sub = cleanName(body?.sub);

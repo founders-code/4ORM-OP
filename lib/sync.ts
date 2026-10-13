@@ -3,6 +3,7 @@ import { allowArea, allowPriority, allowStatus, visibleCalendarWindow } from './
 import { claimBudget } from './db';
 import { listEvents, listDriveTree, recentMail, googleConfigured, DRIVE_CALLS } from './google';
 import { listContacts, listPipeline, listReminders, ghlConfigured } from './ghl';
+import { fail } from './log';
 
 type Sql = NeonQueryFunction<false, false>;
 
@@ -155,44 +156,68 @@ export async function syncDrive(sql: Sql, ownerId: string, force = false) {
 }
 
 export async function syncGhl(sql: Sql, ownerId: string, force = false) {
-  if (!ghlConfigured()) {
-    await mark(sql, ownerId, 'ghl', 'not_connected', 'Not connected.');
-    return;
-  }
-  if (!force && (await isFresh(sql, ownerId, 'ghl'))) return;
-  if (!(await claimBudget(sql, ownerId, 'gohighlevel', 4))) {
-    await mark(sql, ownerId, 'ghl', 'stale', 'GoHighLevel refresh is waiting on the rate ceiling.');
-    return;
-  }
-  const contacts = await listContacts();
-  await mark(sql, ownerId, 'ghl', contacts.status, contacts.contacts.length ? `${contacts.contacts.length} contacts` : 'No contacts returned.');
-  for (const contact of contacts.contacts) {
-    await sql`
-      INSERT INTO contacts (owner_id, name, company, role, email, phone, area, source, source_id)
-      VALUES (${ownerId}, ${contact.name}, ${contact.company}, ${contact.role}, ${contact.email}, ${contact.phone}, 'investors', 'ghl', ${contact.id})
-      ON CONFLICT (owner_id, source, source_id) WHERE source_id IS NOT NULL
-      DO UPDATE SET name = EXCLUDED.name, company = EXCLUDED.company, role = EXCLUDED.role, email = EXCLUDED.email, phone = EXCLUDED.phone
-    `;
-  }
-  const pipe = await listPipeline();
-  if (pipe.status === 'connected' || pipe.status === 'reached_empty') {
-    await sql`DELETE FROM pipeline_stages WHERE owner_id = ${ownerId}`;
-    for (const stage of pipe.stages) {
+  try {
+    if (!ghlConfigured()) {
+      await mark(sql, ownerId, 'ghl', 'not_connected', 'Not connected.');
+      return;
+    }
+    if (!force && (await isFresh(sql, ownerId, 'ghl'))) {
+      const prior = await sql`SELECT status FROM sync_state WHERE owner_id = ${ownerId} AND source = 'ghl'`;
+      const stages = await sql`SELECT stage FROM pipeline_stages WHERE owner_id = ${ownerId} LIMIT 1`;
+      const status = String(prior[0]?.status || '');
+      if (stages.length || status === 'reached_empty' || status === 'not_connected') return;
+    }
+    if (!(await claimBudget(sql, ownerId, 'gohighlevel', 4))) {
+      await mark(sql, ownerId, 'ghl', 'stale', 'GoHighLevel refresh is waiting on the rate ceiling.');
+      return;
+    }
+    const contacts = await listContacts();
+    if (contacts.status !== 'unavailable') {
+      for (const contact of contacts.contacts) {
+        await sql`
+          INSERT INTO contacts (owner_id, name, company, role, email, phone, area, source, source_id)
+          VALUES (${ownerId}, ${contact.name}, ${contact.company}, ${contact.role}, ${contact.email}, ${contact.phone}, 'investors', 'ghl', ${contact.id})
+          ON CONFLICT (owner_id, source, source_id) WHERE source_id IS NOT NULL
+          DO UPDATE SET name = EXCLUDED.name, company = EXCLUDED.company, role = EXCLUDED.role, email = EXCLUDED.email, phone = EXCLUDED.phone
+        `;
+      }
+    }
+    const pipe = await listPipeline();
+    if (pipe.status === 'connected' || pipe.status === 'reached_empty') {
+      await sql`DELETE FROM pipeline_stages WHERE owner_id = ${ownerId}`;
+      for (const stage of pipe.stages) {
+        await sql`
+          INSERT INTO pipeline_stages (owner_id, stage, count, detail)
+          VALUES (${ownerId}, ${stage.stage}, ${stage.count}, ${stage.detail})
+        `;
+      }
+    }
+    const failed = contacts.status === 'unavailable' || pipe.status === 'unavailable';
+    if (failed) {
+      await mark(sql, ownerId, 'ghl', 'stale', 'GHL sync failed');
+    } else {
+      const detail = pipe.stages.length
+        ? pipe.stages.map((stage) => `${stage.stage} ${stage.count}`).join(', ').slice(0, 180)
+        : (contacts.contacts.length ? `${contacts.contacts.length} contacts` : 'No opportunities returned.');
+      await mark(sql, ownerId, 'ghl', pipe.stages.length || contacts.contacts.length ? 'connected' : 'reached_empty', detail);
+    }
+    const reminders = await listReminders();
+    await mark(sql, ownerId, 'ghl_tasks', reminders.status, reminders.status === 'unavailable' ? 'Reminders could not be read.' : `${reminders.tasks.length} reminders`);
+    for (const task of reminders.tasks) {
       await sql`
-        INSERT INTO pipeline_stages (owner_id, stage, count, detail)
-        VALUES (${ownerId}, ${stage.stage}, ${stage.count}, ${stage.detail})
+        INSERT INTO items (owner_id, title, area, status, priority, due, source, source_id)
+        VALUES (${ownerId}, ${task.title}, 'follow_up', 'new', 'normal', ${task.due}, 'ghl', ${task.id})
+        ON CONFLICT (owner_id, source, source_id) WHERE source_id IS NOT NULL
+        DO UPDATE SET title = EXCLUDED.title, due = EXCLUDED.due, updated_at = now()
       `;
     }
-  }
-  const reminders = await listReminders();
-  await mark(sql, ownerId, 'ghl_tasks', reminders.status, reminders.status === 'unavailable' ? 'Reminders could not be read.' : `${reminders.tasks.length} reminders`);
-  for (const task of reminders.tasks) {
-    await sql`
-      INSERT INTO items (owner_id, title, area, status, priority, due, source, source_id)
-      VALUES (${ownerId}, ${task.title}, 'follow_up', 'new', 'normal', ${task.due}, 'ghl', ${task.id})
-      ON CONFLICT (owner_id, source, source_id) WHERE source_id IS NOT NULL
-      DO UPDATE SET title = EXCLUDED.title, due = EXCLUDED.due, updated_at = now()
-    `;
+  } catch (err) {
+    fail('ghl_sync', err);
+    try {
+      await mark(sql, ownerId, 'ghl', 'stale', 'GHL sync failed');
+    } catch (markErr) {
+      fail('ghl_sync', markErr);
+    }
   }
 }
 
@@ -237,10 +262,10 @@ export async function ingestMail(sql: Sql, ownerId: string, force = false) {
 
 export async function writeBrief(sql: Sql, ownerId: string, titles: string[], sources: string[]) {
   const top = titles.slice(0, 3).map((t) => ({ t }));
-  const headline = titles[0] ? titles[0].slice(0, 140) : 'Nothing new reached the desk.';
+  const headline = titles[0] ? titles[0].slice(0, 140) : 'Nothing urgent on the desk';
   const summary = titles.length
-    ? `${titles.length} items reached the desk this morning.`
-    : 'The morning pull ran and found nothing new.';
+    ? `${titles.length} open items need a look today.`
+    : '';
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Edmonton', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
   await sql`
     INSERT INTO daily_brief (owner_id, brief_date, headline, summary, top_three, sources)

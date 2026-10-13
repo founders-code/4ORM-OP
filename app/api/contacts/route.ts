@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { allowArea, allowContactType, allowStage, allowTier, parseDue } from '@/lib/guard.mjs';
+import { allowArea, allowContactCategory, allowContactType, allowStage, allowTier, inferContactCategory, parseDue } from '@/lib/guard.mjs';
 import { fail } from '@/lib/log';
 import { openBoard } from '@/lib/session';
 
@@ -32,6 +32,7 @@ function shape(row: Record<string, unknown>) {
     area: String(row.area || 'other'),
     notes: String(row.notes || ''),
     type: String(row.type || 'other'),
+    category: String(row.category || ''),
     tier: String(row.tier || 'B'),
     stage: String(row.stage || 'new'),
     nextAction: String(row.next_action || ''),
@@ -57,6 +58,7 @@ export async function POST(req: Request) {
     }
     const company = text(body?.company, 120);
     const role = text(body?.role, 120);
+    const category = allowContactCategory(String(body?.category || '')) || inferContactCategory(`${company} ${role} ${name}`);
     const email = text(body?.email, 180);
     const phone = text(body?.phone, 40);
     const notes = text(body?.notes, 500);
@@ -64,9 +66,9 @@ export async function POST(req: Request) {
     const nextDate = when(body?.nextDate);
     if (nextDate === undefined) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const rows = await session.sql`
-      INSERT INTO contacts (owner_id, name, company, role, email, phone, area, notes, source, type, tier, stage, next_action, next_date)
-      VALUES (${session.userId}, ${name}, ${company}, ${role}, ${email}, ${phone}, ${area}, ${notes}, 'manual', ${type}, ${tier}, ${stage}, ${nextAction}, ${nextDate})
-      RETURNING id, name, company, role, email, phone, area, notes, type, tier, stage, next_action, next_date, last_touch
+      INSERT INTO contacts (owner_id, name, company, role, email, phone, area, notes, source, type, tier, stage, next_action, next_date, category)
+      VALUES (${session.userId}, ${name}, ${company}, ${role}, ${email}, ${phone}, ${area}, ${notes}, 'manual', ${type}, ${tier}, ${stage}, ${nextAction}, ${nextDate}, ${category})
+      RETURNING id, name, company, role, email, phone, area, notes, type, tier, stage, next_action, next_date, last_touch, category
     `;
     return NextResponse.json(shape(rows[0] as Record<string, unknown>));
   } catch {
@@ -92,9 +94,10 @@ export async function PATCH(req: Request) {
     const nextAction = text(present(body, 'next_action') && !present(body, 'nextAction') ? body?.next_action : body?.nextAction, 180);
     const area = present(body, 'area') ? allowArea(String(body?.area || '')) : null;
     const type = present(body, 'type') ? allowContactType(String(body?.type || '')) : null;
+    const category = present(body, 'category') ? allowContactCategory(String(body?.category || '')) : null;
     const tier = present(body, 'tier') ? allowTier(String(body?.tier || '')) : null;
     const stage = present(body, 'stage') ? allowStage(String(body?.stage || '')) : null;
-    if ((present(body, 'name') && !name) || (present(body, 'area') && !area) || (present(body, 'type') && !type) || (present(body, 'tier') && !tier) || (present(body, 'stage') && !stage)) {
+    if ((present(body, 'name') && !name) || (present(body, 'area') && !area) || (present(body, 'type') && !type) || (present(body, 'category') && !category) || (present(body, 'tier') && !tier) || (present(body, 'stage') && !stage)) {
       return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     }
     const setNext = present(body, 'nextDate') || present(body, 'next_date');
@@ -103,7 +106,7 @@ export async function PATCH(req: Request) {
     const setTouch = present(body, 'lastTouch');
     const lastTouch = setTouch ? when(body?.lastTouch) : null;
     if (setTouch && lastTouch === undefined) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
-    const flags = ['name', 'company', 'role', 'email', 'phone', 'area', 'notes', 'type', 'tier', 'stage', 'nextAction', 'next_action', 'nextDate', 'next_date', 'lastTouch'];
+    const flags = ['name', 'company', 'role', 'email', 'phone', 'area', 'notes', 'type', 'category', 'tier', 'stage', 'nextAction', 'next_action', 'nextDate', 'next_date', 'lastTouch'];
     if (!flags.some((key) => present(body, key))) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const rows = await session.sql`
       UPDATE contacts SET
@@ -115,13 +118,14 @@ export async function PATCH(req: Request) {
         area = CASE WHEN ${present(body, 'area')} THEN ${area} ELSE area END,
         notes = CASE WHEN ${present(body, 'notes')} THEN ${notes} ELSE notes END,
         type = CASE WHEN ${present(body, 'type')} THEN ${type} ELSE type END,
+        category = CASE WHEN ${present(body, 'category')} THEN ${category} ELSE category END,
         tier = CASE WHEN ${present(body, 'tier')} THEN ${tier} ELSE tier END,
         stage = CASE WHEN ${present(body, 'stage')} THEN ${stage} ELSE stage END,
         next_action = CASE WHEN ${present(body, 'nextAction') || present(body, 'next_action')} THEN ${nextAction} ELSE next_action END,
         next_date = CASE WHEN ${setNext} THEN ${nextDate}::timestamptz ELSE next_date END,
         last_touch = CASE WHEN ${setTouch} THEN ${lastTouch}::timestamptz ELSE last_touch END
       WHERE id = ${id} AND owner_id = ${session.userId}
-      RETURNING id, name, company, role, email, phone, area, notes, type, tier, stage, next_action, next_date, last_touch
+      RETURNING id, name, company, role, email, phone, area, notes, type, tier, stage, next_action, next_date, last_touch, category
     `;
     if (!rows.length) return NextResponse.json({ error: 'Unavailable' }, { status: 404 });
     return NextResponse.json(shape(rows[0] as Record<string, unknown>));
