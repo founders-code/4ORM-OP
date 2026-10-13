@@ -9,6 +9,7 @@ import {
   deleteSpace,
   deleteSpaceItem,
   deleteSpaceRecipient,
+  listSpaceRecipient,
   moveSpaceToDrive,
   patchSpace,
   readSpace,
@@ -113,6 +114,10 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
     if (action === 'remove-recipient') {
       const removed = await deleteSpaceRecipient(sql, session.userId, id, String(body.recipientId || ''));
       return NextResponse.json(removed || existing);
+    }
+    if (action === 'list-recipient') {
+      const listed = await listSpaceRecipient(sql, session.userId, id, String(body.recipientId || ''));
+      return NextResponse.json(listed || existing);
     }
     if (action === 'push-drive') {
       const pushed = await moveSpaceToDrive(sql, session.userId, id);
