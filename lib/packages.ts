@@ -187,8 +187,14 @@ export async function listPackages(sql: Sql, ownerId: string) {
   }
 }
 
+const BLANK_SPACES = ['Untitled space 1', 'Untitled space 2', 'Untitled space 3', 'Untitled space 4'];
+
 async function seedPackages(sql: Sql, ownerId: string) {
-  for (const item of STARTERS) {
+  const seeds = [
+    ...STARTERS.map((item) => ({ name: item.name, kind: item.kind, emailSubject: item.emailSubject, emailBody: item.emailBody, research: item.research })),
+    ...BLANK_SPACES.map((name) => ({ name, kind: 'data_room', emailSubject: '', emailBody: '', research: '' })),
+  ];
+  for (const item of seeds) {
     try {
       const found = await sql`SELECT id FROM packages WHERE owner_id = ${ownerId} AND name = ${item.name} LIMIT 1`;
       if (found.length) continue;

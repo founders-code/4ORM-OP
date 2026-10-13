@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { withCreds } from '@/lib/creds';
-import { copyDriveFile, driveWrite } from '@/lib/google';
+import { copyDriveFile, driveWrite, uploadDriveBytes } from '@/lib/google';
 import { fail } from '@/lib/log';
 import { openBoard } from '@/lib/session';
 import { loadCredsFor } from '@/lib/vault';
@@ -59,13 +59,35 @@ export async function POST(req: Request) {
       const category = CATS.includes(String(body?.category || '')) ? String(body.category) : '';
       const name = String(body?.name || '').trim().slice(0, 180);
       const raw = String(body?.body || '');
+      const mime = String(body?.mime || '').slice(0, 120);
       if (!category || !name || !raw || raw.length > 1600000) {
         return NextResponse.json({ error: 'Could not store that file.' }, { status: 400 });
       }
+      let driveFileId = '';
+      let url = '';
+      const office = /officedocument|msword|ms-excel|ms-powerpoint/.test(mime);
+      if (office) {
+        try {
+          const cached = await session.sql`SELECT tree FROM drive_cache WHERE owner_id = ${session.userId}`;
+          let tree: unknown = cached[0]?.tree;
+          if (typeof tree === 'string') {
+            try { tree = JSON.parse(tree); } catch { tree = []; }
+          }
+          const parent = String((Array.isArray(tree) ? tree[0] : null)?.id || '');
+          if (/^[\w-]{8,}$/.test(parent)) {
+            const creds = await loadCredsFor(session.userId);
+            const uploaded = (await withCreds(creds, () => uploadDriveBytes(name, mime, parent, Buffer.from(raw, 'base64')))) as { id?: string; webViewLink?: string } | null;
+            driveFileId = String(uploaded?.id || '');
+            url = driveFileId ? String(uploaded?.webViewLink || `https://drive.google.com/file/d/${driveFileId}/view`) : '';
+          }
+        } catch (err) {
+          fail('staged_drive', err);
+        }
+      }
       try {
         await session.sql`
-          INSERT INTO staged_docs (owner_id, category, name, mime, body_b64)
-          VALUES (${session.userId}, ${category}, ${name}, ${String(body?.mime || '').slice(0, 120)}, ${raw})
+          INSERT INTO staged_docs (owner_id, category, name, url, drive_file_id, mime, body_b64)
+          VALUES (${session.userId}, ${category}, ${name}, ${url}, ${driveFileId}, ${mime}, ${raw})
         `;
       } catch (err) {
         fail('staged_upload', err);

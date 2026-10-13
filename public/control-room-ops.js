@@ -107,7 +107,7 @@
       off += len;
       return node;
     }).join('');
-    return '<svg viewBox="0 0 120 120" width="220" height="220">' + arcs + '<text x="60" y="66" text-anchor="middle" font-size="22" font-weight="650" fill="#102033">' + (centre || 0) + '</text></svg>';
+    return '<svg viewBox="0 0 120 120" width="180" height="180">' + arcs + '<text x="60" y="66" text-anchor="middle" font-size="18" font-weight="650" fill="#102033">' + (centre || 0) + '</text></svg>';
   }
 
   function dueFor(col) {
@@ -132,7 +132,7 @@
     var next = (STATE.events || []).filter(function (ev) { return laDay(ev.start) === today && ev.start >= Date.now() - 60000; }).sort(function (a, b) { return a.start - b.start; }).slice(0, 2);
     var line = counts.Overdue ? counts.Overdue + ' overdue. ' + (move ? move.text : 'Clear the overdue list first.') : (move ? move.text : 'Nothing urgent on the desk.');
     cmd.innerHTML = '<div class="lb-add"><input id="opsAdd" type="text" placeholder="Capture a task" style="flex:1"/><button class="btn pri sm" id="opsAddBtn" type="button">Add</button></div>'
-      + '<div class="focus" style="margin-top:10px"><div class="k">Today\'s focus</div><div style="font-size:16px;font-weight:700;margin-top:4px">' + esc(line) + '</div></div>'
+      + '<div class="focus" style="margin-top:10px"><div class="k">Today\'s focus</div><div style="font-size:13px;font-weight:700;margin-top:4px">' + esc(line) + '</div></div>'
       + '<div class="pulse" style="margin-top:10px">' + Object.keys(counts).map(function (k) { return '<div><div class="k">' + esc(k) + '</div><b>' + counts[k] + '</b></div>'; }).join('') + '</div>'
       + '<div class="card" id="nextUp" style="padding:14px;margin-top:10px"><div class="sec-h"><h3>Next up</h3><button class="btn sm" id="findSlot" type="button">Find a 30-min slot</button></div>' + (next.length ? next.map(function (ev) { return '<div data-count="' + ev.start + '">' + esc(ev.title || 'Event') + ' <span>' + soon(ev.start) + '</span></div>'; }).join('') : '<div>No more events today.</div>') + '</div>';
     var cols = [
@@ -149,7 +149,7 @@
         return b === 'later';
       });
       return '<div class="exec-col ' + col[0] + '" data-col="' + col[0] + '"><div class="sec-h"><h3>' + col[1] + '</h3><button class="addmini" type="button" data-add-col="' + col[0] + '">+</button></div>' + items.map(function (it) {
-        return '<div class="exec-card" draggable="true" data-item="' + esc(it.id) + '"><input type="checkbox" data-done="' + esc(it.id) + '" aria-label="Done"/><button type="button" data-edit="' + esc(it.id) + '" style="flex:1;text-align:left;border:0;background:transparent;font:inherit;cursor:pointer"><b>' + esc(it.title) + '</b><div class="kick">' + esc(areaLabel(it.area)) + '</div></button><button type="button" data-del="' + esc(it.id) + '" aria-label="Delete">x</button></div>';
+        return '<div class="exec-card" draggable="true" data-item="' + esc(it.id) + '"><input type="checkbox" data-done="' + esc(it.id) + '" aria-label="Done"/><button type="button" data-edit="' + esc(it.id) + '" style="flex:1;text-align:left;border:0;background:transparent;font:inherit;cursor:pointer"><b>' + esc(it.title) + '</b><div class="kick">' + esc(areaLabel(it.area)) + '</div>' + (it._err ? '<div class="soft-err">' + esc(it._err) + '</div>' : '') + '</button><button type="button" data-del="' + esc(it.id) + '" aria-label="Delete">x</button></div>';
       }).join('') + '</div>';
     }).join('') + '</div>';
     bindWar();
@@ -159,12 +159,7 @@
     var add = document.getElementById('opsAddBtn');
     if (add) add.onclick = function () { var input = document.getElementById('opsAdd'); saveItem(input.value, input.getAttribute('data-col') || 'today'); input.value = ''; };
     document.querySelectorAll('[data-add-col]').forEach(function (btn) {
-      btn.onclick = function () {
-        var input = document.getElementById('opsAdd');
-        if (!input) return;
-        input.setAttribute('data-col', btn.getAttribute('data-add-col'));
-        input.focus();
-      };
+      btn.onclick = function () { saveItem('', btn.getAttribute('data-add-col')); };
     });
     var find = document.getElementById('findSlot');
     if (find) find.onclick = openSlots;
@@ -199,9 +194,11 @@
   }
 
   function saveItem(title, col) {
-    title = String(title || '').trim();
-    if (!title) return;
-    authFetch('/api/items', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: title, area: 'other', due: dueFor(col) }) }).then(function (r) { if (!r.ok) throw 0; return authFetch('/api/board', { credentials: 'same-origin' }); }).then(function (r) { return r.json(); }).then(applyBoard).catch(function () {});
+    title = String(title || '').trim() || 'Untitled task';
+    var temp = { id: 'tmp-' + Date.now(), title: title, area: 'other', status: 'new', priority: 'normal', due: dueFor(col), notes: '' };
+    STATE.items = (STATE.items || []).concat([temp]);
+    renderWar();
+    authFetch('/api/items', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: title, area: 'other', due: dueFor(col) }) }).then(function (r) { if (!r.ok) throw 0; return authFetch('/api/board', { credentials: 'same-origin' }); }).then(function (r) { return r.json(); }).then(applyBoard).catch(function () { temp._err = 'Not saved yet'; renderWar(); });
   }
 
   function editItem(id) {
@@ -210,11 +207,16 @@
     var card = document.getElementById('modalCard');
     var modal = document.getElementById('modal');
     if (!card || !modal) return;
-    card.innerHTML = '<div class="mhd"><div style="font-weight:700">Edit task</div><button class="x" id="mClose" type="button">x</button></div><form class="mbd" id="opsEdit"><label>Title<input id="opsTitle" type="text" value="' + esc(it.title) + '" style="width:100%;margin-top:4px"/></label><label style="display:block;margin-top:8px">Notes<textarea id="opsNotes" rows="4" style="width:100%;margin-top:4px">' + esc(it.notes || '') + '</textarea></label><button class="btn pri sm" type="submit" style="margin-top:10px">Save</button></form>';
+    card.innerHTML = '<div class="mhd"><div style="font-weight:700">Edit task</div><button class="x" id="mClose" type="button">x</button></div><form class="mbd" id="opsEdit"><label>Title<input id="opsTitle" type="text" value="' + esc(it.title) + '" style="width:100%;margin-top:4px"/></label><label style="display:block;margin-top:8px">Notes<textarea id="opsNotes" rows="4" style="width:100%;margin-top:4px">' + esc(it.notes || '') + '</textarea></label><div class="soft-err" id="opsEditErr"></div><button class="btn pri sm" type="submit" style="margin-top:10px">Save</button></form>';
+    modal.classList.add('open');
     modal.hidden = false;
+    document.getElementById('mClose').onclick = function () { if (typeof closeModal === 'function') closeModal(); };
     document.getElementById('opsEdit').onsubmit = function (e) {
       e.preventDefault();
-      authFetch('/api/items', { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: id, title: document.getElementById('opsTitle').value, notes: document.getElementById('opsNotes').value }) }).then(function () { modal.hidden = true; return authFetch('/api/board', { credentials: 'same-origin' }); }).then(function (r) { return r.json(); }).then(applyBoard).catch(function () {});
+      var next = document.getElementById('opsTitle').value.trim() || 'Untitled task';
+      it.title = next;
+      it.notes = document.getElementById('opsNotes').value;
+      authFetch('/api/items', { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: id, title: next, notes: it.notes }) }).then(function (r) { if (!r.ok) throw 0; if (typeof closeModal === 'function') closeModal(); return authFetch('/api/board', { credentials: 'same-origin' }); }).then(function (r) { return r.json(); }).then(applyBoard).catch(function () { var err = document.getElementById('opsEditErr'); if (err) err.textContent = 'Not saved yet'; renderWar(); });
     };
   }
 
@@ -351,8 +353,8 @@
         btn.onclick = function () {
           var doc = files.filter(function (d) { return d.id === btn.getAttribute('data-lib-open'); })[0];
           if (!doc) return;
-          var url = doc.url || ('/api/documents/file?id=' + encodeURIComponent(doc.id));
-          openDocView(doc.name, url, 'This file cannot be previewed here. Use Open in Drive.');
+          var url = doc.driveFileId ? ('https://drive.google.com/file/d/' + encodeURIComponent(doc.driveFileId) + '/view') : (doc.url || ('/api/documents/file?id=' + encodeURIComponent(doc.id)));
+          openDocView(doc.name, url, '');
         };
       });
       box.querySelectorAll('[data-lib-del]').forEach(function (btn) {
@@ -618,41 +620,80 @@
   function renderSticky() {
     var host = document.getElementById('stickyDesk');
     if (!host) return;
-    authFetch('/api/notes/sticky', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
-      var notes = data.notes || [];
-      host.innerHTML = '<div class="lb-add"><textarea id="stickBody" rows="2" placeholder="Note" style="flex:1"></textarea><select id="stickColor" aria-label="Colour"><option>yellow</option><option>blue</option><option>green</option><option>pink</option></select><button class="btn pri sm" id="stickAdd" type="button">Add</button></div><div class="sticky-board" id="stickBoard"></div>';
+    var colours = ['yellow', 'blue', 'green', 'pink'];
+    function paint(notes) {
+      host.innerHTML = '<div class="sec-h"><h3>Notes</h3><button class="btn pri sm" id="stickAdd" type="button">+ New note</button></div><div class="sticky-board" id="stickBoard"></div>';
       var board = document.getElementById('stickBoard');
       board.innerHTML = notes.map(function (note) {
-        return '<div class="sticky ' + esc(note.color) + '" data-stick="' + esc(note.id) + '" style="left:' + (Number(note.x) || 24) + 'px;top:' + (Number(note.y) || 24) + 'px"><textarea rows="4">' + esc(note.body) + '</textarea><button type="button" data-stick-del="' + esc(note.id) + '">Delete</button></div>';
+        return '<div class="sticky ' + esc(note.color || 'yellow') + '" data-stick="' + esc(note.id) + '" style="left:' + (Number(note.x) || 24) + 'px;top:' + (Number(note.y) || 24) + 'px"><select aria-label="Colour">' + colours.map(function (c) { return '<option' + ((note.color || 'yellow') === c ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select><textarea rows="4">' + esc(note.body || '') + '</textarea>' + (note._err ? '<div class="soft-err">' + esc(note._err) + '</div>' : '') + '<button type="button" data-stick-del="' + esc(note.id) + '">x</button></div>';
       }).join('');
       document.getElementById('stickAdd').onclick = function () {
-        authFetch('/api/notes/sticky', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ body: document.getElementById('stickBody').value, color: document.getElementById('stickColor').value }) }).then(renderSticky).catch(function () {});
+        var temp = { id: 'tmp-' + Date.now(), body: '', color: 'yellow', x: 24 + (notes.length % 4) * 28, y: 24 + (notes.length % 3) * 20 };
+        notes.push(temp);
+        paint(notes);
+        var area = host.querySelector('[data-stick="' + temp.id + '"] textarea');
+        if (area) area.focus();
+        authFetch('/api/notes/sticky', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ body: '', color: 'yellow', x: temp.x, y: temp.y }) }).then(function (r) { if (!r.ok) throw 0; return r.json();         }).then(function (saved) {
+          var card = host.querySelector('[data-stick="' + temp.id + '"]');
+          temp.id = saved.id || temp.id;
+          if (card && saved.id) card.setAttribute('data-stick', saved.id);
+          var area = card && card.querySelector('textarea');
+          if (saved.id && area && (area.value || temp.color !== 'yellow')) {
+            authFetch('/api/notes/' + saved.id, { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ body: area.value, color: temp.color, x: card.offsetLeft, y: card.offsetTop }) }).catch(function () {});
+          }
+        }).catch(function () { temp._err = 'Not saved yet'; var card = host.querySelector('[data-stick="' + temp.id + '"]'); if (card && !card.querySelector('.soft-err')) card.insertAdjacentHTML('beforeend', '<div class="soft-err">Not saved yet</div>'); });
       };
       board.querySelectorAll('[data-stick-del]').forEach(function (btn) {
         btn.onclick = function () {
-          authFetch('/api/notes/' + btn.getAttribute('data-stick-del'), { method: 'DELETE', credentials: 'same-origin' }).then(renderSticky).catch(function () {});
+          var id = btn.getAttribute('data-stick-del');
+          var left = notes.filter(function (note) { return note.id !== id; });
+          notes.splice(0, notes.length);
+          left.forEach(function (note) { notes.push(note); });
+          paint(notes);
+          if (String(id).indexOf('tmp-') === 0) return;
+          authFetch('/api/notes/' + id, { method: 'DELETE', credentials: 'same-origin' }).catch(function () {});
         };
       });
       board.querySelectorAll('.sticky').forEach(function (card) {
         var area = card.querySelector('textarea');
+        var pick = card.querySelector('select');
+        area.oninput = function () {
+          var note = notes.filter(function (row) { return row.id === card.getAttribute('data-stick'); })[0];
+          if (note) note.body = area.value;
+        };
         area.onchange = function () {
-          authFetch('/api/notes/' + card.getAttribute('data-stick'), { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ body: area.value }) }).catch(function () {});
+          var id = card.getAttribute('data-stick');
+          if (String(id).indexOf('tmp-') === 0) return;
+          authFetch('/api/notes/' + id, { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ body: area.value }) }).catch(function () {});
+        };
+        pick.onchange = function () {
+          card.className = 'sticky ' + pick.value;
+          var note = notes.filter(function (row) { return row.id === card.getAttribute('data-stick'); })[0];
+          if (note) note.color = pick.value;
+          var id = card.getAttribute('data-stick');
+          if (String(id).indexOf('tmp-') === 0) return;
+          authFetch('/api/notes/' + id, { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ color: pick.value }) }).catch(function () {});
         };
         card.onpointerdown = function (e) {
-          if (e.target.closest('textarea,button')) return;
+          if (e.target.closest('textarea,button,select')) return;
           var sx = e.clientX - card.offsetLeft;
           var sy = e.clientY - card.offsetTop;
           function move(ev) { card.style.left = (ev.clientX - sx) + 'px'; card.style.top = (ev.clientY - sy) + 'px'; }
           function up() {
             document.removeEventListener('pointermove', move);
             document.removeEventListener('pointerup', up);
-            authFetch('/api/notes/' + card.getAttribute('data-stick'), { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ x: card.offsetLeft, y: card.offsetTop }) }).catch(function () {});
+            var id = card.getAttribute('data-stick');
+            var note = notes.filter(function (row) { return row.id === id; })[0];
+            if (note) { note.x = card.offsetLeft; note.y = card.offsetTop; }
+            if (String(id).indexOf('tmp-') === 0) return;
+            authFetch('/api/notes/' + id, { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ x: card.offsetLeft, y: card.offsetTop }) }).catch(function () {});
           }
           document.addEventListener('pointermove', move);
           document.addEventListener('pointerup', up);
         };
       });
-    }).catch(function () { host.innerHTML = '<div class="kick">Notes could not load.</div>'; });
+    }
+    authFetch('/api/notes/sticky', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) { paint(data.notes || []); }).catch(function () { paint([]); var board = document.getElementById('stickBoard'); if (board) board.insertAdjacentHTML('afterbegin', '<div class="soft-err">Notes could not load. A new note still stays on this board.</div>'); });
   }
   document.addEventListener('click', function (e) {
     var link = e.target.closest('a[target="_blank"]');

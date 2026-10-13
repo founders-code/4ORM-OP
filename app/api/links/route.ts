@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = await req.json().catch(() => null);
     const kind = String(body?.kind || '');
     if (kind === 'category') {
@@ -77,6 +77,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ title, url: parsed.toString(), cat: category, sub });
   } catch {
     fail('links_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
   }
 }

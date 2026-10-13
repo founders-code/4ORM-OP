@@ -110,6 +110,23 @@ export async function createEvent(startMs: number, durMin: number, title: string
   return json?.id ? String(json.id) : null;
 }
 
+const OFFICE_AS_GOOGLE: Record<string, string> = {
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'application/vnd.google-apps.document',
+  'application/msword': 'application/vnd.google-apps.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'application/vnd.google-apps.spreadsheet',
+  'application/vnd.ms-excel': 'application/vnd.google-apps.spreadsheet',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'application/vnd.google-apps.presentation',
+  'application/vnd.ms-powerpoint': 'application/vnd.google-apps.presentation',
+};
+
+async function pdfBytes(access: string, fileId: string) {
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application%2Fpdf`, {
+    headers: { authorization: `Bearer ${access}` },
+  });
+  if (!res.ok) return null;
+  return Buffer.from(await res.arrayBuffer());
+}
+
 export async function exportDriveFile(fileId: string) {
   if (!configured() || !/^[\w-]{8,}$/.test(fileId)) return null;
   const access = await accessToken();
@@ -118,19 +135,38 @@ export async function exportDriveFile(fileId: string) {
     `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,mimeType&supportsAllDrives=true`,
   )) as { name?: string; mimeType?: string } | null;
   if (!meta) return null;
+  const name = String(meta.name || 'Document');
   const googleType = String(meta.mimeType || '');
-  const exportable = googleType.startsWith('application/vnd.google-apps.') && googleType !== 'application/vnd.google-apps.folder';
-  const url = exportable
-    ? `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application%2Fpdf`
-    : `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`;
-  const res = await fetch(url, { headers: { authorization: `Bearer ${access}` } });
+  const native = googleType.startsWith('application/vnd.google-apps.') && googleType !== 'application/vnd.google-apps.folder';
+  if (native) {
+    const bytes = await pdfBytes(access, fileId);
+    return bytes ? { name, type: 'application/pdf', bytes } : null;
+  }
+  const office = OFFICE_AS_GOOGLE[googleType];
+  if (office) {
+    const copied = (await gfetch(
+      `https://www.googleapis.com/drive/v3/files/${fileId}/copy?supportsAllDrives=true&fields=id`,
+      { method: 'POST', body: JSON.stringify({ name: '4orm preview', mimeType: office }) },
+    )) as { id?: string } | null;
+    const copyId = String(copied?.id || '');
+    if (!/^[\w-]{8,}$/.test(copyId)) return null;
+    try {
+      const bytes = await pdfBytes(access, copyId);
+      return bytes ? { name, type: 'application/pdf', bytes } : null;
+    } finally {
+      await fetch(`https://www.googleapis.com/drive/v3/files/${copyId}?supportsAllDrives=true`, {
+        method: 'DELETE',
+        headers: { authorization: `Bearer ${access}` },
+      }).catch(() => null);
+    }
+  }
+  const direct = googleType.startsWith('image/') || googleType === 'application/pdf' || googleType.startsWith('text/');
+  if (!direct) return null;
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`, {
+    headers: { authorization: `Bearer ${access}` },
+  });
   if (!res.ok) return null;
-  const bytes = Buffer.from(await res.arrayBuffer());
-  return {
-    name: String(meta.name || 'Document'),
-    type: exportable ? 'application/pdf' : googleType || 'application/octet-stream',
-    bytes,
-  };
+  return { name, type: googleType, bytes: Buffer.from(await res.arrayBuffer()) };
 }
 
 export async function moveEvent(id: string, startMs: number, durMin: number) {

@@ -45,7 +45,7 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = await req.json().catch(() => null);
     const name = text(body?.name, 120);
     const area = allowArea(String(body?.area || 'other')) || 'other';
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
     return NextResponse.json(shape(rows[0] as Record<string, unknown>));
   } catch {
     fail('contacts_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
   }
 }
 
@@ -81,7 +81,7 @@ export async function PATCH(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     const id = String(body?.id || '');
     if (!ID.test(id)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
@@ -131,6 +131,6 @@ export async function PATCH(req: Request) {
     return NextResponse.json(shape(rows[0] as Record<string, unknown>));
   } catch {
     fail('contacts_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
   }
 }
