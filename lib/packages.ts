@@ -279,7 +279,8 @@ export async function createPackage(
   }
   if (!spaceType && clean) spaceType = 'project';
   if (spaceType === 'project' && !subjectLabel) subjectLabel = clean;
-  if (!allowed || !clean) return null;
+  if (!clean) clean = 'Untitled space';
+  if (!allowed) return null;
   const description = clip(meta.description, 240);
   const spaceCategory = clip(meta.spaceCategory, 80);
   let rows;
@@ -291,13 +292,19 @@ export async function createPackage(
     `;
   } catch (err) {
     fail('packages_create_space', err);
-    rows = await sql`
-      INSERT INTO packages (owner_id, name, kind, status)
-      VALUES (${ownerId}, ${clean}, ${allowed}, 'draft')
-      RETURNING id
-    `;
+    try {
+      rows = await sql`
+        INSERT INTO packages (owner_id, name, kind, status)
+        VALUES (${ownerId}, ${clean}, ${allowed}, 'draft')
+        RETURNING id
+      `;
+    } catch (next) {
+      fail('packages_create', next);
+      return null;
+    }
   }
   const createdId = String(rows[0]?.id || '');
+  if (!createdId) return null;
   if ((description || spaceCategory) && createdId) {
     try {
       await sql`UPDATE packages SET description = ${description}, space_category = ${spaceCategory} WHERE id = ${createdId} AND owner_id = ${ownerId}`;
@@ -305,7 +312,31 @@ export async function createPackage(
       fail('packages_description', err);
     }
   }
-  return readPackage(sql, ownerId, createdId);
+  const read = await readPackage(sql, ownerId, createdId);
+  if (read) return read;
+  return {
+    id: createdId,
+    name: clean,
+    kind: allowed,
+    status: 'draft',
+    driveFolderId: '',
+    driveFolderUrl: '',
+    emailSubject: '',
+    emailBody: '',
+    research: '',
+    spaceType: spaceType || '',
+    subjectContactId: '',
+    subjectLabel: subjectLabel || clean,
+    description: description || '',
+    spaceCategory: spaceCategory || '',
+    pushedToDriveAt: '',
+    docCount: 0,
+    recipientCount: 0,
+    docs: [],
+    folders: [],
+    recipients: [],
+    suggestions: [],
+  };
 }
 
 export async function patchPackage(sql: Sql, ownerId: string, id: string, body: Record<string, unknown>) {
