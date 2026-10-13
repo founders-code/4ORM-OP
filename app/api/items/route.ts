@@ -57,14 +57,15 @@ export async function POST(req: Request) {
     if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     const write = readWrite(body);
+    const category = String(body?.category || '').trim().slice(0, 80);
     const rows = await session.sql`
-      INSERT INTO items (owner_id, title, area, status, priority, due, source)
-      VALUES (${session.userId}, ${write.title}, ${write.area}, ${write.status}, ${write.priority}, ${write.dueIso}, 'manual')
+      INSERT INTO items (owner_id, title, area, status, priority, due, source, category)
+      VALUES (${session.userId}, ${write.title}, ${write.area}, ${write.status}, ${write.priority}, ${write.dueIso}, 'manual', ${category})
       RETURNING id, title, area, status, priority, due, owner, source, category
     `;
     return NextResponse.json(shapeItem(rows[0] as Record<string, unknown>));
-  } catch {
-    fail('items_failed');
+  } catch (err) {
+    fail('items_failed', err);
     return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
   }
 }
@@ -123,8 +124,8 @@ export async function PATCH(req: Request) {
     `;
     if (!rows.length) return NextResponse.json({ error: 'Unavailable' }, { status: 404 });
     return NextResponse.json(shapeItem(rows[0] as Record<string, unknown>));
-  } catch {
-    fail('items_failed');
+  } catch (err) {
+    fail('items_failed', err);
     return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
   }
 }

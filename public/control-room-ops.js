@@ -19,6 +19,7 @@
   }
 
   function areaLabel(k, it) {
+    if (it && /^Reach out -/.test(String(it.category || ''))) return String(it.category);
     if (it && /regulat/i.test(String(it.category || ''))) return 'Regulator';
     var hit = (CONFIG.areas || []).filter(function (a) { return a.k === k; })[0];
     return hit ? hit.label : (k || 'Other');
@@ -79,6 +80,18 @@
       { n: waiting.length, color: '#E0A100', label: 'Waiting' },
       { n: blocked.length, color: '#C5363A', label: 'Blocked' }
     ];
+    var upcoming = (STATE.events || []).filter(function (ev) { return ev.start >= Date.now() - 60000; }).sort(function (a, b) { return a.start - b.start; }).slice(0, 3);
+    var todayKey = laDay(Date.now());
+    var talks = (STATE.events || []).filter(function (ev) { return laDay(ev.start) === todayKey; }).slice(0, 4);
+    var reachToday = (STATE.reachOut || []).filter(function (person) { return !person.done; }).slice(0, 4);
+    var rank = { urgent: 0, high: 1, normal: 2, low: 3 };
+    var top = rows.filter(function (it) { return it.status !== 'done'; }).sort(function (a, b) {
+      return (rank[a.priority] == null ? 9 : rank[a.priority]) - (rank[b.priority] == null ? 9 : rank[b.priority]);
+    }).slice(0, 3);
+    var meetHtml = upcoming.length ? upcoming.map(function (ev) { return '<div>' + esc(ev.title || 'Event') + ' <span class="kick">' + soon(ev.start) + '</span></div>'; }).join('') : '<div class="kick">No meetings on the calendar.</div>';
+    var talkHtml = talks.map(function (ev) { return '<div>' + esc(ev.title || 'Call') + '</div>'; }).join('') + reachToday.map(function (person) { return '<div>' + esc(person.name) + ' <span class="kick">' + esc(person.nextAction || 'Reach out') + '</span></div>'; }).join('');
+    if (!talkHtml) talkHtml = '<div class="kick">Nothing to call today.</div>';
+    var topHtml = top.length ? top.map(function (it) { return '<div>' + esc(it.title) + '</div>'; }).join('') : '<div class="kick">No open tasks.</div>';
     var trend = [];
     for (var day = 6; day >= 0; day -= 1) {
       var start = new Date(); start.setHours(0, 0, 0, 0); start = start.getTime() - day * 86400000;
@@ -95,7 +108,7 @@
       + '<button type="button" data-ops="ins:today"><b>' + dueToday + '</b><span>Due today</span></button>'
       + '<button type="button" data-ops="ins:old"><b>' + oldest + 'd</b><span>Oldest overdue</span></button>'
       + '<button type="button" data-ops="ins:done"><b>' + doneWeek + '</b><span>Done last 7d</span></button>'
-      + '</div></div></div>'
+      + '</div><div class="desk-live"><h3>Next meetings</h3>' + meetHtml + '<h3>Today\'s conversations</h3>' + talkHtml + '<h3>Top 3 tasks</h3>' + topHtml + '</div></div></div>'
       + '<div class="ops-2"><div class="card" style="padding:14px"><h3>Task status breakdown</h3><div class="donut-wrap">' + donut(parts, total) + '<div class="legend">' + parts.map(function (p) { var pct = total ? Math.round((p.n / total) * 100) : 0; return '<div><b style="color:' + p.color + '">' + p.n + '</b> ' + esc(p.label) + ' ' + pct + '%</div>'; }).join('') + '</div></div></div>'
       + '<div class="card" style="padding:14px"><h3>Tasks by department</h3>' + Object.keys(areas).map(function (k) { return '<button type="button" class="meter" data-ops="area:' + esc(k) + '"><em>' + esc(k) + '</em><span><i style="width:' + Math.round((areas[k] / maxArea) * 100) + '%"></i></span><b>' + areas[k] + '</b></button>'; }).join('') + '<h3 style="margin-top:16px">Completed - last 7 days</h3>' + spark(trend) + '</div></div>';
     lists['ins:high'] = rows.filter(function (it) { return it.status !== 'done' && (it.priority === 'high' || it.priority === 'urgent'); });
@@ -193,21 +206,16 @@
     var cmd = document.getElementById('warCmd');
     var board = document.getElementById('execBoard');
     if (!cmd || !board) return;
-    var move = ((STATE.ceo && STATE.ceo.moves) || [])[0];
-    var open = liveItems().filter(function (it) { return it.status !== 'done'; });
-    var counts = {
-      Today: open.filter(function (it) { return bucket(it) === 'today'; }).length,
-      Overdue: open.filter(function (it) { return bucket(it) === 'overdue'; }).length,
-      'Waiting on others': (STATE.contacts || []).filter(function (c) { return c.waitingOn || c.status === 'waiting'; }).length,
-      'Done this week': liveItems().filter(function (it) { return it.status === 'done' && bucket(it) === 'week'; }).length
-    };
     var today = laDay(Date.now());
     var next = (STATE.events || []).filter(function (ev) { return laDay(ev.start) === today && ev.start >= Date.now() - 60000; }).sort(function (a, b) { return a.start - b.start; }).slice(0, 2);
-    var line = counts.Overdue ? counts.Overdue + ' overdue. ' + (move ? move.text : 'Clear the overdue list first.') : (move ? move.text : 'Nothing urgent on the desk.');
+    var kinds = [['all', 'All'], ['corporate', 'Corporate'], ['vc', 'VC'], ['client', 'Client'], ['design', 'Design partner'], ['regulator', 'Regulator']];
+    var reachNames = { corporate: 'Corporate', vc: 'VC', client: 'Client', design: 'Design partner', regulator: 'Regulator' };
+    var people = STATE.reachOut || [];
+    var filter = STATE.reachKind || 'all';
+    var shown = people.filter(function (person) { return filter === 'all' || person.kind === filter; });
     cmd.innerHTML = '<div class="lb-add"><input id="opsAdd" type="text" placeholder="Capture a task" style="flex:1"/><button class="btn pri sm" id="opsAddBtn" type="button">Add</button></div>'
-      + '<div class="focus" style="margin-top:10px"><div class="k">Today\'s focus</div><div style="font-size:13px;font-weight:700;margin-top:4px">' + esc(line) + '</div></div>'
-      + '<div class="pulse" style="margin-top:10px">' + Object.keys(counts).map(function (k) { return '<div><div class="k">' + esc(k) + '</div><b>' + counts[k] + '</b></div>'; }).join('') + '</div>'
-      + '<div class="card" id="nextUp" style="padding:14px;margin-top:10px"><div class="sec-h"><h3>Next up</h3><button class="btn sm" id="findSlot" type="button">Find a 30-min slot</button></div>' + (next.length ? next.map(function (ev) { return '<div data-count="' + ev.start + '">' + esc(ev.title || 'Event') + ' <span>' + soon(ev.start) + '</span></div>'; }).join('') : '<div>No more events today.</div>') + '</div>';
+      + '<div class="card" id="nextUp" style="padding:8px 12px;margin-top:8px;display:flex;align-items:center;gap:12px"><div style="flex:1">' + (next.length ? next.map(function (ev) { return '<div data-count="' + ev.start + '">' + esc(ev.title || 'Event') + ' <span class="kick">' + soon(ev.start) + '</span></div>'; }).join('') : '<div class="kick">No more events today.</div>') + '</div><button class="btn sm" id="findSlot" type="button">Find a 30-min slot</button></div>'
+      + '<div class="card" style="padding:12px;margin-top:10px"><h3>Reach out</h3><div class="news-chips">' + kinds.map(function (pair) { var n = people.filter(function (person) { return pair[0] === 'all' || person.kind === pair[0]; }).length; return '<button type="button" data-reach-kind="' + pair[0] + '"' + (filter === pair[0] ? ' class="on"' : '') + '>' + pair[1] + ' ' + n + '</button>'; }).join('') + '</div><div class="reach-grid">' + (shown.length ? shown.map(function (person) { var bits = String(person.name || '?').split(/\s+/).slice(0, 2).map(function (part) { return part.slice(0, 1); }).join('').toUpperCase(); return '<div class="reach-card"><div class="av">' + esc(bits) + '</div><b>' + esc(person.name) + '</b><div class="kick">' + esc(person.company || '') + '</div><span class="kick">' + esc(reachNames[person.kind] || 'Corporate') + '</span><label class="cap"><input type="checkbox" data-reach-done="' + esc(person.id) + '"' + (person.done ? ' checked' : '') + '/>' + esc(person.nextAction || 'Reach out') + '</label><button type="button" data-reach-task="' + esc(person.id) + '">+ task</button></div>'; }).join('') : '<div class="kick">Add people from Pipeline or Contacts.</div>') + '</div></div>';
     var cols = [
       ['today', 'Today'],
       ['week', 'This week'],
@@ -264,6 +272,28 @@
     document.querySelectorAll('[data-edit]').forEach(function (btn) {
       btn.onclick = function () { editItem(btn.getAttribute('data-edit')); };
     });
+    document.querySelectorAll('[data-reach-kind]').forEach(function (btn) {
+      btn.onclick = function () { STATE.reachKind = btn.getAttribute('data-reach-kind'); renderWar(); };
+    });
+    document.querySelectorAll('[data-reach-done]').forEach(function (box) {
+      box.onclick = function (e) {
+        e.stopPropagation();
+        var person = (STATE.reachOut || []).filter(function (row) { return row.id === box.getAttribute('data-reach-done'); })[0];
+        if (!person) return;
+        person.done = !!box.checked;
+        if (box.checked) saveItem(person.nextAction || 'Reach out', 'today', 'Reach out - ' + (person.kind === 'design' ? 'Design partner' : (person.kind || 'Corporate')));
+        authFetch('/api/reach-out/' + person.id, { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ done: person.done }) }).catch(function () {});
+        renderWar();
+      };
+    });
+    document.querySelectorAll('[data-reach-task]').forEach(function (btn) {
+      btn.onclick = function () {
+        var person = (STATE.reachOut || []).filter(function (row) { return row.id === btn.getAttribute('data-reach-task'); })[0];
+        if (!person) return;
+        var label = { corporate: 'Corporate', vc: 'VC', client: 'Client', design: 'Design partner', regulator: 'Regulator' }[person.kind] || 'Corporate';
+        saveItem(person.nextAction || 'Reach out', 'today', 'Reach out - ' + label);
+      };
+    });
     document.querySelectorAll('[data-set-bucket]').forEach(function (btn) {
       btn.onclick = function (e) {
         e.stopPropagation();
@@ -273,12 +303,20 @@
     });
   }
 
-  function saveItem(title, col) {
+  function saveItem(title, col, category) {
     title = String(title || '').trim() || 'Untitled task';
-    var temp = { id: 'tmp-' + Date.now(), title: title, area: 'other', status: 'new', priority: 'normal', due: dueFor(col), notes: '' };
+    var temp = { id: 'tmp-' + Date.now(), title: title, area: 'other', status: 'new', priority: 'normal', due: dueFor(col), notes: '', category: category || '' };
     STATE.items = (STATE.items || []).concat([temp]);
     renderWar();
-    authFetch('/api/items', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: title, area: 'other', due: dueFor(col) }) }).then(function (r) { if (!r.ok) throw 0; return authFetch('/api/board', { credentials: 'same-origin' }); }).then(function (r) { return r.json(); }).then(applyBoard).catch(function () { temp._err = 'Not saved yet'; renderWar(); });
+    authFetch('/api/items', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: title, area: 'other', due: dueFor(col), category: category || '' }) }).then(function (r) { if (!r.ok) throw 0; return authFetch('/api/board', { credentials: 'same-origin' }); }).then(function (r) { return r.json(); }).then(applyBoard).catch(function () { temp._err = 'Not saved yet'; renderWar(); });
+  }
+
+  function loadReach() {
+    authFetch('/api/reach-out', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
+      STATE.reachOut = (d && d.people) || [];
+      if (STATE.desk === 'war') renderWar();
+      if (STATE.desk === 'room') renderOpsDash();
+    }).catch(function () { STATE.reachOut = STATE.reachOut || []; });
   }
 
   function editItem(id) {
@@ -663,11 +701,11 @@
   var priorCard = openContactCard;
   openContactCard = function (id) {
     priorCard(id);
-    if (STATE.desk !== 'contacts') return;
+    var body = document.querySelector('#drawer .db');
+    if (STATE.desk === 'contacts') {
     document.querySelectorAll('#drawer .fld').forEach(function (field) {
       if ((field.textContent || '').indexOf('Phone') === 0) field.remove();
     });
-    var body = document.querySelector('#drawer .db');
     if (body && !document.getElementById('logPipe')) {
       body.insertAdjacentHTML('beforeend', '<div class="cap"><button class="btn sm" id="logPipe" type="button">Log note</button><button class="btn sm" id="ghlOpen" type="button">Open in GHL</button></div><textarea id="pipeNote" rows="3" placeholder="Note" style="width:100%;margin-top:8px"></textarea>');
       document.getElementById('logPipe').onclick = function () {
@@ -675,6 +713,40 @@
       };
       document.getElementById('ghlOpen').onclick = function () {
         openDocView('GoHighLevel', '', 'This record stays on the desk. GoHighLevel remains the source of truth.');
+      };
+    }
+    }
+    if (body && !document.getElementById('addReach')) {
+      var c = (STATE.contacts || []).filter(function (row) { return row.id === id; })[0] || {};
+      body.insertAdjacentHTML('beforeend', '<div class="cap" style="margin-top:10px"><span class="kick">Add to Reach out</span><span class="bucket-picks" id="reachKind"><button type="button" data-rk="corporate" class="on">Corporate</button><button type="button" data-rk="vc">VC</button><button type="button" data-rk="client">Client</button><button type="button" data-rk="design">Design partner</button><button type="button" data-rk="regulator">Regulator</button></span><button class="btn sm" id="addReach" type="button">Add to Reach out</button><button class="btn sm" id="addSpace" type="button">Add to a Space</button></div>');
+      body.querySelectorAll('[data-rk]').forEach(function (btn) {
+        btn.onclick = function () {
+          body.querySelectorAll('[data-rk]').forEach(function (other) { other.classList.remove('on'); });
+          btn.classList.add('on');
+        };
+      });
+      document.getElementById('addReach').onclick = function () {
+        var picked = body.querySelector('[data-rk].on');
+        var kind = picked ? picked.getAttribute('data-rk') : 'corporate';
+        var person = { id: 'tmp-' + Date.now(), name: c.name || 'Person', company: c.company || '', kind: kind, nextAction: c.nextAction || 'Reach out', done: false, contactId: id };
+        STATE.reachOut = (STATE.reachOut || []).concat([person]);
+        authFetch('/api/reach-out', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: person.name, company: person.company, kind: kind, contactId: id, nextAction: person.nextAction }) }).then(loadReach).catch(function () {});
+      };
+      document.getElementById('addSpace').onclick = function () {
+        var modal = document.getElementById('modal');
+        var box = document.getElementById('modalCard');
+        if (!modal || !box) return;
+        var rows = STATE.packages || [];
+        box.classList.add('wide');
+        box.innerHTML = '<div class="mhd"><div style="font-weight:700">Add to a Space</div><button class="x" id="mClose" type="button">x</button></div><div class="mbd">' + (rows.length ? rows.map(function (space) { return '<button type="button" class="ops-row" data-space-add="' + esc(space.id) + '"><b>' + esc(space.name || 'Space') + '</b></button>'; }).join('') : '<div class="kick">No spaces yet.</div>') + '</div>';
+        modal.classList.add('open');
+        modal.hidden = false;
+        document.getElementById('mClose').onclick = function () { if (typeof closeModal === 'function') closeModal(); };
+        box.querySelectorAll('[data-space-add]').forEach(function (btn) {
+          btn.onclick = function () {
+            authFetch('/api/spaces/' + btn.getAttribute('data-space-add'), { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'add-recipient', contactId: id, name: c.name || 'Person', email: c.email || '', role: c.role || '', listed: false }) }).then(function () { if (typeof closeModal === 'function') closeModal(); }).catch(function () {});
+          };
+        });
       };
     }
   };
@@ -685,6 +757,7 @@
     renderOpsDash();
     renderWar();
     renderDeskNotes();
+    loadReach();
     if (STATE.desk === 'news') loadNews();
     if (STATE.desk === 'contacts') loadInbox();
   };
@@ -696,7 +769,7 @@
     if (v === 'drive') renderDocs();
     if (v === 'contacts') loadInbox();
     if (v === 'room') renderOpsDash();
-    if (v === 'war') renderWar();
+    if (v === 'war') { loadReach(); renderWar(); }
     if (v === 'notes') renderSticky();
     if (v === 'znotes') renderZNotes();
   };

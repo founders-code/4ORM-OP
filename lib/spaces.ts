@@ -42,7 +42,7 @@ type Item = {
   position: number;
 };
 
-type Person = { id: string; contactId: string; name: string; email: string; role: string; company: string; stage: string };
+type Person = { id: string; contactId: string; name: string; email: string; role: string; company: string; stage: string; listed: boolean };
 
 function asItem(row: Record<string, unknown>): Item {
   return {
@@ -96,6 +96,7 @@ export async function ensureSpaceTables(sql: Sql) {
       body text
     )`],
     ['db_space_recipients_role', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS role text`],
+    ['db_space_recipients_listed', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS listed boolean NOT NULL DEFAULT true`],
   ];
   for (const [code, run] of steps) {
     try {
@@ -135,7 +136,7 @@ async function readItems(sql: Sql, ownerId: string, spaceId: string): Promise<It
 async function readPeople(sql: Sql, ownerId: string, spaceId: string): Promise<Person[]> {
   try {
     const rows = await sql`
-      SELECT r.id, r.contact_id, r.name, r.email, r.role, c.company, c.stage
+      SELECT r.id, r.contact_id, r.name, r.email, r.role, r.listed, c.company, c.stage
       FROM space_recipients r
       LEFT JOIN contacts c ON c.id::text = r.contact_id AND c.owner_id = ${ownerId}
       WHERE r.space_id = ${spaceId} AND r.owner_id = ${ownerId}
@@ -149,10 +150,32 @@ async function readPeople(sql: Sql, ownerId: string, spaceId: string): Promise<P
       role: String(row.role || ''),
       company: String(row.company || ''),
       stage: String(row.stage || ''),
+      listed: row.listed !== false,
     }));
   } catch (err) {
     fail('spaces_people', err);
-    return [];
+    try {
+      const rows = await sql`
+        SELECT r.id, r.contact_id, r.name, r.email, r.role, c.company, c.stage
+        FROM space_recipients r
+        LEFT JOIN contacts c ON c.id::text = r.contact_id AND c.owner_id = ${ownerId}
+        WHERE r.space_id = ${spaceId} AND r.owner_id = ${ownerId}
+        ORDER BY r.name
+      `;
+      return (rows as Record<string, unknown>[]).map((row) => ({
+        id: String(row.id),
+        contactId: row.contact_id ? String(row.contact_id) : '',
+        name: String(row.name || ''),
+        email: String(row.email || ''),
+        role: String(row.role || ''),
+        company: String(row.company || ''),
+        stage: String(row.stage || ''),
+        listed: true,
+      }));
+    } catch (inner) {
+      fail('spaces_people', inner);
+      return [];
+    }
   }
 }
 
@@ -609,10 +632,11 @@ export async function addSpaceRecipient(sql: Sql, ownerId: string, spaceId: stri
   }
   if (!name) name = 'Recipient';
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) email = '';
+  const listed = input.listed !== false && input.listed !== 'false';
   try {
     await sql`
-      INSERT INTO space_recipients (owner_id, space_id, contact_id, name, email, role)
-      VALUES (${ownerId}, ${spaceId}, ${contactId || null}, ${name}, ${email}, ${role})
+      INSERT INTO space_recipients (owner_id, space_id, contact_id, name, email, role, listed)
+      VALUES (${ownerId}, ${spaceId}, ${contactId || null}, ${name}, ${email}, ${role}, ${listed})
     `;
   } catch (err) {
     fail('spaces_recipient', err);
@@ -620,6 +644,18 @@ export async function addSpaceRecipient(sql: Sql, ownerId: string, spaceId: stri
       INSERT INTO space_recipients (owner_id, space_id, contact_id, name, email)
       VALUES (${ownerId}, ${spaceId}, ${contactId || null}, ${name}, ${email})
     `;
+  }
+  return readSpace(sql, ownerId, spaceId);
+}
+
+export async function listSpaceRecipient(sql: Sql, ownerId: string, spaceId: string, recipientId: string) {
+  if (!spaceIdOk(recipientId)) return null;
+  const row = await owned(sql, ownerId, spaceId);
+  if (!row) return null;
+  try {
+    await sql`UPDATE space_recipients SET listed = true WHERE id = ${recipientId} AND space_id = ${spaceId} AND owner_id = ${ownerId}`;
+  } catch (err) {
+    fail('spaces_recipient', err);
   }
   return readSpace(sql, ownerId, spaceId);
 }
@@ -707,13 +743,14 @@ export async function moveSpaceToDrive(sql: Sql, ownerId: string, spaceId: strin
 export async function sendSpace(sql: Sql, ownerId: string, spaceId: string) {
   const current = await readSpace(sql, ownerId, spaceId);
   if (!current) return null;
-  if (!current.recipients.length) {
+  const mailPeople = current.recipients.filter((person) => person.listed !== false);
+  if (!mailPeople.length) {
     return { prepared: false, note: 'Add a recipient before preparing a send.', package: current, drafts: [], manual: [] };
   }
   const drafts: Array<{ name: string; email: string; draftId: string }> = [];
   const manual: Array<{ name: string; email: string; subject: string; body: string; stage: string }> = [];
   let failed = false;
-  for (const person of current.recipients) {
+  for (const person of mailPeople) {
     const subject = fillToken(current.emailSubject, person);
     const body = assembleMail(current, person);
     if (!person.email) {

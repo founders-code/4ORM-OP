@@ -546,6 +546,18 @@ async function migrateWar(sql: Sql) {
       body text
     )`],
     ['db_space_recipients_role', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS role text`],
+    ['db_space_recipients_listed', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS listed boolean NOT NULL DEFAULT true`],
+    ['db_reach_out', () => sql`CREATE TABLE IF NOT EXISTS reach_out (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      contact_id text,
+      name text NOT NULL DEFAULT '',
+      company text,
+      kind text NOT NULL DEFAULT 'corporate',
+      next_action text,
+      done boolean NOT NULL DEFAULT false,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
   ];
   for (const [code, run] of steps) {
     try {
