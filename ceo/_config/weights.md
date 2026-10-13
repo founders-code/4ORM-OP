@@ -17,10 +17,12 @@ The Control Room's own rank for the item:
 | Cash, runway or the raise | P1 | +40 |
 | A promise past its date | P8 | +35 |
 | A customer or design-partner conversation | P2 | +30 |
-| A regulator or a licence | P4 | +25 |
 | A money record, consent or approval | P5 | +20 |
 | A decision open more than 7 days | P9 | +20 |
+| A regulator or a licence (reach-out only, lowest) | P4 | +5 |
 | Spend not backed by cash in the bank or proof | P10 | −30 |
+
+Regulator is deliberately the lowest boost: it is a reach-out track, never a blocker. It should not take one of the three slots unless cash, the raise, a design partner and overdue promises have nothing live.
 | Signs, files or commits money and is due within 7 days | P9, guardrails | +60 |
 
 An item can take more than one boost. Add them.

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'fs';
 import { tokenOk, allowArea, allowPriority, allowStage, allowStatus, allowContactType, allowTier, allowNoteColor, isBriefHour, windowKey, CEILINGS, parseDue, visibleCalendarWindow } from '../lib/guard.mjs';
 import { ROADMAP, ROAD_CATEGORIES } from '../lib/roadmap.mjs';
-import { computeLamps, pickMoves, readProfileFacts } from '../lib/ceo-score.mjs';
+import { DEFAULT_WEIGHTS, computeLamps, pickMoves, readProfileFacts } from '../lib/ceo-score.mjs';
 import { organizeText } from '../lib/organize.mjs';
 import { openSeal, seal } from '../lib/seal.mjs';
 import { readState, signState } from '../lib/oauth-state.mjs';
@@ -122,7 +122,7 @@ test('the calendar window starts on Sunday and covers six weeks', () => {
 
 test('cash of 100 lights runway and spend red and the three moves stay distinct', () => {
   const now = new Date('2026-10-12T18:00:00Z');
-  const profile = readFileSync(new URL('../ceo/company-profile.md', import.meta.url), 'utf8');
+  const profile = readFileSync(new URL('../ceo/shared/company-profile.md', import.meta.url), 'utf8');
   const facts = readProfileFacts(profile);
   assert.equal(facts.cash, 100);
   assert.equal(facts.burnMonthly, 90050);
@@ -150,17 +150,31 @@ test('cash of 100 lights runway and spend red and the three moves stay distinct'
     due: Date.parse(`${row.due}T18:00:00Z`),
   }));
   const moves = pickMoves({ now, items, lamps, facts });
+  assert.equal(DEFAULT_WEIGHTS.P4, 5);
   assert.equal(moves.length, 3);
+  assert.equal(moves[0].principle, 'P1');
+  assert.equal(moves[1].principle, 'P2');
+  assert.equal(moves.some((move) => move.principle === 'P4' || move.facing === 'regulator'), false);
   assert.equal(new Set(moves.map((move) => move.principle)).size, 3);
   assert.equal(moves.filter((move) => move.facing === 'internal').length <= 1, true);
   assert.equal(moves.some((move) => move.facing !== 'internal'), true);
+  assert.match(moves[0].whyNow, /\$80,000 is in/);
+  assert.match(moves[0].how.join(' '), /Kevin/);
   for (const move of moves) {
     assert.equal(move.text.length <= 90, true);
-    assert.equal(/[\u2013\u2014]/.test(move.text + move.whyNow), false);
+    assert.equal(move.how.length >= 2 && move.how.length <= 4, true);
+    assert.equal(/[\u2013\u2014]/.test(move.text + move.whyNow + move.how.join(' ')), false);
     assert.equal(/\bAI\b/.test(move.text + move.whyNow), false);
-    assert.equal(/\bSign\b/.test(move.text), false);
-    assert.equal(/Atherton/.test(move.text), false);
+    assert.equal(/\bSign\b/.test(move.text + move.how.join(' ')), false);
+    assert.equal(/Atherton/.test(move.text + move.how.join(' ')), false);
   }
+  const quiet = pickMoves({
+    now,
+    items: [{ id: 'r1', title: 'Regulator outreach - FCAC note', area: 'outreach', status: 'open', priority: 'normal', owner: 'Chad', due: Date.parse('2026-10-20T18:00:00Z') }],
+    lamps: [],
+    facts,
+  });
+  assert.equal(quiet.some((move) => move.principle === 'P4'), true);
 });
 
 test('the control room page does not carry secrets', () => {
@@ -171,6 +185,12 @@ test('the control room page does not carry secrets', () => {
   assert.equal(page.includes('4orm Intelligence'), true);
   assert.equal(page.includes('CEO - next three moves'), true);
   assert.equal(page.includes('Form Intelligence'), false);
+  assert.equal(page.includes('Do all steps'), true);
+  assert.equal(page.includes('Close the round to $250,000'), true);
+  assert.equal(page.includes('Spending cash cannot cover'), true);
+  assert.equal(page.includes('Paper the subscription agreement'), true);
+  assert.equal(page.includes("Delete '+ids.length+' '+noun+'?'"), true);
+  assert.equal(page.includes("ids.length+' deleted'"), true);
   assert.equal(/Atherton/.test(page), false);
   assert.equal(/\/api\/(ingest|mcp|cron)/.test(page), false);
 });

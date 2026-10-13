@@ -27,9 +27,18 @@ Slogan: "Major financial decisions. Easier to understand. Easier to explain." Ta
 - Pre-seed window opened 1 Aug 2026, ~90 days, closing about 30 Oct 2026.
 - Common tranche at $8M pre-money, $0.40 a share (decided 19 Sept 2026). SAFE caps $15M, $18M, $20M; 15% discount; MFN.
 - In as of 12 Oct 2026: $80,000 - Don Hickling $70,000, Brooks $10,000.
-- Gate: $200K in before angel conversations open; angels want $100K to $250K in first.
-- Next investor conversations to open (Chad, 12 Oct 2026): Kevin, Zahar, BJ, Daryl.
 - Brooks: subscription up to $500,000 still to be papered; each payment papered as separately elected (open with James Atherton). Early receipt issue to reconcile at $0.40.
+
+### Close the round - the active plan (12 Oct 2026, from Chad)
+- The single survival move: close the friends-and-family round to $250,000. $80,000 is in; $170,000 to go.
+- Source the $170,000 from the private network, in ~$25,000 chunks (about seven cheques). Work it as a named list: who, which chunk, what step they are on, next action, next date.
+- Next private-network conversations to open: Kevin, Zahar, BJ, Daryl.
+
+## Pipelines, checked every day (priority order)
+Every day the CEO reads these three pipelines from the Control Room and GoHighLevel and puts up actionable moves - and if a step is big, it breaks it into the concrete next steps. Priority order, highest first:
+1. VC / private network (the raise). Close friends-and-family to $250,000, $170K to go in ~$25K chunks. This is the survival track.
+2. Design partner. Mortgage brokerages; land the first named design partner. #76-100 first, #1-25 protected.
+3. Regulator. LOWEST priority - this is a reach-out track only, not a blocker. Send the note, log the reply, move on. Never let regulator work outrank cash, the raise, or a design partner.
 
 ## Cash (P1) (12 Oct 2026, from Chad; burn from Pro Forma Master 09-20-2026)
 - Cash in the bank today: $100 (as of 12 Oct 2026). This is far below the model's $25,000 opening assumption, so the runway lamp is RED now and closing the raise is the single survival move.

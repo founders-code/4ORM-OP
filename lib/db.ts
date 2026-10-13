@@ -238,6 +238,7 @@ async function migrate(sql: Sql) {
     created_at timestamptz NOT NULL DEFAULT now()
   )`;
   await sql`ALTER TABLE ceo_moves ADD COLUMN IF NOT EXISTS source_key text`;
+  await sql`ALTER TABLE ceo_moves ADD COLUMN IF NOT EXISTS how jsonb NOT NULL DEFAULT '[]'::jsonb`;
   await sql`
     DO $$ BEGIN
       ALTER TABLE ceo_moves ADD CONSTRAINT ceo_moves_status_check CHECK (status IN ('open','done','snoozed'));
