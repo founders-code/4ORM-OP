@@ -2,6 +2,7 @@ import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { ROADMAP } from './roadmap.mjs';
 import { idlePlugins, listPlugins } from './plugins';
 import { listZoomNotes, seedZoomNotes } from './zoom-notes';
+import { fail } from './log';
 import { listCommitments, listNews, listPlans, newsCategories, syncCommitments } from './war';
 import { syncCalendar, syncDrive, syncGhl, calendarMeta, ingestMail } from './sync';
 
@@ -75,6 +76,15 @@ async function quiet(job: Promise<unknown>) {
   }
 }
 
+async function soft<T>(code: string, job: Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await job;
+  } catch (err) {
+    fail(code, err);
+    return fallback;
+  }
+}
+
 export function idleBoard(needsDatabase: boolean) {
   const off = { state: 'off', word: 'Not connected' };
   return {
@@ -137,6 +147,25 @@ async function seedRoadmap(sql: Sql, ownerId: string) {
   `;
 }
 
+async function readWaiting(sql: Sql, ownerId: string) {
+  const rows = await sql`
+    SELECT id, waiting_on, plan_of
+    FROM items
+    WHERE owner_id = ${ownerId}
+      AND (snooze_until IS NULL OR snooze_until <= now())
+    ORDER BY updated_at DESC
+    LIMIT 200
+  `;
+  const waiting = new Map<string, { waitingOn: string; planOf: string }>();
+  for (const row of rows as Array<Record<string, unknown>>) {
+    waiting.set(String(row.id), {
+      waitingOn: row.waiting_on ? String(row.waiting_on) : '',
+      planOf: row.plan_of ? String(row.plan_of) : '',
+    });
+  }
+  return waiting;
+}
+
 export async function loadBoard(sql: Sql, ownerId: string) {
   await seedRoadmap(sql, ownerId);
   await seedZoomNotes(sql, ownerId);
@@ -146,13 +175,14 @@ export async function loadBoard(sql: Sql, ownerId: string) {
   await quiet(syncGhl(sql, ownerId));
 
   const items = await sql`
-    SELECT id, title, area, status, priority, due, owner, source, category, waiting_on, plan_of
+    SELECT id, title, area, status, priority, due, owner, source, category
     FROM items
     WHERE owner_id = ${ownerId}
       AND (snooze_until IS NULL OR snooze_until <= now())
     ORDER BY updated_at DESC
     LIMIT 200
   `;
+  const waiting = await soft('board_waiting', readWaiting(sql, ownerId), new Map<string, { waitingOn: string; planOf: string }>());
   const contacts = await sql`
     SELECT id, name, company, role, email, phone, area, notes, type, tier, stage, next_action, next_date, last_touch
     FROM contacts
@@ -295,18 +325,18 @@ export async function loadBoard(sql: Sql, ownerId: string) {
       owner: String(row.owner || ''),
       source: String(row.source || 'manual'),
       category: row.category ? String(row.category) : '',
-      waitingOn: row.waiting_on ? String(row.waiting_on) : '',
-      planOf: row.plan_of ? String(row.plan_of) : '',
+      waitingOn: waiting.get(String(row.id))?.waitingOn || '',
+      planOf: waiting.get(String(row.id))?.planOf || '',
     })),
     zoomNotes: await (async () => {
       const notes = await listZoomNotes(sql, ownerId);
-      await quiet(syncCommitments(sql, ownerId, notes));
+      await soft('board_commitments_sync', syncCommitments(sql, ownerId, notes), undefined);
       return notes;
     })(),
-    plans: await listPlans(sql, ownerId),
-    commitments: await listCommitments(sql, ownerId),
-    news: await listNews(sql, ownerId),
-    newsCategories: await newsCategories(sql, ownerId),
+    plans: await soft('board_plans', listPlans(sql, ownerId), []),
+    commitments: await soft('board_commitments', listCommitments(sql, ownerId), []),
+    news: await soft('board_news', listNews(sql, ownerId), []),
+    newsCategories: await soft('board_news_categories', newsCategories(sql, ownerId), []),
     contacts: contacts.map((row) => ({
       id: String(row.id),
       name: String(row.name),

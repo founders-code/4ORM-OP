@@ -15,8 +15,8 @@ export async function GET() {
     const creds = await loadCredsFor(session.userId);
     const board = await withCreds(creds, () => loadBoard(session.sql!, session.userId));
     return NextResponse.json(board);
-  } catch {
-    fail('board_failed');
+  } catch (err) {
+    fail('board_failed', err);
     return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
   }
 }

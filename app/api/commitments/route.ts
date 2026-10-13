@@ -10,11 +10,11 @@ export async function GET() {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    if (!session.sql) return NextResponse.json({ commitments: [] });
     return NextResponse.json({ commitments: await listCommitments(session.sql, session.userId) });
-  } catch {
-    fail('commitments_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+  } catch (err) {
+    fail('commitments_failed', err);
+    return NextResponse.json({ commitments: [] });
   }
 }
 
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    if (!session.sql) return NextResponse.json({ commitments: [] });
     const body = await req.json().catch(() => null);
     const id = String(body?.id || '');
     const action = String(body?.action || '');
@@ -44,8 +44,8 @@ export async function POST(req: Request) {
     const updated = await setCommitment(session.sql, session.userId, id, status);
     if (!updated) return NextResponse.json({ error: 'Unavailable' }, { status: 404 });
     return NextResponse.json({ commitments: await listCommitments(session.sql, session.userId) });
-  } catch {
-    fail('commitments_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+  } catch (err) {
+    fail('commitments_failed', err);
+    return NextResponse.json({ commitments: [] });
   }
 }
