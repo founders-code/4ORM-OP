@@ -138,14 +138,15 @@ export async function setCommitment(sql: Sql, ownerId: string, id: string, statu
   return rows[0] || null;
 }
 
-export async function listNews(sql: Sql, ownerId: string, day = todayKey()) {
+export async function listNews(sql: Sql, ownerId: string, day = todayKey(), span = 14) {
+  const days = span > 14 ? 31 : 14;
   const rows = await sql`
     SELECT id, category, title, summary, url, published_at, is_top, swept_on
     FROM news_items
     WHERE owner_id = ${ownerId}
       AND (
-        published_at >= now() - interval '14 days'
-        OR swept_on >= CURRENT_DATE - 14
+        published_at >= now() - (${days}::int * interval '1 day')
+        OR swept_on >= CURRENT_DATE - ${days}::int
       )
     ORDER BY is_top DESC, published_at DESC NULLS LAST
     LIMIT 80

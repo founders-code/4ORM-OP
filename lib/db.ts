@@ -435,6 +435,8 @@ async function migrateWar(sql: Sql) {
       y int NOT NULL DEFAULT 24,
       created_at timestamptz NOT NULL DEFAULT now()
     )`],
+    ['db_sticky_w', () => sql`ALTER TABLE sticky_notes ADD COLUMN IF NOT EXISTS w int NOT NULL DEFAULT 180`],
+    ['db_sticky_h', () => sql`ALTER TABLE sticky_notes ADD COLUMN IF NOT EXISTS h int NOT NULL DEFAULT 120`],
     ['db_vc_inbox', () => sql`CREATE TABLE IF NOT EXISTS vc_inbox (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       owner_id text NOT NULL,

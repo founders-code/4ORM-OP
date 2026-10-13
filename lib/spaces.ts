@@ -291,6 +291,7 @@ export async function listSpaces(sql: Sql, ownerId: string) {
       const id = String(row.id);
       let docCount = 0;
       let recipientCount = 0;
+      let preview = '';
       try {
         const docs = await sql`
           SELECT id FROM space_items
@@ -299,6 +300,13 @@ export async function listSpaces(sql: Sql, ownerId: string) {
         const people = await sql`SELECT id FROM space_recipients WHERE space_id = ${id} AND owner_id = ${ownerId}`;
         docCount = docs.length;
         recipientCount = people.length;
+        const names = await sql`
+          SELECT name FROM space_items
+          WHERE space_id = ${id} AND owner_id = ${ownerId}
+          ORDER BY position
+          LIMIT 4
+        `;
+        preview = (names as Array<{ name?: string }>).map((row) => String(row.name || '')).filter(Boolean).join('\n');
       } catch (err) {
         fail('spaces_counts', err);
       }
@@ -312,6 +320,7 @@ export async function listSpaces(sql: Sql, ownerId: string) {
         spaceType: 'project',
         subjectLabel: String(row.name || ''),
         description: String(row.notes || ''),
+        preview,
         pushedToDriveAt: pushed && !Number.isNaN(pushed.getTime()) ? pushed.toISOString() : '',
         docCount,
         recipientCount,
