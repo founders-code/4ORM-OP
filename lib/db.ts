@@ -360,6 +360,48 @@ async function migrateWar(sql: Sql) {
       END
       WHERE category IS NULL OR category = ''
     `],
+    ['db_packages', () => sql`CREATE TABLE IF NOT EXISTS packages (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      name text NOT NULL,
+      kind text NOT NULL,
+      drive_folder_id text,
+      drive_folder_url text,
+      email_subject text,
+      email_body text,
+      research text,
+      status text NOT NULL DEFAULT 'draft',
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_packages_kind', () => sql`
+      DO $$ BEGIN
+        ALTER TABLE packages ADD CONSTRAINT packages_kind_check CHECK (kind IN ('data_room','investor','partner','regulator'));
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$
+    `],
+    ['db_packages_status', () => sql`
+      DO $$ BEGIN
+        ALTER TABLE packages ADD CONSTRAINT packages_status_check CHECK (status IN ('draft','ready','sent'));
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$
+    `],
+    ['db_package_docs', () => sql`CREATE TABLE IF NOT EXISTS package_docs (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      package_id uuid NOT NULL REFERENCES packages(id) ON DELETE CASCADE,
+      drive_file_id text,
+      name text NOT NULL,
+      url text,
+      mime text
+    )`],
+    ['db_package_recipients', () => sql`CREATE TABLE IF NOT EXISTS package_recipients (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      package_id uuid NOT NULL REFERENCES packages(id) ON DELETE CASCADE,
+      contact_id text,
+      name text NOT NULL,
+      email text,
+      role text
+    )`],
     ['db_news_items', () => sql`CREATE TABLE IF NOT EXISTS news_items (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       owner_id text NOT NULL,

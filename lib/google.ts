@@ -255,6 +255,53 @@ export async function driveWrite(action: 'mkdir' | 'mkfile' | 'rename' | 'move',
   );
 }
 
+export async function listFolderFiles(folderId: string) {
+  if (!configured() || !safeId(folderId)) return null;
+  const q = new URLSearchParams({
+    q: `'${folderId}' in parents and trashed = false`,
+    fields: 'files(id,name,mimeType,webViewLink)',
+    pageSize: '40',
+    supportsAllDrives: 'true',
+    includeItemsFromAllDrives: 'true',
+  });
+  const json = (await gfetch(`https://www.googleapis.com/drive/v3/files?${q}`)) as { files?: FileRow[] } | null;
+  if (!json?.files) return null;
+  return json.files
+    .filter((file) => file.mimeType !== 'application/vnd.google-apps.folder' && file.id && file.name)
+    .slice(0, 40)
+    .map((file) => ({
+      id: file.id,
+      name: file.name,
+      url: file.webViewLink || '',
+      mime: file.mimeType || '',
+    }));
+}
+
+export async function createGmailDraft(to: string, subject: string, text: string) {
+  if (!configured()) return null;
+  const cleanTo = String(to || '').trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanTo)) return null;
+  const cleanSubject = String(subject || '').replace(/[\r\n]/g, ' ').slice(0, 200);
+  const mime = [
+    `To: ${cleanTo}`,
+    `Subject: ${cleanSubject}`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/plain; charset=utf-8',
+    '',
+    String(text || ''),
+  ].join('\r\n');
+  const raw = Buffer.from(mime).toString('base64url');
+  try {
+    const json = (await gfetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
+      method: 'POST',
+      body: JSON.stringify({ message: { raw } }),
+    })) as { id?: string } | null;
+    return json?.id ? String(json.id) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function recentMail() {
   if (!configured()) return { status: 'unavailable' as const, messages: [] as Array<{ id: string; title: string }> };
   const listed = (await gfetch(

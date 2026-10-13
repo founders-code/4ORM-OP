@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'fs';
 import { tokenOk, allowArea, allowPriority, allowStage, allowStatus, allowContactType, allowTier, allowNoteColor, isBriefHour, windowKey, CEILINGS, parseDue, visibleCalendarWindow, inferContactCategory } from '../lib/guard.mjs';
 import { ROADMAP, ROAD_CATEGORIES } from '../lib/roadmap.mjs';
+import { STARTERS, assembleMail, fillToken } from '../lib/packages.mjs';
 import { DEFAULT_WEIGHTS, computeLamps, pickMoves, readProfileFacts } from '../lib/ceo-score.mjs';
 import { extractCommitments, fallbackPlan, zoneOf, NEWS_CATEGORIES } from '../lib/war.mjs';
 import { organizeText } from '../lib/organize.mjs';
@@ -180,6 +181,21 @@ test('cash of 100 lights runway and spend red and every ranked move is returned'
   assert.equal(quiet.some((move) => move.principle === 'P4'), true);
 });
 
+test('package mail fills tokens and keeps research in the body', () => {
+  assert.equal(STARTERS.length, 4);
+  assert.equal(STARTERS.every((item) => !/@/.test(JSON.stringify(item.suggestions || []))), true);
+  const investor = STARTERS.find((item) => item.kind === 'investor');
+  assert.match(investor.emailSubject, /\$25,000/);
+  assert.match(fillToken('Hello {{first_name}} at {{company}}', { name: 'Kevin Shaw', company: 'North' }), /Kevin/);
+  const regulator = STARTERS.find((item) => item.kind === 'regulator');
+  assert.match(regulator.emailBody, /RPAA/);
+  assert.match(regulator.emailBody, /FINTRAC/);
+  const mailed = assembleMail({ ...regulator, docs: [{ name: 'RPAA note', url: 'https://drive.google.com/file/d/abc' }] }, { name: 'Michael Stephens', company: 'Fasken' });
+  assert.match(mailed, /Michael/);
+  assert.match(mailed, /Docs:/);
+  assert.equal(/@\w+\.\w+/.test(JSON.stringify(STARTERS.map((item) => item.suggestions))), false);
+});
+
 test('contact categories come from the company and role text', () => {
   assert.equal(inferContactCategory('North Capital Ventures'), 'vc');
   assert.equal(inferContactCategory('Fasken LLP'), 'regulator');
@@ -216,6 +232,10 @@ test('the control room page does not carry secrets', () => {
   assert.equal(page.includes('data-v="cal"'), false);
   assert.equal(page.includes('id="navToggle"'), true);
   assert.equal(page.includes('id="peopleFilter"'), true);
+  assert.equal(page.includes('data-v="work"'), true);
+  assert.equal(page.includes('id="pkgGrid"'), true);
+  assert.equal(page.includes('Prepare send'), true);
+  assert.equal(page.includes('Stages from GoHighLevel'), true);
   assert.equal(page.includes('control-room-war.js'), true);
   const warjs = readFileSync(new URL('../public/control-room-war.js', import.meta.url), 'utf8');
   assert.equal(/Atherton|example\.com/.test(warjs), false);
