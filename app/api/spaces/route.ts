@@ -1,40 +1,59 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
-import { createPackage, listPackages } from '@/lib/packages';
+import { createSpace, listSpaces } from '@/lib/spaces';
 import { openBoard } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
+
+function askedName(body: Record<string, unknown> | null) {
+  return String(body?.name || body?.title || '').trim().slice(0, 120) || 'Untitled space';
+}
 
 export async function GET() {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!session.sql) return NextResponse.json({ spaces: [], packages: [] });
-    const packages = await listPackages(session.sql, session.userId);
-    return NextResponse.json({ spaces: packages, packages });
+    const listed = await listSpaces(session.sql, session.userId);
+    return NextResponse.json(listed);
   } catch (err) {
-    fail('spaces_failed', err);
+    fail('spaces_list', err);
     return NextResponse.json({ spaces: [], packages: [] });
   }
 }
 
 export async function POST(req: Request) {
+  const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
+  const name = askedName(body);
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
-    const body = await req.json().catch(() => null);
-    const created = await createPackage(session.sql, session.userId, String(body?.name || ''), String(body?.kind || ''), {
-      spaceType: String(body?.spaceType || ''),
-      subjectContactId: String(body?.subjectContactId || ''),
-      subjectLabel: String(body?.subjectLabel || ''),
-      description: String(body?.description || body?.notes || ''),
-      spaceCategory: String(body?.spaceCategory || body?.category || ''),
-    });
-    if (!created) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
-    return NextResponse.json(created);
+    if (!session.sql) {
+      fail('spaces_create', 'no database');
+      return NextResponse.json({ name, saved: false });
+    }
+    try {
+      const created = await createSpace(session.sql, session.userId, { ...(body || {}), name });
+      if (created?.id) return NextResponse.json(created);
+      fail('spaces_create', 'insert returned no row');
+    } catch (err) {
+      fail('spaces_create', err);
+    }
+    try {
+      const { createPackage } = await import('@/lib/packages');
+      const fallback = await createPackage(session.sql, session.userId, name, String(body?.kind || ''), {
+        spaceType: String(body?.spaceType || 'project'),
+        subjectLabel: name,
+        description: String(body?.description || body?.notes || ''),
+      });
+      if (fallback?.id) return NextResponse.json(fallback);
+      fail('spaces_create', 'package fallback returned no row');
+    } catch (err) {
+      fail('spaces_create', err);
+    }
+    return NextResponse.json({ name, saved: false });
   } catch (err) {
-    fail('spaces_failed', err);
-    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    fail('spaces_create', err);
+    return NextResponse.json({ name, saved: false });
   }
 }

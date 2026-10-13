@@ -510,6 +510,40 @@ async function migrateWar(sql: Sql) {
       created_at timestamptz NOT NULL DEFAULT now()
     )`],
     ['db_news_url', () => sql`CREATE UNIQUE INDEX IF NOT EXISTS news_owner_url_uq ON news_items (owner_id, url) WHERE url <> ''`],
+    ['db_spaces', () => sql`CREATE TABLE IF NOT EXISTS spaces (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      name text NOT NULL DEFAULT 'Untitled space',
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz,
+      drive_folder_id text,
+      pushed_to_drive_at timestamptz
+    )`],
+    ['db_spaces_kind', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'data_room'`],
+    ['db_spaces_notes', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS notes text`],
+    ['db_spaces_drive_url', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS drive_folder_url text`],
+    ['db_space_items', () => sql`CREATE TABLE IF NOT EXISTS space_items (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      space_id uuid NOT NULL,
+      owner_id text NOT NULL,
+      kind text NOT NULL DEFAULT 'file',
+      name text NOT NULL DEFAULT '',
+      url text,
+      mime text,
+      drive_file_id text,
+      thumb_url text,
+      body text,
+      parent_id uuid,
+      position int NOT NULL DEFAULT 0,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_space_email', () => sql`CREATE TABLE IF NOT EXISTS space_email (
+      space_id uuid PRIMARY KEY,
+      owner_id text NOT NULL,
+      subject text,
+      body text
+    )`],
+    ['db_space_recipients_role', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS role text`],
   ];
   for (const [code, run] of steps) {
     try {
