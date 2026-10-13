@@ -25,6 +25,7 @@ type MoveRow = {
   suggested_due: string | null;
   status: string;
   source_key: string | null;
+  how?: unknown;
 };
 
 const ROOT = () => join(process.cwd(), 'ceo');
@@ -35,24 +36,34 @@ function readRel(rel: string) {
   return readFileSync(path, 'utf8');
 }
 
-export function loadCeoFiles() {
+function firstRel(paths: string[]) {
+  for (const rel of paths) {
+    const text = readRel(rel);
+    if (text) return text;
+  }
+  return '';
+}
+
+function principlesText() {
   const dir = ROOT();
-  const principlesDir = join(dir, 'principles');
-  const principles = existsSync(principlesDir)
-    ? readdirSync(principlesDir)
-        .filter((name) => name.endsWith('.md'))
-        .sort()
-        .map((name) => readFileSync(join(principlesDir, name), 'utf8'))
-        .join('\n\n')
-    : '';
+  const folder = ['shared/principles', 'principles'].map((rel) => join(dir, rel)).find((path) => existsSync(path));
+  if (!folder) return '';
+  return readdirSync(folder)
+    .filter((name) => name.endsWith('.md'))
+    .sort()
+    .map((name) => readFileSync(join(folder, name), 'utf8'))
+    .join('\n\n');
+}
+
+export function loadCeoFiles() {
   return {
-    persona: readRel('persona.md'),
-    principles,
-    profile: readRel('company-profile.md'),
-    guardrails: readRel('config/guardrails.md'),
-    voice: readRel('config/voice.md'),
-    weights: readRel('config/weights.md'),
-    lamps: readRel('config/lamps.md'),
+    persona: firstRel(['CLAUDE.md', 'persona.md']),
+    principles: principlesText(),
+    profile: firstRel(['shared/company-profile.md', 'company-profile.md']),
+    guardrails: firstRel(['_config/guardrails.md', 'config/guardrails.md']),
+    voice: firstRel(['_config/voice.md', 'config/voice.md']),
+    weights: firstRel(['_config/weights.md', 'config/weights.md']),
+    lamps: firstRel(['_config/lamps.md', 'config/lamps.md']),
   };
 }
 
@@ -67,7 +78,17 @@ function playbookFor(message: string) {
         : /cash|spend|burn|runway/.test(text)
           ? 'cash-crunch.md'
           : '';
-  return name ? readRel(`playbooks/${name}`) : '';
+  if (!name) return '';
+  return firstRel([`skills/${name}`, `playbooks/${name}`]);
+}
+
+function stepsOf(value: unknown) {
+  let raw = value;
+  if (typeof raw === 'string') {
+    try { raw = JSON.parse(raw); } catch { raw = []; }
+  }
+  if (!Array.isArray(raw)) return [];
+  return raw.map((step) => String(step || '').trim()).filter(Boolean).slice(0, 4);
 }
 
 function asDate(value: unknown) {
@@ -85,6 +106,7 @@ function shapeMove(row: MoveRow) {
     principle,
     principleLabel: PRINCIPLES[principle as keyof typeof PRINCIPLES] || principle,
     whyNow: String(row.why_now || ''),
+    how: stepsOf(row.how),
     area: String(row.area || 'other'),
     suggestedDue: asDate(row.suggested_due),
     status: String(row.status || 'open'),
@@ -125,7 +147,7 @@ export async function readCeo(sql: Sql, ownerId: string) {
     ORDER BY key
   `;
   const moves = await sql`
-    SELECT id, rank, text, principle, why_now, area, suggested_due, status, source_key
+    SELECT id, rank, text, principle, why_now, how, area, suggested_due, status, source_key
     FROM ceo_moves
     WHERE owner_id = ${ownerId} AND status = 'open'
     ORDER BY rank
@@ -267,8 +289,8 @@ export async function refreshCeo(sql: Sql, ownerId: string, now = new Date()) {
   for (const move of moves) {
     const due = move.suggestedDue;
     await sql`
-      INSERT INTO ceo_moves (owner_id, rank, text, principle, why_now, area, suggested_due, status, source_key)
-      VALUES (${ownerId}, ${move.rank}, ${move.text}, ${move.principle}, ${move.whyNow}, ${move.area}, ${due}, 'open', ${move.sourceKey})
+      INSERT INTO ceo_moves (owner_id, rank, text, principle, why_now, area, suggested_due, status, source_key, how)
+      VALUES (${ownerId}, ${move.rank}, ${move.text}, ${move.principle}, ${move.whyNow}, ${move.area}, ${due}, 'open', ${move.sourceKey}, ${JSON.stringify(move.how || [])}::jsonb)
     `;
   }
   return readCeo(sql, ownerId);
@@ -297,7 +319,7 @@ async function logDecision(sql: Sql, ownerId: string, moveId: string | null, fie
 async function loadMove(sql: Sql, ownerId: string, id: string) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
   const rows = await sql`
-    SELECT id, rank, text, principle, why_now, area, suggested_due, status, source_key
+    SELECT id, rank, text, principle, why_now, how, area, suggested_due, status, source_key
     FROM ceo_moves
     WHERE id = ${id} AND owner_id = ${ownerId}
     LIMIT 1
@@ -569,9 +591,42 @@ async function openaiTurn(key: string, model: string, system: string, messages: 
   };
 }
 
+export function standingReply(message: string) {
+  const text = message.toLowerCase();
+  if (/how/.test(text) && /friends-and-family|250,000|close the round|private network/.test(text)) {
+    return [
+      'Close the friends-and-family round to $250,000. $80,000 is in. $170,000 to go.',
+      '1. Open the next conversation with Kevin, then Zahar, BJ, and Daryl.',
+      '2. Assign each one a $25,000 chunk. That is about seven cheques.',
+      '3. For each name write the chunk, the step, the next action, and the next date.',
+      '4. Log the reply the same day and move to the next name.',
+    ].join('\n');
+  }
+  if (/how/.test(text) && /spend|cash cannot|cannot cover/.test(text)) {
+    return [
+      'Cash cannot cover the monthly burn.',
+      '1. List every bill the cash in the bank cannot cover this month.',
+      '2. Protect the product build. Defer every other line.',
+      '3. Pay the deferred lines only as cash from the round lands.',
+    ].join('\n');
+  }
+  if (/how/.test(text) && /subscription|corporate-docs|corp doc/.test(text)) {
+    return [
+      'The subscription agreement goes to counsel. Leave the signature with counsel.',
+      '1. Pull the current corporate-docs subscription draft.',
+      '2. Send it to counsel with the open questions.',
+      '3. Take their edits. Leave the signature with counsel.',
+      '4. Paper each payment only as counsel directs.',
+    ].join('\n');
+  }
+  return '';
+}
+
 export async function chatCeo(sql: Sql, ownerId: string, message: string) {
   const text = message.trim().slice(0, 2000);
   if (!text) return { reply: '', wrote: false };
+  const standing = standingReply(text);
+  if (standing) return { reply: cleanReply(standing), wrote: false };
   const current = await ensureCeo(sql, ownerId);
   const files = loadCeoFiles();
   const items = await sql`
@@ -597,7 +652,7 @@ export async function chatCeo(sql: Sql, ownerId: string, message: string) {
     `Tonight's three moves: ${JSON.stringify(current.moves)}`,
     `Last decisions: ${JSON.stringify(current.decisions)}`,
     `Live board: ${JSON.stringify(snapshot)}`,
-    'Answer in plain words. Hyphens only. Do not describe 4orm as an AI company. Do not invent a number or a name. A move is one line: verb, who, by when. Legal, securities, and tax go to counsel. Never say Sign. You advise. Chad decides.',
+    'Answer in plain words. Hyphens only. Do not describe 4orm as an AI company. Do not invent a number or a name. A move is one line: verb, who, by when, plus a HOW of 2 to 4 steps. The regulator is a reach-out track and the lowest priority. Close friends-and-family to $250,000: $80,000 is in, $170,000 to go, in about seven $25,000 cheques. Next conversations: Kevin, Zahar, BJ, Daryl. Protect the product build. Pay the rest only as cash lands. Legal, securities, and tax go to counsel. Never say Sign. You advise. Chad decides.',
   ].filter(Boolean).join('\n\n');
   const anthropicKey = env('ANTHROPIC_API_KEY');
   const openaiKey = env('OPENAI_API_KEY');
