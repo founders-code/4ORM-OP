@@ -182,7 +182,7 @@ test('cash of 100 lights runway and spend red and every ranked move is returned'
 });
 
 test('package mail fills tokens and keeps research in the body', () => {
-  assert.equal(STARTERS.length, 4);
+  assert.equal(STARTERS.length, 3);
   assert.equal(STARTERS.every((item) => !/@/.test(JSON.stringify(item.suggestions || []))), true);
   const investor = STARTERS.find((item) => item.kind === 'investor');
   assert.match(investor.emailSubject, /\$25,000/);

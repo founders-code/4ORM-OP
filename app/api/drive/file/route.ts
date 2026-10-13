@@ -17,14 +17,17 @@ export async function GET(req: Request) {
     }
     const creds = await loadCredsFor(session.userId);
     const file = await withCreds(creds, () => exportDriveFile(id));
-    if (!file || !file.bytes.length) {
+    const type = String(file?.type || '');
+    const previewable = type.startsWith('image/') || type === 'application/pdf' || type.startsWith('text/');
+    if (!file || !file.bytes.length || !previewable) {
       return NextResponse.json({ error: 'This file cannot be previewed here.' }, { status: 400 });
     }
     return new NextResponse(new Uint8Array(file.bytes), {
       headers: {
-        'content-type': file.type || 'application/octet-stream',
+        'content-type': type,
         'content-disposition': 'inline',
         'cache-control': 'private, max-age=60',
+        'x-content-type-options': 'nosniff',
       },
     });
   } catch (err) {

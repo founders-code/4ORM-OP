@@ -133,8 +133,7 @@ async function readRecipients(sql: Sql, ownerId: string, packageId: string): Pro
 
 export async function listPackages(sql: Sql, ownerId: string) {
   try {
-    const count = await sql`SELECT id FROM packages WHERE owner_id = ${ownerId} LIMIT 1`;
-    if (!count.length) await seedPackages(sql, ownerId);
+    await seedPackages(sql, ownerId);
     let rows: Record<string, unknown>[];
     try {
       rows = (await sql`
@@ -191,6 +190,8 @@ export async function listPackages(sql: Sql, ownerId: string) {
 async function seedPackages(sql: Sql, ownerId: string) {
   for (const item of STARTERS) {
     try {
+      const found = await sql`SELECT id FROM packages WHERE owner_id = ${ownerId} AND name = ${item.name} LIMIT 1`;
+      if (found.length) continue;
       await sql`
         INSERT INTO packages (owner_id, name, kind, email_subject, email_body, research, status)
         VALUES (${ownerId}, ${item.name}, ${item.kind}, ${item.emailSubject}, ${item.emailBody}, ${item.research}, 'draft')
@@ -270,6 +271,7 @@ export async function createPackage(
     if (!clean) clean = contactName;
     if (!subjectLabel) subjectLabel = contactName;
   }
+  if (!spaceType && clean) spaceType = 'project';
   if (spaceType === 'project' && !subjectLabel) subjectLabel = clean;
   if (!allowed || !clean) return null;
   const description = clip(meta.description, 240);
