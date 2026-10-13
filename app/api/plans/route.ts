@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    if (!session.sql) return NextResponse.json({ itemId: '', steps: [], needs: [], draft: '', created: [] });
     const body = await req.json().catch(() => null);
     const saved = await savePlan(session.sql, session.userId, {
       itemId: String(body?.itemId || ''),
@@ -23,8 +23,8 @@ export async function POST(req: Request) {
     });
     if (!saved) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     return NextResponse.json(saved);
-  } catch {
-    fail('plans_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+  } catch (err) {
+    fail('plans_failed', err);
+    return NextResponse.json({ itemId: '', steps: [], needs: [], draft: '', created: [] });
   }
 }

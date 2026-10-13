@@ -1,5 +1,6 @@
 import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
 import { CEILINGS, BUDGET_WINDOW_MS } from './guard.mjs';
+import { fail } from './log';
 import { rememberDatabaseUrl, savedDatabaseUrl } from './vault';
 
 type Sql = NeonQueryFunction<false, false>;
@@ -38,8 +39,6 @@ async function migrate(sql: Sql) {
     WHERE source_id IS NOT NULL`;
   await sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS source text DEFAULT 'manual'`;
   await sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS category text`;
-  await sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS waiting_on text`;
-  await sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS plan_of text`;
   await sql`
     DO $$
     DECLARE r record;
@@ -127,7 +126,6 @@ async function migrate(sql: Sql) {
     runway_weeks int
   )`;
   await sql`ALTER TABLE owner_settings ADD COLUMN IF NOT EXISTS zoom_seed_version text`;
-  await sql`ALTER TABLE owner_settings ADD COLUMN IF NOT EXISTS news_categories jsonb`;
   await sql`CREATE TABLE IF NOT EXISTS note_cats (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id text NOT NULL,
@@ -291,50 +289,67 @@ async function migrate(sql: Sql) {
     created_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE (owner_id, slug)
   )`;
-  await sql`CREATE TABLE IF NOT EXISTS item_plans (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    owner_id text NOT NULL,
-    item_id text NOT NULL,
-    steps jsonb NOT NULL DEFAULT '[]',
-    needs jsonb NOT NULL DEFAULT '[]',
-    draft text,
-    updated_at timestamptz NOT NULL DEFAULT now(),
-    UNIQUE (owner_id, item_id)
-  )`;
-  await sql`CREATE TABLE IF NOT EXISTS commitments (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    owner_id text NOT NULL,
-    text text NOT NULL,
-    source_note_id text NOT NULL DEFAULT '',
-    made_on date,
-    status text NOT NULL DEFAULT 'open',
-    created_at timestamptz NOT NULL DEFAULT now(),
-    UNIQUE (owner_id, source_note_id, text)
-  )`;
-  await sql`
-    DO $$ BEGIN
-      ALTER TABLE commitments ADD CONSTRAINT commitments_status_check CHECK (status IN ('open','done','decked'));
-    EXCEPTION WHEN duplicate_object THEN NULL;
-    END $$
-  `;
-  await sql`CREATE TABLE IF NOT EXISTS news_items (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    owner_id text NOT NULL,
-    category text NOT NULL,
-    title text NOT NULL,
-    summary text,
-    url text,
-    published_at timestamptz,
-    is_top boolean NOT NULL DEFAULT false,
-    swept_on date NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT now()
-  )`;
   await sql`CREATE TABLE IF NOT EXISTS ceo_weights (
     owner_id text NOT NULL,
     key text NOT NULL,
     boost int NOT NULL,
     PRIMARY KEY (owner_id, key)
   )`;
+  await migrateWar(sql);
+}
+
+/** New War Room tables. A failure here is logged and skipped so the rest of the desk still opens. */
+async function migrateWar(sql: Sql) {
+  const steps: Array<[string, () => Promise<unknown>]> = [
+    ['db_waiting_on', () => sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS waiting_on text`],
+    ['db_plan_of', () => sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS plan_of text`],
+    ['db_news_categories', () => sql`ALTER TABLE owner_settings ADD COLUMN IF NOT EXISTS news_categories jsonb`],
+    ['db_item_plans', () => sql`CREATE TABLE IF NOT EXISTS item_plans (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      item_id text NOT NULL,
+      steps jsonb NOT NULL DEFAULT '[]',
+      needs jsonb NOT NULL DEFAULT '[]',
+      draft text,
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      UNIQUE (owner_id, item_id)
+    )`],
+    ['db_commitments', () => sql`CREATE TABLE IF NOT EXISTS commitments (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      text text NOT NULL,
+      source_note_id text NOT NULL DEFAULT '',
+      made_on date,
+      status text NOT NULL DEFAULT 'open',
+      created_at timestamptz NOT NULL DEFAULT now(),
+      UNIQUE (owner_id, source_note_id, text)
+    )`],
+    ['db_commitments_check', () => sql`
+      DO $$ BEGIN
+        ALTER TABLE commitments ADD CONSTRAINT commitments_status_check CHECK (status IN ('open','done','decked'));
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$
+    `],
+    ['db_news_items', () => sql`CREATE TABLE IF NOT EXISTS news_items (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      category text NOT NULL,
+      title text NOT NULL,
+      summary text,
+      url text,
+      published_at timestamptz,
+      is_top boolean NOT NULL DEFAULT false,
+      swept_on date NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
+  ];
+  for (const [code, run] of steps) {
+    try {
+      await run();
+    } catch (err) {
+      fail(code, err);
+    }
+  }
 }
 
 export function resetSql() {
@@ -350,7 +365,8 @@ export async function getSql(): Promise<Sql | null> {
   }
   try {
     return await ready;
-  } catch {
+  } catch (err) {
+    fail('db_init', err);
     ready = null;
     return null;
   }
