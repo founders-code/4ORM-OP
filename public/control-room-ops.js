@@ -437,13 +437,14 @@
     var el = document.getElementById('opsLibrary');
     if (!el || el.hidden) return;
     var docs = STATE.staged || [];
-    el.innerHTML = '<div class="lb-add" id="libDrop">drag documents here, or <label class="btn sm">choose files<input id="libUpload" type="file" multiple hidden></label></div><div class="cap" style="margin:10px 0"><select id="libCat" aria-label="Category">' + CATS.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select><select id="libFile" aria-label="Drive file"><option value="">Pull from Drive</option>' + flatFiles(STATE.drives || [], []).map(function (file) { return '<option value="' + esc(file.id) + '" data-url="' + esc(file.url || '') + '" data-name="' + esc(file.name || '') + '">' + esc(file.name || 'File') + '</option>'; }).join('') + '</select><button class="btn sm" id="libPull" type="button">Pull from Drive</button><button class="btn sm" id="libPush" type="button">Move to Drive</button></div><div class="lib-grid">' + CATS.map(function (c) {
+    el.innerHTML = '<div class="lb-add" id="libDrop">drag documents here, or <label class="btn sm">choose files<input id="libUpload" class="file-in" type="file" multiple></label></div><div class="cap" style="margin:10px 0"><select id="libCat" aria-label="Category">' + CATS.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select><select id="libFile" aria-label="Drive file"><option value="">Pull from Drive</option>' + flatFiles(STATE.drives || [], []).map(function (file) { return '<option value="' + esc(file.id) + '" data-url="' + esc(file.url || '') + '" data-name="' + esc(file.name || '') + '">' + esc(file.name || 'File') + '</option>'; }).join('') + '</select><button class="btn sm" id="libPull" type="button">Pull from Drive</button><button class="btn sm" id="libPush" type="button">Move to Drive</button></div><div class="lib-grid">' + CATS.map(function (c) {
       var n = docs.filter(function (d) { return d.category === c; }).length;
       var mine = docs.filter(function (d) { return d.category === c; }).slice(0, 9);
       var tiles = mine.map(function (d) {
         var image = (d.mime || '').indexOf('image/') === 0;
         var kind = ((d.name || '').split('.').pop() || 'file').slice(0, 4).toUpperCase();
-        var face = image ? '<img alt="" src="/api/documents/file?id=' + encodeURIComponent(d.id) + '"/>' : '<span class="dk">' + esc(kind) + '</span>';
+        var src = image ? ('/api/documents/file?id=' + encodeURIComponent(d.id)) : (d.driveFileId ? ('https://drive.google.com/thumbnail?id=' + encodeURIComponent(d.driveFileId) + '&sz=w240') : '');
+        var face = (src ? '<img alt="" src="' + src + '" onload="var k=this.parentNode.querySelector(\'.dk\');if(k)k.hidden=true" onerror="this.hidden=true"/>' : '') + '<span class="dk"' + (src ? ' hidden' : '') + '>' + esc(kind) + '</span>';
         return '<button type="button" class="mini" data-lib-inline="' + esc(d.id) + '">' + face + '<em>' + esc(d.name || 'File') + '</em></button>';
       }).join('');
       return '<div class="lib-card" data-cat="' + esc(c) + '"><div class="lib-h"><b>' + esc(c) + '</b><div class="kick">' + n + ' files</div></div><div class="lib-mini">' + tiles + '</div></div>';
