@@ -48,6 +48,7 @@ function shapePackage(row: Record<string, unknown>, docs: Doc[], recipients: Rec
     subjectContactId: row.subject_contact_id ? String(row.subject_contact_id) : '',
     subjectLabel: row.subject_label ? String(row.subject_label) : '',
     description: String(row.description || ''),
+    spaceCategory: String(row.space_category || ''),
     pushedToDriveAt: pushed && !Number.isNaN(pushed.getTime()) ? pushed.toISOString() : '',
     docCount: docs.length,
     recipientCount: recipients.length,
@@ -137,7 +138,7 @@ export async function listPackages(sql: Sql, ownerId: string) {
     let rows: Record<string, unknown>[];
     try {
       rows = (await sql`
-        SELECT id, name, kind, status, drive_folder_url, space_type, subject_label, pushed_to_drive_at, description
+        SELECT id, name, kind, status, drive_folder_url, space_type, subject_label, pushed_to_drive_at, description, space_category
         FROM packages
         WHERE owner_id = ${ownerId}
         ORDER BY created_at
@@ -174,6 +175,7 @@ export async function listPackages(sql: Sql, ownerId: string) {
         spaceType: row.space_type ? String(row.space_type) : '',
         subjectLabel: row.subject_label ? String(row.subject_label) : '',
         description: String(row.description || ''),
+        spaceCategory: String(row.space_category || ''),
         pushedToDriveAt: pushed && !Number.isNaN(pushed.getTime()) ? pushed.toISOString() : '',
         docCount,
         recipientCount,
@@ -203,7 +205,7 @@ async function owned(sql: Sql, ownerId: string, id: string) {
   try {
     const rows = await sql`
       SELECT id, name, kind, drive_folder_id, drive_folder_url, email_subject, email_body, research, status,
-        space_type, subject_contact_id, subject_label, pushed_to_drive_at, description
+        space_type, subject_contact_id, subject_label, pushed_to_drive_at, description, space_category
       FROM packages
       WHERE id = ${id} AND owner_id = ${ownerId}
     `;
@@ -248,13 +250,17 @@ export async function createPackage(
   ownerId: string,
   name: string,
   kind: string,
-  meta: { spaceType?: string; subjectContactId?: string; subjectLabel?: string; description?: string } = {},
+  meta: { spaceType?: string; subjectContactId?: string; subjectLabel?: string; description?: string; spaceCategory?: string } = {},
 ) {
-  const allowed = allowPackageKind(kind);
+  const allowed = allowPackageKind(kind) || 'data_room';
   let clean = clip(name, 120);
-  const spaceType = allowSpaceType(String(meta.spaceType || ''));
+  let spaceType = allowSpaceType(String(meta.spaceType || ''));
   let subjectContact = clip(meta.subjectContactId, 40);
   let subjectLabel = clip(meta.subjectLabel, 180);
+  if (spaceType === 'person' && !packageIdOk(subjectContact)) {
+    spaceType = clean ? 'project' : '';
+    subjectContact = '';
+  }
   if (spaceType === 'person') {
     if (!packageIdOk(subjectContact)) return null;
     const contacts = await sql`SELECT name FROM contacts WHERE id = ${subjectContact} AND owner_id = ${ownerId}`;
@@ -267,6 +273,7 @@ export async function createPackage(
   if (spaceType === 'project' && !subjectLabel) subjectLabel = clean;
   if (!allowed || !clean) return null;
   const description = clip(meta.description, 240);
+  const spaceCategory = clip(meta.spaceCategory, 80);
   let rows;
   try {
     rows = await sql`
@@ -283,9 +290,9 @@ export async function createPackage(
     `;
   }
   const createdId = String(rows[0]?.id || '');
-  if (description && createdId) {
+  if ((description || spaceCategory) && createdId) {
     try {
-      await sql`UPDATE packages SET description = ${description} WHERE id = ${createdId} AND owner_id = ${ownerId}`;
+      await sql`UPDATE packages SET description = ${description}, space_category = ${spaceCategory} WHERE id = ${createdId} AND owner_id = ${ownerId}`;
     } catch (err) {
       fail('packages_description', err);
     }

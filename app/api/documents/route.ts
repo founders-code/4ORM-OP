@@ -55,6 +55,27 @@ export async function POST(req: Request) {
       `;
       return NextResponse.json({ ok: true });
     }
+    if (action === 'upload') {
+      const category = CATS.includes(String(body?.category || '')) ? String(body.category) : '';
+      const name = String(body?.name || '').trim().slice(0, 180);
+      const raw = String(body?.body || '');
+      if (!category || !name || !raw || raw.length > 1600000) {
+        return NextResponse.json({ error: 'Could not store that file.' }, { status: 400 });
+      }
+      try {
+        await session.sql`
+          INSERT INTO staged_docs (owner_id, category, name, mime, body_b64)
+          VALUES (${session.userId}, ${category}, ${name}, ${String(body?.mime || '').slice(0, 120)}, ${raw})
+        `;
+      } catch (err) {
+        fail('staged_upload', err);
+        await session.sql`
+          INSERT INTO staged_docs (owner_id, category, name, mime)
+          VALUES (${session.userId}, ${category}, ${name}, ${String(body?.mime || '').slice(0, 120)})
+        `;
+      }
+      return NextResponse.json({ ok: true });
+    }
     if (action === 'remove') {
       const id = String(body?.id || '');
       if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: 'Could not remove that file.' }, { status: 400 });

@@ -425,6 +425,16 @@ async function migrateWar(sql: Sql) {
     ['db_contact_what', () => sql`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS what_they_do text`],
     ['db_contact_why', () => sql`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS fb_why text`],
     ['db_packages_description', () => sql`ALTER TABLE packages ADD COLUMN IF NOT EXISTS description text`],
+    ['db_packages_space_category', () => sql`ALTER TABLE packages ADD COLUMN IF NOT EXISTS space_category text`],
+    ['db_sticky_notes', () => sql`CREATE TABLE IF NOT EXISTS sticky_notes (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      body text NOT NULL DEFAULT '',
+      color text NOT NULL DEFAULT 'yellow',
+      x int NOT NULL DEFAULT 24,
+      y int NOT NULL DEFAULT 24,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
     ['db_vc_inbox', () => sql`CREATE TABLE IF NOT EXISTS vc_inbox (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       owner_id text NOT NULL,
@@ -442,8 +452,10 @@ async function migrateWar(sql: Sql) {
       drive_file_id text,
       mime text,
       thumb_url text,
+      body_b64 text,
       created_at timestamptz NOT NULL DEFAULT now()
     )`],
+    ['db_staged_body', () => sql`ALTER TABLE staged_docs ADD COLUMN IF NOT EXISTS body_b64 text`],
     ['db_news_items', () => sql`CREATE TABLE IF NOT EXISTS news_items (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       owner_id text NOT NULL,
