@@ -82,6 +82,11 @@ function renderWar(){
   renderSweep();
 }
 function noteById(id){return (STATE.zoomNotes||[]).filter(function(n){return n.id===id;})[0];}
+function hiddenWait(key){return (STATE.resolvedWaiting||[]).indexOf(key)>=0;}
+function closeBtn(itemId,key){
+  var attrs=itemId?' data-close-item="'+esc(itemId)+'"':' data-close-key="'+esc(key||'')+'"';
+  return '<button type="button" class="wclose"'+attrs+' aria-label="Done">\u00d7</button>';
+}
 function renderWaiting(){
   var us=document.getElementById('waitUs');
   var said=document.getElementById('saidCard');
@@ -89,38 +94,40 @@ function renderWaiting(){
   if(!us||!said||!them) return;
   var rows=[];
   (STATE.commitments||[]).filter(function(c){return c.status==='open';}).forEach(function(c){
+    var key='us:commit:'+c.id;
+    if(hiddenWait(key)) return;
     var note=noteById(c.sourceNoteId);
     var who=(note&&(note.attendees||[]).filter(function(n){return n&&n.toLowerCase()!=='chad';})[0])||'Them';
     var age=ageDays(c.madeOn);
-    rows.push({who:who,what:c.text,age:age,late:age!=null&&age>=7,plan:'commit:'+c.id,area:'follow_up'});
+    rows.push({who:who,what:c.text,age:age,late:age!=null&&age>=7,plan:'commit:'+c.id,area:'follow_up',key:key});
   });
   openItems().filter(function(it){return it.source==='gmail';}).forEach(function(it){
     var age=ageDays(it.due);
     var late=it.due!=null&&days(it.due)<0;
-    rows.push({who:'Mail',what:it.title,age:age,late:late,plan:'item:'+it.id,area:it.area});
+    rows.push({who:'Mail',what:it.title,age:age,late:late,plan:'item:'+it.id,area:it.area,itemId:it.id});
   });
   openItems().filter(function(it){return it.source!=='gmail'&&(!it.owner||/^chad\b/i.test(it.owner));}).forEach(function(it){
     var hit=(STATE.contacts||[]).filter(function(c){return c.name&&c.name.length>2&&it.title.toLowerCase().indexOf(c.name.toLowerCase())>=0;})[0];
     if(!hit) return;
     var late=it.due!=null&&days(it.due)<0;
-    rows.push({who:hit.name,what:it.title,age:ageDays(it.due),late:late,plan:'item:'+it.id,area:it.area});
+    rows.push({who:hit.name,what:it.title,age:ageDays(it.due),late:late,plan:'item:'+it.id,area:it.area,itemId:it.id});
   });
   us.innerHTML='<div class="whead"><h3>Waiting on us</h3></div>'+(rows.length?rows.map(function(row,i){
-    return '<div class="wrow" data-peek="us:'+i+'"><div class="wt"><span class="chip">'+esc(row.who)+'</span> '+esc(row.what)+'</div>'+ageChip(row.age,row.late)+planBtn(row.plan,row.what,row.area)+'</div>';
+    return '<div class="wrow" data-peek="us:'+i+'"><div class="wt"><span class="chip">'+esc(row.who)+'</span> '+esc(row.what)+'</div>'+ageChip(row.age,row.late)+planBtn(row.plan,row.what,row.area)+closeBtn(row.itemId,row.key)+'</div>';
   }).join(''):'<div class="wempty">Nobody is blocked on you.</div>');
   STATE._waitUs=rows;
   var commits=(STATE.commitments||[]).filter(function(c){return c.status!=='done';});
   said.innerHTML='<div class="whead"><h3>You said you\'d do it</h3></div>'+(commits.length?commits.map(function(c){
     var note=noteById(c.sourceNoteId);
     var label=note?(fmtNoteDate(note.date)+' - '+note.title):'Note';
-    return '<div class="wrow"><div class="wt">'+esc(c.text)+'</div><button type="button" class="chip" data-znote="'+esc(c.sourceNoteId)+'">'+esc(label)+'</button><button type="button" class="btn sm" data-commit-done="'+esc(c.id)+'">Done</button><button type="button" class="btn sm" data-commit-deck="'+esc(c.id)+'">To the deck</button>'+planBtn('commit:'+c.id,c.text,'follow_up')+'</div>';
+    return '<div class="wrow"><div class="wt">'+esc(c.text)+'</div><button type="button" class="chip" data-znote="'+esc(c.sourceNoteId)+'">'+esc(label)+'</button><button type="button" class="btn sm" data-commit-done="'+esc(c.id)+'">Done</button><button type="button" class="btn sm" data-commit-deck="'+esc(c.id)+'">To the deck</button>'+planBtn('commit:'+c.id,c.text,'follow_up')+'<button type="button" class="wclose" data-commit-done="'+esc(c.id)+'" aria-label="Done">\u00d7</button></div>';
   }).join(''):'<div class="wempty">No open commitments from the notes.</div>');
   var others=openItems().filter(function(it){return it.waitingOn||(it.status==='waiting'&&it.owner&&!/^chad\b/i.test(it.owner));});
   var flagForm=STATE.flagOpen?'<div class="wrow"><input id="flagItem" type="text" placeholder="Which open item" aria-label="Which open item"/><input id="flagWho" type="text" placeholder="Waiting on whom" aria-label="Waiting on whom"/><button class="btn sm pri" type="button" id="flagSave">Save flag</button></div>':'';
   them.innerHTML='<div class="whead"><h3>Waiting on others</h3><button class="btn sm" type="button" id="flagWait">Flag an item</button></div>'+flagForm+(others.length?others.map(function(it){
     var late=it.due!=null&&days(it.due)<0;
     var who=it.waitingOn||it.owner||'Someone';
-    return '<div class="wrow" data-peek="them:'+esc(it.id)+'"><div class="wt">'+esc(it.title)+'</div><span class="chip">'+esc(who)+'</span>'+ageChip(ageDays(it.due),late)+planBtn('item:'+it.id,it.title,it.area)+'</div>';
+    return '<div class="wrow" data-peek="them:'+esc(it.id)+'"><div class="wt">'+esc(it.title)+'</div><span class="chip">'+esc(who)+'</span>'+ageChip(ageDays(it.due),late)+planBtn('item:'+it.id,it.title,it.area)+closeBtn(it.id,'')+'</div>';
   }).join(''):'<div class="wempty">You are not blocked on anyone.</div>');
 }
 function renderSweep(){
@@ -189,6 +196,10 @@ function openPeek(title,body,planId,planTitle,area){
 var _renderRoom=renderRoom;
 renderRoom=function(){_renderRoom();renderWar();};
 document.getElementById('v-war').addEventListener('click',function(e){
+  var closeItem=e.target.closest('[data-close-item]');
+  if(closeItem){resolveItem(closeItem.getAttribute('data-close-item'));return;}
+  var closeKey=e.target.closest('[data-close-key]');
+  if(closeKey){resolveKey(closeKey.getAttribute('data-close-key'));return;}
   var plan=e.target.closest('[data-plan]');
   if(plan){openPlan(plan.getAttribute('data-plan'),plan.getAttribute('data-ptitle'),plan.getAttribute('data-parea'));return;}
   var peek=e.target.closest('[data-peek]');
@@ -231,8 +242,29 @@ document.getElementById('v-war').addEventListener('click',function(e){
     authFetch('/api/items',{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({id:hit.id,waitingOn:who})}).then(function(r){if(!r.ok)throw 0;renderWar();}).catch(function(){deskFail('Could not flag that item.');});
   }
 });
+function resolveItem(id){
+  var hit=(STATE.items||[]).filter(function(it){return it.id===id;})[0];
+  var prev=hit?hit.status:'open';
+  if(hit) hit.status='done';
+  renderWar();
+  authFetch('/api/items/'+id,{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({status:'done'})}).then(function(r){if(!r.ok)throw 0;}).catch(function(){if(hit)hit.status=prev;renderWar();deskFail('Could not close that row.');});
+}
+function resolveKey(key){
+  if(!key) return;
+  var prev=(STATE.resolvedWaiting||[]).slice();
+  STATE.resolvedWaiting=prev.concat([key]);
+  renderWar();
+  authFetch('/api/waiting',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({sourceKey:key})}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(data){if(!data||data.ok!==true)throw 0;}).catch(function(){STATE.resolvedWaiting=prev;renderWar();deskFail('Could not close that row.');});
+}
 function commitAct(id,action){
-  authFetch('/api/commitments',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({id:id,action:action})}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(data){STATE.commitments=data.commitments||STATE.commitments;renderWar();if(action==='deck') return loadBoard();}).catch(function(){deskFail('Could not update that commitment.');});
+  var prev=(STATE.commitments||[]).slice();
+  STATE.commitments=prev.map(function(c){return c.id===id?Object.assign({},c,{status:action==='done'?'done':'decked'}):c;});
+  renderWar();
+  var done=action==='done';
+  var req=done
+    ? authFetch('/api/commitments/'+id,{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({status:'done'})})
+    : authFetch('/api/commitments',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({id:id,action:action})});
+  req.then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(data){if(data&&data.commitments)STATE.commitments=data.commitments;renderWar();if(action==='deck') return loadBoard();}).catch(function(){STATE.commitments=prev;renderWar();deskFail('Could not update that commitment.');});
 }
 document.getElementById('planClose').onclick=closePlan;
 document.getElementById('planWin').addEventListener('click',function(e){if(e.target.id==='planWin') closePlan();});

@@ -121,7 +121,7 @@ test('the calendar window starts on Sunday and covers six weeks', () => {
   assert.equal(fromWednesday.start.toISOString(), fromSunday.start.toISOString());
 });
 
-test('cash of 100 lights runway and spend red and the three moves stay distinct', () => {
+test('cash of 100 lights runway and spend red and every ranked move is returned', () => {
   const now = new Date('2026-10-12T18:00:00Z');
   const profile = readFileSync(new URL('../ceo/shared/company-profile.md', import.meta.url), 'utf8');
   const facts = readProfileFacts(profile);
@@ -152,15 +152,17 @@ test('cash of 100 lights runway and spend red and the three moves stay distinct'
   }));
   const moves = pickMoves({ now, items, lamps, facts });
   assert.equal(DEFAULT_WEIGHTS.P4, 5);
-  assert.equal(moves.length, 3);
-  assert.equal(moves[0].principle, 'P1');
-  assert.equal(moves[1].principle, 'P2');
-  assert.equal(moves.some((move) => move.principle === 'P4' || move.facing === 'regulator'), false);
-  assert.equal(new Set(moves.map((move) => move.principle)).size, 3);
-  assert.equal(moves.filter((move) => move.facing === 'internal').length <= 1, true);
+  assert.equal(moves.length > 3, true);
+  assert.equal(moves[0].rank, 1);
+  assert.equal(moves[moves.length - 1].rank, moves.length);
+  const raise = moves.filter((move) => move.principle === 'P1');
+  assert.equal(raise.length > 0, true);
+  assert.equal(moves.some((move) => move.principle === 'P2'), true);
   assert.equal(moves.some((move) => move.facing !== 'internal'), true);
-  assert.match(moves[0].whyNow, /\$80,000 is in/);
-  assert.match(moves[0].how.join(' '), /Kevin/);
+  assert.match(raise[0].whyNow, /\$80,000 is in/);
+  assert.match(raise[0].how.join(' '), /Kevin/);
+  const hidden = pickMoves({ now, items, lamps, facts, quietKeys: [moves[0].sourceKey] });
+  assert.equal(hidden.some((move) => move.sourceKey === moves[0].sourceKey), false);
   for (const move of moves) {
     assert.equal(move.text.length <= 90, true);
     assert.equal(move.how.length >= 2 && move.how.length <= 4, true);
@@ -184,7 +186,8 @@ test('the control room page does not carry secrets', () => {
   assert.equal(page.includes('Connect GoHighLevel'), true);
   assert.equal(/DATABASE_URL|INGEST_TOKEN|CRON_SECRET|GOOGLE_|GHL_|refresh_token|client_secret/.test(page), false);
   assert.equal(page.includes('4orm Intelligence'), true);
-  assert.equal(page.includes('CEO - next three moves'), true);
+  assert.equal(page.includes('CEO - ranked moves'), true);
+  assert.equal(page.includes('wait-scroll'), true);
   assert.equal(page.includes('Form Intelligence'), false);
   assert.equal(page.includes('Do all steps'), true);
   assert.equal(page.includes('Close the round to $250,000'), true);

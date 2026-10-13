@@ -103,6 +103,7 @@ export function idleBoard(needsDatabase: boolean) {
     zoomNotes: [],
     runwayWeeks: null,
     calendarUntil: null,
+    resolvedWaiting: [],
     reads: { database: needsDatabase ? 'failed' : 'ok' },
   };
 }
@@ -223,6 +224,10 @@ export async function loadBoard(sql: Sql, ownerId: string) {
   const settings = await read(reads, 'settings', async () => {
     const rows = await sql`SELECT runway_weeks FROM owner_settings WHERE owner_id = ${ownerId} LIMIT 1`;
     return rows as Row[];
+  }, []);
+  const resolvedWaiting = await read(reads, 'resolvedWaiting', async () => {
+    const rows = await sql`SELECT source_key FROM resolved_waiting WHERE owner_id = ${ownerId}`;
+    return (rows as Row[]).map((row) => String(row.source_key || '')).filter(Boolean);
   }, []);
   const calendar = await read(reads, 'events', () => calendarMeta(sql, ownerId), { events: [], until: null });
   const zoomNotes = await read(reads, 'zoomNotes', () => listZoomNotes(sql, ownerId), []);
@@ -382,6 +387,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
     calendarUntil: calendar.until,
     folders,
     drives: folders.map((folder) => ({ id: folder.id, name: folder.name, folders: folder.children, files: folder.docs })),
+    resolvedWaiting,
     reads: { ...reads, folders: reads.drives || 'failed' },
   };
 }

@@ -3,6 +3,7 @@ import { join } from 'path';
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { allowArea, allowPriority, allowStatus, parseDue } from './guard.mjs';
 import { env } from './env.mjs';
+import { fail } from './log';
 import {
   PRINCIPLES,
   SEED_FACTS,
@@ -151,7 +152,6 @@ export async function readCeo(sql: Sql, ownerId: string) {
     FROM ceo_moves
     WHERE owner_id = ${ownerId} AND status = 'open'
     ORDER BY rank
-    LIMIT 3
   `;
   const decisions = await sql`
     SELECT id, move_id, context, options, evidence, case_against, decision, owner, review_date, created_at
@@ -276,6 +276,18 @@ export async function refreshCeo(sql: Sql, ownerId: string, now = new Date()) {
     if (row.text) quietTexts.push(String(row.text));
     if (row.source_key) quietKeys.push(String(row.source_key));
   }
+  try {
+    const today = edmontonDay(now);
+    const snoozed = await sql`
+      SELECT move_key FROM move_snooze
+      WHERE owner_id = ${ownerId} AND snoozed_on = ${today}::date
+    `;
+    for (const row of snoozed as Array<{ move_key?: string }>) {
+      if (row.move_key) quietKeys.push(String(row.move_key));
+    }
+  } catch (err) {
+    fail('ceo_snooze', err);
+  }
   const moves = pickMoves({ now, items: open, lamps, weights, facts, quietTexts, quietKeys });
   await sql`DELETE FROM ceo_moves WHERE owner_id = ${ownerId} AND status = 'open'`;
   for (const row of lamps) {
@@ -373,22 +385,39 @@ export async function doMove(sql: Sql, ownerId: string, id: string) {
   return refreshCeo(sql, ownerId);
 }
 
+function edmontonDay(now = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Edmonton',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
+}
+
 export async function snoozeMove(sql: Sql, ownerId: string, id: string, reason: string) {
   const move = await loadMove(sql, ownerId, id);
+  if (!move || move.status !== 'open') return null;
+  const key = String(move.source_key || move.text || '').trim().slice(0, 180);
+  if (!key) return null;
+  const today = edmontonDay();
+  try {
+    await sql`
+      INSERT INTO move_snooze (owner_id, move_key, snoozed_on)
+      VALUES (${ownerId}, ${key}, ${today}::date)
+      ON CONFLICT (owner_id, move_key, snoozed_on) DO NOTHING
+    `;
+  } catch (err) {
+    fail('ceo_snooze', err);
+    return null;
+  }
   const why = reason.trim().slice(0, 500);
-  if (!move || move.status !== 'open' || !why) return null;
-  await sql`
-    UPDATE ceo_moves
-    SET status = 'snoozed', snooze_until = now() + interval '3 days'
-    WHERE id = ${move.id} AND owner_id = ${ownerId}
-  `;
   await logDecision(sql, ownerId, move.id, {
     context: move.text,
     options: 'Do | Not now | Ask',
     evidence: move.why_now || '',
     caseAgainst: why,
     decision: 'Not now',
-    reviewDate: new Date(Date.now() + 3 * 86400000).toISOString(),
+    reviewDate: `${today}T23:59:00`,
   });
   return refreshCeo(sql, ownerId);
 }
