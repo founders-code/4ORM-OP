@@ -42,7 +42,7 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = await req.json().catch(() => null);
     if (String(body?.kind || '') === 'category') {
       const name = clean(body?.name, 80);
@@ -98,7 +98,7 @@ export async function POST(req: Request) {
     return NextResponse.json(noteShape(made[0] as Record<string, unknown>));
   } catch {
     fail('notes_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
   }
 }
 
@@ -106,7 +106,7 @@ export async function PATCH(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = await req.json().catch(() => null);
     const id = String(body?.id || '');
     if (!ID.test(id)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
@@ -139,7 +139,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json(noteShape(rows[0] as Record<string, unknown>));
   } catch {
     fail('notes_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
   }
 }
 
@@ -147,7 +147,7 @@ export async function DELETE(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = await req.json().catch(() => null);
     const id = String(body?.id || '');
     const kind = String(body?.kind || '');
@@ -168,6 +168,6 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ id });
   } catch {
     fail('notes_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
   }
 }

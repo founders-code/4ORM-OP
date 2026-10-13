@@ -3,6 +3,7 @@ import { ROADMAP } from './roadmap.mjs';
 import { idlePlugins, listPlugins } from './plugins';
 import { listZoomNotes, seedZoomNotes } from './zoom-notes';
 import { fail } from './log';
+import { seedFacebook } from './seed-facebook';
 import { syncCalendar, syncDrive, syncGhl, calendarMeta, ingestMail } from './sync';
 
 type Sql = NeonQueryFunction<false, false>;
@@ -196,7 +197,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
 
   const items = await read(reads, 'items', async () => {
     const rows = await sql`
-      SELECT id, title, area, status, priority, due, owner, source, category
+      SELECT id, title, area, status, priority, due, owner, source, category, notes
       FROM items
       WHERE owner_id = ${ownerId}
         AND (snooze_until IS NULL OR snooze_until <= now())
@@ -205,24 +206,46 @@ export async function loadBoard(sql: Sql, ownerId: string) {
     `;
     return rows as Row[];
   }, []);
+  await read(reads, 'facebook', () => seedFacebook(sql, ownerId), undefined);
   const contacts = await read(reads, 'contacts', async () => {
     const rows = await sql`
       SELECT id, name, company, role, email, phone, area, notes, type, tier, stage, next_action, next_date, last_touch
       FROM contacts
       WHERE owner_id = ${ownerId}
       ORDER BY name
-      LIMIT 200
+      LIMIT 400
     `;
     const tagged = new Map<string, string>();
+    const extraById = new Map<string, Row>();
     try {
-      const extra = await sql`SELECT id, category FROM contacts WHERE owner_id = ${ownerId}`;
-      for (const row of extra as Row[]) {
-        if (row.category) tagged.set(String(row.id), String(row.category));
-      }
+      const extra = await sql`
+        SELECT id, category, fb_tier, fb_ask, fb_status, mutuals, what_they_do, fb_why, source
+        FROM contacts WHERE owner_id = ${ownerId}
+      `;
+      for (const row of extra as Row[]) extraById.set(String(row.id), row);
     } catch (err) {
       fail('board_contact_category', err);
+      try {
+        const extra = await sql`SELECT id, category FROM contacts WHERE owner_id = ${ownerId}`;
+        for (const row of extra as Row[]) extraById.set(String(row.id), row);
+      } catch (inner) {
+        fail('board_contact_category', inner);
+      }
     }
-    return (rows as Row[]).map((row) => ({ ...row, category: tagged.get(String(row.id)) || '' })) as Row[];
+    return (rows as Row[]).map((row) => {
+      const extra = extraById.get(String(row.id)) || {};
+      return {
+        ...row,
+        category: extra.category ? String(extra.category) : '',
+        fbTier: extra.fb_tier ? String(extra.fb_tier) : '',
+        fbAsk: extra.fb_ask ? String(extra.fb_ask) : '',
+        fbStatus: extra.fb_status ? String(extra.fb_status) : '',
+        mutuals: extra.mutuals ? String(extra.mutuals) : '',
+        whatTheyDo: extra.what_they_do ? String(extra.what_they_do) : '',
+        fbWhy: extra.fb_why ? String(extra.fb_why) : '',
+        source: extra.source ? String(extra.source) : '',
+      };
+    }) as Row[];
   }, []);
   const categories = await read(reads, 'categories', async () => {
     const rows = await sql`SELECT name, subs FROM link_categories WHERE owner_id = ${ownerId} ORDER BY name`;

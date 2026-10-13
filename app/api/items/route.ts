@@ -25,7 +25,7 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = await req.json().catch(() => null);
     const title = String(body?.title || '').trim().slice(0, 180);
     const area = allowArea(String(body?.area || 'other'));
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     return NextResponse.json(shapeItem(rows[0] as Record<string, unknown>));
   } catch {
     fail('items_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
   }
 }
 
@@ -51,7 +51,7 @@ export async function PATCH(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = await req.json().catch(() => null);
     const id = String(body?.id || '');
     const has = (key: string) => !!body && Object.prototype.hasOwnProperty.call(body, key);
@@ -62,16 +62,18 @@ export async function PATCH(req: Request) {
     const setOwner = has('owner');
     const setDue = has('due');
     const setWait = has('waitingOn');
+    const setNotes = has('notes');
     const title = setTitle ? String(body?.title || '').trim().slice(0, 240) : '';
     const area = setArea ? allowArea(String(body?.area || '')) : null;
     const status = setStatus ? allowStatus(String(body?.status || '')) : null;
     const priority = setPriority ? allowPriority(String(body?.priority || '')) : null;
     const parsed = setDue ? parseDue(body?.due) : { ok: true, iso: null };
-    if (!/^[0-9a-f-]{36}$/i.test(id) || (setTitle && !title) || (setArea && !area) || (setStatus && !status) || (setPriority && !priority) || !parsed.ok || (!setTitle && !setArea && !setStatus && !setPriority && !setOwner && !setDue && !setWait)) {
+    if (!/^[0-9a-f-]{36}$/i.test(id) || (setTitle && !title) || (setArea && !area) || (setStatus && !status) || (setPriority && !priority) || !parsed.ok || (!setTitle && !setArea && !setStatus && !setPriority && !setOwner && !setDue && !setWait && !setNotes)) {
       return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     }
     const owner = setOwner ? String(body?.owner ?? '').slice(0, 80) : '';
     const waitingOn = setWait ? String(body?.waitingOn ?? '').slice(0, 80) : '';
+    const notes = setNotes ? String(body?.notes ?? '').slice(0, 4000) : '';
     const dueIso = parsed.iso;
     const rows = await session.sql`
       UPDATE items
@@ -81,6 +83,7 @@ export async function PATCH(req: Request) {
           priority = CASE WHEN ${setPriority} THEN ${priority} ELSE priority END,
           owner = CASE WHEN ${setOwner} THEN ${owner} ELSE owner END,
           waiting_on = CASE WHEN ${setWait} THEN ${waitingOn} ELSE waiting_on END,
+          notes = CASE WHEN ${setNotes} THEN ${notes} ELSE notes END,
           due = CASE WHEN ${setDue} THEN ${dueIso}::timestamptz ELSE due END,
           updated_at = now()
       WHERE id = ${id} AND owner_id = ${session.userId}
@@ -90,6 +93,6 @@ export async function PATCH(req: Request) {
     return NextResponse.json(shapeItem(rows[0] as Record<string, unknown>));
   } catch {
     fail('items_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
   }
 }
