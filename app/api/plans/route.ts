@@ -1,9 +1,21 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
 import { openBoard } from '@/lib/session';
-import { savePlan } from '@/lib/war';
+import { listPlans, savePlan } from '@/lib/war';
 
 export const dynamic = 'force-dynamic';
+
+export async function GET() {
+  try {
+    const session = await openBoard();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session.sql) return NextResponse.json({ plans: [] });
+    return NextResponse.json({ plans: await listPlans(session.sql, session.userId) });
+  } catch (err) {
+    fail('plans_failed', err);
+    return NextResponse.json({ plans: [] });
+  }
+}
 
 export async function POST(req: Request) {
   try {
