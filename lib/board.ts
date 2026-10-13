@@ -2,6 +2,7 @@ import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { ROADMAP } from './roadmap.mjs';
 import { idlePlugins, listPlugins } from './plugins';
 import { listZoomNotes, seedZoomNotes } from './zoom-notes';
+import { listCommitments, listNews, listPlans, newsCategories, syncCommitments } from './war';
 import { syncCalendar, syncDrive, syncGhl, calendarMeta, ingestMail } from './sync';
 
 type Sql = NeonQueryFunction<false, false>;
@@ -145,7 +146,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
   await quiet(syncGhl(sql, ownerId));
 
   const items = await sql`
-    SELECT id, title, area, status, priority, due, owner, source, category
+    SELECT id, title, area, status, priority, due, owner, source, category, waiting_on, plan_of
     FROM items
     WHERE owner_id = ${ownerId}
       AND (snooze_until IS NULL OR snooze_until <= now())
@@ -294,8 +295,18 @@ export async function loadBoard(sql: Sql, ownerId: string) {
       owner: String(row.owner || ''),
       source: String(row.source || 'manual'),
       category: row.category ? String(row.category) : '',
+      waitingOn: row.waiting_on ? String(row.waiting_on) : '',
+      planOf: row.plan_of ? String(row.plan_of) : '',
     })),
-    zoomNotes: await listZoomNotes(sql, ownerId),
+    zoomNotes: await (async () => {
+      const notes = await listZoomNotes(sql, ownerId);
+      await quiet(syncCommitments(sql, ownerId, notes));
+      return notes;
+    })(),
+    plans: await listPlans(sql, ownerId),
+    commitments: await listCommitments(sql, ownerId),
+    news: await listNews(sql, ownerId),
+    newsCategories: await newsCategories(sql, ownerId),
     contacts: contacts.map((row) => ({
       id: String(row.id),
       name: String(row.name),
