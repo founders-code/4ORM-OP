@@ -36,9 +36,8 @@ export async function POST(req: Request) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!session.sql) return NextResponse.json({ error: 'Could not add that note.' }, { status: 400 });
     const body = await req.json().catch(() => null);
-    const text = String(body?.body || '').trim().slice(0, 2000);
+    const text = String(body?.body || '').slice(0, 2000);
     const color = allowNoteColor(String(body?.color || 'yellow')) || 'yellow';
-    if (!text) return NextResponse.json({ error: 'Could not add that note.' }, { status: 400 });
     const rows = await session.sql`
       INSERT INTO sticky_notes (owner_id, body, color, x, y)
       VALUES (${session.userId}, ${text}, ${color}, ${Number(body?.x) || 24}, ${Number(body?.y) || 24})
