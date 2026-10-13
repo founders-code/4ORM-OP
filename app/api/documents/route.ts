@@ -42,8 +42,8 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Could not update the library.' }, { status: 400 });
-    const body = await req.json().catch(() => null);
+    if (!session.sql) return NextResponse.json({ saved: false });
+    const body = await req.json().catch(() => ({})) as Record<string, unknown>;
     const action = String(body?.action || '');
     if (action === 'pull') {
       const category = CATS.includes(String(body?.category || '')) ? String(body.category) : '';
@@ -55,14 +55,29 @@ export async function POST(req: Request) {
       `;
       return NextResponse.json({ ok: true });
     }
-    if (action === 'upload') {
+    if (action === 'move') {
+      const id = String(body?.id || '');
       const category = CATS.includes(String(body?.category || '')) ? String(body.category) : '';
-      const name = String(body?.name || '').trim().slice(0, 180);
-      const raw = String(body?.body || '');
-      const mime = String(body?.mime || '').slice(0, 120);
-      if (!category || !name || !raw || raw.length > 1600000) {
-        return NextResponse.json({ error: 'Could not store that file.' }, { status: 400 });
+      if (!/^[0-9a-f-]{36}$/i.test(id) || !category) return NextResponse.json({ ok: false });
+      await session.sql`
+        UPDATE staged_docs SET category = ${category}
+        WHERE id = ${id} AND owner_id = ${session.userId}
+      `;
+      return NextResponse.json({ ok: true, id, category });
+    }
+    const uploadLike = action === 'upload' || (!action && (body?.dataUrl || body?.body || body?.name));
+    if (uploadLike) {
+      const category = CATS.includes(String(body?.category || '')) ? String(body.category) : 'Dev';
+      const name = String(body?.name || 'File').trim().slice(0, 180) || 'File';
+      let mime = String(body?.mime || '').slice(0, 120);
+      let raw = String(body?.dataUrl || body?.body || '');
+      const packed = raw.match(/^data:([^;]+);base64,(.+)$/);
+      if (packed) {
+        mime = mime || packed[1].slice(0, 120);
+        raw = packed[2];
       }
+      raw = raw.slice(0, 1600000);
+      if (!raw) return NextResponse.json({ saved: false, name, category });
       let driveFileId = '';
       let url = '';
       const office = /officedocument|msword|ms-excel|ms-powerpoint/.test(mime);
@@ -96,7 +111,7 @@ export async function POST(req: Request) {
           VALUES (${session.userId}, ${category}, ${name}, ${String(body?.mime || '').slice(0, 120)})
         `;
       }
-      return NextResponse.json({ ok: true });
+      return NextResponse.json({ ok: true, name, category });
     }
     if (action === 'remove') {
       const id = String(body?.id || '');
@@ -137,9 +152,9 @@ export async function POST(req: Request) {
       if (failed) return NextResponse.json({ ok: false, error: 'Drive did not take every file. The library is unchanged.' });
       return NextResponse.json({ ok: true, error: '' });
     }
-    return NextResponse.json({ error: 'Could not update the library.' }, { status: 400 });
+    return NextResponse.json({ ok: false });
   } catch (err) {
     fail('staged_docs', err);
-    return NextResponse.json({ error: 'Could not update the library.' }, { status: 400 });
+    return NextResponse.json({ saved: false });
   }
 }

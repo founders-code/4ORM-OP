@@ -42,7 +42,7 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    if (!session.sql) return NextResponse.json({ saved: false });
     const body = await req.json().catch(() => null);
     if (String(body?.kind || '') === 'category') {
       const name = clean(body?.name, 80);
@@ -74,11 +74,24 @@ export async function POST(req: Request) {
       });
     }
     const title = clean(body?.title, 180);
-    if (!title) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const noteBody = clean(body?.body, 4000);
     const color = allowNoteColor(String(body?.color || 'yellow')) || 'yellow';
-    if (body?.color && !allowNoteColor(String(body.color))) {
-      return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    if (!title) {
+      const rows = await session.sql`
+        INSERT INTO sticky_notes (owner_id, body, color, x, y, w, h)
+        VALUES (${session.userId}, ${noteBody.slice(0, 2000)}, ${color}, ${Number(body?.x) || 24}, ${Number(body?.y) || 24}, ${Number(body?.w) || 180}, ${Number(body?.h) || 120})
+        RETURNING id, body, color, x, y, w, h
+      `;
+      const row = rows[0] as Record<string, unknown>;
+      return NextResponse.json({
+        id: String(row.id),
+        body: String(row.body || ''),
+        color: String(row.color || color),
+        x: Number(row.x) || 0,
+        y: Number(row.y) || 0,
+        w: Number(row.w) || 180,
+        h: Number(row.h) || 120,
+      });
     }
     let catId = body?.catId ? String(body.catId) : '';
     if (catId) {
@@ -96,9 +109,9 @@ export async function POST(req: Request) {
       RETURNING id, cat_id, title, body, color, updated_at
     `;
     return NextResponse.json(noteShape(made[0] as Record<string, unknown>));
-  } catch {
-    fail('notes_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+  } catch (err) {
+    fail('notes_failed', err);
+    return NextResponse.json({ saved: false });
   }
 }
 

@@ -36,7 +36,7 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Could not add that note.' }, { status: 400 });
+    if (!session.sql) return NextResponse.json({ saved: false });
     const body = await req.json().catch(() => null);
     const text = String(body?.body || '').slice(0, 2000);
     const color = allowNoteColor(String(body?.color || 'yellow')) || 'yellow';
@@ -48,6 +48,6 @@ export async function POST(req: Request) {
     return NextResponse.json(shape(rows[0] as Record<string, unknown>));
   } catch (err) {
     fail('sticky', err);
-    return NextResponse.json({ error: 'Could not add that note.' }, { status: 400 });
+    return NextResponse.json({ saved: false });
   }
 }
