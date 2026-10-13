@@ -28,7 +28,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         parentId: String(form.get('folderId') || ''),
       }, bytes);
       if (!added) return NextResponse.json({ saved: false, error: 'Could not stage that file. The Space is unchanged.' });
-      return NextResponse.json(added.package || added);
+      return NextResponse.json({ id: params.id, item: added.item, package: added.package || added });
     }
     const staged = await uploadSpaceFile(session.sql, session.userId, params.id, {
       name: String(form.get('name') || file.name || ''),
