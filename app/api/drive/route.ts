@@ -79,7 +79,7 @@ export async function POST(req: Request) {
     const name = String(body?.name || '').trim().slice(0, 180);
     if (action === 'mkdir' || action === 'mkfile') {
       const parentDepth = depthOf(tree, parentId, 1);
-      if (!parentDepth || (action === 'mkdir' && parentDepth >= 3)) {
+      if (!parentDepth || (action === 'mkdir' && parentDepth >= 5)) {
         return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
       }
     }

@@ -394,6 +394,22 @@ async function migrateWar(sql: Sql) {
       url text,
       mime text
     )`],
+    ['db_packages_space_type', () => sql`ALTER TABLE packages ADD COLUMN IF NOT EXISTS space_type text`],
+    ['db_packages_subject_contact', () => sql`ALTER TABLE packages ADD COLUMN IF NOT EXISTS subject_contact_id text`],
+    ['db_packages_subject_label', () => sql`ALTER TABLE packages ADD COLUMN IF NOT EXISTS subject_label text`],
+    ['db_packages_pushed', () => sql`ALTER TABLE packages ADD COLUMN IF NOT EXISTS pushed_to_drive_at timestamptz`],
+    ['db_package_docs_uploaded', () => sql`ALTER TABLE package_docs ADD COLUMN IF NOT EXISTS uploaded boolean NOT NULL DEFAULT false`],
+    ['db_package_docs_thumb', () => sql`ALTER TABLE package_docs ADD COLUMN IF NOT EXISTS thumb_url text`],
+    ['db_package_docs_folder', () => sql`ALTER TABLE package_docs ADD COLUMN IF NOT EXISTS folder_id uuid`],
+    ['db_package_docs_uploaded_at', () => sql`ALTER TABLE package_docs ADD COLUMN IF NOT EXISTS uploaded_at timestamptz`],
+    ['db_package_docs_body', () => sql`ALTER TABLE package_docs ADD COLUMN IF NOT EXISTS body_b64 text`],
+    ['db_space_folders', () => sql`CREATE TABLE IF NOT EXISTS space_folders (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      package_id uuid NOT NULL REFERENCES packages(id) ON DELETE CASCADE,
+      parent_id uuid,
+      name text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
     ['db_package_recipients', () => sql`CREATE TABLE IF NOT EXISTS package_recipients (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       package_id uuid NOT NULL REFERENCES packages(id) ON DELETE CASCADE,

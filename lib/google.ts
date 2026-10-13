@@ -110,15 +110,17 @@ export async function moveEvent(id: string, startMs: number, durMin: number) {
   return !!json;
 }
 
+type DriveFile = { id: string; name: string; url: string; kind: string; mime: string; thumb: string };
+
 type DriveNode = {
   id: string;
   name: string;
   url: string;
   children: DriveNode[];
-  files: { id: string; name: string; url: string; kind: string }[];
+  files: DriveFile[];
 };
 
-type FileRow = { id: string; name: string; mimeType: string; webViewLink?: string };
+type FileRow = { id: string; name: string; mimeType: string; webViewLink?: string; thumbnailLink?: string };
 
 function safeId(id: string) {
   return /^[\w-]{8,}$/.test(id);
@@ -128,7 +130,7 @@ async function listChildren(parentId: string, driveId: string) {
   if (!safeId(parentId) || !safeId(driveId)) return null;
   const q = new URLSearchParams({
     q: `'${parentId}' in parents and trashed = false`,
-    fields: 'files(id,name,mimeType,webViewLink)',
+    fields: 'files(id,name,mimeType,webViewLink,thumbnailLink)',
     pageSize: '40',
     supportsAllDrives: 'true',
     includeItemsFromAllDrives: 'true',
@@ -148,6 +150,8 @@ function asFiles(rows: FileRow[]) {
       name: f.name,
       url: f.webViewLink || '',
       kind: (f.name.split('.').pop() || 'file').slice(0, 8),
+      mime: f.mimeType || '',
+      thumb: f.thumbnailLink || '',
     }));
 }
 
@@ -192,7 +196,19 @@ export async function listDriveTree() {
         if (deepLeft > 0) {
           deepLeft -= 1;
           const deep = await listChildren(child.id, drive.id);
-          if (deep) leaf.files = asFiles(deep);
+          if (deep) {
+            leaf.files = asFiles(deep);
+            leaf.children = deep
+              .filter((row) => row.mimeType === 'application/vnd.google-apps.folder')
+              .slice(0, 8)
+              .map((grand) => ({
+                id: grand.id,
+                name: grand.name,
+                url: grand.webViewLink || '',
+                children: [] as DriveNode[],
+                files: [] as DriveFile[],
+              }));
+          }
         }
         node.children.push(leaf);
       }
@@ -259,7 +275,7 @@ export async function listFolderFiles(folderId: string) {
   if (!configured() || !safeId(folderId)) return null;
   const q = new URLSearchParams({
     q: `'${folderId}' in parents and trashed = false`,
-    fields: 'files(id,name,mimeType,webViewLink)',
+    fields: 'files(id,name,mimeType,webViewLink,thumbnailLink)',
     pageSize: '40',
     supportsAllDrives: 'true',
     includeItemsFromAllDrives: 'true',
@@ -274,7 +290,71 @@ export async function listFolderFiles(folderId: string) {
       name: file.name,
       url: file.webViewLink || '',
       mime: file.mimeType || '',
+      thumb: file.thumbnailLink || '',
     }));
+}
+
+/** One folder, files and subfolders. One Drive call. */
+export async function listFolderContents(folderId: string) {
+  if (!configured() || !safeId(folderId)) return null;
+  const q = new URLSearchParams({
+    q: `'${folderId}' in parents and trashed = false`,
+    fields: 'files(id,name,mimeType,webViewLink,thumbnailLink)',
+    pageSize: '40',
+    supportsAllDrives: 'true',
+    includeItemsFromAllDrives: 'true',
+  });
+  const json = (await gfetch(`https://www.googleapis.com/drive/v3/files?${q}`)) as { files?: FileRow[] } | null;
+  if (!json?.files) return null;
+  const rows = json.files;
+  return {
+    folders: rows
+      .filter((file) => file.mimeType === 'application/vnd.google-apps.folder' && file.id && file.name)
+      .slice(0, 40)
+      .map((file) => ({
+        id: file.id,
+        name: file.name,
+        url: file.webViewLink || '',
+        children: [] as DriveNode[],
+        files: [] as DriveFile[],
+      })),
+    files: asFiles(rows),
+  };
+}
+
+export async function copyDriveFile(fileId: string, parentId: string, name: string) {
+  if (!configured() || !safeId(fileId) || !safeId(parentId)) return null;
+  const clean = name.trim().slice(0, 180);
+  if (!clean) return null;
+  return gfetch(`https://www.googleapis.com/drive/v3/files/${fileId}/copy?supportsAllDrives=true&fields=id,name,webViewLink`, {
+    method: 'POST',
+    body: JSON.stringify({ name: clean, parents: [parentId] }),
+  });
+}
+
+export async function uploadDriveBytes(name: string, mime: string, parentId: string, bytes: Buffer) {
+  if (!configured() || !safeId(parentId) || !bytes.length) return null;
+  const clean = name.trim().slice(0, 180);
+  if (!clean) return null;
+  const access = await accessToken();
+  if (!access) return null;
+  const boundary = `4orm${Date.now()}`;
+  const meta = JSON.stringify({ name: clean, parents: [parentId] });
+  const type = mime || 'application/octet-stream';
+  const head = Buffer.from(
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: ${type}\r\n\r\n`,
+  );
+  const tail = Buffer.from(`\r\n--${boundary}--`);
+  const res = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,name,webViewLink',
+    {
+      method: 'POST',
+      headers: { authorization: `Bearer ${access}`, 'content-type': `multipart/related; boundary=${boundary}` },
+      body: Buffer.concat([head, bytes, tail]),
+    },
+  );
+  if (!res.ok) return null;
+  return res.json() as Promise<{ id?: string; name?: string; webViewLink?: string }>;
 }
 
 export async function createGmailDraft(to: string, subject: string, text: string) {

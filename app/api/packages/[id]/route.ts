@@ -3,14 +3,17 @@ import { fail } from '@/lib/log';
 import {
   addDoc,
   addRecipient,
+  addSpaceFolder,
   bindFolder,
   createFolder,
   packageIdOk,
   patchPackage,
   prepareSend,
+  pushSpace,
   readPackage,
   removeDoc,
   removeRecipient,
+  removeSpaceFolder,
 } from '@/lib/packages';
 import { openBoard } from '@/lib/session';
 
@@ -58,6 +61,13 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     else if (action === 'create-folder') pkg = await createFolder(sql, session.userId, id, String(body?.name || ''), String(body?.parentId || ''));
     else if (action === 'add-doc') pkg = await addDoc(sql, session.userId, id, body || {});
     else if (action === 'remove-doc') pkg = await removeDoc(sql, session.userId, id, String(body?.docId || ''));
+    else if (action === 'add-folder') pkg = await addSpaceFolder(sql, session.userId, id, String(body?.name || ''), String(body?.parentId || ''));
+    else if (action === 'remove-folder') pkg = await removeSpaceFolder(sql, session.userId, id, String(body?.folderId || ''));
+    else if (action === 'push-drive') {
+      const pushed = await pushSpace(sql, session.userId, id);
+      if (!pushed) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+      return NextResponse.json(pushed);
+    }
     else if (action === 'add-recipient') pkg = await addRecipient(sql, session.userId, id, body || {});
     else if (action === 'remove-recipient') pkg = await removeRecipient(sql, session.userId, id, String(body?.recipientId || ''));
     else if (action === 'prepare-send') {

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'fs';
 import { tokenOk, allowArea, allowPriority, allowStage, allowStatus, allowContactType, allowTier, allowNoteColor, isBriefHour, windowKey, CEILINGS, parseDue, visibleCalendarWindow, inferContactCategory } from '../lib/guard.mjs';
 import { ROADMAP, ROAD_CATEGORIES } from '../lib/roadmap.mjs';
-import { STARTERS, assembleMail, fillToken } from '../lib/packages.mjs';
+import { STARTERS, assembleMail, fillToken, orderSpaceFolders } from '../lib/packages.mjs';
 import { DEFAULT_WEIGHTS, computeLamps, pickMoves, readProfileFacts } from '../lib/ceo-score.mjs';
 import { extractCommitments, fallbackPlan, zoneOf, NEWS_CATEGORIES } from '../lib/war.mjs';
 import { organizeText } from '../lib/organize.mjs';
@@ -194,6 +194,15 @@ test('package mail fills tokens and keeps research in the body', () => {
   assert.match(mailed, /Michael/);
   assert.match(mailed, /Docs:/);
   assert.equal(/@\w+\.\w+/.test(JSON.stringify(STARTERS.map((item) => item.suggestions))), false);
+  const ordered = orderSpaceFolders([
+    { id: 'c', parentId: 'b', name: 'Financials' },
+    { id: 'a', parentId: '', name: 'Deck' },
+    { id: 'b', parentId: 'a', name: 'Legal' },
+    { id: 'e', parentId: 'd', name: 'Too deep' },
+    { id: 'd', parentId: 'c', name: 'Notes' },
+  ]);
+  assert.deepEqual(ordered.map((folder) => folder.name), ['Deck', 'Legal', 'Financials', 'Notes']);
+  assert.equal(ordered[3].depth, 4);
 });
 
 test('contact categories come from the company and role text', () => {
@@ -241,6 +250,12 @@ test('the control room page does not carry secrets', () => {
   assert.equal(page.includes('id="v-znotes"'), true);
   assert.equal(page.includes('#v-znotes{background:#0E141C'), true);
   assert.equal(page.includes('data-doc-url'), true);
+  assert.equal(page.includes('data-v="drive"'), false);
+  assert.equal(page.includes('>Spaces</span>'), true);
+  assert.equal(page.includes('Pinned / Key docs'), true);
+  assert.equal(page.includes('Move to Drive'), true);
+  assert.equal(page.includes('cr_docs_open'), true);
+  assert.equal(page.includes('Thumbnails'), true);
   assert.equal(page.includes('control-room-war.js'), true);
   const warjs = readFileSync(new URL('../public/control-room-war.js', import.meta.url), 'utf8');
   assert.equal(/Atherton|example\.com/.test(warjs), false);
