@@ -115,12 +115,23 @@
     if (!modal || !card) return;
     var rows = (lists && lists[key]) || [];
     card.classList.add('wide');
-    card.innerHTML = '<div class="mhd"><div style="font-weight:700">' + esc(key.split(':').slice(1).join(':') || 'Items') + '</div><button class="x" id="mClose" type="button">x</button></div><div class="mbd">' + (rows.length ? rows.map(function (it) { return '<button type="button" class="ops-row" data-ops-item="' + esc(it.id) + '"><b>' + esc(it.title) + '</b><span class="kick">' + esc(areaLabel(it.area, it)) + '</span></button>'; }).join('') : '<div class="kick">Nothing in this group.</div>') + '</div>';
+    card.innerHTML = '<div class="mhd"><div style="font-weight:700">' + esc(key.split(':').slice(1).join(':') || 'Items') + '</div><button class="x" id="mClose" type="button">x</button></div><div class="mbd">' + (rows.length ? rows.map(function (it) { return '<div class="ops-row"><button type="button" data-ops-item="' + esc(it.id) + '"><b>' + esc(it.title) + '</b><span class="kick">' + esc(areaLabel(it.area, it)) + '</span></button><button type="button" data-ops-del="' + esc(it.id) + '">Delete</button></div>'; }).join('') : '<div class="kick">Nothing in this group.</div>') + '</div>';
     modal.classList.add('open');
     modal.hidden = false;
     document.getElementById('mClose').onclick = function () { if (typeof closeModal === 'function') closeModal(); };
     card.querySelectorAll('[data-ops-item]').forEach(function (btn) {
       btn.onclick = function () { if (typeof closeModal === 'function') closeModal(); editItem(btn.getAttribute('data-ops-item')); };
+    });
+    card.querySelectorAll('[data-ops-del]').forEach(function (btn) {
+      btn.onclick = function () {
+        var id = btn.getAttribute('data-ops-del');
+        STATE.items = (STATE.items || []).filter(function (it) { return it.id !== id; });
+        lists[key] = (lists[key] || []).filter(function (it) { return it.id !== id; });
+        if (typeof renderWar === 'function') renderWar();
+        renderOpsDash();
+        authFetch('/api/items/' + id, { method: 'DELETE', credentials: 'same-origin' }).catch(function () {});
+        openOpsList(key, lists);
+      };
     });
   }
 
@@ -269,8 +280,13 @@
       var list = document.getElementById('slotList');
       if (!list) return;
       var slots = data.slots || [];
-      list.innerHTML = (data.error ? '<div class="kick">' + esc(data.error) + '</div>' : '') + slots.map(function (slot) {
-        return '<button class="slot" type="button" data-start="' + slot.start + '"' + (slot.free ? '' : ' disabled') + '>' + esc(slot.label) + (slot.free ? '' : ' - busy') + '</button>';
+      var days = [];
+      slots.forEach(function (slot) { if (days.indexOf(slot.day) < 0) days.push(slot.day || 'Today'); });
+      list.innerHTML = (data.error ? '<div class="kick">' + esc(data.error) + '</div>' : '') + (days.length ? days : ['Today']).map(function (day) {
+        var rows = slots.filter(function (slot) { return (slot.day || 'Today') === day; });
+        return '<div class="kick" style="margin-top:8px">' + esc(day) + '</div>' + rows.map(function (slot) {
+          return '<button class="slot" type="button" data-start="' + slot.start + '"' + (slot.free ? '' : ' disabled') + '>' + esc(slot.label) + (slot.free ? '' : ' - busy') + '</button>';
+        }).join('');
       }).join('');
       list.querySelectorAll('.slot').forEach(function (btn) {
         btn.onclick = function () {
@@ -298,7 +314,13 @@
       return '<button type="button" class="news-card' + (wide ? ' wide' : '') + '" data-news-url="' + esc(item.url || '') + '" data-news-title="' + esc(item.title || '') + '" data-news-why="' + esc(item.summary || '') + '"><div class="hd" style="background:' + tint + '">' + esc(item.category || '') + '</div><div style="padding:12px"><b>' + esc(item.title || '') + '</b><div class="kick">' + esc(item.summary || '') + '</div><div class="kick">' + esc(when) + '</div></div></button>';
     }
     var empty = rows.length ? '' : '<div class="kick">Pulling the last two weeks. Use Refresh if this stays empty.</div>';
-    el.innerHTML = '<div class="news-wrap"><div class="news-rail">' + ['All'].concat(cats.filter(function (c) { return c !== 'All'; })).map(function (c) { return '<button type="button" class="' + (c === on ? 'on' : '') + '" data-news="' + esc(c) + '">' + esc(c) + '</button>' + (c === 'All' ? '' : '<button type="button" data-news-del="' + esc(c) + '" aria-label="Remove category">x</button>'); }).join('') + '<div class="lb-add"><input id="newsCatName" type="text" placeholder="Category"/><button class="btn sm" id="newsCatAdd" type="button">Add</button></div></div><div><div class="cap"><button class="btn sm" id="newsRefresh" type="button">Refresh</button></div><div class="news-grid">' + empty + (top ? card(top, true) : '') + rest.map(function (item) { return card(item, false); }).join('') + '</div></div></div>';
+    el.innerHTML = '<div class="news-wrap"><div class="news-rail"><div class="seg" id="newsSpan"><button type="button" data-span="week"' + (STATE.newsSpan === 'month' ? '' : ' class="on"') + '>Last week</button><button type="button" data-span="month"' + (STATE.newsSpan === 'month' ? ' class="on"' : '') + '>Last month</button></div>' + ['All'].concat(cats.filter(function (c) { return c !== 'All'; })).map(function (c) { return '<button type="button" class="' + (c === on ? 'on' : '') + '" data-news="' + esc(c) + '">' + esc(c) + '</button>' + (c === 'All' ? '' : '<button type="button" data-news-del="' + esc(c) + '" aria-label="Remove category">x</button>'); }).join('') + '<div class="lb-add"><input id="newsCatName" type="text" placeholder="Category"/><button class="btn sm" id="newsCatAdd" type="button">Add</button></div></div><div><div class="cap"><button class="btn sm" id="newsRefresh" type="button">Refresh</button></div><div class="news-grid">' + empty + (top ? card(top, true) : '') + rest.map(function (item) { return card(item, false); }).join('') + '</div></div></div>';
+    el.querySelectorAll('[data-span]').forEach(function (btn) {
+      btn.onclick = function () {
+        STATE.newsSpan = btn.getAttribute('data-span') === 'month' ? 'month' : 'week';
+        loadNews();
+      };
+    });
     el.querySelectorAll('[data-news]').forEach(function (btn) {
       btn.onclick = function () { STATE.newsCat = btn.getAttribute('data-news'); renderNews(STATE.news || [], STATE.newsCategories || cats); };
     });
@@ -330,7 +352,7 @@
   }
 
   function loadNews() {
-    authFetch('/api/news', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
+    authFetch('/api/news' + (STATE.newsSpan === 'month' ? '?span=month' : ''), { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
       STATE.news = data.items || [];
       STATE.newsCategories = data.categories || [];
       renderNews(STATE.news, STATE.newsCategories);
@@ -696,7 +718,7 @@
       host.innerHTML = '<div class="sec-h"><h3>Notes</h3><button class="btn pri sm" id="stickAdd" type="button">+ New note</button></div><div class="sticky-board" id="stickBoard"></div>';
       var board = document.getElementById('stickBoard');
       board.innerHTML = notes.map(function (note) {
-        return '<div class="sticky ' + esc(note.color || 'yellow') + '" data-stick="' + esc(note.id) + '" style="left:' + (Number(note.x) || 24) + 'px;top:' + (Number(note.y) || 24) + 'px"><select aria-label="Colour">' + colours.map(function (c) { return '<option' + ((note.color || 'yellow') === c ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select><textarea rows="4">' + esc(note.body || '') + '</textarea>' + (note._err ? '<div class="soft-err">' + esc(note._err) + '</div>' : '') + '<button type="button" data-stick-del="' + esc(note.id) + '">x</button></div>';
+        return '<div class="sticky ' + esc(note.color || 'yellow') + '" data-stick="' + esc(note.id) + '" style="left:' + (Number(note.x) || 24) + 'px;top:' + (Number(note.y) || 24) + 'px;width:' + (Number(note.w) || 180) + 'px;height:' + (Number(note.h) || 140) + 'px"><select aria-label="Colour">' + colours.map(function (c) { return '<option' + ((note.color || 'yellow') === c ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select><textarea rows="4">' + esc(note.body || '') + '</textarea>' + (note._err ? '<div class="soft-err">' + esc(note._err) + '</div>' : '') + '<button type="button" data-stick-del="' + esc(note.id) + '">x</button><button type="button" class="stick-size" data-stick-size="' + esc(note.id) + '" aria-label="Resize">/</button></div>';
       }).join('');
       document.getElementById('stickAdd').onclick = function () {
         var temp = { id: 'tmp-' + Date.now(), body: '', color: 'yellow', x: 24 + (notes.length % 4) * 28, y: 24 + (notes.length % 3) * 20 };
@@ -723,6 +745,31 @@
           paint(notes);
           if (String(id).indexOf('tmp-') === 0) return;
           authFetch('/api/notes/' + id, { method: 'DELETE', credentials: 'same-origin' }).catch(function () {});
+        };
+      });
+      board.querySelectorAll('[data-stick-size]').forEach(function (handle) {
+        handle.onpointerdown = function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var card = handle.closest('.sticky');
+          if (!card) return;
+          var sx = e.clientX;
+          var sy = e.clientY;
+          var sw = card.offsetWidth;
+          var sh = card.offsetHeight;
+          function move(ev) {
+            card.style.width = Math.max(140, sw + ev.clientX - sx) + 'px';
+            card.style.height = Math.max(100, sh + ev.clientY - sy) + 'px';
+          }
+          function up() {
+            document.removeEventListener('pointermove', move);
+            document.removeEventListener('pointerup', up);
+            var id = card.getAttribute('data-stick');
+            if (String(id).indexOf('tmp-') === 0) return;
+            authFetch('/api/notes/' + id, { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ w: card.offsetWidth, h: card.offsetHeight }) }).catch(function () {});
+          }
+          document.addEventListener('pointermove', move);
+          document.addEventListener('pointerup', up);
         };
       });
       board.querySelectorAll('.sticky').forEach(function (card) {

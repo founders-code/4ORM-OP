@@ -7,16 +7,18 @@ import { NEWS_CATEGORIES, todayKey } from '@/lib/war.mjs';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!session.sql) return NextResponse.json({ items: [], categories: NEWS_CATEGORIES });
-    let items = await listNews(session.sql, session.userId);
+    const span = new URL(req.url).searchParams.get('span') === 'month' ? 31 : 14;
+    let items = await listNews(session.sql, session.userId, undefined, span);
     const fresh = items.some((item) => item.sweptOn === todayKey());
     if (!fresh) {
       try {
-        items = await sweepNews(session.sql, session.userId);
+        await sweepNews(session.sql, session.userId);
+        items = await listNews(session.sql, session.userId, undefined, span);
       } catch (err) {
         fail('news_sweep', err);
       }

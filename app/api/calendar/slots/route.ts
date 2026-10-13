@@ -15,7 +15,7 @@ export async function GET() {
     const now = Date.now();
     if (!session.sql) return NextResponse.json({ slots: openSlots(now, []) });
     const start = new Date(now - 12 * 60 * 60 * 1000).toISOString();
-    const end = new Date(now + 36 * 60 * 60 * 1000).toISOString();
+    const end = new Date(now + 14 * 24 * 60 * 60 * 1000).toISOString();
     const creds = await loadCredsFor(session.userId);
     const listed = await withCreds(creds, () => listEvents(start, end));
     const busy = (listed?.events || []).flatMap((event) => {

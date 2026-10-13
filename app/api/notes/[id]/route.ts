@@ -17,12 +17,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const color = body?.color == null ? '' : (allowNoteColor(String(body.color)) || '');
     const x = Number(body?.x);
     const y = Number(body?.y);
+    const w = Number(body?.w);
+    const h = Number(body?.h);
     await session.sql`
       UPDATE sticky_notes
       SET body = CASE WHEN ${body && Object.prototype.hasOwnProperty.call(body, 'body')} THEN ${text} ELSE body END,
           color = CASE WHEN ${!!color} THEN ${color || 'yellow'} ELSE color END,
           x = CASE WHEN ${Number.isFinite(x)} THEN ${Number.isFinite(x) ? Math.round(x) : 0} ELSE x END,
-          y = CASE WHEN ${Number.isFinite(y)} THEN ${Number.isFinite(y) ? Math.round(y) : 0} ELSE y END
+          y = CASE WHEN ${Number.isFinite(y)} THEN ${Number.isFinite(y) ? Math.round(y) : 0} ELSE y END,
+          w = CASE WHEN ${Number.isFinite(w)} THEN ${Number.isFinite(w) ? Math.round(w) : 180} ELSE w END,
+          h = CASE WHEN ${Number.isFinite(h)} THEN ${Number.isFinite(h) ? Math.round(h) : 120} ELSE h END
       WHERE id = ${params.id} AND owner_id = ${session.userId}
     `;
     return NextResponse.json({ ok: true });
