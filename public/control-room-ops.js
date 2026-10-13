@@ -379,14 +379,15 @@
     var on = STATE.newsCat || 'All';
     var rows = (items || []).filter(function (item) { return on === 'All' || item.category === on; });
     var top = rows.filter(function (item) { return item.is_top || item.isTop; })[0];
-    var rest = rows.filter(function (item) { return item !== top; });
+    var rest = top ? [top].concat(rows.filter(function (item) { return item !== top; })) : rows;
     function card(item, wide) {
       var tint = TINT[item.category] || '#E7EEF6';
       var when = item.publishedAt ? new Date(item.publishedAt).toLocaleDateString('en-CA') : '';
-      return '<button type="button" class="news-card' + (wide ? ' wide' : '') + '" data-news-url="' + esc(item.url || '') + '" data-news-title="' + esc(item.title || '') + '" data-news-why="' + esc(item.summary || '') + '"><div class="hd" style="background:' + tint + '">' + esc(item.category || '') + '</div><div style="padding:12px"><b>' + esc(item.title || '') + '</b><div class="kick">' + esc(item.summary || '') + '</div><div class="kick">' + esc(when) + '</div></div></button>';
+      var shot = item.image ? '<img alt="" src="' + esc(item.image) + '" onerror="this.hidden=true"/>' : esc(item.category || '');
+      return '<button type="button" class="news-card' + (wide ? ' wide' : '') + '" data-news-url="' + esc(item.url || '') + '" data-news-title="' + esc(item.title || '') + '" data-news-why="' + esc(item.summary || '') + '"><div class="shot" style="background:' + tint + '">' + shot + '</div><div style="padding:12px"><b>' + esc(item.title || '') + '</b><div class="kick">' + esc(item.summary || '') + '</div><div class="kick">' + esc(when) + '</div></div></button>';
     }
     var empty = rows.length ? '' : '<div class="kick">The 8:00 and 11:00 Pacific sweeps fill this. Refresh pulls a fresh scrape.</div>';
-    el.innerHTML = '<div class="news-wrap"><div class="cap"><div class="seg" id="newsSpan"><button type="button" data-span="week"' + (STATE.newsSpan === 'week' ? ' class="on"' : '') + '>Last week</button><button type="button" data-span="month"' + (STATE.newsSpan === 'week' ? '' : ' class="on"') + '>Last month</button></div><button class="btn sm" id="newsRefresh" type="button">Refresh</button></div><div class="news-chips">' + ['All'].concat(cats.filter(function (c) { return c !== 'All'; })).map(function (c) { return '<button type="button" class="' + (c === on ? 'on' : '') + '" data-news="' + esc(c) + '">' + esc(c) + (c === 'All' ? '' : ' <span data-news-del="' + esc(c) + '" aria-label="Remove category">x</span>') + '</button>'; }).join('') + '</div><div class="news-grid">' + empty + (top ? card(top, true) : '') + rest.map(function (item) { return card(item, false); }).join('') + '</div></div>';
+    el.innerHTML = '<div class="news-wrap"><div class="cap"><div class="seg" id="newsSpan"><button type="button" data-span="week"' + (STATE.newsSpan === 'week' ? ' class="on"' : '') + '>Last week</button><button type="button" data-span="month"' + (STATE.newsSpan === 'week' ? '' : ' class="on"') + '>Last month</button></div><button class="btn sm" id="newsRefresh" type="button">Refresh</button></div><div class="news-chips">' + ['All'].concat(cats.filter(function (c) { return c !== 'All'; })).map(function (c) { return '<button type="button" class="' + (c === on ? 'on' : '') + '" data-news="' + esc(c) + '">' + esc(c) + (c === 'All' ? '' : ' <span data-news-del="' + esc(c) + '" aria-label="Remove category">x</span>') + '</button>'; }).join('') + '</div><div class="news-grid">' + empty + rest.map(function (item) { return card(item, false); }).join('') + '</div></div>';
     el.querySelectorAll('[data-span]').forEach(function (btn) {
       btn.onclick = function () {
         STATE.newsSpan = btn.getAttribute('data-span') === 'month' ? 'month' : 'week';
@@ -433,21 +434,30 @@
     return out;
   }
 
+  function libFolders() {
+    var names = (STATE.docFolders && STATE.docFolders.length ? STATE.docFolders.slice() : CATS.slice());
+    (STATE.staged || []).forEach(function (d) { if (d.category && names.indexOf(d.category) < 0) names.push(d.category); });
+    return names;
+  }
+
   function renderLibrary() {
     var el = document.getElementById('opsLibrary');
     if (!el || el.hidden) return;
     var docs = STATE.staged || [];
-    el.innerHTML = '<div class="lb-add" id="libDrop">drag documents here, or <label class="btn sm">choose files<input id="libUpload" class="file-in" type="file" multiple></label></div><div class="cap" style="margin:10px 0"><select id="libCat" aria-label="Category">' + CATS.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select><select id="libFile" aria-label="Drive file"><option value="">Pull from Drive</option>' + flatFiles(STATE.drives || [], []).map(function (file) { return '<option value="' + esc(file.id) + '" data-url="' + esc(file.url || '') + '" data-name="' + esc(file.name || '') + '">' + esc(file.name || 'File') + '</option>'; }).join('') + '</select><button class="btn sm" id="libPull" type="button">Pull from Drive</button><button class="btn sm" id="libPush" type="button">Move to Drive</button></div><div class="lib-grid">' + CATS.map(function (c) {
+    var folders = libFolders();
+    el.innerHTML = '<div class="lb-add" id="libDrop">drag documents here, or <label class="btn sm">choose files<input id="libUpload" class="file-in" type="file" multiple></label></div><div class="cap" style="margin:10px 0"><input id="libFolderName" type="text" placeholder="New folder name" aria-label="New folder name"><button class="btn sm" id="libAddFolder" type="button">Add a folder</button><span class="kick">Pull a Drive file into</span><select id="libCat" aria-label="Folder">' + folders.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select><select id="libFile" aria-label="Drive file"><option value="">Choose a Drive file</option>' + flatFiles(STATE.drives || [], []).map(function (file) { return '<option value="' + esc(file.id) + '" data-url="' + esc(file.url || '') + '" data-name="' + esc(file.name || '') + '">' + esc(file.name || 'File') + '</option>'; }).join('') + '</select><button class="btn sm" id="libPull" type="button">Pull into this folder</button><button class="btn sm" id="libPush" type="button">Push this folder to Drive</button></div><div class="lib-grid">' + folders.map(function (c) {
       var n = docs.filter(function (d) { return d.category === c; }).length;
       var mine = docs.filter(function (d) { return d.category === c; }).slice(0, 9);
       var tiles = mine.map(function (d) {
         var image = (d.mime || '').indexOf('image/') === 0;
         var kind = ((d.name || '').split('.').pop() || 'file').slice(0, 4).toUpperCase();
-        var src = image ? ('/api/documents/file?id=' + encodeURIComponent(d.id)) : (d.driveFileId ? ('https://drive.google.com/thumbnail?id=' + encodeURIComponent(d.driveFileId) + '&sz=w240') : '');
-        var face = (src ? '<img alt="" src="' + src + '" onload="var k=this.parentNode.querySelector(\'.dk\');if(k)k.hidden=true" onerror="this.hidden=true"/>' : '') + '<span class="dk"' + (src ? ' hidden' : '') + '>' + esc(kind) + '</span>';
-        return '<button type="button" class="mini" draggable="true" data-lib-inline="' + esc(d.id) + '">' + face + '<em>' + esc(d.name || 'File') + '</em>' + (d._err ? '<em class="soft-err">' + esc(d._err) + '</em>' : '') + '</button>';
+        var pdf = (d.mime || '') === 'application/pdf' || /\.pdf$/i.test(d.name || '');
+        var src = image ? ('/api/documents/file?id=' + encodeURIComponent(d.id)) : (d.driveFileId ? ('https://drive.google.com/thumbnail?id=' + encodeURIComponent(d.driveFileId) + '&sz=w400') : '');
+        var page = (!src && pdf) ? '<span class="page-shot"><iframe title="" src="/api/documents/file?id=' + encodeURIComponent(d.id) + '#page=1"></iframe></span>' : '';
+        var face = (src ? '<img alt="" src="' + src + '" onload="var k=this.parentNode.querySelector(\'.dk\');if(k)k.hidden=true" onerror="this.hidden=true"/>' : '') + page + '<span class="dk"' + (src || page ? ' hidden' : '') + '>' + esc(kind) + '</span>';
+        return '<div class="mini-wrap" draggable="true" data-lib-inline="' + esc(d.id) + '"><button type="button" class="ghost-x" data-lib-x="' + esc(d.id) + '" aria-label="Delete file">x</button><button type="button" class="mini">' + face + '<em>' + esc(d.name || 'File') + '</em>' + (d._err ? '<em class="soft-err">' + esc(d._err) + '</em>' : '') + '</button></div>';
       }).join('');
-      return '<div class="lib-card" data-cat="' + esc(c) + '"><div class="lib-h"><b>' + esc(c) + '</b><div class="kick">' + n + ' files</div></div><div class="lib-mini">' + tiles + '</div></div>';
+      return '<div class="lib-card" data-cat="' + esc(c) + '"><div class="lib-h"><input data-lib-rename="' + esc(c) + '" value="' + esc(c) + '" aria-label="Folder name"><button type="button" class="ghost-x" data-lib-folder-x="' + esc(c) + '" aria-label="Delete folder">x</button><div class="kick">' + n + ' files</div></div><div class="lib-mini">' + tiles + '</div></div>';
     }).join('') + '</div><button type="button" class="btn sm" id="libInc" style="margin-top:10px">Top incumbents</button>';
     var pull = document.getElementById('libPull');
     if (pull) pull.onclick = function () {
@@ -458,11 +468,11 @@
     };
     var push = document.getElementById('libPush');
     if (push) push.onclick = function () {
-      authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'push' }) }).then(function (r) { return r.json(); }).then(function (d) { if (d && d.error) window.alert(d.error); }).catch(function () {});
+      authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'push', category: document.getElementById('libCat').value }) }).then(function (r) { return r.json(); }).then(function (d) { if (d && d.error) window.alert(d.error); }).catch(function () {});
     };
     function takeFiles(files, category) {
-      var cat = CATS.indexOf(category) >= 0 ? category : (document.getElementById('libCat') ? document.getElementById('libCat').value : 'Dev');
-      if (CATS.indexOf(cat) < 0) cat = 'Dev';
+      var cat = category || (document.getElementById('libCat') ? document.getElementById('libCat').value : 'Dev');
+      if (!cat) cat = 'Dev';
       var list = [].slice.call(files || []);
       if (!list.length) return;
       if (typeof deskBusy === 'function') deskBusy(true);
@@ -534,6 +544,53 @@
         };
       });
     }
+    var addFolder = document.getElementById('libAddFolder');
+    if (addFolder) addFolder.onclick = function () {
+      var box = document.getElementById('libFolderName');
+      var name = box && box.value.trim() ? box.value.trim() : 'Untitled folder';
+      STATE.docFolders = libFolders();
+      if (STATE.docFolders.indexOf(name) < 0) STATE.docFolders.push(name);
+      if (box) box.value = '';
+      renderLibrary();
+      authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'add-folder', name: name }) }).then(function (r) { return r.json(); }).then(function (d) {
+        if (d && d.saved === false) return;
+        loadLibrary();
+      }).catch(function () {});
+    };
+    el.querySelectorAll('[data-lib-rename]').forEach(function (box) {
+      box.onclick = function (e) { e.stopPropagation(); };
+      box.onblur = function () {
+        var from = box.getAttribute('data-lib-rename') || '';
+        var name = box.value.trim() || from;
+        if (!from || name === from) return;
+        (STATE.staged || []).forEach(function (d) { if (d.category === from) d.category = name; });
+        STATE.docFolders = libFolders().map(function (c) { return c === from ? name : c; });
+        renderLibrary();
+        authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'rename-folder', from: from, name: name }) }).catch(function () {});
+      };
+    });
+    el.querySelectorAll('[data-lib-folder-x]').forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        var name = btn.getAttribute('data-lib-folder-x') || '';
+        if (!name || !window.confirm('Delete this folder? Files move to Uncategorized.')) return;
+        (STATE.staged || []).forEach(function (d) { if (d.category === name) d.category = 'Uncategorized'; });
+        STATE.docFolders = libFolders().filter(function (c) { return c !== name; });
+        if (STATE.docFolders.indexOf('Uncategorized') < 0) STATE.docFolders.push('Uncategorized');
+        renderLibrary();
+        authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'remove-folder', name: name }) }).catch(function () {});
+      };
+    });
+    el.querySelectorAll('[data-lib-x]').forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        var id = btn.getAttribute('data-lib-x') || '';
+        STATE.staged = (STATE.staged || []).filter(function (d) { return d.id !== id; });
+        renderLibrary();
+        if (id.indexOf('tmp-') === 0) return;
+        authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'remove', id: id }) }).catch(function () {});
+      };
+    });
     var inc = document.getElementById('libInc');
     if (inc) inc.onclick = function () {
       var names = ['Vanta|https://www.vanta.com', 'Drata|https://drata.com', 'Secureframe|https://secureframe.com', 'Thoropass|https://thoropass.com', 'AutoRek|https://www.autorek.com', 'Aveni|https://aveni.ai', 'Fenergo|https://www.fenergo.com', 'Hummingbird|https://hummingbird.co', 'ComplyAdvantage|https://complyadvantage.com', 'Trulioo|https://www.trulioo.com'];
@@ -549,7 +606,7 @@
         btn.onclick = function () { openDocView(btn.getAttribute('data-name'), btn.getAttribute('data-inc'), 'Reference incumbent.'); };
       });
     };
-    el.querySelectorAll('.mini').forEach(function (mini) {
+    el.querySelectorAll('.mini-wrap').forEach(function (mini) {
       mini.ondragstart = function (e) {
         if (!e.dataTransfer) return;
         var id = mini.getAttribute('data-lib-inline') || '';
@@ -583,6 +640,7 @@
       };
       card.onclick = function (e) {
         if (el._dragDoc) { el._dragDoc = false; return; }
+        if (e.target.closest('[data-lib-x],[data-lib-folder-x],[data-lib-rename]')) return;
         var mini = e.target.closest('.mini');
         if (mini) {
           var doc = docs.filter(function (d) { return d.id === mini.getAttribute('data-lib-inline'); })[0];
@@ -599,6 +657,7 @@
   function loadLibrary() {
     authFetch('/api/documents', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
       STATE.staged = data.docs || [];
+      STATE.docFolders = data.folders || data.categories || STATE.docFolders || CATS;
       renderLibrary();
     }).catch(function () { STATE.staged = []; renderLibrary(); });
   }

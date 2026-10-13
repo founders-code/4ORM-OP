@@ -141,7 +141,7 @@ export async function setCommitment(sql: Sql, ownerId: string, id: string, statu
 export async function listNews(sql: Sql, ownerId: string, day = todayKey(), span = 30) {
   const days = span <= 7 ? 7 : 30;
   const rows = await sql`
-    SELECT id, category, title, summary, url, published_at, is_top, swept_on
+    SELECT id, category, title, summary, url, published_at, is_top, swept_on, image_url
     FROM news_items
     WHERE owner_id = ${ownerId}
       AND (
@@ -157,6 +157,7 @@ export async function listNews(sql: Sql, ownerId: string, day = todayKey(), span
     title: String(row.title || ''),
     summary: String(row.summary || ''),
     url: String(row.url || ''),
+    image: String(row.image_url || ''),
     publishedAt: row.published_at ? new Date(String(row.published_at)).getTime() : null,
     isTop: row.is_top === true,
     sweptOn: row.swept_on ? String(row.swept_on).slice(0, 10) : day,
@@ -170,6 +171,7 @@ export async function replaceNews(sql: Sql, ownerId: string, items: Array<Record
     const category = String(item.category || 'Compliance').trim().slice(0, 80);
     const summary = String(item.summary || '').trim().slice(0, 500);
     const url = String(item.url || item.link || '').trim().slice(0, 400);
+    const image = String(item.image || item.image_url || '').trim().slice(0, 500);
     const isTop = item.is_top === true || item.isTop === true;
     const rawWhen = item.published_at || item.publishedAt;
     const when = rawWhen ? new Date(String(rawWhen)) : new Date();
@@ -177,11 +179,11 @@ export async function replaceNews(sql: Sql, ownerId: string, items: Array<Record
     try {
       if (url) {
         await sql`
-          INSERT INTO news_items (owner_id, category, title, summary, url, published_at, is_top, swept_on)
-          VALUES (${ownerId}, ${category}, ${title}, ${summary}, ${url}, ${published}, ${isTop}, ${day}::date)
+          INSERT INTO news_items (owner_id, category, title, summary, url, image_url, published_at, is_top, swept_on)
+          VALUES (${ownerId}, ${category}, ${title}, ${summary}, ${url}, ${image}, ${published}, ${isTop}, ${day}::date)
           ON CONFLICT (owner_id, url) WHERE url <> ''
           DO UPDATE SET title = EXCLUDED.title, summary = EXCLUDED.summary, category = EXCLUDED.category,
-            published_at = EXCLUDED.published_at, is_top = EXCLUDED.is_top, swept_on = EXCLUDED.swept_on
+            image_url = EXCLUDED.image_url, published_at = EXCLUDED.published_at, is_top = EXCLUDED.is_top, swept_on = EXCLUDED.swept_on
         `;
       } else {
         await sql`

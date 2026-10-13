@@ -512,6 +512,14 @@ async function migrateWar(sql: Sql) {
       created_at timestamptz NOT NULL DEFAULT now()
     )`],
     ['db_news_url', () => sql`CREATE UNIQUE INDEX IF NOT EXISTS news_owner_url_uq ON news_items (owner_id, url) WHERE url <> ''`],
+    ['db_news_image', () => sql`ALTER TABLE news_items ADD COLUMN IF NOT EXISTS image_url text`],
+    ['db_doc_folders', () => sql`CREATE TABLE IF NOT EXISTS doc_folders (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      name text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      UNIQUE (owner_id, name)
+    )`],
     ['db_spaces', () => sql`CREATE TABLE IF NOT EXISTS spaces (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       owner_id text NOT NULL,

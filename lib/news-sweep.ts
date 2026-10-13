@@ -12,7 +12,7 @@ const FEEDS = [
   { category: 'Mortgage', q: 'mortgage regulation Canada', why: 'Why it matters to 4orm: housing finance and the partners we call.' },
 ];
 
-const FALLBACK = [
+export const FALLBACK = [
   { category: 'Payments / FINTRAC', title: 'FINTRAC - latest guidance', summary: 'Why it matters to 4orm: the reporting body for the payments desk.', url: 'https://fintrac-canafe.canada.ca/intro-eng', is_top: true },
   { category: 'Fintech & regulation', title: 'Bank of Canada - retail payments', summary: 'Why it matters to 4orm: RPAA is the payments perimeter.', url: 'https://www.bankofcanada.ca/core-functions/financial-system/retail-payments-supervision/', is_top: false },
   { category: 'Compliance', title: 'OSFI - supervision', summary: 'Why it matters to 4orm: federal prudential rules sit next to the raise.', url: 'https://www.osfi-bsif.gc.ca/en', is_top: false },
@@ -42,6 +42,9 @@ async function pullFeed(feed: (typeof FEEDS)[number]) {
   for (const block of xml.split(/<item>/i).slice(1, 7)) {
     const title = decode(pick(block, 'title')).slice(0, 180);
     const link = decode(pick(block, 'link')).slice(0, 400);
+    const media = block.match(/<media:content[^>]+url="([^"]+)"/i);
+    const picture = block.match(/<img[^>]+src="([^"]+)"/i);
+    const image = String((media && media[1]) || (picture && picture[1]) || '').slice(0, 500);
     const pub = new Date(pick(block, 'pubDate'));
     if (!title || !/^https?:\/\//i.test(link) || Number.isNaN(pub.getTime())) continue;
     if (Date.now() - pub.getTime() > 30 * 86400000) continue;
@@ -50,6 +53,7 @@ async function pullFeed(feed: (typeof FEEDS)[number]) {
       title,
       summary: feed.why,
       url: link,
+      image,
       published_at: pub.toISOString(),
       is_top: false,
     });
