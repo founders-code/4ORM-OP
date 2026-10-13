@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!session.sql) return NextResponse.json({ items: [], categories: NEWS_CATEGORIES });
-    const span = new URL(req.url).searchParams.get('span') === 'month' ? 31 : 14;
+    const span = new URL(req.url).searchParams.get('span') === 'week' ? 7 : 30;
     let items = await listNews(session.sql, session.userId, undefined, span);
     const fresh = items.some((item) => item.sweptOn === todayKey());
     if (!fresh) {

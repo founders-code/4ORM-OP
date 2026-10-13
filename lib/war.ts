@@ -138,8 +138,8 @@ export async function setCommitment(sql: Sql, ownerId: string, id: string, statu
   return rows[0] || null;
 }
 
-export async function listNews(sql: Sql, ownerId: string, day = todayKey(), span = 14) {
-  const days = span > 14 ? 31 : 14;
+export async function listNews(sql: Sql, ownerId: string, day = todayKey(), span = 30) {
+  const days = span <= 7 ? 7 : 30;
   const rows = await sql`
     SELECT id, category, title, summary, url, published_at, is_top, swept_on
     FROM news_items

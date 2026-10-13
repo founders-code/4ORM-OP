@@ -255,7 +255,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
   }, []);
   const links = await read(reads, 'links', async () => {
     const rows = await sql`
-      SELECT title, url, category, sub FROM links WHERE owner_id = ${ownerId} ORDER BY created_at DESC LIMIT 200
+      SELECT id, title, url, category, sub, note FROM links WHERE owner_id = ${ownerId} ORDER BY created_at DESC LIMIT 200
     `;
     return rows as Row[];
   }, []);
@@ -439,10 +439,12 @@ export async function loadBoard(sql: Sql, ownerId: string) {
       subs: asList(row.subs).map(String),
     })),
     links: links.map((row) => ({
+      id: String(row.id || ''),
       title: String(row.title),
       url: String(row.url),
       cat: String(row.category || ''),
       sub: String(row.sub || ''),
+      note: String(row.note || ''),
     })),
     events: calendar.events.map((event) => ({
       id: event.id,

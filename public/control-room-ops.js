@@ -115,10 +115,17 @@
     if (!modal || !card) return;
     var rows = (lists && lists[key]) || [];
     card.classList.add('wide');
-    card.innerHTML = '<div class="mhd"><div style="font-weight:700">' + esc(key.split(':').slice(1).join(':') || 'Items') + '</div><button class="x" id="mClose" type="button">x</button></div><div class="mbd">' + (rows.length ? rows.map(function (it) { return '<div class="ops-row"><button type="button" data-ops-item="' + esc(it.id) + '"><b>' + esc(it.title) + '</b><span class="kick">' + esc(areaLabel(it.area, it)) + '</span></button><button type="button" data-ops-del="' + esc(it.id) + '">Delete</button></div>'; }).join('') : '<div class="kick">Nothing in this group.</div>') + '</div>';
+    card.innerHTML = '<div class="mhd"><div style="font-weight:700">' + esc(key.split(':').slice(1).join(':') || 'Items') + '</div><button class="x" id="mClose" type="button">x</button></div><div class="mbd">' + (rows.length ? rows.map(function (it) { return '<div class="ops-row"><button type="button" data-ops-item="' + esc(it.id) + '"><b>' + esc(it.title) + '</b><span class="kick">' + esc(areaLabel(it.area, it)) + '</span></button>' + bucketPicks(it) + '<button type="button" class="ghost-x" data-ops-del="' + esc(it.id) + '" aria-label="Delete">x</button></div>'; }).join('') : '<div class="kick">Nothing in this group.</div>') + '</div>';
     modal.classList.add('open');
     modal.hidden = false;
     document.getElementById('mClose').onclick = function () { if (typeof closeModal === 'function') closeModal(); };
+    card.querySelectorAll('[data-set-bucket]').forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        setBucket(btn.getAttribute('data-set-bucket'), btn.getAttribute('data-col'));
+        openOpsList(key, lists);
+      };
+    });
     card.querySelectorAll('[data-ops-item]').forEach(function (btn) {
       btn.onclick = function () { if (typeof closeModal === 'function') closeModal(); editItem(btn.getAttribute('data-ops-item')); };
     });
@@ -155,6 +162,25 @@
       return node;
     }).join('');
     return '<svg viewBox="0 0 120 120" width="180" height="180">' + arcs + '<text x="60" y="66" text-anchor="middle" font-size="18" font-weight="650" fill="#102033">' + (centre || 0) + '</text></svg>';
+  }
+
+  function bucketPicks(it) {
+    var b = bucket(it);
+    var cur = b === 'week' ? 'week' : (b === 'later' ? 'later' : 'today');
+    return '<span class="bucket-picks">' + [['today', 'Today'], ['week', 'Week'], ['later', 'Later']].map(function (pair) {
+      return '<button type="button" data-set-bucket="' + esc(it.id) + '" data-col="' + pair[0] + '"' + (cur === pair[0] ? ' class="on"' : '') + '>' + pair[1] + '</button>';
+    }).join('') + '</span>';
+  }
+
+  function setBucket(id, col) {
+    var it = (STATE.items || []).filter(function (row) { return row.id === id; })[0];
+    if (!it) return;
+    var prev = it.due;
+    it.due = dueFor(col);
+    renderWar();
+    if (typeof renderOpsDash === 'function') renderOpsDash();
+    var due = it.due == null ? null : new Date(it.due).toISOString();
+    authFetch('/api/items', { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: id, due: due }) }).then(function (r) { if (!r.ok) throw 0; }).catch(function () { it.due = prev; renderWar(); });
   }
 
   function dueFor(col) {
@@ -196,7 +222,7 @@
         return b === 'later';
       });
       return '<div class="exec-col ' + col[0] + '" data-col="' + col[0] + '"><div class="sec-h"><h3>' + col[1] + '</h3><button class="addmini" type="button" data-add-col="' + col[0] + '">+</button></div>' + items.map(function (it) {
-        return '<div class="exec-card" draggable="true" data-item="' + esc(it.id) + '"><input type="checkbox" data-done="' + esc(it.id) + '" aria-label="Done"/><button type="button" data-edit="' + esc(it.id) + '" style="flex:1;text-align:left;border:0;background:transparent;font:inherit;cursor:pointer"><b>' + esc(it.title) + '</b><div class="kick">' + esc(areaLabel(it.area, it)) + '</div>' + (it._err ? '<div class="soft-err">' + esc(it._err) + '</div>' : '') + '</button><button type="button" data-del="' + esc(it.id) + '" aria-label="Delete">x</button></div>';
+        return '<div class="exec-card" draggable="true" data-item="' + esc(it.id) + '"><input type="checkbox" data-done="' + esc(it.id) + '" aria-label="Done"/><button type="button" data-edit="' + esc(it.id) + '" style="flex:1;text-align:left;border:0;background:transparent;font:inherit;cursor:pointer"><b>' + esc(it.title) + '</b><div class="kick">' + esc(areaLabel(it.area, it)) + '</div>' + bucketPicks(it) + (it._err ? '<div class="soft-err">' + esc(it._err) + '</div>' : '') + '</button><button type="button" class="ghost-x" data-del="' + esc(it.id) + '" aria-label="Delete">x</button></div>';
       }).join('') + '</div>';
     }).join('') + '</div>';
     bindWar();
@@ -237,6 +263,13 @@
     });
     document.querySelectorAll('[data-edit]').forEach(function (btn) {
       btn.onclick = function () { editItem(btn.getAttribute('data-edit')); };
+    });
+    document.querySelectorAll('[data-set-bucket]').forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        setBucket(btn.getAttribute('data-set-bucket'), btn.getAttribute('data-col'));
+      };
     });
   }
 
@@ -282,12 +315,13 @@
       var slots = data.slots || [];
       var days = [];
       slots.forEach(function (slot) { if (days.indexOf(slot.day) < 0) days.push(slot.day || 'Today'); });
-      list.innerHTML = (data.error ? '<div class="kick">' + esc(data.error) + '</div>' : '') + (days.length ? days : ['Today']).map(function (day) {
+      list.innerHTML = (data.error ? '<div class="kick">' + esc(data.error) + '</div>' : '') + '<div class="slot-cal">' + (days.length ? days : ['Today']).map(function (day) {
         var rows = slots.filter(function (slot) { return (slot.day || 'Today') === day; });
-        return '<div class="kick" style="margin-top:8px">' + esc(day) + '</div>' + rows.map(function (slot) {
-          return '<button class="slot" type="button" data-start="' + slot.start + '"' + (slot.free ? '' : ' disabled') + '>' + esc(slot.label) + (slot.free ? '' : ' - busy') + '</button>';
-        }).join('');
-      }).join('');
+        return '<div class="slot-day"><div class="day">' + esc(day) + '</div>' + rows.map(function (slot) {
+          var time = String(slot.label || '').split(' ').pop();
+          return '<button class="slot" type="button" data-start="' + slot.start + '"' + (slot.free ? '' : ' disabled') + '>' + esc(time) + (slot.free ? '' : ' busy') + '</button>';
+        }).join('') + '</div>';
+      }).join('') + '</div>';
       list.querySelectorAll('.slot').forEach(function (btn) {
         btn.onclick = function () {
           btn.disabled = true;
@@ -313,8 +347,8 @@
       var when = item.publishedAt ? new Date(item.publishedAt).toLocaleDateString('en-CA') : '';
       return '<button type="button" class="news-card' + (wide ? ' wide' : '') + '" data-news-url="' + esc(item.url || '') + '" data-news-title="' + esc(item.title || '') + '" data-news-why="' + esc(item.summary || '') + '"><div class="hd" style="background:' + tint + '">' + esc(item.category || '') + '</div><div style="padding:12px"><b>' + esc(item.title || '') + '</b><div class="kick">' + esc(item.summary || '') + '</div><div class="kick">' + esc(when) + '</div></div></button>';
     }
-    var empty = rows.length ? '' : '<div class="kick">Pulling the last two weeks. Use Refresh if this stays empty.</div>';
-    el.innerHTML = '<div class="news-wrap"><div class="news-rail"><div class="seg" id="newsSpan"><button type="button" data-span="week"' + (STATE.newsSpan === 'month' ? '' : ' class="on"') + '>Last week</button><button type="button" data-span="month"' + (STATE.newsSpan === 'month' ? ' class="on"' : '') + '>Last month</button></div>' + ['All'].concat(cats.filter(function (c) { return c !== 'All'; })).map(function (c) { return '<button type="button" class="' + (c === on ? 'on' : '') + '" data-news="' + esc(c) + '">' + esc(c) + '</button>' + (c === 'All' ? '' : '<button type="button" data-news-del="' + esc(c) + '" aria-label="Remove category">x</button>'); }).join('') + '<div class="lb-add"><input id="newsCatName" type="text" placeholder="Category"/><button class="btn sm" id="newsCatAdd" type="button">Add</button></div></div><div><div class="cap"><button class="btn sm" id="newsRefresh" type="button">Refresh</button></div><div class="news-grid">' + empty + (top ? card(top, true) : '') + rest.map(function (item) { return card(item, false); }).join('') + '</div></div></div>';
+    var empty = rows.length ? '' : '<div class="kick">The 8:00 and 11:00 Pacific sweeps fill this. Refresh pulls a fresh scrape.</div>';
+    el.innerHTML = '<div class="news-wrap"><div class="news-rail"><div class="seg" id="newsSpan"><button type="button" data-span="week"' + (STATE.newsSpan === 'week' ? ' class="on"' : '') + '>Last week</button><button type="button" data-span="month"' + (STATE.newsSpan === 'week' ? '' : ' class="on"') + '>Last month</button></div>' + ['All'].concat(cats.filter(function (c) { return c !== 'All'; })).map(function (c) { return '<button type="button" class="' + (c === on ? 'on' : '') + '" data-news="' + esc(c) + '">' + esc(c) + '</button>' + (c === 'All' ? '' : '<button type="button" data-news-del="' + esc(c) + '" aria-label="Remove category">x</button>'); }).join('') + '<div class="lb-add"><input id="newsCatName" type="text" placeholder="Category"/><button class="btn sm" id="newsCatAdd" type="button">Add</button></div></div><div><div class="cap"><button class="btn sm" id="newsRefresh" type="button">Refresh</button></div><div class="news-grid">' + empty + (top ? card(top, true) : '') + rest.map(function (item) { return card(item, false); }).join('') + '</div></div></div>';
     el.querySelectorAll('[data-span]').forEach(function (btn) {
       btn.onclick = function () {
         STATE.newsSpan = btn.getAttribute('data-span') === 'month' ? 'month' : 'week';
@@ -325,7 +359,7 @@
       btn.onclick = function () { STATE.newsCat = btn.getAttribute('data-news'); renderNews(STATE.news || [], STATE.newsCategories || cats); };
     });
     el.querySelectorAll('.news-card').forEach(function (btn) {
-      btn.onclick = function () { openDocView(btn.getAttribute('data-news-title'), btn.getAttribute('data-news-url'), btn.getAttribute('data-news-why')); };
+      btn.onclick = function () { if (typeof openLink === 'function') openLink(btn.getAttribute('data-news-title'), btn.getAttribute('data-news-url')); };
     });
     var refresh = document.getElementById('newsRefresh');
     if (refresh) refresh.onclick = function () {
@@ -352,7 +386,7 @@
   }
 
   function loadNews() {
-    authFetch('/api/news' + (STATE.newsSpan === 'month' ? '?span=month' : ''), { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
+    authFetch('/api/news' + (STATE.newsSpan === 'week' ? '?span=week' : '?span=month'), { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
       STATE.news = data.items || [];
       STATE.newsCategories = data.categories || [];
       renderNews(STATE.news, STATE.newsCategories);
@@ -718,7 +752,7 @@
       host.innerHTML = '<div class="sec-h"><h3>Notes</h3><button class="btn pri sm" id="stickAdd" type="button">+ New note</button></div><div class="sticky-board" id="stickBoard"></div>';
       var board = document.getElementById('stickBoard');
       board.innerHTML = notes.map(function (note) {
-        return '<div class="sticky ' + esc(note.color || 'yellow') + '" data-stick="' + esc(note.id) + '" style="left:' + (Number(note.x) || 24) + 'px;top:' + (Number(note.y) || 24) + 'px;width:' + (Number(note.w) || 180) + 'px;height:' + (Number(note.h) || 140) + 'px"><select aria-label="Colour">' + colours.map(function (c) { return '<option' + ((note.color || 'yellow') === c ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select><textarea rows="4">' + esc(note.body || '') + '</textarea>' + (note._err ? '<div class="soft-err">' + esc(note._err) + '</div>' : '') + '<button type="button" data-stick-del="' + esc(note.id) + '">x</button><button type="button" class="stick-size" data-stick-size="' + esc(note.id) + '" aria-label="Resize">/</button></div>';
+        return '<div class="sticky ' + esc(note.color || 'yellow') + '" data-stick="' + esc(note.id) + '" style="left:' + (Number(note.x) || 24) + 'px;top:' + (Number(note.y) || 24) + 'px;width:' + (Number(note.w) || 180) + 'px;height:' + (Number(note.h) || 140) + 'px"><div class="dots">' + colours.map(function (c) { return '<button type="button" class="' + c + ((note.color || 'yellow') === c ? ' on' : '') + '" data-color="' + c + '" aria-label="' + c + '"></button>'; }).join('') + '</div><textarea rows="4">' + esc(note.body || '') + '</textarea>' + (note._err ? '<div class="soft-err">' + esc(note._err) + '</div>' : '') + '<button type="button" class="ghost-x" data-stick-del="' + esc(note.id) + '" aria-label="Delete">x</button><button type="button" class="stick-size" data-stick-size="' + esc(note.id) + '" aria-label="Resize"></button></div>';
       }).join('');
       document.getElementById('stickAdd').onclick = function () {
         var temp = { id: 'tmp-' + Date.now(), body: '', color: 'yellow', x: 24 + (notes.length % 4) * 28, y: 24 + (notes.length % 3) * 20 };
@@ -774,7 +808,6 @@
       });
       board.querySelectorAll('.sticky').forEach(function (card) {
         var area = card.querySelector('textarea');
-        var pick = card.querySelector('select');
         area.oninput = function () {
           var note = notes.filter(function (row) { return row.id === card.getAttribute('data-stick'); })[0];
           if (note) note.body = area.value;
@@ -784,14 +817,19 @@
           if (String(id).indexOf('tmp-') === 0) return;
           authFetch('/api/notes/' + id, { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ body: area.value }) }).catch(function () {});
         };
-        pick.onchange = function () {
-          card.className = 'sticky ' + pick.value;
-          var note = notes.filter(function (row) { return row.id === card.getAttribute('data-stick'); })[0];
-          if (note) note.color = pick.value;
-          var id = card.getAttribute('data-stick');
-          if (String(id).indexOf('tmp-') === 0) return;
-          authFetch('/api/notes/' + id, { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ color: pick.value }) }).catch(function () {});
-        };
+        card.querySelectorAll('[data-color]').forEach(function (dot) {
+          dot.onclick = function (e) {
+            e.stopPropagation();
+            var color = dot.getAttribute('data-color');
+            card.className = 'sticky ' + color;
+            card.querySelectorAll('[data-color]').forEach(function (node) { node.classList.toggle('on', node === dot); });
+            var note = notes.filter(function (row) { return row.id === card.getAttribute('data-stick'); })[0];
+            if (note) note.color = color;
+            var id = card.getAttribute('data-stick');
+            if (String(id).indexOf('tmp-') === 0) return;
+            authFetch('/api/notes/' + id, { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ color: color }) }).catch(function () {});
+          };
+        });
         card.onpointerdown = function (e) {
           if (e.target.closest('textarea,button,select')) return;
           var sx = e.clientX - card.offsetLeft;
