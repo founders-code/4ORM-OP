@@ -31,7 +31,24 @@ export async function GET() {
       WHERE owner_id = ${session.userId}
       ORDER BY category, name
     `;
-    return NextResponse.json({ docs: (rows as Record<string, unknown>[]).map(shape), categories: CATS });
+    let folders = CATS.slice();
+    try {
+      const saved = await session.sql`SELECT name FROM doc_folders WHERE owner_id = ${session.userId} ORDER BY name`;
+      if (!saved.length) {
+        for (const name of CATS) {
+          await session.sql`
+            INSERT INTO doc_folders (owner_id, name)
+            VALUES (${session.userId}, ${name})
+            ON CONFLICT (owner_id, name) DO NOTHING
+          `;
+        }
+      } else {
+        folders = (saved as Record<string, unknown>[]).map((row) => String(row.name || '')).filter(Boolean);
+      }
+    } catch (err) {
+      fail('doc_folders', err);
+    }
+    return NextResponse.json({ docs: (rows as Record<string, unknown>[]).map(shape), categories: folders, folders });
   } catch (err) {
     fail('staged_docs', err);
     return NextResponse.json({ docs: [], categories: CATS });
@@ -46,18 +63,55 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({})) as Record<string, unknown>;
     const action = String(body?.action || '');
     if (action === 'pull') {
-      const category = CATS.includes(String(body?.category || '')) ? String(body.category) : '';
+      const category = String(body?.category || '').trim().slice(0, 80);
       const name = String(body?.name || '').trim().slice(0, 180);
-      if (!category || !name) return NextResponse.json({ error: 'Pick a category and a file.' }, { status: 400 });
+      if (!category || !name) return NextResponse.json({ error: 'Pick a folder and a file.' }, { status: 400 });
       await session.sql`
         INSERT INTO staged_docs (owner_id, category, name, url, drive_file_id, mime)
         VALUES (${session.userId}, ${category}, ${name}, ${String(body?.url || '').slice(0, 500)}, ${String(body?.driveFileId || '').slice(0, 120)}, ${String(body?.mime || '').slice(0, 120)})
       `;
       return NextResponse.json({ ok: true });
     }
+    if (action === 'add-folder' || action === 'rename-folder' || action === 'remove-folder') {
+      const name = String(body?.name || '').trim().slice(0, 80);
+      const from = String(body?.from || '').trim().slice(0, 80);
+      if (action === 'add-folder' && name) {
+        await session.sql`
+          INSERT INTO doc_folders (owner_id, name)
+          VALUES (${session.userId}, ${name})
+          ON CONFLICT (owner_id, name) DO NOTHING
+        `;
+      }
+      if (action === 'rename-folder' && from && name && from !== name) {
+        await session.sql`
+          UPDATE staged_docs SET category = ${name}
+          WHERE owner_id = ${session.userId} AND category = ${from}
+        `;
+        await session.sql`
+          UPDATE doc_folders SET name = ${name}
+          WHERE owner_id = ${session.userId} AND name = ${from}
+        `;
+      }
+      if (action === 'remove-folder' && name) {
+        await session.sql`
+          UPDATE staged_docs SET category = 'Uncategorized'
+          WHERE owner_id = ${session.userId} AND category = ${name}
+        `;
+        await session.sql`
+          INSERT INTO doc_folders (owner_id, name)
+          VALUES (${session.userId}, 'Uncategorized')
+          ON CONFLICT (owner_id, name) DO NOTHING
+        `;
+        await session.sql`
+          DELETE FROM doc_folders
+          WHERE owner_id = ${session.userId} AND name = ${name} AND name <> 'Uncategorized'
+        `;
+      }
+      return NextResponse.json({ ok: true, name: name || from });
+    }
     if (action === 'move') {
       const id = String(body?.id || '');
-      const category = CATS.includes(String(body?.category || '')) ? String(body.category) : '';
+      const category = String(body?.category || '').trim().slice(0, 80);
       if (!/^[0-9a-f-]{36}$/i.test(id) || !category) return NextResponse.json({ ok: false });
       await session.sql`
         UPDATE staged_docs SET category = ${category}
@@ -67,7 +121,7 @@ export async function POST(req: Request) {
     }
     const uploadLike = action === 'upload' || (!action && (body?.dataUrl || body?.body || body?.name));
     if (uploadLike) {
-      const category = CATS.includes(String(body?.category || '')) ? String(body.category) : 'Dev';
+      const category = String(body?.category || '').trim().slice(0, 80) || 'Dev';
       const name = String(body?.name || 'File').trim().slice(0, 180) || 'File';
       let mime = String(body?.mime || '').slice(0, 120);
       let raw = String(body?.dataUrl || body?.body || '');
@@ -121,7 +175,9 @@ export async function POST(req: Request) {
     }
     if (action === 'push') {
       const rows = await session.sql`
-        SELECT id, category, name, drive_file_id FROM staged_docs WHERE owner_id = ${session.userId}
+        SELECT id, category, name, drive_file_id FROM staged_docs
+        WHERE owner_id = ${session.userId}
+          AND (${String(body?.category || '').trim().slice(0, 80)} = '' OR category = ${String(body?.category || '').trim().slice(0, 80)})
       `;
       const creds = await loadCredsFor(session.userId);
       const cached = await session.sql`SELECT tree FROM drive_cache WHERE owner_id = ${session.userId}`;
