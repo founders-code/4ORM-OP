@@ -23,12 +23,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         parentId: String(form.get('parentId') || form.get('folderId') || ''),
       }, bytes);
       if (!added?.item) return NextResponse.json({ saved: false });
-      return NextResponse.json(added.item);
+      return NextResponse.json({ id: params.id, item: added.item, package: added.package || added });
     }
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const added = await addSpaceItem(session.sql, session.userId, params.id, body);
     if (!added) return NextResponse.json({ saved: false });
-    return NextResponse.json(added.item);
+    return NextResponse.json({ id: params.id, item: added.item, package: added.package || added });
   } catch (err) {
     fail('spaces_item', err);
     return NextResponse.json({ saved: false });
