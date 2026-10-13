@@ -222,8 +222,11 @@
     var card = document.getElementById('modalCard');
     var modal = document.getElementById('modal');
     if (!card || !modal) return;
+    card.classList.add('wide');
     card.innerHTML = '<div class="mhd"><div style="font-weight:700">Open 30-minute slots</div><button class="x" id="mClose" type="button">x</button></div><div class="mbd" id="slotList">Reading the calendar.</div>';
+    modal.classList.add('open');
     modal.hidden = false;
+    document.getElementById('mClose').onclick = function () { if (typeof closeModal === 'function') closeModal(); };
     authFetch('/api/calendar/slots', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
       var list = document.getElementById('slotList');
       if (!list) return;
@@ -299,8 +302,8 @@
     var docs = STATE.staged || [];
     el.innerHTML = '<div class="lb-add" id="libDrop">drag documents here, or <label class="btn sm">choose files<input id="libUpload" type="file" multiple hidden></label></div><div class="cap" style="margin:10px 0"><select id="libCat" aria-label="Category">' + CATS.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select><select id="libFile" aria-label="Drive file"><option value="">Pull from Drive</option>' + flatFiles(STATE.drives || [], []).map(function (file) { return '<option value="' + esc(file.id) + '" data-url="' + esc(file.url || '') + '" data-name="' + esc(file.name || '') + '">' + esc(file.name || 'File') + '</option>'; }).join('') + '</select><button class="btn sm" id="libPull" type="button">Pull from Drive</button><button class="btn sm" id="libPush" type="button">Move to Drive</button></div><div class="lib-grid">' + CATS.map(function (c) {
       var n = docs.filter(function (d) { return d.category === c; }).length;
-      return '<div class="lib-card" data-cat="' + esc(c) + '"><b>' + esc(c) + '</b><div class="kick">' + n + ' files</div></div>';
-    }).join('') + '</div><div id="libFiles" style="margin-top:12px"></div>';
+      return '<div class="lib-card" data-cat="' + esc(c) + '"><svg width="22" height="18" viewBox="0 0 22 18" aria-hidden="true"><path d="M2 3.5h6l2 2H20v10H2z" fill="none" stroke="#5C6B7A" stroke-width="1.4"/></svg><b>' + esc(c) + '</b><div class="kick">' + n + ' files</div></div>';
+    }).join('') + '</div>';
     var pull = document.getElementById('libPull');
     if (pull) pull.onclick = function () {
       var sel = document.getElementById('libFile');
@@ -330,23 +333,39 @@
       drop.ondragover = function (e) { e.preventDefault(); };
       drop.ondrop = function (e) { e.preventDefault(); takeFiles(e.dataTransfer.files, document.getElementById('libCat').value); };
     }
+    function openFolder(cat) {
+      var modal = document.getElementById('modal');
+      var box = document.getElementById('modalCard');
+      if (!modal || !box) return;
+      var files = docs.filter(function (d) { return d.category === cat; });
+      box.classList.add('wide');
+      box.innerHTML = '<div class="mhd"><div style="font-weight:700">' + esc(cat) + '</div><button class="x" id="mClose" type="button">x</button></div><div class="mbd"><div class="lib-pop">' + (files.map(function (d) {
+        var image = (d.mime || '').indexOf('image/') === 0;
+        var thumb = image ? '<img alt="" src="/api/documents/file?id=' + encodeURIComponent(d.id) + '">' : '<span class="kick">' + esc((d.mime || 'file').split('/')[0]) + '</span>';
+        return '<div><button type="button" data-lib-open="' + esc(d.id) + '">' + thumb + '<span>' + esc(d.name) + '</span></button><button type="button" data-lib-del="' + esc(d.id) + '" aria-label="Remove">x</button></div>';
+      }).join('') || '<div class="kick">No files in this folder yet.</div>') + '</div></div>';
+      modal.classList.add('open');
+      modal.hidden = false;
+      document.getElementById('mClose').onclick = function () { if (typeof closeModal === 'function') closeModal(); };
+      box.querySelectorAll('[data-lib-open]').forEach(function (btn) {
+        btn.onclick = function () {
+          var doc = files.filter(function (d) { return d.id === btn.getAttribute('data-lib-open'); })[0];
+          if (!doc) return;
+          var url = doc.url || ('/api/documents/file?id=' + encodeURIComponent(doc.id));
+          openDocView(doc.name, url, 'This file cannot be previewed here. Use Open in Drive.');
+        };
+      });
+      box.querySelectorAll('[data-lib-del]').forEach(function (btn) {
+        btn.onclick = function () {
+          authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'remove', id: btn.getAttribute('data-lib-del') }) }).then(function () { if (typeof closeModal === 'function') closeModal(); loadLibrary(); }).catch(function () {});
+        };
+      });
+    }
     el.querySelectorAll('.lib-card').forEach(function (card) {
       card.ondragover = function (e) { e.preventDefault(); card.classList.add('over'); };
       card.ondragleave = function () { card.classList.remove('over'); };
-      card.ondrop = function (e) { e.preventDefault(); card.classList.remove('over'); takeFiles(e.dataTransfer.files, card.getAttribute('data-cat')); };
-      card.onclick = function () {
-        var cat = card.getAttribute('data-cat');
-        document.getElementById('libFiles').innerHTML = docs.filter(function (d) { return d.category === cat; }).map(function (d) {
-          var thumb = (d.mime || '').indexOf('image/') === 0 ? '<img alt="" src="/api/documents/file?id=' + encodeURIComponent(d.id) + '" style="width:72px;height:48px;object-fit:cover;border-radius:6px">' : '';
-          var url = d.url || (d.id ? '/api/documents/file?id=' + encodeURIComponent(d.id) : '');
-          return '<div class="docfile">' + thumb + '<button type="button" class="docopen" data-doc-url="' + esc(url) + '" data-doc-name="' + esc(d.name) + '">' + esc(d.name) + '</button><button type="button" data-lib-del="' + esc(d.id) + '">x</button></div>';
-        }).join('') || '<div class="kick">No files in this category yet.</div>';
-        document.querySelectorAll('[data-lib-del]').forEach(function (btn) {
-          btn.onclick = function () {
-            authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'remove', id: btn.getAttribute('data-lib-del') }) }).then(loadLibrary).catch(function () {});
-          };
-        });
-      };
+      card.ondrop = function (e) { e.preventDefault(); e.stopPropagation(); card.classList.remove('over'); takeFiles(e.dataTransfer.files, card.getAttribute('data-cat')); };
+      card.onclick = function () { openFolder(card.getAttribute('data-cat')); };
     });
   }
 
@@ -451,16 +470,31 @@
     frame.hidden = false;
     fail.hidden = true;
     view.hidden = false;
-    if (url && url.indexOf('/api/documents/file') === 0) {
-      frame.src = url;
-      return;
+    frame.src = 'about:blank';
+    function showBlob(blob) {
+      var type = blob && blob.type || '';
+      var ok = type.indexOf('image/') === 0 || type === 'application/pdf' || type.indexOf('text/') === 0;
+      if (!ok) throw 0;
+      frame.hidden = false;
+      fail.hidden = true;
+      frame.src = URL.createObjectURL(blob);
     }
-    var preview = typeof drivePreview === 'function' ? drivePreview(url) : '';
-    if (!preview) {
+    function showFail() {
       frame.hidden = true;
       frame.removeAttribute('src');
       fail.hidden = false;
       fail.innerHTML = '<p>' + esc(note || 'This file cannot be previewed here. Use Open in Drive.') + '</p>';
+    }
+    if (url && url.indexOf('/api/documents/file') === 0) {
+      authFetch(url, { credentials: 'same-origin' }).then(function (r) {
+        if (!r.ok) throw 0;
+        return r.blob();
+      }).then(showBlob).catch(showFail);
+      return;
+    }
+    var preview = typeof drivePreview === 'function' ? drivePreview(url) : '';
+    if (!preview) {
+      showFail();
       return;
     }
     var id = '';
@@ -470,22 +504,13 @@
       id = match ? match[1] : (parsed.searchParams.get('id') || '');
     } catch (err) { id = ''; }
     if (!id) {
-      frame.hidden = true;
-      fail.hidden = false;
-      fail.innerHTML = '<p>' + esc(note || 'This file cannot be previewed here. Use Open in Drive.') + '</p>';
+      showFail();
       return;
     }
-    frame.src = 'about:blank';
     authFetch('/api/drive/file?id=' + encodeURIComponent(id), { credentials: 'same-origin' }).then(function (r) {
       if (!r.ok) throw 0;
       return r.blob();
-    }).then(function (blob) {
-      frame.src = URL.createObjectURL(blob);
-    }).catch(function () {
-      frame.hidden = true;
-      frame.removeAttribute('src');
-      fail.hidden = false;
-    });
+    }).then(showBlob).catch(showFail);
   };
 
   var priorPeople = renderPeople;
