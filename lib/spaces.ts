@@ -187,7 +187,7 @@ function toView(row: Record<string, unknown>, items: Item[], people: Person[], m
     thumbUrl: item.thumbUrl,
     folderId: item.parentId,
     kind: item.kind,
-    body: item.kind === 'note' ? item.body : '',
+    body: item.kind === 'note' || item.kind === 'link' ? item.body : '',
   }));
   const pushed = row.pushed_to_drive_at ? new Date(String(row.pushed_to_drive_at)) : null;
   const name = String(row.name || 'Untitled space');
@@ -291,7 +291,10 @@ export async function listSpaces(sql: Sql, ownerId: string) {
       const id = String(row.id);
       let docCount = 0;
       let recipientCount = 0;
+      let linkCount = 0;
       let preview = '';
+      let emailSubject = '';
+      let thumbs: Array<{ name: string; thumb: string }> = [];
       try {
         const docs = await sql`
           SELECT id FROM space_items
@@ -307,6 +310,20 @@ export async function listSpaces(sql: Sql, ownerId: string) {
           LIMIT 4
         `;
         preview = (names as Array<{ name?: string }>).map((row) => String(row.name || '')).filter(Boolean).join('\n');
+        const shots = await sql`
+          SELECT name, thumb_url, kind FROM space_items
+          WHERE space_id = ${id} AND owner_id = ${ownerId} AND coalesce(mime, '') <> 'text/x-folder'
+          ORDER BY position
+          LIMIT 6
+        `;
+        thumbs = (shots as Array<{ name?: string; thumb_url?: string }>).map((shot) => ({
+          name: String(shot.name || ''),
+          thumb: String(shot.thumb_url || ''),
+        }));
+        const links = await sql`SELECT id FROM space_items WHERE space_id = ${id} AND owner_id = ${ownerId} AND kind = 'link'`;
+        linkCount = links.length;
+        const mail = await sql`SELECT subject FROM space_email WHERE space_id = ${id} AND owner_id = ${ownerId} LIMIT 1`;
+        emailSubject = String(mail[0]?.subject || '');
       } catch (err) {
         fail('spaces_counts', err);
       }
@@ -321,6 +338,9 @@ export async function listSpaces(sql: Sql, ownerId: string) {
         subjectLabel: String(row.name || ''),
         description: String(row.notes || ''),
         preview,
+        emailSubject,
+        thumbs,
+        linkCount,
         pushedToDriveAt: pushed && !Number.isNaN(pushed.getTime()) ? pushed.toISOString() : '',
         docCount,
         recipientCount,
@@ -465,7 +485,7 @@ function shapeItem(item: Item) {
     driveFileId: item.driveFileId,
     thumb_url: item.thumbUrl,
     thumbUrl: item.thumbUrl,
-    body: item.kind === 'note' ? item.body : '',
+    body: item.kind === 'note' || item.kind === 'link' ? item.body : '',
     parent_id: item.parentId || null,
     parentId: item.parentId,
     position: item.position,

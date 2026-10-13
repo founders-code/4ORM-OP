@@ -44,7 +44,7 @@ async function pullFeed(feed: (typeof FEEDS)[number]) {
     const link = decode(pick(block, 'link')).slice(0, 400);
     const pub = new Date(pick(block, 'pubDate'));
     if (!title || !/^https?:\/\//i.test(link) || Number.isNaN(pub.getTime())) continue;
-    if (Date.now() - pub.getTime() > 14 * 86400000) continue;
+    if (Date.now() - pub.getTime() > 30 * 86400000) continue;
     out.push({
       category: feed.category,
       title,
