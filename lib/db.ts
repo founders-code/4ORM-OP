@@ -38,6 +38,8 @@ async function migrate(sql: Sql) {
     WHERE source_id IS NOT NULL`;
   await sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS source text DEFAULT 'manual'`;
   await sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS category text`;
+  await sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS waiting_on text`;
+  await sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS plan_of text`;
   await sql`
     DO $$
     DECLARE r record;
@@ -125,6 +127,7 @@ async function migrate(sql: Sql) {
     runway_weeks int
   )`;
   await sql`ALTER TABLE owner_settings ADD COLUMN IF NOT EXISTS zoom_seed_version text`;
+  await sql`ALTER TABLE owner_settings ADD COLUMN IF NOT EXISTS news_categories jsonb`;
   await sql`CREATE TABLE IF NOT EXISTS note_cats (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id text NOT NULL,
@@ -287,6 +290,44 @@ async function migrate(sql: Sql) {
     ic text,
     created_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE (owner_id, slug)
+  )`;
+  await sql`CREATE TABLE IF NOT EXISTS item_plans (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id text NOT NULL,
+    item_id text NOT NULL,
+    steps jsonb NOT NULL DEFAULT '[]',
+    needs jsonb NOT NULL DEFAULT '[]',
+    draft text,
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (owner_id, item_id)
+  )`;
+  await sql`CREATE TABLE IF NOT EXISTS commitments (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id text NOT NULL,
+    text text NOT NULL,
+    source_note_id text NOT NULL DEFAULT '',
+    made_on date,
+    status text NOT NULL DEFAULT 'open',
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (owner_id, source_note_id, text)
+  )`;
+  await sql`
+    DO $$ BEGIN
+      ALTER TABLE commitments ADD CONSTRAINT commitments_status_check CHECK (status IN ('open','done','decked'));
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$
+  `;
+  await sql`CREATE TABLE IF NOT EXISTS news_items (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id text NOT NULL,
+    category text NOT NULL,
+    title text NOT NULL,
+    summary text,
+    url text,
+    published_at timestamptz,
+    is_top boolean NOT NULL DEFAULT false,
+    swept_on date NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
   )`;
   await sql`CREATE TABLE IF NOT EXISTS ceo_weights (
     owner_id text NOT NULL,

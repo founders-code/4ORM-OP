@@ -16,6 +16,8 @@ function shapeItem(row: Record<string, unknown>) {
     owner: String(row.owner || ''),
     source: String(row.source || 'manual'),
     category: row.category ? String(row.category) : '',
+    waitingOn: row.waiting_on ? String(row.waiting_on) : '',
+    planOf: row.plan_of ? String(row.plan_of) : '',
   };
 }
 
@@ -59,15 +61,17 @@ export async function PATCH(req: Request) {
     const setPriority = has('priority');
     const setOwner = has('owner');
     const setDue = has('due');
+    const setWait = has('waitingOn');
     const title = setTitle ? String(body?.title || '').trim().slice(0, 240) : '';
     const area = setArea ? allowArea(String(body?.area || '')) : null;
     const status = setStatus ? allowStatus(String(body?.status || '')) : null;
     const priority = setPriority ? allowPriority(String(body?.priority || '')) : null;
     const parsed = setDue ? parseDue(body?.due) : { ok: true, iso: null };
-    if (!/^[0-9a-f-]{36}$/i.test(id) || (setTitle && !title) || (setArea && !area) || (setStatus && !status) || (setPriority && !priority) || !parsed.ok || (!setTitle && !setArea && !setStatus && !setPriority && !setOwner && !setDue)) {
+    if (!/^[0-9a-f-]{36}$/i.test(id) || (setTitle && !title) || (setArea && !area) || (setStatus && !status) || (setPriority && !priority) || !parsed.ok || (!setTitle && !setArea && !setStatus && !setPriority && !setOwner && !setDue && !setWait)) {
       return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     }
     const owner = setOwner ? String(body?.owner ?? '').slice(0, 80) : '';
+    const waitingOn = setWait ? String(body?.waitingOn ?? '').slice(0, 80) : '';
     const dueIso = parsed.iso;
     const rows = await session.sql`
       UPDATE items
@@ -76,6 +80,7 @@ export async function PATCH(req: Request) {
           status = CASE WHEN ${setStatus} THEN ${status} ELSE status END,
           priority = CASE WHEN ${setPriority} THEN ${priority} ELSE priority END,
           owner = CASE WHEN ${setOwner} THEN ${owner} ELSE owner END,
+          waiting_on = CASE WHEN ${setWait} THEN ${waitingOn} ELSE waiting_on END,
           due = CASE WHEN ${setDue} THEN ${dueIso}::timestamptz ELSE due END,
           updated_at = now()
       WHERE id = ${id} AND owner_id = ${session.userId}

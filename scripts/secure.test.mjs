@@ -4,6 +4,7 @@ import { readFileSync } from 'fs';
 import { tokenOk, allowArea, allowPriority, allowStage, allowStatus, allowContactType, allowTier, allowNoteColor, isBriefHour, windowKey, CEILINGS, parseDue, visibleCalendarWindow } from '../lib/guard.mjs';
 import { ROADMAP, ROAD_CATEGORIES } from '../lib/roadmap.mjs';
 import { DEFAULT_WEIGHTS, computeLamps, pickMoves, readProfileFacts } from '../lib/ceo-score.mjs';
+import { extractCommitments, fallbackPlan, zoneOf, NEWS_CATEGORIES } from '../lib/war.mjs';
 import { organizeText } from '../lib/organize.mjs';
 import { openSeal, seal } from '../lib/seal.mjs';
 import { readState, signState } from '../lib/oauth-state.mjs';
@@ -193,4 +194,40 @@ test('the control room page does not carry secrets', () => {
   assert.equal(page.includes("ids.length+' deleted'"), true);
   assert.equal(/Atherton/.test(page), false);
   assert.equal(/\/api\/(ingest|mcp|cron)/.test(page), false);
+  assert.equal(page.includes('Daily sweep - news'), true);
+  assert.equal(page.includes('Raise - Friends &amp; Family - survival track'), true);
+  assert.equal(page.includes('Ask 4orm Intelligence to build the plan'), true);
+  assert.equal(page.includes('Waiting on us'), true);
+  assert.equal(page.includes("You said you'd do it"), true);
+  assert.equal(page.includes('Waiting on others'), true);
+  assert.equal(page.includes('control-room-war.js'), true);
+  const warjs = readFileSync(new URL('../public/control-room-war.js', import.meta.url), 'utf8');
+  assert.equal(/Atherton|example\.com/.test(warjs), false);
+  assert.equal(warjs.includes('/api/ceo/plan'), true);
+  assert.equal(warjs.includes('/api/plans'), true);
+  assert.equal(/\/api\/(ingest|mcp|cron)/.test(warjs), false);
+});
+
+test('war room helpers extract commitments and fill a plan', () => {
+  const rows = extractCommitments([{
+    id: 'n1',
+    date: '2026-10-01',
+    others: ["I'll send the deck."],
+    improve: ['I am going to call the broker.'],
+    intel: [{ value: 'The market is quiet.' }, { value: "I will follow up tomorrow." }],
+  }]);
+  assert.equal(rows.length, 3);
+  assert.equal(rows[0].sourceNoteId, 'n1');
+  assert.equal(rows[0].madeOn, '2026-10-01');
+  const again = extractCommitments([{ id: 'n1', date: '2026-10-01', others: ["I'll send the deck.", "I'll send the deck."], improve: [], intel: [] }]);
+  assert.equal(again.length, 1);
+  const plan = fallbackPlan({ title: 'Email the broker', area: 'outreach', steps: [] });
+  assert.equal(plan.steps.length >= 2, true);
+  assert.match(plan.draft, /Hello/);
+  assert.equal(/[\u2013\u2014]/.test(JSON.stringify(plan)), false);
+  assert.equal(zoneOf({ principle: 'P1', text: 'Close the round', area: 'other' }), 'raise');
+  assert.equal(zoneOf({ principle: 'P2', text: 'Call brokers', area: 'outreach' }), 'partner');
+  assert.equal(zoneOf({ principle: 'P4', facing: 'regulator', text: 'Note the file', area: 'outreach' }), 'regulator');
+  assert.equal(NEWS_CATEGORIES.includes('Fundraising / VC'), true);
+  assert.equal(NEWS_CATEGORIES.includes('AI'), true);
 });

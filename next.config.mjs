@@ -4,6 +4,7 @@ const nextConfig = {
     '/api/ceo': ['./ceo/**/*'],
     '/api/ceo/refresh': ['./ceo/**/*'],
     '/api/ceo/chat': ['./ceo/**/*'],
+    '/api/ceo/plan': ['./ceo/**/*'],
     '/api/ceo/weights': ['./ceo/**/*'],
     '/api/ceo/moves/[id]/do': ['./ceo/**/*'],
     '/api/ceo/moves/[id]/snooze': ['./ceo/**/*'],
