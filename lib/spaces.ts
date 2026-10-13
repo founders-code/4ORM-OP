@@ -525,14 +525,17 @@ export async function addSpaceItem(
   const row = await owned(sql, ownerId, spaceId);
   if (!row) return null;
   const mime = clip(input.mime, 120) || (bytes ? 'application/octet-stream' : '');
-  const kind = kindOf(input.kind, mime);
-  const name = clip(input.name, 180) || (kind === 'link' ? clip(input.url, 180) : '') || (kind === 'note' ? 'Note' : 'Untitled file');
+  const asked = clip(input.kind, 20).toLowerCase();
+  const folder = asked === 'folder' || mime === 'text/x-folder';
+  const kind = folder ? 'note' : kindOf(input.kind, mime);
+  const name = clip(input.name, 180) || (kind === 'link' ? clip(input.url, 180) : '') || (folder ? 'Untitled folder' : kind === 'note' ? 'Note' : 'Untitled file');
   let parent = clip(input.parent_id || input.parentId || input.folderId, 40);
   if (parent && !spaceIdOk(parent)) parent = '';
   if (parent) {
     const depth = await depthOf(sql, spaceId, parent);
     if (depth >= 3) parent = '';
   }
+  const storedMime = folder ? 'text/x-folder' : mime;
   const url = clip(input.url, 500);
   const driveFileId = clip(input.driveFileId || input.drive_file_id, 120);
   let body = kind === 'note' ? clip(input.body, 8000) : '';
@@ -558,7 +561,7 @@ export async function addSpaceItem(
   const position = Number(siblings[0]?.position || 0) + 1;
   const rows = await sql`
     INSERT INTO space_items (space_id, owner_id, kind, name, url, mime, drive_file_id, thumb_url, body, parent_id, position)
-    VALUES (${spaceId}, ${ownerId}, ${kind}, ${name}, ${url}, ${mime}, ${driveFileId}, ${thumb}, ${body}, ${parent || null}, ${position})
+    VALUES (${spaceId}, ${ownerId}, ${kind}, ${name}, ${url}, ${storedMime}, ${driveFileId}, ${thumb}, ${body}, ${parent || null}, ${position})
     RETURNING id, space_id, kind, name, url, mime, drive_file_id, thumb_url, body, parent_id, position
   `;
   await sql`UPDATE spaces SET updated_at = now() WHERE id = ${spaceId} AND owner_id = ${ownerId}`;
