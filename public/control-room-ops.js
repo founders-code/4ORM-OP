@@ -445,7 +445,7 @@
         var kind = ((d.name || '').split('.').pop() || 'file').slice(0, 4).toUpperCase();
         var src = image ? ('/api/documents/file?id=' + encodeURIComponent(d.id)) : (d.driveFileId ? ('https://drive.google.com/thumbnail?id=' + encodeURIComponent(d.driveFileId) + '&sz=w240') : '');
         var face = (src ? '<img alt="" src="' + src + '" onload="var k=this.parentNode.querySelector(\'.dk\');if(k)k.hidden=true" onerror="this.hidden=true"/>' : '') + '<span class="dk"' + (src ? ' hidden' : '') + '>' + esc(kind) + '</span>';
-        return '<button type="button" class="mini" data-lib-inline="' + esc(d.id) + '">' + face + '<em>' + esc(d.name || 'File') + '</em></button>';
+        return '<button type="button" class="mini" draggable="true" data-lib-inline="' + esc(d.id) + '">' + face + '<em>' + esc(d.name || 'File') + '</em>' + (d._err ? '<em class="soft-err">' + esc(d._err) + '</em>' : '') + '</button>';
       }).join('');
       return '<div class="lib-card" data-cat="' + esc(c) + '"><div class="lib-h"><b>' + esc(c) + '</b><div class="kick">' + n + ' files</div></div><div class="lib-mini">' + tiles + '</div></div>';
     }).join('') + '</div><button type="button" class="btn sm" id="libInc" style="margin-top:10px">Top incumbents</button>';
@@ -461,14 +461,33 @@
       authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'push' }) }).then(function (r) { return r.json(); }).then(function (d) { if (d && d.error) window.alert(d.error); }).catch(function () {});
     };
     function takeFiles(files, category) {
-      Array.prototype.forEach.call(files || [], function (file) {
-        var reader = new FileReader();
-        reader.onload = function () {
-          var raw = String(reader.result || '');
-          var comma = raw.indexOf(',');
-          authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'upload', category: category, name: file.name, mime: file.type, body: comma >= 0 ? raw.slice(comma + 1) : raw }) }).then(loadLibrary).catch(function () {});
-        };
-        reader.readAsDataURL(file);
+      var cat = CATS.indexOf(category) >= 0 ? category : (document.getElementById('libCat') ? document.getElementById('libCat').value : 'Dev');
+      if (CATS.indexOf(cat) < 0) cat = 'Dev';
+      var list = [].slice.call(files || []);
+      if (!list.length) return;
+      if (typeof deskBusy === 'function') deskBusy(true);
+      var jobs = list.map(function (file) {
+        var temp = 'tmp-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        STATE.staged = (STATE.staged || []).concat([{ id: temp, category: cat, name: file.name || 'File', mime: file.type || '', driveFileId: '', url: '' }]);
+        var body = new FormData();
+        body.append('file', file);
+        body.append('category', cat);
+        body.append('name', file.name || 'File');
+        body.append('mime', file.type || '');
+        return authFetch('/api/documents/upload', { method: 'POST', credentials: 'same-origin', body: body }).then(function (r) {
+          return r.json().then(function (d) { return { ok: !!(r.ok && d && d.ok), temp: temp }; });
+        }).catch(function () { return { ok: false, temp: temp }; });
+      });
+      renderLibrary();
+      Promise.all(jobs).then(function (results) {
+        if (typeof deskBusy === 'function') deskBusy(false);
+        var failed = results.filter(function (row) { return !row.ok; });
+        if (!failed.length) { loadLibrary(); return; }
+        failed.forEach(function (row) {
+          var hit = (STATE.staged || []).filter(function (d) { return d.id === row.temp; })[0];
+          if (hit) hit._err = 'Not saved yet';
+        });
+        renderLibrary();
       });
     }
     var drop = document.getElementById('libDrop');
@@ -505,7 +524,7 @@
         btn.onclick = function () {
           var doc = files.filter(function (d) { return d.id === btn.getAttribute('data-lib-open'); })[0];
           if (!doc) return;
-          var url = doc.driveFileId ? ('https://drive.google.com/file/d/' + encodeURIComponent(doc.driveFileId) + '/view') : (doc.url || ('/api/documents/file?id=' + encodeURIComponent(doc.id)));
+          var url = doc.driveFileId ? ('https://drive.google.com/file/d/' + encodeURIComponent(doc.driveFileId) + '/preview') : (doc.url || ('/api/documents/file?id=' + encodeURIComponent(doc.id)));
           openDocView(doc.name, url, '');
         };
       });
@@ -530,16 +549,45 @@
         btn.onclick = function () { openDocView(btn.getAttribute('data-name'), btn.getAttribute('data-inc'), 'Reference incumbent.'); };
       });
     };
+    el.querySelectorAll('.mini').forEach(function (mini) {
+      mini.ondragstart = function (e) {
+        if (!e.dataTransfer) return;
+        var id = mini.getAttribute('data-lib-inline') || '';
+        e.dataTransfer.setData('text/plain', '4orm-doc:' + id);
+        e.dataTransfer.effectAllowed = 'move';
+        el._dragDoc = true;
+      };
+    });
     el.querySelectorAll('.lib-card').forEach(function (card) {
       card.ondragover = function (e) { e.preventDefault(); card.classList.add('over'); };
       card.ondragleave = function () { card.classList.remove('over'); };
-      card.ondrop = function (e) { e.preventDefault(); e.stopPropagation(); card.classList.remove('over'); takeFiles(e.dataTransfer.files, card.getAttribute('data-cat')); };
+      card.ondrop = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        card.classList.remove('over');
+        var plain = '';
+        try { plain = e.dataTransfer.getData('text/plain') || ''; } catch (err) { plain = ''; }
+        if (plain.indexOf('4orm-doc:') === 0) {
+          var id = plain.slice(9);
+          var cat = card.getAttribute('data-cat') || '';
+          var doc = (STATE.staged || []).filter(function (d) { return d.id === id; })[0];
+          if (!doc || doc.category === cat || String(id).indexOf('tmp-') === 0) return;
+          doc.category = cat;
+          renderLibrary();
+          authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'move', id: id, category: cat }) }).then(function (r) { return r.json(); }).then(function (d) {
+            if (!d || d.ok === false) { doc._err = 'Not moved yet'; renderLibrary(); }
+          }).catch(function () { doc._err = 'Not moved yet'; renderLibrary(); });
+          return;
+        }
+        takeFiles(e.dataTransfer.files, card.getAttribute('data-cat'));
+      };
       card.onclick = function (e) {
+        if (el._dragDoc) { el._dragDoc = false; return; }
         var mini = e.target.closest('.mini');
         if (mini) {
           var doc = docs.filter(function (d) { return d.id === mini.getAttribute('data-lib-inline'); })[0];
           if (!doc) return;
-          var url = doc.driveFileId ? ('https://drive.google.com/file/d/' + encodeURIComponent(doc.driveFileId) + '/view') : (doc.url || ('/api/documents/file?id=' + encodeURIComponent(doc.id)));
+          var url = doc.driveFileId ? ('https://drive.google.com/file/d/' + encodeURIComponent(doc.driveFileId) + '/preview') : (doc.url || ('/api/documents/file?id=' + encodeURIComponent(doc.id)));
           openDocView(doc.name, url, '');
           return;
         }
@@ -632,12 +680,10 @@
     });
   }
 
-  var priorOpen = openDocView;
   openDocView = function (name, url, note) {
     var view = document.getElementById('docView');
     document.getElementById('docViewName').textContent = name || 'Document';
     var driveBtn = document.getElementById('docViewDrive');
-    if (driveBtn) driveBtn.onclick = function () { openDocView(name, url, note || 'This file stays in the desk.'); };
     var frame = document.getElementById('docViewFrame');
     var fail = document.getElementById('docFallback');
     if (!fail) {
@@ -649,7 +695,13 @@
     frame.hidden = false;
     fail.hidden = true;
     view.hidden = false;
-    frame.src = 'about:blank';
+    var preview = typeof drivePreview === 'function' ? drivePreview(url) : '';
+    if (driveBtn) {
+      driveBtn.hidden = !preview;
+      driveBtn.onclick = function () { if (preview) frame.src = preview; };
+    }
+    if (typeof deskBusy === 'function') deskBusy(true);
+    function done() { if (typeof deskBusy === 'function') deskBusy(false); }
     function showBlob(blob) {
       var type = blob && blob.type || '';
       var ok = type.indexOf('image/') === 0 || type === 'application/pdf' || type.indexOf('text/') === 0;
@@ -658,38 +710,37 @@
       fail.hidden = true;
       frame.src = URL.createObjectURL(blob);
     }
-    function showFail() {
-      frame.hidden = true;
-      frame.removeAttribute('src');
-      fail.hidden = false;
-      fail.innerHTML = '<p>' + esc(note || 'This file cannot be previewed here. Use Open in Drive.') + '</p>';
-    }
     if (url && url.indexOf('/api/documents/file') === 0) {
+      frame.src = 'about:blank';
       authFetch(url, { credentials: 'same-origin' }).then(function (r) {
         if (!r.ok) throw 0;
         return r.blob();
-      }).then(showBlob).catch(showFail);
+      }).then(showBlob).catch(function () {
+        frame.hidden = true;
+        fail.hidden = false;
+        fail.innerHTML = '<p>' + esc(note || 'This file cannot be previewed here.') + '</p>';
+      }).then(done, done);
       return;
     }
-    var preview = typeof drivePreview === 'function' ? drivePreview(url) : '';
     if (!preview) {
-      showFail();
+      frame.hidden = true;
+      fail.hidden = false;
+      fail.innerHTML = '<p>' + esc(note || 'This file cannot be previewed here.') + '</p>';
+      done();
       return;
     }
+    frame.src = preview;
     var id = '';
     try {
-      var parsed = new URL(url);
+      var parsed = new URL(preview);
       var match = parsed.pathname.match(/\/d\/([^/]+)/);
-      id = match ? match[1] : (parsed.searchParams.get('id') || '');
+      id = match ? match[1] : '';
     } catch (err) { id = ''; }
-    if (!id) {
-      showFail();
-      return;
-    }
+    if (!id) { done(); return; }
     authFetch('/api/drive/file?id=' + encodeURIComponent(id), { credentials: 'same-origin' }).then(function (r) {
       if (!r.ok) throw 0;
       return r.blob();
-    }).then(showBlob).catch(showFail);
+    }).then(showBlob).catch(function () {}).then(done, done);
   };
 
   var priorPeople = renderPeople;

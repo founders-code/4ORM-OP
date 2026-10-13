@@ -250,7 +250,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
     }) as Row[];
   }, []);
   const categories = await read(reads, 'categories', async () => {
-    const rows = await sql`SELECT name, subs FROM link_categories WHERE owner_id = ${ownerId} ORDER BY name`;
+    const rows = await sql`SELECT id, name, subs FROM link_categories WHERE owner_id = ${ownerId} ORDER BY name`;
     return rows as Row[];
   }, []);
   const links = await read(reads, 'links', async () => {
