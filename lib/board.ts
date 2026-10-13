@@ -197,7 +197,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
 
   const items = await read(reads, 'items', async () => {
     const rows = await sql`
-      SELECT id, title, area, status, priority, due, owner, source, category, notes
+      SELECT id, title, area, status, priority, due, owner, source, category, notes, updated_at
       FROM items
       WHERE owner_id = ${ownerId}
         AND (snooze_until IS NULL OR snooze_until <= now())

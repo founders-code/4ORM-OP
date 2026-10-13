@@ -29,6 +29,7 @@ export async function POST(req: Request) {
       subjectContactId: String(body?.subjectContactId || ''),
       subjectLabel: String(body?.subjectLabel || ''),
       description: String(body?.description || ''),
+      spaceCategory: String(body?.spaceCategory || body?.category || ''),
     });
     if (!created) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     return NextResponse.json(created);

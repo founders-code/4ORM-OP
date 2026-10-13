@@ -40,14 +40,14 @@
     var comp = total ? Math.round((done.length / total) * 100) : 0;
     var onTime = done.length ? Math.round((done.filter(function (it) { return bucket(it) !== 'overdue'; }).length / done.length) * 100) : 100;
     var tiles = [
-      ['Total', total, ''],
-      ['Done', done.length, 'ok'],
-      ['Active', active.length, 'go'],
-      ['Waiting', waiting.length, ''],
-      ['Blocked', blocked.length, ''],
-      ['Overdue', overdue.length, 'bad'],
-      ['Comp', comp + '%', 'ok'],
-      ['On time', onTime + '%', 'warn']
+      ['Total', total, '', 'on the desk'],
+      ['Done', done.length, 'ok', 'closed'],
+      ['Active', active.length, 'go', 'in motion'],
+      ['Waiting', waiting.length, '', 'paused'],
+      ['Blocked', blocked.length, blocked.length ? 'bad' : '', 'stuck'],
+      ['Overdue', overdue.length, 'bad', 'past due'],
+      ['Comp', comp + '%', 'ok', 'done / total'],
+      ['On time', onTime + '%', 'warn', 'closed on time']
     ];
     var byStatus = { done: done.length, active: active.length, waiting: waiting.length, blocked: blocked.length };
     var areas = {};
@@ -56,29 +56,58 @@
     rows.forEach(function (it) { if (pri[it.priority] != null) pri[it.priority] += 1; });
     var highOpen = rows.filter(function (it) { return it.status !== 'done' && (it.priority === 'high' || it.priority === 'urgent'); }).length;
     var dueWeek = rows.filter(function (it) { return it.status !== 'done' && bucket(it) === 'week'; }).length;
-    var dueDays = rows.filter(function (it) { return it.due && it.status !== 'done'; }).map(function (it) { return Math.max(0, Math.round((it.due - Date.now()) / 86400000)); });
-    var avg = dueDays.length ? Math.round(dueDays.reduce(function (s, n) { return s + n; }, 0) / dueDays.length) : 0;
+    var dueToday = rows.filter(function (it) { return it.status !== 'done' && (bucket(it) === 'today' || bucket(it) === 'overdue'); }).length;
+    var oldest = overdue.reduce(function (max, it) { var age = it.due ? Math.max(0, Math.round((Date.now() - it.due) / 86400000)) : 0; return Math.max(max, age); }, 0);
+    var weekAgo = Date.now() - 7 * 86400000;
+    var doneWeek = done.filter(function (it) { var at = Date.parse(it.updated_at || '') || it.due || 0; return at >= weekAgo; }).length;
+    var maxStatus = Math.max(done.length, active.length, waiting.length, blocked.length, 1);
     var maxArea = Math.max.apply(null, Object.keys(areas).map(function (k) { return areas[k]; }).concat([1]));
+    var maxPri = Math.max(pri.urgent, pri.high, pri.normal, pri.low, 1);
+    function meters(pairs, max) {
+      return pairs.map(function (pair) {
+        return '<div class="meter"><em>' + esc(pair[0]) + '</em><span><i style="width:' + Math.round((pair[1] / max) * 100) + '%"></i></span><b>' + pair[1] + '</b></div>';
+      }).join('');
+    }
+    var parts = [
+      { n: done.length, color: '#1F8A4C', label: 'Completed' },
+      { n: active.length, color: '#2F6FED', label: 'Active' },
+      { n: waiting.length, color: '#E0A100', label: 'Waiting' },
+      { n: blocked.length, color: '#C5363A', label: 'Blocked' }
+    ];
+    var trend = [];
+    for (var day = 6; day >= 0; day -= 1) {
+      var start = new Date(); start.setHours(0, 0, 0, 0); start = start.getTime() - day * 86400000;
+      var count = done.filter(function (it) { var at = Date.parse(it.updated_at || '') || 0; return at >= start && at < start + 86400000; }).length;
+      trend.push(count);
+    }
     el.innerHTML = '<div class="money"><div><div class="k">Raise - friends &amp; family</div><div class="n">$80K / $250K</div><div class="bar"><span></span></div><div class="kick" style="color:#C5D4E6;margin-top:8px">$170K to go - 3/7 cheques - 18 days to Oct 30</div></div><div><div class="k">Runway</div><div class="n bad">~1 day</div></div><div><div class="k">Cash</div><div class="n">$100</div></div></div>'
-      + '<div class="metrics">' + tiles.map(function (t) { return '<div class="metric ' + t[2] + '"><div class="k">' + esc(t[0]) + '</div><div class="n">' + esc(String(t[1])) + '</div></div>'; }).join('') + '</div>'
-      + '<div class="ops-2"><div class="card" style="padding:14px"><h3>Operations overview</h3><div class="kick">Status</div><div>' + ['done', 'active', 'waiting', 'blocked'].map(function (k) { return esc(k) + ' ' + byStatus[k]; }).join(' - ') + '</div><div class="kick" style="margin-top:8px">Departments</div><div>' + Object.keys(areas).map(function (k) { return esc(k) + ' ' + areas[k]; }).join(' - ') + '</div><div class="kick" style="margin-top:8px">Priority</div><div>' + Object.keys(pri).map(function (k) { return esc(k) + ' ' + pri[k]; }).join(' - ') + '</div></div>'
-      + '<div class="card" style="padding:14px"><h3>Quick insights</h3><div>High priority open ' + highOpen + '</div><div>Due this week ' + dueWeek + '</div><div>Active tasks ' + active.length + '</div><div>Avg days to due ' + avg + '</div><div>Blocked tasks ' + blocked.length + '</div></div></div>'
-      + '<div class="ops-2"><div class="card" style="padding:14px"><h3>Task status breakdown</h3>' + donut([{ n: done.length, color: '#1F8A4C' }, { n: active.length, color: '#2F6FED' }, { n: waiting.length, color: '#E0A100' }, { n: blocked.length, color: '#C5363A' }]) + '</div>'
-      + '<div class="card" style="padding:14px"><h3>Tasks by department</h3>' + Object.keys(areas).map(function (k) { return '<div style="display:flex;gap:8px;align-items:center;margin-top:6px"><span style="width:110px">' + esc(k) + '</span><span style="height:8px;border-radius:99px;background:#2F6FED;width:' + Math.round((areas[k] / maxArea) * 180) + 'px"></span></div>'; }).join('') + '</div></div>';
+      + '<div class="metrics">' + tiles.map(function (t) { return '<div class="metric ' + t[2] + '"><div class="k">' + esc(t[0]) + '</div><div class="n">' + esc(String(t[1])) + '</div><div class="kick">' + esc(t[3]) + '</div></div>'; }).join('') + '</div>'
+      + '<div class="ops-2"><div class="card" style="padding:14px"><h3>Operations overview</h3><div class="kick">Status</div>' + meters([['Done', done.length], ['Active', active.length], ['Waiting', waiting.length], ['Blocked', blocked.length]], maxStatus) + '<div class="kick" style="margin-top:10px">Departments</div>' + meters(Object.keys(areas).map(function (k) { return [k, areas[k]]; }), maxArea) + '<div class="kick" style="margin-top:10px">Priority</div>' + meters(Object.keys(pri).map(function (k) { return [k, pri[k]]; }), maxPri) + '</div>'
+      + '<div class="card" style="padding:14px"><h3>Quick insights</h3><div class="insights"><div><b>' + highOpen + '</b><span>High priority open</span></div><div><b>' + dueWeek + '</b><span>Due this week</span></div><div><b>' + active.length + '</b><span>Active tasks</span></div><div><b>' + dueToday + '</b><span>Due today</span></div><div><b>' + oldest + 'd</b><span>Oldest overdue</span></div><div><b>' + doneWeek + '</b><span>Done last 7d</span></div></div></div></div>'
+      + '<div class="ops-2"><div class="card" style="padding:14px"><h3>Task status breakdown</h3><div class="donut-wrap">' + donut(parts, total) + '<div class="legend">' + parts.map(function (p) { var pct = total ? Math.round((p.n / total) * 100) : 0; return '<div><b style="color:' + p.color + '">' + p.n + '</b> ' + esc(p.label) + ' ' + pct + '%</div>'; }).join('') + '</div></div></div>'
+      + '<div class="card" style="padding:14px"><h3>Tasks by department</h3>' + Object.keys(areas).map(function (k) { return '<div class="meter"><em>' + esc(k) + '</em><span><i style="width:' + Math.round((areas[k] / maxArea) * 100) + '%"></i></span><b>' + areas[k] + '</b></div>'; }).join('') + '<h3 style="margin-top:16px">Completed - last 7 days</h3>' + spark(trend) + '</div></div>';
   }
 
-  function donut(parts) {
-    if (!parts.some(function (p) { return p.n; })) parts = [{ n: 1, color: '#E6EBF1' }];
-    var total = parts.reduce(function (s, p) { return s + p.n; }, 0) || 1;
+  function spark(values) {
+    var max = Math.max.apply(null, values.concat([1]));
+    var w = 280; var h = 64;
+    var pts = values.map(function (n, i) { return (i * (w / 6)) + ',' + (h - (n / max) * (h - 8) - 4); }).join(' ');
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="64"><polyline fill="none" stroke="#2F6FED" stroke-width="2" points="' + pts + '"/></svg>';
+  }
+
+  function donut(parts, centre) {
+    var drawn = parts.slice();
+    if (!drawn.some(function (p) { return p.n; })) drawn = [{ n: 1, color: '#E6EBF1' }];
+    var total = drawn.reduce(function (s, p) { return s + p.n; }, 0) || 1;
     var c = 2 * Math.PI * 42;
     var off = 0;
-    var arcs = parts.map(function (p) {
+    var arcs = drawn.map(function (p) {
       var len = (p.n / total) * c;
       var node = '<circle cx="60" cy="60" r="42" fill="none" stroke="' + p.color + '" stroke-width="14" stroke-dasharray="' + len + ' ' + (c - len) + '" stroke-dashoffset="' + (-off) + '" transform="rotate(-90 60 60)"/>';
       off += len;
       return node;
     }).join('');
-    return '<svg viewBox="0 0 120 120" width="150" height="150">' + arcs + '</svg>';
+    return '<svg viewBox="0 0 120 120" width="220" height="220">' + arcs + '<text x="60" y="66" text-anchor="middle" font-size="22" font-weight="650" fill="#102033">' + (centre || 0) + '</text></svg>';
   }
 
   function dueFor(col) {
@@ -101,7 +130,11 @@
     };
     var today = laDay(Date.now());
     var next = (STATE.events || []).filter(function (ev) { return laDay(ev.start) === today && ev.start >= Date.now() - 60000; }).sort(function (a, b) { return a.start - b.start; }).slice(0, 2);
-    cmd.innerHTML = '<div class="cmd"><div><div class="lb-add"><input id="opsAdd" type="text" placeholder="Capture a task" style="flex:1"/><button class="btn pri sm" id="opsAddBtn" type="button">Add</button></div><div class="pulse" style="margin-top:10px">' + Object.keys(counts).map(function (k) { return '<div><div class="k">' + esc(k) + '</div><b>' + counts[k] + '</b></div>'; }).join('') + '</div></div><div class="focus"><div class="k">Today\'s focus</div><div style="font-size:16px;font-weight:700;margin-top:4px">' + esc(move ? move.text : 'Nothing urgent on the desk.') + '</div><div id="nextUp" style="margin-top:10px"><div class="k">Next up</div>' + (next.length ? next.map(function (ev) { return '<div data-count="' + ev.start + '">' + esc(ev.title || 'Event') + ' <span>' + soon(ev.start) + '</span></div>'; }).join('') : '<div>No more events today.</div>') + '<button class="btn sm" id="findSlot" type="button" style="margin-top:8px">Find a 30-min slot</button></div></div></div>';
+    var line = counts.Overdue ? counts.Overdue + ' overdue. ' + (move ? move.text : 'Clear the overdue list first.') : (move ? move.text : 'Nothing urgent on the desk.');
+    cmd.innerHTML = '<div class="lb-add"><input id="opsAdd" type="text" placeholder="Capture a task" style="flex:1"/><button class="btn pri sm" id="opsAddBtn" type="button">Add</button></div>'
+      + '<div class="focus" style="margin-top:10px"><div class="k">Today\'s focus</div><div style="font-size:16px;font-weight:700;margin-top:4px">' + esc(line) + '</div></div>'
+      + '<div class="pulse" style="margin-top:10px">' + Object.keys(counts).map(function (k) { return '<div><div class="k">' + esc(k) + '</div><b>' + counts[k] + '</b></div>'; }).join('') + '</div>'
+      + '<div class="card" id="nextUp" style="padding:14px;margin-top:10px"><div class="sec-h"><h3>Next up</h3><button class="btn sm" id="findSlot" type="button">Find a 30-min slot</button></div>' + (next.length ? next.map(function (ev) { return '<div data-count="' + ev.start + '">' + esc(ev.title || 'Event') + ' <span>' + soon(ev.start) + '</span></div>'; }).join('') : '<div>No more events today.</div>') + '</div>';
     var cols = [
       ['today', 'Today'],
       ['week', 'This week'],
@@ -220,11 +253,27 @@
     var rest = rows.filter(function (item) { return item !== top; });
     function card(item, wide) {
       var tint = TINT[item.category] || '#E7EEF6';
-      return '<a class="news-card' + (wide ? ' wide' : '') + '" href="' + esc(item.url || '#') + '" target="_blank" rel="noopener"><div class="hd" style="background:' + tint + '">' + esc(item.category || '') + '</div><div style="padding:12px"><b>' + esc(item.title || '') + '</b><div class="kick">' + esc(item.summary || '') + '</div></div></a>';
+      return '<button type="button" class="news-card' + (wide ? ' wide' : '') + '" data-news-url="' + esc(item.url || '') + '" data-news-title="' + esc(item.title || '') + '" data-news-why="' + esc(item.summary || '') + '"><div class="hd" style="background:' + tint + '">' + esc(item.category || '') + '</div><div style="padding:12px"><b>' + esc(item.title || '') + '</b><div class="kick">' + esc(item.summary || '') + '</div></div></button>';
     }
-    el.innerHTML = '<div class="news-wrap"><div class="news-rail">' + ['All'].concat(cats.filter(function (c) { return c !== 'All'; })).map(function (c) { return '<button type="button" class="' + (c === on ? 'on' : '') + '" data-news="' + esc(c) + '">' + esc(c) + '</button>'; }).join('') + '</div><div><div class="news-grid">' + (top ? card(top, true) : '') + rest.map(function (item) { return card(item, false); }).join('') + '</div></div></div>';
+    el.innerHTML = '<div class="news-wrap"><div class="news-rail">' + ['All'].concat(cats.filter(function (c) { return c !== 'All'; })).map(function (c) { return '<button type="button" class="' + (c === on ? 'on' : '') + '" data-news="' + esc(c) + '">' + esc(c) + '</button>' + (c === 'All' ? '' : '<button type="button" data-news-del="' + esc(c) + '" aria-label="Remove category">x</button>'); }).join('') + '<div class="lb-add"><input id="newsCatName" type="text" placeholder="Category"/><button class="btn sm" id="newsCatAdd" type="button">Add</button></div></div><div><div class="news-grid">' + (top ? card(top, true) : '') + rest.map(function (item) { return card(item, false); }).join('') + '</div></div></div>';
     el.querySelectorAll('[data-news]').forEach(function (btn) {
       btn.onclick = function () { STATE.newsCat = btn.getAttribute('data-news'); renderNews(STATE.news || [], STATE.newsCategories || cats); };
+    });
+    el.querySelectorAll('.news-card').forEach(function (btn) {
+      btn.onclick = function () { openDocView(btn.getAttribute('data-news-title'), btn.getAttribute('data-news-url'), btn.getAttribute('data-news-why')); };
+    });
+    var addCat = document.getElementById('newsCatAdd');
+    if (addCat) addCat.onclick = function () {
+      var name = document.getElementById('newsCatName').value.trim();
+      if (!name) return;
+      var next = cats.filter(function (c) { return c !== 'All'; }).concat([name]);
+      authFetch('/api/news/categories', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ categories: next }) }).then(function (r) { return r.json(); }).then(function (d) { STATE.newsCategories = d.categories || next; renderNews(STATE.news || [], STATE.newsCategories); }).catch(function () {});
+    };
+    el.querySelectorAll('[data-news-del]').forEach(function (btn) {
+      btn.onclick = function () {
+        if (!window.confirm('Remove this category? Articles stay.')) return;
+        authFetch('/api/news/categories/' + encodeURIComponent(btn.getAttribute('data-news-del')), { method: 'DELETE', credentials: 'same-origin' }).then(loadNews).catch(function () {});
+      };
     });
   }
 
@@ -248,9 +297,9 @@
     var el = document.getElementById('opsLibrary');
     if (!el || el.hidden) return;
     var docs = STATE.staged || [];
-    el.innerHTML = '<div class="cap" style="margin-bottom:10px"><select id="libCat" aria-label="Category">' + CATS.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select><select id="libFile" aria-label="Drive file"><option value="">Pull from Drive</option>' + flatFiles(STATE.drives || [], []).map(function (file) { return '<option value="' + esc(file.id) + '" data-url="' + esc(file.url || '') + '" data-name="' + esc(file.name || '') + '">' + esc(file.name || 'File') + '</option>'; }).join('') + '</select><button class="btn sm" id="libPull" type="button">Pull from Drive</button><button class="btn sm" id="libPush" type="button">Move to Drive</button></div><div class="lib-grid">' + CATS.map(function (c) {
+    el.innerHTML = '<div class="lb-add" id="libDrop">drag documents here, or <label class="btn sm">choose files<input id="libUpload" type="file" multiple hidden></label></div><div class="cap" style="margin:10px 0"><select id="libCat" aria-label="Category">' + CATS.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select><select id="libFile" aria-label="Drive file"><option value="">Pull from Drive</option>' + flatFiles(STATE.drives || [], []).map(function (file) { return '<option value="' + esc(file.id) + '" data-url="' + esc(file.url || '') + '" data-name="' + esc(file.name || '') + '">' + esc(file.name || 'File') + '</option>'; }).join('') + '</select><button class="btn sm" id="libPull" type="button">Pull from Drive</button><button class="btn sm" id="libPush" type="button">Move to Drive</button></div><div class="lib-grid">' + CATS.map(function (c) {
       var n = docs.filter(function (d) { return d.category === c; }).length;
-      return '<button class="lib-card" type="button" data-cat="' + esc(c) + '"><b>' + esc(c) + '</b><div class="kick">' + n + ' files</div></button>';
+      return '<div class="lib-card" data-cat="' + esc(c) + '"><b>' + esc(c) + '</b><div class="kick">' + n + ' files</div></div>';
     }).join('') + '</div><div id="libFiles" style="margin-top:12px"></div>';
     var pull = document.getElementById('libPull');
     if (pull) pull.onclick = function () {
@@ -263,11 +312,34 @@
     if (push) push.onclick = function () {
       authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'push' }) }).then(function (r) { return r.json(); }).then(function (d) { if (d && d.error) window.alert(d.error); }).catch(function () {});
     };
+    function takeFiles(files, category) {
+      Array.prototype.forEach.call(files || [], function (file) {
+        var reader = new FileReader();
+        reader.onload = function () {
+          var raw = String(reader.result || '');
+          var comma = raw.indexOf(',');
+          authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'upload', category: category, name: file.name, mime: file.type, body: comma >= 0 ? raw.slice(comma + 1) : raw }) }).then(loadLibrary).catch(function () {});
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    var drop = document.getElementById('libDrop');
+    var upload = document.getElementById('libUpload');
+    if (upload) upload.onchange = function () { takeFiles(upload.files, document.getElementById('libCat').value); };
+    if (drop) {
+      drop.ondragover = function (e) { e.preventDefault(); };
+      drop.ondrop = function (e) { e.preventDefault(); takeFiles(e.dataTransfer.files, document.getElementById('libCat').value); };
+    }
     el.querySelectorAll('.lib-card').forEach(function (card) {
+      card.ondragover = function (e) { e.preventDefault(); card.classList.add('over'); };
+      card.ondragleave = function () { card.classList.remove('over'); };
+      card.ondrop = function (e) { e.preventDefault(); card.classList.remove('over'); takeFiles(e.dataTransfer.files, card.getAttribute('data-cat')); };
       card.onclick = function () {
         var cat = card.getAttribute('data-cat');
         document.getElementById('libFiles').innerHTML = docs.filter(function (d) { return d.category === cat; }).map(function (d) {
-          return '<div class="docfile"><button type="button" class="docopen" data-doc-url="' + esc(d.url || '') + '" data-doc-name="' + esc(d.name) + '">' + esc(d.name) + '</button><button type="button" data-lib-del="' + esc(d.id) + '">x</button></div>';
+          var thumb = (d.mime || '').indexOf('image/') === 0 ? '<img alt="" src="/api/documents/file?id=' + encodeURIComponent(d.id) + '" style="width:72px;height:48px;object-fit:cover;border-radius:6px">' : '';
+          var url = d.url || (d.id ? '/api/documents/file?id=' + encodeURIComponent(d.id) : '');
+          return '<div class="docfile">' + thumb + '<button type="button" class="docopen" data-doc-url="' + esc(url) + '" data-doc-name="' + esc(d.name) + '">' + esc(d.name) + '</button><button type="button" data-lib-del="' + esc(d.id) + '">x</button></div>';
         }).join('') || '<div class="kick">No files in this category yet.</div>';
         document.querySelectorAll('[data-lib-del]').forEach(function (btn) {
           btn.onclick = function () {
@@ -285,18 +357,10 @@
     }).catch(function () { STATE.staged = []; renderLibrary(); });
   }
 
-  function setLib(mode) {
-    var drive = mode === 'drive';
+  function setLib() {
     var lib = document.getElementById('opsLibrary');
-    var tree = document.getElementById('docTree');
-    var tools = document.querySelector('#v-docs .doc-tools');
-    var pins = document.querySelector('#v-docs .pinbar');
-    if (lib) lib.hidden = drive;
-    if (tree) tree.hidden = !drive;
-    if (tools) tools.hidden = !drive;
-    if (pins) pins.hidden = !drive;
-    document.querySelectorAll('#libMode button').forEach(function (btn) { btn.classList.toggle('on', btn.getAttribute('data-lib') === mode); });
-    if (!drive) loadLibrary();
+    if (lib) lib.hidden = false;
+    loadLibrary();
   }
 
   function loadInbox() {
@@ -371,24 +435,34 @@
   }
 
   var priorOpen = openDocView;
-  openDocView = function (name, url) {
-    var preview = drivePreview(url);
-    if (!preview) return;
+  openDocView = function (name, url, note) {
     var view = document.getElementById('docView');
     document.getElementById('docViewName').textContent = name || 'Document';
-    document.getElementById('docViewDrive').href = url;
+    var driveBtn = document.getElementById('docViewDrive');
+    if (driveBtn) driveBtn.onclick = function () { openDocView(name, url, note || 'This file stays in the desk.'); };
     var frame = document.getElementById('docViewFrame');
     var fail = document.getElementById('docFallback');
     if (!fail) {
       fail = document.createElement('div');
       fail.id = 'docFallback';
       fail.style.padding = '24px';
-      fail.innerHTML = '<p>This file cannot be previewed here. Use Open in Drive.</p>';
       frame.parentNode.insertBefore(fail, frame.nextSibling);
     }
     frame.hidden = false;
     fail.hidden = true;
     view.hidden = false;
+    if (url && url.indexOf('/api/documents/file') === 0) {
+      frame.src = url;
+      return;
+    }
+    var preview = typeof drivePreview === 'function' ? drivePreview(url) : '';
+    if (!preview) {
+      frame.hidden = true;
+      frame.removeAttribute('src');
+      fail.hidden = false;
+      fail.innerHTML = '<p>' + esc(note || 'This file cannot be previewed here. Use Open in Drive.') + '</p>';
+      return;
+    }
     var id = '';
     try {
       var parsed = new URL(url);
@@ -398,6 +472,7 @@
     if (!id) {
       frame.hidden = true;
       fail.hidden = false;
+      fail.innerHTML = '<p>' + esc(note || 'This file cannot be previewed here. Use Open in Drive.') + '</p>';
       return;
     }
     frame.src = 'about:blank';
@@ -429,9 +504,12 @@
     });
     var body = document.querySelector('#drawer .db');
     if (body && !document.getElementById('logPipe')) {
-      body.insertAdjacentHTML('beforeend', '<div class="cap"><button class="btn sm" id="logPipe" type="button">Log note</button><a class="btn sm" id="ghlOpen" href="https://app.gohighlevel.com/" target="_blank" rel="noopener">Open in GHL</a></div><textarea id="pipeNote" rows="3" placeholder="Note" style="width:100%;margin-top:8px"></textarea>');
+      body.insertAdjacentHTML('beforeend', '<div class="cap"><button class="btn sm" id="logPipe" type="button">Log note</button><button class="btn sm" id="ghlOpen" type="button">Open in GHL</button></div><textarea id="pipeNote" rows="3" placeholder="Note" style="width:100%;margin-top:8px"></textarea>');
       document.getElementById('logPipe').onclick = function () {
         authFetch('/api/contacts', { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: id, notes: document.getElementById('pipeNote').value }) }).catch(function () {});
+      };
+      document.getElementById('ghlOpen').onclick = function () {
+        openDocView('GoHighLevel', '', 'This record stays on the desk. GoHighLevel remains the source of truth.');
       };
     }
   };
@@ -450,10 +528,12 @@
     priorSwitch(v);
     if (v === 'news') loadNews();
     if (v === 'docs') setLib('library');
+    if (v === 'drive') renderDocs();
     if (v === 'contacts') loadInbox();
     if (v === 'room') renderOpsDash();
     if (v === 'war') renderWar();
-    if (v === 'znotes') renderDeskNotes();
+    if (v === 'notes') renderSticky();
+    if (v === 'znotes') renderZNotes();
   };
 
   var brand = document.querySelector('.brand');
@@ -471,17 +551,90 @@
     e.stopPropagation();
     authFetch('/api/packages/' + btn.getAttribute('data-push-card'), { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'push-drive' }) }).catch(function () {});
   }, true);
-  var notes = document.getElementById('v-znotes');
-  if (notes && !document.getElementById('deskNotes')) {
-    notes.insertAdjacentHTML('afterbegin', '<form id="noteForm" class="lb-add" style="margin-bottom:12px"><input id="opsNoteId" type="hidden" value=""/><input id="opsNoteTitle" type="text" placeholder="Title" style="flex:1"/><input id="opsNoteBody" type="text" placeholder="Key intel" style="flex:1"/><button class="btn pri sm" type="submit">Save note</button></form><div id="deskNotes"></div>');
-    document.getElementById('noteForm').onsubmit = function (e) {
+  var zoom = document.getElementById('v-znotes');
+  if (zoom && !document.getElementById('zoomForm')) {
+    zoom.insertAdjacentHTML('afterbegin', '<form id="zoomForm" class="lb-add" style="margin-bottom:12px"><input id="zoomId" type="hidden" value=""/><input id="zoomTitle" type="text" placeholder="Title" style="flex:1"/><input id="zoomPeople" type="text" placeholder="Attendees" style="flex:1"/><textarea id="zoomOthers" rows="2" placeholder="What others said" style="flex:1"></textarea><button class="btn pri sm" type="submit">Save</button></form>');
+    document.getElementById('zoomForm').onsubmit = function (e) {
       e.preventDefault();
-      var id = document.getElementById('opsNoteId').value;
-      var payload = { title: document.getElementById('opsNoteTitle').value, body: document.getElementById('opsNoteBody').value };
-      var req = id ? authFetch('/api/notes', { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(Object.assign({ id: id }, payload)) }) : authFetch('/api/notes', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
-      req.then(function () { document.getElementById('noteForm').reset(); return authFetch('/api/board', { credentials: 'same-origin' }); }).then(function (r) { return r.json(); }).then(applyBoard).catch(function () {});
+      var id = document.getElementById('zoomId').value;
+      var payload = { title: document.getElementById('zoomTitle').value, attendees: document.getElementById('zoomPeople').value, others: document.getElementById('zoomOthers').value };
+      var req = id ? authFetch('/api/zoom/' + id, { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) }) : authFetch('/api/zoom', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+      req.then(function () { document.getElementById('zoomForm').reset(); return authFetch('/api/board', { credentials: 'same-origin' }); }).then(function (r) { return r.json(); }).then(applyBoard).catch(function () {});
     };
   }
+  var priorZ = renderZNotes;
+  renderZNotes = function () {
+    priorZ();
+    var grid = document.getElementById('zGrid');
+    if (!grid) return;
+    grid.querySelectorAll('.zrow').forEach(function (row) {
+      var open = row.querySelector('[data-z]');
+      var id = open ? open.getAttribute('data-z') : '';
+      if (!id || row.querySelector('[data-zdel]')) return;
+      row.insertAdjacentHTML('beforeend', '<button type="button" data-zedit="' + id + '">Edit</button><button type="button" data-zdel="' + id + '">Delete</button>');
+    });
+    grid.querySelectorAll('[data-zdel]').forEach(function (btn) {
+      btn.onclick = function () {
+        if (!window.confirm('Delete this meeting note?')) return;
+        authFetch('/api/zoom/' + btn.getAttribute('data-zdel'), { method: 'DELETE', credentials: 'same-origin' }).then(function () { return authFetch('/api/board', { credentials: 'same-origin' }); }).then(function (r) { return r.json(); }).then(applyBoard).catch(function () {});
+      };
+    });
+    grid.querySelectorAll('[data-zedit]').forEach(function (btn) {
+      btn.onclick = function () {
+        var note = (STATE.zoomNotes || []).filter(function (n) { return n.id === btn.getAttribute('data-zedit'); })[0];
+        if (!note) return;
+        document.getElementById('zoomId').value = note.id;
+        document.getElementById('zoomTitle').value = note.title || '';
+        document.getElementById('zoomPeople').value = (note.attendees || []).join(', ');
+        document.getElementById('zoomOthers').value = (note.others || []).join('\n');
+      };
+    });
+  };
+  function renderSticky() {
+    var host = document.getElementById('stickyDesk');
+    if (!host) return;
+    authFetch('/api/notes/sticky', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
+      var notes = data.notes || [];
+      host.innerHTML = '<div class="lb-add"><textarea id="stickBody" rows="2" placeholder="Note" style="flex:1"></textarea><select id="stickColor" aria-label="Colour"><option>yellow</option><option>blue</option><option>green</option><option>pink</option></select><button class="btn pri sm" id="stickAdd" type="button">Add</button></div><div class="sticky-board" id="stickBoard"></div>';
+      var board = document.getElementById('stickBoard');
+      board.innerHTML = notes.map(function (note) {
+        return '<div class="sticky ' + esc(note.color) + '" data-stick="' + esc(note.id) + '" style="left:' + (Number(note.x) || 24) + 'px;top:' + (Number(note.y) || 24) + 'px"><textarea rows="4">' + esc(note.body) + '</textarea><button type="button" data-stick-del="' + esc(note.id) + '">Delete</button></div>';
+      }).join('');
+      document.getElementById('stickAdd').onclick = function () {
+        authFetch('/api/notes/sticky', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ body: document.getElementById('stickBody').value, color: document.getElementById('stickColor').value }) }).then(renderSticky).catch(function () {});
+      };
+      board.querySelectorAll('[data-stick-del]').forEach(function (btn) {
+        btn.onclick = function () {
+          authFetch('/api/notes/' + btn.getAttribute('data-stick-del'), { method: 'DELETE', credentials: 'same-origin' }).then(renderSticky).catch(function () {});
+        };
+      });
+      board.querySelectorAll('.sticky').forEach(function (card) {
+        var area = card.querySelector('textarea');
+        area.onchange = function () {
+          authFetch('/api/notes/' + card.getAttribute('data-stick'), { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ body: area.value }) }).catch(function () {});
+        };
+        card.onpointerdown = function (e) {
+          if (e.target.closest('textarea,button')) return;
+          var sx = e.clientX - card.offsetLeft;
+          var sy = e.clientY - card.offsetTop;
+          function move(ev) { card.style.left = (ev.clientX - sx) + 'px'; card.style.top = (ev.clientY - sy) + 'px'; }
+          function up() {
+            document.removeEventListener('pointermove', move);
+            document.removeEventListener('pointerup', up);
+            authFetch('/api/notes/' + card.getAttribute('data-stick'), { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ x: card.offsetLeft, y: card.offsetTop }) }).catch(function () {});
+          }
+          document.addEventListener('pointermove', move);
+          document.addEventListener('pointerup', up);
+        };
+      });
+    }).catch(function () { host.innerHTML = '<div class="kick">Notes could not load.</div>'; });
+  }
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest('a[target="_blank"]');
+    if (!link) return;
+    e.preventDefault();
+    openDocView(link.textContent || 'Link', link.getAttribute('href') || '', '');
+  }, true);
   var integ = document.getElementById('v-int');
   if (integ && !document.getElementById('discGoogle')) {
     integ.insertAdjacentHTML('beforeend', '<div class="cap" style="margin-top:12px"><button class="btn sm" id="discGoogle" type="button">Disconnect Google</button><button class="btn sm" id="discGhl" type="button">Disconnect GoHighLevel</button></div>');
