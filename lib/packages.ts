@@ -47,6 +47,7 @@ function shapePackage(row: Record<string, unknown>, docs: Doc[], recipients: Rec
     spaceType: row.space_type ? String(row.space_type) : '',
     subjectContactId: row.subject_contact_id ? String(row.subject_contact_id) : '',
     subjectLabel: row.subject_label ? String(row.subject_label) : '',
+    description: String(row.description || ''),
     pushedToDriveAt: pushed && !Number.isNaN(pushed.getTime()) ? pushed.toISOString() : '',
     docCount: docs.length,
     recipientCount: recipients.length,
@@ -136,7 +137,7 @@ export async function listPackages(sql: Sql, ownerId: string) {
     let rows: Record<string, unknown>[];
     try {
       rows = (await sql`
-        SELECT id, name, kind, status, drive_folder_url, space_type, subject_label, pushed_to_drive_at
+        SELECT id, name, kind, status, drive_folder_url, space_type, subject_label, pushed_to_drive_at, description
         FROM packages
         WHERE owner_id = ${ownerId}
         ORDER BY created_at
@@ -172,6 +173,7 @@ export async function listPackages(sql: Sql, ownerId: string) {
         driveFolderUrl: row.drive_folder_url ? String(row.drive_folder_url) : '',
         spaceType: row.space_type ? String(row.space_type) : '',
         subjectLabel: row.subject_label ? String(row.subject_label) : '',
+        description: String(row.description || ''),
         pushedToDriveAt: pushed && !Number.isNaN(pushed.getTime()) ? pushed.toISOString() : '',
         docCount,
         recipientCount,
@@ -201,7 +203,7 @@ async function owned(sql: Sql, ownerId: string, id: string) {
   try {
     const rows = await sql`
       SELECT id, name, kind, drive_folder_id, drive_folder_url, email_subject, email_body, research, status,
-        space_type, subject_contact_id, subject_label, pushed_to_drive_at
+        space_type, subject_contact_id, subject_label, pushed_to_drive_at, description
       FROM packages
       WHERE id = ${id} AND owner_id = ${ownerId}
     `;
@@ -246,7 +248,7 @@ export async function createPackage(
   ownerId: string,
   name: string,
   kind: string,
-  meta: { spaceType?: string; subjectContactId?: string; subjectLabel?: string } = {},
+  meta: { spaceType?: string; subjectContactId?: string; subjectLabel?: string; description?: string } = {},
 ) {
   const allowed = allowPackageKind(kind);
   let clean = clip(name, 120);
@@ -264,6 +266,7 @@ export async function createPackage(
   }
   if (spaceType === 'project' && !subjectLabel) subjectLabel = clean;
   if (!allowed || !clean) return null;
+  const description = clip(meta.description, 240);
   let rows;
   try {
     rows = await sql`
@@ -279,7 +282,15 @@ export async function createPackage(
       RETURNING id
     `;
   }
-  return readPackage(sql, ownerId, String(rows[0]?.id || ''));
+  const createdId = String(rows[0]?.id || '');
+  if (description && createdId) {
+    try {
+      await sql`UPDATE packages SET description = ${description} WHERE id = ${createdId} AND owner_id = ${ownerId}`;
+    } catch (err) {
+      fail('packages_description', err);
+    }
+  }
+  return readPackage(sql, ownerId, createdId);
 }
 
 export async function patchPackage(sql: Sql, ownerId: string, id: string, body: Record<string, unknown>) {
@@ -469,7 +480,7 @@ export async function addSpaceFolder(sql: Sql, ownerId: string, id: string, name
   if (parent) {
     if (!folders.some((folder) => folder.id === parent)) return null;
     const depth = orderSpaceFolders(folders).find((folder) => folder.id === parent)?.depth || 0;
-    if (depth >= 4) return null;
+    if (depth >= 3) return null;
   }
   await sql`
     INSERT INTO space_folders (package_id, parent_id, name)

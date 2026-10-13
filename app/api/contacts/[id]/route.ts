@@ -10,7 +10,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     if (!ID.test(params.id)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const rows = await session.sql`
       DELETE FROM contacts WHERE id = ${params.id} AND owner_id = ${session.userId} RETURNING id
@@ -19,6 +19,6 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     return NextResponse.json({ id: String((rows[0] as { id: string }).id) });
   } catch {
     fail('contacts_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
   }
 }

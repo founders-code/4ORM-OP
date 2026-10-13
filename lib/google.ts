@@ -94,6 +94,45 @@ export async function listEvents(timeMin: string, timeMax: string, pageToken = '
   };
 }
 
+export async function createEvent(startMs: number, durMin: number, title: string) {
+  if (!configured()) return null;
+  const cal = encodeURIComponent(process.env.GOOGLE_CALENDAR_ID || 'chad@4ormfinance.com');
+  const start = new Date(startMs);
+  const end = new Date(startMs + durMin * 60 * 1000);
+  const json = (await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${cal}/events`, {
+    method: 'POST',
+    body: JSON.stringify({
+      summary: String(title || 'Focus').slice(0, 180),
+      start: { dateTime: start.toISOString(), timeZone: 'America/Los_Angeles' },
+      end: { dateTime: end.toISOString(), timeZone: 'America/Los_Angeles' },
+    }),
+  })) as { id?: string } | null;
+  return json?.id ? String(json.id) : null;
+}
+
+export async function exportDriveFile(fileId: string) {
+  if (!configured() || !/^[\w-]{8,}$/.test(fileId)) return null;
+  const access = await accessToken();
+  if (!access) return null;
+  const meta = (await gfetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,mimeType&supportsAllDrives=true`,
+  )) as { name?: string; mimeType?: string } | null;
+  if (!meta) return null;
+  const googleType = String(meta.mimeType || '');
+  const exportable = googleType.startsWith('application/vnd.google-apps.') && googleType !== 'application/vnd.google-apps.folder';
+  const url = exportable
+    ? `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application%2Fpdf`
+    : `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`;
+  const res = await fetch(url, { headers: { authorization: `Bearer ${access}` } });
+  if (!res.ok) return null;
+  const bytes = Buffer.from(await res.arrayBuffer());
+  return {
+    name: String(meta.name || 'Document'),
+    type: exportable ? 'application/pdf' : googleType || 'application/octet-stream',
+    bytes,
+  };
+}
+
 export async function moveEvent(id: string, startMs: number, durMin: number) {
   if (!configured()) return false;
   if (!/^[\w-]+$/.test(id)) return false;

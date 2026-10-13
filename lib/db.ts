@@ -418,6 +418,32 @@ async function migrateWar(sql: Sql) {
       email text,
       role text
     )`],
+    ['db_contact_fb_tier', () => sql`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS fb_tier text`],
+    ['db_contact_fb_ask', () => sql`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS fb_ask text`],
+    ['db_contact_fb_status', () => sql`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS fb_status text`],
+    ['db_contact_mutuals', () => sql`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS mutuals text`],
+    ['db_contact_what', () => sql`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS what_they_do text`],
+    ['db_contact_why', () => sql`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS fb_why text`],
+    ['db_packages_description', () => sql`ALTER TABLE packages ADD COLUMN IF NOT EXISTS description text`],
+    ['db_vc_inbox', () => sql`CREATE TABLE IF NOT EXISTS vc_inbox (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      name text NOT NULL,
+      note text,
+      status text NOT NULL DEFAULT 'open',
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_staged_docs', () => sql`CREATE TABLE IF NOT EXISTS staged_docs (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      category text NOT NULL,
+      name text NOT NULL,
+      url text,
+      drive_file_id text,
+      mime text,
+      thumb_url text,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
     ['db_news_items', () => sql`CREATE TABLE IF NOT EXISTS news_items (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       owner_id text NOT NULL,

@@ -97,6 +97,24 @@ export async function listPipeline() {
   return { status: stages.length ? ('connected' as const) : ('reached_empty' as const), stages };
 }
 
+export async function createContact(input: { name: string; company?: string; email?: string }) {
+  const name = String(input.name || '').trim().slice(0, 120);
+  if (!name) return null;
+  const [first, ...rest] = name.split(' ');
+  const json = (await ghl('/contacts/', {
+    method: 'POST',
+    body: JSON.stringify({
+      locationId: locationId(),
+      firstName: first,
+      lastName: rest.join(' '),
+      name,
+      companyName: String(input.company || '').slice(0, 120),
+      email: String(input.email || ''),
+    }),
+  })) as { contact?: { id?: string } } | null;
+  return json?.contact?.id ? String(json.contact.id) : null;
+}
+
 export async function listReminders() {
   const loc = locationId();
   if (!loc) return { status: 'unavailable' as const, tasks: [] as Array<{ id: string; title: string; due: string | null }> };

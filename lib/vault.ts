@@ -56,6 +56,16 @@ export async function saveGoogleRefresh(userId: string, refresh: string) {
   return writeBag(userId, bag);
 }
 
+export async function clearIntegration(userId: string, which: string) {
+  const bag = await readBag(userId);
+  if (which === 'google') delete bag.googleRefresh;
+  else if (which === 'ghl') {
+    delete bag.ghlKey;
+    delete bag.ghlLocation;
+  } else return false;
+  return writeBag(userId, bag);
+}
+
 export async function saveGhl(userId: string, key: string, location: string) {
   const bag = await readBag(userId);
   bag.ghlKey = key;
