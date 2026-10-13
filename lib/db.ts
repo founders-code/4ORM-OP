@@ -330,6 +330,20 @@ async function migrateWar(sql: Sql) {
       EXCEPTION WHEN duplicate_object THEN NULL;
       END $$
     `],
+    ['db_resolved_waiting', () => sql`CREATE TABLE IF NOT EXISTS resolved_waiting (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      source_key text NOT NULL,
+      resolved_at timestamptz NOT NULL DEFAULT now(),
+      UNIQUE (owner_id, source_key)
+    )`],
+    ['db_move_snooze', () => sql`CREATE TABLE IF NOT EXISTS move_snooze (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      move_key text NOT NULL,
+      snoozed_on date NOT NULL,
+      UNIQUE (owner_id, move_key, snoozed_on)
+    )`],
     ['db_news_items', () => sql`CREATE TABLE IF NOT EXISTS news_items (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       owner_id text NOT NULL,
