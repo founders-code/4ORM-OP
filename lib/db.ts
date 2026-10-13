@@ -456,6 +456,47 @@ async function migrateWar(sql: Sql) {
       created_at timestamptz NOT NULL DEFAULT now()
     )`],
     ['db_staged_body', () => sql`ALTER TABLE staged_docs ADD COLUMN IF NOT EXISTS body_b64 text`],
+    ['db_space_files', () => sql`CREATE TABLE IF NOT EXISTS space_files (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      space_id uuid NOT NULL,
+      folder_id uuid,
+      name text NOT NULL DEFAULT '',
+      url text,
+      mime text,
+      kind text,
+      body text,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_space_recipients', () => sql`CREATE TABLE IF NOT EXISTS space_recipients (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      space_id uuid NOT NULL,
+      contact_id text,
+      name text NOT NULL DEFAULT '',
+      email text,
+      note text,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_contact_recat', () => sql`
+      UPDATE contacts
+      SET category = CASE
+        WHEN source = 'facebook' THEN 'facebook'
+        WHEN category = 'personal' THEN 'personal'
+        WHEN category = 'regulatory' OR category = 'regulator' THEN category
+        WHEN lower(coalesce(company, '') || ' ' || coalesce(role, '') || ' ' || coalesce(name, '')) ~ '(angel|syndicate)' THEN 'angel'
+        WHEN lower(coalesce(company, '') || ' ' || coalesce(role, '') || ' ' || coalesce(name, '')) ~ '(investor|capital|ventures|fund|[^a-z]vc[^a-z]|^vc[^a-z]|[^a-z]vc$)' THEN 'vc'
+        WHEN lower(coalesce(company, '') || ' ' || coalesce(role, '') || ' ' || coalesce(name, '')) ~ '(fintrac|osfi|fcac|rpaa|regulator|securities|reca|competition bureau)' THEN 'regulatory'
+        WHEN lower(coalesce(company, '') || ' ' || coalesce(role, '') || ' ' || coalesce(name, '')) ~ '(law|llp|fasken|counsel)' THEN 'regulator'
+        WHEN lower(coalesce(company, '') || ' ' || coalesce(role, '') || ' ' || coalesce(name, '')) ~ '(grant|sr&ed|alberta innovates|innovate|irap|nserc|ministry|government)' THEN 'grant'
+        WHEN email IS NOT NULL AND email <> '' THEN 'business'
+        WHEN type = 'vc' THEN 'vc'
+        WHEN type = 'business' THEN 'business'
+        WHEN type = 'grant_reg' THEN 'grant'
+        ELSE 'business'
+      END
+      WHERE category IS NULL OR category = '' OR category = 'other'
+    `],
     ['db_news_items', () => sql`CREATE TABLE IF NOT EXISTS news_items (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       owner_id text NOT NULL,
@@ -468,6 +509,7 @@ async function migrateWar(sql: Sql) {
       swept_on date NOT NULL,
       created_at timestamptz NOT NULL DEFAULT now()
     )`],
+    ['db_news_url', () => sql`CREATE UNIQUE INDEX IF NOT EXISTS news_owner_url_uq ON news_items (owner_id, url) WHERE url <> ''`],
   ];
   for (const [code, run] of steps) {
     try {

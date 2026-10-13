@@ -1,5 +1,6 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { env } from './env.mjs';
+import { fail } from './log';
 import { allowArea, allowPriority, parseDue } from './guard.mjs';
 import { NEWS_CATEGORIES, asNeeds, asSteps, extractCommitments, fallbackPlan, todayKey } from './war.mjs';
 
@@ -141,9 +142,13 @@ export async function listNews(sql: Sql, ownerId: string, day = todayKey()) {
   const rows = await sql`
     SELECT id, category, title, summary, url, published_at, is_top, swept_on
     FROM news_items
-    WHERE owner_id = ${ownerId} AND swept_on = ${day}::date
+    WHERE owner_id = ${ownerId}
+      AND (
+        published_at >= now() - interval '14 days'
+        OR swept_on >= CURRENT_DATE - 14
+      )
     ORDER BY is_top DESC, published_at DESC NULLS LAST
-    LIMIT 40
+    LIMIT 80
   `;
   return (rows as Array<Record<string, unknown>>).map((row) => ({
     id: String(row.id),
@@ -158,18 +163,34 @@ export async function listNews(sql: Sql, ownerId: string, day = todayKey()) {
 }
 
 export async function replaceNews(sql: Sql, ownerId: string, items: Array<Record<string, unknown>>, day = todayKey()) {
-  await sql`DELETE FROM news_items WHERE owner_id = ${ownerId} AND swept_on = ${day}::date`;
   for (const item of items.slice(0, 40)) {
     const title = String(item.title || '').trim().slice(0, 180);
     if (!title) continue;
     const category = String(item.category || 'Compliance').trim().slice(0, 80);
     const summary = String(item.summary || '').trim().slice(0, 500);
-    const url = String(item.url || '').trim().slice(0, 400);
+    const url = String(item.url || item.link || '').trim().slice(0, 400);
     const isTop = item.is_top === true || item.isTop === true;
-    await sql`
-      INSERT INTO news_items (owner_id, category, title, summary, url, published_at, is_top, swept_on)
-      VALUES (${ownerId}, ${category}, ${title}, ${summary}, ${url}, now(), ${isTop}, ${day}::date)
-    `;
+    const rawWhen = item.published_at || item.publishedAt;
+    const when = rawWhen ? new Date(String(rawWhen)) : new Date();
+    const published = Number.isNaN(when.getTime()) ? new Date().toISOString() : when.toISOString();
+    try {
+      if (url) {
+        await sql`
+          INSERT INTO news_items (owner_id, category, title, summary, url, published_at, is_top, swept_on)
+          VALUES (${ownerId}, ${category}, ${title}, ${summary}, ${url}, ${published}, ${isTop}, ${day}::date)
+          ON CONFLICT (owner_id, url) WHERE url <> ''
+          DO UPDATE SET title = EXCLUDED.title, summary = EXCLUDED.summary, category = EXCLUDED.category,
+            published_at = EXCLUDED.published_at, is_top = EXCLUDED.is_top, swept_on = EXCLUDED.swept_on
+        `;
+      } else {
+        await sql`
+          INSERT INTO news_items (owner_id, category, title, summary, url, published_at, is_top, swept_on)
+          VALUES (${ownerId}, ${category}, ${title}, ${summary}, ${url}, ${published}, ${isTop}, ${day}::date)
+        `;
+      }
+    } catch (err) {
+      fail('news_upsert', err);
+    }
   }
   return listNews(sql, ownerId, day);
 }

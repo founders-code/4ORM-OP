@@ -206,7 +206,7 @@ async function listChildren(parentId: string, driveId: string) {
   const q = new URLSearchParams({
     q: `'${parentId}' in parents and trashed = false`,
     fields: 'files(id,name,mimeType,webViewLink,thumbnailLink)',
-    pageSize: '40',
+    pageSize: '100',
     supportsAllDrives: 'true',
     includeItemsFromAllDrives: 'true',
     corpora: 'drive',
@@ -230,64 +230,32 @@ function asFiles(rows: FileRow[]) {
     }));
 }
 
-const DRIVE_LIMIT = { drives: 4, folders: 6, deepFiles: 10 };
+const DRIVE_LIMIT = { drives: 38 };
 
-/** drives.list + each drive + each top folder + ten deepest file listings. 39 calls, under the 40 ceiling. */
-export const DRIVE_CALLS = 1 + DRIVE_LIMIT.drives * (1 + DRIVE_LIMIT.folders) + DRIVE_LIMIT.deepFiles;
+/** drives.list plus one files.list per shared drive. 39 calls, under the 40 ceiling. Deeper folders load on open. */
+export const DRIVE_CALLS = 1 + DRIVE_LIMIT.drives;
 
-/** Shared drive, folder, subfolder. Files at each level come from that level's listing. */
+/** Every shared drive, with every top-level folder from that drive's listing. */
 export async function listDriveTree() {
   if (!configured()) return { status: 'unavailable' as const, drives: [] as Array<{ id: string; name: string; folders: DriveNode[] }> };
-  const listed = (await gfetch('https://www.googleapis.com/drive/v3/drives?pageSize=10')) as {
+  const listed = (await gfetch('https://www.googleapis.com/drive/v3/drives?pageSize=100')) as {
     drives?: Array<{ id: string; name: string }>;
   } | null;
   if (!listed) return { status: 'unavailable' as const, drives: [] };
-  let deepLeft = DRIVE_LIMIT.deepFiles;
   const out = [];
   for (const drive of (listed.drives || []).slice(0, DRIVE_LIMIT.drives)) {
     if (!safeId(drive.id)) continue;
     const top = await listChildren(drive.id, drive.id);
-    if (!top) return { status: 'unavailable' as const, drives: out };
-    const folders: DriveNode[] = [];
-    for (const folder of top.filter((f) => f.mimeType === 'application/vnd.google-apps.folder').slice(0, DRIVE_LIMIT.folders)) {
-      const inner = await listChildren(folder.id, drive.id);
-      if (!inner) continue;
-      folders.push({
+    if (!top) continue;
+    const folders: DriveNode[] = top
+      .filter((row) => row.mimeType === 'application/vnd.google-apps.folder')
+      .map((folder) => ({
         id: folder.id,
         name: folder.name,
         url: folder.webViewLink || '',
-        files: asFiles(inner),
+        files: [],
         children: [],
-      });
-      const node = folders[folders.length - 1];
-      for (const child of inner.filter((f) => f.mimeType === 'application/vnd.google-apps.folder').slice(0, 8)) {
-        const leaf = {
-          id: child.id,
-          name: child.name,
-          url: child.webViewLink || '',
-          children: [] as DriveNode[],
-          files: [] as DriveNode['files'],
-        };
-        if (deepLeft > 0) {
-          deepLeft -= 1;
-          const deep = await listChildren(child.id, drive.id);
-          if (deep) {
-            leaf.files = asFiles(deep);
-            leaf.children = deep
-              .filter((row) => row.mimeType === 'application/vnd.google-apps.folder')
-              .slice(0, 8)
-              .map((grand) => ({
-                id: grand.id,
-                name: grand.name,
-                url: grand.webViewLink || '',
-                children: [] as DriveNode[],
-                files: [] as DriveFile[],
-              }));
-          }
-        }
-        node.children.push(leaf);
-      }
-    }
+      }));
     out.push({
       id: drive.id,
       name: drive.name,
