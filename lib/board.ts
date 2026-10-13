@@ -4,6 +4,7 @@ import { idlePlugins, listPlugins } from './plugins';
 import { listZoomNotes, seedZoomNotes } from './zoom-notes';
 import { fail } from './log';
 import { seedFacebook } from './seed-facebook';
+import { seedOps } from './seed-ops';
 import { syncCalendar, syncDrive, syncGhl, calendarMeta, ingestMail } from './sync';
 
 type Sql = NeonQueryFunction<false, false>;
@@ -207,6 +208,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
     return rows as Row[];
   }, []);
   await read(reads, 'facebook', () => seedFacebook(sql, ownerId), undefined);
+  await read(reads, 'ops_seed', () => seedOps(sql, ownerId), undefined);
   const contacts = await read(reads, 'contacts', async () => {
     const rows = await sql`
       SELECT id, name, company, role, email, phone, area, notes, type, tier, stage, next_action, next_date, last_touch

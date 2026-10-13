@@ -6,6 +6,7 @@ import { fail } from '@/lib/log';
 import { cronSecret, ingestToken } from '@/lib/secrets';
 import { roomOwner } from '@/lib/session';
 import { refreshCeo } from '@/lib/ceo';
+import { sweepNews } from '@/lib/news-sweep';
 import { ingestMail, syncCalendar, syncGhl, writeBrief } from '@/lib/sync';
 import { loadCredsFor } from '@/lib/vault';
 
@@ -76,6 +77,11 @@ export async function GET(req: Request) {
       await refreshCeo(sql, ownerId);
     } catch {
       fail('ceo_failed');
+    }
+    try {
+      await sweepNews(sql, ownerId);
+    } catch {
+      fail('news_sweep');
     }
     return NextResponse.json({ ok: true });
   } catch {

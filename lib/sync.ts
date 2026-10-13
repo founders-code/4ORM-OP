@@ -1,5 +1,5 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
-import { allowArea, allowPriority, allowStatus, visibleCalendarWindow } from './guard.mjs';
+import { allowArea, allowPriority, allowStatus, inferContactCategory, visibleCalendarWindow } from './guard.mjs';
 import { claimBudget } from './db';
 import { listEvents, listDriveTree, recentMail, googleConfigured, DRIVE_CALLS } from './google';
 import { listContacts, listPipeline, listReminders, ghlConfigured } from './ghl';
@@ -174,11 +174,15 @@ export async function syncGhl(sql: Sql, ownerId: string, force = false) {
     const contacts = await listContacts();
     if (contacts.status !== 'unavailable') {
       for (const contact of contacts.contacts) {
+        const category = inferContactCategory(`${contact.company} ${contact.role} ${contact.name}`) === 'other' && contact.company
+          ? 'business'
+          : (inferContactCategory(`${contact.company} ${contact.role} ${contact.name}`) === 'other' && contact.email ? 'business' : inferContactCategory(`${contact.company} ${contact.role} ${contact.name}`));
         await sql`
-          INSERT INTO contacts (owner_id, name, company, role, email, phone, area, source, source_id)
-          VALUES (${ownerId}, ${contact.name}, ${contact.company}, ${contact.role}, ${contact.email}, ${contact.phone}, 'investors', 'ghl', ${contact.id})
+          INSERT INTO contacts (owner_id, name, company, role, email, phone, area, source, source_id, category)
+          VALUES (${ownerId}, ${contact.name}, ${contact.company}, ${contact.role}, ${contact.email}, ${contact.phone}, 'investors', 'ghl', ${contact.id}, ${category})
           ON CONFLICT (owner_id, source, source_id) WHERE source_id IS NOT NULL
-          DO UPDATE SET name = EXCLUDED.name, company = EXCLUDED.company, role = EXCLUDED.role, email = EXCLUDED.email, phone = EXCLUDED.phone
+          DO UPDATE SET name = EXCLUDED.name, company = EXCLUDED.company, role = EXCLUDED.role, email = EXCLUDED.email, phone = EXCLUDED.phone,
+            category = CASE WHEN contacts.category IS NULL OR contacts.category = '' OR contacts.category = 'other' THEN EXCLUDED.category ELSE contacts.category END
         `;
       }
     }

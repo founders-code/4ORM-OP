@@ -317,6 +317,10 @@ export async function patchPackage(sql: Sql, ownerId: string, id: string, body: 
   if (Object.prototype.hasOwnProperty.call(body, 'name') && !name) return null;
   if (Object.prototype.hasOwnProperty.call(body, 'kind') && !kind) return null;
   if (Object.prototype.hasOwnProperty.call(body, 'status') && !status) return null;
+  const note = Object.prototype.hasOwnProperty.call(body, 'notes')
+    ? clip(body.notes, 8000)
+    : (Object.prototype.hasOwnProperty.call(body, 'description') ? clip(body.description, 8000) : null);
+  const setNote = note !== null;
   const subject = Object.prototype.hasOwnProperty.call(body, 'emailSubject') ? clip(body.emailSubject, 200) : null;
   const emailBody = Object.prototype.hasOwnProperty.call(body, 'emailBody') ? clip(body.emailBody, 8000) : null;
   const research = Object.prototype.hasOwnProperty.call(body, 'research') ? clip(body.research, 8000) : null;
@@ -331,6 +335,7 @@ export async function patchPackage(sql: Sql, ownerId: string, id: string, body: 
       email_subject = CASE WHEN ${setSubject} THEN ${subject} ELSE email_subject END,
       email_body = CASE WHEN ${setBody} THEN ${emailBody} ELSE email_body END,
       research = CASE WHEN ${setResearch} THEN ${research} ELSE research END,
+      description = CASE WHEN ${setNote} THEN ${note} ELSE description END,
       updated_at = now()
     WHERE id = ${id} AND owner_id = ${ownerId}
   `;
@@ -545,6 +550,14 @@ export async function uploadSpaceFile(
       VALUES (${id}, ${''}, ${name}, ${''}, ${mime}, true, ${thumb}, ${folderId || null}, now(), ${b64})
     `;
     await sql`UPDATE packages SET updated_at = now() WHERE id = ${id} AND owner_id = ${ownerId}`;
+    try {
+      await sql`
+        INSERT INTO space_files (owner_id, space_id, folder_id, name, mime, kind, body)
+        VALUES (${ownerId}, ${id}, ${folderId || null}, ${name}, ${mime}, 'file', ${''})
+      `;
+    } catch (err) {
+      fail('space_files', err);
+    }
   } catch (err) {
     fail('packages_upload', err);
     return { error: 'Could not stage that file. The Space is unchanged.', package: null };
@@ -625,4 +638,38 @@ export async function pushSpace(sql: Sql, ownerId: string, id: string) {
   `;
   const next = await readPackage(sql, ownerId, id);
   return { ok: true, error: '', package: next || current };
+}
+
+export async function deletePackage(sql: Sql, ownerId: string, id: string) {
+  const row = await owned(sql, ownerId, id);
+  if (!row) return false;
+  if (String(row.name || '') === 'Uncategorized') return false;
+  let hold = '';
+  try {
+    const found = await sql`SELECT id FROM packages WHERE owner_id = ${ownerId} AND name = 'Uncategorized' LIMIT 1`;
+    hold = String(found[0]?.id || '');
+    if (!hold) {
+      const made = await sql`
+        INSERT INTO packages (owner_id, name, kind, status)
+        VALUES (${ownerId}, 'Uncategorized', 'data_room', 'draft')
+        RETURNING id
+      `;
+      hold = String(made[0]?.id || '');
+    }
+    if (hold && hold !== id) {
+      await sql`UPDATE package_docs SET package_id = ${hold} WHERE package_id = ${id}`;
+      await sql`UPDATE space_folders SET package_id = ${hold} WHERE package_id = ${id}`;
+      await sql`UPDATE package_recipients SET package_id = ${hold} WHERE package_id = ${id}`;
+      try {
+        await sql`UPDATE space_files SET space_id = ${hold} WHERE space_id = ${id}`;
+        await sql`UPDATE space_recipients SET space_id = ${hold} WHERE space_id = ${id}`;
+      } catch (err) {
+        fail('space_move', err);
+      }
+    }
+  } catch (err) {
+    fail('packages_delete', err);
+  }
+  await sql`DELETE FROM packages WHERE id = ${id} AND owner_id = ${ownerId}`;
+  return true;
 }

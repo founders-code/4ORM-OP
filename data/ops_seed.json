@@ -1,0 +1,52 @@
+{
+  "regulators": [
+    { "name": "FINTRAC", "url": "https://fintrac-canafe.canada.ca" },
+    { "name": "Bank of Canada RPAA", "url": "https://www.bankofcanada.ca" },
+    { "name": "CSA", "url": "https://www.securities-administrators.ca" },
+    { "name": "ASC", "url": "https://www.asc.ca" },
+    { "name": "BCSC", "url": "https://www.bcsc.bc.ca" },
+    { "name": "OSC", "url": "https://www.osc.ca" },
+    { "name": "AMF", "url": "https://lautorite.qc.ca" },
+    { "name": "FCAC", "url": "https://www.canada.ca/en/financial-consumer-agency.html" },
+    { "name": "OSFI", "url": "https://www.osfi-bsif.gc.ca" },
+    { "name": "FSRA", "url": "https://www.fsrao.ca" },
+    { "name": "RECA", "url": "https://www.reca.ca" },
+    { "name": "RCMP financial crime", "url": "https://www.rcmp-grc.gc.ca" },
+    { "name": "Competition Bureau", "url": "https://competition-bureau.canada.ca" }
+  ],
+  "vc_platforms": [
+    { "name": "OpenVC", "url": "https://www.openvc.app" },
+    { "name": "Signal/NFX", "url": "https://signal.nfx.com" },
+    { "name": "AngelList", "url": "https://www.angellist.com" },
+    { "name": "Visible", "url": "https://visible.vc" },
+    { "name": "Foundersuite", "url": "https://www.foundersuite.com" },
+    { "name": "DocSend", "url": "https://www.docsend.com" },
+    { "name": "Crunchbase", "url": "https://www.crunchbase.com" },
+    { "name": "Dealroom", "url": "https://dealroom.co" },
+    { "name": "Gust", "url": "https://gust.com" }
+  ],
+  "incumbents": [
+    { "name": "Vanta", "url": "https://www.vanta.com" },
+    { "name": "Drata", "url": "https://drata.com" },
+    { "name": "Secureframe", "url": "https://secureframe.com" },
+    { "name": "Thoropass", "url": "https://thoropass.com" },
+    { "name": "AutoRek", "url": "https://www.autorek.com" },
+    { "name": "Aveni", "url": "https://aveni.ai" },
+    { "name": "Fenergo", "url": "https://www.fenergo.com" },
+    { "name": "Hummingbird", "url": "https://hummingbird.co" },
+    { "name": "ComplyAdvantage", "url": "https://complyadvantage.com" },
+    { "name": "Trulioo", "url": "https://www.trulioo.com" }
+  ],
+  "vc_firms": [
+    "BDC Seed Venture Fund",
+    "Golden Ventures",
+    "Version One Ventures",
+    "Panache Ventures",
+    "Inovia Capital",
+    "Real Ventures",
+    "OMERS Ventures",
+    "Whitecap Venture Partners",
+    "Impression Ventures",
+    "Luge Capital"
+  ]
+}

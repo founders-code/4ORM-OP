@@ -18,7 +18,8 @@
     return 'in ' + Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm';
   }
 
-  function areaLabel(k) {
+  function areaLabel(k, it) {
+    if (it && /regulat/i.test(String(it.category || ''))) return 'Regulator';
     var hit = (CONFIG.areas || []).filter(function (a) { return a.k === k; })[0];
     return hit ? hit.label : (k || 'Other');
   }
@@ -51,7 +52,8 @@
     ];
     var byStatus = { done: done.length, active: active.length, waiting: waiting.length, blocked: blocked.length };
     var areas = {};
-    rows.forEach(function (it) { var k = areaLabel(it.area); areas[k] = (areas[k] || 0) + 1; });
+    var areaRows = {};
+    rows.forEach(function (it) { var k = areaLabel(it.area, it); areas[k] = (areas[k] || 0) + 1; (areaRows[k] = areaRows[k] || []).push(it); });
     var pri = { urgent: 0, high: 0, normal: 0, low: 0 };
     rows.forEach(function (it) { if (pri[it.priority] != null) pri[it.priority] += 1; });
     var highOpen = rows.filter(function (it) { return it.status !== 'done' && (it.priority === 'high' || it.priority === 'urgent'); }).length;
@@ -63,9 +65,12 @@
     var maxStatus = Math.max(done.length, active.length, waiting.length, blocked.length, 1);
     var maxArea = Math.max.apply(null, Object.keys(areas).map(function (k) { return areas[k]; }).concat([1]));
     var maxPri = Math.max(pri.urgent, pri.high, pri.normal, pri.low, 1);
+    var lists = {};
     function meters(pairs, max) {
       return pairs.map(function (pair) {
-        return '<div class="meter"><em>' + esc(pair[0]) + '</em><span><i style="width:' + Math.round((pair[1] / max) * 100) + '%"></i></span><b>' + pair[1] + '</b></div>';
+        var key = pair[2];
+        lists[key] = pair[3] || [];
+        return '<button type="button" class="meter" data-ops="' + esc(key) + '"><em>' + esc(pair[0]) + '</em><span><i style="width:' + Math.round((pair[1] / max) * 100) + '%"></i></span><b>' + pair[1] + '</b></button>';
       }).join('');
     }
     var parts = [
@@ -82,10 +87,41 @@
     }
     el.innerHTML = '<div class="money"><div><div class="k">Raise - friends &amp; family</div><div class="n">$80K / $250K</div><div class="bar"><span></span></div><div class="kick" style="color:#C5D4E6;margin-top:8px">$170K to go - 3/7 cheques - 18 days to Oct 30</div></div><div><div class="k">Runway</div><div class="n bad">~1 day</div></div><div><div class="k">Cash</div><div class="n">$100</div></div></div>'
       + '<div class="metrics">' + tiles.map(function (t) { return '<div class="metric ' + t[2] + '"><div class="k">' + esc(t[0]) + '</div><div class="n">' + esc(String(t[1])) + '</div><div class="kick">' + esc(t[3]) + '</div></div>'; }).join('') + '</div>'
-      + '<div class="ops-2"><div class="card" style="padding:14px"><h3>Operations overview</h3><div class="kick">Status</div>' + meters([['Done', done.length], ['Active', active.length], ['Waiting', waiting.length], ['Blocked', blocked.length]], maxStatus) + '<div class="kick" style="margin-top:10px">Departments</div>' + meters(Object.keys(areas).map(function (k) { return [k, areas[k]]; }), maxArea) + '<div class="kick" style="margin-top:10px">Priority</div>' + meters(Object.keys(pri).map(function (k) { return [k, pri[k]]; }), maxPri) + '</div>'
-      + '<div class="card" style="padding:14px"><h3>Quick insights</h3><div class="insights"><div><b>' + highOpen + '</b><span>High priority open</span></div><div><b>' + dueWeek + '</b><span>Due this week</span></div><div><b>' + active.length + '</b><span>Active tasks</span></div><div><b>' + dueToday + '</b><span>Due today</span></div><div><b>' + oldest + 'd</b><span>Oldest overdue</span></div><div><b>' + doneWeek + '</b><span>Done last 7d</span></div></div></div></div>'
+      + '<div class="ops-2"><div class="card" style="padding:14px"><h3>Operations overview</h3><div class="kick">Status</div>' + meters([['Done', done.length, 'status:done', done], ['Active', active.length, 'status:active', active], ['Waiting', waiting.length, 'status:waiting', waiting], ['Blocked', blocked.length, 'status:blocked', blocked]], maxStatus) + '<div class="kick" style="margin-top:10px">Departments</div>' + meters(Object.keys(areas).map(function (k) { return [k, areas[k], 'area:' + k, areaRows[k]]; }), maxArea) + '<div class="kick" style="margin-top:10px">Priority</div>' + meters(Object.keys(pri).map(function (k) { return [k, pri[k], 'pri:' + k, rows.filter(function (it) { return it.priority === k; })]; }), maxPri) + '</div>'
+      + '<div class="card" style="padding:14px"><h3>Quick insights</h3><div class="insights">'
+      + '<button type="button" data-ops="ins:high"><b>' + highOpen + '</b><span>High priority open</span></button>'
+      + '<button type="button" data-ops="ins:week"><b>' + dueWeek + '</b><span>Due this week</span></button>'
+      + '<button type="button" data-ops="ins:active"><b>' + active.length + '</b><span>Active tasks</span></button>'
+      + '<button type="button" data-ops="ins:today"><b>' + dueToday + '</b><span>Due today</span></button>'
+      + '<button type="button" data-ops="ins:old"><b>' + oldest + 'd</b><span>Oldest overdue</span></button>'
+      + '<button type="button" data-ops="ins:done"><b>' + doneWeek + '</b><span>Done last 7d</span></button>'
+      + '</div></div></div>'
       + '<div class="ops-2"><div class="card" style="padding:14px"><h3>Task status breakdown</h3><div class="donut-wrap">' + donut(parts, total) + '<div class="legend">' + parts.map(function (p) { var pct = total ? Math.round((p.n / total) * 100) : 0; return '<div><b style="color:' + p.color + '">' + p.n + '</b> ' + esc(p.label) + ' ' + pct + '%</div>'; }).join('') + '</div></div></div>'
-      + '<div class="card" style="padding:14px"><h3>Tasks by department</h3>' + Object.keys(areas).map(function (k) { return '<div class="meter"><em>' + esc(k) + '</em><span><i style="width:' + Math.round((areas[k] / maxArea) * 100) + '%"></i></span><b>' + areas[k] + '</b></div>'; }).join('') + '<h3 style="margin-top:16px">Completed - last 7 days</h3>' + spark(trend) + '</div></div>';
+      + '<div class="card" style="padding:14px"><h3>Tasks by department</h3>' + Object.keys(areas).map(function (k) { return '<button type="button" class="meter" data-ops="area:' + esc(k) + '"><em>' + esc(k) + '</em><span><i style="width:' + Math.round((areas[k] / maxArea) * 100) + '%"></i></span><b>' + areas[k] + '</b></button>'; }).join('') + '<h3 style="margin-top:16px">Completed - last 7 days</h3>' + spark(trend) + '</div></div>';
+    lists['ins:high'] = rows.filter(function (it) { return it.status !== 'done' && (it.priority === 'high' || it.priority === 'urgent'); });
+    lists['ins:week'] = rows.filter(function (it) { return it.status !== 'done' && bucket(it) === 'week'; });
+    lists['ins:active'] = active;
+    lists['ins:today'] = rows.filter(function (it) { return it.status !== 'done' && (bucket(it) === 'today' || bucket(it) === 'overdue'); });
+    lists['ins:old'] = overdue;
+    lists['ins:done'] = done.filter(function (it) { var at = Date.parse(it.updated_at || '') || it.due || 0; return at >= weekAgo; });
+    el.querySelectorAll('[data-ops]').forEach(function (btn) {
+      btn.onclick = function () { openOpsList(btn.getAttribute('data-ops'), lists); };
+    });
+  }
+
+  function openOpsList(key, lists) {
+    var modal = document.getElementById('modal');
+    var card = document.getElementById('modalCard');
+    if (!modal || !card) return;
+    var rows = (lists && lists[key]) || [];
+    card.classList.add('wide');
+    card.innerHTML = '<div class="mhd"><div style="font-weight:700">' + esc(key.split(':').slice(1).join(':') || 'Items') + '</div><button class="x" id="mClose" type="button">x</button></div><div class="mbd">' + (rows.length ? rows.map(function (it) { return '<button type="button" class="ops-row" data-ops-item="' + esc(it.id) + '"><b>' + esc(it.title) + '</b><span class="kick">' + esc(areaLabel(it.area, it)) + '</span></button>'; }).join('') : '<div class="kick">Nothing in this group.</div>') + '</div>';
+    modal.classList.add('open');
+    modal.hidden = false;
+    document.getElementById('mClose').onclick = function () { if (typeof closeModal === 'function') closeModal(); };
+    card.querySelectorAll('[data-ops-item]').forEach(function (btn) {
+      btn.onclick = function () { if (typeof closeModal === 'function') closeModal(); editItem(btn.getAttribute('data-ops-item')); };
+    });
   }
 
   function spark(values) {
@@ -149,7 +185,7 @@
         return b === 'later';
       });
       return '<div class="exec-col ' + col[0] + '" data-col="' + col[0] + '"><div class="sec-h"><h3>' + col[1] + '</h3><button class="addmini" type="button" data-add-col="' + col[0] + '">+</button></div>' + items.map(function (it) {
-        return '<div class="exec-card" draggable="true" data-item="' + esc(it.id) + '"><input type="checkbox" data-done="' + esc(it.id) + '" aria-label="Done"/><button type="button" data-edit="' + esc(it.id) + '" style="flex:1;text-align:left;border:0;background:transparent;font:inherit;cursor:pointer"><b>' + esc(it.title) + '</b><div class="kick">' + esc(areaLabel(it.area)) + '</div>' + (it._err ? '<div class="soft-err">' + esc(it._err) + '</div>' : '') + '</button><button type="button" data-del="' + esc(it.id) + '" aria-label="Delete">x</button></div>';
+        return '<div class="exec-card" draggable="true" data-item="' + esc(it.id) + '"><input type="checkbox" data-done="' + esc(it.id) + '" aria-label="Done"/><button type="button" data-edit="' + esc(it.id) + '" style="flex:1;text-align:left;border:0;background:transparent;font:inherit;cursor:pointer"><b>' + esc(it.title) + '</b><div class="kick">' + esc(areaLabel(it.area, it)) + '</div>' + (it._err ? '<div class="soft-err">' + esc(it._err) + '</div>' : '') + '</button><button type="button" data-del="' + esc(it.id) + '" aria-label="Delete">x</button></div>';
       }).join('') + '</div>';
     }).join('') + '</div>';
     bindWar();
@@ -258,15 +294,26 @@
     var rest = rows.filter(function (item) { return item !== top; });
     function card(item, wide) {
       var tint = TINT[item.category] || '#E7EEF6';
-      return '<button type="button" class="news-card' + (wide ? ' wide' : '') + '" data-news-url="' + esc(item.url || '') + '" data-news-title="' + esc(item.title || '') + '" data-news-why="' + esc(item.summary || '') + '"><div class="hd" style="background:' + tint + '">' + esc(item.category || '') + '</div><div style="padding:12px"><b>' + esc(item.title || '') + '</b><div class="kick">' + esc(item.summary || '') + '</div></div></button>';
+      var when = item.publishedAt ? new Date(item.publishedAt).toLocaleDateString('en-CA') : '';
+      return '<button type="button" class="news-card' + (wide ? ' wide' : '') + '" data-news-url="' + esc(item.url || '') + '" data-news-title="' + esc(item.title || '') + '" data-news-why="' + esc(item.summary || '') + '"><div class="hd" style="background:' + tint + '">' + esc(item.category || '') + '</div><div style="padding:12px"><b>' + esc(item.title || '') + '</b><div class="kick">' + esc(item.summary || '') + '</div><div class="kick">' + esc(when) + '</div></div></button>';
     }
-    el.innerHTML = '<div class="news-wrap"><div class="news-rail">' + ['All'].concat(cats.filter(function (c) { return c !== 'All'; })).map(function (c) { return '<button type="button" class="' + (c === on ? 'on' : '') + '" data-news="' + esc(c) + '">' + esc(c) + '</button>' + (c === 'All' ? '' : '<button type="button" data-news-del="' + esc(c) + '" aria-label="Remove category">x</button>'); }).join('') + '<div class="lb-add"><input id="newsCatName" type="text" placeholder="Category"/><button class="btn sm" id="newsCatAdd" type="button">Add</button></div></div><div><div class="news-grid">' + (top ? card(top, true) : '') + rest.map(function (item) { return card(item, false); }).join('') + '</div></div></div>';
+    var empty = rows.length ? '' : '<div class="kick">Pulling the last two weeks. Use Refresh if this stays empty.</div>';
+    el.innerHTML = '<div class="news-wrap"><div class="news-rail">' + ['All'].concat(cats.filter(function (c) { return c !== 'All'; })).map(function (c) { return '<button type="button" class="' + (c === on ? 'on' : '') + '" data-news="' + esc(c) + '">' + esc(c) + '</button>' + (c === 'All' ? '' : '<button type="button" data-news-del="' + esc(c) + '" aria-label="Remove category">x</button>'); }).join('') + '<div class="lb-add"><input id="newsCatName" type="text" placeholder="Category"/><button class="btn sm" id="newsCatAdd" type="button">Add</button></div></div><div><div class="cap"><button class="btn sm" id="newsRefresh" type="button">Refresh</button></div><div class="news-grid">' + empty + (top ? card(top, true) : '') + rest.map(function (item) { return card(item, false); }).join('') + '</div></div></div>';
     el.querySelectorAll('[data-news]').forEach(function (btn) {
       btn.onclick = function () { STATE.newsCat = btn.getAttribute('data-news'); renderNews(STATE.news || [], STATE.newsCategories || cats); };
     });
     el.querySelectorAll('.news-card').forEach(function (btn) {
       btn.onclick = function () { openDocView(btn.getAttribute('data-news-title'), btn.getAttribute('data-news-url'), btn.getAttribute('data-news-why')); };
     });
+    var refresh = document.getElementById('newsRefresh');
+    if (refresh) refresh.onclick = function () {
+      refresh.disabled = true;
+      authFetch('/api/news/refresh', { method: 'POST', credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
+        STATE.news = data.items || [];
+        STATE.newsCategories = data.categories || STATE.newsCategories;
+        renderNews(STATE.news, STATE.newsCategories);
+      }).catch(function () { refresh.disabled = false; });
+    };
     var addCat = document.getElementById('newsCatAdd');
     if (addCat) addCat.onclick = function () {
       var name = document.getElementById('newsCatName').value.trim();
@@ -287,7 +334,7 @@
       STATE.news = data.items || [];
       STATE.newsCategories = data.categories || [];
       renderNews(STATE.news, STATE.newsCategories);
-    }).catch(function () { renderNews([], []); });
+    }).catch(function () { renderNews([], ['Compliance', 'AI', 'Counseling', 'Fintech & regulation', 'Mortgage', 'Fraud & scams', 'Grants', 'Payments / FINTRAC']); });
   }
 
   function flatFiles(nodes, out) {
@@ -305,7 +352,7 @@
     el.innerHTML = '<div class="lb-add" id="libDrop">drag documents here, or <label class="btn sm">choose files<input id="libUpload" type="file" multiple hidden></label></div><div class="cap" style="margin:10px 0"><select id="libCat" aria-label="Category">' + CATS.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select><select id="libFile" aria-label="Drive file"><option value="">Pull from Drive</option>' + flatFiles(STATE.drives || [], []).map(function (file) { return '<option value="' + esc(file.id) + '" data-url="' + esc(file.url || '') + '" data-name="' + esc(file.name || '') + '">' + esc(file.name || 'File') + '</option>'; }).join('') + '</select><button class="btn sm" id="libPull" type="button">Pull from Drive</button><button class="btn sm" id="libPush" type="button">Move to Drive</button></div><div class="lib-grid">' + CATS.map(function (c) {
       var n = docs.filter(function (d) { return d.category === c; }).length;
       return '<div class="lib-card" data-cat="' + esc(c) + '"><svg width="22" height="18" viewBox="0 0 22 18" aria-hidden="true"><path d="M2 3.5h6l2 2H20v10H2z" fill="none" stroke="#5C6B7A" stroke-width="1.4"/></svg><b>' + esc(c) + '</b><div class="kick">' + n + ' files</div></div>';
-    }).join('') + '</div>';
+    }).join('') + '</div><button type="button" class="btn sm" id="libInc" style="margin-top:10px">Top incumbents</button>';
     var pull = document.getElementById('libPull');
     if (pull) pull.onclick = function () {
       var sel = document.getElementById('libFile');
@@ -341,14 +388,23 @@
       if (!modal || !box) return;
       var files = docs.filter(function (d) { return d.category === cat; });
       box.classList.add('wide');
-      box.innerHTML = '<div class="mhd"><div style="font-weight:700">' + esc(cat) + '</div><button class="x" id="mClose" type="button">x</button></div><div class="mbd"><div class="lib-pop">' + (files.map(function (d) {
+      var mode = 'grid';
+      try { mode = localStorage.getItem('cr_lib_mode') || 'grid'; } catch (err) { mode = 'grid'; }
+      box.innerHTML = '<div class="mhd"><div style="font-weight:700">' + esc(cat) + '</div><div class="seg" id="libMode"><button type="button" data-lib-mode="list"' + (mode === 'list' ? ' class="on"' : '') + '>List</button><button type="button" data-lib-mode="grid"' + (mode === 'grid' ? ' class="on"' : '') + '>Thumbnails</button></div><button class="x" id="mClose" type="button">x</button></div><div class="mbd"><div class="lib-pop' + (mode === 'list' ? ' list' : '') + '">' + (files.map(function (d) {
         var image = (d.mime || '').indexOf('image/') === 0;
-        var thumb = image ? '<img alt="" src="/api/documents/file?id=' + encodeURIComponent(d.id) + '">' : '<span class="kick">' + esc((d.mime || 'file').split('/')[0]) + '</span>';
-        return '<div><button type="button" data-lib-open="' + esc(d.id) + '">' + thumb + '<span>' + esc(d.name) + '</span></button><button type="button" data-lib-del="' + esc(d.id) + '" aria-label="Remove">x</button></div>';
+        var kind = ((d.name || '').split('.').pop() || (d.mime || 'file').split('/').pop() || 'file').slice(0, 8).toUpperCase();
+        var thumb = image ? '<img alt="" src="/api/documents/file?id=' + encodeURIComponent(d.id) + '">' : '<span class="type">' + esc(kind) + '</span>';
+        return '<div class="lib-tile"><button type="button" data-lib-open="' + esc(d.id) + '">' + thumb + '<span class="dn">' + esc(d.name) + '</span></button><button type="button" data-lib-del="' + esc(d.id) + '" aria-label="Remove">x</button></div>';
       }).join('') || '<div class="kick">No files in this folder yet.</div>') + '</div></div>';
       modal.classList.add('open');
       modal.hidden = false;
       document.getElementById('mClose').onclick = function () { if (typeof closeModal === 'function') closeModal(); };
+      box.querySelectorAll('[data-lib-mode]').forEach(function (btn) {
+        btn.onclick = function () {
+          try { localStorage.setItem('cr_lib_mode', btn.getAttribute('data-lib-mode') || 'grid'); } catch (err) {}
+          openFolder(cat);
+        };
+      });
       box.querySelectorAll('[data-lib-open]').forEach(function (btn) {
         btn.onclick = function () {
           var doc = files.filter(function (d) { return d.id === btn.getAttribute('data-lib-open'); })[0];
@@ -363,6 +419,21 @@
         };
       });
     }
+    var inc = document.getElementById('libInc');
+    if (inc) inc.onclick = function () {
+      var names = ['Vanta|https://www.vanta.com', 'Drata|https://drata.com', 'Secureframe|https://secureframe.com', 'Thoropass|https://thoropass.com', 'AutoRek|https://www.autorek.com', 'Aveni|https://aveni.ai', 'Fenergo|https://www.fenergo.com', 'Hummingbird|https://hummingbird.co', 'ComplyAdvantage|https://complyadvantage.com', 'Trulioo|https://www.trulioo.com'];
+      var modal = document.getElementById('modal');
+      var box = document.getElementById('modalCard');
+      if (!modal || !box) return;
+      box.classList.add('wide');
+      box.innerHTML = '<div class="mhd"><div style="font-weight:700">Top incumbents</div><button class="x" id="mClose" type="button">x</button></div><div class="mbd">' + names.map(function (row) { var bits = row.split('|'); return '<button type="button" class="ops-row" data-inc="' + esc(bits[1]) + '" data-name="' + esc(bits[0]) + '"><b>' + esc(bits[0]) + '</b></button>'; }).join('') + '</div>';
+      modal.classList.add('open');
+      modal.hidden = false;
+      document.getElementById('mClose').onclick = function () { if (typeof closeModal === 'function') closeModal(); };
+      box.querySelectorAll('[data-inc]').forEach(function (btn) {
+        btn.onclick = function () { openDocView(btn.getAttribute('data-name'), btn.getAttribute('data-inc'), 'Reference incumbent.'); };
+      });
+    };
     el.querySelectorAll('.lib-card').forEach(function (card) {
       card.ondragover = function (e) { e.preventDefault(); card.classList.add('over'); };
       card.ondragleave = function () { card.classList.remove('over'); };
@@ -576,7 +647,7 @@
     if (!btn) return;
     e.preventDefault();
     e.stopPropagation();
-    authFetch('/api/packages/' + btn.getAttribute('data-push-card'), { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'push-drive' }) }).catch(function () {});
+    authFetch('/api/spaces/' + btn.getAttribute('data-push-card'), { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'push-drive' }) }).catch(function () {});
   }, true);
   var zoom = document.getElementById('v-znotes');
   if (zoom && !document.getElementById('zoomForm')) {

@@ -10,6 +10,7 @@ import {
   patchPackage,
   prepareSend,
   pushSpace,
+  deletePackage,
   readPackage,
   removeDoc,
   removeRecipient,
@@ -74,11 +75,26 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       const sent = await prepareSend(sql, session.userId, id);
       if (!sent) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
       return NextResponse.json(sent);
+    } else if (action === 'add-link') {
+      pkg = await addDoc(sql, session.userId, id, { name: String(body?.name || body?.url || 'Link'), url: String(body?.url || ''), mime: 'text/uri-list' });
     } else return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     if (!pkg) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     return NextResponse.json(pkg);
   } catch (err) {
     fail('packages_failed', err);
     return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+  }
+}
+
+export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+  try {
+    const session = await openBoard();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session.sql || !packageIdOk(params.id)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    const ok = await deletePackage(session.sql, session.userId, params.id);
+    return NextResponse.json({ ok });
+  } catch (err) {
+    fail('packages_failed', err);
+    return NextResponse.json({ ok: false });
   }
 }
