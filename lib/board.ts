@@ -110,6 +110,44 @@ export function idleBoard(needsDatabase: boolean) {
 
 type Row = Record<string, unknown>;
 
+function edmontonDay(value: unknown) {
+  if (value == null || value === '') return '';
+  const ms = value instanceof Date ? value.getTime() : new Date(String(value)).getTime();
+  if (!Number.isFinite(ms)) return '';
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Edmonton',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(ms));
+}
+
+function deskBrief(items: Row[], contacts: Row[]) {
+  const today = edmontonDay(new Date());
+  const open = items.filter((row) => row.status !== 'done' && row.status !== 'dropped');
+  const late = open.filter((row) => {
+    const day = edmontonDay(row.due);
+    return !!day && day < today;
+  });
+  const due = open.filter((row) => edmontonDay(row.due) === today);
+  const waiting = contacts.filter((row) => {
+    const day = edmontonDay(row.next_date);
+    const stage = String(row.stage || '');
+    return !!day && day <= today && stage !== 'lost' && stage !== 'committed';
+  });
+  const lines = [
+    ...late.map((row) => `Overdue - ${String(row.title || '')}`),
+    ...due.map((row) => `Due today - ${String(row.title || '')}`),
+    ...waiting.map((row) => `${String(row.name || 'Someone')} is waiting`),
+  ].filter((line) => line.trim().length > 2);
+  if (!lines.length) return { headline: 'Nothing urgent on the desk', summary: '', top3: [] as Array<{ t: string }> };
+  const bits: string[] = [];
+  if (late.length) bits.push(`${late.length} overdue`);
+  if (due.length) bits.push(`${due.length} due today`);
+  if (waiting.length) bits.push(`${waiting.length} waiting on you`);
+  return { headline: lines[0], summary: bits.join(' - '), top3: lines.slice(0, 8).map((t) => ({ t })) };
+}
+
 async function read<T>(reads: Record<string, 'ok' | 'failed'>, name: string, job: () => Promise<T>, fallback: T): Promise<T> {
   try {
     const value = await job();
@@ -173,7 +211,16 @@ export async function loadBoard(sql: Sql, ownerId: string) {
       ORDER BY name
       LIMIT 200
     `;
-    return rows as Row[];
+    const tagged = new Map<string, string>();
+    try {
+      const extra = await sql`SELECT id, category FROM contacts WHERE owner_id = ${ownerId}`;
+      for (const row of extra as Row[]) {
+        if (row.category) tagged.set(String(row.id), String(row.category));
+      }
+    } catch (err) {
+      fail('board_contact_category', err);
+    }
+    return (rows as Row[]).map((row) => ({ ...row, category: tagged.get(String(row.id)) || '' })) as Row[];
   }, []);
   const categories = await read(reads, 'categories', async () => {
     const rows = await sql`SELECT name, subs FROM link_categories WHERE owner_id = ${ownerId} ORDER BY name`;
@@ -268,17 +315,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
     }),
   ];
 
-  const briefRow = briefs[0];
-  const top = asList(briefRow?.top_three);
-  const brief = briefRow
-    ? {
-        headline: String(briefRow.headline || ''),
-        summary: String(briefRow.summary || ''),
-        top3: top.map((entry) => ({ t: String((entry as { t?: string }).t || '') })),
-      }
-    : reached || open.length
-      ? { headline: 'No brief has been filed today.', summary: 'The desk is showing what is already stored.', top3: [] }
-      : { headline: 'Sources unavailable.', summary: 'Mail, calendar, and GoHighLevel could not be reached.', top3: [] };
+  const brief = deskBrief(items, contacts);
 
   const drives = asList(cached[0]?.tree) as Array<Record<string, unknown>>;
   const folders = drives.map((drive) => ({
@@ -346,6 +383,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
       area: String(row.area || 'other'),
       notes: String(row.notes || ''),
       type: String(row.type || 'other'),
+      category: row.category ? String(row.category) : '',
       tier: String(row.tier || 'B'),
       stage: String(row.stage || 'new'),
       nextAction: String(row.next_action || ''),

@@ -344,6 +344,22 @@ async function migrateWar(sql: Sql) {
       snoozed_on date NOT NULL,
       UNIQUE (owner_id, move_key, snoozed_on)
     )`],
+    ['db_contact_category', () => sql`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS category text`],
+    ['db_contact_category_fill', () => sql`
+      UPDATE contacts
+      SET category = CASE
+        WHEN lower(coalesce(company, '') || ' ' || coalesce(role, '') || ' ' || coalesce(name, '')) ~ '(investor|capital|ventures|[^a-z]vc[^a-z]|^vc[^a-z]|[^a-z]vc$)' THEN 'vc'
+        WHEN lower(coalesce(company, '') || ' ' || coalesce(role, '') || ' ' || coalesce(name, '')) ~ '(law|llp|fasken|counsel)' THEN 'regulator'
+        WHEN lower(coalesce(company, '') || ' ' || coalesce(role, '') || ' ' || coalesce(name, '')) ~ '(century 21|remax|broker)' THEN 'business'
+        WHEN lower(coalesce(company, '') || ' ' || coalesce(role, '') || ' ' || coalesce(name, '')) ~ '(grant|sr&ed|alberta innovates)' THEN 'grant'
+        WHEN lower(coalesce(company, '') || ' ' || coalesce(role, '') || ' ' || coalesce(name, '')) ~ 'board' THEN 'board'
+        WHEN type = 'vc' THEN 'vc'
+        WHEN type = 'business' THEN 'business'
+        WHEN type = 'grant_reg' THEN 'grant'
+        ELSE 'other'
+      END
+      WHERE category IS NULL OR category = ''
+    `],
     ['db_news_items', () => sql`CREATE TABLE IF NOT EXISTS news_items (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       owner_id text NOT NULL,
