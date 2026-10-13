@@ -45,7 +45,7 @@ type Folder = {
   name: string;
   url: string;
   children: Folder[];
-  docs: { id: string; name: string; url: string; kind: string }[];
+  docs: { id: string; name: string; url: string; kind: string; mime: string; thumb: string }[];
 };
 
 function asFolders(nodes: Array<Record<string, unknown>> | undefined): Folder[] {
@@ -60,6 +60,8 @@ function asFolders(nodes: Array<Record<string, unknown>> | undefined): Folder[] 
           name: String(file.name || ''),
           url: String(file.url || ''),
           kind: String(file.kind || 'file'),
+          mime: String(file.mime || ''),
+          thumb: String(file.thumb || ''),
         }))
       : [],
     children: asFolders(node.children as Array<Record<string, unknown>> | undefined)
@@ -328,6 +330,8 @@ export async function loadBoard(sql: Sql, ownerId: string) {
           name: String(file.name || ''),
           url: String(file.url || ''),
           kind: String(file.kind || 'file'),
+          mime: String(file.mime || ''),
+          thumb: String(file.thumb || ''),
         }))
       : [],
     children: asFolders(drive.folders as Array<Record<string, unknown>> | undefined),

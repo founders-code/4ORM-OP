@@ -24,7 +24,11 @@ export async function POST(req: Request) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = await req.json().catch(() => null);
-    const created = await createPackage(session.sql, session.userId, String(body?.name || ''), String(body?.kind || ''));
+    const created = await createPackage(session.sql, session.userId, String(body?.name || ''), String(body?.kind || ''), {
+      spaceType: String(body?.spaceType || ''),
+      subjectContactId: String(body?.subjectContactId || ''),
+      subjectLabel: String(body?.subjectLabel || ''),
+    });
     if (!created) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     return NextResponse.json(created);
   } catch (err) {
