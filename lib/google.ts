@@ -55,9 +55,7 @@ async function gfetch(url: string, init?: RequestInit) {
   return res.json();
 }
 
-export async function listEvents(timeMin: string, timeMax: string, pageToken = '') {
-  if (!configured()) return { status: 'unavailable' as const, events: [], nextPageToken: '' };
-  const cal = encodeURIComponent(process.env.GOOGLE_CALENDAR_ID || 'chad@4ormfinance.com');
+async function pullCalendar(calendarId: string, timeMin: string, timeMax: string, pageToken: string) {
   const q = new URLSearchParams({
     timeMin,
     timeMax,
@@ -66,9 +64,16 @@ export async function listEvents(timeMin: string, timeMax: string, pageToken = '
     maxResults: '250',
   });
   if (pageToken) q.set('pageToken', pageToken);
-  const json = (await gfetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${cal}/events?${q}`,
+  return (await gfetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${q}`,
   )) as { items?: Array<Record<string, unknown>>; nextPageToken?: string } | null;
+}
+
+export async function listEvents(timeMin: string, timeMax: string, pageToken = '') {
+  if (!configured()) return { status: 'unavailable' as const, events: [], nextPageToken: '' };
+  const named = process.env.GOOGLE_CALENDAR_ID || 'primary';
+  let json = await pullCalendar(named, timeMin, timeMax, pageToken);
+  if (!json && named !== 'primary') json = await pullCalendar('primary', timeMin, timeMax, pageToken);
   if (!json) return { status: 'unavailable' as const, events: [], nextPageToken: '' };
   const items = json.items || [];
   const events = items
@@ -439,6 +444,32 @@ export async function recentMail() {
     )) as { id?: string; payload?: { headers?: Array<{ name: string; value: string }> } } | null;
     const subject = msg?.payload?.headers?.find((h) => h.name.toLowerCase() === 'subject')?.value || '';
     if (msg?.id && subject) messages.push({ id: msg.id, title: subject.slice(0, 180) });
+  }
+  return { status: messages.length ? ('connected' as const) : ('reached_empty' as const), messages };
+}
+
+export async function inboxMail() {
+  if (!configured()) return { status: 'unavailable' as const, messages: [] as Array<{ from: string; subject: string; snippet: string; at: number }> };
+  const listed = (await gfetch(
+    'https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=8&q=' + encodeURIComponent('newer_than:14d'),
+  )) as { messages?: Array<{ id: string }> } | null;
+  if (!listed) return { status: 'unavailable' as const, messages: [] };
+  const messages = [];
+  for (const row of (listed.messages || []).slice(0, 8)) {
+    const msg = (await gfetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(row.id)}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`,
+    )) as { snippet?: string; internalDate?: string; payload?: { headers?: Array<{ name: string; value: string }> } } | null;
+    const headers = msg?.payload?.headers || [];
+    const pick = (name: string) => headers.find((h) => h.name.toLowerCase() === name)?.value || '';
+    const from = pick('from').replace(/<[^>]+>/g, '').replace(/"/g, '').trim().slice(0, 80);
+    const subject = pick('subject').slice(0, 180);
+    if (!from && !subject) continue;
+    messages.push({
+      from: from || 'Sender',
+      subject: subject || '(no subject)',
+      snippet: String(msg?.snippet || '').slice(0, 160),
+      at: Number(msg?.internalDate) || Date.parse(pick('date')) || Date.now(),
+    });
   }
   return { status: messages.length ? ('connected' as const) : ('reached_empty' as const), messages };
 }
