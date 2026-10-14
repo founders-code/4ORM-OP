@@ -918,42 +918,58 @@
     e.stopPropagation();
     authFetch('/api/spaces/' + btn.getAttribute('data-push-card'), { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'push-drive' }) }).catch(function () {});
   }, true);
-  var zoom = document.getElementById('v-znotes');
-  if (zoom && !document.getElementById('zoomForm')) {
-    zoom.insertAdjacentHTML('afterbegin', '<form id="zoomForm" class="lb-add" style="margin-bottom:12px"><input id="zoomId" type="hidden" value=""/><input id="zoomTitle" type="text" placeholder="Title" style="flex:1"/><input id="zoomPeople" type="text" placeholder="Attendees" style="flex:1"/><textarea id="zoomOthers" rows="2" placeholder="What others said" style="flex:1"></textarea><button class="btn pri sm" type="submit">Save</button></form>');
-    document.getElementById('zoomForm').onsubmit = function (e) {
-      e.preventDefault();
-      var id = document.getElementById('zoomId').value;
-      var payload = { title: document.getElementById('zoomTitle').value, attendees: document.getElementById('zoomPeople').value, others: document.getElementById('zoomOthers').value };
-      var req = id ? authFetch('/api/zoom/' + id, { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) }) : authFetch('/api/zoom', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
-      req.then(function () { document.getElementById('zoomForm').reset(); return authFetch('/api/board', { credentials: 'same-origin' }); }).then(function (r) { return r.json(); }).then(applyBoard).catch(function () {});
-    };
-  }
+  var zoomForm = document.getElementById('zoomForm');
+  if (zoomForm) zoomForm.onsubmit = function (e) {
+    e.preventDefault();
+    var id = document.getElementById('zoomId').value;
+    var title = document.getElementById('zoomTitle').value.trim() || 'Untitled meeting';
+    var people = document.getElementById('zoomPeople').value;
+    var others = document.getElementById('zoomOthers').value;
+    var payload = { title: title, attendees: people, others: others };
+    var names = people.split(',').map(function (bit) { return bit.trim(); }).filter(Boolean);
+    var lines = others.split('\n').map(function (bit) { return bit.trim(); }).filter(Boolean);
+    zoomForm.reset();
+    if (id) {
+      var note = (STATE.zoomNotes || []).filter(function (n) { return n.id === id; })[0];
+      if (note) { note.title = title; note.attendees = names; note.others = lines; note._err = ''; }
+      renderZNotes();
+      authFetch('/api/zoom/' + id, { method: 'PATCH', quiet: true, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) }).then(function (r) { if (!r.ok) throw 0; }).catch(function () { if (note) { note._err = 'Not saved yet'; renderZNotes(); } });
+      return;
+    }
+    var temp = { id: 'tmp-' + Date.now(), title: title, attendees: names, others: lines, date: new Date().toISOString().slice(0, 10), solo: !names.length, intel: [], improve: [], sources: [] };
+    STATE.zoomNotes = STATE.zoomNotes || [];
+    STATE.zoomNotes.unshift(temp);
+    renderZNotes();
+    authFetch('/api/zoom', { method: 'POST', quiet: true, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) }).then(function (r) { if (!r.ok) throw 0; return authFetch('/api/board', { credentials: 'same-origin' }); }).then(function (r) { return r.json(); }).then(applyBoard).catch(function () { temp._err = 'Not saved yet'; renderZNotes(); });
+  };
   var priorZ = renderZNotes;
   renderZNotes = function () {
     priorZ();
     var grid = document.getElementById('zGrid');
     if (!grid) return;
-    grid.querySelectorAll('.zrow').forEach(function (row) {
-      var open = row.querySelector('[data-z]');
-      var id = open ? open.getAttribute('data-z') : '';
-      if (!id || row.querySelector('[data-zdel]')) return;
-      row.insertAdjacentHTML('beforeend', '<button type="button" data-zedit="' + id + '">Edit</button><button type="button" data-zdel="' + id + '">Delete</button>');
-    });
     grid.querySelectorAll('[data-zdel]').forEach(function (btn) {
-      btn.onclick = function () {
+      btn.onclick = function (ev) {
+        ev.stopPropagation();
         if (!window.confirm('Delete this meeting note?')) return;
-        authFetch('/api/zoom/' + btn.getAttribute('data-zdel'), { method: 'DELETE', credentials: 'same-origin' }).then(function () { return authFetch('/api/board', { credentials: 'same-origin' }); }).then(function (r) { return r.json(); }).then(applyBoard).catch(function () {});
+        var id = btn.getAttribute('data-zdel');
+        var prev = (STATE.zoomNotes || []).slice();
+        STATE.zoomNotes = prev.filter(function (n) { return n.id !== id; });
+        renderZNotes();
+        if (String(id).indexOf('tmp-') === 0) return;
+        authFetch('/api/zoom/' + id, { method: 'DELETE', quiet: true, credentials: 'same-origin' }).then(function (r) { if (!r.ok) throw 0; }).catch(function () { STATE.zoomNotes = prev; renderZNotes(); });
       };
     });
     grid.querySelectorAll('[data-zedit]').forEach(function (btn) {
-      btn.onclick = function () {
+      btn.onclick = function (ev) {
+        ev.stopPropagation();
         var note = (STATE.zoomNotes || []).filter(function (n) { return n.id === btn.getAttribute('data-zedit'); })[0];
         if (!note) return;
         document.getElementById('zoomId').value = note.id;
         document.getElementById('zoomTitle').value = note.title || '';
         document.getElementById('zoomPeople').value = (note.attendees || []).join(', ');
         document.getElementById('zoomOthers').value = (note.others || []).join('\n');
+        var title = document.getElementById('zoomTitle');
+        if (title) title.focus();
       };
     });
   };
