@@ -671,43 +671,81 @@
     if (!el) return;
     var cats = categories && categories.length ? categories : ['All'];
     var on = STATE.newsCat || 'All';
-    var rows = (items || []).filter(function (item) { return on === 'All' || item.category === on; });
+    var q = String(STATE.newsQ || '').toLowerCase();
+    var all = items || [];
+    var rows = all.filter(function (item) { return on === 'All' || item.category === on; }).filter(function (item) { return !q || ((item.title || '') + ' ' + (item.summary || '')).toLowerCase().indexOf(q) >= 0; });
+    var start = new Date();
+    start.setHours(0, 0, 0, 0);
+    var isToday = function (item) { return Date.parse(item.publishedAt || item.published_at || 0) >= start.getTime(); };
     if (STATE.newsSpan === 'today') {
-      var start = new Date();
-      start.setHours(0, 0, 0, 0);
-      var todays = rows.filter(function (item) { return Date.parse(item.publishedAt || item.published_at || 0) >= start.getTime(); });
+      var todays = rows.filter(isToday);
       if (todays.length) rows = todays;
     }
-    var top = rows.filter(function (item) { return item.is_top || item.isTop; })[0];
-    var rest = top ? [top].concat(rows.filter(function (item) { return item !== top; })) : rows;
+    var top = rows.filter(function (item) { return item.is_top || item.isTop; })[0] || rows[0];
+    var rest = rows.filter(function (item) { return item !== top; });
     function impactOf(item) {
       var cat = String(item.category || '').toLowerCase();
       var blob = (cat + ' ' + (item.title || '') + ' ' + (item.summary || '')).toLowerCase();
-      if (/competitor|vanta|drata|aveni|secureframe|\bthreat\b/.test(blob)) return ['threat', 'Threat', 'g5'];
-      if (/fraud|scam|breach/.test(blob) && !/fintrac|osfi|compliance|payment/.test(cat)) return ['threat', 'Threat', 'g5'];
+      if (/competitor|vanta|drata|aveni|secureframe|\bthreat\b/.test(blob)) return ['threat', 'Threat', 'g2'];
       if (/grant|non-dilutive|innovate/.test(blob)) return ['opp', 'Opportunity', 'g4'];
       if (/mortgage|housing|broker/.test(cat)) return ['opp', 'Opportunity', 'g3'];
-      if (/fintech/.test(cat) && /venture|fund|capital|invest|raise/.test(blob)) return ['opp', 'Opportunity', 'g4'];
-      if (/venture|fundraising|angel round|series [a-d]/.test(blob) && !/fintrac|osfi|fcac|aml/.test(cat)) return ['opp', 'Opportunity', 'g3'];
-      if (/regulat|fintrac|osfi|csa|fcac|compliance|rpaa|payment|aml/.test(blob)) return ['reg', 'Regulatory', 'g2'];
-      var grads = ['g1', 'g3', 'g4', 'g5'];
-      return ['opp', 'Opportunity', grads[Math.abs(String(item.title || '').length) % grads.length]];
+      if (/fraud|scam|breach/.test(blob)) return ['reg', 'Regulatory', 'g6'];
+      if (/venture|fundraising|angel round|series [a-d]|pre-seed|seed round/.test(blob) && !/fintrac|osfi|fcac|aml/.test(cat)) return ['opp', 'Opportunity', 'g5'];
+      if (/regulat|fintrac|osfi|csa|fcac|compliance|rpaa|payment|aml/.test(blob)) return ['reg', 'Regulatory', 'g1'];
+      return ['opp', 'Opportunity', ['g1', 'g3', 'g4', 'g5'][String(item.title || '').length % 4]];
     }
-    function card(item) {
+    function host(url) { try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return ''; } }
+    function when(item) {
+      var ts = Date.parse(item.publishedAt || item.published_at || 0);
+      if (!ts) return '';
+      if (ts >= start.getTime()) return 'today';
+      var d = Math.floor((start.getTime() - ts) / 86400000) + 1;
+      return d === 1 ? 'yesterday' : d + 'd ago';
+    }
+    function face(item) { return item.image ? ' style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.35)),url(' + esc(item.image) + ');background-size:cover;background-position:center"' : ''; }
+    function story(item) {
       var hit = impactOf(item);
-      var when = item.publishedAt ? new Date(item.publishedAt).toLocaleDateString('en-CA') : '';
-      var face = item.image ? 'background-image:url(' + esc(item.image) + ');background-size:cover' : '';
-      return '<div class="news-card"><button type="button" class="shot ' + hit[2] + '" data-news-url="' + esc(item.url || '') + '" data-news-title="' + esc(item.title || '') + '" style="' + face + '"><span class="cat">' + esc(item.category || 'News') + '</span><span class="impact ' + hit[0] + '">' + hit[1] + '</span></button><div style="padding:10px 12px 12px"><b>' + esc(item.title || '') + '</b><div class="quiet" style="padding:4px 0">' + esc(item.summary || '') + '</div><div class="quiet" style="padding:0">' + esc(when) + ' <button type="button" class="act" data-news-save="' + esc(item.title || '') + '" style="margin-left:8px;color:#1f5fff;background:none;border:0;cursor:pointer">Save</button></div></div></div>';
+      var src = [host(item.url || ''), when(item)].filter(Boolean).join(' &middot; ');
+      return '<div class="card story" data-news-url="' + esc(item.url || '') + '" data-news-title="' + esc(item.title || '') + '"><div class="img ' + hit[2] + '"' + face(item) + '><span class="cat">' + esc(item.category || 'News') + '</span><span class="tag ' + hit[0] + '">' + hit[1] + '</span></div><div class="b"><div class="h">' + esc(item.title || '') + '</div><div class="tk">' + esc(item.summary || '') + '</div><div class="foot">' + src + '<button type="button" class="save" data-news-save="' + esc(item.title || '') + '">Save &#8250;</button></div></div></div>';
     }
-    var empty = rows.length ? '' : '<div class="kick">The 8:00 and 11:00 Pacific sweeps fill this. Refresh pulls a fresh scrape.</div>';
-    var heroHit = top ? impactOf(top) : null;
-    var heroFace = top && top.image ? ' style="background-image:url(' + esc(top.image) + ');background-size:cover"' : '';
-    var hero = top ? '<div class="mcard news-hero"><div class="img ' + heroHit[2] + '"' + heroFace + '><span class="impact ' + heroHit[0] + '">' + heroHit[1] + '</span><div class="h">' + esc(top.title || '') + '</div></div><div style="padding:12px 16px 14px"><div class="quiet" style="padding:0 0 8px"><b>Why it matters to 4orm:</b> ' + esc(top.summary || '') + '</div><div class="cap"><button type="button" class="btn pri sm" data-news-act="post" data-news-title="' + esc(top.title || '') + '">Draft a LinkedIn post</button><button type="button" class="btn sm" data-news-act="letter" data-news-title="' + esc(top.title || '') + '">Add to investor newsletter</button><button type="button" class="btn sm" data-news-act="vc" data-news-title="' + esc(top.title || '') + '">Cite to a VC</button><button type="button" class="btn sm" data-news-save="' + esc(top.title || '') + '">Save to a Space</button><button type="button" class="btn sm" data-news-act="open" data-news-title="' + esc(top.title || '') + '" data-news-url="' + esc(top.url || '') + '">Open source</button></div></div></div>' : '';
-    var brief = rest.slice(0, 5).map(function (item, i) { return '<div class="m"><span class="dot"></span>' + (i + 1) + '. ' + esc(item.title || '') + '</div>'; }).join('') || '<div class="quiet">The sweep fills the briefing.</div>';
-    var chips = ['RPAA', 'safeguarding', 'consumer understanding', 'AML'].map(function (topic) {
-      return '<button type="button" data-news-topic="' + esc(topic) + '">' + esc(topic) + '</button>';
+    var hero = '';
+    if (top) {
+      var hh = impactOf(top);
+      var heroSrc = [host(top.url || ''), top.publishedAt ? new Date(top.publishedAt).toLocaleDateString('en-CA') : ''].filter(Boolean).join(' &middot; ');
+      var t1 = esc(top.title || '');
+      hero = '<div class="card hero"><div class="img ' + hh[2] + '"' + face(top) + '><span class="kick">Top release ' + (isToday(top) ? 'today' : 'this ' + (STATE.newsSpan === 'week' ? 'week' : 'month')) + ' &middot; ' + esc(top.category || 'News') + '</span><span class="impact ' + hh[0] + '">' + hh[1] + '</span><div class="h">' + t1 + '</div></div><div class="b"><div class="take"><b>Why it matters to 4orm:</b> ' + esc(top.summary || 'Read the source and decide where it lands - deck, regulator note or a VC follow-up.') + '</div>' + (heroSrc ? '<div class="src">' + heroSrc + '</div>' : '') + '<div class="actions"><button type="button" class="act pri" data-news-act="post" data-news-title="' + t1 + '"><span class="mk">&#10022;</span> Draft a LinkedIn post</button><button type="button" class="act" data-news-act="letter" data-news-title="' + t1 + '"><span class="mk">&#10022;</span> Add to investor newsletter</button><button type="button" class="act" data-news-act="vc" data-news-title="' + t1 + '">Cite to a VC</button><button type="button" class="act" data-news-save="' + t1 + '">Save to ' + esc(top.category || 'a') + ' space</button><button type="button" class="act" data-news-act="open" data-news-title="' + t1 + '" data-news-url="' + esc(top.url || '') + '">Open source</button></div></div></div>';
+    }
+    var empty = rows.length ? '' : '<div class="card nw-empty">The 8:00 and 11:00 Pacific sweeps fill this. Refresh pulls a fresh scrape.</div>';
+    var briefRows = (top ? [top] : []).concat(rest).slice(0, 5);
+    var brief = briefRows.map(function (item, i) { return '<div class="r"><span class="n">' + (i + 1) + '</span>' + esc(item.title || '') + '</div>'; }).join('') || '<div class="r">The sweep fills the briefing.</div>';
+    var comps = ['Vanta', 'Drata', 'Aveni', 'Secureframe'].map(function (name) {
+      var hits = all.filter(function (item) { return ((item.title || '') + ' ' + (item.summary || '')).toLowerCase().indexOf(name.toLowerCase()) >= 0; }).sort(function (x, y) { return Date.parse(y.publishedAt || 0) - Date.parse(x.publishedAt || 0); });
+      var hit = hits[0];
+      var age = hit ? Math.max(0, Math.floor((Date.now() - Date.parse(hit.publishedAt || 0)) / 86400000)) : null;
+      var color = age == null ? '#c6cfdd' : age <= 2 ? '#f23a4d' : age <= 7 ? '#f0a020' : '#c6cfdd';
+      var line = hit ? String(hit.title || '').slice(0, 46) : 'quiet';
+      return { age: age == null ? 999 : age, html: '<div class="comprow"><span class="d" style="background:' + color + '"></span>' + (hit && line.toLowerCase().indexOf(name.toLowerCase()) === 0 ? esc(line) : esc(name) + ' - ' + esc(line)) + '<span class="mt">' + (age == null ? '-' : age === 0 ? 'today' : age + 'd') + '</span></div>' };
+    }).sort(function (x, y) { return x.age - y.age; }).map(function (c) { return c.html; }).join('');
+    var topics = ['RPAA', 'suitability', 'broker conduct', 'AML', 'non-dilutive', 'safeguarding', 'consumer understanding'];
+    var trend = topics.map(function (topic) {
+      var n = all.filter(function (item) { return ((item.title || '') + ' ' + (item.summary || '')).toLowerCase().indexOf(topic.toLowerCase()) >= 0; }).length;
+      return { topic: topic, n: n };
+    }).sort(function (x, y) { return y.n - x.n; }).map(function (row) {
+      return '<button type="button" class="tp' + (q === row.topic.toLowerCase() ? ' on' : '') + '" data-news-topic="' + esc(row.topic) + '">' + esc(row.topic) + (row.n >= 2 ? ' <b>&#9650;</b>' : '') + '</button>';
     }).join('');
-    el.innerHTML = '<div class="news-brief"><div class="news-wrap"><div class="cap"><div class="seg" id="newsSpan"><button type="button" data-span="today"' + (STATE.newsSpan === 'today' ? ' class="on"' : '') + '>Today</button><button type="button" data-span="week"' + (STATE.newsSpan === 'week' ? ' class="on"' : '') + '>Last week</button><button type="button" data-span="month"' + (STATE.newsSpan !== 'week' && STATE.newsSpan !== 'today' ? ' class="on"' : '') + '>Last month</button></div><button class="btn sm" id="newsRefresh" type="button">Refresh</button></div>' + hero + '<div class="news-chips">' + ['All'].concat(cats.filter(function (c) { return c !== 'All'; })).map(function (c) { return '<button type="button" class="' + (c === on ? 'on' : '') + '" data-news="' + esc(c) + '">' + esc(c) + (c === 'All' ? '' : ' <span data-news-del="' + esc(c) + '" aria-label="Remove category">x</span>') + '</button>'; }).join('') + '</div><div class="news-grid">' + empty + rest.map(function (item) { return card(item); }).join('') + '</div></div><aside><div class="mcard"><div class="ch" style="cursor:default"><span class="t">Your briefing</span></div><div class="mlist">' + brief + '</div></div><div class="mcard" style="margin-top:12px"><div class="ch" style="cursor:default"><span class="t">Competitor watch</span></div><div class="vcrow"><span class="d" style="background:#c6cfdd"></span>Vanta</div><div class="vcrow"><span class="d" style="background:#f0a020"></span>Drata</div><div class="vcrow"><span class="d" style="background:#c6cfdd"></span>Aveni</div><div class="vcrow"><span class="d" style="background:#c6cfdd"></span>Secureframe</div></div><div class="mcard" style="margin-top:12px"><div class="ch" style="cursor:default"><span class="t">Trending for 4orm</span></div><div class="stick-filters">' + chips + '</div></div></aside></div>';
+    var chips = ['All'].concat(cats.filter(function (c) { return c !== 'All'; })).map(function (c) {
+      return '<span class="chip' + (c === on ? ' on' : '') + '"><button type="button" data-news="' + esc(c) + '">' + esc(c) + '</button>' + (c === 'All' ? '' : '<button type="button" class="ghost-x" data-news-del="' + esc(c) + '" aria-label="Remove category"></button>') + '</span>';
+    }).join('');
+    var span = STATE.newsSpan === 'today' ? 'today' : STATE.newsSpan === 'week' ? 'week' : 'month';
+    el.innerHTML = '<div class="nwx"><div class="top"><span class="t">News</span><div class="seg" id="newsSpan"><button type="button" data-span="today"' + (span === 'today' ? ' class="on"' : '') + '>Today</button><button type="button" data-span="week"' + (span === 'week' ? ' class="on"' : '') + '>Last week</button><button type="button" data-span="month"' + (span === 'month' ? ' class="on"' : '') + '>Last month</button></div><button class="btn" id="newsRefresh" type="button">Refresh</button><div class="right"><input class="search" id="newsSearch" type="text" placeholder="Search news..." value="' + esc(STATE.newsQ || '') + '"/><span class="sweeps">8AM + 11AM SWEEPS</span></div></div><div class="chips">' + chips + '</div><div class="wrap"><div>' + hero + empty + '<div class="grid">' + rest.map(story).join('') + '</div></div><div class="rail"><div class="card"><div class="ch"><span class="mk">4</span><span class="t">Your briefing</span><span class="s">' + briefRows.length + ' things ' + (span === 'today' ? 'today' : 'this ' + span) + '</span></div><div class="brief">' + brief + '</div></div><div class="card"><div class="ch"><span class="t">Competitor watch</span><span class="s">Drata / Vanta / Aveni</span></div><div class="comp">' + comps + '</div></div><div class="card"><div class="ch"><span class="t">Trending for 4orm</span></div><div class="trend">' + trend + '</div></div></div></div></div>';
+    var search = document.getElementById('newsSearch');
+    if (search) search.oninput = function () {
+      var pos = search.selectionStart;
+      STATE.newsQ = search.value;
+      renderNews(STATE.news || [], STATE.newsCategories || cats);
+      var again = document.getElementById('newsSearch');
+      if (again) { again.focus(); try { again.setSelectionRange(pos, pos); } catch (e) {} }
+    };
     el.querySelectorAll('[data-span]').forEach(function (btn) {
       btn.onclick = function () {
         var span = btn.getAttribute('data-span');
@@ -739,11 +777,10 @@
     });
     el.querySelectorAll('[data-news-topic]').forEach(function (btn) {
       btn.onclick = function () {
+        var topic = btn.getAttribute('data-news-topic');
         STATE.newsCat = 'All';
-        STATE.newsQ = btn.getAttribute('data-news-topic');
-        renderNews((STATE.news || []).filter(function (item) {
-          return ((item.title || '') + ' ' + (item.summary || '')).toLowerCase().indexOf(String(STATE.newsQ).toLowerCase()) >= 0;
-        }), STATE.newsCategories || cats);
+        STATE.newsQ = String(STATE.newsQ || '').toLowerCase() === topic.toLowerCase() ? '' : topic;
+        renderNews(STATE.news || [], STATE.newsCategories || cats);
       };
     });
     var refresh = document.getElementById('newsRefresh');
