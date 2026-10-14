@@ -1,6 +1,7 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { claimBudget } from './db';
 import { allowPackageKind } from './guard.mjs';
+import { addGhlTask, ensureGhlContact, ghlConfigured, opportunityStages, pushOpportunity, repliedInbound, sendViaGhl } from './ghl';
 import { copyDriveFile, createGmailDraft, driveWrite, uploadDriveBytes } from './google';
 import { fail } from './log';
 import { STARTERS, assembleMail, fillToken } from './packages.mjs';
@@ -43,7 +44,7 @@ type Item = {
   position: number;
 };
 
-type Person = { id: string; contactId: string; name: string; email: string; role: string; company: string; stage: string; listed: boolean };
+type Person = { id: string; contactId: string; name: string; email: string; role: string; company: string; stage: string; listed: boolean; sendStatus: string };
 
 function asItem(row: Record<string, unknown>): Item {
   return {
@@ -77,6 +78,7 @@ export async function ensureSpaceTables(sql: Sql) {
     ['db_spaces_category', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS category text`],
     ['db_spaces_stage', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS stage text`],
     ['db_spaces_sent', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS sent_at timestamptz`],
+    ['db_spaces_ghl', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS ghl_opportunity_id text`],
     ['db_spaces_drive_url', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS drive_folder_url text`],
     ['db_space_items', () => sql`CREATE TABLE IF NOT EXISTS space_items (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -101,6 +103,7 @@ export async function ensureSpaceTables(sql: Sql) {
     )`],
     ['db_space_recipients_role', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS role text`],
     ['db_space_recipients_listed', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS listed boolean NOT NULL DEFAULT true`],
+    ['db_space_recipients_send', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS send_status text`],
   ];
   for (const [code, run] of steps) {
     try {
@@ -140,7 +143,7 @@ async function readItems(sql: Sql, ownerId: string, spaceId: string): Promise<It
 async function readPeople(sql: Sql, ownerId: string, spaceId: string): Promise<Person[]> {
   try {
     const rows = await sql`
-      SELECT r.id, r.contact_id, r.name, r.email, r.role, r.listed, c.company, c.stage
+      SELECT r.id, r.contact_id, r.name, r.email, r.role, r.listed, r.send_status, c.company, c.stage
       FROM space_recipients r
       LEFT JOIN contacts c ON c.id::text = r.contact_id AND c.owner_id = ${ownerId}
       WHERE r.space_id = ${spaceId} AND r.owner_id = ${ownerId}
@@ -155,6 +158,7 @@ async function readPeople(sql: Sql, ownerId: string, spaceId: string): Promise<P
       company: String(row.company || ''),
       stage: String(row.stage || ''),
       listed: row.listed !== false,
+      sendStatus: String(row.send_status || ''),
     }));
   } catch (err) {
     fail('spaces_people', err);
@@ -175,6 +179,7 @@ async function readPeople(sql: Sql, ownerId: string, spaceId: string): Promise<P
         company: String(row.company || ''),
         stage: String(row.stage || ''),
         listed: true,
+        sendStatus: '',
       }));
     } catch (inner) {
       fail('spaces_people', inner);
@@ -347,9 +352,111 @@ async function seedOutreach(sql: Sql, ownerId: string) {
   }
 }
 
+async function pullGhlStages(sql: Sql, ownerId: string) {
+  try {
+    if (!ghlConfigured()) return;
+    const board = await opportunityStages();
+    if (!board.length) return;
+    const rows = await sql`
+      SELECT id, ghl_opportunity_id
+      FROM spaces
+      WHERE owner_id = ${ownerId} AND coalesce(ghl_opportunity_id, '') <> ''
+    `;
+    const byId = new Map(board.map((row) => [row.id, row.stage]));
+    for (const row of rows as Array<{ id: string; ghl_opportunity_id?: string }>) {
+      const next = byId.get(String(row.ghl_opportunity_id || ''));
+      if (!next) continue;
+      await sql`
+        UPDATE spaces SET stage = ${next}, updated_at = now()
+        WHERE id = ${row.id} AND owner_id = ${ownerId} AND coalesce(stage, '') <> ${next}
+      `;
+    }
+  } catch (err) {
+    fail('spaces_ghl_pull', err);
+  }
+}
+
+async function rememberOpportunity(sql: Sql, ownerId: string, id: string, stage: string) {
+  try {
+    if (!ghlConfigured()) return;
+    const people = await readPeople(sql, ownerId, id);
+    const person = people.find((row) => row.email);
+    if (!person) return;
+    const contactId = await ensureGhlContact({ name: person.name || 'Space', email: person.email, company: person.company });
+    if (!contactId) return;
+    const current = await sql`SELECT name, ghl_opportunity_id FROM spaces WHERE id = ${id} AND owner_id = ${ownerId} LIMIT 1`;
+    const row = current[0] as { name?: string; ghl_opportunity_id?: string } | undefined;
+    const opp = await pushOpportunity({
+      name: String(row?.name || person.name || 'Space'),
+      contactId,
+      stage,
+      opportunityId: String(row?.ghl_opportunity_id || ''),
+    });
+    if (!opp) return;
+    await sql`UPDATE spaces SET ghl_opportunity_id = ${opp} WHERE id = ${id} AND owner_id = ${ownerId}`;
+  } catch (err) {
+    fail('spaces_ghl_push', err);
+  }
+}
+
+const SIGN_OFF = '\n\nChad Johnston\n4orm Finance\nchad@4ormfinance.com';
+
+export async function sendSpaceGhl(sql: Sql, ownerId: string, spaceId: string, flags: { docs?: boolean; links?: boolean }) {
+  const current = await readSpace(sql, ownerId, spaceId);
+  if (!current) return { sent: false, note: 'That space could not be read.' };
+  if (!ghlConfigured()) return { sent: false, note: 'GoHighLevel is not connected. The email stays here.', package: current };
+  const people = current.recipients.filter((person) => person.listed !== false && person.email);
+  if (!people.length) return { sent: false, note: 'Add a recipient with an email before sending.', package: current };
+  const includeDocs = flags.docs !== false;
+  const includeLinks = flags.links !== false;
+  let sent = 0;
+  for (const person of people) {
+    const contactId = await ensureGhlContact({ name: person.name || current.name, email: person.email, company: person.company });
+    const subject = fillToken(current.emailSubject || current.name, person);
+    let body = fillToken(current.emailBody || '', person);
+    if (includeDocs) {
+      const lines = current.docs.filter((doc) => doc.kind !== 'link' && doc.mime !== 'text/x-folder').map((doc) => {
+        const url = doc.driveFileId ? `https://drive.google.com/file/d/${doc.driveFileId}/view` : doc.url;
+        return url ? `${doc.name} - ${url}` : doc.name;
+      }).filter(Boolean);
+      if (lines.length) body += `\n\nDocuments:\n${lines.join('\n')}`;
+    }
+    if (includeLinks) {
+      const lines = current.docs.filter((doc) => doc.kind === 'link').map((doc) => (doc.url ? `${doc.name} - ${doc.url}` : doc.name)).filter(Boolean);
+      if (lines.length) body += `\n\nLinks:\n${lines.join('\n')}`;
+    }
+    if (!body.includes('chad@4ormfinance.com')) body += SIGN_OFF;
+    const html = body.slice(0, 8000).replaceAll('\n', '<br>');
+    const ok = contactId ? await sendViaGhl({ contactId, email: person.email, subject, html }) : false;
+    if (!ok) continue;
+    sent += 1;
+    try {
+      let status = 'sent';
+      if (contactId && await repliedInbound(contactId)) status = 'replied';
+      await sql`UPDATE space_recipients SET send_status = ${status} WHERE id = ${person.id} AND space_id = ${spaceId} AND owner_id = ${ownerId}`;
+    } catch (err) {
+      fail('spaces_send_status', err);
+    }
+  }
+  if (!sent) return { sent: false, note: 'GoHighLevel did not accept the send. Nothing was marked sent.', package: current };
+  const next = await patchSpace(sql, ownerId, spaceId, { stage: 'sent' });
+  return { sent: true, count: sent, note: 'Sent from chad@4ormfinance.com through GoHighLevel. Opens and replies update when GoHighLevel reports them.', package: next || current };
+}
+
+export async function followSpaceGhl(sql: Sql, ownerId: string, spaceId: string) {
+  const current = await readSpace(sql, ownerId, spaceId);
+  if (!current || !ghlConfigured()) return { ok: false, note: 'Follow up is on the desk. GoHighLevel is not connected.' };
+  const person = current.recipients.find((row) => row.email);
+  if (!person) return { ok: false, note: 'Follow up is on the desk.' };
+  const contactId = await ensureGhlContact({ name: person.name || current.name, email: person.email, company: person.company });
+  const ok = contactId ? await addGhlTask(contactId, `Follow up - ${current.name}`) : false;
+  return { ok, note: ok ? 'Follow up is on the desk and in GoHighLevel.' : 'Follow up is on the desk. GoHighLevel did not take the task.' };
+}
+
 export async function listSpaces(sql: Sql, ownerId: string) {
   try {
     await ensureSpaceTables(sql);
+    await pullGhlStages(sql, ownerId);
     let packages: Array<Record<string, unknown>> = [];
     try {
       const rows = await sql`
@@ -541,6 +648,7 @@ export async function patchSpace(sql: Sql, ownerId: string, id: string, body: Re
       : current.body;
     await saveEmail(sql, ownerId, id, subject, emailBody);
   }
+  if (stage) await rememberOpportunity(sql, ownerId, id, stage);
   return readSpace(sql, ownerId, id);
 }
 

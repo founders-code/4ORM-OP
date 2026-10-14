@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
 import { DELETE as packageDelete, GET as packageGet, PATCH as packagePatch, POST as packagePost } from '../../packages/[id]/route';
-import { ghlConfigured, sendMailboxEmail } from '@/lib/ghl';
 import { openBoard } from '@/lib/session';
 import {
   addSpaceFolder,
@@ -10,11 +9,13 @@ import {
   deleteSpace,
   deleteSpaceItem,
   deleteSpaceRecipient,
+  followSpaceGhl,
   listSpaceRecipient,
   moveSpaceToDrive,
   patchSpace,
   readSpace,
   sendSpace,
+  sendSpaceGhl,
   spaceIdOk,
 } from '@/lib/spaces';
 
@@ -129,20 +130,15 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
       return NextResponse.json(sent || { prepared: false, package: existing, note: 'Could not prepare that send.' });
     }
     if (action === 'send-ghl') {
-      const view = await readSpace(sql, session.userId, id);
-      if (!view) return NextResponse.json({ sent: false, note: 'That space could not be read.', package: existing });
-      if (!ghlConfigured()) return NextResponse.json({ sent: false, note: 'GoHighLevel sending is not connected. The email stays here.', package: view });
-      const people = (view.recipients || []).filter((person) => person.listed !== false && person.email);
-      if (!people.length) return NextResponse.json({ sent: false, note: 'Add a recipient with an email before sending.', package: view });
-      const sign = '\n\nChad Johnston\n4orm Finance\nchad@4ormfinance.com';
-      let sent = 0;
-      for (const person of people) {
-        const ok = await sendMailboxEmail(person.email, view.emailSubject || view.name, `${view.emailBody || ''}${sign}`);
-        if (ok) sent += 1;
-      }
-      if (!sent) return NextResponse.json({ sent: false, note: 'GoHighLevel did not accept the send. Nothing was marked sent.', package: view });
-      const next = await patchSpace(sql, session.userId, id, { stage: 'sent' });
-      return NextResponse.json({ sent: true, count: sent, note: 'Sent from chad@4ormfinance.com through GoHighLevel. Opens and replies update when GoHighLevel reports them.', package: next || view });
+      const sent = await sendSpaceGhl(sql, session.userId, id, {
+        docs: body.includeDocs !== false,
+        links: body.includeLinks !== false,
+      });
+      return NextResponse.json(sent || { sent: false, note: 'GoHighLevel did not send that.', package: existing });
+    }
+    if (action === 'follow-up') {
+      const followed = await followSpaceGhl(sql, session.userId, id);
+      return NextResponse.json(followed || { ok: false, note: 'Follow up is on the desk.' });
     }
     if (action === 'add-note') {
       const added = await addSpaceItem(sql, session.userId, id, { kind: 'note', name: body.name || 'Note', body: body.body || '', parentId: body.parentId });
