@@ -71,17 +71,32 @@ function titleStage(name: string) {
   return clean.toLowerCase().replace(/\b[a-z]/g, (ch) => ch.toUpperCase());
 }
 
+function postsOf(json: Record<string, unknown> | null) {
+  if (!json) return [] as Array<{ status?: string }>;
+  const raw = json.posts ?? json.results ?? json.data;
+  if (Array.isArray(raw)) return raw as Array<{ status?: string }>;
+  if (raw && typeof raw === 'object' && Array.isArray((raw as { posts?: unknown[] }).posts)) {
+    return (raw as { posts: Array<{ status?: string }> }).posts;
+  }
+  return [];
+}
+
 export async function listSocialQueue() {
   const loc = encodeURIComponent(locationId());
-  const json = (await ghl(`/social-media-posting/${loc}/posts?limit=20&skip=0`)) as {
-    posts?: Array<{ status?: string }>;
-    results?: Array<{ status?: string }>;
-  } | null;
+  let json = (await ghl(`/social-media-posting/${loc}/posts?limit=20&skip=0`)) as Record<string, unknown> | null;
+  if (!postsOf(json).length) {
+    const listed = (await ghl(`/social-media-posting/${loc}/posts/list`, {
+      method: 'POST',
+      body: JSON.stringify({ skip: 0, limit: 20 }),
+    })) as Record<string, unknown> | null;
+    if (postsOf(listed).length) json = listed;
+  }
+  const posts = postsOf(json);
   if (!json) return null;
-  const posts = json.posts || json.results || [];
-  const queued = posts.filter((post) => /schedul|queue|draft|pending/i.test(String(post.status || 'scheduled')));
+  const queued = posts.filter((post) => /schedul|queue|draft|pending|in_progress|in progress/i.test(String(post.status || 'scheduled')));
   const left = queued.length || posts.length;
-  return { left, cadence: left ? Math.max(1, Math.round(left / 7)) : 0 };
+  if (!left) return null;
+  return { left, cadence: Math.max(1, Math.round(left / 7)) };
 }
 
 export async function listPipeline() {
@@ -101,19 +116,25 @@ export async function listPipeline() {
   })) as {
     opportunities?: Array<Record<string, unknown>>;
   } | null;
-  if (!json) return { status: 'unavailable' as const, stages: [] as Array<{ stage: string; count: number; detail: string }> };
+  if (!json) return { status: 'unavailable' as const, stages: [] as Array<{ stage: string; count: number; detail: string }>, touches: [] as Array<{ sourceId: string; name: string; at: string }> };
   const counts = new Map<string, number>();
+  const touches: Array<{ sourceId: string; name: string; at: string }> = [];
   for (const row of json.opportunities || []) {
     const named = names.get(String(row.pipelineStageId || '')) || String(row.status || 'Open');
     const stage = titleStage(named).slice(0, 80);
     counts.set(stage, (counts.get(stage) || 0) + 1);
+    const at = String(row.updatedAt || row.lastStatusChangeAt || row.lastStageChangeAt || row.createdAt || '');
+    const contact = row.contact as { name?: string } | undefined;
+    const sourceId = String(row.contactId || '');
+    const name = String(contact?.name || row.name || '').slice(0, 120);
+    if (at && (sourceId || name)) touches.push({ sourceId, name, at });
   }
   const stages = [...counts.entries()].map(([stage, count]) => ({
     stage,
     count,
     detail: count === 1 ? '1 opportunity' : `${count} opportunities`,
   }));
-  return { status: stages.length ? ('connected' as const) : ('reached_empty' as const), stages };
+  return { status: stages.length ? ('connected' as const) : ('reached_empty' as const), stages, touches };
 }
 
 export async function createContact(input: { name: string; company?: string; email?: string }) {

@@ -14,7 +14,23 @@ export async function GET() {
     if (!session.sql) return NextResponse.json({ messages: [] });
     const creds = await loadCredsFor(session.userId);
     const mail = await withCreds(creds, () => inboxMail());
-    return NextResponse.json({ messages: mail?.messages || [] });
+    const messages = mail?.messages || [];
+    for (const message of messages) {
+      const email = String(message.email || '').trim();
+      const at = Number(message.at);
+      if (!email || !Number.isFinite(at)) continue;
+      const iso = new Date(at).toISOString();
+      try {
+        await session.sql`
+          UPDATE contacts SET last_touch = ${iso}::timestamptz
+          WHERE owner_id = ${session.userId} AND lower(email) = lower(${email})
+            AND (last_touch IS NULL OR last_touch < ${iso}::timestamptz)
+        `;
+      } catch (err) {
+        fail('mail_touch', err);
+      }
+    }
+    return NextResponse.json({ messages });
   } catch (err) {
     fail('mail_inbox', err);
     return NextResponse.json({ messages: [] });

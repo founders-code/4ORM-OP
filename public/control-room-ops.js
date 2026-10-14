@@ -10,6 +10,10 @@
     }
   }
 
+  function moveLabel(move) {
+    return move ? (move.title || move.name || move.text || '') : '';
+  }
+
   function soon(ms) {
     var gap = ms - Date.now();
     if (gap < 0) return 'now';
@@ -114,9 +118,9 @@
     var cash = 18, raise = 32, product = rows.length ? Math.max(20, 80 - Math.min(open.length, 60)) : 24;
     var legal = rows.some(function (it) { return /legal|regulat/i.test(it.title || ''); }) ? 40 : 55;
     var score = Math.round((cash + raise + pipeScore + product + legal) / 5);
-    var movers = ((STATE.ceo && STATE.ceo.moves) || []).filter(function (move) { return move && (move.title || move.name); }).slice(0, 3);
+    var movers = ((STATE.ceo && STATE.ceo.moves) || []).filter(function (move) { return moveLabel(move); }).slice(0, 3);
     var moverHtml = movers.length ? '<div class="mlist">' + movers.map(function (move, i) {
-      return '<div class="m"><span class="dot" style="background:' + (i ? '#1f5fff' : '#f23a4d') + '"></span>' + esc(move.title || move.name) + '<span class="mt">P' + (i + 1) + '</span></div>';
+      return '<div class="m"><span class="dot" style="background:' + (i ? '#1f5fff' : '#f23a4d') + '"></span>' + esc(moveLabel(move)) + '<span class="mt">P' + (i + 1) + '</span></div>';
     }).join('') + '</div><div class="pace">These are the ranked moves from 4orm Intelligence, the same list as the War Room.</div>' : '<div class="quiet">No ranked move yet. The War Room one-thing fills this.</div>';
     var bars = [30, 45, 25, 60, 40, 70, Math.min(100, 20 + doneWeek * 8)].map(function (n) { return '<div class="bar" style="height:' + Math.max(8, n) + '%"></div>'; }).join('');
     var meetings = (STATE.events || []).filter(function (ev) { return ev.start >= Date.now() - 60000; }).sort(function (a, b) { return a.start - b.start; }).slice(0, 3);
@@ -177,7 +181,10 @@
     }).catch(function () {});
     authFetch('/api/mail', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
       STATE.mail = (data && data.messages) || [];
+      if (typeof stampWarmth === 'function') stampWarmth();
       if (STATE.desk === 'room' || !STATE.desk) renderOpsDash();
+      if (STATE.desk === 'people' && typeof renderPeople === 'function') renderPeople(document.getElementById('pSearch') ? document.getElementById('pSearch').value : '');
+      if (STATE.desk === 'contacts' && typeof renderContacts === 'function') renderContacts(document.getElementById('cSearch') ? document.getElementById('cSearch').value : '');
     }).catch(function () { STATE.mail = STATE.mail || []; });
     authFetch('/api/content', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
       STATE.content = data || { empty: true };
@@ -373,7 +380,7 @@
     var people = STATE.reachOut || [];
     var filter = STATE.reachKind || 'all';
     var shown = people.filter(function (person) { return filter === 'all' || person.kind === filter; });
-    var moves = ((STATE.ceo && STATE.ceo.moves) || []).filter(function (move) { return move && (move.title || move.name); });
+    var moves = ((STATE.ceo && STATE.ceo.moves) || []).filter(function (move) { return moveLabel(move); });
     var one = moves[0];
     var needleOn = {};
     try { needleOn = JSON.parse(localStorage.getItem('cr_needle') || '{}'); } catch (err) { needleOn = {}; }
@@ -386,7 +393,7 @@
       var on = !!(needleOn.ids && needleOn.ids[id]);
       if (on) doneN += 1;
       var rank = i === 0 ? '#1 the one thing' : '#' + (i + 1);
-      return '<div class="nm' + (on ? ' done' : '') + '"><span class="rank">' + rank + '</span><div class="tt">' + esc(move.title || move.name) + '</div><span class="tag">' + esc(move.zone || move.area || 'Raise') + '</span><input class="ck" type="checkbox" data-needle="' + esc(id) + '"' + (on ? ' checked' : '') + '/></div>';
+      return '<div class="nm' + (on ? ' done' : '') + '"><span class="rank">' + rank + '</span><div class="tt">' + esc(moveLabel(move)) + '</div><span class="tag">' + esc(move.zone || move.area || 'Raise') + '</span><input class="ck" type="checkbox" data-needle="' + esc(id) + '"' + (on ? ' checked' : '') + '/></div>';
     }).join('');
     var left = STATE.focusUntil && STATE.focusUntil > Date.now() ? STATE.focusUntil - Date.now() : 25 * 60 * 1000;
     var mm = String(Math.floor(left / 60000)).padStart(2, '0');
@@ -473,7 +480,7 @@
     var plan = document.getElementById('focusPlan');
     if (plan) plan.onclick = function () {
       var move = ((STATE.ceo && STATE.ceo.moves) || [])[0];
-      if (move && typeof openPlan === 'function') openPlan(move.id || 'one', move.title || 'The one thing', 'investors');
+      if (move && typeof openPlan === 'function') openPlan(move.id || 'one', moveLabel(move) || 'The one thing', 'investors');
     };
     var later = document.getElementById('focusLater');
     if (later) later.onclick = function () {
@@ -651,10 +658,17 @@
     var top = rows.filter(function (item) { return item.is_top || item.isTop; })[0];
     var rest = top ? [top].concat(rows.filter(function (item) { return item !== top; })) : rows;
     function impactOf(item) {
-      var blob = ((item.category || '') + ' ' + (item.title || '')).toLowerCase();
-      if (/compet|vanta|drata|threat|scam|fraud/.test(blob)) return ['threat', 'Threat', 'g5'];
-      if (/regulat|fintrac|osfi|csa|fcac|compliance|rpaa/.test(blob)) return ['reg', 'Regulatory', 'g1'];
-      return ['opp', 'Opportunity', 'g3'];
+      var cat = String(item.category || '').toLowerCase();
+      var blob = (cat + ' ' + (item.title || '') + ' ' + (item.summary || '')).toLowerCase();
+      if (/competitor|vanta|drata|aveni|secureframe|\bthreat\b/.test(blob)) return ['threat', 'Threat', 'g5'];
+      if (/fraud|scam|breach/.test(blob) && !/fintrac|osfi|compliance|payment/.test(cat)) return ['threat', 'Threat', 'g5'];
+      if (/grant|non-dilutive|innovate/.test(blob)) return ['opp', 'Opportunity', 'g4'];
+      if (/mortgage|housing|broker/.test(cat)) return ['opp', 'Opportunity', 'g3'];
+      if (/fintech/.test(cat) && /venture|fund|capital|invest|raise/.test(blob)) return ['opp', 'Opportunity', 'g4'];
+      if (/venture|fundraising|angel round|series [a-d]/.test(blob) && !/fintrac|osfi|fcac|aml/.test(cat)) return ['opp', 'Opportunity', 'g3'];
+      if (/regulat|fintrac|osfi|csa|fcac|compliance|rpaa|payment|aml/.test(blob)) return ['reg', 'Regulatory', 'g2'];
+      var grads = ['g1', 'g3', 'g4', 'g5'];
+      return ['opp', 'Opportunity', grads[Math.abs(String(item.title || '').length) % grads.length]];
     }
     function card(item) {
       var hit = impactOf(item);
@@ -664,7 +678,8 @@
     }
     var empty = rows.length ? '' : '<div class="kick">The 8:00 and 11:00 Pacific sweeps fill this. Refresh pulls a fresh scrape.</div>';
     var heroHit = top ? impactOf(top) : null;
-    var hero = top ? '<div class="mcard news-hero"><div class="img ' + heroHit[2] + '"><span class="impact ' + heroHit[0] + '">' + heroHit[1] + '</span><div class="h">' + esc(top.title || '') + '</div></div><div style="padding:12px 16px 14px"><div class="quiet" style="padding:0 0 8px"><b>Why it matters to 4orm:</b> ' + esc(top.summary || '') + '</div><div class="cap"><button type="button" class="btn pri sm" data-news-act="post" data-news-title="' + esc(top.title || '') + '">Draft a LinkedIn post</button><button type="button" class="btn sm" data-news-act="letter" data-news-title="' + esc(top.title || '') + '">Add to investor newsletter</button><button type="button" class="btn sm" data-news-act="vc" data-news-title="' + esc(top.title || '') + '">Cite to a VC</button><button type="button" class="btn sm" data-news-save="' + esc(top.title || '') + '">Save to a Space</button><button type="button" class="btn sm" data-news-act="open" data-news-title="' + esc(top.title || '') + '" data-news-url="' + esc(top.url || '') + '">Open source</button></div></div></div>' : '';
+    var heroFace = top && top.image ? ' style="background-image:url(' + esc(top.image) + ');background-size:cover"' : '';
+    var hero = top ? '<div class="mcard news-hero"><div class="img ' + heroHit[2] + '"' + heroFace + '><span class="impact ' + heroHit[0] + '">' + heroHit[1] + '</span><div class="h">' + esc(top.title || '') + '</div></div><div style="padding:12px 16px 14px"><div class="quiet" style="padding:0 0 8px"><b>Why it matters to 4orm:</b> ' + esc(top.summary || '') + '</div><div class="cap"><button type="button" class="btn pri sm" data-news-act="post" data-news-title="' + esc(top.title || '') + '">Draft a LinkedIn post</button><button type="button" class="btn sm" data-news-act="letter" data-news-title="' + esc(top.title || '') + '">Add to investor newsletter</button><button type="button" class="btn sm" data-news-act="vc" data-news-title="' + esc(top.title || '') + '">Cite to a VC</button><button type="button" class="btn sm" data-news-save="' + esc(top.title || '') + '">Save to a Space</button><button type="button" class="btn sm" data-news-act="open" data-news-title="' + esc(top.title || '') + '" data-news-url="' + esc(top.url || '') + '">Open source</button></div></div></div>' : '';
     var brief = rest.slice(0, 5).map(function (item, i) { return '<div class="m"><span class="dot"></span>' + (i + 1) + '. ' + esc(item.title || '') + '</div>'; }).join('') || '<div class="quiet">The sweep fills the briefing.</div>';
     var chips = ['RPAA', 'safeguarding', 'consumer understanding', 'AML'].map(function (topic) {
       return '<button type="button" data-news-topic="' + esc(topic) + '">' + esc(topic) + '</button>';
@@ -1352,6 +1367,14 @@
     }
   };
 
+  if (typeof applyCeo === 'function') {
+    var priorCeo = applyCeo;
+    applyCeo = function (data) {
+      priorCeo(data);
+      if (!STATE.desk || STATE.desk === 'room') renderOpsDash();
+      if (STATE.desk === 'war') renderWar();
+    };
+  }
   var priorApply = applyBoard;
   applyBoard = function (data) {
     priorApply(data);
@@ -1368,8 +1391,9 @@
     if (v === 'news') loadNews();
     if (v === 'docs') setLib('library');
     if (v === 'drive') renderDocs();
-    if (v === 'contacts') loadInbox();
-    if (v === 'room') renderOpsDash();
+    if (v === 'contacts') { loadDeskFeeds(); loadInbox(); }
+    if (v === 'people') loadDeskFeeds();
+    if (v === 'room') { loadDeskFeeds(); renderOpsDash(); }
     if (v === 'war') { loadReach(); renderWar(); }
     if (v === 'notes') renderSticky();
     if (v === 'znotes') renderZNotes();
