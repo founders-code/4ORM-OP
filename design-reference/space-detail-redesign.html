@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Space - campaign workbench</title>
+<style>
+:root{color-scheme:light;--bg:#f4f6f9;--panel:#fff;--ink:#0b1220;--muted:#5b6472;--line:#e7e9ee;--blue:#1f5fff;--navy:#0b1f55;--gold:#c79a3a;--green:#1a9d5a;--amber:#e08a00;--red:#d7263d;--r:12px;--shadow:0 1px 2px rgba(16,24,40,.04),0 8px 22px rgba(16,24,40,.06);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);padding:16px 20px 44px}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.back{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 12px;font-size:12px;cursor:pointer;color:#33405a}
+.name{font-size:18px;font-weight:750}
+.ppl{font-size:11px;color:var(--muted)}
+.top .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 13px;font-size:12px;font-weight:600;color:#33405a;cursor:pointer}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.g{background:#0b1f55;border-color:#0b1f55;color:#fff}
+/* stage bar */
+.stagewrap{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:11px 16px;margin-bottom:14px}
+.stages{display:flex;align-items:center;gap:6px;flex:1}
+.stage{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.stage .dot{width:9px;height:9px;border-radius:50%;background:#d7deea}
+.stage.done .dot{background:var(--green)}.stage.now .dot{background:var(--blue);box-shadow:0 0 0 4px rgba(31,95,255,.15)}
+.stage.now{color:var(--navy);font-weight:700}
+.stage .arr{color:#c6cfdd;margin:0 2px}
+.ready{display:flex;align-items:center;gap:9px}
+.ring{--p:80;width:40px;height:40px;border-radius:50%;background:conic-gradient(var(--green) calc(var(--p)*1%),#e9edf4 0);display:flex;align-items:center;justify-content:center}
+.ring b{width:30px;height:30px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.ready .lab{font-size:10px;color:var(--muted);line-height:1.2}.ready .lab b{display:block;color:var(--ink);font-size:12px}
+/* grid 3 col */
+.cols{display:grid;grid-template-columns:300px 1fr 310px;gap:16px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.ch{display:flex;align-items:center;gap:8px;padding:12px 14px 8px}
+.ch .t{font-size:12.5px;font-weight:700}.ch .s{font-size:10.5px;color:var(--muted);margin-left:auto}
+.pad{padding:4px 14px 14px}
+/* who */
+.who .av{width:40px;height:40px;border-radius:50%;background:#dbe6ff;color:#2a4c9c;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+.whohead{display:flex;gap:11px;align-items:center;padding:12px 14px 6px}
+.whohead .nm{font-size:13.5px;font-weight:700}.whohead .ro{font-size:10.5px;color:var(--muted)}
+.intel{font-size:11.5px;color:#30384a;line-height:1.5;background:#f7f9fc;border:1px solid var(--line);border-left:2px solid var(--gold);border-radius:8px;padding:9px 10px;margin:6px 0}
+.intel .lab{display:block;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#7f6a38;margin-bottom:3px}
+.invest{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.invest .b{font-size:10px;border:1px solid #d7e0f6;background:#eef3ff;color:#3a5bbf;border-radius:999px;padding:2px 8px}
+.wholink{font-size:11px;color:var(--blue);font-weight:600;margin-top:8px;cursor:pointer;display:inline-block}
+.ships{display:flex;gap:8px;flex-wrap:wrap}
+.fthumb{width:62px}.fthumb .pg{height:68px;background:#eef2f8;border:1px solid var(--line);border-radius:6px;display:flex;align-items:flex-end;justify-content:center;font-size:8px;font-weight:800;color:#8aa0c8;padding:5px}
+.fthumb .nm{font-size:9px;color:var(--muted);margin-top:3px;line-height:1.15}
+.shipsum{font-size:10.5px;color:var(--muted);margin-top:8px}
+/* email */
+.email .fld{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:10px 0 4px}
+.email input,.email textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-size:12.5px;outline:none;font-family:inherit;resize:none}
+.email input:focus,.email textarea:focus{border-color:var(--blue)}
+.aibar{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0 2px}
+.aibtn{font-size:11px;border:1px solid #cdd8ef;background:linear-gradient(135deg,#eef3ff,#f6f9ff);color:#2a4c9c;border-radius:8px;padding:6px 10px;cursor:pointer;font-weight:600}
+.aibtn .sp{color:var(--blue)}
+.prev{display:flex;align-items:center;gap:8px;margin:10px 0 4px;font-size:10.5px;color:var(--muted)}
+.prev select{border:1px solid var(--line);border-radius:7px;padding:4px 8px;font-size:11px}
+.notes{min-height:120px}
+/* recipients mini crm */
+.rec{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line)}
+.rec:last-child{border-bottom:none}
+.rec .a{width:26px;height:26px;border-radius:50%;background:#e9eefb;color:#2a4c9c;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.rec .nm{font-size:12px;font-weight:600}.rec .st{font-size:10px;color:var(--muted)}
+.pill{font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:2px 8px;margin-left:auto}
+.pill.sent{background:#eef2fb;color:#3a5bbf}.pill.rep{background:#eaf7ef;color:#1a7a48}.pill.not{background:#f2f4f8;color:#8491a6}.pill.open{background:#fff5e6;color:#9a6a00}
+.addrec{font-size:11px;color:var(--blue);font-weight:600;cursor:pointer;margin-top:8px;display:inline-block}
+/* timeline */
+.tl{position:relative;padding-left:16px}
+.tl .ev{position:relative;padding:7px 0;font-size:11px;color:#30384a}
+.tl .ev::before{content:"";position:absolute;left:-16px;top:11px;width:7px;height:7px;border-radius:50%;background:var(--blue)}
+.tl .ev .d{font-size:9.5px;color:var(--muted)}
+.tl::before{content:"";position:absolute;left:-13px;top:4px;bottom:4px;width:1px;background:var(--line)}
+.follow{display:flex;align-items:center;gap:8px;background:#fff8ec;border:1px solid #f0e2c0;border-radius:9px;padding:9px 11px;font-size:11px;color:#7a5a12;margin-top:4px}
+.follow b{color:#5a420c}
+.checkrow{display:flex;align-items:center;gap:8px;font-size:11.5px;padding:5px 0;color:#30384a}
+.checkrow .c{width:15px;height:15px;border-radius:4px;background:var(--green);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center}
+.checkrow .c.off{background:#fff;border:1.5px solid #c5cdda}
+</style></head>
+<body>
+
+<div class="top">
+  <button class="back">&#8592; Back</button>
+  <div><div class="name">Joe Canavan</div><div class="ppl">Venture Capital &middot; angel &middot; 1 recipient</div></div>
+  <div class="right">
+    <button class="btn">Preview send</button>
+    <button class="btn">Move to Drive</button>
+    <button class="btn g">Move to Gmail &#9662;</button>
+  </div>
+</div>
+
+<div class="stagewrap">
+  <div class="stages">
+    <div class="stage done"><span class="dot"></span>Draft</div><span class="arr">&#8250;</span>
+    <div class="stage now"><span class="dot"></span>Ready</div><span class="arr">&#8250;</span>
+    <div class="stage"><span class="dot"></span>Sent</div><span class="arr">&#8250;</span>
+    <div class="stage"><span class="dot"></span>Replied</div><span class="arr">&#8250;</span>
+    <div class="stage"><span class="dot"></span>Meeting</div><span class="arr">&#8250;</span>
+    <div class="stage"><span class="dot"></span>Committed</div>
+  </div>
+  <div class="ready"><div class="ring" style="--p:80"><b>4/5</b></div><div class="lab"><b>Almost ready</b>add a recipient email</div></div>
+</div>
+
+<div class="cols">
+
+  <!-- LEFT: who + what ships -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card who">
+      <div class="whohead"><span class="av">JC</span><div><div class="nm">Joe Canavan</div><div class="ro">Former CEO, Assante Wealth</div></div></div>
+      <div class="pad">
+        <div class="intel"><span class="lab">Why connect</span>~80% of his angel book is fintech. Former CEO of Assante - lived the suitability/advice-evidence problem from the top.</div>
+        <div class="intel"><span class="lab">Hook to open with</span>CapIntel and Homewise both sit near our wedge - lead with the evidence gap he already funds.</div>
+        <div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:8px 0 4px">Has backed</div>
+        <div class="invest"><span class="b">Wealthsimple</span><span class="b">Borrowell</span><span class="b">CapIntel</span><span class="b">Homewise</span><span class="b">YouSet</span></div>
+        <span class="wholink">Open contact / pipeline card &#8250;</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><span class="t">What ships</span><span class="s">3 docs &middot; 1 link</span></div>
+      <div class="pad">
+        <div class="ships">
+          <div class="fthumb"><div class="pg">PPTX</div><div class="nm">Investor Deck v11</div></div>
+          <div class="fthumb"><div class="pg">PDF</div><div class="nm">Company Brief</div></div>
+          <div class="fthumb"><div class="pg">XLSX</div><div class="nm">PreSeed Summary</div></div>
+        </div>
+        <div class="shipsum">Drag docs here from Documents, or Add from library. Total ~2.4 MB.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: email + notes -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card email">
+      <div class="ch"><span class="t">Prepared email</span><span class="s">Chris Voss style</span></div>
+      <div class="pad">
+        <div class="aibar">
+          <span class="aibtn"><span class="sp">&#10022;</span> Draft with 4orm Intelligence</span>
+          <span class="aibtn"><span class="sp">&#10022;</span> Personalize per recipient</span>
+          <span class="aibtn">Tighten</span><span class="aibtn">Shorten</span>
+        </div>
+        <div class="fld">Subject</div>
+        <input value="A quick one on the evidence gap you funded around">
+        <div class="fld">Body</div>
+        <textarea rows="7">Joe,
+
+You've probably seen a dozen "compliance" pitches this month, so I'll be quick.
+
+You backed CapIntel and Homewise - companies that live right next to the thing I keep running into: regulated firms can sell the product, but can't prove the client understood it...</textarea>
+        <div class="prev">Preview as <select><option>Joe Canavan</option></select> &middot; tokens {{first_name}} {{company}} filled</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><span class="t">Notes</span><span class="s">working pad</span></div>
+      <div class="pad"><textarea class="notes" placeholder="Prep notes, objections to expect, talking points..."></textarea></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: recipients crm + activity + follow-up + readiness -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card">
+      <div class="ch"><span class="t">Recipients</span><span class="s">mini CRM</span></div>
+      <div class="pad">
+        <div class="rec"><span class="a">JC</span><div><div class="nm">Joe Canavan</div><div class="st">no email yet &middot; from Top 50</div></div><span class="pill not">Not sent</span></div>
+        <span class="addrec">+ Add from contacts</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><span class="t">Readiness</span><span class="s">4 / 5</span></div>
+      <div class="pad">
+        <div class="checkrow"><span class="c">&#10003;</span> Email written</div>
+        <div class="checkrow"><span class="c">&#10003;</span> Docs attached (3)</div>
+        <div class="checkrow"><span class="c">&#10003;</span> Intel captured</div>
+        <div class="checkrow"><span class="c">&#10003;</span> Drive folder bound</div>
+        <div class="checkrow"><span class="c off"></span> Recipient email added</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><span class="t">Activity</span></div>
+      <div class="pad">
+        <div class="tl">
+          <div class="ev">Space created from Top 50 list<span class="d">Oct 13</span></div>
+          <div class="ev">Email drafted (4orm Intelligence)<span class="d">Oct 13</span></div>
+          <div class="ev">3 docs attached from Documents<span class="d">Oct 13</span></div>
+        </div>
+        <div class="follow">&#9200; Follow-up set: <b>&nbsp;3 days after send</b> &middot; adds a War Room task</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body></html>

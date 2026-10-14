@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>News - intelligence briefing</title>
+<style>
+:root{color-scheme:light;--bg:#f4f6f9;--panel:#fff;--ink:#0b1220;--muted:#5b6472;--line:#e7e9ee;--blue:#1f5fff;--navy:#0b1f55;--green:#17b86a;--amber:#f0a020;--red:#f23a4d;--gold:#c79a3a;--r:14px;--shadow:0 1px 2px rgba(16,24,40,.05),0 10px 26px rgba(16,24,40,.07);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);padding:14px 20px 44px}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.top .t{font-size:18px;font-weight:750}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}.seg span{font-size:11.5px;padding:7px 12px;color:var(--muted);cursor:pointer}.seg span.on{background:var(--navy);color:#fff}
+.top .btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 12px;font-size:12px;font-weight:600;color:#33405a;cursor:pointer}
+.top .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.top .search{border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:12px;color:var(--muted);width:200px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.chip{font-size:10.5px;border:1px solid var(--line);border-radius:999px;padding:5px 11px;color:#44506a;cursor:pointer;background:#fff}
+.chip.on{background:#eef2fb;border-color:#cdd8ef;color:var(--navy);font-weight:600}
+.wrap{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+/* hero */
+.hero{overflow:hidden;margin-bottom:14px}
+.hero .img{height:180px;background:linear-gradient(135deg,#17326e,#2f6bff);position:relative;display:flex;align-items:flex-end;padding:14px 16px}
+.hero .kick{position:absolute;top:12px;left:14px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.25);border-radius:5px;padding:3px 8px}
+.hero .impact{position:absolute;top:12px;right:14px;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border-radius:5px;padding:3px 8px}
+.impact.opp{background:#d9f7e7;color:#0f7a48}.impact.threat{background:#ffe0e4;color:#c0273b}.impact.reg{background:#e6edff;color:#2a4c9c}
+.hero .h{color:#fff;font-size:21px;font-weight:800;line-height:1.2;text-shadow:0 1px 10px rgba(0,0,0,.4)}
+.hero .b{padding:13px 16px}
+.hero .take{font-size:13px;color:#30384a;line-height:1.5}
+.hero .take b{color:var(--navy)}
+.hero .src{font-size:10.5px;color:var(--muted);margin-top:6px}
+.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.act{font-size:11px;font-weight:650;border-radius:8px;padding:7px 12px;cursor:pointer;border:1px solid var(--line);background:#fff;color:#33405a}
+.act.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.act .mk{color:#2f6bff}.act.pri .mk{color:#bcd6ff}
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.story{overflow:hidden;cursor:pointer;transition:transform .1s,box-shadow .1s}
+.story:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(16,24,40,.1)}
+.story .img{height:92px;position:relative;display:flex;align-items:flex-start;padding:8px}
+.story .cat{font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.28);border-radius:4px;padding:2px 6px}
+.story .tag{position:absolute;top:8px;right:8px;font-size:8px;font-weight:800;text-transform:uppercase;border-radius:4px;padding:2px 6px}
+.story .b{padding:9px 11px 11px}
+.story .h{font-size:12.5px;font-weight:700;line-height:1.25}
+.story .tk{font-size:10.5px;color:var(--muted);line-height:1.35;margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.story .foot{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:9.5px;color:#aeb6c4}
+.story .save{margin-left:auto;color:var(--blue);font-weight:650;cursor:pointer;font-size:10px}
+.g1{background:linear-gradient(135deg,#1b4db8,#2f6bff)}.g2{background:linear-gradient(135deg,#6b3fa0,#a24cd6)}.g3{background:linear-gradient(135deg,#0f766e,#17b86a)}.g4{background:linear-gradient(135deg,#b5790f,#f0a020)}.g5{background:linear-gradient(135deg,#1b4db8,#17326e)}.g6{background:linear-gradient(135deg,#8a2433,#f23a4d)}
+/* right rail */
+.ch{display:flex;align-items:center;gap:8px;padding:12px 14px 8px}.ch .t{font-size:12.5px;font-weight:750}.ch .s{font-size:10px;color:var(--muted);margin-left:auto}
+.ch .mk{width:16px;height:16px;border-radius:4px;background:linear-gradient(135deg,#2f6bff,#0b2a7a);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.brief{padding:2px 14px 12px}
+.brief .r{display:flex;gap:9px;padding:8px 0;border-bottom:1px solid var(--line);font-size:11.5px;line-height:1.35}
+.brief .r:last-child{border-bottom:none}
+.brief .n{color:#3a5bbf;font-weight:800;flex:0 0 auto}
+.comp{padding:2px 14px 12px}
+.comprow{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--line);font-size:11.5px}
+.comprow:last-child{border-bottom:none}
+.comprow .d{width:7px;height:7px;border-radius:50%}
+.comprow .mt{margin-left:auto;font-size:10px;color:var(--muted)}
+.trend{padding:2px 14px 12px;display:flex;flex-wrap:wrap;gap:6px}
+.trend .tp{font-size:10.5px;border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:#44506a}
+.trend .tp b{color:var(--red)}
+</style></head><body>
+
+<div class="top">
+  <span class="t">News</span>
+  <div class="seg"><span class="on">Today</span><span>Last week</span><span>Last month</span></div>
+  <button class="btn">Refresh</button>
+  <div class="right"><input class="search" placeholder="Search news..."><span style="font-size:10px;letter-spacing:.1em;color:var(--muted)">8AM + 11AM SWEEPS</span></div>
+</div>
+<div class="chips"><span class="chip on">All</span><span class="chip">Compliance</span><span class="chip">AI</span><span class="chip">Counselling</span><span class="chip">Fintech &amp; reg</span><span class="chip">Mortgage</span><span class="chip">Fraud</span><span class="chip">Grants</span><span class="chip">Payments / FINTRAC</span><span class="chip">Competitors</span><span class="chip">Design partners</span><span class="chip">VC</span></div>
+
+<div class="wrap">
+  <div>
+    <!-- HERO -->
+    <div class="card hero">
+      <div class="img"><span class="kick">Top release today &middot; Fintech &amp; reg</span><span class="impact opp">Opportunity</span><div class="h">FINTRAC updates PSP registration guidance under the RPAA</div></div>
+      <div class="b">
+        <div class="take"><b>Why it matters to 4orm:</b> this is the exact evidence-and-suitability perimeter you build to. Use it in the regulator note and the investor deck - it validates the wedge the week you are raising.</div>
+        <div class="src">bankofcanada.ca &middot; 2026-10-13 &middot; credibility: primary source</div>
+        <div class="actions">
+          <span class="act pri"><span class="mk">&#10022;</span> Draft a LinkedIn post</span>
+          <span class="act"><span class="mk">&#10022;</span> Add to investor newsletter</span>
+          <span class="act">Cite to a VC</span>
+          <span class="act">Save to Regulator space</span>
+          <span class="act">Open source</span>
+        </div>
+      </div>
+    </div>
+    <!-- GRID -->
+    <div class="grid">
+      <div class="card story"><div class="img g2"><span class="cat">Competitors</span><span class="tag threat" style="background:#ffe0e4;color:#c0273b">Threat</span></div><div class="b"><div class="h">Vanta raises to expand compliance automation</div><div class="tk">Watch the positioning - their audit-trail story overlaps our evidence wedge.</div><div class="foot">vanta.com &middot; today<span class="save">Save &#8250;</span></div></div></div>
+      <div class="card story"><div class="img g3"><span class="cat">Mortgage</span><span class="tag opp" style="background:#d9f7e7;color:#0f7a48">Opportunity</span></div><div class="b"><div class="h">FSRA tightens broker suitability expectations</div><div class="tk">Direct tailwind for the brokerage pitch - name it on Century 21 calls.</div><div class="foot">fsrao.ca &middot; today<span class="save">Save &#8250;</span></div></div></div>
+      <div class="card story"><div class="img g4"><span class="cat">Grants</span><span class="tag opp" style="background:#d9f7e7;color:#0f7a48">Opportunity</span></div><div class="b"><div class="h">Alberta Innovates opens a product-stream intake</div><div class="tk">Non-dilutive runway - check eligibility this week.</div><div class="foot">albertainnovates.ca &middot; today<span class="save">Save &#8250;</span></div></div></div>
+      <div class="card story"><div class="img g1"><span class="cat">Fintech &amp; reg</span><span class="tag reg" style="background:#e6edff;color:#2a4c9c">Regulatory</span></div><div class="b"><div class="h">CSA consults on client-focused reforms</div><div class="tk">Recorded suitability is exactly what the reforms want proof of.</div><div class="foot">securities-administrators.ca<span class="save">Save &#8250;</span></div></div></div>
+      <div class="card story"><div class="img g5"><span class="cat">Fundraising / VC</span><span class="tag opp" style="background:#d9f7e7;color:#0f7a48">Opportunity</span></div><div class="b"><div class="h">Canadian pre-seed fintech activity up in Q4</div><div class="tk">Timing signal - push angel outreach now while it's warm.</div><div class="foot">betakit.com &middot; today<span class="save">Save &#8250;</span></div></div></div>
+      <div class="card story"><div class="img g6"><span class="cat">Fraud &amp; scams</span><span class="tag reg" style="background:#e6edff;color:#2a4c9c">Regulatory</span></div><div class="b"><div class="h">CAFC reports record investment-scam losses</div><div class="tk">Proof the consumer-understanding problem is real and costly.</div><div class="foot">antifraudcentre.ca<span class="save">Save &#8250;</span></div></div></div>
+    </div>
+  </div>
+
+  <!-- RIGHT RAIL -->
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div class="card">
+      <div class="ch"><span class="mk">4</span><span class="t">Your briefing</span><span class="s">5 things today</span></div>
+      <div class="brief">
+        <div class="r"><span class="n">1</span>FINTRAC RPAA guidance - your wedge, validated. Put it in the deck.</div>
+        <div class="r"><span class="n">2</span>Vanta raised - a competitor is circling the evidence story.</div>
+        <div class="r"><span class="n">3</span>FSRA raised broker suitability - name-drop on brokerage calls.</div>
+        <div class="r"><span class="n">4</span>Alberta Innovates intake open - free runway, act this week.</div>
+        <div class="r"><span class="n">5</span>Pre-seed fintech is heating up - send the angel emails now.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><span class="t">Competitor watch</span><span class="s">Drata / Vanta / Aveni</span></div>
+      <div class="comp">
+        <div class="comprow"><span class="d" style="background:var(--red)"></span>Vanta - raised, expanding<span class="mt">today</span></div>
+        <div class="comprow"><span class="d" style="background:var(--amber)"></span>Aveni (UK) - AI advice compliance<span class="mt">2d</span></div>
+        <div class="comprow"><span class="d" style="background:#c6cfdd"></span>Drata - quiet<span class="mt">7d</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><span class="t">Trending for 4orm</span></div>
+      <div class="trend"><span class="tp">RPAA <b>&#9650;</b></span><span class="tp">suitability evidence <b>&#9650;</b></span><span class="tp">broker conduct <b>&#9650;</b></span><span class="tp">AML automation</span><span class="tp">non-dilutive</span></div>
+    </div>
+  </div>
+</div>
+</body></html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>War Room - focus engine</title>
+<style>
+:root{color-scheme:light;--bg:#f4f6f9;--panel:#fff;--ink:#0b1220;--muted:#5b6472;--line:#e7e9ee;--blue:#1f5fff;--navy:#0b1f55;--dark:#0b1526;--green:#1a9d5a;--amber:#e08a00;--red:#d7263d;--gold:#d8b25a;--r:14px;--shadow:0 1px 2px rgba(16,24,40,.05),0 10px 26px rgba(16,24,40,.07);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);padding:14px 20px 44px}
+.stakes{display:flex;align-items:center;gap:0;background:linear-gradient(100deg,#0b1526,#13224a);color:#eaf1ff;border-radius:12px;padding:10px 16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.stakes .s{display:flex;flex-direction:column;padding:0 16px;border-right:1px solid #22345c}
+.stakes .s:last-child{border-right:none;margin-left:auto}
+.stakes .k{font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#8fa3c6}
+.stakes .v{font-size:14px;font-weight:750;margin-top:2px}
+.stakes .v.red{color:#ff8da3}.stakes .v.green{color:#7fe0ad}
+.prog{width:120px;height:7px;background:#1e2d4d;border-radius:999px;overflow:hidden;margin-top:6px}
+.prog i{display:block;height:100%;width:32%;background:linear-gradient(90deg,#3f7bff,#7fd0ff)}
+.streak{font-size:12px;font-weight:700;color:#ffd27f}
+.cap{display:flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 10px;box-shadow:var(--shadow);margin-bottom:12px}
+.cap input{flex:1;border:none;outline:none;font-size:13px;background:transparent}
+.cap button{background:var(--blue);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12.5px;font-weight:600;cursor:pointer}
+/* THE ONE THING hero */
+.hero{display:grid;grid-template-columns:1fr 280px;gap:0;background:linear-gradient(135deg,#0c1730,#0a1326);border:1px solid #1b2a4a;border-radius:16px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:14px;color:#eaf1ff}
+.hero .l{padding:18px 20px}
+.hero .lab{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#7f93bb;display:flex;align-items:center;gap:8px}
+.hero .lab .mk{width:18px;height:18px;border-radius:5px;background:linear-gradient(135deg,#2f6bff,#0b2a7a);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff}
+.hero .big{font-size:22px;font-weight:800;line-height:1.25;margin:9px 0 4px;letter-spacing:-.01em}
+.hero .why{font-size:12px;color:#a9bbe6;line-height:1.5}
+.hero .why b{color:#8fd0ff}
+.steps{display:flex;gap:8px;margin:13px 0 15px;flex-wrap:wrap}
+.step{font-size:11px;color:#cfe0ff;background:#11213d;border:1px solid #223457;border-radius:8px;padding:6px 10px}
+.step .n{color:#5f87e0;font-weight:800;margin-right:5px}
+.hero .acts{display:flex;gap:9px;flex-wrap:wrap}
+.b1{background:var(--blue);border:none;color:#fff;border-radius:10px;padding:11px 18px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px}
+.b2{background:#13213c;border:1px solid #27385c;color:#cfe0ff;border-radius:10px;padding:11px 15px;font-size:12.5px;font-weight:600;cursor:pointer}
+.hero .r{background:#0b1222;border-left:1px solid #1b2a4a;padding:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.timer{width:118px;height:118px;border-radius:50%;background:conic-gradient(#2f6bff 0deg,#1b2a4a 0deg);display:flex;align-items:center;justify-content:center;position:relative}
+.timer .in{width:98px;height:98px;border-radius:50%;background:#0b1222;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.timer .t{font-size:24px;font-weight:800;color:#eaf1ff;font-variant-numeric:tabular-nums}
+.timer .s{font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:#7f93bb}
+.focusmeta{font-size:10.5px;color:#8fa3c6;text-align:center;line-height:1.5}
+.focusmeta b{color:#cfe0ff}
+/* needle movers */
+.nm-wrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:13px 15px 15px;margin-bottom:14px}
+.nm-head{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.nm-head .t{font-size:13px;font-weight:750}.nm-head .s{font-size:10.5px;color:var(--muted)}
+.nm-head .prog2{margin-left:auto;font-size:11px;color:var(--muted)}.nm-head .prog2 b{color:var(--green)}
+.nm-row{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+.nm{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:7px;background:#fcfdfe;position:relative}
+.nm.one{border-color:#cdd8ef;background:linear-gradient(180deg,#f5f8ff,#fbfdff)}
+.nm .rank{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#3a5bbf;font-weight:800}
+.nm .tt{font-size:13px;font-weight:700;line-height:1.3}
+.nm .tag{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:#eef1f6;border-radius:5px;padding:2px 7px;align-self:flex-start}
+.nm .ck{position:absolute;top:11px;right:11px;width:20px;height:20px;border-radius:6px;border:1.6px solid #c5cdda;background:#fff}
+.nm.done .ck{background:var(--green);border-color:var(--green)}
+.nm.done .tt{text-decoration:line-through;color:var(--muted)}
+.nm.empty{border-style:dashed;align-items:center;justify-content:center;color:#9aa6ba;font-size:12px;font-weight:600;min-height:92px;cursor:pointer}
+/* coach + momentum row */
+.row2{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;margin-bottom:14px}
+.coach{background:#fffaf0;border:1px solid #f0e2c0;border-left:3px solid var(--gold);border-radius:var(--r);box-shadow:var(--shadow);padding:13px 15px}
+.coach .h{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:750;color:#7a5a12}
+.coach .h .mk{width:16px;height:16px;border-radius:4px;background:linear-gradient(135deg,#2f6bff,#0b2a7a);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.coach p{font-size:12px;color:#5a420c;line-height:1.5;margin:7px 0 0}
+.coach .do{font-size:11px;color:var(--blue);font-weight:650;margin-top:8px;display:inline-block;cursor:pointer}
+.mom{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:13px 15px}
+.mom .h{font-size:12px;font-weight:700;margin-bottom:9px}
+.week{display:flex;gap:8px;margin-bottom:10px}
+.day{flex:1;text-align:center}
+.day .d{width:30px;height:30px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.day.hit .d{background:#eaf7ef;color:var(--green);border:1.5px solid var(--green)}
+.day.miss .d{background:#f6f7f9;color:#aeb6c4;border:1.5px solid var(--line)}
+.day.today .d{background:var(--blue);color:#fff}
+.day .l{font-size:9px;color:var(--muted)}
+.budget{font-size:11px;color:#30384a;background:#f5f8ff;border:1px solid #e1e9fb;border-radius:9px;padding:8px 10px}
+.budget b{color:var(--navy)}
+/* small reach + board hint */
+.section{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:12px 15px;margin-bottom:14px}
+.sh{font-size:12.5px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.sh .s{font-size:10.5px;color:var(--muted);font-weight:400;margin-left:auto}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+.col{border:1px solid var(--line);border-radius:11px;padding:9px;min-height:70px}
+.col.t{background:#f3fbf6;border-color:#cdecd8}.col.w{background:#fffcf2;border-color:#f0e2b6}.col.l{background:#fdf4f3;border-color:#f3cfcc}
+.col h4{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:2px 4px 7px}
+.tk{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-bottom:6px;font-size:11px;display:flex;gap:7px;align-items:center}
+.tk .c{width:12px;height:12px;border-radius:4px;border:1.4px solid #c5cdda;flex:0 0 auto}
+/* end of day */
+.eod{background:linear-gradient(135deg,#0c1730,#0a1326);color:#eaf1ff;border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px}
+.eod .h{font-size:12px;font-weight:750;display:flex;align-items:center;gap:8px}
+.eod .h .time{margin-left:auto;font-size:10px;color:#8fa3c6}
+.eod .line{display:flex;align-items:center;gap:9px;font-size:12px;padding:7px 0;border-bottom:1px solid #1b2a4a}
+.eod .line:last-child{border-bottom:none}
+.eod .ic{width:18px}.eod .ic.ok{color:#7fe0ad}.eod .ic.no{color:#ff8da3}
+.eod .roll{font-size:11px;color:#8fd0ff;cursor:pointer}
+.eod .foot{font-size:11.5px;color:#cfe0ff;margin-top:9px}
+</style></head><body>
+
+<!-- STAKES -->
+<div class="stakes">
+  <div class="s"><span class="k">Cash</span><span class="v">$100</span></div>
+  <div class="s"><span class="k">Runway</span><span class="v red">~1 day</span></div>
+  <div class="s"><span class="k">Raise - F&amp;F</span><span class="v">$80K / $250K</span><span class="prog"><i></i></span></div>
+  <div class="s"><span class="k">To Oct 30</span><span class="v">17 days</span></div>
+  <div class="s"><span class="k">Focus streak</span><span class="streak">&#128293; 4 days</span></div>
+</div>
+
+<!-- CAPTURE -->
+<div class="cap"><input placeholder="Capture a task - or type an idea to park it, so you don't lose focus"><button>Add</button></div>
+
+<!-- THE ONE THING -->
+<div class="hero">
+  <div class="l">
+    <div class="lab"><span class="mk">4</span> 4orm Intelligence &middot; today's one move</div>
+    <div class="big">Confirm Don's next $25K and lock the date.</div>
+    <div class="why">Why: it's the nearest committed cheque and you're at <b>~1 day runway</b>. Cash first - this single move extends the company. P1.</div>
+    <div class="steps"><span class="step"><span class="n">1</span>Text Don to confirm</span><span class="step"><span class="n">2</span>Send the subscription agreement</span><span class="step"><span class="n">3</span>Lock a date this week</span></div>
+    <div class="acts"><button class="b1">&#9654; Start 25-min focus</button><button class="b2">Commit this as my one thing</button><button class="b2">Plan</button><button class="b2">Not now</button></div>
+  </div>
+  <div class="r">
+    <div class="timer" style="background:conic-gradient(#2f6bff 252deg,#1b2a4a 0deg)"><div class="in"><div class="t">17:20</div><div class="s">focus</div></div></div>
+    <div class="focusmeta"><b>2h 10m</b> deep work today<br><b>1 of 3</b> needle-movers done</div>
+  </div>
+</div>
+
+<!-- NEEDLE MOVERS -->
+<div class="nm-wrap">
+  <div class="nm-head"><span class="t">Today's 1-3 needle movers</span><span class="s">the only things that count as a win today</span><span class="prog2"><b>1</b> / 3 done</span></div>
+  <div class="nm-row">
+    <div class="nm one"><span class="rank">#1 the one thing</span><div class="tt">Confirm Don's next $25K</div><span class="tag">Raise &middot; P1</span><span class="ck"></span></div>
+    <div class="nm done"><span class="rank">#2</span><div class="tt">Call Kevin - book the $25K ask</div><span class="tag">Raise</span><span class="ck">&#10003;</span></div>
+    <div class="nm empty">+ set your 3rd needle mover<br><span style="font-size:10px;font-weight:400">pull from 4orm Intelligence or a task</span></div>
+  </div>
+</div>
+
+<!-- COACH + MOMENTUM -->
+<div class="row2">
+  <div class="coach">
+    <div class="h"><span class="mk">4</span> Coaching note</div>
+    <p>You've deferred "Reach out to regulators" for 5 days. It's P12 - the lowest priority and not a gate. Either drop it or give it one 10-minute block, but do not let it steal a cash-first morning. Your win today is Don, then Kevin. Protect that.</p>
+    <span class="do">Snooze regulators 1 week &#8250;</span>
+  </div>
+  <div class="mom">
+    <div class="h">Momentum</div>
+    <div class="week">
+      <div class="day hit"><div class="d">&#10003;</div><div class="l">Fri</div></div>
+      <div class="day hit"><div class="d">&#10003;</div><div class="l">Sat</div></div>
+      <div class="day miss"><div class="d">&middot;</div><div class="l">Sun</div></div>
+      <div class="day hit"><div class="d">&#10003;</div><div class="l">Mon</div></div>
+      <div class="day today"><div class="d">?</div><div class="l">Tue</div></div>
+    </div>
+    <div class="budget">Open focus time today: <b>3h 0m</b> &middot; queued deep work: <b>2 tasks (~2h)</b>. It fits - block 9-11am for Don + Kevin.</div>
+  </div>
+</div>
+
+<!-- REACH OUT (slim) -->
+<div class="section">
+  <div class="sh">Reach out <span class="s">people to contact - from Pipeline / Contacts</span></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:#44506a">
+    <span style="background:#eef2fb;border:1px solid #cdd8ef;border-radius:999px;padding:5px 11px">Don Hickling - call, confirm $25K</span>
+    <span style="background:#f7f9fc;border:1px solid var(--line);border-radius:999px;padding:5px 11px">Kevin Wong - call &#10003;</span>
+    <span style="background:#f7f9fc;border:1px solid var(--line);border-radius:999px;padding:5px 11px">Jeff Tindale - replied, book call</span>
+    <span style="background:#f7f9fc;border:1px solid var(--line);border-radius:999px;padding:5px 11px">Bruce - follow up</span>
+  </div>
+</div>
+
+<!-- EXECUTION BOARD (compact) -->
+<div class="section">
+  <div class="sh">Execution <span class="s" style="margin-left:auto;display:flex;align-items:center;gap:10px">everything else - drag, tag Today/Week/Later <span style="border:1px solid var(--line);border-radius:7px;padding:4px 10px;font-weight:600;color:#33405a;cursor:pointer;background:#fff">&#8599; Expand full-screen</span></span></div>
+  <div class="board">
+    <div class="col t"><h4>Today</h4><div class="tk"><span class="c"></span>Draft $25K / 5% email</div><div class="tk"><span class="c"></span>Hold non-essential spend</div></div>
+    <div class="col w"><h4>This week</h4><div class="tk"><span class="c"></span>Sign up OpenVC + angels</div><div class="tk"><span class="c"></span>Corp docs to James</div></div>
+    <div class="col l"><h4>Later</h4><div class="tk"><span class="c"></span>Michael Stevens - RPAA note</div></div>
+  </div>
+</div>
+
+<!-- END OF DAY -->
+<div class="eod">
+  <div class="h">End of day review <span class="time">appears at 6pm</span></div>
+  <div class="line"><span class="ic ok">&#10003;</span> Kevin call - booked the $25K ask</div>
+  <div class="line"><span class="ic no">&#10007;</span> Confirm Don $25K - not done <span class="roll" style="margin-left:auto">Roll to tomorrow &#8250;</span></div>
+  <div class="foot">You moved <b>1 of 2</b> needle-movers. Lock tomorrow's one thing now, keep the streak alive.</div>
+</div>
+
+</body></html>

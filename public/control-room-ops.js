@@ -421,13 +421,22 @@
     });
     var openH = Math.max(0, Math.round((15 * 60 - busyMin) / 60));
     var budget = (STATE.events || []).length ? (openH + 'h still open today between 6am and 9pm after what is already booked. Block the morning for the one thing.') : 'Open focus sits next to the calendar. Block the morning for the one thing.';
-    var steps = (one && one.steps && one.steps.length ? one.steps : ['Confirm the next cheque', 'Send the paper', 'Lock a date this week']).slice(0, 3);
-    cmd.innerHTML = '<div class="command" style="padding:10px 16px"><div class="cmdtop"><div class="vital"><span class="k">Cash</span><span class="v">$100</span></div><div class="vital"><span class="k">Runway</span><span class="v red">~1 day</span></div><div class="vital"><span class="k">Raise - F&amp;F</span><span class="v">$80K / $250K</span></div><div class="vital"><span class="k">To Oct 30</span><span class="v">' + daysToClose() + ' days</span></div></div></div>'
-      + '<div class="focus-hero"><div class="l"><div class="lab">4orm Intelligence - today\'s one move</div><div class="big">' + esc(one ? (one.title || one.name) : 'Pick the one thing') + '</div><div class="why">' + esc(one && one.why ? one.why : 'Tied to runway and the raise. Cash first.') + '</div><div class="steps">' + steps.map(function (step, i) { return '<span class="step">' + (i + 1) + ' ' + esc(typeof step === 'string' ? step : (step.title || step.text || 'Step')) + '</span>'; }).join('') + '</div><div class="cap" style="background:transparent;border:0;box-shadow:none;padding:0"><button class="btn pri sm" type="button" id="focusStart">Start 25-min focus</button><button class="btn sm" type="button" id="focusPlan">Plan</button><button class="btn sm" type="button" id="focusLater">Not now</button></div></div><div class="r"><div class="timer" style="--deg:' + deg + 'deg"><div class="in"><div class="t" id="focusClock">' + mm + ':' + ss + '</div><div class="s">focus</div></div></div><div class="quiet" style="color:#8fa3c6">' + doneN + ' of 3 needle-movers</div></div></div>'
+    var steps = (one && one.how && one.how.length ? one.how : (one && one.steps && one.steps.length ? one.steps : ['Confirm the next cheque', 'Send the paper', 'Lock a date this week'])).slice(0, 3);
+    var streak = 0;
+    for (var sd = 0; sd < 60; sd += 1) {
+      var sk = laDay(Date.now() - sd * 86400000);
+      if (needleLog[sk]) streak += 1;
+      else if (sd > 0) break;
+    }
+    var eodLines = moves.slice(0, 3).map(function (move, i) {
+      var on = !!(needleOn.ids && needleOn.ids[String(move.id || i)]);
+      return '<div class="line"><span class="ic ' + (on ? 'ok' : 'no') + '">' + (on ? '\u2713' : '\u2717') + '</span>' + esc(moveLabel(move)) + (on ? '' : ' - not done') + '</div>';
+    }).join('');
+    cmd.innerHTML = '<div class="command" style="padding:10px 16px"><div class="cmdtop"><div class="vital"><span class="k">Cash</span><span class="v">$100</span></div><div class="vital"><span class="k">Runway</span><span class="v red">~1 day</span></div><div class="vital"><span class="k">Raise - F&amp;F</span><span class="v">$80K / $250K</span></div><div class="vital"><span class="k">To Oct 30</span><span class="v">' + daysToClose() + ' days</span></div><div class="vital" style="margin-left:auto;text-align:right"><span class="k">Focus streak</span><span class="v streak">' + (streak ? '\ud83d\udd25 ' + streak + ' day' + (streak === 1 ? '' : 's') : 'Start today') + '</span></div></div></div>'
+      + '<div class="lb-add capbar"><input id="opsAdd" type="text" placeholder="Capture a task - or type an idea to park it, so you don\'t lose focus" style="flex:1"/><button class="btn pri sm" id="opsAddBtn" type="button">Add</button></div>'
+      + '<div class="focus-hero"><div class="l"><div class="lab">4orm Intelligence - today\'s one move</div><div class="big">' + esc(one ? moveLabel(one) : 'Pick the one thing') + '</div><div class="why">' + esc(one && (one.whyNow || one.why) ? 'Why: ' + (one.whyNow || one.why) : 'Tied to runway and the raise. Cash first.') + '</div><div class="steps">' + steps.map(function (step, i) { return '<span class="step">' + (i + 1) + ' ' + esc(typeof step === 'string' ? step : (step.title || step.text || 'Step')) + '</span>'; }).join('') + '</div><div class="cap" style="background:transparent;border:0;box-shadow:none;padding:0"><button class="btn pri sm" type="button" id="focusStart">\u25b6 Start 25-min focus</button><button class="btn sm" type="button" id="focusCommit">Commit this as my one thing</button><button class="btn sm" type="button" id="focusPlan">Plan</button><button class="btn sm" type="button" id="focusLater">Not now</button></div></div><div class="r"><div class="timer" style="--deg:' + deg + 'deg"><div class="in"><div class="t" id="focusClock">' + mm + ':' + ss + '</div><div class="s">focus</div></div></div><div class="quiet" style="color:#8fa3c6"><b style="color:#eaf1ff">' + doneN + ' of 3</b> needle-movers done</div></div></div>'
       + '<div class="nm-wrap"><div class="nm-head"><span>Today\'s 1-3 needle movers</span><span class="s">the only things that count as a win today</span><span class="prog2"><b>' + doneN + '</b> / 3 done</span></div><div class="nm-row">' + slots + '</div></div>'
       + '<div class="ctrl" style="grid-template-columns:1.3fr 1fr"><div class="coach"><b>Coaching note</b><p>Regulators can wait. Do not let them take a cash-first morning. Drop them or give them 10 minutes, then come back to the one thing.</p></div><div class="mcard" style="padding:12px"><b>Momentum</b><div class="week">' + week + '</div><div class="budget">' + esc(budget) + '</div></div></div>'
-      + (evening ? '<div class="eod"><b>End of day review</b><div class="quiet" style="color:#cfe0ff">' + doneN + ' of 3 needle-movers checked. Lock tomorrow\'s one thing before you close the desk.</div></div>' : '')
-      + '<div class="lb-add"><input id="opsAdd" type="text" placeholder="Capture a task, or park a stray idea" style="flex:1"/><button class="btn pri sm" id="opsAddBtn" type="button">Add</button></div>'
       + '<div class="card" id="nextUp" style="padding:8px 12px;margin-top:8px;display:flex;align-items:center;gap:12px"><div style="flex:1">' + (next.length ? next.map(function (ev) { return '<div data-count="' + ev.start + '">' + esc(ev.title || 'Event') + ' <span class="kick">' + soon(ev.start) + '</span></div>'; }).join('') : '<div class="kick">No more events today.</div>') + '</div><button class="btn sm" id="findSlot" type="button">Find a 30-min slot</button></div>'
       + '<div class="card" style="padding:12px;margin-top:10px"><h3>Reach out</h3><div class="news-chips">' + kinds.map(function (pair) { var n = people.filter(function (person) { return pair[0] === 'all' || person.kind === pair[0]; }).length; return '<button type="button" data-reach-kind="' + pair[0] + '"' + (filter === pair[0] ? ' class="on"' : '') + '>' + pair[1] + ' ' + n + '</button>'; }).join('') + '</div><div class="reach-grid">' + (shown.length ? shown.map(function (person) { var bits = String(person.name || '?').split(/\s+/).slice(0, 2).map(function (part) { return part.slice(0, 1); }).join('').toUpperCase(); return '<div class="reach-card"><div class="av">' + esc(bits) + '</div><b>' + esc(person.name) + '</b><div class="kick">' + esc(person.company || '') + '</div><span class="kick">' + esc(reachNames[person.kind] || 'Corporate') + '</span><label class="cap"><input type="checkbox" data-reach-done="' + esc(person.id) + '"' + (person.done ? ' checked' : '') + '/>' + esc(person.nextAction || 'Reach out') + '</label><button type="button" data-reach-task="' + esc(person.id) + '">+ task</button></div>'; }).join('') : '<div class="kick">Add people from Pipeline or Contacts.</div>') + '</div></div>';
     var cols = [
@@ -435,7 +444,7 @@
       ['week', 'This week'],
       ['later', 'Later']
     ];
-    board.innerHTML = '<div class="cap"><button class="btn sm" type="button" id="execFull">Expand</button></div><div class="exec">' + cols.map(function (col) {
+    board.innerHTML = '<div class="execcard"><div class="sh">Execution <span class="s">everything else - drag, tag Today/Week/Later <button class="xfull" type="button" id="execFull">\u2197 Expand full-screen</button></span></div><div class="exec">' + cols.map(function (col) {
       var items = liveItems().filter(function (it) {
         var b = bucket(it);
         if (it.status === 'done') return false;
@@ -446,7 +455,8 @@
       return '<div class="exec-col ' + col[0] + '" data-col="' + col[0] + '"><div class="sec-h"><h3>' + col[1] + '</h3><button class="addmini" type="button" data-add-col="' + col[0] + '">+</button></div>' + items.map(function (it) {
         return '<div class="exec-card" draggable="true" data-item="' + esc(it.id) + '"><input type="checkbox" data-done="' + esc(it.id) + '" aria-label="Done"/><button type="button" data-edit="' + esc(it.id) + '" style="flex:1;text-align:left;border:0;background:transparent;font:inherit;cursor:pointer"><b>' + esc(it.title) + '</b><div class="kick">' + esc(areaLabel(it.area, it)) + '</div></button>' + bucketPicks(it) + (it._err ? '<div class="soft-err">' + esc(it._err) + '</div>' : '') + '<button type="button" class="ghost-x" data-del="' + esc(it.id) + '" aria-label="Delete">x</button></div>';
       }).join('') + '</div>';
-    }).join('') + '</div>';
+    }).join('') + '</div></div>'
+      + (evening && moves.length ? '<div class="eod"><div class="h">End of day review <span class="time">' + doneN + ' of ' + Math.min(3, moves.length) + ' done</span></div>' + eodLines + '<div class="foot">You moved <b>' + doneN + ' of ' + Math.min(3, moves.length) + '</b> needle-movers. Lock tomorrow\'s one thing now, keep the streak alive.</div></div>' : '');
     bindWar();
   }
 
@@ -461,7 +471,20 @@
     var full = document.getElementById('execFull');
     if (full) full.onclick = function () {
       document.body.classList.toggle('exec-full');
-      full.textContent = document.body.classList.contains('exec-full') ? 'Close' : 'Expand';
+      full.textContent = document.body.classList.contains('exec-full') ? 'Close full-screen' : '\u2197 Expand full-screen';
+    };
+    var commit = document.getElementById('focusCommit');
+    if (commit) commit.onclick = function () {
+      var move = ((STATE.ceo && STATE.ceo.moves) || [])[0];
+      if (!move || !moveLabel(move)) return;
+      var map = {};
+      try { map = JSON.parse(localStorage.getItem('cr_needle') || '{}'); } catch (err) { map = {}; }
+      if (map.day !== laDay(Date.now())) map = { day: laDay(Date.now()), ids: {} };
+      map.one = String(move.id || '');
+      try { localStorage.setItem('cr_needle', JSON.stringify(map)); } catch (err) {}
+      saveItem(moveLabel(move), 'today');
+      commit.textContent = 'Committed for today';
+      commit.disabled = true;
     };
     var focus = document.getElementById('focusStart');
     if (focus) focus.onclick = function () {
@@ -785,50 +808,94 @@
     return names;
   }
 
+  function docSets() {
+    var base = [['investor', 'Investor data room', ['VC', 'Angel', 'Friends & Fam']], ['regulator', 'Regulator pack', ['Regulator', 'Government']], ['ff', 'F&F bundle', ['Friends & Fam']]];
+    var mine = [];
+    try { mine = JSON.parse(localStorage.getItem('cr_doc_sets') || '[]'); } catch (err) { mine = []; }
+    return base.concat((mine || []).filter(function (s) { return s && s.id; }).map(function (s) { return [s.id, s.name || 'Untitled set', [], s.ids || []]; }));
+  }
+
+  function inSet(set, d) {
+    if (set[3]) return set[3].indexOf(d.id) >= 0;
+    return set[2].indexOf(d.category) >= 0;
+  }
+
   function libraryMarkup(docs, folders) {
-    var sets = [['investor', 'Investor data room', ['VC', 'Angel', 'Friends & Fam']], ['regulator', 'Regulator pack', ['Regulator', 'Government']], ['ff', 'F&F bundle', ['Friends & Fam']]];
+    var sets = docSets();
     var active = STATE.docFolder && folders.indexOf(STATE.docFolder) >= 0 ? STATE.docFolder : (folders[0] || '');
     var types = [['all', 'All'], ['pdf', 'PDF'], ['slides', 'Slides'], ['sheets', 'Sheets'], ['docs', 'Docs'], ['images', 'Images']];
-    var wheres = [['all', 'All'], ['space', 'In a space'], ['drive', 'From Drive'], ['upload', 'Uploaded']];
+    var wheres = [['space', 'In a space'], ['drive', 'From Drive'], ['upload', 'Uploaded']];
+    var q = String(STATE.docQ || '').toLowerCase();
     var tree = folders.map(function (c) {
       var n = docs.filter(function (d) { return d.category === c; }).length;
-      var on = c === active && !STATE.docSet ? ' on' : '';
-      return '<div class="lib-card' + on + '" data-cat="' + esc(c) + '" data-pick-folder="' + esc(c) + '"><input data-lib-rename="' + esc(c) + '" value="' + esc(c) + '" aria-label="Folder name"><span class="kick">' + n + '</span><button type="button" class="ghost-x" data-lib-folder-x="' + esc(c) + '" aria-label="Delete folder">x</button></div>';
+      var on = c === active && !STATE.docSet;
+      return '<div class="row lib-card' + (on ? ' on' : '') + '" data-cat="' + esc(c) + '" data-pick-folder="' + esc(c) + '"><span class="chev">' + (on ? '\u25be' : '\u25b8') + '</span><input data-lib-rename="' + esc(c) + '" value="' + esc(c) + '" aria-label="Folder name"><span class="ct">' + n + '</span><button type="button" class="ghost-x" data-lib-folder-x="' + esc(c) + '" aria-label="Delete folder">x</button></div>';
     }).join('');
     var setHtml = sets.map(function (s) {
-      return '<button type="button" class="row' + (STATE.docSet === s[0] ? ' on' : '') + '" data-doc-set="' + s[0] + '">' + esc(s[1]) + '</button>';
+      var n = docs.filter(function (d) { return inSet(s, d); }).length;
+      return '<div class="row' + (STATE.docSet === s[0] ? ' on' : '') + '" data-doc-set="' + esc(s[0]) + '"><span class="pin">\u2605</span>' + esc(s[1]) + '<span class="ct">' + n + '</span></div>';
     }).join('');
-    var chips = '<div class="doc-chips">' + types.map(function (t) { return '<button type="button" data-doc-type="' + t[0] + '"' + ((STATE.docType || 'all') === t[0] ? ' class="on"' : '') + '>' + t[1] + '</button>'; }).join('') + '</div><div class="doc-chips">' + wheres.map(function (t) { return '<button type="button" data-doc-where="' + t[0] + '"' + ((STATE.docWhere || 'all') === t[0] ? ' class="on"' : '') + '>' + t[1] + '</button>'; }).join('') + '</div>';
+    var chips = '<div class="chips">' + types.map(function (t) { return '<button type="button" class="fchip' + ((STATE.docType || 'all') === t[0] ? ' on' : '') + '" data-doc-type="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div><div class="chips">' + wheres.map(function (t) { return '<button type="button" class="fchip' + (STATE.docWhere === t[0] ? ' on' : '') + '" data-doc-where="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>';
+    var title = active;
     var pool = docs.filter(function (d) {
+      if (q) return String(d.name || '').toLowerCase().indexOf(q) >= 0 || String(d.category || '').toLowerCase().indexOf(q) >= 0;
       if (STATE.docSet) {
         var set = sets.filter(function (s) { return s[0] === STATE.docSet; })[0];
-        if (set && set[2].indexOf(d.category) < 0) return false;
+        if (set) { title = set[1]; if (!inSet(set, d)) return false; }
       } else if (d.category !== active) return false;
       if ((STATE.docType || 'all') !== 'all' && docKind(d) !== STATE.docType) return false;
       var used = docUsed(d);
       var where = used.length ? 'space' : (d.driveFileId ? 'drive' : 'upload');
-      if ((STATE.docWhere || 'all') !== 'all' && where !== STATE.docWhere) return false;
+      if (STATE.docWhere && STATE.docWhere !== 'all' && where !== STATE.docWhere) return false;
       return true;
     });
+    if (q) title = 'Search: ' + STATE.docQ;
     var picked = STATE.docPick || {};
     var tiles = pool.map(function (d) {
       var image = (d.mime || '').indexOf('image/') === 0;
       var kind = ((d.name || '').split('.').pop() || 'file').slice(0, 4).toUpperCase();
-      var pdf = (d.mime || '') === 'application/pdf' || /\.pdf$/i.test(d.name || '');
+      var k = docKind(d);
+      var cls = k === 'pdf' ? ' pdf' : k === 'sheets' ? ' xls' : k === 'images' ? ' img' : '';
       var src = image ? ('/api/documents/file?id=' + encodeURIComponent(d.id)) : (d.driveFileId ? ('https://drive.google.com/thumbnail?id=' + encodeURIComponent(d.driveFileId) + '&sz=w400') : '');
-      var page = (!src && pdf) ? '<span class="page-shot"><iframe title="" src="/api/documents/file?id=' + encodeURIComponent(d.id) + '#page=1"></iframe></span>' : '';
-      var face = (src ? '<img alt="" src="' + src + '" onload="var k=this.parentNode.querySelector(\'.dk\');if(k)k.hidden=true" onerror="this.hidden=true"/>' : '') + page + '<span class="dk"' + (src || page ? ' hidden' : '') + '>' + esc(kind) + '</span>';
+      var sheet = image ? '' : '<div class="sheet"><div class="ln t"></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div>';
+      var face = (src ? '<img alt="" src="' + src + '" onload="var k=this.parentNode.querySelector(\'.sheet\');if(k)k.hidden=true" onerror="this.hidden=true"/>' : '') + sheet;
       var used = docUsed(d);
-      var on = picked[d.id] ? ' on' : '';
-      return '<div class="doc-tile' + on + ' mini-wrap" draggable="true" data-lib-inline="' + esc(d.id) + '"><input class="pick" type="checkbox" data-lib-pick="' + esc(d.id) + '"' + (picked[d.id] ? ' checked' : '') + '><button type="button" class="ghost-x" data-lib-x="' + esc(d.id) + '" aria-label="Delete file">x</button><button type="button" class="mini">' + face + '<em>' + esc(d.name || 'File') + '</em></button><div class="kick"><span class="doc-sync ' + (d.driveFileId ? 'on' : 'off') + '"></span> ' + esc(used.length ? used.slice(0, 2).join(', ') : 'not in a space') + (d._err ? ' - ' + esc(d._err) : '') + '</div></div>';
+      var on = picked[d.id] ? ' sel' : '';
+      return '<div class="doc' + on + ' mini-wrap" draggable="true" data-lib-inline="' + esc(d.id) + '"><input class="ck pick" type="checkbox" data-lib-pick="' + esc(d.id) + '"' + (picked[d.id] ? ' checked' : '') + ' aria-label="Select"><span class="sync ' + (d.driveFileId ? 'ok' : 'local') + '"></span><button type="button" class="ghost-x" data-lib-x="' + esc(d.id) + '" aria-label="Delete file">x</button><button type="button" class="mini"><div class="page' + cls + '">' + face + '<span class="typ">' + esc(kind) + '</span></div><div class="m"><div class="nm">' + esc(d.name || 'File') + '</div><span class="usein' + (used.length ? '' : ' none') + '">' + esc(used.length ? 'in: ' + used.slice(0, 2).join(', ') : 'not in a space') + '</span>' + (d._err ? '<span class="usein none">' + esc(d._err) + '</span>' : '') + '</div></button></div>';
     }).join('');
     var ids = Object.keys(picked);
-    var spaceOpts = (STATE.packages || []).map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.name) + '</option>'; }).join('');
-    var moveOpts = folders.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('');
-    var bar = ids.length ? '<div class="doc-bar"><span>' + ids.length + ' selected</span><select id="libToSpace" aria-label="Space">' + spaceOpts + '</select><button type="button" class="btn sm" id="libAddSpace">Add to Space</button><button type="button" class="btn sm" id="libBuildSpace">Build a Space</button><button type="button" class="btn sm" id="libPushSel">Push to Drive</button><select id="libMoveTo" aria-label="Move to folder">' + moveOpts + '</select><button type="button" class="btn sm" id="libMoveSel">Move</button><button type="button" class="btn sm" id="libDelSel">Delete</button></div>' : '';
-    var rail = (STATE.packages || []).slice(0, 16).map(function (p) { return '<div class="drop" data-space-drop="' + esc(p.id) + '">' + esc(p.name) + '</div>'; }).join('') || '<div class="kick">No spaces yet</div>';
-    var recent = docs.slice(-5).reverse().map(function (d) { return '<div class="kick">' + esc(d.name || 'File') + '</div>'; }).join('');
-    return '<div class="lb-add" id="libDrop">drag documents here, or <label class="btn sm">choose files<input id="libUpload" class="file-in" type="file" multiple></label></div><div class="doc-cmd"><aside class="doc-side"><div class="kick">Folders</div><div class="doc-tree">' + tree + '</div><div class="cap" style="margin-top:8px"><input id="libFolderName" type="text" placeholder="New folder name" aria-label="New folder name"><button class="btn sm" id="libAddFolder" type="button">Add a folder</button></div><div class="kick" style="margin-top:10px">Sets</div>' + setHtml + chips + '<div class="cap" style="margin-top:8px"><span class="kick">Pull a Drive file into this folder</span><select id="libCat" aria-label="Folder">' + folders.map(function (c) { return '<option' + (c === active ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select><select id="libFile" aria-label="Drive file"><option value="">Choose a Drive file</option>' + flatFiles(STATE.drives || [], []).map(function (file) { return '<option value="' + esc(file.id) + '" data-url="' + esc(file.url || '') + '" data-name="' + esc(file.name || '') + '">' + esc(file.name || 'File') + '</option>'; }).join('') + '</select><button class="btn sm" id="libPull" type="button">Pull into this folder</button><button class="btn sm" id="libPush" type="button">Push this folder to Drive</button></div></aside><div><div class="sec-h"><h3>' + esc(STATE.docSet ? (sets.filter(function (s) { return s[0] === STATE.docSet; })[0] || ['', active])[1] : active) + '</h3></div>' + bar + '<div class="doc-grid">' + (tiles || '<div class="kick">No files in this folder yet.</div>') + '</div><button type="button" class="btn sm" id="libInc" style="margin-top:10px">Top incumbents</button></div><aside class="doc-rail"><div class="kick">Spaces</div>' + rail + '<button type="button" class="btn sm" id="libBuildSpace2" style="margin-top:8px">Build a new Space from the selection</button><div class="kick" style="margin-top:10px">Recently added</div>' + recent + '</aside></div>';
+    var menu = STATE.docMenu === 'space' ? '<div class="dmenu">' + ((STATE.packages || []).map(function (p) { return '<button type="button" data-lib-to-space="' + esc(p.id) + '">' + esc(p.name) + '</button>'; }).join('') || '<div class="hintbar">No spaces yet.</div>') + '</div>' : STATE.docMenu === 'move' ? '<div class="dmenu">' + folders.map(function (c) { return '<button type="button" data-lib-move-to="' + esc(c) + '">' + esc(c) + '</button>'; }).join('') + '</div>' : '';
+    var bar = ids.length ? '<div class="selbar"><b>' + ids.length + ' selected</b><div class="sp"><button type="button" class="act go" id="libAddSpace">Add to Space \u25be</button><button type="button" class="act" id="libBuildSpace">Build a Space</button><button type="button" class="act" id="libPushSel">Push to Drive</button><button type="button" class="act" id="libMoveSel">Move \u25be</button><button type="button" class="act" id="libDelSel">Delete</button></div>' + menu + '</div>' : '';
+    var rail = (STATE.packages || []).slice(0, 12).map(function (p) {
+      var ini = String(p.name || 'S').replace(/[^A-Za-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean).slice(0, 2).map(function (w) { return w[0]; }).join('').toUpperCase();
+      var n = (p.docs || []).length;
+      return '<div class="spacedrop" data-space-drop="' + esc(p.id) + '"><div class="d">' + esc(ini) + '</div><div><div class="nm">' + esc(p.name) + '</div><div class="sub">' + n + ' doc' + (n === 1 ? '' : 's') + ' \u00b7 drop to add</div></div></div>';
+    }).join('');
+    var recent = docs.slice(-5).reverse().map(function (d) { var k = docKind(d); var ic = k === 'pdf' ? 'PDF' : k === 'sheets' ? 'XLS' : k === 'slides' ? 'PPT' : k === 'images' ? 'IMG' : 'DOC'; return '<div class="ri"><span class="ic">' + ic + '</span>' + esc(d.name || 'File') + '</div>'; }).join('') || '<div class="hintbar" style="padding:4px 0">Nothing added yet.</div>';
+    var view = STATE.docView === 'list' ? 'list' : 'grid';
+    return '<div class="dcx"><div class="head"><span class="t">Documents</span><input class="search" id="libSearch" type="search" placeholder="Search all documents - name, type, or what\'s inside" value="' + esc(STATE.docQ || '') + '"><div class="seg"><button type="button" data-doc-view="grid"' + (view === 'grid' ? ' class="on"' : '') + '>Grid</button><button type="button" data-doc-view="list"' + (view === 'list' ? ' class="on"' : '') + '>List</button></div><button type="button" class="btn" id="libAddFolder">+ Folder</button><button type="button" class="btn pri" id="libNewSet">New set</button></div><div class="cap">Your staging library and launchpad: <button type="button" class="lk" id="libPullOpen">pull from Drive</button>, <label class="lk">upload<input id="libUpload" class="file-in" type="file" multiple></label>, preview inline, select, and drop straight into a Space to build a send-bundle.</div><div class="wrap"><div class="card side"><div class="sh">Folders <button type="button" class="add" id="libAddFolder2">+ new</button></div><div class="doc-tree">' + tree + '</div><div class="divide"></div><div class="sh">Sets <button type="button" class="add" id="libNewSet2">+ new</button></div><div class="set">' + setHtml + '</div><div class="divide"></div><div class="sh">Filter by type</div>' + chips + '</div><div id="libDrop">' + bar + '<div class="grid doc-grid' + (view === 'list' ? ' list' : '') + '">' + (tiles || '<div class="empty">No files in ' + esc(title) + ' yet. Drop files here, or pull them from Drive.</div>') + '</div></div><div class="card rr"><div class="sh">Drag docs into a Space</div><div class="spacelist">' + rail + '<div class="spacedrop build" id="libBuildSpace2"><div class="d">+</div><div><div class="nm">Build a new Space</div><div class="sub">from the selection</div></div></div></div><div class="divide"></div><div class="sh">Recently added</div><div class="recent">' + recent + '</div><div class="hintbar">Green dot = synced to Drive \u00b7 amber = local only. <button type="button" class="lk" id="libInc">Top incumbents</button></div></div></div></div>';
+  }
+
+  function openPullDrive(active, folders) {
+    var modal = document.getElementById('modal');
+    var box = document.getElementById('modalCard');
+    if (!modal || !box) return;
+    box.classList.remove('wide');
+    box.innerHTML = '<div class="mhd"><div style="font-weight:700">Pull from Drive</div><button class="x" id="mClose" type="button">x</button></div><div class="mbd dcx-pull"><label>Folder<select id="libCat" aria-label="Folder">' + folders.map(function (c) { return '<option' + (c === active ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></label><label>Drive file<select id="libFile" aria-label="Drive file"><option value="">Choose a Drive file</option>' + flatFiles(STATE.drives || [], []).map(function (file) { return '<option value="' + esc(file.id) + '" data-url="' + esc(file.url || '') + '" data-name="' + esc(file.name || '') + '">' + esc(file.name || 'File') + '</option>'; }).join('') + '</select></label><div class="cap"><button class="btn sm pri" id="libPull" type="button">Pull into this folder</button><button class="btn sm" id="libPush" type="button">Push this folder to Drive</button></div></div>';
+    modal.classList.add('open');
+    modal.hidden = false;
+    document.getElementById('mClose').onclick = function () { if (typeof closeModal === 'function') closeModal(); };
+    document.getElementById('libPull').onclick = function () {
+      var sel = document.getElementById('libFile');
+      var opt = sel.options[sel.selectedIndex];
+      if (!opt || !opt.value) return;
+      authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'pull', category: document.getElementById('libCat').value, name: opt.getAttribute('data-name'), url: opt.getAttribute('data-url'), driveFileId: opt.value }) }).then(function () { if (typeof closeModal === 'function') closeModal(); loadLibrary(); }).catch(function () {});
+    };
+    document.getElementById('libPush').onclick = function () { pushFolder(document.getElementById('libCat').value); };
+  }
+
+  function pushFolder(cat) {
+    authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'push', category: cat }) }).then(function (r) { return r.json(); }).then(function (d) { if (d && d.error) window.alert(d.error); }).catch(function () {});
   }
 
   function renderLibrary() {
@@ -846,19 +913,34 @@
       STATE.docSpacesAsked = true;
       loadPackages().then(function () { renderLibrary(); });
     }
-    var pull = document.getElementById('libPull');
-    if (pull) pull.onclick = function () {
-      var sel = document.getElementById('libFile');
-      var opt = sel.options[sel.selectedIndex];
-      if (!opt || !opt.value) return;
-      authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'pull', category: document.getElementById('libCat').value, name: opt.getAttribute('data-name'), url: opt.getAttribute('data-url'), driveFileId: opt.value }) }).then(loadLibrary).catch(function () {});
+    var activeFolder = STATE.docFolder && folders.indexOf(STATE.docFolder) >= 0 ? STATE.docFolder : (folders[0] || 'Dev');
+    var pullOpen = document.getElementById('libPullOpen');
+    if (pullOpen) pullOpen.onclick = function () { openPullDrive(activeFolder, folders); };
+    var search = document.getElementById('libSearch');
+    if (search) search.oninput = function () {
+      STATE.docQ = search.value;
+      var pos = search.selectionStart;
+      renderLibrary();
+      var again = document.getElementById('libSearch');
+      if (again) { again.focus(); try { again.setSelectionRange(pos, pos); } catch (err) {} }
     };
-    var push = document.getElementById('libPush');
-    if (push) push.onclick = function () {
-      authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'push', category: document.getElementById('libCat').value }) }).then(function (r) { return r.json(); }).then(function (d) { if (d && d.error) window.alert(d.error); }).catch(function () {});
-    };
+    el.querySelectorAll('[data-doc-view]').forEach(function (btn) {
+      btn.onclick = function () { STATE.docView = btn.getAttribute('data-doc-view'); renderLibrary(); };
+    });
+    function newSet() {
+      var mine = [];
+      try { mine = JSON.parse(localStorage.getItem('cr_doc_sets') || '[]'); } catch (err) { mine = []; }
+      var id = 'set-' + Date.now();
+      mine.push({ id: id, name: 'Untitled set', ids: Object.keys(STATE.docPick || {}) });
+      try { localStorage.setItem('cr_doc_sets', JSON.stringify(mine)); } catch (err) {}
+      STATE.docSet = id;
+      renderLibrary();
+    }
+    ['libNewSet', 'libNewSet2'].forEach(function (id) { var b = document.getElementById(id); if (b) b.onclick = newSet; });
+    var addFolder2 = document.getElementById('libAddFolder2');
+    if (addFolder2) addFolder2.onclick = function () { var b = document.getElementById('libAddFolder'); if (b) b.click(); };
     function takeFiles(files, category) {
-      var cat = category || (document.getElementById('libCat') ? document.getElementById('libCat').value : 'Dev');
+      var cat = category || activeFolder || 'Dev';
       if (!cat) cat = 'Dev';
       var list = [].slice.call(files || []);
       if (!list.length) return;
@@ -889,10 +971,10 @@
     }
     var drop = document.getElementById('libDrop');
     var upload = document.getElementById('libUpload');
-    if (upload) upload.onchange = function () { takeFiles(upload.files, document.getElementById('libCat').value); };
+    if (upload) upload.onchange = function () { takeFiles(upload.files, activeFolder); };
     if (drop) {
       drop.ondragover = function (e) { e.preventDefault(); };
-      drop.ondrop = function (e) { e.preventDefault(); takeFiles(e.dataTransfer.files, document.getElementById('libCat').value); };
+      drop.ondrop = function (e) { e.preventDefault(); if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) takeFiles(e.dataTransfer.files, activeFolder); };
     }
     function openFolder(cat) {
       var modal = document.getElementById('modal');
@@ -1053,13 +1135,13 @@
       };
     });
     el.querySelectorAll('[data-doc-set]').forEach(function (btn) {
-      btn.onclick = function () { STATE.docSet = btn.getAttribute('data-doc-set') || ''; renderLibrary(); };
+      btn.onclick = function () { STATE.docSet = btn.getAttribute('data-doc-set') || ''; STATE.docQ = ''; renderLibrary(); };
     });
     el.querySelectorAll('[data-doc-type]').forEach(function (btn) {
       btn.onclick = function () { STATE.docType = btn.getAttribute('data-doc-type') || 'all'; renderLibrary(); };
     });
     el.querySelectorAll('[data-doc-where]').forEach(function (btn) {
-      btn.onclick = function () { STATE.docWhere = btn.getAttribute('data-doc-where') || 'all'; renderLibrary(); };
+      btn.onclick = function () { var w = btn.getAttribute('data-doc-where') || 'all'; STATE.docWhere = STATE.docWhere === w ? 'all' : w; renderLibrary(); };
     });
     el.querySelectorAll('[data-lib-pick]').forEach(function (box) {
       box.onclick = function (e) { e.stopPropagation(); };
@@ -1102,10 +1184,10 @@
       renderLibrary();
     }
     var addSpace = document.getElementById('libAddSpace');
-    if (addSpace) addSpace.onclick = function () {
-      var sel = document.getElementById('libToSpace');
-      addDocsToSpace(sel ? sel.value : '', Object.keys(STATE.docPick || {}));
-    };
+    if (addSpace) addSpace.onclick = function () { STATE.docMenu = STATE.docMenu === 'space' ? '' : 'space'; renderLibrary(); };
+    el.querySelectorAll('[data-lib-to-space]').forEach(function (btn) {
+      btn.onclick = function () { STATE.docMenu = ''; addDocsToSpace(btn.getAttribute('data-lib-to-space') || '', Object.keys(STATE.docPick || {})); };
+    });
     function buildSpace() {
       var ids = Object.keys(STATE.docPick || {});
       if (!ids.length) return;
@@ -1122,19 +1204,23 @@
     var build2 = document.getElementById('libBuildSpace2');
     if (build2) build2.onclick = buildSpace;
     var pushSel = document.getElementById('libPushSel');
-    if (pushSel) pushSel.onclick = function () { var btn = document.getElementById('libPush'); if (btn) btn.click(); };
+    if (pushSel) pushSel.onclick = function () { pushFolder(activeFolder); };
     var moveSel = document.getElementById('libMoveSel');
-    if (moveSel) moveSel.onclick = function () {
-      var cat = (document.getElementById('libMoveTo') || {}).value || '';
-      if (!cat) return;
-      selectedDocs().forEach(function (doc) {
-        if (String(doc.id).indexOf('tmp-') === 0) return;
-        doc.category = cat;
-        authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'move', id: doc.id, category: cat }) }).catch(function () { doc._err = 'Not moved yet'; });
-      });
-      STATE.docPick = {};
-      renderLibrary();
-    };
+    if (moveSel) moveSel.onclick = function () { STATE.docMenu = STATE.docMenu === 'move' ? '' : 'move'; renderLibrary(); };
+    el.querySelectorAll('[data-lib-move-to]').forEach(function (btn) {
+      btn.onclick = function () {
+        var cat = btn.getAttribute('data-lib-move-to') || '';
+        if (!cat) return;
+        selectedDocs().forEach(function (doc) {
+          if (String(doc.id).indexOf('tmp-') === 0) return;
+          doc.category = cat;
+          authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'move', id: doc.id, category: cat }) }).catch(function () { doc._err = 'Not moved yet'; });
+        });
+        STATE.docPick = {};
+        STATE.docMenu = '';
+        renderLibrary();
+      };
+    });
     var delSel = document.getElementById('libDelSel');
     if (delSel) delSel.onclick = function () {
       if (!window.confirm('Delete the selected files?')) return;

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>War Room - Reach Out</title>
+<style>
+:root{color-scheme:light;--bg:#f4f5f7;--panel:#fff;--ink:#0b1220;--muted:#5b6472;--line:#e7e9ee;--blue:#1f5fff;--dark:#0d1526;--red:#d7263d;--amber:#e08a00;--green:#1a9d5a;--r:14px;--shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.06);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);padding:18px 22px 50px}
+.h{font-size:18px;font-weight:750;letter-spacing:-.01em;margin:0 0 2px}.sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.ch{display:flex;align-items:center;gap:10px;padding:11px 14px 8px}.ch .t{font-size:12.5px;font-weight:700;letter-spacing:.02em}.ch .sub2{font-size:10.5px;color:var(--muted);margin-left:auto}
+.stack{display:flex;flex-direction:column;gap:14px}
+/* capture + next up */
+.qcap{display:flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 10px;box-shadow:var(--shadow)}
+.qcap input{flex:1;border:none;outline:none;font-size:13px;background:transparent}
+.qcap button{background:var(--blue);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12.5px;font-weight:600;cursor:pointer}
+.nextup{display:flex;align-items:center;gap:14px;padding:11px 14px}
+.nextup .lab{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.nextup .ev{font-size:12.5px;font-weight:600}
+.cd{font-size:11px;font-weight:700;color:var(--blue);background:#eef2fb;border-radius:999px;padding:3px 9px}
+.find{margin-left:auto;font-size:11.5px;color:var(--blue);font-weight:650;cursor:pointer;border:1px solid #d7e0f6;border-radius:8px;padding:6px 11px;background:#fff}
+/* reach out */
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 8px}
+.chip{font-size:10.5px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;color:#44506a;cursor:pointer;letter-spacing:.02em}
+.chip.on{background:var(--dark);border-color:var(--dark);color:#fff}
+.chip .n{opacity:.6;margin-left:4px}
+.people{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:4px 14px 14px}
+@media(max-width:1100px){.people{grid-template-columns:repeat(3,1fr)}}
+.person{border:1px solid var(--line);border-radius:12px;padding:10px 11px;display:flex;flex-direction:column;gap:8px;background:#fcfdfe}
+.person .top{display:flex;align-items:center;gap:9px}
+.av{width:30px;height:30px;border-radius:50%;background:#dbe6ff;color:#2a4c9c;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.person .nm{font-size:12.5px;font-weight:650;line-height:1.15}
+.person .co{font-size:10.5px;color:var(--muted)}
+.tag{font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:5px;align-self:flex-start}
+.tag.vc{background:#eef2fb;color:#3a5bbf}.tag.reg{background:#fdf0ec;color:#b5502e}.tag.partner{background:#eef7f0;color:#2b7a4b}.tag.corp{background:#f3eefb;color:#6b3fa0}.tag.client{background:#fff6e6;color:#9a7500}
+.act{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding-top:8px}
+.act .ck{width:16px;height:16px;border-radius:5px;border:1.6px solid #c5cdda;flex:0 0 auto;cursor:pointer}
+.act .what{font-size:11.5px;font-weight:600;color:#30384a}
+.act .go{margin-left:auto;font-size:10.5px;color:var(--blue);font-weight:650;cursor:pointer}
+/* exec board */
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.col{border:1px solid var(--line);border-radius:12px;padding:10px;max-height:260px;overflow:auto}
+.col.today{background:#f3fbf6;border-color:#cdecd8}.col.week{background:#fffcf2;border-color:#f0e2b6}.col.later{background:#fdf4f3;border-color:#f3cfcc}
+.col h4{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:2px 4px 8px;display:flex;align-items:center;gap:6px}
+.task{background:#fff;border:1px solid var(--line);border-radius:9px;padding:7px 9px;margin-bottom:7px;font-size:11px;display:flex;gap:8px;align-items:flex-start}
+.task .ck{width:13px;height:13px;border-radius:4px;border:1.5px solid #c5cdda;flex:0 0 auto;margin-top:1px}
+.task .bk{display:block;margin-top:4px;font-size:9px;color:#8491a6}
+.task .bk b{color:var(--blue);cursor:pointer;margin-right:7px}
+.task .area{font-size:8px;color:#8491a6;letter-spacing:.06em;text-transform:uppercase;display:block;margin-top:2px}
+/* intel */
+.intel{background:linear-gradient(180deg,#0f1b32,#0c1426);border:1px solid #1b294a;color:#e8eefc;border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px}
+.intel .ih{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.intel .lg{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,#2f6bff,#0b2a7a);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#fff}
+.intel .t{font-weight:700;font-size:12.5px}.intel .m{margin-left:auto;font-size:10px;color:#7f91b6}
+.intel .one{font-size:14px;font-weight:700}.intel .one b{color:#8fd0ff}
+.note{font-size:10.5px;color:var(--muted);padding-top:2px}
+.hint{font-size:11px;color:var(--muted);background:#eef2fb;border:1px solid #dbe6ff;border-radius:10px;padding:8px 12px}
+</style></head>
+<body>
+<div class="h">War Room</div>
+<div class="sub">Capture + Next up on top, then Reach Out (people), then Today / This week / Later, then 4orm Intelligence.</div>
+<div class="stack">
+
+  <div class="qcap"><input placeholder="Capture a task - type and hit Add..."><button>Add</button></div>
+
+  <div class="card nextup"><span class="lab">Next up</span><span class="ev">Don and Chad 1on1</span><span class="cd">in 2h 9m</span><span class="ev" style="color:var(--muted)">Kevin call</span><span class="cd" style="background:#f0f2f6;color:var(--muted)">in 5h</span><span class="find">Find a 30-min slot</span></div>
+
+  <div class="card">
+    <div class="ch"><span class="t">Reach out</span><span class="sub2">people to contact - added from Pipeline or Contacts, check off when done</span></div>
+    <div class="chips">
+      <span class="chip on">All <span class="n">9</span></span><span class="chip">Corporate <span class="n">2</span></span><span class="chip">VC <span class="n">2</span></span><span class="chip">Client <span class="n">1</span></span><span class="chip">Design partner <span class="n">2</span></span><span class="chip">Regulator <span class="n">2</span></span>
+    </div>
+    <div class="people">
+      <div class="person"><div class="top"><span class="av">KW</span><div><div class="nm">Kevin Wong</div><div class="co">Personal network</div></div></div><span class="tag vc">VC</span><div class="act"><span class="ck"></span><span class="what">Call - $25K ask</span><span class="go">+ task</span></div></div>
+      <div class="person"><div class="top"><span class="av">BF</span><div><div class="nm">Bruce Fair</div><div class="co">NextEdge Capital</div></div></div><span class="tag vc">VC</span><div class="act"><span class="ck"></span><span class="what">Call - send one-pager</span><span class="go">+ task</span></div></div>
+      <div class="person"><div class="top"><span class="av">KP</span><div><div class="nm">Keegan Poulton</div><div class="co">Speer Technologies</div></div></div><span class="tag partner">Design partner</span><div class="act"><span class="ck"></span><span class="what">Email - LOI</span><span class="go">+ task</span></div></div>
+      <div class="person"><div class="top"><span class="av">MS</span><div><div class="nm">Michael Stevens</div><div class="co">Fasken</div></div></div><span class="tag reg">Regulator</span><div class="act"><span class="ck"></span><span class="what">Call - RPAA intro</span><span class="go">+ task</span></div></div>
+      <div class="person"><div class="top"><span class="av">DK</span><div><div class="nm">Dave Kershaw</div><div class="co">Cabana Vancouver</div></div></div><span class="tag corp">Corporate</span><div class="act"><span class="ck"></span><span class="what">Call - angel cheque</span><span class="go">+ task</span></div></div>
+      <div class="person"><div class="top"><span class="av">C2</span><div><div class="nm">Century 21</div><div class="co">Brokerage</div></div></div><span class="tag partner">Design partner</span><div class="act"><span class="ck"></span><span class="what">Email - discovery</span><span class="go">+ task</span></div></div>
+      <div class="person"><div class="top"><span class="av">FK</span><div><div class="nm">Faisal Karmali</div><div class="co">CIBC Wood Gundy</div></div></div><span class="tag corp">Corporate</span><div class="act"><span class="ck"></span><span class="what">Call - intro</span><span class="go">+ task</span></div></div>
+      <div class="person"><div class="top"><span class="av">AS</span><div><div class="nm">ASC</div><div class="co">Alberta Securities</div></div></div><span class="tag reg">Regulator</span><div class="act"><span class="ck"></span><span class="what">Reach out</span><span class="go">+ task</span></div></div>
+      <div class="person"><div class="top"><span class="av">DH</span><div><div class="nm">Don Hickling</div><div class="co">Confirmed $70K</div></div></div><span class="tag client">Client</span><div class="act"><span class="ck"></span><span class="what">Call - next $25K</span><span class="go">+ task</span></div></div>
+    </div>
+  </div>
+
+  <div class="hint">From the Pipeline or Contacts, click a person -> "Add to Reach Out" and pick a type (Corporate / VC / Client / Design partner / Regulator). Checking a person off, or "+ task", creates an actionable task below.</div>
+
+  <div class="card" style="padding:4px 2px 2px">
+    <div class="ch" style="padding:10px 14px 2px"><span class="t">Execution</span><span class="sub2">drag between columns &middot; tasks created from Reach Out land here</span></div>
+    <div class="board" style="padding:8px 12px 12px">
+      <div class="col today"><h4>Today</h4>
+        <div class="task"><span class="ck"></span><div>Call Kevin - $25K ask<span class="area">Reach out &middot; VC</span><span class="bk"><b>Today</b> Week Later</span></div></div>
+        <div class="task"><span class="ck"></span><div>Call Bruce - one-pager<span class="area">Reach out &middot; VC</span><span class="bk"><b>Today</b> Week Later</span></div></div>
+        <div class="task"><span class="ck"></span><div>Call Don - confirm next $25K<span class="area">Reach out &middot; Client</span><span class="bk"><b>Today</b> Week Later</span></div></div>
+      </div>
+      <div class="col week"><h4>This week</h4>
+        <div class="task"><span class="ck"></span><div>Email Keegan the LOI<span class="area">Reach out &middot; Partner</span><span class="bk">Today <b>Week</b> Later</span></div></div>
+        <div class="task"><span class="ck"></span><div>Century 21 discovery email<span class="area">Reach out &middot; Partner</span><span class="bk">Today <b>Week</b> Later</span></div></div>
+        <div class="task"><span class="ck"></span><div>Sign up for OpenVC<span class="area">Investors</span><span class="bk">Today <b>Week</b> Later</span></div></div>
+      </div>
+      <div class="col later"><h4>Later</h4>
+        <div class="task"><span class="ck"></span><div>Michael Stevens - RPAA intro<span class="area">Reach out &middot; Regulator</span><span class="bk">Today Week <b>Later</b></span></div></div>
+        <div class="task"><span class="ck"></span><div>ASC reach out<span class="area">Reach out &middot; Regulator</span><span class="bk">Today Week <b>Later</b></span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="intel">
+    <div class="ih"><span class="lg">4</span><span class="t">4orm Intelligence</span><span class="m">CEO - ranked moves</span></div>
+    <div class="one">Close friends and family to <b>$250,000</b>, Chad, by 30 Oct.</div>
+    <div class="note" style="color:#8fa3c6;margin-top:6px">$80,000 is in. $170,000 to go, in about seven $25,000 cheques. P1 cash first.</div>
+  </div>
+
+</div>
+</body></html>

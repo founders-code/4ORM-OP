@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard - Mission Control</title>
+<style>
+:root{color-scheme:light;--bg:#f4f6f9;--panel:#fff;--ink:#0b1220;--muted:#5b6472;--line:#e7e9ee;--blue:#1f5fff;--navy:#0b1f55;--dark:#0b1526;--green:#17b86a;--amber:#f0a020;--red:#f23a4d;--gold:#d8b25a;--r:14px;--shadow:0 1px 2px rgba(16,24,40,.05),0 10px 26px rgba(16,24,40,.07);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);padding:14px 20px 44px}
+.title{font-size:18px;font-weight:750;margin-bottom:10px}
+/* command strip (dark) */
+.command{background:linear-gradient(120deg,#0a1326,#13224a);border-radius:16px;box-shadow:var(--shadow);padding:14px 18px;margin-bottom:14px;color:#eaf1ff}
+.cmdtop{display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap}
+.vital{display:flex;flex-direction:column;gap:2px}
+.vital .k{font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#8fa3c6}
+.vital .v{font-size:20px;font-weight:800;line-height:1}
+.vital .v.red{color:#ff8da3}.vital .v.green{color:#7fe0ad}.vital .sub{font-size:10px;color:#93a6cf}
+.countdown{margin-left:auto;text-align:right}
+.countdown .big{font-size:26px;font-weight:850;color:#ff8da3;line-height:1}
+.countdown .k{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8fa3c6;margin-top:3px}
+.prog{height:7px;background:#1e2d4d;border-radius:999px;overflow:hidden;margin-top:7px;width:220px}.prog i{display:block;height:100%;width:32%;background:linear-gradient(90deg,#3f7bff,#7fd0ff)}
+/* annunciator lamps */
+.lamps{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;margin-top:14px}
+.lamp{background:#0c1627;border:1px solid #1d2b46;border-radius:10px;padding:9px 11px;cursor:pointer;position:relative}
+.lamp .led{width:9px;height:9px;border-radius:50%;position:absolute;top:10px;right:10px}
+.lamp .led.g{background:var(--green);box-shadow:0 0 8px var(--green)}
+.lamp .led.a{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.lamp .led.r{background:var(--red);box-shadow:0 0 10px var(--red);animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.lamp .nm{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8fa3c6}
+.lamp .st{font-size:12px;font-weight:700;margin-top:4px}
+.lamp .st.r{color:#ff8da3}.lamp .st.a{color:#ffd08a}.lamp .st.g{color:#9ff0c5}
+/* 3-col control row */
+.ctrl{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.ch{display:flex;align-items:center;gap:8px;padding:12px 15px 8px}.ch .t{font-size:12.5px;font-weight:750}.ch .s{font-size:10px;color:var(--muted);margin-left:auto}
+.ch .mk{width:16px;height:16px;border-radius:4px;background:linear-gradient(135deg,#2f6bff,#0b2a7a);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center}
+/* alert feed */
+.alert{display:flex;align-items:flex-start;gap:10px;padding:9px 15px;border-bottom:1px solid var(--line)}
+.alert:last-child{border-bottom:none}
+.alert .sev{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:0 0 auto}
+.sev.r{background:var(--red)}.sev.a{background:var(--amber)}.sev.b{background:var(--blue)}
+.alert .tx{font-size:12px;line-height:1.35}.alert .tx .src{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.alert .go{margin-left:auto;font-size:11px;color:var(--blue);font-weight:650;cursor:pointer;white-space:nowrap}
+/* raise tracker */
+.cheques{display:flex;gap:5px;padding:4px 15px 8px}
+.cq{flex:1;height:34px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff}
+.cq.in{background:var(--green)}.cq.pend{background:#cdd8ef;color:#44506a}.cq.open{background:#eef1f6;color:#aeb6c4;border:1px dashed #cbd5e8}
+.pace{padding:6px 15px 14px;font-size:11.5px;color:#30384a}
+.pace b{color:var(--navy)}
+.pace .warn{color:var(--red);font-weight:700}
+/* worry panel */
+.worry{padding:4px 15px 12px}
+.worryrow{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.worryrow:last-child{border-bottom:none}
+.worryrow .ic{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;flex:0 0 auto;font-weight:800}
+.ic.r{background:#fdecee;color:var(--red)}.ic.a{background:#fef6e7;color:#b5790f}
+.worryrow .tx{font-size:11.5px;line-height:1.4;color:#30384a}.worryrow .tx b{color:var(--ink)}
+/* today + health row */
+.row3{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.mlist .m{display:flex;align-items:center;gap:9px;padding:8px 15px;border-bottom:1px solid var(--line);font-size:11.5px}
+.mlist .m:last-child{border-bottom:none}
+.mlist .mt{margin-left:auto;font-size:10px;color:var(--muted)}
+.mlist .dot{width:7px;height:7px;border-radius:50%;background:var(--blue)}
+.health{padding:10px 15px 15px;text-align:center}
+.gauge{--p:62;width:120px;height:120px;border-radius:50%;margin:4px auto 8px;background:conic-gradient(var(--amber) calc(var(--p)*1%),#eef1f6 0);display:flex;align-items:center;justify-content:center}
+.gauge .in{width:92px;height:92px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge .n{font-size:28px;font-weight:850}.gauge .l{font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.subscore{display:flex;justify-content:space-between;font-size:10.5px;padding:3px 0;color:#44506a}
+.subscore .b{width:70px;height:6px;border-radius:999px;background:#eef1f6;overflow:hidden}.subscore .b i{display:block;height:100%}
+.spark{display:flex;align-items:flex-end;gap:4px;height:46px;padding:6px 15px 2px}
+.spark .bar{flex:1;background:linear-gradient(180deg,#5f87e0,#1f5fff);border-radius:3px 3px 0 0}
+.momrow{display:flex;justify-content:space-between;font-size:11px;padding:6px 15px 12px;color:#44506a}
+.momrow b{color:var(--ink)}
+.note{font-size:10.5px;color:var(--muted);margin:2px 2px 12px}
+
+.inbox .ir{display:flex;align-items:flex-start;gap:9px;padding:8px 15px;border-bottom:1px solid var(--line)}
+.inbox .ir:last-child{border-bottom:none}
+.inbox .av{width:26px;height:26px;border-radius:50%;background:#e9eefb;color:#2a4c9c;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.inbox .av.vc{background:#ffe3e7;color:#c0273b}
+.inbox .su{font-size:12px;font-weight:650;line-height:1.25}
+.inbox .sn{font-size:10.5px;color:var(--muted);line-height:1.3;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.inbox .flag{font-size:8px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border-radius:5px;padding:2px 6px;margin-left:auto;white-space:nowrap}
+.flag.vc{background:#fdecee;color:var(--red)}.flag.rep{background:#eef2fb;color:#3a5bbf}.flag.fyi{background:#f2f4f8;color:#8491a6}
+.inbox .age{font-size:9px;color:#aeb6c4;margin-top:3px}
+.runway-gauge{display:flex;align-items:center;gap:14px;padding:10px 15px 6px}
+.rbig{font-size:34px;font-weight:850;line-height:1}
+.rbar{flex:1}
+.rbar .track{height:9px;background:#eef1f6;border-radius:999px;overflow:hidden}
+.rbar .track i{display:block;height:100%;width:34%;background:linear-gradient(90deg,#f0a020,#f23a4d)}
+.rbar .lab{font-size:10.5px;color:var(--muted);margin-top:5px}
+.rbar .lab b{color:var(--red)}
+.cmini{padding:6px 15px 12px;font-size:11px;color:#30384a}
+.cmini .r{display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid var(--line)}
+.cmini .r b{color:var(--navy)}
+.vcrow{display:flex;align-items:center;gap:9px;padding:8px 15px;border-bottom:1px solid var(--line);font-size:11.5px}
+.vcrow:last-child{border-bottom:none}
+.vcrow .d{width:7px;height:7px;border-radius:50%}
+.vcrow .mt{margin-left:auto;font-size:10px;color:var(--muted)}
+.vcrow .act{margin-left:8px;font-size:10.5px;color:var(--blue);font-weight:650;cursor:pointer}
+.card>.ch{cursor:pointer}.card.collapsed>*:not(.ch){display:none}.card .cx{margin-left:10px;color:#9aa6ba;font-size:12px;flex:0 0 auto}
+</style></head><body>
+
+<div class="title">Dashboard - Mission Control</div>
+
+<!-- COMMAND STRIP -->
+<div class="command">
+  <div class="cmdtop">
+    <div class="vital"><span class="k">Cash</span><span class="v">$100</span><span class="sub">in the bank</span></div>
+    <div class="vital"><span class="k">Burn</span><span class="v">$90K</span><span class="sub">/ month</span></div>
+    <div class="vital"><span class="k">Runway</span><span class="v red">~1 day</span><span class="sub">at current burn</span></div>
+    <div class="vital"><span class="k">Raise - F&amp;F</span><span class="v">$80K / $250K</span><span class="prog"><i></i></span></div>
+    <div class="countdown"><div class="big">17d</div><div class="k">to close - Oct 30</div></div>
+  </div>
+  <!-- ANNUNCIATOR LAMPS -->
+  <div class="lamps">
+    <div class="lamp"><span class="led r"></span><div class="nm">Runway</div><div class="st r">Critical</div></div>
+    <div class="lamp"><span class="led a"></span><div class="nm">Raise pace</div><div class="st a">Behind</div></div>
+    <div class="lamp"><span class="led g"></span><div class="nm">Pipeline</div><div class="st g">3 replies</div></div>
+    <div class="lamp"><span class="led a"></span><div class="nm">Spend</div><div class="st a">Watch</div></div>
+    <div class="lamp"><span class="led a"></span><div class="nm">Legal docs</div><div class="st a">2 unsigned</div></div>
+    <div class="lamp"><span class="led r"></span><div class="nm">Concentration</div><div class="st r">High</div></div>
+    <div class="lamp"><span class="led g"></span><div class="nm">Integrations</div><div class="st g">5 live</div></div>
+  </div>
+</div>
+<div class="note">Lamps are clickable - each jumps to the thing. Green good, amber watch, red needs you now.</div>
+
+<!-- CONTROL ROW: needs you / raise tracker / what I'd worry about -->
+<div class="ctrl">
+  <div class="card">
+    <div class="ch"><span class="t">What needs you now</span><span class="s">across every system</span></div>
+    <div class="alert"><span class="sev r"></span><div class="tx">Confirm Don's next $25K - cheque not locked, runway ~1 day<div class="src">Raise &middot; critical</div></div><span class="go">Do &#8250;</span></div>
+    <div class="alert"><span class="sev b"></span><div class="tx">Jeff Tindale replied - no response in 12m<div class="src">GHL &middot; reply</div></div><span class="go">Reply &#8250;</span></div>
+    <div class="alert"><span class="sev a"></span><div class="tx">Subscription agreements unsigned (James Atherton)<div class="src">Legal</div></div><span class="go">Chase &#8250;</span></div>
+    <div class="alert"><span class="sev a"></span><div class="tx">Bruce follow-up due today<div class="src">Pipeline</div></div><span class="go">Send &#8250;</span></div>
+    <div class="alert"><span class="sev b"></span><div class="tx">News sweep: FINTRAC RPAA update - use in regulator note<div class="src">News</div></div><span class="go">Open &#8250;</span></div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="t">Raise tracker</span><span class="s">7 x $25K cheques</span></div>
+    <div class="cheques">
+      <div class="cq in">DON</div><div class="cq in">$80K</div><div class="cq pend">BROOKS?</div><div class="cq open">4</div><div class="cq open">5</div><div class="cq open">6</div><div class="cq open">7</div>
+    </div>
+    <div class="pace">
+      <b>$170,000 to go</b> in 17 days = <b>$10,000/day</b> of commitments needed.<br>
+      This week you booked <b>$0</b> new. <span class="warn">You are behind pace - widen the round today.</span>
+    </div>
+    <div class="ch" style="padding-top:2px"><span class="t">Today's conversations</span></div>
+    <div class="mlist">
+      <div class="m"><span class="dot"></span>Mike Stephens / Bruce - Chad - Kevin<span class="mt">in 9h 25m</span></div>
+      <div class="m"><span class="dot"></span>Kevin and Chad - 1on1 (GTM focus)<span class="mt">in 10h</span></div>
+      <div class="m"><span class="dot"></span>Development end-to-end - 4orm Platform<span class="mt">in 11h</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="mk">4</span><span class="t">What I'd worry about</span><span class="s">blind spots</span></div>
+    <div class="worry">
+      <div class="worryrow"><span class="ic r">!</span><div class="tx"><b>Concentration risk.</b> 100% of the $80K in is from one person (Don). If he pauses, the round stalls. Widen to 3+ backers fast.</div></div>
+      <div class="worryrow"><span class="ic r">!</span><div class="tx"><b>1-day runway with no signed docs.</b> Cash can't cover the next cheque's timing. Lock Don's date AND the subscription agreement in parallel.</div></div>
+      <div class="worryrow"><span class="ic a">&#9888;</span><div class="tx"><b>Single dev dependency (Speer).</b> The platform build sits with one partner. No fallback if it slips - get the MSA + timeline in writing.</div></div>
+      <div class="worryrow"><span class="ic a">&#9888;</span><div class="tx"><b>Drift.</b> Regulator outreach deferred 5 days; it's lowest priority - either drop it or 10-min it, don't let it nag.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- INBOX / CONTENT RUNWAY / VC WATCH -->
+<div class="ctrl">
+  <div class="card inbox">
+    <div class="ch"><span class="t">Inbox - needs you</span><span class="s">from Gmail &middot; VC flagged</span></div>
+    <div class="ir"><span class="av vc">NM</span><div><div class="su">Neil Mitchell (NextEdge)</div><div class="sn">"Happy to take a look - send the deck and your traction..."</div><div class="age">18m ago</div></div><span class="flag vc">VC &middot; reply</span></div>
+    <div class="ir"><span class="av vc">JC</span><div><div class="su">Joe Canavan</div><div class="sn">"Interesting. What's the evidence standard you're building to?"</div><div class="age">1h ago</div></div><span class="flag vc">VC &middot; reply</span></div>
+    <div class="ir"><span class="av">JA</span><div><div class="su">James Atherton (JHA Law)</div><div class="sn">"Subscription agreements attached - need signatures by Fri."</div><div class="age">3h ago</div></div><span class="flag rep">Action</span></div>
+    <div class="ir"><span class="av">DH</span><div><div class="su">Don Hickling</div><div class="sn">"Call me when you have the date - ready to wire."</div><div class="age">5h ago</div></div><span class="flag rep">Reply</span></div>
+    <div class="cmini" style="border-top:none"><b>2 VC emails</b> waiting on you - never let these sit. <span style="color:var(--blue);font-weight:650;cursor:pointer">Open VC inbox &#8250;</span></div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="t">Content runway</span><span class="s">GoHighLevel social planner</span></div>
+    <div class="runway-gauge">
+      <div class="rbig" style="color:var(--amber)">8</div>
+      <div class="rbar"><div class="track"><i></i></div><div class="lab">posts left &middot; <b>runs dry Thu (~3 days)</b></div></div>
+    </div>
+    <div class="cmini">
+      <div class="r"><span>Scheduled / queued</span><b>8 posts</b></div>
+      <div class="r"><span>Posting cadence</span><b>~3 / day</b></div>
+      <div class="r"><span>Investor newsletter</span><b>next due Fri (monthly)</b></div>
+      <div class="r"><span>Research paper</span><b>due this week</b></div>
+    </div>
+    <div class="cmini" style="padding-top:2px"><span style="color:var(--blue);font-weight:650;cursor:pointer">+ Add posts in GoHighLevel &#8250;</span></div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="mk">4</span><span class="t">VC watch</span><span class="s">never let one go cold</span></div>
+    <div class="vcrow"><span class="d" style="background:var(--green)"></span>Neil Mitchell - replied, needs deck<span class="act">Send &#8250;</span></div>
+    <div class="vcrow"><span class="d" style="background:var(--green)"></span>Joe Canavan - opened 3x, replied<span class="act">Answer &#8250;</span></div>
+    <div class="vcrow"><span class="d" style="background:var(--amber)"></span>Bruce Fair - sent 2d ago, no open<span class="act">Follow up &#8250;</span></div>
+    <div class="vcrow"><span class="d" style="background:#c6cfdd"></span>Anshul Ruparell - ready, not sent<span class="act">Send &#8250;</span></div>
+    <div class="cmini" style="border-top:none"><b>10 VCs</b> in play &middot; 2 awaiting you &middot; 1 going cold. Hammer the list - newsletter them monthly.</div>
+  </div>
+</div>
+
+<!-- HEALTH + MOMENTUM -->
+<div class="row3">
+  <div class="card">
+    <div class="ch"><span class="t">Company health</span><span class="s">composite</span></div>
+    <div class="health">
+      <div class="gauge" style="--p:58"><div class="in"><div class="n">58</div><div class="l">of 100</div></div></div>
+      <div class="subscore"><span>Cash / runway</span><span class="b"><i style="width:18%;background:var(--red)"></i></span></div>
+      <div class="subscore"><span>Raise</span><span class="b"><i style="width:45%;background:var(--amber)"></i></span></div>
+      <div class="subscore"><span>Pipeline</span><span class="b"><i style="width:70%;background:var(--green)"></i></span></div>
+      <div class="subscore"><span>Product / Speer</span><span class="b"><i style="width:60%;background:var(--amber)"></i></span></div>
+      <div class="subscore"><span>Legal</span><span class="b"><i style="width:40%;background:var(--amber)"></i></span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch"><span class="t">Momentum</span><span class="s">last 7 days</span></div>
+    <div class="spark">
+      <div class="bar" style="height:40%"></div><div class="bar" style="height:20%"></div><div class="bar" style="height:70%"></div><div class="bar" style="height:35%"></div><div class="bar" style="height:85%"></div><div class="bar" style="height:55%"></div><div class="bar" style="height:30%"></div>
+    </div>
+    <div class="momrow"><span>Tasks done <b>8</b></span><span>Outreach sent <b>6</b></span><span>Replies <b>3</b></span></div>
+    <div class="ch" style="padding-top:2px"><span class="t">Next meetings</span></div>
+    <div class="mlist">
+      <div class="m"><span class="dot"></span>Executive Advisor - War Room<span class="mt">today</span></div>
+      <div class="m"><span class="dot"></span>Don and Chad - 1on1<span class="mt">Wed</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch"><span class="mk">4</span><span class="t">Today's 1-3</span><span class="s">from the War Room</span></div>
+    <div class="mlist">
+      <div class="m"><span class="dot" style="background:var(--red)"></span>Confirm Don's next $25K<span class="mt">P1</span></div>
+      <div class="m"><span class="dot" style="background:var(--blue)"></span>Call Kevin - book the ask<span class="mt">P1</span></div>
+      <div class="m"><span class="dot" style="background:var(--blue)"></span>Design-partner emails (Century 21)<span class="mt">P4</span></div>
+    </div>
+    <div class="pace" style="padding-top:8px">Protect 9-11am for the two cash-first moves. That is the day.</div>
+  </div>
+</div>
+
+<div class="note">Below this: your Operations overview bars, Quick insights, and the Task-status / by-department charts stay as they are.</div>
+<script>
+document.querySelectorAll('.card').forEach(function(card){
+  var h=card.querySelector('.ch'); if(!h)return;
+  var cx=document.createElement('span'); cx.className='cx'; cx.textContent='\u25be';
+  var s=h.querySelector('.s'); if(s&&s.style.marginLeft==='auto'){h.appendChild(cx);} else {cx.style.marginLeft='auto'; h.appendChild(cx);}
+  h.addEventListener('click',function(){card.classList.toggle('collapsed'); cx.textContent=card.classList.contains('collapsed')?'\u25b8':'\u25be';});
+});
+</script>
+</body></html>

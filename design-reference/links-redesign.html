@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Links - redesign</title>
+<style>
+:root{color-scheme:light;--bg:#f4f5f7;--panel:#fff;--ink:#0b1220;--muted:#5b6472;--line:#e7e9ee;--blue:#1f5fff;--navy:#0b1f55;--r:12px;--shadow:0 1px 2px rgba(16,24,40,.04),0 6px 18px rgba(16,24,40,.06);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);padding:16px 20px 40px}
+.h{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.h .t{font-size:18px;font-weight:750}
+.h .search{margin-left:auto;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 12px;font-size:12.5px;width:280px;color:var(--muted)}
+.wrap{display:grid;grid-template-columns:248px 1fr;gap:16px;align-items:start}
+/* tree */
+.tree{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:10px 8px;position:sticky;top:12px}
+.tree .thd{display:flex;align-items:center;padding:4px 8px 10px}
+.tree .thd .lbl{font-size:9.5px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+.tree .thd .add{margin-left:auto;font-size:11px;color:var(--blue);font-weight:650;cursor:pointer}
+.row{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:12.5px;color:#2a3344}
+.row:hover{background:#f2f5fb}
+.row.on{background:#eef2fb;color:var(--navy);font-weight:600}
+.row .chev{width:12px;color:#9aa6ba;font-size:10px;transition:transform .12s}
+.row .chev.open{transform:rotate(90deg)}
+.row .ic{color:#c9a94a;font-size:13px}
+.row .ct{margin-left:auto;font-size:10px;color:#9aa6ba;background:#eef1f6;border-radius:999px;padding:1px 7px}
+.row .sub-add{font-size:10px;color:var(--blue);font-weight:650;margin-left:8px;display:none;cursor:pointer}
+.row:hover .sub-add{display:inline}
+.sub{padding-left:16px}
+.sub .row{font-size:12px;color:#44506a}
+.sub2{padding-left:30px}
+.tree .foot{border-top:1px solid var(--line);margin-top:8px;padding:8px 8px 2px;font-size:11.5px;color:var(--blue);cursor:pointer;font-weight:600}
+/* right */
+.content{min-width:0}
+.crumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.crumb .c{font-size:14px;font-weight:700}
+.crumb .path{font-size:11px;color:var(--muted)}
+.addbar{display:flex;gap:8px;margin-bottom:14px}
+.addbar input{border:1px solid var(--line);border-radius:9px;padding:8px 11px;font-size:12.5px;background:#fff;outline:none}
+.addbar .title{flex:1}.addbar .url{flex:1.4}
+.addbar button{background:var(--blue);color:#fff;border:none;border-radius:9px;padding:8px 16px;font-size:12.5px;font-weight:600;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(4,1fr)}}
+.lk{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;position:relative;transition:transform .1s,box-shadow .1s}
+.lk:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(16,24,40,.1)}
+.lk .thumb{height:86px;background:#eef2f8;display:flex;align-items:center;justify-content:center;font-weight:800;color:#8aa0c8;font-size:12px;letter-spacing:.04em;overflow:hidden}
+.lk .thumb.g{background:linear-gradient(135deg,#fde8e8,#e9eefb)}
+.lk .thumb img{width:100%;height:100%;object-fit:cover}
+.lk .meta{padding:7px 9px 9px}
+.lk .nm{font-size:11.5px;font-weight:650;line-height:1.2;color:var(--ink)}
+.lk .note{font-size:10px;color:#44506a;margin-top:5px;line-height:1.3;width:100%;border:none;border-top:1px dashed #e3e7ee;padding-top:5px;outline:none;background:transparent}
+.lk .note::placeholder{color:#aeb6c4}
+.lk .note:focus{border-top-color:var(--blue)}
+.lk .x{position:absolute;top:5px;right:6px;width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.9);color:#8a94a6;font-size:12px;display:none;align-items:center;justify-content:center}
+.lk:hover .x{display:flex}
+.cap{font-size:11px;color:var(--muted);margin:4px 2px 14px}
+.dot{display:inline-block;width:52px;height:52px;border-radius:12px}
+
+.row{border-bottom:1px solid #f0f2f6}
+.row:last-child{border-bottom:none}
+.sub{border-left:1px solid #e7e9ee;margin-left:14px;padding-left:10px}
+.row .nm2{flex:1}
+</style></head>
+<body>
+<div class="h"><span class="t">Links</span><input class="search" placeholder="Search links..."></div>
+<div class="cap">A clean Drive-style tree on the left; a tight, thumbnail-first wall on the right. Three levels deep, categories expand/collapse.</div>
+<div class="wrap">
+
+  <!-- TREE -->
+  <div class="tree">
+    <div class="thd"><span class="lbl">Categories</span><span class="add">+ New</span></div>
+    <div class="row"><span class="chev">&#9656;</span>Company <span class="sub-add">+ sub</span><span class="ct">4</span></div>
+    <div class="row"><span class="chev">&#9656;</span>Fund raising <span class="sub-add">+ sub</span><span class="ct">7</span></div>
+    <div class="row on"><span class="chev open">&#9656;</span>Notes &amp; Docs <span class="sub-add">+ sub</span><span class="ct">9</span></div>
+    <div class="sub">
+      <div class="row on">Meetings <span class="sub-add">+ sub</span><span class="ct">3</span></div>
+      <div class="row">Pitch <span class="ct">2</span></div>
+      <div class="row">Lists <span class="ct">4</span></div>
+    </div>
+    <div class="row"><span class="chev">&#9656;</span>Incumbents <span class="sub-add">+ sub</span><span class="ct">6</span></div>
+    <div class="row"><span class="chev">&#9656;</span>Market validation <span class="sub-add">+ sub</span><span class="ct">3</span></div>
+    <div class="row"><span class="chev">&#9656;</span>Partners &amp; Dev <span class="sub-add">+ sub</span><span class="ct">5</span></div>
+    <div class="row"><span class="chev">&#9656;</span>Resources <span class="sub-add">+ sub</span><span class="ct">8</span></div>
+    <div class="row"><span class="chev">&#9656;</span>Tools &amp; Ops <span class="sub-add">+ sub</span><span class="ct">6</span></div>
+    <div class="row"><span class="chev">&#9656;</span>VC <span class="sub-add">+ sub</span><span class="ct">11</span></div>
+    <div class="row"><span class="chev">&#9656;</span>Music <span class="sub-add">+ sub</span><span class="ct">5</span></div>
+    <div class="foot">Expand all</div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <div class="crumb"><span class="c">Notes &amp; Docs</span><span class="path">/ Meetings</span></div>
+    <div class="addbar"><input class="title" placeholder="Title"><input class="url" placeholder="https://"><button>Add link</button></div>
+    <div class="grid">
+      <div class="lk"><div class="x">&times;</div><div class="thumb g">SLACK</div><div class="meta"><div class="nm">Filogix</div><input class="note" value="incumbent - broker tech" placeholder="add a note..."></div></div>
+      <div class="lk"><div class="x">&times;</div><div class="thumb g">PDF</div><div class="meta"><div class="nm">Pitch deck (Google Doc)</div><input class="note" value="v10 investor deck" placeholder="add a note..."></div></div>
+      <div class="lk"><div class="x">&times;</div><div class="thumb g">XLS</div><div class="meta"><div class="nm">Canadian investor list</div><input class="note" value="08-19-2026" placeholder="add a note..."></div></div>
+      <div class="lk"><div class="x">&times;</div><div class="thumb g">DOC</div><div class="meta"><div class="nm">Speer Tech - market view</div><input class="note" value="incumbents + market" placeholder="add a note..."></div></div>
+      <div class="lk"><div class="x">&times;</div><div class="thumb g">&#9650;</div><div class="meta"><div class="nm">AutoRek</div><input class="note" value="reconciliation incumbent" placeholder="add a note..."></div></div>
+      <div class="lk"><div class="x">&times;</div><div class="thumb g">LZ</div><div class="meta"><div class="nm">LayerZero</div><input class="note" value="infra reference" placeholder="add a note..."></div></div>
+      <div class="lk"><div class="x">&times;</div><div class="thumb g">&#9835;</div><div class="meta"><div class="nm">Lumocore - Upbeat</div><input class="note" value="pitch bg track" placeholder="add a note..."></div></div>
+      <div class="lk"><div class="x">&times;</div><div class="thumb g">BD</div><div class="meta"><div class="nm">4orm BD pitch</div><input class="note" value="institutional" placeholder="add a note..."></div></div>
+      <div class="lk"><div class="x">&times;</div><div class="thumb g">G</div><div class="meta"><div class="nm">Vision & North Star</div><input class="note" value="founder doc" placeholder="add a note..."></div></div>
+      <div class="lk"><div class="x">&times;</div><div class="thumb g">PDF</div><div class="meta"><div class="nm">Evidence Book</div><input class="note" value="10-2026" placeholder="add a note..."></div></div>
+    </div>
+  </div>
+
+</div>
+</body></html>

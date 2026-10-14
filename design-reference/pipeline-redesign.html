@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipeline - GHL cockpit</title>
+<style>
+:root{color-scheme:light;--bg:#f4f6f9;--panel:#fff;--ink:#0b1220;--muted:#5b6472;--line:#e7e9ee;--blue:#1f5fff;--navy:#0b1f55;--green:#1a9d5a;--amber:#e08a00;--red:#d7263d;--gold:#c79a3a;--r:12px;--shadow:0 1px 2px rgba(16,24,40,.04),0 8px 22px rgba(16,24,40,.06);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);padding:14px 20px 44px}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.tabs{display:flex;gap:4px}
+.tab{font-size:12px;padding:7px 13px;border-radius:9px;color:#44506a;cursor:pointer;font-weight:600}
+.tab.on{background:var(--navy);color:#fff}
+.pills{display:flex;gap:5px;margin-left:6px}
+.pill{font-size:11px;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;color:#44506a;cursor:pointer}
+.pill.on{background:#eef2fb;border-color:#cdd8ef;color:var(--navy);font-weight:600}
+.top .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.ghlbtn{display:flex;align-items:center;gap:7px;border:1px solid #d9b38a;background:#fff;border-radius:9px;padding:7px 12px;font-size:12px;font-weight:600;color:#8a5a22;cursor:pointer}
+.ghlbtn .d{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.mirror{font-size:10.5px;color:var(--muted);margin:-4px 2px 12px}
+/* funnel */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.ch{display:flex;align-items:center;gap:8px;padding:12px 15px 8px}.ch .t{font-size:12.5px;font-weight:700}.ch .s{font-size:10.5px;color:var(--muted);margin-left:auto}
+.funnel{display:flex;align-items:stretch;gap:0;padding:10px 15px 16px}
+.fstage{flex:1;position:relative;padding:0 6px}
+.fbar{border-radius:8px;padding:10px 12px;color:#fff;min-height:64px;display:flex;flex-direction:column;justify-content:center}
+.fbar .n{font-size:22px;font-weight:800;line-height:1}
+.fbar .l{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;margin-top:3px}
+.fbar .v{font-size:10px;opacity:.85;margin-top:2px}
+.s1{background:#8aa0c8}.s2{background:#5f87e0}.s3{background:#3a6bdc}.s4{background:#1f5fff}.s5{background:#1a9d5a}
+.conv{position:absolute;right:-7px;top:50%;transform:translateY(-50%);font-size:9px;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:999px;padding:1px 6px;z-index:2}
+/* kpi */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:14px 0}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:11px 13px}
+.kpi .v{font-size:19px;font-weight:800}.kpi .k{font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-top:5px}
+.kpi.g .v{color:var(--green)}.kpi.b .v{color:var(--blue)}.kpi.a .v{color:var(--amber)}
+/* two col */
+.row2{display:grid;grid-template-columns:1.25fr 1fr;gap:14px;align-items:start}
+/* needs you */
+.need{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.need:last-child{border-bottom:none}
+.need .av{width:30px;height:30px;border-radius:50%;background:#dbe6ff;color:#2a4c9c;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.need .nm{font-size:12.5px;font-weight:650}.need .co{font-size:10.5px;color:var(--muted)}
+.need .why{display:flex;gap:5px;margin-left:auto}
+.rchip{font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;border-radius:999px;padding:3px 8px}
+.rchip.rep{background:#eaf7ef;color:#1a7a48}.rchip.due{background:#fff5e6;color:#9a6a00}.rchip.hot{background:#ffece9;color:#c0392b}
+.need .go{font-size:11px;font-weight:650;color:var(--blue);cursor:pointer;margin-left:8px}
+/* matrix */
+.matrix{padding:6px 14px 14px;overflow:auto}
+.mtable{border-collapse:collapse;width:100%;font-size:11px}
+.mtable th{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:6px 8px;text-align:center;font-weight:600}
+.mtable td{padding:0;text-align:center}
+.mtable .rowlab{text-align:left;color:#30384a;font-weight:600;padding:6px 8px;white-space:nowrap}
+.cell{display:inline-flex;align-items:center;justify-content:center;width:34px;height:28px;border-radius:6px;font-weight:700;color:#0b1220;margin:2px}
+/* activity */
+.act{display:flex;align-items:center;gap:9px;padding:8px 14px;border-bottom:1px solid var(--line);font-size:11.5px}
+.act:last-child{border-bottom:none}
+.act .i{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;flex:0 0 auto}
+.i.open{background:#eef2fb;color:#3a5bbf}.i.rep{background:#eaf7ef;color:#1a7a48}.i.sent{background:#f2f4f8;color:#5b6472}
+.act .d{margin-left:auto;font-size:10px;color:var(--muted)}
+.hint{font-size:10.5px;color:var(--muted);padding:8px 14px 12px}
+</style></head><body>
+
+<div class="top">
+  <div class="tabs"><span class="tab on">Dashboard</span><span class="tab">Board</span><span class="tab">Table</span></div>
+  <div class="pills"><span class="pill">All</span><span class="pill">VC</span><span class="pill on">Angel</span><span class="pill">Design partners</span><span class="pill">Regulators</span><span class="pill">Grants</span><span class="pill">Advisors</span><span class="pill">Partners</span><span class="pill">Network</span></div>
+  <div class="right"><input style="border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:12px;color:var(--muted);width:220px" placeholder="Search pipeline..."><span class="ghlbtn"><span class="d"></span> Open in GoHighLevel</span></div>
+</div>
+<div class="mirror">Filtered to <b>Angel</b> - the whole cockpit (funnel, needs-today, KPIs, matrix) scopes to this category. GHL runs the automations; this is your cockpit.</div>
+
+<div class="card">
+  <div class="ch"><span class="t">Funnel</span><span class="s">Angel &middot; stages from GoHighLevel &middot; 26 opportunities</span></div>
+  <div class="funnel">
+    <div class="fstage"><div class="fbar s1"><div class="n">21</div><div class="l">Cold</div><div class="v">to work</div></div><span class="conv">2%</span></div>
+    <div class="fstage"><div class="fbar s2"><div class="n">2</div><div class="l">Contacted</div><div class="v">sent</div></div><span class="conv">50%</span></div>
+    <div class="fstage"><div class="fbar s3"><div class="n">1</div><div class="l">Discovery</div><div class="v">replied</div></div><span class="conv">33%</span></div>
+    <div class="fstage"><div class="fbar s4"><div class="n">1</div><div class="l">Proposal</div><div class="v">live</div></div><span class="conv">100%</span></div>
+    <div class="fstage"><div class="fbar s5"><div class="n">1</div><div class="l">Committed</div><div class="v">$70K</div></div></div>
+  </div>
+</div>
+
+<div class="kpis">
+  <div class="kpi b"><div class="v">6</div><div class="k">Sent this week</div></div>
+  <div class="kpi"><div class="v">41%</div><div class="k">Open rate</div></div>
+  <div class="kpi g"><div class="v">3</div><div class="k">Replies</div></div>
+  <div class="kpi a"><div class="v">2</div><div class="k">Meetings booked</div></div>
+  <div class="kpi"><div class="v">4.2d</div><div class="k">Avg days in stage</div></div>
+</div>
+
+<div class="row2">
+  <!-- needs you today -->
+  <div class="card">
+    <div class="ch"><span class="t">Needs you today</span><span class="s">smart list from GHL activity</span></div>
+    <div class="need"><span class="av">JT</span><div><div class="nm">Jeff Tindale</div><div class="co">Investor &middot; VC</div></div><div class="why"><span class="rchip rep">Replied</span></div><span class="go">Book call &#8250;</span></div>
+    <div class="need"><span class="av">DH</span><div><div class="nm">Don Hickling</div><div class="co">Angel</div></div><div class="why"><span class="rchip rep">Replied</span></div><span class="go">Confirm $25K &#8250;</span></div>
+    <div class="need"><span class="av">BF</span><div><div class="nm">Bruce Fair</div><div class="co">NextEdge Capital &middot; VC</div></div><div class="why"><span class="rchip due">Follow-up due</span></div><span class="go">Send follow-up &#8250;</span></div>
+    <div class="need"><span class="av">JC</span><div><div class="nm">Joe Canavan</div><div class="co">Angel</div></div><div class="why"><span class="rchip hot">Hot + opened 3x</span></div><span class="go">Send today &#8250;</span></div>
+    <div class="need"><span class="av">EW</span><div><div class="nm">Elizabeth Wood</div><div class="co">CMI &middot; Prospect</div></div><div class="why"><span class="rchip due">Follow-up due</span></div><span class="go">Follow-up &#8250;</span></div>
+  </div>
+
+  <!-- health + matrix -->
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div class="card">
+      <div class="ch"><span class="t">Category &times; Stage</span><span class="s">where things sit</span></div>
+      <div class="matrix">
+        <table class="mtable">
+          <tr><th></th><th>Cold</th><th>Contacted</th><th>Discovery</th><th>Proposal</th><th>Committed</th></tr>
+          <tr><td class="rowlab">VC</td><td><span class="cell" style="background:#e9eefb">38</span></td><td><span class="cell" style="background:#d6e2fb">3</span></td><td><span class="cell" style="background:#c7d9fb">2</span></td><td><span class="cell" style="background:#eef1f6">0</span></td><td><span class="cell" style="background:#eef1f6">0</span></td></tr>
+          <tr><td class="rowlab">Angel</td><td><span class="cell" style="background:#e9eefb">21</span></td><td><span class="cell" style="background:#d6e2fb">2</span></td><td><span class="cell" style="background:#c7d9fb">1</span></td><td><span class="cell" style="background:#cdeedd">1</span></td><td><span class="cell" style="background:#bfe6cd">1</span></td></tr>
+          <tr><td class="rowlab">Business</td><td><span class="cell" style="background:#e9eefb">25</span></td><td><span class="cell" style="background:#eef1f6">1</span></td><td><span class="cell" style="background:#eef1f6">0</span></td><td><span class="cell" style="background:#eef1f6">0</span></td><td><span class="cell" style="background:#eef1f6">0</span></td></tr>
+          <tr><td class="rowlab">Regulator</td><td><span class="cell" style="background:#e9eefb">14</span></td><td><span class="cell" style="background:#eef1f6">0</span></td><td><span class="cell" style="background:#eef1f6">0</span></td><td><span class="cell" style="background:#eef1f6">0</span></td><td><span class="cell" style="background:#eef1f6">0</span></td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><span class="t">Recent activity</span><span class="s">from GHL</span></div>
+      <div class="act"><span class="i rep">&#9993;</span> Jeff Tindale replied <span class="d">12m</span></div>
+      <div class="act"><span class="i open">&#128065;</span> Joe Canavan opened "evidence gap" 3x <span class="d">1h</span></div>
+      <div class="act"><span class="i sent">&#8599;</span> Design partners - sent to Century 21 <span class="d">3h</span></div>
+      <div class="act"><span class="i open">&#128065;</span> Elizabeth Wood opened <span class="d">5h</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="hint" style="margin-top:4px">Click any contact to open their record (notes, intel, GHL timeline, their Space). Select contacts to "Build an outreach Space." Every row has "Open in GHL." No phone numbers shown.</div>
+</body></html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zoom notes - redesign</title>
+<style>
+:root{color-scheme:dark;
+ --bg:#12235c;--panel:#1a2f70;--panel2:#20387f;--line:#2c4791;--ink:#eef3ff;--muted:#a9bbe6;
+ --blue:#4f93ff;--blue2:#5fd0ff;--blue-soft:#bcd6ff;--gold:#d8b25a;--green:#49c088;
+ --r:14px;--shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.28);
+ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(160deg,#1a2f70 0%,#122257 55%,#0e1c49 100%);color:var(--ink);padding:18px 20px 44px}
+.head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.head .t{font-size:18px;font-weight:750;letter-spacing:-.01em}
+.head .sub{font-size:11px;color:var(--muted);margin-left:4px}
+.head .count{margin-left:auto;font-size:11px;color:var(--muted)}
+/* capture bar */
+.cap{display:grid;grid-template-columns:1fr 1fr 1.4fr auto;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px;box-shadow:var(--shadow);margin-bottom:12px}
+.cap input,.cap textarea{background:#15265f;border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--ink);font-size:12.5px;outline:none;resize:none;font-family:inherit}
+.cap input::placeholder,.cap textarea::placeholder{color:#5f7297}
+.cap input:focus,.cap textarea:focus{border-color:#5fd0ff}
+.cap .save{background:#1f5fff;border:none;border-radius:10px;color:#fff;font-size:12.5px;font-weight:650;padding:0 20px;cursor:pointer}
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.search{flex:1;background:#15265f;border:1px solid var(--line);border-radius:10px;padding:9px 13px;color:var(--ink);font-size:12.5px;outline:none}
+.search::placeholder{color:#5f7297}
+.seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg span{font-size:11.5px;padding:8px 14px;color:var(--muted);cursor:pointer}
+.seg span.on{background:#1f5fff;color:#fff}
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:1200px){.grid{grid-template-columns:repeat(3,1fr)}}
+.note{background:linear-gradient(180deg,#1d3178,#182a6a);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 14px 10px;display:flex;flex-direction:column;gap:9px;transition:border-color .12s,transform .12s}
+.note:hover{border-color:#2a3f68;transform:translateY(-2px)}
+.note .dt{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-family:"JetBrains Mono",ui-monospace,monospace}
+.note .ti{font-size:14px;font-weight:800;letter-spacing:.01em;line-height:1.3;color:#f3f7ff}
+.note .solo{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);border:1px solid #3a3320;background:rgba(216,178,90,.08);border-radius:5px;padding:1px 6px;align-self:flex-start}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:9.5px;letter-spacing:.04em;color:#cfe0ff;border:1px solid #3f63b8;background:rgba(31,95,255,.14);border-radius:999px;padding:3px 9px}
+.chip.more{color:var(--muted);border-color:var(--line);background:transparent}
+.intel{font-size:11.5px;line-height:1.45;color:#dbe6ff;background:#15265f;border:1px solid var(--line);border-left:2px solid var(--gold);border-radius:8px;padding:9px 10px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.intel .lab{display:block;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#7f6a38;margin-bottom:3px}
+.foot{display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:8px;border-top:1px solid var(--line)}
+.open{font-size:11.5px;font-weight:650;color:#fff;background:#1f5fff;border:none;border-radius:8px;padding:6px 15px;cursor:pointer}
+.ic{margin-left:auto;display:flex;gap:4px;opacity:.55}
+.note:hover .ic{opacity:1}
+.ic b{width:26px;height:26px;border-radius:7px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;cursor:pointer;font-weight:400}
+.ic b:hover{color:#fff;border-color:#2a3f68}
+.ic b.del:hover{color:#ff8da3;border-color:#5a2433}
+</style></head>
+<body>
+<div class="head"><span class="t">Zoom notes</span><span class="sub">what other people said - intel first</span><span class="count">43 meetings</span></div>
+
+<div class="cap">
+  <input placeholder="Title">
+  <input placeholder="Attendees">
+  <textarea placeholder="What others said" rows="1"></textarea>
+  <button class="save">Save</button>
+</div>
+
+<div class="toolbar">
+  <input class="search" placeholder="Search title, attendee, or what they said">
+  <div class="seg"><span class="on">Newest</span><span>Oldest</span></div>
+</div>
+
+<div class="grid">
+  <div class="note"><div class="dt">Oct 09, 2026</div><div class="ti">Investor feedback - Jeff Tindale walks the deck</div>
+    <div class="chips"><span class="chip">Chad Johnston</span><span class="chip">Bruce Fair</span><span class="chip">Jeff Tindale</span></div>
+    <div class="intel"><span class="lab">What others said</span>~$200-500M revenue, grew by acquisition (Vancouver notary software). Minor at $40K, serious at $4M.</div>
+    <div class="foot"><button class="open">Open</button><div class="ic"><b>&#9998;</b><b class="del">&#128465;</b></div></div>
+  </div>
+  <div class="note"><div class="dt">Oct 08, 2026</div><div class="ti">Spear Technologies review - direction, MSA, AI specialist</div>
+    <div class="chips"><span class="chip">Keegan Poulton</span><span class="chip">Mathew Mozaffari</span><span class="chip more">+3</span></div>
+    <div class="intel"><span class="lab">What others said</span>MBA Queen's, ex-UBC Sauder adjunct; built SaaS KYC/onboarding, owns mortgage-broker stake.</div>
+    <div class="foot"><button class="open">Open</button><div class="ic"><b>&#9998;</b><b class="del">&#128465;</b></div></div>
+  </div>
+  <div class="note"><div class="dt">Oct 07, 2026</div><div class="ti">Consumer / institutional partnership life cycles with Zed</div>
+    <div class="chips"><span class="chip">Chad Johnston</span><span class="chip">Zed</span></div>
+    <div class="intel"><span class="lab">What others said</span>UBC faculty contact, Vancity, WorkSafeBC legal / compliance angle worth pursuing.</div>
+    <div class="foot"><button class="open">Open</button><div class="ic"><b>&#9998;</b><b class="del">&#128465;</b></div></div>
+  </div>
+  <div class="note"><div class="dt">Oct 06, 2026</div><div class="ti">Don Hickling weekly catch-up - market and crypto macro</div>
+    <div class="chips"><span class="chip">Chad Johnston</span><span class="chip">Don Hickling</span></div>
+    <div class="intel"><span class="lab">What others said</span>~$11/sq ft; single-family ~$9.50. Asked sharp questions on Spear's new pricing.</div>
+    <div class="foot"><button class="open">Open</button><div class="ic"><b>&#9998;</b><b class="del">&#128465;</b></div></div>
+  </div>
+  <div class="note"><div class="dt">Oct 10, 2026</div><div class="ti">Pitch-deck edits and the suitability thesis</div><span class="solo">Solo</span>
+    <div class="intel"><span class="lab">Note to self</span>Tighten the suitability thesis on slide 4; lead with the evidence gap, not the tech.</div>
+    <div class="foot"><button class="open">Open</button><div class="ic"><b>&#9998;</b><b class="del">&#128465;</b></div></div>
+  </div>
+  <div class="note"><div class="dt">Sep 30, 2026</div><div class="ti">Dean Hesse beta-tests FormIQ on the Newton exchange</div>
+    <div class="chips"><span class="chip">Chad Johnston</span><span class="chip">Dean Hesse</span></div>
+    <div class="intel"><span class="lab">What others said</span>Unverified withdrawal allegation; claimed 'pattern' off one complaint; source dated 2024.</div>
+    <div class="foot"><button class="open">Open</button><div class="ic"><b>&#9998;</b><b class="del">&#128465;</b></div></div>
+  </div>
+  <div class="note"><div class="dt">Sep 28, 2026</div><div class="ti">Deck rework + investor-outreach planning with Bruce and Kevin</div>
+    <div class="chips"><span class="chip">Bruce Fair</span><span class="chip">Kevin Wong</span></div>
+    <div class="intel"><span class="lab">What others said</span>Bruce: align the first page with the prior deck; liked 'major financial decision' framing.</div>
+    <div class="foot"><button class="open">Open</button><div class="ic"><b>&#9998;</b><b class="del">&#128465;</b></div></div>
+  </div>
+  <div class="note"><div class="dt">Sep 25, 2026</div><div class="ti">Dean McCall - sales and fundraising coaching</div>
+    <div class="chips"><span class="chip">Chad Johnston</span><span class="chip">Dean McCall</span></div>
+    <div class="intel"><span class="lab">What others said</span>~30/day, wording varied every 5-10 messages. Advised a tighter cadence and one ask.</div>
+    <div class="foot"><button class="open">Open</button><div class="ic"><b>&#9998;</b><b class="del">&#128465;</b></div></div>
+  </div>
+</div>
+</body></html>

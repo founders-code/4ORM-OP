@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drive</title>
+<style>
+:root{color-scheme:light;--bg:#f4f6fb;--ink:#101828;--muted:#6b7488;--line:#e7ebf2;--blue:#1f5fff;--navy:#0b1f55;
+font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-size:13px}
+.wrap{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+/* TREE */
+.tree{background:#fff;border-right:1px solid var(--line);padding:16px 10px;overflow:auto}
+.tree h1{font-size:15px;margin:2px 8px 6px;font-weight:750}
+.texp{display:flex;gap:6px;margin:0 8px 12px}
+.texp span{font-size:10.5px;color:#1b52c7;cursor:pointer}
+.tn{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:7px;cursor:pointer;color:#33405a;font-weight:550;white-space:nowrap;font-size:12.5px}
+.tn:hover{background:#f2f5fb}.tn.on{background:#eaf0ff;color:var(--blue);font-weight:650}
+.tw{width:13px;display:inline-block;text-align:center;color:#9aa3b5;font-size:10px;flex:0 0 auto}
+.tn .ct{margin-left:auto;font-size:10.5px;color:#aab3c4}
+.tn .star{color:#e0a81e;font-size:11px}
+.kids{margin-left:14px;border-left:1px solid #eef1f6;padding-left:3px}
+.file .tw{color:transparent}
+.fdot{width:7px;height:7px;border-radius:2px;flex:0 0 auto}
+.p-pdf{background:#e0483a}.p-xls{background:#1a9d5a}.p-doc{background:#1f5fff}.p-ppt{background:#e08b1e}.p-img{background:#7a5bd0}
+/* MAIN */
+.main{padding:18px 22px;overflow:auto}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.crumb{font-size:13px;color:var(--muted)}.crumb b{color:var(--ink)}
+.top .s{flex:1;max-width:300px;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 12px;color:var(--muted);margin-left:8px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 13px;font-size:12px;font-weight:600;color:#33405a;cursor:pointer}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.sec{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#9aa3b5;margin:4px 2px 10px}
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+.qc{background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px;cursor:pointer;transition:.15s}
+.qc:hover{border-color:#c9d8ff;box-shadow:0 3px 12px rgba(31,95,255,.08)}
+.qc .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:15px;margin-bottom:9px}
+.qc .nm{font-weight:650;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qc .mt{font-size:10.5px;color:var(--muted);margin-top:3px}
+table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border:1px solid var(--line);border-radius:13px;overflow:hidden}
+th{text-align:left;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:#9aa3b5;font-weight:700;padding:10px 14px;border-bottom:1px solid var(--line)}
+td{padding:10px 14px;border-bottom:1px solid #f0f2f7}
+tr:last-child td{border-bottom:none}tr:hover td{background:#fafbfe}
+.fn{display:flex;align-items:center;gap:11px;font-weight:600}
+.fic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;flex:0 0 auto}
+.pdf{background:#e0483a}.xls{background:#1a9d5a}.doc{background:#1f5fff}.ppt{background:#e08b1e}.img{background:#7a5bd0}
+.muted{color:var(--muted);font-size:12px}
+.rowact{display:flex;gap:6px;opacity:0}tr:hover .rowact{opacity:1}
+.ia{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;cursor:pointer;font-size:12px;color:#51607a}
+.ia:hover{background:#eaf0ff;border-color:#c9d8ff;color:var(--blue)}
+.lnk{font-size:10.5px;color:#1b52c7;background:#eef3ff;border-radius:6px;padding:2px 7px}
+</style></head><body>
+<div class="wrap">
+  <!-- EXPANDABLE TREE -->
+  <div class="tree">
+    <h1>Drive</h1>
+    <div class="texp"><span onclick="allT(true)">Expand all</span>&middot;<span onclick="allT(false)">Collapse all</span></div>
+
+    <div class="tn on" onclick="tg(this)"><span class="tw">&#9662;</span>&#128193; My Drive</div>
+    <div class="kids">
+
+      <div class="tn" onclick="tg(this)"><span class="tw">&#9662;</span>&#128193; Investor Materials <span class="star">&#9733;</span><span class="ct">24</span></div>
+      <div class="kids">
+        <div class="tn file"><span class="tw"></span><span class="fdot p-pdf"></span>Investor Deck v7.pdf</div>
+        <div class="tn file"><span class="tw"></span><span class="fdot p-ppt"></span>Teaser - 1 pager.pptx</div>
+        <div class="tn" onclick="tg(this)"><span class="tw">&#9656;</span>&#128193; Data Room <span class="ct">18</span></div>
+        <div class="kids" style="display:none">
+          <div class="tn file"><span class="tw"></span><span class="fdot p-xls"></span>Cap table.xlsx</div>
+          <div class="tn file"><span class="tw"></span><span class="fdot p-doc"></span>SAFE - template.docx</div>
+          <div class="tn file"><span class="tw"></span><span class="fdot p-pdf"></span>Incorporation certs.pdf</div>
+        </div>
+        <div class="tn" onclick="tg(this)"><span class="tw">&#9656;</span>&#128193; Decks - archive <span class="ct">6</span></div>
+        <div class="kids" style="display:none">
+          <div class="tn file"><span class="tw"></span><span class="fdot p-pdf"></span>Deck v5.pdf</div>
+          <div class="tn file"><span class="tw"></span><span class="fdot p-pdf"></span>Deck v6.pdf</div>
+        </div>
+      </div>
+
+      <div class="tn" onclick="tg(this)"><span class="tw">&#9656;</span>&#128193; Legal &amp; Corporate <span class="ct">31</span></div>
+      <div class="kids" style="display:none">
+        <div class="tn file"><span class="tw"></span><span class="fdot p-doc"></span>Subscription Agreement.docx</div>
+        <div class="tn file"><span class="tw"></span><span class="fdot p-doc"></span>Shareholder agreement.docx</div>
+        <div class="tn" onclick="tg(this)"><span class="tw">&#9656;</span>&#128193; Contracts <span class="ct">11</span></div>
+        <div class="kids" style="display:none">
+          <div class="tn file"><span class="tw"></span><span class="fdot p-pdf"></span>NDA - mutual.pdf</div>
+        </div>
+      </div>
+
+      <div class="tn" onclick="tg(this)"><span class="tw">&#9656;</span>&#128193; Financials <span class="star">&#9733;</span><span class="ct">17</span></div>
+      <div class="kids" style="display:none">
+        <div class="tn file"><span class="tw"></span><span class="fdot p-xls"></span>Financial Model - Oct.xlsx</div>
+        <div class="tn file"><span class="tw"></span><span class="fdot p-xls"></span>Burn &amp; runway.xlsx</div>
+      </div>
+
+      <div class="tn" onclick="tg(this)"><span class="tw">&#9656;</span>&#128193; Design Partners <span class="ct">14</span></div>
+      <div class="kids" style="display:none">
+        <div class="tn file"><span class="tw"></span><span class="fdot p-ppt"></span>Northbridge Pilot.pptx</div>
+      </div>
+
+      <div class="tn" onclick="tg(this)"><span class="tw">&#9656;</span>&#128193; Regulatory <span class="ct">9</span></div>
+      <div class="kids" style="display:none">
+        <div class="tn file"><span class="tw"></span><span class="fdot p-pdf"></span>RPAA Guidance - FINTRAC.pdf</div>
+      </div>
+
+      <div class="tn" onclick="tg(this)"><span class="tw">&#9656;</span>&#128193; Research &amp; Intel <span class="ct">22</span></div>
+      <div class="kids" style="display:none">
+        <div class="tn file"><span class="tw"></span><span class="fdot p-img"></span>Evidence-index-chart.png</div>
+      </div>
+
+      <div class="tn" onclick="tg(this)"><span class="tw">&#9656;</span>&#128193; Brand &amp; Assets <span class="ct">8</span></div>
+      <div class="kids" style="display:none">
+        <div class="tn file"><span class="tw"></span><span class="fdot p-img"></span>Logo-lockup.png</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="top">
+      <div class="crumb">My Drive / <b>Investor Materials</b></div>
+      <div class="s">&#128269; Search files...</div>
+      <button class="btn">New folder</button>
+      <button class="btn pri">&#8593; Upload</button>
+    </div>
+
+    <div class="sec">Pinned for the raise</div>
+    <div class="quick">
+      <div class="qc"><div class="ic" style="background:#fde0dc;color:#e0483a">&#128196;</div><div class="nm">Investor Deck v7</div><div class="mt">PDF &middot; edited 2h ago</div></div>
+      <div class="qc"><div class="ic" style="background:#ddf0e6;color:#1a9d5a">&#128202;</div><div class="nm">Financial Model</div><div class="mt">Sheet &middot; edited yesterday</div></div>
+      <div class="qc"><div class="ic" style="background:#e2ebff;color:#1f5fff">&#128221;</div><div class="nm">SAFE / Subscription</div><div class="mt">Doc &middot; edited 3d ago</div></div>
+      <div class="qc"><div class="ic" style="background:#f0e8ff;color:#7a5bd0">&#128194;</div><div class="nm">Data Room</div><div class="mt">Folder &middot; 18 files</div></div>
+    </div>
+
+    <div class="sec">Investor Materials &middot; recent</div>
+    <table>
+      <thead><tr><th style="width:42%">Name</th><th>Owner</th><th>Modified</th><th>Linked to</th><th style="width:100px"></th></tr></thead>
+      <tbody>
+        <tr><td><div class="fn"><span class="fic pdf">PDF</span>Investor Deck v7.pdf</div></td><td class="muted">You</td><td class="muted">2 hours ago</td><td><span class="lnk">&#9873; Fundraise</span></td><td><div class="rowact"><span class="ia" title="Preview">&#128065;</span><span class="ia" title="Share">&#128279;</span><span class="ia" title="Attach to space">&#9873;</span></div></td></tr>
+        <tr><td><div class="fn"><span class="fic xls">XLS</span>Financial Model - Oct.xlsx</div></td><td class="muted">You</td><td class="muted">Yesterday</td><td><span class="lnk">&#9873; Fundraise</span></td><td><div class="rowact"><span class="ia" title="Preview">&#128065;</span><span class="ia" title="Share">&#128279;</span><span class="ia" title="Attach to space">&#9873;</span></div></td></tr>
+        <tr><td><div class="fn"><span class="fic doc">DOC</span>Subscription Agreement.docx</div></td><td class="muted">You</td><td class="muted">3 days ago</td><td><span class="lnk">&#9873; Legal</span></td><td><div class="rowact"><span class="ia" title="Preview">&#128065;</span><span class="ia" title="Share">&#128279;</span><span class="ia" title="Attach to space">&#9873;</span></div></td></tr>
+        <tr><td><div class="fn"><span class="fic ppt">PPT</span>Northbridge Pilot Walkthrough.pptx</div></td><td class="muted">You</td><td class="muted">4 days ago</td><td><span class="lnk">&#9873; Design Partners</span></td><td><div class="rowact"><span class="ia" title="Preview">&#128065;</span><span class="ia" title="Share">&#128279;</span><span class="ia" title="Attach to space">&#9873;</span></div></td></tr>
+        <tr><td><div class="fn"><span class="fic pdf">PDF</span>RPAA Guidance - FINTRAC.pdf</div></td><td class="muted">Shared</td><td class="muted">1 week ago</td><td><span class="lnk">&#9873; Regulatory</span></td><td><div class="rowact"><span class="ia" title="Preview">&#128065;</span><span class="ia" title="Share">&#128279;</span><span class="ia" title="Attach to space">&#9873;</span></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<script>
+function tg(el){var k=el.nextElementSibling;if(!k||!k.classList.contains('kids'))return;
+  var open=k.style.display!=='none';k.style.display=open?'none':'block';
+  var w=el.querySelector('.tw');if(w&&w.textContent.trim())w.innerHTML=open?'&#9656;':'&#9662;';}
+function allT(open){document.querySelectorAll('.kids').forEach(function(k){
+  if(k.parentElement.classList.contains('tree'))return;k.style.display=open?'block':'none';});
+  document.querySelectorAll('.tn .tw').forEach(function(w){if(w.textContent.trim())w.innerHTML=open?'&#9662;':'&#9656;';});}
+</script>
+</body></html>

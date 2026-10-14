@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contacts - relationship command center</title>
+<style>
+:root{color-scheme:light;--bg:#f4f6fb;--ink:#101828;--muted:#6b7488;--line:#e7ebf2;--blue:#1f5fff;--navy:#0b1f55;--gold:#c79a3a;--green:#1a9d5a;--amber:#e08b1e;--red:#e0483a;
+font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-size:13px}
+.wrap{display:grid;grid-template-columns:212px 1fr;min-height:100vh}
+/* left rail */
+.rail{background:#fff;border-right:1px solid var(--line);padding:16px 12px}
+.rail h1{font-size:15px;margin:2px 6px 14px;font-weight:750}
+.seg{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9aa3b5;margin:16px 6px 6px}
+.lx{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;color:#33405a;font-weight:550}
+.lx:hover{background:#f2f5fb}.lx.on{background:#eaf0ff;color:var(--blue);font-weight:650}
+.lx .ct{margin-left:auto;font-size:11px;color:#9aa3b5;background:#f0f2f7;border-radius:999px;padding:1px 7px}
+.lx.on .ct{background:#dbe6ff;color:var(--blue)}
+.dot{width:8px;height:8px;border-radius:50%}
+/* main */
+.main{padding:18px 22px}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.top .s{flex:1;max-width:360px;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 12px;color:var(--muted)}
+.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 13px;font-size:12px;font-weight:600;color:#33405a;cursor:pointer}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+/* attention strip */
+.attn{background:linear-gradient(120deg,#0a1326,#13224a);border-radius:14px;padding:14px 16px;color:#fff;margin-bottom:18px}
+.attn .h{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8fa6e8;display:flex;align-items:center;gap:7px;margin-bottom:11px}
+.attn .row{display:flex;gap:10px;overflow:auto}
+.cold{flex:0 0 auto;background:#ffffff14;border:1px solid #ffffff1f;border-radius:11px;padding:10px 12px;min-width:210px}
+.cold .nm{font-weight:650;font-size:12.5px;display:flex;align-items:center;gap:7px}
+.cold .av{width:22px;height:22px;border-radius:50%;background:#2d4a8a;display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff}
+.cold .meta{font-size:10.5px;color:#aeb9d6;margin:5px 0 8px}
+.cold .act{font-size:10.5px;color:#cfe;background:#ffffff16;border-radius:7px;padding:3px 8px;cursor:pointer;display:inline-block}
+.warmbar{height:4px;border-radius:3px;background:#ffffff24;margin:7px 0 2px;overflow:hidden}
+.warmbar i{display:block;height:100%}
+/* table */
+.sort{display:flex;gap:8px;margin-bottom:10px;align-items:center;color:var(--muted);font-size:11.5px}
+.chip{font-size:10.5px;border:1px solid var(--line);border-radius:999px;padding:4px 10px;background:#fff;cursor:pointer}
+.chip.on{background:var(--navy);border-color:var(--navy);color:#fff}
+table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+th{text-align:left;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:#9aa3b5;font-weight:700;padding:11px 14px;border-bottom:1px solid var(--line)}
+td{padding:11px 14px;border-bottom:1px solid #f0f2f7;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafbfe}
+.person{display:flex;align-items:center;gap:10px}
+.av2{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff;flex:0 0 auto}
+.nm2{font-weight:650}.sub{font-size:11px;color:var(--muted)}
+.tagc{font-size:10px;font-weight:700;border-radius:6px;padding:3px 8px;display:inline-block}
+.t-angel{background:#fff4de;color:#9a6a00}.t-vc{background:#e7edff;color:#1b45c7}.t-prospect{background:#e3f6ea;color:#107a43}.t-reg{background:#efeaff;color:#5b3bc0}.t-ff{background:#ffe9ef;color:#b02a54}.t-adv{background:#e8f4ff;color:#1667b5}
+.warm{display:flex;align-items:center;gap:7px}
+.wdots{display:flex;gap:3px}.wdots i{width:7px;height:7px;border-radius:50%;background:#e2e6ee}
+.wl{font-size:10.5px;color:var(--muted)}
+.touch{font-size:11.5px}.touch.cold{color:var(--red);font-weight:600}.touch.ok{color:var(--muted)}
+.next{font-size:11.5px;color:#33405a}
+.rowact{display:flex;gap:6px;opacity:0}
+tr:hover .rowact{opacity:1}
+.ia{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;cursor:pointer;font-size:12px;color:#51607a}
+.ia:hover{background:#eaf0ff;border-color:#c9d8ff;color:var(--blue)}
+.foot{font-size:11px;color:var(--muted);margin-top:12px;text-align:center}
+</style></head><body>
+<div class="wrap">
+  <!-- LEFT RAIL: smart segments -->
+  <div class="rail">
+    <h1>Contacts</h1>
+    <div class="lx on">All people <span class="ct">214</span></div>
+    <div class="lx">Starred <span class="ct">12</span></div>
+
+    <div class="seg">By role</div>
+    <div class="lx"><span class="dot" style="background:#e0a81e"></span>Angels <span class="ct">38</span></div>
+    <div class="lx"><span class="dot" style="background:#1f5fff"></span>VCs <span class="ct">46</span></div>
+    <div class="lx"><span class="dot" style="background:#1a9d5a"></span>Prospects <span class="ct">61</span></div>
+    <div class="lx"><span class="dot" style="background:#7a5bd0"></span>Regulators <span class="ct">24</span></div>
+    <div class="lx"><span class="dot" style="background:#b02a54"></span>Friends &amp; family <span class="ct">19</span></div>
+    <div class="lx"><span class="dot" style="background:#1667b5"></span>Advisors <span class="ct">26</span></div>
+
+    <div class="seg">Smart lists</div>
+    <div class="lx" style="color:var(--red)">&#10052;&#65039; Going cold <span class="ct" style="background:#ffe1dd;color:#c0392b">9</span></div>
+    <div class="lx" style="color:#9a6a00">&#9203; Owe a reply <span class="ct" style="background:#fff0d6;color:#9a6a00">5</span></div>
+    <div class="lx">&#128293; Warm &amp; active <span class="ct">22</span></div>
+    <div class="lx">&#128279; Can intro me <span class="ct">7</span></div>
+    <div class="lx">&#127793; New this week <span class="ct">11</span></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="top">
+      <div class="s">&#128269; Search name, company, tag...</div>
+      <button class="btn">Import</button>
+      <button class="btn pri">+ Add contact</button>
+    </div>
+
+    <!-- attention strip -->
+    <div class="attn">
+      <div class="h">&#10052;&#65039; Going cold &middot; reach out before the round closes</div>
+      <div class="row">
+        <div class="cold">
+          <div class="nm"><span class="av2" style="width:22px;height:22px;font-size:10px;background:#e0a81e">JC</span>Joe Canavan</div>
+          <div class="meta">Angel &middot; last touch 11 days ago</div>
+          <div class="warmbar"><i style="width:60%;background:#e0a81e"></i></div>
+          <span class="act">&#9993; Email via GHL</span>
+        </div>
+        <div class="cold">
+          <div class="nm"><span class="av2" style="width:22px;height:22px;font-size:10px;background:#1f5fff">BL</span>Bruce Livesey</div>
+          <div class="meta">Advisor &middot; last touch 14 days ago</div>
+          <div class="warmbar"><i style="width:45%;background:#e0483a"></i></div>
+          <span class="act">&#9993; Follow up</span>
+        </div>
+        <div class="cold">
+          <div class="nm"><span class="av2" style="width:22px;height:22px;font-size:10px;background:#1a9d5a">DK</span>Don Kirsh</div>
+          <div class="meta">F&amp;F &middot; verbal $25K, no date</div>
+          <div class="warmbar"><i style="width:72%;background:#e0a81e"></i></div>
+          <span class="act">&#9742; Lock the date</span>
+        </div>
+        <div class="cold">
+          <div class="nm"><span class="av2" style="width:22px;height:22px;font-size:10px;background:#7a5bd0">SR</span>Sarah Reiss</div>
+          <div class="meta">Regulator &middot; last touch 18 days ago</div>
+          <div class="warmbar"><i style="width:38%;background:#e0483a"></i></div>
+          <span class="act">&#9993; Re-engage</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- filters -->
+    <div class="sort">
+      <span class="chip on">All</span><span class="chip">Angels</span><span class="chip">VCs</span><span class="chip">Prospects</span><span class="chip">F&amp;F</span>
+      <span style="margin-left:auto">Sort: <b style="color:#33405a">Needs attention</b> &middot; Warmth &middot; Last touch &middot; Name</span>
+    </div>
+
+    <table>
+      <thead><tr><th style="width:30%">Person</th><th>Role</th><th>Warmth</th><th>Last touch</th><th>Next step</th><th style="width:118px"></th></tr></thead>
+      <tbody>
+        <tr>
+          <td><div class="person"><span class="av2" style="background:#e0a81e">JC</span><div><div class="nm2">Joe Canavan</div><div class="sub">Jmeson Capital &middot; intro&apos;d by Bruce</div></div></div></td>
+          <td><span class="tagc t-angel">Angel</span></td>
+          <td><div class="warm"><div class="wdots"><i style="background:#e0a81e"></i><i style="background:#e0a81e"></i><i style="background:#e0a81e"></i><i></i><i></i></div><span class="wl">Cooling</span></div></td>
+          <td><span class="touch cold">11 days ago</span></td>
+          <td><span class="next">Send CapIntel angle</span></td>
+          <td><div class="rowact"><span class="ia" title="Email via GHL">&#9993;</span><span class="ia" title="Open space">&#9873;</span><span class="ia" title="Add to pipeline">&#43;</span></div></td>
+        </tr>
+        <tr>
+          <td><div class="person"><span class="av2" style="background:#1f5fff">MA</span><div><div class="nm2">Matt Arkell</div><div class="sub">Golden Ventures &middot; fintech thesis</div></div></div></td>
+          <td><span class="tagc t-vc">VC</span></td>
+          <td><div class="warm"><div class="wdots"><i style="background:#1a9d5a"></i><i style="background:#1a9d5a"></i><i style="background:#1a9d5a"></i><i style="background:#1a9d5a"></i><i></i></div><span class="wl">Warm</span></div></td>
+          <td><span class="touch ok">2 days ago</span></td>
+          <td><span class="next">Waiting on his reply</span></td>
+          <td><div class="rowact"><span class="ia" title="Email via GHL">&#9993;</span><span class="ia" title="Open space">&#9873;</span><span class="ia" title="Add to pipeline">&#43;</span></div></td>
+        </tr>
+        <tr>
+          <td><div class="person"><span class="av2" style="background:#1a9d5a">TM</span><div><div class="nm2">Tanya Mehta</div><div class="sub">Northbridge Payments &middot; design partner</div></div></div></td>
+          <td><span class="tagc t-prospect">Prospect</span></td>
+          <td><div class="warm"><div class="wdots"><i style="background:#1a9d5a"></i><i style="background:#1a9d5a"></i><i style="background:#1a9d5a"></i><i style="background:#1a9d5a"></i><i style="background:#1a9d5a"></i></div><span class="wl">Hot</span></div></td>
+          <td><span class="touch ok">yesterday</span></td>
+          <td><span class="next">Book the pilot call</span></td>
+          <td><div class="rowact"><span class="ia" title="Email via GHL">&#9993;</span><span class="ia" title="Open space">&#9873;</span><span class="ia" title="Add to pipeline">&#43;</span></div></td>
+        </tr>
+        <tr>
+          <td><div class="person"><span class="av2" style="background:#b02a54">DK</span><div><div class="nm2">Don Kirsh</div><div class="sub">Family friend &middot; verbal commit</div></div></div></td>
+          <td><span class="tagc t-ff">F&amp;F</span></td>
+          <td><div class="warm"><div class="wdots"><i style="background:#e0a81e"></i><i style="background:#e0a81e"></i><i style="background:#e0a81e"></i><i style="background:#e0a81e"></i><i></i></div><span class="wl">Cooling</span></div></td>
+          <td><span class="touch cold">6 days ago</span></td>
+          <td><span class="next">Confirm $25K + date</span></td>
+          <td><div class="rowact"><span class="ia" title="Email via GHL">&#9993;</span><span class="ia" title="Open space">&#9873;</span><span class="ia" title="Add to pipeline">&#43;</span></div></td>
+        </tr>
+        <tr>
+          <td><div class="person"><span class="av2" style="background:#7a5bd0">SR</span><div><div class="nm2">Sarah Reiss</div><div class="sub">FSRA &middot; policy, conduct standards</div></div></div></td>
+          <td><span class="tagc t-reg">Regulator</span></td>
+          <td><div class="warm"><div class="wdots"><i style="background:#e0483a"></i><i style="background:#e0483a"></i><i></i><i></i><i></i></div><span class="wl">Cold</span></div></td>
+          <td><span class="touch cold">18 days ago</span></td>
+          <td><span class="next">Share evidence memo</span></td>
+          <td><div class="rowact"><span class="ia" title="Email via GHL">&#9993;</span><span class="ia" title="Open space">&#9873;</span><span class="ia" title="Add to pipeline">&#43;</span></div></td>
+        </tr>
+        <tr>
+          <td><div class="person"><span class="av2" style="background:#1667b5">BL</span><div><div class="nm2">Bruce Livesey</div><div class="sub">Advisor &middot; can intro to 3 angels</div></div></div></td>
+          <td><span class="tagc t-adv">Advisor</span></td>
+          <td><div class="warm"><div class="wdots"><i style="background:#1a9d5a"></i><i style="background:#1a9d5a"></i><i style="background:#1a9d5a"></i><i></i><i></i></div><span class="wl">Warm</span></div></td>
+          <td><span class="touch cold">14 days ago</span></td>
+          <td><span class="next">Ask for FSRA intro</span></td>
+          <td><div class="rowact"><span class="ia" title="Email via GHL">&#9993;</span><span class="ia" title="Open space">&#9873;</span><span class="ia" title="Add to pipeline">&#43;</span></div></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="foot">Showing 6 of 214 &middot; warmth and last-touch update automatically from your GHL sends and replies</div>
+  </div>
+</div>
+</body></html>
