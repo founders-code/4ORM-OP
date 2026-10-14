@@ -4,6 +4,7 @@ import { allowPackageKind } from './guard.mjs';
 import { copyDriveFile, createGmailDraft, driveWrite, uploadDriveBytes } from './google';
 import { fail } from './log';
 import { STARTERS, assembleMail, fillToken } from './packages.mjs';
+import outreachSeed from '../data/spaces_seed.json';
 
 type Sql = NeonQueryFunction<false, false>;
 
@@ -73,6 +74,7 @@ export async function ensureSpaceTables(sql: Sql) {
     )`],
     ['db_spaces_kind', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'data_room'`],
     ['db_spaces_notes', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS notes text`],
+    ['db_spaces_category', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS category text`],
     ['db_spaces_drive_url', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS drive_folder_url text`],
     ['db_space_items', () => sql`CREATE TABLE IF NOT EXISTS space_items (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -110,7 +112,7 @@ export async function ensureSpaceTables(sql: Sql) {
 async function owned(sql: Sql, ownerId: string, id: string) {
   if (!spaceIdOk(id)) return null;
   const rows = await sql`
-    SELECT id, name, kind, notes, drive_folder_id, drive_folder_url, pushed_to_drive_at, created_at
+    SELECT id, name, kind, notes, category, drive_folder_id, drive_folder_url, pushed_to_drive_at, created_at
     FROM spaces
     WHERE id = ${id} AND owner_id = ${ownerId}
     LIMIT 1
@@ -229,7 +231,7 @@ function toView(row: Record<string, unknown>, items: Item[], people: Person[], m
     subjectContactId: '',
     subjectLabel: name,
     description: String(row.notes || ''),
-    spaceCategory: '',
+    spaceCategory: String(row.category || ''),
     pushedToDriveAt: pushed && !Number.isNaN(pushed.getTime()) ? pushed.toISOString() : '',
     docCount: docs.length,
     recipientCount: people.length,
@@ -287,6 +289,61 @@ async function seedTemplates(sql: Sql, ownerId: string, taken: Set<string>) {
   }
 }
 
+function plain(value: string) {
+  return value.replace(/\u2014/g, ' - ').replace(/\u2013/g, '-');
+}
+
+async function seedOutreach(sql: Sql, ownerId: string) {
+  const entries = (outreachSeed.spaces || []) as Array<Record<string, unknown>>;
+  const kinds: Record<string, string> = { angel: 'investor', prospect: 'partner', regulator: 'regulator' };
+  let taken = new Set<string>();
+  try {
+    const rows = await sql`SELECT name FROM spaces WHERE owner_id = ${ownerId}`;
+    taken = new Set((rows as Array<{ name?: string }>).map((row) => String(row.name || '')));
+  } catch (err) {
+    fail('spaces_seed_names', err);
+    return;
+  }
+  for (const item of entries) {
+    const name = clip(item.name, 120);
+    if (!name || taken.has(name)) continue;
+    taken.add(name);
+    const kind = kinds[String(item.kind || '')] || 'data_room';
+    const notes = plain((Array.isArray(item.intel) ? item.intel : []).map((line) => String(line || '').trim()).filter(Boolean).join('\n')).slice(0, 8000);
+    const category = clip(item.category, 40);
+    const role = clip(item.role, 120);
+    try {
+      const rows = await sql`
+        INSERT INTO spaces (owner_id, name, kind, notes, category, updated_at)
+        VALUES (${ownerId}, ${name}, ${kind}, ${notes}, ${category}, now())
+        RETURNING id
+      `;
+      const id = String(rows[0]?.id || '');
+      if (!id) continue;
+      await sql`
+        INSERT INTO space_email (space_id, owner_id, subject, body)
+        VALUES (${id}, ${ownerId}, ${plain(clip(item.email_subject, 200))}, ${plain(clip(item.email_body, 8000))})
+        ON CONFLICT (space_id) DO NOTHING
+      `;
+      const people = Array.isArray(item.people) ? item.people : [];
+      for (const person of people) {
+        const who = clip(person, 120);
+        if (!who) continue;
+        try {
+          await sql`
+            INSERT INTO space_recipients (owner_id, space_id, name, email, role, listed)
+            VALUES (${ownerId}, ${id}, ${who}, ${''}, ${role}, ${true})
+          `;
+        } catch (err) {
+          fail('spaces_seed_person', err);
+        }
+      }
+    } catch (err) {
+      fail('spaces_outreach', err);
+    }
+  }
+}
+
 export async function listSpaces(sql: Sql, ownerId: string) {
   try {
     await ensureSpaceTables(sql);
@@ -303,8 +360,9 @@ export async function listSpaces(sql: Sql, ownerId: string) {
       fail('spaces_list_packages', err);
     }
     await seedTemplates(sql, ownerId, new Set(packages.map((row) => String(row.name || ''))));
+    await seedOutreach(sql, ownerId);
     const rows = await sql`
-      SELECT id, name, kind, notes, drive_folder_id, drive_folder_url, pushed_to_drive_at, created_at
+      SELECT id, name, kind, notes, category, drive_folder_id, drive_folder_url, pushed_to_drive_at, created_at
       FROM spaces
       WHERE owner_id = ${ownerId}
       ORDER BY created_at
@@ -360,6 +418,7 @@ export async function listSpaces(sql: Sql, ownerId: string) {
         spaceType: 'project',
         subjectLabel: String(row.name || ''),
         description: String(row.notes || ''),
+        spaceCategory: String(row.category || ''),
         preview,
         emailSubject,
         thumbs,
@@ -536,8 +595,8 @@ export async function addSpaceItem(
     if (depth >= 3) parent = '';
   }
   const storedMime = folder ? 'text/x-folder' : mime;
-  const url = clip(input.url, 500);
-  const driveFileId = clip(input.driveFileId || input.drive_file_id, 120);
+  let url = clip(input.url, 500);
+  let driveFileId = clip(input.driveFileId || input.drive_file_id, 120);
   let body = kind === 'note' ? clip(input.body, 8000) : '';
   let thumb = clip(input.thumbUrl || input.thumb_url, 200000);
   if (bytes) {
@@ -550,6 +609,23 @@ export async function addSpaceItem(
       const data = match[2].slice(0, FILE_CAP);
       body = data;
       if ((match[1] || mime).startsWith('image/') && data.length < 120000) thumb = input.dataUrl.slice(0, 200000);
+    }
+  }
+  if (bytes && !driveFileId && /officedocument|msword|ms-excel|ms-powerpoint/.test(mime)) {
+    try {
+      const cached = await sql`SELECT tree FROM drive_cache WHERE owner_id = ${ownerId}`;
+      let tree: unknown = (cached[0] as { tree?: unknown } | undefined)?.tree;
+      if (typeof tree === 'string') {
+        try { tree = JSON.parse(tree); } catch { tree = []; }
+      }
+      const parentId = String((Array.isArray(tree) ? (tree[0] as { id?: string } | null) : null)?.id || '');
+      if (/^[\w-]{8,}$/.test(parentId)) {
+        const uploaded = await uploadDriveBytes(name, mime, parentId, bytes) as { id?: string } | null;
+        driveFileId = clip(uploaded?.id, 120);
+        if (driveFileId && !url) url = `https://drive.google.com/file/d/${driveFileId}/preview`;
+      }
+    } catch (err) {
+      fail('spaces_office', err);
     }
   }
   const siblings = await sql`

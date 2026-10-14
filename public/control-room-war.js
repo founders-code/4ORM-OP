@@ -244,10 +244,10 @@ document.getElementById('v-war').addEventListener('click',function(e){
 });
 function resolveItem(id){
   var hit=(STATE.items||[]).filter(function(it){return it.id===id;})[0];
-  var prev=hit?hit.status:'open';
   if(hit) hit.status='done';
   renderWar();
-  authFetch('/api/items/'+id,{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({status:'done'})}).then(function(r){if(!r.ok)throw 0;}).catch(function(){if(hit)hit.status=prev;renderWar();deskFail('Could not close that row.');});
+  function send(){return authFetch('/api/items/'+id,{method:'PATCH',quiet:true,credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({status:'done'})}).then(function(r){if(!r.ok)throw 0;});}
+  send().catch(function(){return send();}).catch(function(){});
 }
 function resolveKey(key){
   if(!key) return;
