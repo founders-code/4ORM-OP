@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Documents - command center</title>
+<style>
+:root{color-scheme:light;--bg:#f4f6f9;--panel:#fff;--ink:#0b1220;--muted:#5b6472;--line:#e7e9ee;--blue:#1f5fff;--navy:#0b1f55;--gold:#c79a3a;--green:#1a9d5a;--amber:#e08a00;--r:12px;--shadow:0 1px 2px rgba(16,24,40,.04),0 8px 22px rgba(16,24,40,.06);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);padding:16px 20px 40px}
+.head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.head .t{font-size:18px;font-weight:750}
+.head .search{flex:1;max-width:420px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 12px;font-size:12.5px;color:var(--muted)}
+.head .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-left:auto}
+.head .seg span{font-size:11.5px;padding:7px 12px;color:var(--muted);cursor:pointer}
+.head .seg span.on{background:var(--navy);color:#fff}
+.head .btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 13px;font-size:12px;font-weight:600;color:#33405a;cursor:pointer}
+.head .btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.cap{font-size:11.5px;color:var(--muted);margin:2px 2px 14px}
+.wrap{display:grid;grid-template-columns:210px 1fr 236px;gap:16px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+/* left tree */
+.side{padding:10px 8px;position:sticky;top:12px}
+.sh{font-size:9.5px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;padding:8px 8px 6px;display:flex;align-items:center}
+.sh .add{margin-left:auto;color:var(--blue);font-weight:650;cursor:pointer;font-size:10.5px}
+.row{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:12.5px;color:#2a3344}
+.row:hover{background:#f1f4fa}.row.on{background:#eef2fb;color:var(--navy);font-weight:600}
+.row .chev{width:10px;color:#aeb6c4;font-size:9px}
+.row .ct{margin-left:auto;font-size:10px;color:#9aa6ba;background:#eef1f6;border-radius:999px;padding:1px 7px}
+.set .row .pin{color:var(--gold)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:6px 8px 4px}
+.fchip{font-size:10px;border:1px solid var(--line);border-radius:999px;padding:4px 9px;color:#44506a;cursor:pointer;background:#fff}
+.fchip.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.divide{height:1px;background:var(--line);margin:8px 4px}
+/* center */
+.selbar{display:flex;align-items:center;gap:10px;background:#0b1f55;color:#fff;border-radius:10px;padding:9px 13px;margin-bottom:12px;font-size:12px}
+.selbar b{font-weight:700}
+.selbar .sp{margin-left:auto;display:flex;gap:8px}
+.selbar .act{background:#1c3f91;border:none;color:#dce8ff;border-radius:7px;padding:6px 11px;font-size:11.5px;cursor:pointer}
+.selbar .act.go{background:var(--blue);color:#fff;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:1300px){.grid{grid-template-columns:repeat(3,1fr)}}
+.doc{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;position:relative;transition:transform .1s,box-shadow .1s}
+.doc:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(16,24,40,.1)}
+.doc.sel{outline:2px solid var(--blue);outline-offset:-2px}
+.doc .ck{position:absolute;top:7px;left:7px;width:18px;height:18px;border-radius:5px;border:1.6px solid #c5cdda;background:#fff;display:none}
+.doc:hover .ck,.doc.sel .ck{display:block}
+.doc.sel .ck{background:var(--blue);border-color:var(--blue)}
+.doc .sync{position:absolute;top:9px;right:9px;width:8px;height:8px;border-radius:50%}
+.sync.ok{background:var(--green)}.sync.local{background:var(--amber)}
+.page{height:118px;background:linear-gradient(160deg,#fbfcfe,#eef2f8);display:flex;align-items:flex-start;justify-content:center;padding:12px;position:relative}
+.sheet{width:74px;background:#fff;border:1px solid #e3e8f0;border-radius:3px;box-shadow:0 2px 6px rgba(16,24,40,.08);padding:8px 7px}
+.sheet .ln{height:3px;background:#dde3ee;border-radius:2px;margin:3px 0}
+.sheet .ln.s{width:60%}.sheet .ln.t{height:5px;background:#c3cde0;width:70%;margin-bottom:5px}
+.page .typ{position:absolute;bottom:8px;right:9px;font-size:8.5px;font-weight:800;letter-spacing:.05em;color:#8aa0c8;background:#fff;border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+.page.pdf .typ{color:#b4484a}.page.xls .typ{color:#2f8a56}.page.img{background:linear-gradient(160deg,#dfe9fb,#cdd8f0)}
+.doc .m{padding:8px 10px 10px}
+.doc .nm{font-size:11.5px;font-weight:650;line-height:1.25}
+.doc .usein{font-size:9px;color:#3a5bbf;background:#eef2fb;border-radius:5px;padding:2px 6px;margin-top:6px;display:inline-block}
+.doc .usein.none{color:#9aa6ba;background:#f2f4f8}
+/* right rail */
+.rr .sh{padding:10px 10px 6px}
+.spacelist{padding:4px 8px 10px}
+.spacedrop{display:flex;align-items:center;gap:9px;border:1.5px dashed #cbd5e8;border-radius:10px;padding:10px 11px;margin-bottom:8px;cursor:pointer;background:#fbfcfe}
+.spacedrop:hover{border-color:var(--blue);background:#f5f8ff}
+.spacedrop .d{width:26px;height:26px;border-radius:7px;background:#e9eefb;color:#2a4c9c;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.spacedrop .nm{font-size:11.5px;font-weight:600}
+.spacedrop .sub{font-size:9.5px;color:var(--muted)}
+.recent{padding:2px 10px 12px}
+.recent .ri{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:11px}
+.recent .ri:last-child{border-bottom:none}
+.recent .ri .ic{width:22px;height:22px;border-radius:5px;background:#eef2f8;color:#5873a8;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.hintbar{font-size:10.5px;color:var(--muted);padding:6px 10px 10px}
+</style></head>
+<body>
+<div class="head"><span class="t">Documents</span>
+  <input class="search" placeholder="Search all documents - name, type, or what's inside">
+  <div class="seg"><span class="on">Grid</span><span>List</span></div>
+  <button class="btn">+ Folder</button><button class="btn pri">New set</button>
+</div>
+<div class="cap">Your staging library and launchpad: pull from Drive, preview inline, select, and drop straight into a Space to build a send-bundle.</div>
+
+<div class="wrap">
+
+  <!-- LEFT: tree + sets + filters -->
+  <div class="card side">
+    <div class="sh">Folders <span class="add">+ new</span></div>
+    <div class="row on"><span class="chev">&#9662;</span> VC <span class="ct">9</span></div>
+    <div class="row"><span class="chev">&#9656;</span> Angel <span class="ct">4</span></div>
+    <div class="row"><span class="chev">&#9656;</span> Regulator <span class="ct">10</span></div>
+    <div class="row"><span class="chev">&#9656;</span> Design Partners <span class="ct">4</span></div>
+    <div class="row"><span class="chev">&#9656;</span> Legal <span class="ct">6</span></div>
+    <div class="row"><span class="chev">&#9656;</span> Grants <span class="ct">3</span></div>
+    <div class="row"><span class="chev">&#9656;</span> Resources <span class="ct">8</span></div>
+    <div class="divide"></div>
+    <div class="sh">Sets <span class="add">+ new</span></div>
+    <div class="set">
+      <div class="row"><span class="pin">&#9733;</span> Investor data room <span class="ct">11</span></div>
+      <div class="row"><span class="pin">&#9733;</span> Regulator pack <span class="ct">5</span></div>
+      <div class="row"><span class="pin">&#9733;</span> F&amp;F bundle <span class="ct">3</span></div>
+    </div>
+    <div class="divide"></div>
+    <div class="sh">Filter by type</div>
+    <div class="chips"><span class="fchip on">All</span><span class="fchip">PDF</span><span class="fchip">Slides</span><span class="fchip">Sheets</span><span class="fchip">Docs</span><span class="fchip">Images</span></div>
+    <div class="chips"><span class="fchip">In a space</span><span class="fchip">From Drive</span><span class="fchip">Uploaded</span></div>
+  </div>
+
+  <!-- CENTER: selection bar + grid -->
+  <div>
+    <div class="selbar"><b>3 selected</b>
+      <div class="sp">
+        <button class="act go">Add to Space &#9662;</button>
+        <button class="act">Build a Space</button>
+        <button class="act">Push to Drive</button>
+        <button class="act">Move</button>
+        <button class="act">Delete</button>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="doc sel"><span class="ck"></span><span class="sync ok"></span><div class="page"><div class="sheet"><div class="ln t"></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div><span class="typ">PPTX</span></div><div class="m"><div class="nm">Investor Deck v11</div><span class="usein">in: F&amp;F bundle</span></div></div>
+      <div class="doc sel"><span class="ck"></span><span class="sync ok"></span><div class="page"><div class="sheet"><div class="ln t"></div><div class="ln"></div><div class="ln"></div><div class="ln s"></div></div><span class="typ">PDF</span></div><div class="m"><div class="nm">Company Brief</div><span class="usein">in: Data room</span></div></div>
+      <div class="doc"><span class="ck"></span><span class="sync local"></span><div class="page xls"><div class="sheet"><div class="ln t"></div><div class="ln"></div><div class="ln s"></div></div><span class="typ">XLSX</span></div><div class="m"><div class="nm">PreSeed Financial Summary</div><span class="usein none">not in a space</span></div></div>
+      <div class="doc sel"><span class="ck"></span><span class="sync ok"></span><div class="page pdf"><div class="sheet"><div class="ln t"></div><div class="ln"></div><div class="ln"></div></div><span class="typ">PDF</span></div><div class="m"><div class="nm">Evidence Book 10-2026</div><span class="usein">in: Regulator pack</span></div></div>
+      <div class="doc"><span class="ck"></span><span class="sync ok"></span><div class="page"><div class="sheet"><div class="ln t"></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div><span class="typ">PDF</span></div><div class="m"><div class="nm">Roadmap to Capital</div><span class="usein none">not in a space</span></div></div>
+      <div class="doc"><span class="ck"></span><span class="sync ok"></span><div class="page pdf"><div class="sheet"><div class="ln t"></div><div class="ln"></div></div><span class="typ">PDF</span></div><div class="m"><div class="nm">Founder Vision & North Star</div><span class="usein">in: Data room</span></div></div>
+      <div class="doc"><span class="ck"></span><span class="sync local"></span><div class="page img"><span class="typ">PNG</span></div><div class="m"><div class="nm">Welcome to 4orm 2026</div><span class="usein none">not in a space</span></div></div>
+      <div class="doc"><span class="ck"></span><span class="sync ok"></span><div class="page"><div class="sheet"><div class="ln t"></div><div class="ln"></div><div class="ln s"></div></div><span class="typ">DOCX</span></div><div class="m"><div class="nm">Subscription Agreement</div><span class="usein">in: F&amp;F bundle</span></div></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: drop-to-space + recent -->
+  <div class="card rr">
+    <div class="sh">Drag docs into a Space</div>
+    <div class="spacelist">
+      <div class="spacedrop"><div class="d">FF</div><div><div class="nm">Friends & Family email</div><div class="sub">3 docs &middot; drop to add</div></div></div>
+      <div class="spacedrop"><div class="d">DR</div><div><div class="nm">Investor data room</div><div class="sub">11 docs &middot; drop to add</div></div></div>
+      <div class="spacedrop"><div class="d">RG</div><div><div class="nm">Regulator intro</div><div class="sub">5 docs &middot; drop to add</div></div></div>
+      <div class="spacedrop" style="border-style:solid;border-color:var(--blue);background:#f5f8ff"><div class="d" style="background:var(--blue);color:#fff">+</div><div><div class="nm">Build a new Space</div><div class="sub">from the selection</div></div></div>
+    </div>
+    <div class="divide"></div>
+    <div class="sh">Recently added</div>
+    <div class="recent">
+      <div class="ri"><span class="ic">PNG</span> Welcome to 4orm 2026</div>
+      <div class="ri"><span class="ic">XLS</span> PreSeed Financial Summary</div>
+      <div class="ri"><span class="ic">PDF</span> 4orm VC and Design Partner</div>
+    </div>
+    <div class="hintbar">Green dot = synced to Drive &middot; amber = local only.</div>
+  </div>
+
+</div>
+</body></html>

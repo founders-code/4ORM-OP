@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spaces - outreach pipeline</title>
+<style>
+:root{color-scheme:light;--bg:#f4f6f9;--panel:#fff;--ink:#0b1220;--muted:#5b6472;--line:#e7e9ee;--blue:#1f5fff;--navy:#0b1f55;--green:#1a9d5a;--amber:#e08a00;--gold:#c79a3a;--red:#d7263d;--r:12px;--shadow:0 1px 2px rgba(16,24,40,.04),0 8px 22px rgba(16,24,40,.06);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);padding:16px 20px 44px}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.top .t{font-size:18px;font-weight:750}
+.top .sub{font-size:11px;color:var(--muted)}
+.top .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg span{font-size:11.5px;padding:7px 13px;color:var(--muted);cursor:pointer}.seg span.on{background:var(--navy);color:#fff}
+.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 13px;font-size:12px;font-weight:600;color:#33405a;cursor:pointer}.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+/* metrics */
+.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px}
+.m{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:11px 13px}
+.m .v{font-size:21px;font-weight:800;line-height:1}.m .k{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.m.g .v{color:var(--green)}.m.b .v{color:var(--blue)}.m.a .v{color:var(--amber)}.m.gold .v{color:var(--gold)}
+/* board */
+.board{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;align-items:start}
+.col{background:#eef1f6;border:1px solid var(--line);border-radius:12px;padding:9px;min-height:200px}
+.colh{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:3px 4px 9px}
+.colh .n{margin-left:auto;background:#fff;border:1px solid var(--line);border-radius:999px;font-size:9px;padding:1px 7px;color:#44506a}
+.colh .dot{width:8px;height:8px;border-radius:50%}
+.d-draft{background:#9aa6ba}.d-ready{background:var(--blue)}.d-sent{background:#6b8ff5}.d-rep{background:var(--green)}.d-meet{background:var(--amber)}.d-com{background:var(--gold)}
+.sp{background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 1px 2px rgba(16,24,40,.05);padding:10px;margin-bottom:9px;cursor:grab}
+.sp:hover{border-color:#b9c6e6}
+.sp .cat{font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:#3a5bbf;background:#eef2fb;border-radius:5px;padding:2px 6px;display:inline-block}
+.sp .nm{font-size:12.5px;font-weight:700;margin:6px 0 3px;line-height:1.2}
+.sp .who{font-size:10.5px;color:var(--muted);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sp .row{display:flex;align-items:center;gap:7px;margin-top:9px}
+.ring{--p:80;width:26px;height:26px;border-radius:50%;background:conic-gradient(var(--green) calc(var(--p)*1%),#e9edf4 0);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.ring b{width:19px;height:19px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:800}
+.na{font-size:10px;font-weight:650;border-radius:6px;padding:3px 7px}
+.na.now{background:#ffece9;color:#c0392b}.na.soon{background:#fff5e6;color:#9a6a00}.na.wait{background:#eef2fb;color:#3a5bbf}.na.ok{background:#eaf7ef;color:#1a7a48}
+.addcol{font-size:11px;color:var(--muted);text-align:center;padding:8px;cursor:pointer}
+</style></head><body>
+
+<div class="top">
+  <div><div class="t">Spaces</div><div class="sub">Your outreach pipeline - every send-bundle, by stage.</div></div>
+  <div class="right">
+    <div class="seg"><span>Groups</span><span class="on">Board</span></div>
+    <button class="btn">Filter: Needs action</button>
+    <button class="btn pri">+ Add space</button>
+  </div>
+</div>
+
+<div class="metrics">
+  <div class="m"><div class="v">50</div><div class="k">Spaces</div></div>
+  <div class="m b"><div class="v">8</div><div class="k">Ready to send</div></div>
+  <div class="m"><div class="v">6</div><div class="k">Sent this week</div></div>
+  <div class="m g"><div class="v">3</div><div class="k">Replies</div></div>
+  <div class="m a"><div class="v">2</div><div class="k">Meetings booked</div></div>
+  <div class="m gold"><div class="v">$80K</div><div class="k">Committed</div></div>
+</div>
+
+<div class="board">
+  <div class="col">
+    <div class="colh"><span class="dot d-draft"></span>Draft <span class="n">34</span></div>
+    <div class="sp"><span class="cat">VC</span><div class="nm">Neil Mitchell</div><div class="who">Insurtech angel - backed YouSet, QuickFacts</div><div class="row"><div class="ring" style="--p:40"><b>2/5</b></div><span class="na soon">Finish email</span></div></div>
+    <div class="sp"><span class="cat">Prospect</span><div class="nm">Continental Currency</div><div class="who">MSB - RPAA / AML evidence pain</div><div class="row"><div class="ring" style="--p:40"><b>2/5</b></div><span class="na soon">Add docs</span></div></div>
+    <div class="sp"><span class="cat">Regulator</span><div class="nm">FINTRAC</div><div class="who">Record-keeping + reporting fit</div><div class="row"><div class="ring" style="--p:60"><b>3/5</b></div><span class="na wait">Research</span></div></div>
+  </div>
+  <div class="col">
+    <div class="colh"><span class="dot d-ready"></span>Ready <span class="n">8</span></div>
+    <div class="sp"><span class="cat">VC</span><div class="nm">Joe Canavan</div><div class="who">80% fintech angel book - CapIntel, Homewise</div><div class="row"><div class="ring" style="--p:80"><b>4/5</b></div><span class="na now">Send today</span></div></div>
+    <div class="sp"><span class="cat">VC</span><div class="nm">Anshul Ruparell</div><div class="who">Built in mortgage + auto - our wedges</div><div class="row"><div class="ring" style="--p:100"><b>5/5</b></div><span class="na now">Send today</span></div></div>
+    <div class="sp"><span class="cat">Partner</span><div class="nm">Design partners</div><div class="who">Century 21 / Remax discovery</div><div class="row"><div class="ring" style="--p:80"><b>4/5</b></div><span class="na now">Send</span></div></div>
+  </div>
+  <div class="col">
+    <div class="colh"><span class="dot d-sent"></span>Sent <span class="n">6</span></div>
+    <div class="sp"><span class="cat">VC</span><div class="nm">Bruce Fair</div><div class="who">Advisor + connector - made Jeff intro</div><div class="row"><div class="ring" style="--p:100"><b>sent</b></div><span class="na soon">Follow up 2d</span></div></div>
+    <div class="sp"><span class="cat">Prospect</span><div class="nm">CMI Mortgages</div><div class="who">Elizabeth Wood, COO/CCO</div><div class="row"><div class="ring" style="--p:100"><b>sent</b></div><span class="na wait">Awaiting reply</span></div></div>
+  </div>
+  <div class="col">
+    <div class="colh"><span class="dot d-rep"></span>Replied <span class="n">3</span></div>
+    <div class="sp"><span class="cat">VC</span><div class="nm">Jeff Tindale</div><div class="who">Minor $40K, serious $4M - wants one-pager</div><div class="row"><div class="ring" style="--p:100"><b>&#9993;</b></div><span class="na now">Book call</span></div></div>
+    <div class="sp"><span class="cat">Angel</span><div class="nm">Don Hickling</div><div class="who">Confirmed $70K - next $25K</div><div class="row"><div class="ring" style="--p:100"><b>&#9993;</b></div><span class="na now">Confirm cheque</span></div></div>
+  </div>
+  <div class="col">
+    <div class="colh"><span class="dot d-meet"></span>Meeting <span class="n">2</span></div>
+    <div class="sp"><span class="cat">Angel</span><div class="nm">Kevin Wong</div><div class="who">$25K / 5% - warmest of three</div><div class="row"><div class="ring" style="--p:100"><b>&#128197;</b></div><span class="na ok">Call Tue 2pm</span></div></div>
+  </div>
+  <div class="col">
+    <div class="colh"><span class="dot d-com"></span>Committed <span class="n">1</span></div>
+    <div class="sp"><span class="cat">Angel</span><div class="nm">Don Hickling</div><div class="who">$70K in - part of the $80K</div><div class="row"><div class="ring" style="--p:100"><b>$</b></div><span class="na ok">$70K</span></div></div>
+  </div>
+</div>
+</body></html>
