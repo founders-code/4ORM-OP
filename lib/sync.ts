@@ -162,10 +162,14 @@ export async function syncGhl(sql: Sql, ownerId: string, force = false) {
       return;
     }
     if (!force && (await isFresh(sql, ownerId, 'ghl'))) {
-      const prior = await sql`SELECT status FROM sync_state WHERE owner_id = ${ownerId} AND source = 'ghl'`;
+      const prior = await sql`SELECT status, detail FROM sync_state WHERE owner_id = ${ownerId} AND source = 'ghl'`;
       const stages = await sql`SELECT stage FROM pipeline_stages WHERE owner_id = ${ownerId} LIMIT 1`;
       const status = String(prior[0]?.status || '');
-      if (stages.length || status === 'reached_empty' || status === 'not_connected') return;
+      const detail = String(prior[0]?.detail || '');
+      if (stages.length || status === 'reached_empty' || status === 'not_connected') {
+        const touched = await sql`SELECT id FROM contacts WHERE owner_id = ${ownerId} AND last_touch IS NOT NULL LIMIT 1`;
+        if (touched.length || detail.includes('no touch dates') || status === 'reached_empty' || status === 'not_connected') return;
+      }
     }
     if (!(await claimBudget(sql, ownerId, 'gohighlevel', 4))) {
       await mark(sql, ownerId, 'ghl', 'stale', 'GoHighLevel refresh is waiting on the rate ceiling.');
@@ -195,14 +199,35 @@ export async function syncGhl(sql: Sql, ownerId: string, force = false) {
           VALUES (${ownerId}, ${stage.stage}, ${stage.count}, ${stage.detail})
         `;
       }
+      for (const touch of pipe.touches || []) {
+        const at = new Date(touch.at);
+        if (Number.isNaN(at.getTime())) continue;
+        const iso = at.toISOString();
+        if (touch.sourceId) {
+          await sql`
+            UPDATE contacts SET last_touch = ${iso}::timestamptz
+            WHERE owner_id = ${ownerId} AND source = 'ghl' AND source_id = ${touch.sourceId}
+              AND (last_touch IS NULL OR last_touch < ${iso}::timestamptz)
+          `;
+        }
+        if (touch.name.length > 2) {
+          await sql`
+            UPDATE contacts SET last_touch = ${iso}::timestamptz
+            WHERE owner_id = ${ownerId} AND lower(name) = lower(${touch.name})
+              AND (last_touch IS NULL OR last_touch < ${iso}::timestamptz)
+          `;
+        }
+      }
     }
     const failed = contacts.status === 'unavailable' || pipe.status === 'unavailable';
     if (failed) {
       await mark(sql, ownerId, 'ghl', 'stale', 'GHL sync failed');
     } else {
-      const detail = pipe.stages.length
-        ? pipe.stages.map((stage) => `${stage.stage} ${stage.count}`).join(', ').slice(0, 180)
-        : (contacts.contacts.length ? `${contacts.contacts.length} contacts` : 'No opportunities returned.');
+      const touchNote = (pipe.touches || []).length ? '' : ' no touch dates';
+      const detail = (pipe.stages.length
+        ? pipe.stages.map((stage) => `${stage.stage} ${stage.count}`).join(', ')
+        : (contacts.contacts.length ? `${contacts.contacts.length} contacts` : 'No opportunities returned.')
+      ).slice(0, 160) + touchNote;
       await mark(sql, ownerId, 'ghl', pipe.stages.length || contacts.contacts.length ? 'connected' : 'reached_empty', detail);
     }
     const reminders = await listReminders();
@@ -251,6 +276,16 @@ export async function ingestMail(sql: Sql, ownerId: string, force = false) {
     const status = allowStatus('new');
     const priority = allowPriority('normal');
     if (!area || !status || !priority) continue;
+    const rawFrom = String(message.from || '');
+    const fromEmail = ((rawFrom.match(/<([^>]+)>/) || [])[1] || '').trim();
+    if (fromEmail && message.at) {
+      const iso = new Date(message.at).toISOString();
+      await sql`
+        UPDATE contacts SET last_touch = ${iso}::timestamptz
+        WHERE owner_id = ${ownerId} AND lower(email) = lower(${fromEmail})
+          AND (last_touch IS NULL OR last_touch < ${iso}::timestamptz)
+      `;
+    }
     items.push({ title: message.title, area, status, priority, source: 'gmail', source_id: message.id });
     const rows = await sql`
       INSERT INTO items (owner_id, title, area, status, priority, source, source_id)
