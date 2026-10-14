@@ -12,12 +12,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!session.sql || !ID.test(params.id)) return NextResponse.json({ error: 'Could not update that note.' }, { status: 400 });
     const body = await req.json().catch(() => null);
-    const title = String(body?.title || '').trim().slice(0, 180);
-    if (!title) return NextResponse.json({ error: 'Could not update that note.' }, { status: 400 });
+    const title = String(body?.title || '').trim().slice(0, 180) || 'Untitled meeting';
     const others = JSON.stringify(String(body?.others || '').split('\n').map((line) => line.trim()).filter(Boolean).slice(0, 40));
+    const attendees = JSON.stringify(String(body?.attendees || '').split(',').map((line) => line.trim()).filter(Boolean).slice(0, 20));
     await session.sql`
       UPDATE zoom_notes
-      SET title = ${title}, others = ${others}::jsonb
+      SET title = ${title}, others = ${others}::jsonb, attendees = ${attendees}::jsonb
       WHERE id = ${params.id} AND owner_id = ${session.userId}
     `;
     return NextResponse.json({ ok: true });

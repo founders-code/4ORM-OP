@@ -10,8 +10,7 @@ export async function POST(req: Request) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!session.sql) return NextResponse.json({ error: 'Could not save that note.' }, { status: 400 });
     const body = await req.json().catch(() => null);
-    const title = String(body?.title || '').trim().slice(0, 180);
-    if (!title) return NextResponse.json({ error: 'Could not save that note.' }, { status: 400 });
+    const title = String(body?.title || '').trim().slice(0, 180) || 'Untitled meeting';
     const noteId = `manual-${Date.now()}`;
     const others = JSON.stringify(String(body?.others || '').split('\n').map((line) => line.trim()).filter(Boolean).slice(0, 40));
     const attendees = JSON.stringify(String(body?.attendees || '').split(',').map((line) => line.trim()).filter(Boolean).slice(0, 20));
