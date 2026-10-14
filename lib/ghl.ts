@@ -115,6 +115,24 @@ export async function createContact(input: { name: string; company?: string; ema
   return json?.contact?.id ? String(json.contact.id) : null;
 }
 
+export async function sendMailboxEmail(to: string, subject: string, html: string) {
+  const address = String(to || '').trim();
+  if (!configured() || !locationId() || !address || !address.includes('@')) return false;
+  const json = await ghl('/conversations/messages', {
+    method: 'POST',
+    body: JSON.stringify({
+      type: 'Email',
+      locationId: locationId(),
+      emailTo: address,
+      emailFrom: 'chad@4ormfinance.com',
+      subject: String(subject || '4orm Finance').slice(0, 200),
+      html: String(html || '').slice(0, 8000),
+      message: String(html || '').slice(0, 8000),
+    }),
+  });
+  return !!json;
+}
+
 export async function listReminders() {
   const loc = locationId();
   if (!loc) return { status: 'unavailable' as const, tasks: [] as Array<{ id: string; title: string; due: string | null }> };

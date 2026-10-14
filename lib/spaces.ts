@@ -75,6 +75,8 @@ export async function ensureSpaceTables(sql: Sql) {
     ['db_spaces_kind', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'data_room'`],
     ['db_spaces_notes', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS notes text`],
     ['db_spaces_category', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS category text`],
+    ['db_spaces_stage', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS stage text`],
+    ['db_spaces_sent', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS sent_at timestamptz`],
     ['db_spaces_drive_url', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS drive_folder_url text`],
     ['db_space_items', () => sql`CREATE TABLE IF NOT EXISTS space_items (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -112,7 +114,7 @@ export async function ensureSpaceTables(sql: Sql) {
 async function owned(sql: Sql, ownerId: string, id: string) {
   if (!spaceIdOk(id)) return null;
   const rows = await sql`
-    SELECT id, name, kind, notes, category, drive_folder_id, drive_folder_url, pushed_to_drive_at, created_at
+    SELECT id, name, kind, notes, category, stage, drive_folder_id, drive_folder_url, pushed_to_drive_at, created_at
     FROM spaces
     WHERE id = ${id} AND owner_id = ${ownerId}
     LIMIT 1
@@ -221,7 +223,8 @@ function toView(row: Record<string, unknown>, items: Item[], people: Person[], m
     id: String(row.id),
     name,
     kind: String(row.kind || starter?.kind || 'data_room'),
-    status: 'draft',
+    status: String(row.stage || 'draft'),
+    stage: String(row.stage || 'draft'),
     driveFolderId: row.drive_folder_id ? String(row.drive_folder_id) : '',
     driveFolderUrl: row.drive_folder_url ? String(row.drive_folder_url) : '',
     emailSubject: mail.subject || starter?.emailSubject || '',
@@ -362,7 +365,7 @@ export async function listSpaces(sql: Sql, ownerId: string) {
     await seedTemplates(sql, ownerId, new Set(packages.map((row) => String(row.name || ''))));
     await seedOutreach(sql, ownerId);
     const rows = await sql`
-      SELECT id, name, kind, notes, category, drive_folder_id, drive_folder_url, pushed_to_drive_at, created_at
+      SELECT id, name, kind, notes, category, stage, sent_at, drive_folder_id, drive_folder_url, pushed_to_drive_at, created_at
       FROM spaces
       WHERE owner_id = ${ownerId}
       ORDER BY created_at
@@ -413,7 +416,9 @@ export async function listSpaces(sql: Sql, ownerId: string) {
         id,
         name: String(row.name || 'Untitled space'),
         kind: String(row.kind || 'data_room'),
-        status: 'draft',
+        status: String(row.stage || 'draft'),
+        stage: String(row.stage || 'draft'),
+        sentAt: row.sent_at ? String(row.sent_at) : '',
         driveFolderUrl: row.drive_folder_url ? String(row.drive_folder_url) : '',
         spaceType: 'project',
         subjectLabel: String(row.name || ''),
@@ -511,13 +516,17 @@ export async function patchSpace(sql: Sql, ownerId: string, id: string, body: Re
   const category = Object.prototype.hasOwnProperty.call(body, 'category') || Object.prototype.hasOwnProperty.call(body, 'spaceCategory')
     ? clip(body.category ?? body.spaceCategory, 80)
     : null;
-  if (name !== null || notes !== null || kind !== null || category !== null) {
+  const stageRaw = Object.prototype.hasOwnProperty.call(body, 'stage') ? String(body.stage || '').toLowerCase() : '';
+  const stage = stageRaw && ['draft', 'ready', 'sent', 'replied', 'meeting', 'committed'].includes(stageRaw) ? stageRaw : (stageRaw ? 'draft' : null);
+  if (name !== null || notes !== null || kind !== null || category !== null || stage !== null) {
     await sql`
       UPDATE spaces SET
         name = CASE WHEN ${name !== null} THEN ${name || 'Untitled space'} ELSE name END,
         notes = CASE WHEN ${notes !== null} THEN ${notes || ''} ELSE notes END,
         kind = CASE WHEN ${kind !== null} THEN ${kind || 'data_room'} ELSE kind END,
         category = CASE WHEN ${category !== null} THEN ${category || ''} ELSE category END,
+        stage = CASE WHEN ${stage !== null} THEN ${stage || 'draft'} ELSE stage END,
+        sent_at = CASE WHEN ${stage === 'sent'} THEN now() ELSE sent_at END,
         updated_at = now()
       WHERE id = ${id} AND owner_id = ${ownerId}
     `;
