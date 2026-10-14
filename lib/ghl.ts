@@ -65,6 +65,25 @@ export async function listContacts() {
   return { status: contacts.length ? ('connected' as const) : ('reached_empty' as const), contacts };
 }
 
+function titleStage(name: string) {
+  const clean = name.replace(/\s+/g, ' ').trim();
+  if (clean.length < 3 || clean !== clean.toUpperCase()) return clean;
+  return clean.toLowerCase().replace(/\b[a-z]/g, (ch) => ch.toUpperCase());
+}
+
+export async function listSocialQueue() {
+  const loc = encodeURIComponent(locationId());
+  const json = (await ghl(`/social-media-posting/${loc}/posts?limit=20&skip=0`)) as {
+    posts?: Array<{ status?: string }>;
+    results?: Array<{ status?: string }>;
+  } | null;
+  if (!json) return null;
+  const posts = json.posts || json.results || [];
+  const queued = posts.filter((post) => /schedul|queue|draft|pending/i.test(String(post.status || 'scheduled')));
+  const left = queued.length || posts.length;
+  return { left, cadence: left ? Math.max(1, Math.round(left / 7)) : 0 };
+}
+
 export async function listPipeline() {
   const loc = encodeURIComponent(locationId());
   const pipes = (await ghl(`/opportunities/pipelines?locationId=${loc}`)) as {
@@ -86,7 +105,7 @@ export async function listPipeline() {
   const counts = new Map<string, number>();
   for (const row of json.opportunities || []) {
     const named = names.get(String(row.pipelineStageId || '')) || String(row.status || 'Open');
-    const stage = named.slice(0, 80);
+    const stage = titleStage(named).slice(0, 80);
     counts.set(stage, (counts.get(stage) || 0) + 1);
   }
   const stages = [...counts.entries()].map(([stage, count]) => ({
