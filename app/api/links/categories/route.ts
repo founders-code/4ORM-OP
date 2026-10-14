@@ -51,7 +51,7 @@ export async function DELETE(req: Request) {
     const name = clean(body.name || url.searchParams.get('name'));
     if (!session.sql || !name || name === 'Uncategorized') return NextResponse.json({ ok: false });
     await session.sql`
-      UPDATE links SET category = 'Uncategorized', sub = ''
+      UPDATE links SET category = 'Uncategorized', sub = '', leaf = ''
       WHERE owner_id = ${session.userId} AND category = ${name}
     `;
     await session.sql`

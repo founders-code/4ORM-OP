@@ -22,6 +22,25 @@ function asList(value: unknown): unknown[] {
   return [];
 }
 
+function asNest(value: unknown): Record<string, string[]> {
+  let raw = value;
+  if (typeof raw === 'string') {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      return {};
+    }
+  }
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, string[]> = {};
+  Object.entries(raw as Record<string, unknown>).forEach(([key, kids]) => {
+    const name = String(key || '').trim();
+    if (!name) return;
+    out[name] = asList(kids).map((item) => String(item || '').trim()).filter(Boolean);
+  });
+  return out;
+}
+
 const WORD: Record<string, { state: string; word: string }> = {
   connected: { state: 'ok', word: 'Connected' },
   reached_empty: { state: 'ok', word: 'Reached, nothing today' },
@@ -250,12 +269,12 @@ export async function loadBoard(sql: Sql, ownerId: string) {
     }) as Row[];
   }, []);
   const categories = await read(reads, 'categories', async () => {
-    const rows = await sql`SELECT id, name, subs FROM link_categories WHERE owner_id = ${ownerId} ORDER BY name`;
+    const rows = await sql`SELECT id, name, subs, nest FROM link_categories WHERE owner_id = ${ownerId} ORDER BY name`;
     return rows as Row[];
   }, []);
   const links = await read(reads, 'links', async () => {
     const rows = await sql`
-      SELECT id, title, url, category, sub, note FROM links WHERE owner_id = ${ownerId} ORDER BY created_at DESC LIMIT 200
+      SELECT id, title, url, category, sub, note, leaf FROM links WHERE owner_id = ${ownerId} ORDER BY created_at DESC LIMIT 200
     `;
     return rows as Row[];
   }, []);
@@ -435,8 +454,10 @@ export async function loadBoard(sql: Sql, ownerId: string) {
     })),
     runwayWeeks: settings[0]?.runway_weeks == null ? null : Number(settings[0].runway_weeks),
     categories: categories.map((row) => ({
+      id: String(row.id || ''),
       name: String(row.name),
       subs: asList(row.subs).map(String),
+      nest: asNest(row.nest),
     })),
     links: links.map((row) => ({
       id: String(row.id || ''),
@@ -444,6 +465,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
       url: String(row.url),
       cat: String(row.category || ''),
       sub: String(row.sub || ''),
+      leaf: String(row.leaf || ''),
       note: String(row.note || ''),
     })),
     events: calendar.events.map((event) => ({

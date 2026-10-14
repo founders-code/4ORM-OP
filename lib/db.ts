@@ -567,6 +567,8 @@ async function migrateWar(sql: Sql) {
       done boolean NOT NULL DEFAULT false,
       created_at timestamptz NOT NULL DEFAULT now()
     )`],
+    ['db_link_nest', () => sql`ALTER TABLE link_categories ADD COLUMN IF NOT EXISTS nest jsonb`],
+    ['db_link_leaf', () => sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS leaf text`],
   ];
   for (const [code, run] of steps) {
     try {

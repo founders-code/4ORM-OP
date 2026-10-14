@@ -26,7 +26,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     const name = String(rows[0]?.name || '');
     if (!name || name === 'Uncategorized') return NextResponse.json({ ok: false });
     await session.sql`
-      UPDATE links SET category = 'Uncategorized', sub = ''
+      UPDATE links SET category = 'Uncategorized', sub = '', leaf = ''
       WHERE owner_id = ${session.userId} AND category = ${name}
     `;
     await session.sql`
