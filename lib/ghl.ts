@@ -115,20 +115,130 @@ export async function createContact(input: { name: string; company?: string; ema
   return json?.contact?.id ? String(json.contact.id) : null;
 }
 
-export async function sendMailboxEmail(to: string, subject: string, html: string) {
-  const address = String(to || '').trim();
-  if (!configured() || !locationId() || !address || !address.includes('@')) return false;
+const STAGE_WORDS: Array<[string, string]> = [
+  ['committed', 'committed'],
+  ['meeting', 'meeting'],
+  ['replied', 'replied'],
+  ['reply', 'replied'],
+  ['sent', 'sent'],
+  ['ready', 'ready'],
+  ['draft', 'draft'],
+];
+
+export function localStageName(label: string) {
+  const name = String(label || '').toLowerCase();
+  for (const [word, stage] of STAGE_WORDS) {
+    if (name === word || name.includes(word)) return stage;
+  }
+  return '';
+}
+
+export async function ensureGhlContact(input: { name: string; company?: string; email?: string }) {
+  const email = String(input.email || '').trim();
+  if (!configured() || !locationId()) return '';
+  if (email) {
+    const found = (await ghl(`/contacts/search/duplicate?locationId=${encodeURIComponent(locationId())}&email=${encodeURIComponent(email)}`)) as {
+      contact?: { id?: string };
+    } | null;
+    if (found?.contact?.id) return String(found.contact.id);
+  }
+  return (await createContact(input)) || '';
+}
+
+export async function sendViaGhl(input: { contactId: string; email: string; subject: string; html: string }) {
+  if (!configured() || !locationId() || !input.contactId) return false;
   const json = await ghl('/conversations/messages', {
     method: 'POST',
     body: JSON.stringify({
       type: 'Email',
+      contactId: input.contactId,
       locationId: locationId(),
-      emailTo: address,
+      emailTo: String(input.email || ''),
       emailFrom: 'chad@4ormfinance.com',
-      subject: String(subject || '4orm Finance').slice(0, 200),
-      html: String(html || '').slice(0, 8000),
-      message: String(html || '').slice(0, 8000),
+      subject: String(input.subject || '4orm Finance').slice(0, 200),
+      html: String(input.html || '').slice(0, 8000),
+      message: String(input.html || '').slice(0, 8000),
     }),
+  });
+  return !!json;
+}
+
+export async function pushOpportunity(input: { name: string; contactId: string; stage: string; opportunityId?: string }) {
+  if (!configured() || !locationId() || !input.contactId) return '';
+  const pipes = (await ghl(`/opportunities/pipelines?locationId=${encodeURIComponent(locationId())}`)) as {
+    pipelines?: Array<{ id?: string; stages?: Array<{ id?: string; name?: string }> }>;
+  } | null;
+  let pipelineId = '';
+  let stageId = '';
+  const want = String(input.stage || '').toLowerCase();
+  for (const pipe of pipes?.pipelines || []) {
+    for (const stage of pipe.stages || []) {
+      if (localStageName(String(stage.name || '')) === want && pipe.id && stage.id) {
+        pipelineId = String(pipe.id);
+        stageId = String(stage.id);
+      }
+    }
+  }
+  if (!pipelineId || !stageId) return '';
+  if (input.opportunityId) {
+    const updated = await ghl(`/opportunities/${encodeURIComponent(input.opportunityId)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ pipelineId, pipelineStageId: stageId }),
+    });
+    if (updated) return input.opportunityId;
+  }
+  const created = (await ghl('/opportunities/', {
+    method: 'POST',
+    body: JSON.stringify({
+      locationId: locationId(),
+      pipelineId,
+      pipelineStageId: stageId,
+      name: String(input.name || 'Space').slice(0, 120),
+      contactId: input.contactId,
+      status: 'open',
+    }),
+  })) as { opportunity?: { id?: string } } | null;
+  return created?.opportunity?.id ? String(created.opportunity.id) : '';
+}
+
+export async function opportunityStages() {
+  const pipes = (await ghl(`/opportunities/pipelines?locationId=${encodeURIComponent(locationId())}`)) as {
+    pipelines?: Array<{ stages?: Array<{ id?: string; name?: string }> }>;
+  } | null;
+  const names = new Map<string, string>();
+  for (const pipe of pipes?.pipelines || []) {
+    for (const stage of pipe.stages || []) {
+      const local = localStageName(String(stage.name || ''));
+      if (stage.id && local) names.set(String(stage.id), local);
+    }
+  }
+  const json = (await ghl('/opportunities/search', {
+    method: 'POST',
+    body: JSON.stringify({ locationId: locationId(), limit: 100 }),
+  })) as { opportunities?: Array<Record<string, unknown>> } | null;
+  if (!json) return [] as Array<{ id: string; stage: string }>;
+  return (json.opportunities || []).map((row) => ({
+    id: String(row.id || ''),
+    stage: names.get(String(row.pipelineStageId || '')) || '',
+  })).filter((row) => row.id && row.stage);
+}
+
+export async function repliedInbound(contactId: string) {
+  if (!contactId) return false;
+  const json = (await ghl(`/conversations/search?locationId=${encodeURIComponent(locationId())}&contactId=${encodeURIComponent(contactId)}`)) as {
+    conversations?: Array<Record<string, unknown>>;
+  } | null;
+  const row = json?.conversations?.[0];
+  if (!row) return false;
+  const direction = String(row.lastMessageDirection || '').toLowerCase();
+  return direction.includes('inbound');
+}
+
+export async function addGhlTask(contactId: string, title: string) {
+  if (!contactId) return false;
+  const json = await ghl(`/contacts/${encodeURIComponent(contactId)}/tasks`, {
+    method: 'POST',
+    body: JSON.stringify({ title: title.slice(0, 180), completed: false }),
   });
   return !!json;
 }

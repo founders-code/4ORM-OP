@@ -571,6 +571,8 @@ async function migrateWar(sql: Sql) {
     ['db_link_leaf', () => sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS leaf text`],
     ['db_spaces_stage', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS stage text`],
     ['db_spaces_sent', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS sent_at timestamptz`],
+    ['db_spaces_ghl', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS ghl_opportunity_id text`],
+    ['db_space_recipients_send', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS send_status text`],
   ];
   for (const [code, run] of steps) {
     try {
