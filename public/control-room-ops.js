@@ -64,6 +64,11 @@
     if (overdue.length) needs.push(['a', overdue.length + ' task' + (overdue.length === 1 ? '' : 's') + ' overdue.', 'Tasks']);
     if (reach.length) needs.push(['b', reach.length + ' people still waiting on a reach-out.', 'Reach out']);
     if (drafts.length) needs.push(['a', drafts.length + ' spaces are still drafts.', 'Spaces']);
+    try {
+      JSON.parse(localStorage.getItem('cr_dash_notes') || '[]').slice(0, 2).forEach(function (pin) {
+        if (pin && pin.text) needs.push(['b', pin.text, 'Notes']);
+      });
+    } catch (err) {}
     if (!needs.length) needs.push(['b', 'Nothing on the desk is on fire.', 'Desk']);
     var needHtml = needs.map(function (row) {
       return '<div class="alert"><span class="sev ' + row[0] + '"></span><div>' + esc(row[1]) + '<span class="src">' + esc(row[2]) + '</span></div><button type="button" class="go" data-go="room">Open</button></div>';
@@ -389,18 +394,31 @@
     var deg = STATE.focusUntil ? Math.max(0, Math.min(360, ((STATE.focusUntil - Date.now()) / (25 * 60 * 1000)) * 360)) : 0;
     var evening = new Date().getHours() >= 17;
     var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var needleLog = {};
+    try { needleLog = JSON.parse(localStorage.getItem('cr_needle_log') || '{}'); } catch (err) { needleLog = {}; }
+    if (doneN) needleLog[today] = doneN;
+    try { localStorage.setItem('cr_needle_log', JSON.stringify(needleLog)); } catch (err) {}
     var week = '';
     for (var d = 4; d >= 0; d -= 1) {
       var when = new Date(); when.setDate(when.getDate() - d);
       var label = days[when.getDay()];
-      var cls = d === 0 ? 'today' : (d % 2 ? 'hit' : 'miss');
-      week += '<div class="day ' + cls + '"><div class="d">' + (cls === 'hit' ? 'ok' : cls === 'today' ? '?' : '-') + '</div><div class="l">' + label + '</div></div>';
+      var key = laDay(when.getTime());
+      var hit = needleLog[key];
+      var cls = d === 0 ? 'today' : (hit ? 'hit' : '');
+      week += '<div class="day ' + cls + '"><div class="d">' + (hit ? hit : cls === 'today' ? '?' : '-') + '</div><div class="l">' + label + '</div></div>';
     }
+    var busyMin = 0;
+    (STATE.events || []).forEach(function (ev) {
+      if (laDay(ev.start) !== today) return;
+      busyMin += Number(ev.dur) || 30;
+    });
+    var openH = Math.max(0, Math.round((15 * 60 - busyMin) / 60));
+    var budget = (STATE.events || []).length ? (openH + 'h still open today between 6am and 9pm after what is already booked. Block the morning for the one thing.') : 'Open focus sits next to the calendar. Block the morning for the one thing.';
     var steps = (one && one.steps && one.steps.length ? one.steps : ['Confirm the next cheque', 'Send the paper', 'Lock a date this week']).slice(0, 3);
     cmd.innerHTML = '<div class="command" style="padding:10px 16px"><div class="cmdtop"><div class="vital"><span class="k">Cash</span><span class="v">$100</span></div><div class="vital"><span class="k">Runway</span><span class="v red">~1 day</span></div><div class="vital"><span class="k">Raise - F&amp;F</span><span class="v">$80K / $250K</span></div><div class="vital"><span class="k">To Oct 30</span><span class="v">' + daysToClose() + ' days</span></div></div></div>'
       + '<div class="focus-hero"><div class="l"><div class="lab">4orm Intelligence - today\'s one move</div><div class="big">' + esc(one ? (one.title || one.name) : 'Pick the one thing') + '</div><div class="why">' + esc(one && one.why ? one.why : 'Tied to runway and the raise. Cash first.') + '</div><div class="steps">' + steps.map(function (step, i) { return '<span class="step">' + (i + 1) + ' ' + esc(typeof step === 'string' ? step : (step.title || step.text || 'Step')) + '</span>'; }).join('') + '</div><div class="cap" style="background:transparent;border:0;box-shadow:none;padding:0"><button class="btn pri sm" type="button" id="focusStart">Start 25-min focus</button><button class="btn sm" type="button" id="focusPlan">Plan</button><button class="btn sm" type="button" id="focusLater">Not now</button></div></div><div class="r"><div class="timer" style="--deg:' + deg + 'deg"><div class="in"><div class="t" id="focusClock">' + mm + ':' + ss + '</div><div class="s">focus</div></div></div><div class="quiet" style="color:#8fa3c6">' + doneN + ' of 3 needle-movers</div></div></div>'
       + '<div class="nm-wrap"><div class="nm-head"><span>Today\'s 1-3 needle movers</span><span class="s">the only things that count as a win today</span><span class="prog2"><b>' + doneN + '</b> / 3 done</span></div><div class="nm-row">' + slots + '</div></div>'
-      + '<div class="ctrl" style="grid-template-columns:1.3fr 1fr"><div class="coach"><b>Coaching note</b><p>Regulators can wait. Do not let them take a cash-first morning. Drop them or give them 10 minutes, then come back to the one thing.</p></div><div class="mcard" style="padding:12px"><b>Momentum</b><div class="week">' + week + '</div><div class="budget">Open focus sits next to the calendar. Block the morning for the one thing.</div></div></div>'
+      + '<div class="ctrl" style="grid-template-columns:1.3fr 1fr"><div class="coach"><b>Coaching note</b><p>Regulators can wait. Do not let them take a cash-first morning. Drop them or give them 10 minutes, then come back to the one thing.</p></div><div class="mcard" style="padding:12px"><b>Momentum</b><div class="week">' + week + '</div><div class="budget">' + esc(budget) + '</div></div></div>'
       + (evening ? '<div class="eod"><b>End of day review</b><div class="quiet" style="color:#cfe0ff">' + doneN + ' of 3 needle-movers checked. Lock tomorrow\'s one thing before you close the desk.</div></div>' : '')
       + '<div class="lb-add"><input id="opsAdd" type="text" placeholder="Capture a task, or park a stray idea" style="flex:1"/><button class="btn pri sm" id="opsAddBtn" type="button">Add</button></div>'
       + '<div class="card" id="nextUp" style="padding:8px 12px;margin-top:8px;display:flex;align-items:center;gap:12px"><div style="flex:1">' + (next.length ? next.map(function (ev) { return '<div data-count="' + ev.start + '">' + esc(ev.title || 'Event') + ' <span class="kick">' + soon(ev.start) + '</span></div>'; }).join('') : '<div class="kick">No more events today.</div>') + '</div><button class="btn sm" id="findSlot" type="button">Find a 30-min slot</button></div>'
@@ -1444,15 +1462,26 @@
         return !q || String(note.body || '').toLowerCase().indexOf(q) >= 0;
       });
       var kinds = [['all', 'All'], ['pinned', 'Pinned'], ['idea', 'Idea'], ['todo', 'To-do'], ['person', 'Person'], ['decision', 'Decision'], ['archive', 'Archive']];
-      host.innerHTML = '<div class="sec-h"><h3>Notes</h3><input id="stickFind" type="search" placeholder="Search notes" aria-label="Search notes" value="' + esc(q) + '"><button class="btn sm" id="stickTidy" type="button">Tidy up</button><button class="btn sm" id="stickFull" type="button">Full screen</button><button class="btn pri sm" id="stickAdd" type="button">+ New note</button></div><div class="stick-filters">' + kinds.map(function (pair) { return '<button type="button" data-stick-kind="' + pair[0] + '"' + (kind === pair[0] ? ' class="on"' : '') + '>' + pair[1] + '</button>'; }).join('') + '</div><div class="sticky-board" id="stickBoard"></div>';
+      host.innerHTML = '<div class="sec-h"><h3>Notes</h3><input id="stickFind" type="search" placeholder="Search notes" aria-label="Search notes" value="' + esc(q) + '"><button class="btn sm" id="stickTidy" type="button">Tidy up</button><button class="btn sm" id="stickFull" type="button">Full screen</button><button class="btn pri sm" id="stickAdd" type="button">+ New note</button><span class="dots" id="stickDots"></span></div><div class="stick-filters">' + kinds.map(function (pair) { return '<button type="button" data-stick-kind="' + pair[0] + '"' + (kind === pair[0] ? ' class="on"' : '') + '>' + pair[1] + '</button>'; }).join('') + '</div><div class="sticky-board" id="stickBoard"></div>';
       var board = document.getElementById('stickBoard');
       board.innerHTML = shown.map(function (note, index) {
         var meta = note.meta || {};
-        var tilt = (index % 2 ? 1.5 : -1.5);
-        var tag = '<span class="tag">' + esc(meta.kind || 'Type') + '</span>';
-        var pin = meta.pin ? '<span class="tag">Pinned</span>' : '';
-        return '<div class="sticky ' + esc(note.color || 'yellow') + '" data-stick="' + esc(note.id) + '" style="left:' + (Number(note.x) || 24) + 'px;top:' + (Number(note.y) || 24) + 'px;width:' + (Number(note.w) || 210) + 'px;height:' + (Number(note.h) || 180) + 'px;transform:rotate(' + tilt + 'deg)">' + pin + tag + '<div class="dots">' + colours.map(function (c) { return '<button type="button" class="' + c + ((note.color || 'yellow') === c ? ' on' : '') + '" data-color="' + c + '" aria-label="' + c + '"></button>'; }).join('') + '</div><textarea rows="4">' + esc(note.body || '') + '</textarea><input class="note-line" data-stick-remind="' + esc(note.id) + '" value="' + esc(meta.remind || '') + '" placeholder="Reminder" aria-label="Reminder"/><button type="button" class="conv" data-stick-task="' + esc(note.id) + '">Convert to task</button>' + (note._err ? '<div class="soft-err">' + esc(note._err) + '</div>' : '') + '<button type="button" class="ghost-x" data-stick-del="' + esc(note.id) + '" aria-label="Archive">x</button><button type="button" class="stick-size" data-stick-size="' + esc(note.id) + '" aria-label="Resize"></button></div>';
+        var tilt = (index % 2 ? 1.2 : -1.2);
+        var kindLabel = { idea: 'Idea', todo: 'To-do', person: 'Person', decision: 'Decision' }[meta.kind || ''] || 'Type';
+        var pinMark = meta.pin ? '<span class="pin" aria-hidden="true">&#128204;</span>' : '';
+        var checks = (meta.checks || []).map(function (row, i) {
+          return '<label class="check' + (row.done ? ' done' : '') + '"><input type="checkbox" data-stick-check="' + esc(note.id) + '" data-i="' + i + '"' + (row.done ? ' checked' : '') + '/><input type="text" data-stick-line="' + esc(note.id) + '" data-i="' + i + '" value="' + esc(row.t || '') + '" placeholder="Checklist item" aria-label="Checklist item"/></label>';
+        }).join('');
+        var link = meta.link && meta.link.name ? '<button type="button" class="nlink" data-stick-jump="' + esc(note.id) + '">' + esc(meta.link.name) + '</button>' : '';
+        return '<div class="sticky ' + esc(note.color || 'yellow') + '" data-stick="' + esc(note.id) + '" style="left:' + (Number(note.x) || 24) + 'px;top:' + (Number(note.y) || 24) + 'px;width:' + (Number(note.w) || 220) + 'px;height:' + (Number(note.h) || 220) + 'px;transform:rotate(' + tilt + 'deg)">' + pinMark + '<button type="button" class="tag" data-stick-kind-btn="' + esc(note.id) + '">' + esc(kindLabel) + '</button><button type="button" class="tag" data-stick-pin="' + esc(note.id) + '">' + (meta.pin ? 'Pinned' : 'Pin') + '</button><div class="dots">' + colours.map(function (c) { return '<button type="button" class="' + c + ((note.color || 'yellow') === c ? ' on' : '') + '" data-color="' + c + '" aria-label="' + c + '"></button>'; }).join('') + '</div><textarea rows="3">' + esc(note.body || '') + '</textarea>' + checks + '<button type="button" class="addcheck" data-stick-addcheck="' + esc(note.id) + '">+ check</button>' + link + '<input class="note-line" data-stick-link="' + esc(note.id) + '" value="' + esc((meta.link && meta.link.name) || '') + '" placeholder="Link a person or space" aria-label="Link a person or space"/><input class="note-line" data-stick-remind="' + esc(note.id) + '" value="' + esc(meta.remind || '') + '" placeholder="Reminder" aria-label="Reminder"/><div class="acts"><button type="button" data-stick-task="' + esc(note.id) + '">Convert to task</button><button type="button" data-stick-content="' + esc(note.id) + '">Send to content runway</button><button type="button" data-stick-space="' + esc(note.id) + '">Save to a space</button><button type="button" data-stick-dash="' + esc(note.id) + '">Pin to dashboard</button><button type="button" data-stick-open="' + esc(note.id) + '">Open space</button></div>' + (note._err ? '<div class="soft-err">' + esc(note._err) + '</div>' : '') + '<button type="button" class="ghost-x" data-stick-del="' + esc(note.id) + '" aria-label="Archive">x</button><button type="button" class="stick-size" data-stick-size="' + esc(note.id) + '" aria-label="Resize"></button></div>';
       }).join('');
+      var dotHost = document.getElementById('stickDots');
+      if (dotHost) {
+        dotHost.innerHTML = colours.map(function (c) { return '<button type="button" class="' + c + ((STATE.stickColor || 'yellow') === c ? ' on' : '') + '" data-new-color="' + c + '" aria-label="' + c + '"></button>'; }).join('');
+        dotHost.querySelectorAll('[data-new-color]').forEach(function (dot) {
+          dot.onclick = function () { STATE.stickColor = dot.getAttribute('data-new-color'); paint(notes); };
+        });
+      }
       var findBox = document.getElementById('stickFind');
       if (findBox) findBox.oninput = function () {
         STATE.stickQ = findBox.value;
@@ -1476,17 +1505,17 @@
       var full = document.getElementById('stickFull');
       if (full) full.onclick = function () { document.body.classList.toggle('exec-full'); var board = document.getElementById('stickBoard'); if (board) board.style.minHeight = document.body.classList.contains('exec-full') ? '80vh' : ''; };
       document.getElementById('stickAdd').onclick = function () {
-        var temp = { id: 'tmp-' + Date.now(), body: '', color: 'yellow', x: 24 + (notes.length % 4) * 28, y: 24 + (notes.length % 3) * 20 };
+        var temp = { id: 'tmp-' + Date.now(), body: '', color: STATE.stickColor || 'yellow', x: 24 + (notes.length % 4) * 28, y: 24 + (notes.length % 3) * 20 };
         notes.push(temp);
         paint(notes);
         var area = host.querySelector('[data-stick="' + temp.id + '"] textarea');
         if (area) area.focus();
-        authFetch('/api/notes/sticky', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ body: '', color: 'yellow', x: temp.x, y: temp.y }) }).then(function (r) { if (!r.ok) throw 0; return r.json();         }).then(function (saved) {
+        authFetch('/api/notes/sticky', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ body: '', color: temp.color, x: temp.x, y: temp.y }) }).then(function (r) { if (!r.ok) throw 0; return r.json();         }).then(function (saved) {
           var card = host.querySelector('[data-stick="' + temp.id + '"]');
           temp.id = saved.id || temp.id;
           if (card && saved.id) card.setAttribute('data-stick', saved.id);
           var area = card && card.querySelector('textarea');
-          if (saved.id && area && (area.value || temp.color !== 'yellow')) {
+          if (saved.id && area && (area.value || temp.color !== 'yellow' || (temp.meta))) {
             authFetch('/api/notes/' + saved.id, { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ body: area.value, color: temp.color, x: card.offsetLeft, y: card.offsetTop }) }).catch(function () {});
           }
         }).catch(function () { temp._err = 'Not saved yet'; var card = host.querySelector('[data-stick="' + temp.id + '"]'); if (card && !card.querySelector('.soft-err')) card.insertAdjacentHTML('beforeend', '<div class="soft-err">Not saved yet</div>'); });
@@ -1500,6 +1529,126 @@
           e.stopPropagation();
           var note = notes.filter(function (row) { return row.id === btn.getAttribute('data-stick-task'); })[0];
           if (note) saveItem(note.body || 'Note', 'today');
+        };
+      });
+
+      function noteBy(attr, el) {
+        return notes.filter(function (row) { return row.id === el.getAttribute(attr); })[0];
+      }
+      board.querySelectorAll('[data-stick-check]').forEach(function (box) {
+        box.onchange = function (e) {
+          e.stopPropagation();
+          var note = noteBy('data-stick-check', box);
+          var i = Number(box.getAttribute('data-i'));
+          if (!note || !note.meta || !note.meta.checks || !note.meta.checks[i]) return;
+          note.meta.checks[i].done = box.checked;
+          var row = box.closest('.check');
+          if (row) row.classList.toggle('done', box.checked);
+          patchMeta(note);
+        };
+      });
+      board.querySelectorAll('[data-stick-line]').forEach(function (box) {
+        box.onchange = function () {
+          var note = noteBy('data-stick-line', box);
+          var i = Number(box.getAttribute('data-i'));
+          if (!note || !note.meta || !note.meta.checks || !note.meta.checks[i]) return;
+          note.meta.checks[i].t = box.value;
+          patchMeta(note);
+        };
+      });
+      board.querySelectorAll('[data-stick-addcheck]').forEach(function (btn) {
+        btn.onclick = function (e) {
+          e.stopPropagation();
+          var note = noteBy('data-stick-addcheck', btn);
+          if (!note) return;
+          note.meta = note.meta || {};
+          note.meta.checks = note.meta.checks || [];
+          note.meta.checks.push({ t: '', done: false });
+          if (!note.meta.kind) note.meta.kind = 'todo';
+          patchMeta(note);
+          paint(notes);
+        };
+      });
+      board.querySelectorAll('[data-stick-link]').forEach(function (box) {
+        box.onchange = function () {
+          var note = noteBy('data-stick-link', box);
+          if (!note) return;
+          var q = box.value.trim().toLowerCase();
+          note.meta = note.meta || {};
+          var person = (STATE.contacts || []).filter(function (c) { return String(c.name || '').toLowerCase() === q; })[0];
+          var space = (STATE.packages || []).filter(function (sp) { return String(sp.name || '').toLowerCase() === q; })[0];
+          if (person) note.meta.link = { kind: 'person', id: person.id, name: person.name };
+          else if (space) note.meta.link = { kind: 'space', id: space.id, name: space.name };
+          else note.meta.link = q ? { kind: 'name', id: '', name: box.value.trim() } : null;
+          patchMeta(note);
+          paint(notes);
+        };
+      });
+      board.querySelectorAll('[data-stick-jump]').forEach(function (btn) {
+        btn.onclick = function (e) {
+          e.stopPropagation();
+          var note = noteBy('data-stick-jump', btn);
+          var link = note && note.meta && note.meta.link;
+          if (!link) return;
+          if (link.kind === 'space' && typeof switchView === 'function') {
+            switchView('work');
+            var card = document.querySelector('[data-pkg="' + link.id + '"]');
+            if (card) card.click();
+          } else if (typeof switchView === 'function') switchView('people');
+        };
+      });
+      board.querySelectorAll('[data-stick-content]').forEach(function (btn) {
+        btn.onclick = function (e) {
+          e.stopPropagation();
+          var note = noteBy('data-stick-content', btn);
+          if (note) saveItem('Draft post: ' + String(note.body || 'Note').slice(0, 80), 'today');
+        };
+      });
+      board.querySelectorAll('[data-stick-space]').forEach(function (btn) {
+        btn.onclick = function (e) {
+          e.stopPropagation();
+          var note = noteBy('data-stick-space', btn);
+          if (!note) return;
+          var name = (note.meta && note.meta.link && note.meta.link.name) || '';
+          var space = (STATE.packages || []).filter(function (sp) { return String(sp.name || '').toLowerCase() === String(name).toLowerCase() || (note.meta && note.meta.link && note.meta.link.id === sp.id); })[0];
+          if (!space) { note._err = 'Type a space name in the link line first.'; paint(notes); return; }
+          var notesText = String(space.description || space.notes || '');
+          var extra = String(note.body || '').trim();
+          if (extra && notesText.indexOf(extra) < 0) notesText = (notesText + '\n' + extra).trim();
+          space.description = notesText;
+          note.meta = note.meta || {};
+          note.meta.link = { kind: 'space', id: space.id, name: space.name };
+          note._err = '';
+          patchMeta(note);
+          if (String(space.id).indexOf('tmp-') !== 0) authFetch('/api/spaces/' + space.id, { method: 'PATCH', quiet: true, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ notes: notesText }) }).catch(function () {});
+          paint(notes);
+        };
+      });
+      board.querySelectorAll('[data-stick-dash]').forEach(function (btn) {
+        btn.onclick = function (e) {
+          e.stopPropagation();
+          var note = noteBy('data-stick-dash', btn);
+          if (!note) return;
+          note.meta = note.meta || {};
+          note.meta.pin = true;
+          patchMeta(note);
+          var pins = [];
+          try { pins = JSON.parse(localStorage.getItem('cr_dash_notes') || '[]'); } catch (err) { pins = []; }
+          pins = pins.filter(function (row) { return row.id !== note.id; });
+          pins.unshift({ id: note.id, text: String(note.body || 'Pinned note').slice(0, 80) });
+          try { localStorage.setItem('cr_dash_notes', JSON.stringify(pins.slice(0, 5))); } catch (err) {}
+          paint(notes);
+        };
+      });
+      board.querySelectorAll('[data-stick-open]').forEach(function (btn) {
+        btn.onclick = function (e) {
+          e.stopPropagation();
+          var note = noteBy('data-stick-open', btn);
+          var link = note && note.meta && note.meta.link;
+          if (!link || !link.id) { if (note) { note._err = 'Link a space first.'; paint(notes); } return; }
+          if (typeof switchView === 'function') switchView('work');
+          var card = document.querySelector('[data-pkg="' + link.id + '"]');
+          if (card) card.click();
         };
       });
       board.querySelectorAll('[data-stick-remind]').forEach(function (box) {
@@ -1570,7 +1719,7 @@
             var note = notes.filter(function (row) { return row.id === card.getAttribute('data-stick'); })[0];
             if (!note) return;
             note.meta = note.meta || {};
-            if (tag.textContent === 'Pinned') note.meta.pin = !note.meta.pin;
+            if (tag.hasAttribute('data-stick-pin')) note.meta.pin = !note.meta.pin;
             else {
               var order = ['idea', 'todo', 'person', 'decision', ''];
               note.meta.kind = order[(order.indexOf(note.meta.kind || '') + 1) % order.length];
@@ -1593,7 +1742,7 @@
           };
         });
         card.onpointerdown = function (e) {
-          if (e.target.closest('textarea,button,select')) return;
+          if (e.target.closest('textarea,button,select,input,label')) return;
           var sx = e.clientX - card.offsetLeft;
           var sy = e.clientY - card.offsetTop;
           function move(ev) { card.style.left = (ev.clientX - sx) + 'px'; card.style.top = (ev.clientY - sy) + 'px'; }
