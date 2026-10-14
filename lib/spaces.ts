@@ -508,12 +508,16 @@ export async function patchSpace(sql: Sql, ownerId: string, id: string, body: Re
     ? clip(body.notes ?? body.description, 8000)
     : null;
   const kind = Object.prototype.hasOwnProperty.call(body, 'kind') ? (allowPackageKind(String(body.kind || '')) || 'data_room') : null;
-  if (name !== null || notes !== null || kind !== null) {
+  const category = Object.prototype.hasOwnProperty.call(body, 'category') || Object.prototype.hasOwnProperty.call(body, 'spaceCategory')
+    ? clip(body.category ?? body.spaceCategory, 80)
+    : null;
+  if (name !== null || notes !== null || kind !== null || category !== null) {
     await sql`
       UPDATE spaces SET
         name = CASE WHEN ${name !== null} THEN ${name || 'Untitled space'} ELSE name END,
         notes = CASE WHEN ${notes !== null} THEN ${notes || ''} ELSE notes END,
         kind = CASE WHEN ${kind !== null} THEN ${kind || 'data_room'} ELSE kind END,
+        category = CASE WHEN ${category !== null} THEN ${category || ''} ELSE category END,
         updated_at = now()
       WHERE id = ${id} AND owner_id = ${ownerId}
     `;

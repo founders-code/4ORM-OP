@@ -346,6 +346,15 @@
     };
   }
 
+  function slotHead(day) {
+    var bits = String(day || '').split('-');
+    if (bits.length < 3) return day || 'Today';
+    var when = new Date(Date.UTC(Number(bits[0]), Number(bits[1]) - 1, Number(bits[2])));
+    if (Number.isNaN(when.getTime())) return day;
+    var wk = when.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
+    return wk + ' ' + Number(bits[2]);
+  }
+
   function openSlots() {
     var card = document.getElementById('modalCard');
     var modal = document.getElementById('modal');
@@ -363,7 +372,7 @@
       slots.forEach(function (slot) { if (days.indexOf(slot.day) < 0) days.push(slot.day || 'Today'); });
       list.innerHTML = (data.error ? '<div class="kick">' + esc(data.error) + '</div>' : '') + '<div class="slot-cal">' + (days.length ? days : ['Today']).map(function (day) {
         var rows = slots.filter(function (slot) { return (slot.day || 'Today') === day; });
-        return '<div class="slot-day"><div class="day">' + esc(day) + '</div>' + rows.map(function (slot) {
+        return '<div class="slot-day"><div class="day">' + esc(slotHead(day)) + '</div>' + rows.map(function (slot) {
           var time = String(slot.label || '').split(' ').pop();
           return '<button class="slot" type="button" data-start="' + slot.start + '"' + (slot.free ? '' : ' disabled') + '>' + esc(time) + (slot.free ? '' : ' busy') + '</button>';
         }).join('') + '</div>';
