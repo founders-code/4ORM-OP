@@ -29,6 +29,96 @@
     return (STATE.items || []).filter(function (it) { return it.status !== 'dropped'; });
   }
 
+  function daysToClose() {
+    var end = Date.parse('2026-10-30T07:00:00Z');
+    return Math.max(0, Math.ceil((end - Date.now()) / 86400000));
+  }
+
+  function missionShut() {
+    try { return JSON.parse(localStorage.getItem('cr_mission') || '{}'); } catch (err) { return {}; }
+  }
+
+  function missionCard(id, title, body) {
+    var shut = missionShut()[id] === false;
+    return '<section class="mc"><button type="button" class="mc-h" data-mc="' + id + '"><span>' + title + '</span><span>' + (shut ? '>' : 'v') + '</span></button>' + (shut ? '' : '<div class="mc-b">' + body + '</div>') + '</section>';
+  }
+
+  function missionHtml(rows, doneWeek) {
+    var days = daysToClose();
+    var open = rows.filter(function (it) { return it.status !== 'done'; });
+    var overdue = open.filter(function (it) { return bucket(it) === 'overdue'; });
+    var reach = (STATE.reachOut || []).filter(function (person) { return !person.done; });
+    var drafts = (STATE.packages || []).filter(function (space) { return String(space.stage || space.status || 'draft') === 'draft'; });
+    var needs = [];
+    if (days <= 30) needs.push('Raise closes in ' + days + ' days. 4 of 7 cheques are still open.');
+    if (overdue.length) needs.push(overdue.length + ' task' + (overdue.length === 1 ? '' : 's') + ' overdue.');
+    if (reach.length) needs.push(reach.length + ' people still waiting on a reach-out.');
+    if (drafts.length) needs.push(drafts.length + ' spaces are still drafts.');
+    if (!needs.length) needs.push('Nothing on the desk is on fire.');
+    var cheques = '';
+    for (var i = 0; i < 7; i += 1) cheques += '<i class="' + (i < 3 ? 'in' : 'wait') + '"></i>';
+    var worries = [
+      'Cash is $100 and runway is about a day. A cheque has to land before the desk goes dark.',
+      'The raise is concentrated in friends and family. One delayed cheque is the whole pace.',
+      'Unsigned docs plus a short runway is the pairing that stalls a close.',
+      'One build path. If that slips, the product date slips with it.'
+    ];
+    var mail = STATE.mail || STATE.inbox || [];
+    var inbox = mail.length ? mail.slice(0, 4).map(function (row) {
+      var flag = /vc|fund|capital|ventures/i.test((row.from || '') + ' ' + (row.subject || '')) ? 'VC' : 'Reply';
+      return '<div><b>' + esc(row.from || 'Sender') + '</b> ' + esc(row.subject || '') + ' <span class="kick">' + flag + '</span></div>';
+    }).join('') : '<div class="kick">Gmail has not returned messages. Investor mail pins here when it does.</div>';
+    var vcs = (STATE.packages || []).filter(function (space) {
+      return /vc|venture/i.test(String(space.spaceCategory || space.category || '') + ' ' + String(space.name || ''));
+    }).slice(0, 6);
+    var watch = vcs.length ? vcs.map(function (space) {
+      return '<div>' + esc(space.name) + ' <span class="kick">' + esc(space.stage || space.status || 'draft') + '</span></div>';
+    }).join('') : '<div class="kick">No VC spaces on the board yet.</div>';
+    var cash = 12;
+    var raise = 32;
+    var pipe = Math.min(100, ((STATE.pipeline || []).length ? 48 : 16));
+    var product = rows.length ? Math.max(20, 80 - Math.min(open.length, 60)) : 24;
+    var legal = rows.some(function (it) { return /legal|regulat/i.test(it.title || ''); }) ? 40 : 62;
+    var score = Math.round((cash + raise + pipe + product + legal) / 5);
+    var movers = ((STATE.ceo && STATE.ceo.moves) || []).slice(0, 3);
+    if (!movers.length) movers = open.slice(0, 3).map(function (it) { return { title: it.title }; });
+    var moverHtml = movers.length ? movers.map(function (move) { return '<div>' + esc(move.title || move.name || 'Move') + '</div>'; }).join('') : '<div class="kick">No needle-mover on the desk.</div>';
+    var lamps = [
+      ['Runway', 'red', 'room'],
+      ['Raise pace', 'amber', 'room'],
+      ['Pipeline', (STATE.pipeline || []).length ? 'green' : 'amber', 'contacts'],
+      ['Spend', 'red', 'room'],
+      ['Legal docs', 'amber', 'docs'],
+      ['Concentration', 'amber', 'work'],
+      ['Integrations', 'green', 'int']
+    ];
+    var strip = '<div class="cmd-strip"><div><div class="kick">Cash</div><b>$100</b></div><div><div class="kick">Burn</div><b>~$3K</b></div><div><div class="kick">Runway</div><b class="bad">~1 day</b></div><div><div class="kick">Raise</div><b>$80K / $250K</b></div><div><div class="kick">Oct 30</div><b>' + days + 'd</b></div><div class="lamps">' + lamps.map(function (lamp) { return '<button type="button" class="lamp ' + lamp[1] + '" data-go="' + lamp[2] + '">' + lamp[0] + '</button>'; }).join('') + '</div></div>';
+    return strip
+      + missionCard('needs', 'What needs you now', needs.map(function (line) { return '<div>' + esc(line) + '</div>'; }).join(''))
+      + missionCard('raise', 'Raise tracker', '<div class="cheque">' + cheques + '</div><div class="kick">3 in, 4 still open. $170K over ' + days + ' days.</div>')
+      + missionCard('worry', 'What I would worry about', worries.map(function (line) { return '<div>' + esc(line) + '</div>'; }).join(''))
+      + missionCard('inbox', 'Inbox - needs you', inbox)
+      + missionCard('content', 'Content runway', '<div class="kick">GoHighLevel has not returned a content queue. Posts left and the day it runs dry show here when it does.</div>')
+      + missionCard('vc', 'VC watch', watch)
+      + missionCard('health', 'Company health ' + score, '<div class="kick">Cash ' + cash + ' - Raise ' + raise + ' - Pipeline ' + pipe + ' - Product ' + product + ' - Legal ' + legal + '. Desk snapshot, not a ledger.</div>')
+      + missionCard('move', 'Today\'s 1-3', moverHtml + '<div class="kick">Done last 7 days: ' + doneWeek + '</div>');
+  }
+
+  function bindMission(el) {
+    el.querySelectorAll('[data-mc]').forEach(function (btn) {
+      btn.onclick = function () {
+        var map = missionShut();
+        var id = btn.getAttribute('data-mc');
+        map[id] = map[id] === false;
+        try { localStorage.setItem('cr_mission', JSON.stringify(map)); } catch (err) {}
+        renderOpsDash();
+      };
+    });
+    el.querySelectorAll('[data-go]').forEach(function (btn) {
+      btn.onclick = function () { if (typeof switchView === 'function') switchView(btn.getAttribute('data-go')); };
+    });
+  }
+
   function renderOpsDash() {
     var el = document.getElementById('opsDash');
     if (!el) return;
@@ -98,7 +188,7 @@
       var count = done.filter(function (it) { var at = Date.parse(it.updated_at || '') || 0; return at >= start && at < start + 86400000; }).length;
       trend.push(count);
     }
-    el.innerHTML = '<div class="money"><div><div class="k">Raise - friends &amp; family</div><div class="n">$80K / $250K</div><div class="bar"><span></span></div><div class="kick" style="color:#C5D4E6;margin-top:8px">$170K to go - 3/7 cheques - 18 days to Oct 30</div></div><div><div class="k">Runway</div><div class="n bad">~1 day</div></div><div><div class="k">Cash</div><div class="n">$100</div></div></div>'
+    el.innerHTML = missionHtml(rows, doneWeek) + '<div class="money"><div><div class="k">Raise - friends &amp; family</div><div class="n">$80K / $250K</div><div class="bar"><span></span></div><div class="kick" style="color:#C5D4E6;margin-top:8px">$170K to go - 3/7 cheques - 18 days to Oct 30</div></div><div><div class="k">Runway</div><div class="n bad">~1 day</div></div><div><div class="k">Cash</div><div class="n">$100</div></div></div>'
       + '<div class="metrics">' + tiles.map(function (t) { return '<div class="metric ' + t[2] + '"><div class="k">' + esc(t[0]) + '</div><div class="n">' + esc(String(t[1])) + '</div><div class="kick">' + esc(t[3]) + '</div></div>'; }).join('') + '</div>'
       + '<div class="ops-2"><div class="card" style="padding:14px"><h3>Operations overview</h3><div class="kick">Status</div>' + meters([['Done', done.length, 'status:done', done], ['Active', active.length, 'status:active', active], ['Waiting', waiting.length, 'status:waiting', waiting], ['Blocked', blocked.length, 'status:blocked', blocked]], maxStatus) + '<div class="kick" style="margin-top:10px">Departments</div>' + meters(Object.keys(areas).map(function (k) { return [k, areas[k], 'area:' + k, areaRows[k]]; }), maxArea) + '<div class="kick" style="margin-top:10px">Priority</div>' + meters(Object.keys(pri).map(function (k) { return [k, pri[k], 'pri:' + k, rows.filter(function (it) { return it.priority === k; })]; }), maxPri) + '</div>'
       + '<div class="card" style="padding:14px"><h3>Quick insights</h3><div class="insights">'
@@ -120,6 +210,7 @@
     el.querySelectorAll('[data-ops]').forEach(function (btn) {
       btn.onclick = function () { openOpsList(btn.getAttribute('data-ops'), lists); };
     });
+    bindMission(el);
   }
 
   function openOpsList(key, lists) {
@@ -215,7 +306,18 @@
     var people = STATE.reachOut || [];
     var filter = STATE.reachKind || 'all';
     var shown = people.filter(function (person) { return filter === 'all' || person.kind === filter; });
-    cmd.innerHTML = '<div class="lb-add"><input id="opsAdd" type="text" placeholder="Capture a task" style="flex:1"/><button class="btn pri sm" id="opsAddBtn" type="button">Add</button></div>'
+    var moves = ((STATE.ceo && STATE.ceo.moves) || []).slice(0, 3);
+    var one = moves[0];
+    var slots = [0, 1, 2].map(function (i) {
+      var move = moves[i];
+      return '<label class="card" style="padding:8px"><input type="checkbox" data-needle="' + i + '"/> ' + esc(move ? (move.title || 'Move') : 'Set a needle-mover') + '</label>';
+    }).join('');
+    var evening = new Date().getHours() >= 17;
+    cmd.innerHTML = '<div class="cmd-strip"><div><div class="kick">Cash</div><b>$100</b></div><div><div class="kick">Runway</div><b class="bad">~1 day</b></div><div><div class="kick">Raise</div><b>$80K / $250K</b></div><div><div class="kick">Oct 30</div><b>' + daysToClose() + 'd</b></div></div>'
+      + '<div class="focus-hero"><div class="kick">The one thing</div><b>' + esc(one ? (one.title || 'Pick the one thing') : 'Pick the one thing') + '</b><div class="kick">' + esc(one && one.why ? one.why : 'Tied to runway and the raise.') + '</div><div style="margin-top:8px"><button class="btn pri sm" type="button" id="focusStart">Start 25-min focus</button><span class="kick" id="focusClock"></span></div></div>'
+      + '<div class="needle" style="margin-bottom:8px">' + slots + '</div>'
+      + '<div class="card" style="padding:10px;margin-bottom:8px"><div class="kick">Coaching</div><div>Regulators can wait. Do not let them take a cash-first morning. Drop them or give them 10 minutes.</div>' + (evening ? '<div class="kick">End of day: check the 1-3, then set tomorrow\'s one thing.</div>' : '') + '</div>'
+      + '<div class="lb-add"><input id="opsAdd" type="text" placeholder="Capture a task, or park a stray idea" style="flex:1"/><button class="btn pri sm" id="opsAddBtn" type="button">Add</button></div>'
       + '<div class="card" id="nextUp" style="padding:8px 12px;margin-top:8px;display:flex;align-items:center;gap:12px"><div style="flex:1">' + (next.length ? next.map(function (ev) { return '<div data-count="' + ev.start + '">' + esc(ev.title || 'Event') + ' <span class="kick">' + soon(ev.start) + '</span></div>'; }).join('') : '<div class="kick">No more events today.</div>') + '</div><button class="btn sm" id="findSlot" type="button">Find a 30-min slot</button></div>'
       + '<div class="card" style="padding:12px;margin-top:10px"><h3>Reach out</h3><div class="news-chips">' + kinds.map(function (pair) { var n = people.filter(function (person) { return pair[0] === 'all' || person.kind === pair[0]; }).length; return '<button type="button" data-reach-kind="' + pair[0] + '"' + (filter === pair[0] ? ' class="on"' : '') + '>' + pair[1] + ' ' + n + '</button>'; }).join('') + '</div><div class="reach-grid">' + (shown.length ? shown.map(function (person) { var bits = String(person.name || '?').split(/\s+/).slice(0, 2).map(function (part) { return part.slice(0, 1); }).join('').toUpperCase(); return '<div class="reach-card"><div class="av">' + esc(bits) + '</div><b>' + esc(person.name) + '</b><div class="kick">' + esc(person.company || '') + '</div><span class="kick">' + esc(reachNames[person.kind] || 'Corporate') + '</span><label class="cap"><input type="checkbox" data-reach-done="' + esc(person.id) + '"' + (person.done ? ' checked' : '') + '/>' + esc(person.nextAction || 'Reach out') + '</label><button type="button" data-reach-task="' + esc(person.id) + '">+ task</button></div>'; }).join('') : '<div class="kick">Add people from Pipeline or Contacts.</div>') + '</div></div>';
     var cols = [
@@ -223,7 +325,7 @@
       ['week', 'This week'],
       ['later', 'Later']
     ];
-    board.innerHTML = '<div class="exec">' + cols.map(function (col) {
+    board.innerHTML = '<div class="cap"><button class="btn sm" type="button" id="execFull">Expand</button></div><div class="exec">' + cols.map(function (col) {
       var items = liveItems().filter(function (it) {
         var b = bucket(it);
         if (it.status === 'done') return false;
@@ -246,6 +348,17 @@
     });
     var find = document.getElementById('findSlot');
     if (find) find.onclick = openSlots;
+    var full = document.getElementById('execFull');
+    if (full) full.onclick = function () {
+      document.body.classList.toggle('exec-full');
+      full.textContent = document.body.classList.contains('exec-full') ? 'Close' : 'Expand';
+    };
+    var focus = document.getElementById('focusStart');
+    if (focus) focus.onclick = function () {
+      STATE.focusUntil = Date.now() + 25 * 60 * 1000;
+      var clock = document.getElementById('focusClock');
+      if (clock) clock.textContent = '25:00';
+    };
     document.querySelectorAll('.exec-card').forEach(function (card) {
       card.ondragstart = function (e) { e.dataTransfer.setData('text', card.getAttribute('data-item')); };
     });
@@ -395,6 +508,12 @@
     var cats = categories && categories.length ? categories : ['All'];
     var on = STATE.newsCat || 'All';
     var rows = (items || []).filter(function (item) { return on === 'All' || item.category === on; });
+    if (STATE.newsSpan === 'today') {
+      var start = new Date();
+      start.setHours(0, 0, 0, 0);
+      var todays = rows.filter(function (item) { return Date.parse(item.publishedAt || item.published_at || 0) >= start.getTime(); });
+      if (todays.length) rows = todays;
+    }
     var top = rows.filter(function (item) { return item.is_top || item.isTop; })[0];
     var rest = top ? [top].concat(rows.filter(function (item) { return item !== top; })) : rows;
     function card(item, wide) {
@@ -404,15 +523,27 @@
       return '<button type="button" class="news-card' + (wide ? ' wide' : '') + '" data-news-url="' + esc(item.url || '') + '" data-news-title="' + esc(item.title || '') + '" data-news-why="' + esc(item.summary || '') + '"><div class="shot" style="background:' + tint + '">' + shot + '</div><div style="padding:12px"><b>' + esc(item.title || '') + '</b><div class="kick">' + esc(item.summary || '') + '</div><div class="kick">' + esc(when) + '</div></div></button>';
     }
     var empty = rows.length ? '' : '<div class="kick">The 8:00 and 11:00 Pacific sweeps fill this. Refresh pulls a fresh scrape.</div>';
-    el.innerHTML = '<div class="news-wrap"><div class="cap"><div class="seg" id="newsSpan"><button type="button" data-span="week"' + (STATE.newsSpan === 'week' ? ' class="on"' : '') + '>Last week</button><button type="button" data-span="month"' + (STATE.newsSpan === 'week' ? '' : ' class="on"') + '>Last month</button></div><button class="btn sm" id="newsRefresh" type="button">Refresh</button></div><div class="news-chips">' + ['All'].concat(cats.filter(function (c) { return c !== 'All'; })).map(function (c) { return '<button type="button" class="' + (c === on ? 'on' : '') + '" data-news="' + esc(c) + '">' + esc(c) + (c === 'All' ? '' : ' <span data-news-del="' + esc(c) + '" aria-label="Remove category">x</span>') + '</button>'; }).join('') + '</div><div class="news-grid">' + empty + rest.map(function (item) { return card(item, false); }).join('') + '</div></div>';
+    var hero = top ? '<div class="card" style="padding:12px;margin-bottom:8px"><div class="kick">Top release</div><b>' + esc(top.title || '') + '</b><div>' + esc(top.summary || '') + '</div><div class="cap"><button type="button" class="btn sm" data-news-act="post" data-news-title="' + esc(top.title || '') + '">Draft a LinkedIn post</button><button type="button" class="btn sm" data-news-act="letter" data-news-title="' + esc(top.title || '') + '">Add to investor newsletter</button><button type="button" class="btn sm" data-news-act="vc" data-news-title="' + esc(top.title || '') + '">Cite to a VC</button><button type="button" class="btn sm" data-news-act="open" data-news-title="' + esc(top.title || '') + '" data-news-url="' + esc(top.url || '') + '">Open source</button></div></div>' : '';
+    var brief = rest.slice(0, 5).map(function (item, i) { return '<div>' + (i + 1) + '. ' + esc(item.title || '') + '</div>'; }).join('') || '<div class="kick">The sweep fills the briefing.</div>';
+    el.innerHTML = '<div class="news-brief"><div class="news-wrap"><div class="cap"><div class="seg" id="newsSpan"><button type="button" data-span="today"' + (STATE.newsSpan === 'today' ? ' class="on"' : '') + '>Today</button><button type="button" data-span="week"' + (STATE.newsSpan === 'week' ? ' class="on"' : '') + '>Last week</button><button type="button" data-span="month"' + (STATE.newsSpan !== 'week' && STATE.newsSpan !== 'today' ? ' class="on"' : '') + '>Last month</button></div><button class="btn sm" id="newsRefresh" type="button">Refresh</button></div>' + hero + '<div class="news-chips">' + ['All'].concat(cats.filter(function (c) { return c !== 'All'; })).map(function (c) { return '<button type="button" class="' + (c === on ? 'on' : '') + '" data-news="' + esc(c) + '">' + esc(c) + (c === 'All' ? '' : ' <span data-news-del="' + esc(c) + '" aria-label="Remove category">x</span>') + '</button>'; }).join('') + '</div><div class="news-grid">' + empty + rest.map(function (item) { return card(item, false); }).join('') + '</div></div><aside class="card" style="padding:10px"><div class="kick">Your briefing</div>' + brief + '<div class="kick" style="margin-top:8px">Competitor watch</div><div class="kick">Vanta, Drata, Aveni, Secureframe. A story that names one of them shows here.</div><div class="kick" style="margin-top:8px">Trending</div><div>RPAA, safeguarding, consumer understanding</div></aside></div>';
     el.querySelectorAll('[data-span]').forEach(function (btn) {
       btn.onclick = function () {
-        STATE.newsSpan = btn.getAttribute('data-span') === 'month' ? 'month' : 'week';
+        var span = btn.getAttribute('data-span');
+        STATE.newsSpan = span === 'today' ? 'today' : (span === 'week' ? 'week' : 'month');
         loadNews();
       };
     });
     el.querySelectorAll('[data-news]').forEach(function (btn) {
       btn.onclick = function () { STATE.newsCat = btn.getAttribute('data-news'); renderNews(STATE.news || [], STATE.newsCategories || cats); };
+    });
+    el.querySelectorAll('[data-news-act]').forEach(function (btn) {
+      btn.onclick = function () {
+        var title = btn.getAttribute('data-news-title') || 'Story';
+        var act = btn.getAttribute('data-news-act');
+        if (act === 'open') { if (typeof openLink === 'function') openLink(title, btn.getAttribute('data-news-url')); return; }
+        saveItem((act === 'post' ? 'LinkedIn: ' : act === 'letter' ? 'Newsletter: ' : 'Cite to a VC: ') + title, 'week');
+        if (typeof deskNote === 'function') deskNote('Added to This week.');
+      };
     });
     el.querySelectorAll('.news-card').forEach(function (btn) {
       btn.onclick = function () { if (typeof openLink === 'function') openLink(btn.getAttribute('data-news-title'), btn.getAttribute('data-news-url')); };
@@ -1159,11 +1290,31 @@
     if (!host) return;
     var colours = ['yellow', 'blue', 'green', 'pink'];
     function paint(notes) {
-      host.innerHTML = '<div class="sec-h"><h3>Notes</h3><button class="btn pri sm" id="stickAdd" type="button">+ New note</button></div><div class="sticky-board" id="stickBoard"></div>';
+      var q = String(STATE.stickQ || '').toLowerCase();
+      var shown = notes.filter(function (note) { return !q || String(note.body || '').toLowerCase().indexOf(q) >= 0; });
+      host.innerHTML = '<div class="sec-h"><h3>Notes</h3><input id="stickFind" type="search" placeholder="Search notes" aria-label="Search notes" value="' + esc(q) + '"><button class="btn sm" id="stickTidy" type="button">Tidy up</button><button class="btn pri sm" id="stickAdd" type="button">+ New note</button></div><div class="sticky-board" id="stickBoard"></div>';
       var board = document.getElementById('stickBoard');
-      board.innerHTML = notes.map(function (note) {
-        return '<div class="sticky ' + esc(note.color || 'yellow') + '" data-stick="' + esc(note.id) + '" style="left:' + (Number(note.x) || 24) + 'px;top:' + (Number(note.y) || 24) + 'px;width:' + (Number(note.w) || 180) + 'px;height:' + (Number(note.h) || 140) + 'px"><div class="dots">' + colours.map(function (c) { return '<button type="button" class="' + c + ((note.color || 'yellow') === c ? ' on' : '') + '" data-color="' + c + '" aria-label="' + c + '"></button>'; }).join('') + '</div><textarea rows="4">' + esc(note.body || '') + '</textarea>' + (note._err ? '<div class="soft-err">' + esc(note._err) + '</div>' : '') + '<button type="button" class="ghost-x" data-stick-del="' + esc(note.id) + '" aria-label="Delete">x</button><button type="button" class="stick-size" data-stick-size="' + esc(note.id) + '" aria-label="Resize"></button></div>';
+      board.innerHTML = shown.map(function (note, index) {
+        var tilt = (index % 2 ? 1.5 : -1.5);
+        return '<div class="sticky ' + esc(note.color || 'yellow') + '" data-stick="' + esc(note.id) + '" style="left:' + (Number(note.x) || 24) + 'px;top:' + (Number(note.y) || 24) + 'px;width:' + (Number(note.w) || 180) + 'px;height:' + (Number(note.h) || 140) + 'px;transform:rotate(' + tilt + 'deg)"><div class="dots">' + colours.map(function (c) { return '<button type="button" class="' + c + ((note.color || 'yellow') === c ? ' on' : '') + '" data-color="' + c + '" aria-label="' + c + '"></button>'; }).join('') + '</div><textarea rows="4">' + esc(note.body || '') + '</textarea>' + (note._err ? '<div class="soft-err">' + esc(note._err) + '</div>' : '') + '<button type="button" class="ghost-x" data-stick-del="' + esc(note.id) + '" aria-label="Delete">x</button><button type="button" class="stick-size" data-stick-size="' + esc(note.id) + '" aria-label="Resize"></button></div>';
       }).join('');
+      var findBox = document.getElementById('stickFind');
+      if (findBox) findBox.oninput = function () {
+        STATE.stickQ = findBox.value;
+        paint(notes);
+        var again = document.getElementById('stickFind');
+        if (again) { again.focus(); var n = again.value.length; again.setSelectionRange(n, n); }
+      };
+      var tidy = document.getElementById('stickTidy');
+      if (tidy) tidy.onclick = function () {
+        notes.forEach(function (note, i) {
+          note.x = 16 + (i % 4) * 200;
+          note.y = 16 + Math.floor(i / 4) * 170;
+          if (String(note.id).indexOf('tmp-') === 0) return;
+          authFetch('/api/notes/' + note.id, { method: 'PATCH', credentials: 'same-origin', quiet: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ x: note.x, y: note.y }) }).catch(function () {});
+        });
+        paint(notes);
+      };
       document.getElementById('stickAdd').onclick = function () {
         var temp = { id: 'tmp-' + Date.now(), body: '', color: 'yellow', x: 24 + (notes.length % 4) * 28, y: 24 + (notes.length % 3) * 20 };
         notes.push(temp);
