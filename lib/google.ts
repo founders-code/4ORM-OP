@@ -199,7 +199,7 @@ export async function moveEvent(id: string, startMs: number, durMin: number) {
   return !!json;
 }
 
-type DriveFile = { id: string; name: string; url: string; kind: string; mime: string; thumb: string };
+type DriveFile = { id: string; name: string; url: string; kind: string; mime: string; thumb: string; modified?: string; owner?: string };
 
 type DriveNode = {
   id: string;
@@ -209,7 +209,21 @@ type DriveNode = {
   files: DriveFile[];
 };
 
-type FileRow = { id: string; name: string; mimeType: string; webViewLink?: string; thumbnailLink?: string };
+type FileRow = {
+  id: string;
+  name: string;
+  mimeType: string;
+  webViewLink?: string;
+  thumbnailLink?: string;
+  modifiedTime?: string;
+  owners?: Array<{ displayName?: string; me?: boolean }>;
+};
+
+function ownerOf(row: FileRow) {
+  const first = row.owners?.[0];
+  if (!first) return 'Shared';
+  return first.me ? 'You' : (first.displayName || 'Shared').slice(0, 60);
+}
 
 function safeId(id: string) {
   return /^[\w-]{8,}$/.test(id);
@@ -219,7 +233,7 @@ async function listChildren(parentId: string, driveId: string) {
   if (!safeId(parentId) || !safeId(driveId)) return null;
   const q = new URLSearchParams({
     q: `'${parentId}' in parents and trashed = false`,
-    fields: 'files(id,name,mimeType,webViewLink,thumbnailLink)',
+    fields: 'files(id,name,mimeType,webViewLink,thumbnailLink,modifiedTime,owners(displayName,me))',
     pageSize: '100',
     supportsAllDrives: 'true',
     includeItemsFromAllDrives: 'true',
@@ -241,6 +255,8 @@ function asFiles(rows: FileRow[]) {
       kind: (f.name.split('.').pop() || 'file').slice(0, 8),
       mime: f.mimeType || '',
       thumb: f.thumbnailLink || '',
+      modified: f.modifiedTime || '',
+      owner: ownerOf(f),
     }));
 }
 
@@ -332,7 +348,7 @@ export async function listFolderFiles(folderId: string) {
   if (!configured() || !safeId(folderId)) return null;
   const q = new URLSearchParams({
     q: `'${folderId}' in parents and trashed = false`,
-    fields: 'files(id,name,mimeType,webViewLink,thumbnailLink)',
+    fields: 'files(id,name,mimeType,webViewLink,thumbnailLink,modifiedTime,owners(displayName,me))',
     pageSize: '40',
     supportsAllDrives: 'true',
     includeItemsFromAllDrives: 'true',
@@ -348,6 +364,8 @@ export async function listFolderFiles(folderId: string) {
       url: file.webViewLink || '',
       mime: file.mimeType || '',
       thumb: file.thumbnailLink || '',
+      modified: file.modifiedTime || '',
+      owner: ownerOf(file),
     }));
 }
 
@@ -356,7 +374,7 @@ export async function listFolderContents(folderId: string) {
   if (!configured() || !safeId(folderId)) return null;
   const q = new URLSearchParams({
     q: `'${folderId}' in parents and trashed = false`,
-    fields: 'files(id,name,mimeType,webViewLink,thumbnailLink)',
+    fields: 'files(id,name,mimeType,webViewLink,thumbnailLink,modifiedTime,owners(displayName,me))',
     pageSize: '40',
     supportsAllDrives: 'true',
     includeItemsFromAllDrives: 'true',
