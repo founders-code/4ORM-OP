@@ -457,25 +457,89 @@
     return names;
   }
 
+  function docKind(d) {
+    var n = String(d.name || '').toLowerCase();
+    var m = String(d.mime || '').toLowerCase();
+    if (m.indexOf('image/') === 0 || /\.(png|jpe?g|gif|webp)$/.test(n)) return 'images';
+    if (m.indexOf('pdf') >= 0 || n.slice(-4) === '.pdf') return 'pdf';
+    if (/ppt|presentation/.test(m) || /\.pptx?$/.test(n)) return 'slides';
+    if (/sheet|excel|csv/.test(m) || /\.(xlsx?|csv)$/.test(n)) return 'sheets';
+    return 'docs';
+  }
+
+  function docUsed(d) {
+    var names = (STATE.docUse && STATE.docUse[d.id]) ? STATE.docUse[d.id].slice() : [];
+    (STATE.packages || []).forEach(function (p) {
+      (p.docs || []).forEach(function (x) {
+        if ((d.driveFileId && x.driveFileId === d.driveFileId) || (x.name && x.name === d.name)) {
+          if (names.indexOf(p.name) < 0) names.push(p.name);
+        }
+      });
+    });
+    return names;
+  }
+
+  function libraryMarkup(docs, folders) {
+    var sets = [['investor', 'Investor data room', ['VC', 'Angel', 'Friends & Fam']], ['regulator', 'Regulator pack', ['Regulator', 'Government']], ['ff', 'F&F bundle', ['Friends & Fam']]];
+    var active = STATE.docFolder && folders.indexOf(STATE.docFolder) >= 0 ? STATE.docFolder : (folders[0] || '');
+    var types = [['all', 'All'], ['pdf', 'PDF'], ['slides', 'Slides'], ['sheets', 'Sheets'], ['docs', 'Docs'], ['images', 'Images']];
+    var wheres = [['all', 'All'], ['space', 'In a space'], ['drive', 'From Drive'], ['upload', 'Uploaded']];
+    var tree = folders.map(function (c) {
+      var n = docs.filter(function (d) { return d.category === c; }).length;
+      var on = c === active && !STATE.docSet ? ' on' : '';
+      return '<div class="lib-card' + on + '" data-cat="' + esc(c) + '" data-pick-folder="' + esc(c) + '"><input data-lib-rename="' + esc(c) + '" value="' + esc(c) + '" aria-label="Folder name"><span class="kick">' + n + '</span><button type="button" class="ghost-x" data-lib-folder-x="' + esc(c) + '" aria-label="Delete folder">x</button></div>';
+    }).join('');
+    var setHtml = sets.map(function (s) {
+      return '<button type="button" class="row' + (STATE.docSet === s[0] ? ' on' : '') + '" data-doc-set="' + s[0] + '">' + esc(s[1]) + '</button>';
+    }).join('');
+    var chips = '<div class="doc-chips">' + types.map(function (t) { return '<button type="button" data-doc-type="' + t[0] + '"' + ((STATE.docType || 'all') === t[0] ? ' class="on"' : '') + '>' + t[1] + '</button>'; }).join('') + '</div><div class="doc-chips">' + wheres.map(function (t) { return '<button type="button" data-doc-where="' + t[0] + '"' + ((STATE.docWhere || 'all') === t[0] ? ' class="on"' : '') + '>' + t[1] + '</button>'; }).join('') + '</div>';
+    var pool = docs.filter(function (d) {
+      if (STATE.docSet) {
+        var set = sets.filter(function (s) { return s[0] === STATE.docSet; })[0];
+        if (set && set[2].indexOf(d.category) < 0) return false;
+      } else if (d.category !== active) return false;
+      if ((STATE.docType || 'all') !== 'all' && docKind(d) !== STATE.docType) return false;
+      var used = docUsed(d);
+      var where = used.length ? 'space' : (d.driveFileId ? 'drive' : 'upload');
+      if ((STATE.docWhere || 'all') !== 'all' && where !== STATE.docWhere) return false;
+      return true;
+    });
+    var picked = STATE.docPick || {};
+    var tiles = pool.map(function (d) {
+      var image = (d.mime || '').indexOf('image/') === 0;
+      var kind = ((d.name || '').split('.').pop() || 'file').slice(0, 4).toUpperCase();
+      var pdf = (d.mime || '') === 'application/pdf' || /\.pdf$/i.test(d.name || '');
+      var src = image ? ('/api/documents/file?id=' + encodeURIComponent(d.id)) : (d.driveFileId ? ('https://drive.google.com/thumbnail?id=' + encodeURIComponent(d.driveFileId) + '&sz=w400') : '');
+      var page = (!src && pdf) ? '<span class="page-shot"><iframe title="" src="/api/documents/file?id=' + encodeURIComponent(d.id) + '#page=1"></iframe></span>' : '';
+      var face = (src ? '<img alt="" src="' + src + '" onload="var k=this.parentNode.querySelector(\'.dk\');if(k)k.hidden=true" onerror="this.hidden=true"/>' : '') + page + '<span class="dk"' + (src || page ? ' hidden' : '') + '>' + esc(kind) + '</span>';
+      var used = docUsed(d);
+      var on = picked[d.id] ? ' on' : '';
+      return '<div class="doc-tile' + on + ' mini-wrap" draggable="true" data-lib-inline="' + esc(d.id) + '"><input class="pick" type="checkbox" data-lib-pick="' + esc(d.id) + '"' + (picked[d.id] ? ' checked' : '') + '><button type="button" class="ghost-x" data-lib-x="' + esc(d.id) + '" aria-label="Delete file">x</button><button type="button" class="mini">' + face + '<em>' + esc(d.name || 'File') + '</em></button><div class="kick"><span class="doc-sync ' + (d.driveFileId ? 'on' : 'off') + '"></span> ' + esc(used.length ? used.slice(0, 2).join(', ') : 'not in a space') + (d._err ? ' - ' + esc(d._err) : '') + '</div></div>';
+    }).join('');
+    var ids = Object.keys(picked);
+    var spaceOpts = (STATE.packages || []).map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.name) + '</option>'; }).join('');
+    var moveOpts = folders.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('');
+    var bar = ids.length ? '<div class="doc-bar"><span>' + ids.length + ' selected</span><select id="libToSpace" aria-label="Space">' + spaceOpts + '</select><button type="button" class="btn sm" id="libAddSpace">Add to Space</button><button type="button" class="btn sm" id="libBuildSpace">Build a Space</button><button type="button" class="btn sm" id="libPushSel">Push to Drive</button><select id="libMoveTo" aria-label="Move to folder">' + moveOpts + '</select><button type="button" class="btn sm" id="libMoveSel">Move</button><button type="button" class="btn sm" id="libDelSel">Delete</button></div>' : '';
+    var rail = (STATE.packages || []).slice(0, 16).map(function (p) { return '<div class="drop" data-space-drop="' + esc(p.id) + '">' + esc(p.name) + '</div>'; }).join('') || '<div class="kick">No spaces yet</div>';
+    var recent = docs.slice(-5).reverse().map(function (d) { return '<div class="kick">' + esc(d.name || 'File') + '</div>'; }).join('');
+    return '<div class="lb-add" id="libDrop">drag documents here, or <label class="btn sm">choose files<input id="libUpload" class="file-in" type="file" multiple></label></div><div class="doc-cmd"><aside class="doc-side"><div class="kick">Folders</div><div class="doc-tree">' + tree + '</div><div class="cap" style="margin-top:8px"><input id="libFolderName" type="text" placeholder="New folder name" aria-label="New folder name"><button class="btn sm" id="libAddFolder" type="button">Add a folder</button></div><div class="kick" style="margin-top:10px">Sets</div>' + setHtml + chips + '<div class="cap" style="margin-top:8px"><span class="kick">Pull a Drive file into this folder</span><select id="libCat" aria-label="Folder">' + folders.map(function (c) { return '<option' + (c === active ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select><select id="libFile" aria-label="Drive file"><option value="">Choose a Drive file</option>' + flatFiles(STATE.drives || [], []).map(function (file) { return '<option value="' + esc(file.id) + '" data-url="' + esc(file.url || '') + '" data-name="' + esc(file.name || '') + '">' + esc(file.name || 'File') + '</option>'; }).join('') + '</select><button class="btn sm" id="libPull" type="button">Pull into this folder</button><button class="btn sm" id="libPush" type="button">Push this folder to Drive</button></div></aside><div><div class="sec-h"><h3>' + esc(STATE.docSet ? (sets.filter(function (s) { return s[0] === STATE.docSet; })[0] || ['', active])[1] : active) + '</h3></div>' + bar + '<div class="doc-grid">' + (tiles || '<div class="kick">No files in this folder yet.</div>') + '</div><button type="button" class="btn sm" id="libInc" style="margin-top:10px">Top incumbents</button></div><aside class="doc-rail"><div class="kick">Spaces</div>' + rail + '<button type="button" class="btn sm" id="libBuildSpace2" style="margin-top:8px">Build a new Space from the selection</button><div class="kick" style="margin-top:10px">Recently added</div>' + recent + '</aside></div>';
+  }
+
   function renderLibrary() {
     var el = document.getElementById('opsLibrary');
     if (!el || el.hidden) return;
     var docs = STATE.staged || [];
     var folders = libFolders();
-    el.innerHTML = '<div class="lb-add" id="libDrop">drag documents here, or <label class="btn sm">choose files<input id="libUpload" class="file-in" type="file" multiple></label></div><div class="cap" style="margin:10px 0"><input id="libFolderName" type="text" placeholder="New folder name" aria-label="New folder name"><button class="btn sm" id="libAddFolder" type="button">Add a folder</button><span class="kick">Pull a Drive file into</span><select id="libCat" aria-label="Folder">' + folders.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select><select id="libFile" aria-label="Drive file"><option value="">Choose a Drive file</option>' + flatFiles(STATE.drives || [], []).map(function (file) { return '<option value="' + esc(file.id) + '" data-url="' + esc(file.url || '') + '" data-name="' + esc(file.name || '') + '">' + esc(file.name || 'File') + '</option>'; }).join('') + '</select><button class="btn sm" id="libPull" type="button">Pull into this folder</button><button class="btn sm" id="libPush" type="button">Push this folder to Drive</button></div><div class="lib-grid">' + folders.map(function (c) {
-      var n = docs.filter(function (d) { return d.category === c; }).length;
-      var mine = docs.filter(function (d) { return d.category === c; }).slice(0, 9);
-      var tiles = mine.map(function (d) {
-        var image = (d.mime || '').indexOf('image/') === 0;
-        var kind = ((d.name || '').split('.').pop() || 'file').slice(0, 4).toUpperCase();
-        var pdf = (d.mime || '') === 'application/pdf' || /\.pdf$/i.test(d.name || '');
-        var src = image ? ('/api/documents/file?id=' + encodeURIComponent(d.id)) : (d.driveFileId ? ('https://drive.google.com/thumbnail?id=' + encodeURIComponent(d.driveFileId) + '&sz=w400') : '');
-        var page = (!src && pdf) ? '<span class="page-shot"><iframe title="" src="/api/documents/file?id=' + encodeURIComponent(d.id) + '#page=1"></iframe></span>' : '';
-        var face = (src ? '<img alt="" src="' + src + '" onload="var k=this.parentNode.querySelector(\'.dk\');if(k)k.hidden=true" onerror="this.hidden=true"/>' : '') + page + '<span class="dk"' + (src || page ? ' hidden' : '') + '>' + esc(kind) + '</span>';
-        return '<div class="mini-wrap" draggable="true" data-lib-inline="' + esc(d.id) + '"><button type="button" class="ghost-x" data-lib-x="' + esc(d.id) + '" aria-label="Delete file">x</button><button type="button" class="mini">' + face + '<em>' + esc(d.name || 'File') + '</em>' + (d._err ? '<em class="soft-err">' + esc(d._err) + '</em>' : '') + '</button></div>';
-      }).join('');
-      return '<div class="lib-card" data-cat="' + esc(c) + '"><div class="lib-h"><input data-lib-rename="' + esc(c) + '" value="' + esc(c) + '" aria-label="Folder name"><button type="button" class="ghost-x" data-lib-folder-x="' + esc(c) + '" aria-label="Delete folder">x</button><div class="kick">' + n + ' files</div></div><div class="lib-mini">' + tiles + '</div></div>';
-    }).join('') + '</div><button type="button" class="btn sm" id="libInc" style="margin-top:10px">Top incumbents</button>';
+    if (STATE.docPick) {
+      var live = {};
+      docs.forEach(function (d) { if (STATE.docPick[d.id]) live[d.id] = true; });
+      STATE.docPick = live;
+    }
+    el.innerHTML = libraryMarkup(docs, folders);
+    if (!STATE.docSpacesAsked && typeof loadPackages === 'function') {
+      STATE.docSpacesAsked = true;
+      loadPackages().then(function () { renderLibrary(); });
+    }
     var pull = document.getElementById('libPull');
     if (pull) pull.onclick = function () {
       var sel = document.getElementById('libFile');
@@ -667,7 +731,124 @@
           openDocView(doc.name, url, '');
           return;
         }
-        openFolder(card.getAttribute('data-cat'));
+        var folder = e.target.closest('[data-pick-folder]');
+        STATE.docFolder = (folder && folder.getAttribute('data-pick-folder')) || card.getAttribute('data-cat');
+        STATE.docSet = '';
+        renderLibrary();
+      };
+    });
+    el.querySelectorAll('[data-pick-folder]').forEach(function (btn) {
+      btn.onclick = function (e) {
+        if (e.target.closest('[data-lib-rename],[data-lib-folder-x]')) return;
+        e.stopPropagation();
+        STATE.docFolder = btn.getAttribute('data-pick-folder') || '';
+        STATE.docSet = '';
+        renderLibrary();
+      };
+    });
+    el.querySelectorAll('[data-doc-set]').forEach(function (btn) {
+      btn.onclick = function () { STATE.docSet = btn.getAttribute('data-doc-set') || ''; renderLibrary(); };
+    });
+    el.querySelectorAll('[data-doc-type]').forEach(function (btn) {
+      btn.onclick = function () { STATE.docType = btn.getAttribute('data-doc-type') || 'all'; renderLibrary(); };
+    });
+    el.querySelectorAll('[data-doc-where]').forEach(function (btn) {
+      btn.onclick = function () { STATE.docWhere = btn.getAttribute('data-doc-where') || 'all'; renderLibrary(); };
+    });
+    el.querySelectorAll('[data-lib-pick]').forEach(function (box) {
+      box.onclick = function (e) { e.stopPropagation(); };
+      box.onchange = function () {
+        STATE.docPick = STATE.docPick || {};
+        var id = box.getAttribute('data-lib-pick') || '';
+        if (box.checked) STATE.docPick[id] = true; else delete STATE.docPick[id];
+        renderLibrary();
+      };
+    });
+    el.querySelectorAll('.doc-grid .mini').forEach(function (mini) {
+      mini.onclick = function (e) {
+        if (e.target.closest('[data-lib-x],[data-lib-pick]')) return;
+        var wrap = mini.closest('[data-lib-inline]');
+        var doc = docs.filter(function (d) { return d.id === (wrap ? wrap.getAttribute('data-lib-inline') : ''); })[0];
+        if (!doc) return;
+        var url = doc.driveFileId ? ('https://drive.google.com/file/d/' + encodeURIComponent(doc.driveFileId) + '/preview') : (doc.url || ('/api/documents/file?id=' + encodeURIComponent(doc.id)));
+        openDocView(doc.name, url, '');
+      };
+    });
+    function selectedDocs() {
+      return (STATE.staged || []).filter(function (d) { return STATE.docPick && STATE.docPick[d.id]; });
+    }
+    function rememberUse(spaceName, ids) {
+      STATE.docUse = STATE.docUse || {};
+      ids.forEach(function (id) {
+        STATE.docUse[id] = STATE.docUse[id] || [];
+        if (STATE.docUse[id].indexOf(spaceName) < 0) STATE.docUse[id].push(spaceName);
+      });
+    }
+    function addDocsToSpace(spaceId, ids) {
+      var space = (STATE.packages || []).filter(function (p) { return p.id === spaceId; })[0];
+      if (!space || !ids.length) return;
+      ids.forEach(function (id) {
+        var doc = (STATE.staged || []).filter(function (d) { return d.id === id; })[0];
+        if (!doc || String(id).indexOf('tmp-') === 0) return;
+        authFetch('/api/spaces/' + spaceId, { method: 'POST', credentials: 'same-origin', quiet: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'add-doc', name: doc.name, url: doc.url || '', mime: doc.mime || '', driveFileId: doc.driveFileId || '' }) }).catch(function () {});
+      });
+      rememberUse(space.name, ids);
+      renderLibrary();
+    }
+    var addSpace = document.getElementById('libAddSpace');
+    if (addSpace) addSpace.onclick = function () {
+      var sel = document.getElementById('libToSpace');
+      addDocsToSpace(sel ? sel.value : '', Object.keys(STATE.docPick || {}));
+    };
+    function buildSpace() {
+      var ids = Object.keys(STATE.docPick || {});
+      if (!ids.length) return;
+      var name = 'Bundle';
+      authFetch('/api/spaces', { method: 'POST', credentials: 'same-origin', quiet: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: name }) }).then(function (r) { return r.json(); }).then(function (d) {
+        var id = d && (d.id || (d.space && d.space.id) || (d.package && d.package.id));
+        if (!id) return;
+        STATE.packages = (STATE.packages || []).concat([{ id: id, name: d.name || name, docs: [], stage: 'draft', status: 'draft' }]);
+        addDocsToSpace(id, ids);
+      }).catch(function () {});
+    }
+    var build = document.getElementById('libBuildSpace');
+    if (build) build.onclick = buildSpace;
+    var build2 = document.getElementById('libBuildSpace2');
+    if (build2) build2.onclick = buildSpace;
+    var pushSel = document.getElementById('libPushSel');
+    if (pushSel) pushSel.onclick = function () { var btn = document.getElementById('libPush'); if (btn) btn.click(); };
+    var moveSel = document.getElementById('libMoveSel');
+    if (moveSel) moveSel.onclick = function () {
+      var cat = (document.getElementById('libMoveTo') || {}).value || '';
+      if (!cat) return;
+      selectedDocs().forEach(function (doc) {
+        if (String(doc.id).indexOf('tmp-') === 0) return;
+        doc.category = cat;
+        authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'move', id: doc.id, category: cat }) }).catch(function () { doc._err = 'Not moved yet'; });
+      });
+      STATE.docPick = {};
+      renderLibrary();
+    };
+    var delSel = document.getElementById('libDelSel');
+    if (delSel) delSel.onclick = function () {
+      if (!window.confirm('Delete the selected files?')) return;
+      var ids = Object.keys(STATE.docPick || {});
+      STATE.staged = (STATE.staged || []).filter(function (d) { return ids.indexOf(d.id) < 0; });
+      STATE.docPick = {};
+      renderLibrary();
+      ids.forEach(function (id) {
+        if (id.indexOf('tmp-') === 0) return;
+        authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'remove', id: id }) }).catch(function () {});
+      });
+    };
+    el.querySelectorAll('[data-space-drop]').forEach(function (box) {
+      box.ondragover = function (e) { e.preventDefault(); };
+      box.ondrop = function (e) {
+        e.preventDefault();
+        var plain = '';
+        try { plain = e.dataTransfer.getData('text/plain') || ''; } catch (err) { plain = ''; }
+        var ids = plain.indexOf('4orm-doc:') === 0 ? [plain.slice(9)] : Object.keys(STATE.docPick || {});
+        addDocsToSpace(box.getAttribute('data-space-drop') || '', ids);
       };
     });
   }
