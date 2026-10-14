@@ -1,11 +1,42 @@
 import { NextResponse } from 'next/server';
+import { withCreds } from '@/lib/creds';
+import { uploadDriveBytes } from '@/lib/google';
 import { fail } from '@/lib/log';
 import { openBoard } from '@/lib/session';
+import { loadCredsFor } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
 
+type Sql = NonNullable<NonNullable<Awaited<ReturnType<typeof openBoard>>>['sql']>;
+
+async function fileOffice(
+  sql: Sql,
+  userId: string,
+  name: string,
+  mime: string,
+  raw: string,
+) {
+  if (!/officedocument|msword|ms-excel|ms-powerpoint/.test(mime)) return { driveFileId: '', url: '' };
+  try {
+    const cached = await sql`SELECT tree FROM drive_cache WHERE owner_id = ${userId}`;
+    let tree: unknown = (cached[0] as { tree?: unknown } | undefined)?.tree;
+    if (typeof tree === 'string') {
+      try { tree = JSON.parse(tree); } catch { tree = []; }
+    }
+    const parent = String((Array.isArray(tree) ? (tree[0] as { id?: string } | null) : null)?.id || '');
+    if (!/^[\w-]{8,}$/.test(parent)) return { driveFileId: '', url: '' };
+    const creds = await loadCredsFor(userId);
+    const uploaded = (await withCreds(creds, () => uploadDriveBytes(name, mime, parent, Buffer.from(raw, 'base64')))) as { id?: string } | null;
+    const driveFileId = String(uploaded?.id || '');
+    return { driveFileId, url: driveFileId ? `https://drive.google.com/file/d/${driveFileId}/preview` : '' };
+  } catch (err) {
+    fail('staged_drive', err);
+    return { driveFileId: '', url: '' };
+  }
+}
+
 async function store(
-  sql: NonNullable<Awaited<ReturnType<typeof openBoard>>>['sql'],
+  sql: Sql,
   userId: string,
   category: string,
   name: string,
@@ -13,9 +44,10 @@ async function store(
   raw: string,
 ) {
   if (!sql || !raw) return false;
+  const filed = await fileOffice(sql, userId, name, mime, raw);
   await sql`
-    INSERT INTO staged_docs (owner_id, category, name, mime, body_b64)
-    VALUES (${userId}, ${category}, ${name}, ${mime}, ${raw})
+    INSERT INTO staged_docs (owner_id, category, name, url, drive_file_id, mime, body_b64)
+    VALUES (${userId}, ${category}, ${name}, ${filed.url}, ${filed.driveFileId}, ${mime}, ${raw})
   `;
   return true;
 }

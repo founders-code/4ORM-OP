@@ -188,12 +188,14 @@
   function setBucket(id, col) {
     var it = (STATE.items || []).filter(function (row) { return row.id === id; })[0];
     if (!it) return;
-    var prev = it.due;
     it.due = dueFor(col);
     renderWar();
     if (typeof renderOpsDash === 'function') renderOpsDash();
     var due = it.due == null ? null : new Date(it.due).toISOString();
-    authFetch('/api/items', { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: id, due: due }) }).then(function (r) { if (!r.ok) throw 0; }).catch(function () { it.due = prev; renderWar(); });
+    function send() {
+      return authFetch('/api/items', { method: 'PATCH', quiet: true, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: id, due: due }) }).then(function (r) { if (!r.ok) throw 0; });
+    }
+    send().catch(function () { return send(); }).catch(function () {});
   }
 
   function dueFor(col) {
@@ -251,15 +253,21 @@
       col.ondragover = function (e) { e.preventDefault(); };
       col.ondrop = function (e) {
         e.preventDefault();
-        var id = e.dataTransfer.getData('text');
-        var due = dueFor(col.getAttribute('data-col'));
-        authFetch('/api/items', { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: id, due: due }) }).then(function () { return authFetch('/api/board', { credentials: 'same-origin' }); }).then(function (r) { return r.json(); }).then(applyBoard).catch(function () {});
+        setBucket(e.dataTransfer.getData('text'), col.getAttribute('data-col'));
       };
     });
     document.querySelectorAll('[data-done]').forEach(function (box) {
       box.onclick = function (e) {
         e.stopPropagation();
-        authFetch('/api/items/' + box.getAttribute('data-done'), { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ status: 'done' }) }).then(function () { return authFetch('/api/board', { credentials: 'same-origin' }); }).then(function (r) { return r.json(); }).then(applyBoard).catch(function () {});
+        var id = box.getAttribute('data-done');
+        var it = (STATE.items || []).filter(function (row) { return row.id === id; })[0];
+        if (it) it.status = 'done';
+        renderWar();
+        if (typeof renderOpsDash === 'function') renderOpsDash();
+        function send() {
+          return authFetch('/api/items/' + id, { method: 'PATCH', quiet: true, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ status: 'done' }) }).then(function (r) { if (!r.ok) throw 0; });
+        }
+        send().catch(function () { return send(); }).catch(function () {});
       };
     });
     document.querySelectorAll('[data-del]').forEach(function (btn) {
@@ -308,7 +316,7 @@
     var temp = { id: 'tmp-' + Date.now(), title: title, area: 'other', status: 'new', priority: 'normal', due: dueFor(col), notes: '', category: category || '' };
     STATE.items = (STATE.items || []).concat([temp]);
     renderWar();
-    authFetch('/api/items', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: title, area: 'other', due: dueFor(col), category: category || '' }) }).then(function (r) { if (!r.ok) throw 0; return authFetch('/api/board', { credentials: 'same-origin' }); }).then(function (r) { return r.json(); }).then(applyBoard).catch(function () { temp._err = 'Not saved yet'; renderWar(); });
+    authFetch('/api/items', { method: 'POST', quiet: true, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: title, area: 'other', due: dueFor(col), category: category || '' }) }).then(function (r) { if (!r.ok) throw 0; return authFetch('/api/board', { credentials: 'same-origin' }); }).then(function (r) { return r.json(); }).then(applyBoard).catch(function () { temp._err = 'Not saved yet'; renderWar(); });
   }
 
   function loadReach() {
@@ -643,7 +651,8 @@
         if (e.target.closest('[data-lib-x],[data-lib-folder-x],[data-lib-rename]')) return;
         var mini = e.target.closest('.mini');
         if (mini) {
-          var doc = docs.filter(function (d) { return d.id === mini.getAttribute('data-lib-inline'); })[0];
+          var wrap = mini.closest('[data-lib-inline]');
+          var doc = docs.filter(function (d) { return d.id === (wrap ? wrap.getAttribute('data-lib-inline') : ''); })[0];
           if (!doc) return;
           var url = doc.driveFileId ? ('https://drive.google.com/file/d/' + encodeURIComponent(doc.driveFileId) + '/preview') : (doc.url || ('/api/documents/file?id=' + encodeURIComponent(doc.id)));
           openDocView(doc.name, url, '');
@@ -769,7 +778,7 @@
       fail.hidden = true;
       frame.src = URL.createObjectURL(blob);
     }
-    if (url && url.indexOf('/api/documents/file') === 0) {
+    if (url && (url.indexOf('/api/documents/file') === 0 || url.indexOf('/api/spaces/') === 0)) {
       frame.src = 'about:blank';
       authFetch(url, { credentials: 'same-origin' }).then(function (r) {
         if (!r.ok) throw 0;

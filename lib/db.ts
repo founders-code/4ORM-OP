@@ -531,6 +531,7 @@ async function migrateWar(sql: Sql) {
     )`],
     ['db_spaces_kind', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'data_room'`],
     ['db_spaces_notes', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS notes text`],
+    ['db_spaces_category', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS category text`],
     ['db_spaces_drive_url', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS drive_folder_url text`],
     ['db_space_items', () => sql`CREATE TABLE IF NOT EXISTS space_items (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

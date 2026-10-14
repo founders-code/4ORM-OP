@@ -20,7 +20,7 @@ export async function GET(_req: Request, { params }: { params: { id: string; ite
     const row = rows[0] as { mime?: string; body?: string } | undefined;
     const mime = String(row?.mime || '');
     const raw = String(row?.body || '');
-    const previewable = mime.startsWith('image/') || mime === 'application/pdf';
+    const previewable = mime.startsWith('image/') || mime === 'application/pdf' || mime.startsWith('text/') || mime === 'text/csv';
     if (!raw || !previewable) return NextResponse.json({ error: 'This file cannot be previewed here.' }, { status: 400 });
     return new NextResponse(new Uint8Array(Buffer.from(raw, 'base64')), {
       headers: { 'content-type': mime, 'content-disposition': 'inline', 'cache-control': 'private, max-age=300', 'x-content-type-options': 'nosniff' },
