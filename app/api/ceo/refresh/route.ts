@@ -9,10 +9,10 @@ export async function POST() {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     return NextResponse.json(await refreshCeo(session.sql, session.userId));
   } catch {
     fail('ceo_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
   }
 }

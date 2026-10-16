@@ -84,20 +84,30 @@ function postsOf(json: Record<string, unknown> | null) {
 
 export async function listSocialQueue() {
   const loc = encodeURIComponent(locationId());
-  let json = (await ghl(`/social-media-posting/${loc}/posts?limit=20&skip=0`)) as Record<string, unknown> | null;
-  if (!postsOf(json).length) {
-    const listed = (await ghl(`/social-media-posting/${loc}/posts/list`, {
-      method: 'POST',
-      body: JSON.stringify({ skip: 0, limit: 20 }),
-    })) as Record<string, unknown> | null;
-    if (postsOf(listed).length) json = listed;
+  const posts: Array<{ status?: string; scheduleDate?: string; scheduledAt?: string; publishAt?: string }> = [];
+  let reached = false;
+  for (const skip of [0, 20, 40, 60, 80]) {
+    let json = (await ghl(`/social-media-posting/${loc}/posts?limit=20&skip=${skip}`)) as Record<string, unknown> | null;
+    if (!postsOf(json).length) {
+      const listed = (await ghl(`/social-media-posting/${loc}/posts/list`, {
+        method: 'POST',
+        body: JSON.stringify({ skip, limit: 20 }),
+      })) as Record<string, unknown> | null;
+      if (postsOf(listed).length) json = listed;
+    }
+    if (json) reached = true;
+    const batch = postsOf(json) as Array<{ status?: string; scheduleDate?: string; scheduledAt?: string; publishAt?: string }>;
+    if (!batch.length) break;
+    posts.push(...batch);
+    if (batch.length < 20) break;
   }
-  const posts = postsOf(json);
-  if (!json) return null;
+  if (!reached) return null;
   const queued = posts.filter((post) => /schedul|queue|draft|pending|in_progress|in progress/i.test(String(post.status || 'scheduled')));
   const left = queued.length || posts.length;
-  if (!left) return null;
-  return { left, cadence: Math.max(1, Math.round(left / 7)) };
+  const cadence = left ? Math.max(1, Math.round(left / 7) || 1) : 0;
+  const dates = queued.map((post) => Date.parse(String(post.scheduleDate || post.scheduledAt || post.publishAt || ''))).filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
+  const newsletterDue = dates[0] ? new Date(dates[0]).toISOString().slice(0, 10) : '';
+  return { left, cadence, newsletterDue, empty: left === 0 };
 }
 
 export async function listPipeline() {

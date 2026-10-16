@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/news",
       "schedule": "0 15,16,18,19 * * *"
+    },
+    {
+      "path": "/api/cron/ceo",
+      "schedule": "30 13,14 * * *"
     }
   ]
 }
