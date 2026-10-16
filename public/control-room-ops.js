@@ -258,7 +258,12 @@
       if (data && data.events && data.events.length) { STATE.events = data.events; if (STATE.desk === 'room' || !STATE.desk) renderOpsDash(); if (STATE.desk === 'war') renderWar(); }
     }).catch(function () {});
     authFetch('/api/mail', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
-      STATE.mail = (data && data.messages) || [];
+      STATE.mail = ((data && data.messages) || []).filter(function (m) {
+        var subject = String(m && m.subject || '');
+        var email = String(m && m.email || '').toLowerCase();
+        if (/^(calendar-notification|calendar-server)@google\.com$/.test(email)) return false;
+        return !/^\s*(?:(?:re|fwd?|fw)\s*:\s*)*(?:invitation|updated invitation|accepted|declined|tentative|tentatively accepted|canceled|cancelled|canceled event|cancelled event)(?:\s+\(.*?\))?\s*:/i.test(subject);
+      });
       STATE.linkedin = (data && data.linkedin) || [];
       if (typeof stampWarmth === 'function') stampWarmth();
       if (STATE.desk === 'room' || !STATE.desk) renderOpsDash();

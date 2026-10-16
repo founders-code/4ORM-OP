@@ -1,20 +1,67 @@
 import { NextResponse } from 'next/server';
+import { withCreds } from '@/lib/creds';
+import { claimBudget } from '@/lib/db';
+import { zoomMail } from '@/lib/google';
 import { fail } from '@/lib/log';
 import { openBoard } from '@/lib/session';
+import { loadCredsFor } from '@/lib/vault';
+import { filledZoomIds, lastZoomSync, saveMailNotes, syncZoomApi, zoomConfigured } from '@/lib/zoom';
 import { listZoomNotes, seedZoomNotes } from '@/lib/zoom-notes';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 export async function GET() {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    if (!session.sql) return NextResponse.json({ notes: [], error: 'Unavailable' });
     await seedZoomNotes(session.sql, session.userId);
     const notes = await listZoomNotes(session.sql, session.userId);
-    return NextResponse.json({ notes });
+    const syncedAt = await lastZoomSync(session.sql, session.userId);
+    return NextResponse.json({ notes, syncedAt, zoom: zoomConfigured() ? 'connected' : 'not_connected' });
   } catch {
     fail('zoom_notes_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    return NextResponse.json({ notes: [], error: 'Unavailable' });
+  }
+}
+
+/** Refresh on demand: every recent Zoom recording and transcript, plus Zoom summary emails, de-duped by meeting. */
+export async function POST() {
+  try {
+    const session = await openBoard();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session.sql) return NextResponse.json({ ok: false, notes: [], error: 'Unavailable' });
+    const sql = session.sql;
+    await seedZoomNotes(sql, session.userId);
+    if (!(await claimBudget(sql, session.userId, 'zoom', 25))) {
+      const notes = await listZoomNotes(sql, session.userId);
+      return NextResponse.json({ ok: false, busy: true, notes, error: 'Zoom refreshed a moment ago. Try again in a few minutes.' });
+    }
+    const known = await filledZoomIds(sql, session.userId);
+    const api = await syncZoomApi(sql, session.userId, known).catch((err) => {
+      fail('zoom_sync', err);
+      return { added: 0, filled: 0, seen: 0, zoom: 'unavailable' as const };
+    });
+    const mailKnown = new Set([...known].filter((id) => id.startsWith('gmail-')).map((id) => id.slice(6)));
+    const creds = await loadCredsFor(session.userId);
+    const mails = await withCreds(creds, () => zoomMail(mailKnown, 20)).catch((err) => {
+      fail('zoom_mail', err);
+      return null;
+    });
+    const mailAdded = mails ? await saveMailNotes(sql, session.userId, mails) : 0;
+    const notes = await listZoomNotes(sql, session.userId);
+    return NextResponse.json({
+      ok: true,
+      added: api.added + mailAdded,
+      filled: api.filled,
+      seen: api.seen,
+      zoom: api.zoom,
+      gmail: mails ? 'connected' : 'unavailable',
+      notes,
+    });
+  } catch (err) {
+    fail('zoom_refresh', err);
+    return NextResponse.json({ ok: false, notes: [], error: 'Unavailable' });
   }
 }
