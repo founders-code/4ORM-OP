@@ -889,7 +889,16 @@
       list.querySelectorAll('.slot').forEach(function (btn) {
         btn.onclick = function () {
           btn.disabled = true;
-          authFetch('/api/calendar/slots', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ start: Number(btn.getAttribute('data-start')) }) }).then(function (r) { return r.json().then(function (d) { if (!r.ok) throw d; btn.textContent = btn.textContent + ' - booked'; }); }).catch(function () { btn.disabled = false; });
+          authFetch('/api/calendar/slots', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ start: Number(btn.getAttribute('data-start')) }) }).then(function (r) { return r.json().then(function (d) {
+            if (!r.ok) throw d;
+            btn.textContent = btn.textContent + ' - booked';
+            var start = Number(d && d.start) || Number(btn.getAttribute('data-start'));
+            if (Number.isFinite(start)) {
+              STATE.events = (STATE.events || []).concat([{ id: String((d && d.id) || ('slot-' + start)), start: start, dur: 30, title: 'Focus block', join: '' }]);
+              if (STATE.desk === 'war') renderWar();
+              if (STATE.desk === 'room' || !STATE.desk) renderOpsDash();
+            }
+          }); }).catch(function () { btn.disabled = false; });
         };
       });
     }).catch(function () {
