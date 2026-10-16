@@ -9,6 +9,10 @@ const nextConfig = {
     '/api/ceo/moves/[id]/do': ['./ceo/**/*'],
     '/api/ceo/moves/[id]/snooze': ['./ceo/**/*'],
     '/api/cron/brief': ['./ceo/**/*'],
+    '/api/cron/news': ['./NEWS_SOURCES.md'],
+    '/api/news': ['./NEWS_SOURCES.md'],
+    '/api/news/refresh': ['./NEWS_SOURCES.md'],
+    '/api/news/ingest': ['./NEWS_SOURCES.md'],
   },
   // Serve the public landing at "/" so the look is preserved exactly.
   // The gated rooms live at /advisor.html, /employee.html, /engineering.html.

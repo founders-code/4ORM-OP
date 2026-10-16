@@ -10,25 +10,27 @@ type Sql = NeonQueryFunction<false, false>;
 const FRESH_MS = 10 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-type CalEvent = { id: string; start: number; dur: number; title: string; color: string };
+type CalEvent = { id: string; start: number; dur: number; title: string; color: string; join: string };
 
 function asEvents(value: unknown): CalEvent[] {
   const parsed = typeof value === 'string' ? JSON.parse(value) : value;
   if (!Array.isArray(parsed)) return [];
-  return parsed
-    .map((event) => {
-      const row = event as Record<string, unknown>;
-      const id = String(row.id || '');
-      if (!id) return null;
-      return {
-        id,
-        start: Number(row.start) || 0,
-        dur: Number(row.dur) || 30,
-        title: String(row.title || ''),
-        color: '#2E6BF2',
-      };
-    })
-    .filter((event): event is CalEvent => !!event);
+  const rows: CalEvent[] = [];
+  for (const event of parsed) {
+    const row = event as Record<string, unknown>;
+    const id = String(row.id || '');
+    if (!id) continue;
+    const join = String(row.join || '');
+    rows.push({
+      id,
+      start: Number(row.start) || 0,
+      dur: Number(row.dur) || 30,
+      title: String(row.title || ''),
+      color: '#2E6BF2',
+      join: /^https?:\/\//i.test(join) ? join.slice(0, 500) : '',
+    });
+  }
+  return rows;
 }
 
 async function pullEvents(sql: Sql, ownerId: string, timeMin: string, timeMax: string) {

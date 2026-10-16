@@ -115,7 +115,11 @@
     function isAction(row) {
       return /\b(sign|signature|docusign|agreement|contract|invoice|action required|approve|approval|deadline|due by|by (mon|tue|wed|thu|fri)|wire)\b/i.test((row.subject || '') + ' ' + (row.snippet || ''));
     }
-    var mail = (STATE.mail || []).slice().sort(function (a, b) {
+    var mail = (STATE.mail || []).filter(function (row) {
+      var who = String(row.from || '').replace(/\s+/g, ' ').trim();
+      if (/^chad r\.?\s*johnston$/i.test(who) && !row.outbound) return false;
+      return true;
+    }).slice().sort(function (a, b) {
       var av = isVcMail(a) ? 0 : 1;
       var bv = isVcMail(b) ? 0 : 1;
       return av - bv || (Number(b.at) || 0) - (Number(a.at) || 0);
@@ -161,7 +165,7 @@
     }).join('') + '</div><div class="pace">These are the ranked moves from 4orm Intelligence, the same list as the War Room.</div>' : '<div class="quiet">No ranked move yet. The War Room one-thing fills this.</div>';
     var bars = [30, 45, 25, 60, 40, 70, Math.min(100, 20 + doneWeek * 8)].map(function (n) { return '<div class="bar" style="height:' + Math.max(8, n) + '%"></div>'; }).join('');
     var meetings = (STATE.events || []).filter(function (ev) { return ev.start >= Date.now() - 60000; }).sort(function (a, b) { return a.start - b.start; }).slice(0, 3);
-    var meet = meetings.length ? meetings.map(function (ev) { return '<div class="m"><span class="dot"></span>' + esc(ev.title || 'Meeting') + '<span class="mt">' + soon(ev.start) + '</span></div>'; }).join('') : '<div class="quiet">No meetings on the calendar.</div>';
+    var meet = meetings.length ? meetings.map(function (ev) { return '<div class="m"><span class="dot"></span>' + alarmMeetLine(ev) + '</div>'; }).join('') : '<div class="quiet">No meetings on the calendar.</div>';
     var lamps = [
       ['Runway', 'r', 'Critical', 'room'],
       ['Raise pace', 'a', 'Behind', 'room'],
@@ -261,7 +265,9 @@
       STATE.mail = ((data && data.messages) || []).filter(function (m) {
         var subject = String(m && m.subject || '');
         var email = String(m && m.email || '').toLowerCase();
+        var who = String(m && m.from || '').replace(/\s+/g, ' ').trim();
         if (/^(calendar-notification|calendar-server)@google\.com$/.test(email)) return false;
+        if (/^chad r\.?\s*johnston$/i.test(who) && !(m && m.outbound)) return false;
         return !/^\s*(?:(?:re|fwd?|fw)\s*:\s*)*(?:invitation|updated invitation|accepted|declined|tentative|tentatively accepted|canceled|cancelled|canceled event|cancelled event)(?:\s+\(.*?\))?\s*:/i.test(subject);
       });
       STATE.linkedin = (data && data.linkedin) || [];
@@ -340,7 +346,7 @@
     var top = rows.filter(function (it) { return it.status !== 'done'; }).sort(function (a, b) {
       return (rank[a.priority] == null ? 9 : rank[a.priority]) - (rank[b.priority] == null ? 9 : rank[b.priority]);
     }).slice(0, 3);
-    var meetHtml = upcoming.length ? upcoming.map(function (ev) { return '<div>' + esc(ev.title || 'Event') + ' <span class="kick">' + soon(ev.start) + '</span></div>'; }).join('') : '<div class="kick">No meetings on the calendar.</div>';
+    var meetHtml = upcoming.length ? upcoming.map(function (ev) { return alarmMeetLine(ev); }).join('') : '<div class="kick">No meetings on the calendar.</div>';
     var talkHtml = talks.map(function (ev) { return '<div>' + esc(ev.title || 'Call') + '</div>'; }).join('') + reachToday.map(function (person) { return '<div>' + esc(person.name) + ' <span class="kick">' + esc(person.nextAction || 'Reach out') + '</span></div>'; }).join('');
     if (!talkHtml) talkHtml = '<div class="kick">Nothing to call today.</div>';
     var topHtml = top.length ? top.map(function (it) { return '<div>' + esc(it.title) + '</div>'; }).join('') : '<div class="kick">No open tasks.</div>';
@@ -526,7 +532,7 @@
       + '<div class="focus-hero"><div class="l"><div class="lab">4orm Intelligence - today\'s one move</div><div class="big">' + esc(one ? moveLabel(one) : 'Pick the one thing') + '</div><div class="why">' + esc(one && (one.whyNow || one.why) ? 'Why: ' + (one.whyNow || one.why) : 'Tied to runway and the raise. Cash first.') + '</div><div class="steps">' + steps.map(function (step, i) { return '<span class="step">' + (i + 1) + ' ' + esc(typeof step === 'string' ? step : (step.title || step.text || 'Step')) + '</span>'; }).join('') + '</div><div class="cap" style="background:transparent;border:0;box-shadow:none;padding:0"><button class="btn pri sm" type="button" id="focusStart">\u25b6 Start 25-min focus</button><button class="btn sm" type="button" id="focusCommit">Commit this as my one thing</button><button class="btn sm" type="button" id="focusPlan">Plan</button><button class="btn sm" type="button" id="focusLater">Not now</button></div></div><div class="r"><div class="timer" style="--deg:' + deg + 'deg"><div class="in"><div class="t" id="focusClock">' + mm + ':' + ss + '</div><div class="s">focus</div></div></div><div class="quiet" style="color:#8fa3c6"><b style="color:#eaf1ff">' + doneN + ' of 3</b> needle-movers done</div></div></div>'
       + '<div class="nm-wrap"><div class="nm-head"><span>Today\'s 1-3 needle movers</span><span class="s">the only things that count as a win today</span><span class="prog2"><b>' + doneN + '</b> / 3 done</span></div><div class="nm-row">' + slots + '</div></div>'
       + '<div class="ctrl" style="grid-template-columns:1.3fr 1fr"><div class="coach"><b>Coaching note</b><p>Regulators can wait. Do not let them take a cash-first morning. Drop them or give them 10 minutes, then come back to the one thing.</p></div><div class="mcard" style="padding:12px"><b>Momentum</b><div class="week">' + week + '</div><div class="budget">' + esc(budget) + '</div></div></div>'
-      + '<div class="card" id="nextUp" style="padding:8px 12px;margin-top:8px;display:flex;align-items:center;gap:12px"><div style="flex:1">' + (next.length ? next.map(function (ev) { return '<div data-count="' + ev.start + '">' + esc(ev.title || 'Event') + ' <span class="kick">' + soon(ev.start) + '</span></div>'; }).join('') : '<div class="kick">No more events today.</div>') + '</div><button class="btn sm" id="findSlot" type="button">Find a 30-min slot</button></div>'
+      + '<div class="card" id="nextUp" style="padding:8px 12px;margin-top:8px;display:flex;align-items:center;gap:12px"><div style="flex:1">' + (next.length ? next.map(function (ev) { return '<div data-count="' + ev.start + '">' + alarmMeetLine(ev) + '</div>'; }).join('') : '<div class="kick">No more events today.</div>') + '</div><button class="btn sm" id="findSlot" type="button">Find a 30-min slot</button></div>'
       + '<div class="card rox"><div class="ch"><span class="t">Reach out</span><span class="sub2">people to contact - added from Pipeline or Contacts, check off when done</span></div><div class="chips">' + kinds.map(function (pair) { var n = people.filter(function (person) { return pair[0] === 'all' || person.kind === pair[0]; }).length; return '<button type="button" class="chip' + (filter === pair[0] ? ' on' : '') + '" data-reach-kind="' + pair[0] + '">' + pair[1] + ' <span class="n">' + n + '</span></button>'; }).join('') + '</div><div class="people">' + (shown.length ? shown.map(function (person) { var bits = String(person.name || '?').split(/\s+/).slice(0, 2).map(function (part) { return part.slice(0, 1); }).join('').toUpperCase(); var tagCls = { vc: 'vc', regulator: 'reg', design: 'partner', client: 'client', corporate: 'corp' }[person.kind] || 'corp'; return '<div class="person' + (person.done ? ' done' : '') + '"><div class="top"><span class="av">' + esc(bits) + '</span><div><div class="nm">' + esc(person.name) + '</div><div class="co">' + esc(person.company || '') + '</div></div></div><span class="tag ' + tagCls + '">' + esc(reachNames[person.kind] || 'Corporate') + '</span><div class="act"><label class="ckl"><input type="checkbox" data-reach-done="' + esc(person.id) + '"' + (person.done ? ' checked' : '') + ' aria-label="Done"/><span class="ck"></span></label><span class="what">' + esc(person.nextAction || 'Reach out') + '</span><button type="button" class="go" data-reach-task="' + esc(person.id) + '">+ task</button></div></div>'; }).join('') : '<div class="rox-empty">Add people from Pipeline or Contacts.</div>') + '</div></div><div class="rox-hint">From the Pipeline or Contacts, click a person and choose Add to Reach Out with a type. Checking a person off, or + task, creates an actionable task below.</div>';
     var cols = [
       ['today', 'Today'],
@@ -2127,8 +2133,10 @@
   document.addEventListener('click', function (e) {
     var link = e.target.closest('a[target="_blank"]');
     if (!link) return;
+    var href = link.getAttribute('href') || '';
+    if (/linkedin\.com/i.test(href)) return;
     e.preventDefault();
-    openDocView(link.textContent || 'Link', link.getAttribute('href') || '', '');
+    openDocView(link.textContent || 'Link', href, '');
   }, true);
   var integ = document.getElementById('v-int');
   if (integ && !document.getElementById('discGoogle')) {
@@ -2148,6 +2156,205 @@
       if (span) span.textContent = soon(Number(node.getAttribute('data-count')));
     });
   }, 30000);
+
+  function alarmPrefs() {
+    var on = true;
+    var lead = 10;
+    try {
+      var raw = JSON.parse(localStorage.getItem('cr_alarm') || '{}');
+      if (raw && raw.on === false) on = false;
+      if (raw && (raw.lead === 5 || raw.lead === 10 || raw.lead === 15)) lead = raw.lead;
+    } catch (err) {}
+    return { on: on, lead: lead };
+  }
+  function saveAlarmPrefs(next) {
+    try { localStorage.setItem('cr_alarm', JSON.stringify(next)); } catch (err) {}
+  }
+  function muteMap() {
+    try {
+      var raw = JSON.parse(localStorage.getItem('cr_alarm_mute') || '{}');
+      return raw && typeof raw === 'object' ? raw : {};
+    } catch (err) { return {}; }
+  }
+  function alarmMuted(id) {
+    return !!(STATE.alarmMute && STATE.alarmMute[id]);
+  }
+  function persistMutes() {
+    try { localStorage.setItem('cr_alarm_mute', JSON.stringify(STATE.alarmMute || {})); } catch (err) {}
+  }
+  function alarmMeetLine(ev, withWhen) {
+    var muted = alarmMuted(ev.id);
+    var when = withWhen
+      ? ((typeof fmtTime === 'function' ? fmtTime(ev.start) : ''))
+      : soon(ev.start);
+    if (withWhen) when = new Date(ev.start).toLocaleDateString(undefined, { weekday: 'short' }) + (when ? ' ' + when : '');
+    return '<div class="meet-row"><button type="button" class="mute-bell' + (muted ? ' on' : '') + '" data-mute-meet="' + esc(ev.id) + '" title="' + (muted ? 'Alarm off' : 'Silence this meeting') + '" aria-label="' + (muted ? 'Unmute alarm' : 'Mute alarm') + '">' + (muted ? '&#128263;' : '&#128276;') + '</button><span class="ttl">' + esc(ev.title || 'Meeting') + '</span><span class="mt">' + esc(when) + '</span></div>';
+  }
+  function paintMeetViews() {
+    if ((STATE.desk === 'room' || !STATE.desk) && typeof renderOpsDash === 'function') renderOpsDash();
+    if (STATE.desk === 'war' && typeof renderWar === 'function') renderWar();
+    if (typeof renderTodayPop === 'function') renderTodayPop();
+    if (typeof paintCal === 'function') paintCal();
+  }
+  function toggleMeetMute(id) {
+    if (!id) return;
+    STATE.alarmMute = STATE.alarmMute || muteMap();
+    if (STATE.alarmMute[id]) delete STATE.alarmMute[id];
+    else STATE.alarmMute[id] = 1;
+    persistMutes();
+    paintMeetViews();
+    authFetch('/api/alarms', { method: 'POST', credentials: 'same-origin', quiet: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ eventId: id, muted: !!STATE.alarmMute[id] }) }).catch(function () {});
+  }
+  function playBubble() {
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      if (!playBubble.ctx) playBubble.ctx = new Ctx();
+      var ctx = playBubble.ctx;
+      if (ctx.state === 'suspended') ctx.resume();
+      var t0 = ctx.currentTime;
+      [0, 0.3, 0.6].forEach(function (offset) {
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, t0 + offset);
+        osc.frequency.exponentialRampToValueAtTime(900, t0 + offset + 0.25);
+        gain.gain.setValueAtTime(0.0001, t0 + offset);
+        gain.gain.exponentialRampToValueAtTime(0.28, t0 + offset + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + offset + 0.25);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t0 + offset);
+        osc.stop(t0 + offset + 0.26);
+      });
+    } catch (err) {}
+  }
+  var alarmArmed = false;
+  function armAlarm() {
+    if (alarmArmed) return;
+    alarmArmed = true;
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (Ctx) {
+        if (!playBubble.ctx) playBubble.ctx = new Ctx();
+        if (playBubble.ctx.state === 'suspended') playBubble.ctx.resume();
+      }
+    } catch (err) {}
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      try { Notification.requestPermission(); } catch (err) {}
+    }
+  }
+  document.addEventListener('pointerdown', armAlarm, { once: true });
+  document.addEventListener('keydown', armAlarm, { once: true });
+  function firedSet() {
+    try {
+      var raw = JSON.parse(localStorage.getItem('cr_alarm_fired') || '{}');
+      var day = laDay(Date.now());
+      if (raw.day !== day) return { day: day, ids: {} };
+      return { day: day, ids: raw.ids || {} };
+    } catch (err) { return { day: laDay(Date.now()), ids: {} }; }
+  }
+  function whenLine(ev) {
+    try {
+      return new Date(ev.start).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    } catch (err) { return ''; }
+  }
+  function showMeetAlarm(ev, lead) {
+    var box = document.getElementById('meetAlarm');
+    if (!box) return;
+    var join = /^https?:\/\//i.test(ev.join || '') ? ev.join : '';
+    box.innerHTML = '<div class="tx"><div class="t">Meeting in ' + lead + ' min - ' + esc(ev.title || 'Meeting') + '</div><div class="s">' + esc(whenLine(ev)) + '</div></div>' + (join ? '<button type="button" class="btn pri sm" data-join-meet="' + esc(join) + '">Join</button>' : '') + '<button type="button" class="btn sm" data-dismiss-alarm>Dismiss</button>';
+    box.hidden = false;
+  }
+  function tickAlarms() {
+    var prefs = alarmPrefs();
+    if (!prefs.on) return;
+    var leadMs = prefs.lead * 60 * 1000;
+    var now = Date.now();
+    var fired = firedSet();
+    (STATE.events || []).forEach(function (ev) {
+      if (!ev || !ev.id || alarmMuted(ev.id) || fired.ids[ev.id]) return;
+      var left = ev.start - now;
+      if (left > leadMs + 15000 || left < -30000) return;
+      fired.ids[ev.id] = 1;
+      try { localStorage.setItem('cr_alarm_fired', JSON.stringify(fired)); } catch (err) {}
+      showMeetAlarm(ev, prefs.lead);
+      if (alarmArmed) playBubble();
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        try {
+          var note = new Notification('Meeting in ' + prefs.lead + ' min - ' + (ev.title || 'Meeting'), { body: whenLine(ev), silent: false });
+          note.onclick = function () { window.focus(); };
+        } catch (err) {}
+      }
+    });
+  }
+  function pollCalAlarms() {
+    var from = new Date(Date.now() - 3600000).toISOString();
+    var to = new Date(Date.now() + 6 * 3600000).toISOString();
+    authFetch('/api/calendar?from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to), { credentials: 'same-origin', quiet: true }).then(function (r) { return r.json(); }).then(function (data) {
+      if (!data || !Array.isArray(data.events) || !data.events.length) return;
+      var byId = {};
+      (STATE.events || []).forEach(function (ev) { if (ev && ev.id) byId[ev.id] = ev; });
+      data.events.forEach(function (ev) { if (ev && ev.id) byId[ev.id] = ev; });
+      STATE.events = Object.keys(byId).map(function (key) { return byId[key]; });
+      tickAlarms();
+    }).catch(function () {});
+  }
+  function alarmSettingsHtml() {
+    var prefs = alarmPrefs();
+    return '<div class="alarm-set"><div class="lab">Meeting alarm</div><div class="sub">Chime and banner 10 minutes before a meeting. Mute any event from the list. No sound until you click once on this page.</div><div class="row"><label><input type="checkbox" id="alarmOn"' + (prefs.on ? ' checked' : '') + '/> Alarm on</label><label>Lead <select id="alarmLead"><option value="5"' + (prefs.lead === 5 ? ' selected' : '') + '>5 min</option><option value="10"' + (prefs.lead === 10 ? ' selected' : '') + '>10 min</option><option value="15"' + (prefs.lead === 15 ? ' selected' : '') + '>15 min</option></select></label><button type="button" class="btn sm" id="alarmTest">Test sound</button></div></div>';
+  }
+  function bindAlarmSettings() {
+    var on = document.getElementById('alarmOn');
+    var lead = document.getElementById('alarmLead');
+    var test = document.getElementById('alarmTest');
+    if (on) on.onchange = function () { var prefs = alarmPrefs(); prefs.on = !!on.checked; saveAlarmPrefs(prefs); };
+    if (lead) lead.onchange = function () { var prefs = alarmPrefs(); var n = Number(lead.value); prefs.lead = n === 5 || n === 15 ? n : 10; saveAlarmPrefs(prefs); };
+    if (test) test.onclick = function () { armAlarm(); playBubble(); };
+  }
+  function bootAlarms() {
+    STATE.alarmMute = STATE.alarmMute || muteMap();
+    authFetch('/api/alarms', { credentials: 'same-origin', quiet: true }).then(function (r) { return r.json(); }).then(function (data) {
+      if (!data || !Array.isArray(data.muted)) return;
+      var map = muteMap();
+      data.muted.forEach(function (id) { map[id] = 1; });
+      STATE.alarmMute = map;
+      persistMutes();
+      paintMeetViews();
+      tickAlarms();
+    }).catch(function () {});
+    if (bootAlarms.done) { tickAlarms(); return; }
+    bootAlarms.done = true;
+    setInterval(tickAlarms, 15000);
+    setInterval(pollCalAlarms, 60000);
+    tickAlarms();
+  }
+  document.addEventListener('click', function (e) {
+    var mute = e.target.closest && e.target.closest('[data-mute-meet]');
+    if (mute) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleMeetMute(mute.getAttribute('data-mute-meet'));
+      return;
+    }
+    var join = e.target.closest && e.target.closest('[data-join-meet]');
+    if (join) {
+      e.preventDefault();
+      var url = join.getAttribute('data-join-meet') || '';
+      if (/^https?:\/\//i.test(url)) window.open(url, '_blank', 'noopener');
+      return;
+    }
+    var dismiss = e.target.closest && e.target.closest('[data-dismiss-alarm]');
+    if (dismiss) {
+      var box = document.getElementById('meetAlarm');
+      if (box) box.hidden = true;
+    }
+  });
+  window.alarmMeetLine = alarmMeetLine;
+  window.alarmMuted = alarmMuted;
+  window.alarmSettingsHtml = alarmSettingsHtml;
+  window.bindAlarmSettings = bindAlarmSettings;
+  window.bootAlarms = bootAlarms;
   window.saveItem = saveItem;
   if (document.getElementById('opsDash')) renderOpsDash();
 })();

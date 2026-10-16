@@ -306,7 +306,7 @@ export async function listPipelines() {
     pipelines?: Array<{ id?: string; name?: string; stages?: Array<{ id?: string; name?: string; position?: number }> }>;
   } | null;
   if (!pipes) return { status: 'unavailable' as const, pipelines: [] as GhlPipeline[] };
-  const list = (pipes.pipelines || []).filter((pipe) => pipe.id).slice(0, 16);
+  const list = (pipes.pipelines || []).filter((pipe) => pipe.id);
   const opps = await Promise.all(list.map((pipe) => pipelineOpps(String(pipe.id)).catch(() => null)));
   const pipelines: GhlPipeline[] = list.map((pipe, ix) => {
     const rows = opps[ix] || [];
@@ -314,7 +314,7 @@ export async function listPipelines() {
       .filter((stage) => stage.id)
       .slice()
       .sort((a, b) => (Number(a.position) || 0) - (Number(b.position) || 0))
-      .map((stage) => ({ id: String(stage.id), name: String(stage.name || 'Stage').replace(/\s+/g, ' ').trim().slice(0, 80), count: 0, value: 0, opps: [] as GhlOpp[] }));
+      .map((stage) => ({ id: String(stage.id), name: titleStage(String(stage.name || 'Stage').replace(/\s+/g, ' ').trim()).slice(0, 80), count: 0, value: 0, opps: [] as GhlOpp[] }));
     const byId = new Map(stages.map((stage) => [stage.id, stage]));
     for (const row of rows) {
       const stage = byId.get(String(row.pipelineStageId || ''));

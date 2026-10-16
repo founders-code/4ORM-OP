@@ -474,6 +474,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
       dur: event.dur,
       title: event.title,
       color: '#2E6BF2',
+      join: String((event as { join?: string }).join || ''),
     })),
     calendarUntil: calendar.until,
     folders,

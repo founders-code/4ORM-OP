@@ -56,6 +56,21 @@ async function gfetch(url: string, init?: RequestInit) {
   return res.json();
 }
 
+function eventJoin(ev: Record<string, unknown>) {
+  const hang = String(ev.hangoutLink || '');
+  if (/^https?:\/\//i.test(hang)) return hang.slice(0, 500);
+  const points = ((ev.conferenceData as { entryPoints?: Array<{ uri?: string }> } | undefined)?.entryPoints) || [];
+  for (const point of points) {
+    const uri = String(point.uri || '');
+    if (/^https?:\/\//i.test(uri)) return uri.slice(0, 500);
+  }
+  const loc = String(ev.location || '');
+  if (/^https?:\/\//i.test(loc)) return loc.slice(0, 500);
+  const desc = String(ev.description || '');
+  const match = desc.match(/https?:\/\/(?:[\w.-]+\.)?(?:zoom\.us|meet\.google\.com)[^\s<>"']+/i);
+  return match ? match[0].slice(0, 500) : '';
+}
+
 async function pullCalendar(calendarId: string, timeMin: string, timeMax: string, pageToken: string) {
   const q = new URLSearchParams({
     timeMin,
@@ -93,6 +108,7 @@ export async function listEvents(timeMin: string, timeMax: string, pageToken = '
         dur: Math.max(15, Math.round((endMs - startMs) / 60000)),
         title: String(ev.summary || 'Busy'),
         color: '#2E6BF2',
+        join: eventJoin(ev),
       };
     })
     .filter(Boolean);
