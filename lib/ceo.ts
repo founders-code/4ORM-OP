@@ -4,6 +4,10 @@ import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { allowArea, allowPriority, allowStatus, parseDue } from './guard.mjs';
 import { env } from './env.mjs';
 import { fail } from './log';
+import { listPipelines } from './ghl';
+import { listMeetingActions } from './meeting-actions';
+import { calendarPayload } from './sync';
+import { listNews } from './war';
 import {
   PRINCIPLES,
   SEED_FACTS,
@@ -98,17 +102,29 @@ function asDate(value: unknown) {
   return Number.isFinite(ms) ? ms : null;
 }
 
+function zoneLabel(row: { principle?: string; area?: string; text?: string; why_now?: string }) {
+  const blob = `${row.principle || ''} ${row.area || ''} ${row.text || ''} ${row.why_now || ''}`.toLowerCase();
+  if (/regulat|fcac|licen/.test(blob) || row.area === 'legal') return 'Regulator';
+  if (/partner|broker|outreach/.test(blob) || row.area === 'outreach') return 'Partners';
+  if (/cash|runway|spend|burn/.test(blob)) return 'Cash';
+  if (/product|build|ship/.test(blob) || row.area === 'dev') return 'Product';
+  return 'Raise';
+}
+
 function shapeMove(row: MoveRow) {
   const principle = String(row.principle || '');
+  const rank = Number(row.rank) || 0;
   return {
     id: String(row.id),
-    rank: Number(row.rank) || 0,
+    rank,
     text: String(row.text || ''),
     principle,
     principleLabel: PRINCIPLES[principle as keyof typeof PRINCIPLES] || principle,
     whyNow: String(row.why_now || ''),
     how: stepsOf(row.how),
     area: String(row.area || 'other'),
+    zone: zoneLabel(row),
+    severity: rank === 1 ? 'high' : rank === 2 ? 'medium' : 'low',
     suggestedDue: asDate(row.suggested_due),
     status: String(row.status || 'open'),
   };
@@ -312,6 +328,204 @@ export async function ensureCeo(sql: Sql, ownerId: string) {
   const current = await readCeo(sql, ownerId);
   if (!current.lamps.length && !current.moves.length) return refreshCeo(sql, ownerId);
   return current;
+}
+
+function pacificDay(now = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Los_Angeles',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
+}
+
+export async function ceoContext(sql: Sql, ownerId: string) {
+  const files = loadCeoFiles();
+  const facts = files.profile ? readProfileFacts(files.profile) : { ...SEED_FACTS };
+  const cash = Number(facts.cash) || 100;
+  const burn = Number(facts.burnMonthly) || 90050;
+  const runwayDays = burn > 0 ? Math.max(0, Math.round((cash / burn) * 30)) : 1;
+  const raise = { in: 80000, pending: 0, open: 170000, target: 250000, pace: 'behind' };
+  let pipelines: Array<{ name: string; total: number; stages: Array<{ name: string; count: number }> }> = [];
+  try {
+    const all = await listPipelines();
+    pipelines = (all.pipelines || []).map((pipe) => ({
+      name: pipe.name,
+      total: pipe.total,
+      stages: pipe.stages.map((stage) => ({ name: stage.name, count: stage.count })),
+    }));
+  } catch (err) {
+    fail('ceo_context_ghl', err);
+  }
+  let meetings: Array<{ id: string; start: number; title: string }> = [];
+  try {
+    const events = (await calendarPayload(sql, ownerId)) as Array<{ id: string; start: number; title: string }>;
+    const start = Date.now() - 60 * 60 * 1000;
+    const end = Date.now() + 18 * 60 * 60 * 1000;
+    meetings = events.filter((ev) => ev.start >= start && ev.start <= end).slice(0, 12);
+  } catch (err) {
+    fail('ceo_context_cal', err);
+  }
+  let commitments: Array<{ text: string; kind: string; meetingTitle: string }> = [];
+  try {
+    commitments = (await listMeetingActions(sql, ownerId)).slice(0, 12).map((row) => ({
+      text: row.text,
+      kind: row.kind,
+      meetingTitle: row.meetingTitle,
+    }));
+  } catch (err) {
+    fail('ceo_context_actions', err);
+  }
+  let news: Array<{ title: string; source: string; impact: string }> = [];
+  try {
+    const items = await listNews(sql, ownerId);
+    news = items.slice(0, 5).map((row: { title?: string; source?: string; impact?: string }) => ({
+      title: String(row.title || ''),
+      source: String(row.source || ''),
+      impact: String(row.impact || ''),
+    }));
+  } catch (err) {
+    fail('ceo_context_news', err);
+  }
+  let inbox = { vc: 0, needs: 0 };
+  try {
+    const rows = await sql`
+      SELECT title, area, priority FROM items
+      WHERE owner_id = ${ownerId} AND status IN ('new', 'open', 'doing', 'waiting')
+      LIMIT 80
+    `;
+    inbox = {
+      vc: (rows as Array<{ area?: string; title?: string }>).filter((row) => /vc|investor/i.test(`${row.area || ''} ${row.title || ''}`)).length,
+      needs: (rows as Array<{ priority?: string }>).filter((row) => row.priority === 'urgent' || row.priority === 'high').length,
+    };
+  } catch (err) {
+    fail('ceo_context_inbox', err);
+  }
+  return { cash, runwayDays, raise, pipelines, meetings, inbox, commitments, news };
+}
+
+function principleForZone(zone: string) {
+  if (/regulat/i.test(zone)) return 'P4';
+  if (/partner/i.test(zone)) return 'P2';
+  return 'P1';
+}
+
+function areaForZone(zone: string) {
+  if (/regulat|legal/i.test(zone)) return 'legal';
+  if (/partner/i.test(zone)) return 'outreach';
+  if (/product/i.test(zone)) return 'dev';
+  return 'investors';
+}
+
+async function writeDailyMoves(sql: Sql, ownerId: string, rows: Array<Record<string, unknown>>) {
+  const day = pacificDay();
+  const cleaned = rows.slice(0, 4).map((row, i) => {
+    const text = String(row.title || row.text || '').replace(/[\u2013\u2014]/g, '-').trim().slice(0, 180);
+    const why = String(row.why || row.whyNow || '').replace(/[\u2013\u2014]/g, '-').trim().slice(0, 280);
+    const zone = String(row.zone || 'Raise').slice(0, 24);
+    const how = Array.isArray(row.how) ? row.how.map((step) => String(step || '').slice(0, 120)).filter(Boolean).slice(0, 4) : [];
+    return {
+      rank: i + 1,
+      text,
+      why,
+      zone,
+      how,
+      principle: principleForZone(zone),
+      area: areaForZone(zone),
+      sourceKey: `daily:${day}:${i + 1}`,
+    };
+  }).filter((row) => row.text);
+  if (!cleaned.length) return null;
+  await sql`DELETE FROM ceo_moves WHERE owner_id = ${ownerId} AND status = 'open'`;
+  for (const move of cleaned) {
+    await sql`
+      INSERT INTO ceo_moves (owner_id, rank, text, principle, why_now, area, suggested_due, status, source_key, how)
+      VALUES (${ownerId}, ${move.rank}, ${move.text}, ${move.principle}, ${move.why}, ${move.area}, ${null}, 'open', ${move.sourceKey}, ${JSON.stringify(move.how)}::jsonb)
+    `;
+  }
+  return readCeo(sql, ownerId);
+}
+
+async function dailyBrainJson(system: string, prompt: string) {
+  const anthropicKey = env('ANTHROPIC_API_KEY');
+  const openaiKey = env('OPENAI_API_KEY');
+  const model = env('CEO_MODEL');
+  if (anthropicKey) {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': anthropicKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: model || 'claude-sonnet-4-5',
+        max_tokens: 900,
+        system,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+      signal: AbortSignal.timeout(25000),
+    });
+    if (!res.ok) return '';
+    const body = await res.json() as { content?: Array<{ type: string; text?: string }> };
+    return (body.content || []).filter((block) => block.type === 'text').map((block) => block.text || '').join('\n');
+  }
+  if (openaiKey) {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${openaiKey}` },
+      body: JSON.stringify({
+        model: model || 'gpt-4o-mini',
+        max_tokens: 900,
+        messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }],
+      }),
+      signal: AbortSignal.timeout(25000),
+    });
+    if (!res.ok) return '';
+    const body = await res.json() as { choices?: Array<{ message?: { content?: string } }> };
+    return body.choices?.[0]?.message?.content || '';
+  }
+  return '';
+}
+
+function parseDailyMoves(raw: string) {
+  const text = String(raw || '').trim();
+  const start = text.indexOf('[');
+  const end = text.lastIndexOf(']');
+  if (start < 0 || end <= start) return [];
+  try {
+    const parsed = JSON.parse(text.slice(start, end + 1));
+    return Array.isArray(parsed) ? parsed.filter((row) => row && typeof row === 'object') as Array<Record<string, unknown>> : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function dailyCeo(sql: Sql, ownerId: string, incoming: unknown[] | null) {
+  if (Array.isArray(incoming) && incoming.length) {
+    const saved = await writeDailyMoves(sql, ownerId, incoming as Array<Record<string, unknown>>);
+    if (saved) return saved;
+  }
+  try {
+    const context = await ceoContext(sql, ownerId);
+    const files = loadCeoFiles();
+    const system = [
+      files.persona || 'You are Chad Johnston\'s second CEO at 4orm Finance. You advise. Chad decides.',
+      files.principles,
+      files.guardrails,
+      files.voice,
+      files.profile,
+      'Ground today in leverage, cash-first, focus, and sequencing. Regulator is the lowest priority. Hyphens only. Do not describe 4orm as an AI company. Do not invent a name, Gmail, post count, or cheque name. Use only names and numbers in the live context JSON.',
+    ].filter(Boolean).join('\n\n');
+    const prompt = `Live context JSON:\n${JSON.stringify(context)}\n\nReturn ONLY a JSON array of 3 or 4 objects: [{"rank":1,"title":"...","zone":"Raise|Partners|Regulator|Cash|Product","severity":"high|medium|low","why":"one line tied to a live number","how":["step","step"]}]. Highest-leverage first.`;
+    const raw = await dailyBrainJson(system, prompt);
+    const parsed = parseDailyMoves(raw);
+    const saved = await writeDailyMoves(sql, ownerId, parsed);
+    if (saved) return saved;
+  } catch (err) {
+    fail('ceo_daily_brain', err);
+  }
+  return refreshCeo(sql, ownerId);
 }
 
 async function logDecision(sql: Sql, ownerId: string, moveId: string | null, fields: {

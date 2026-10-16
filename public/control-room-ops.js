@@ -141,28 +141,54 @@
       return '<div class="ln' + (ix === 0 ? ' pin' : '') + (row.unread ? ' new' : '') + '"><span class="inb">in</span><div class="bd"><div class="su">' + esc(row.name || 'LinkedIn') + (row.kind === 'update' && /^linkedin$/i.test(row.name || '') ? '' : ' <span class="kd">' + esc(kindWord[row.kind] || kindWord.update) + '</span>') + '</div><div class="sn">' + esc(row.snippet || '') + '</div></div><div class="ra"><span class="age">' + esc(ageLabel(row.at)) + '</span><a class="lo" href="https://www.linkedin.com/messaging/" target="_blank" rel="noopener noreferrer">Open in LinkedIn &#8250;</a></div></div>';
     }).join('') + '</div>' : '<div class="quiet">No LinkedIn notifications in the last 30 days. They arrive by email to the connected inbox.</div>';
     var queue = STATE.content;
-    var content = queue && !queue.empty ? '<div class="runway-gauge"><div class="rbig">' + queue.left + '</div><div class="rbar"><div class="track"><i style="width:' + Math.min(100, queue.left * 8) + '%"></i></div><div class="lab">posts left' + (queue.left ? ' - runs dry in about ' + Math.max(1, Math.round(queue.left / Math.max(queue.cadence || 1, 1))) + ' days' : '') + '</div></div></div><div class="cmini"><div class="r"><span>Scheduled / queued</span><b>' + queue.left + (queue.left === 1 ? ' post' : ' posts') + '</b></div><div class="r"><span>Posting cadence</span><b>~' + (queue.cadence || 0) + ' / day</b></div></div>' : '<div class="quiet">GoHighLevel has not returned a content queue. Posts left and the day it runs dry show here when it does.</div>';
+    var content = queue && typeof queue.left === 'number' ? '<div class="runway-gauge"><div class="rbig">' + queue.left + '</div><div class="rbar"><div class="track"><i style="width:' + Math.min(100, (Number(queue.left) || 0) * 8) + '%"></i></div><div class="lab">posts left' + (queue.left ? ' - runs dry in about ' + Math.max(1, Math.round(queue.left / Math.max(queue.cadence || 1, 1))) + ' days' : '') + '</div></div></div><div class="cmini"><div class="r"><span>Scheduled / queued</span><b>' + queue.left + (queue.left === 1 ? ' post' : ' posts') + '</b></div><div class="r"><span>Posting cadence</span><b>~' + (queue.cadence || 0) + ' / day</b></div>' + (queue.newsletterDue ? '<div class="r"><span>Newsletter next due</span><b>' + esc(queue.newsletterDue) + '</b></div>' : '') + '</div>' : '<div class="quiet">GoHighLevel has not returned a content queue. Posts left and the day it runs dry show here when it does.</div>';
     var vcs = (STATE.packages || []).filter(function (space) {
       return /vc|venture|angel/i.test(String(space.spaceCategory || space.category || '') + ' ' + String(space.name || ''));
+    }).map(function (space) { return { name: space.name, stage: space.stage || space.status || 'open', go: 'work' }; });
+    (STATE.ghlPipes || []).forEach(function (pipe) {
+      var vcPipe = /vc|venture|investor|angel|capital|raise/i.test(pipe.name || '');
+      (pipe.stages || []).forEach(function (stage) {
+        (stage.opps || []).forEach(function (o) {
+          if (!o.contact && !o.email) return;
+          if (!vcPipe) {
+            var hit = (STATE.contacts || []).some(function (c) {
+              return typeof catMatch === 'function' && catMatch(contactCategory(c), 'vc') && ((c.email && o.email && String(c.email).toLowerCase() === String(o.email).toLowerCase()) || (c.name && o.contact && String(c.name).toLowerCase() === String(o.contact).toLowerCase()));
+            });
+            if (!hit) return;
+          }
+          vcs.push({ name: o.contact || o.email, stage: stage.name || o.status || 'open', go: 'contacts' });
+        });
+      });
     });
     if (!vcs.length) {
       vcs = (STATE.contacts || []).filter(function (c) { return typeof catMatch === 'function' && catMatch(contactCategory(c), 'vc'); }).slice(0, 6).map(function (c) {
-        return { name: c.name, stage: c.stage || 'ready' };
+        return { name: c.name, stage: c.stage || 'ready', go: 'people' };
       });
     }
-    var watch = vcs.length ? vcs.slice(0, 6).map(function (space) {
+    var seenVc = {};
+    var watch = vcs.filter(function (space) {
+      var key = String(space.name || '').toLowerCase();
+      if (!key || seenVc[key]) return false;
+      seenVc[key] = 1;
+      return true;
+    }).slice(0, 6).map(function (space) {
       var stage = String(space.stage || space.status || 'draft');
-      var color = /repli|commit/i.test(stage) ? '#17b86a' : /sent|open/i.test(stage) ? '#f0a020' : '#c6cfdd';
-      return '<div class="vcrow"><span class="d" style="background:' + color + '"></span>' + esc(space.name) + '<button type="button" class="act" data-go="work">Open</button></div>';
-    }).join('') : '<div class="quiet">No VC spaces or VC contacts on the board yet.</div>';
+      var color = /repli|commit/i.test(stage) ? '#17b86a' : /sent|open|meeting/i.test(stage) ? '#f0a020' : '#c6cfdd';
+      return '<div class="vcrow"><span class="d" style="background:' + color + '"></span>' + esc(space.name) + '<button type="button" class="act" data-go="' + esc(space.go || 'work') + '">Open</button></div>';
+    }).join('') || '<div class="quiet">No VC spaces or VC contacts on the board yet.</div>';
     var pipeScore = Math.min(100, ((STATE.pipeline || []).reduce(function (n, s) { return n + (Number(s.v) || 0); }, 0) ? 70 : 16));
     var cash = 18, raise = 32, product = rows.length ? Math.max(20, 80 - Math.min(open.length, 60)) : 24;
     var legal = rows.some(function (it) { return /legal|regulat/i.test(it.title || ''); }) ? 40 : 55;
     var score = Math.round((cash + raise + pipeScore + product + legal) / 5);
     var movers = ((STATE.ceo && STATE.ceo.moves) || []).filter(function (move) { return moveLabel(move); }).slice(0, 3);
+    var needleDash = {};
+    try { needleDash = JSON.parse(localStorage.getItem('cr_needle') || '{}'); } catch (err) { needleDash = {}; }
+    if (needleDash.day !== laDay(Date.now())) needleDash = { day: laDay(Date.now()), ids: {} };
     var moverHtml = movers.length ? '<div class="mlist">' + movers.map(function (move, i) {
-      return '<div class="m"><span class="dot" style="background:' + (i ? '#1f5fff' : '#f23a4d') + '"></span>' + esc(moveLabel(move)) + '<span class="mt">P' + (i + 1) + '</span></div>';
-    }).join('') + '</div><div class="pace">These are the ranked moves from 4orm Intelligence, the same list as the War Room.</div>' : '<div class="quiet">No ranked move yet. The War Room one-thing fills this.</div>';
+      var id = String(move.id || i);
+      var on = !!(needleDash.ids && needleDash.ids[id]);
+      return '<div class="m"><span class="dot" style="background:' + (on ? '#17b86a' : (i ? '#1f5fff' : '#f23a4d')) + '"></span>' + esc(moveLabel(move)) + '<span class="mt">' + (on ? 'Done' : '#' + (i + 1)) + '</span></div>';
+    }).join('') + '</div><div class="pace">Same 1-3 needle-movers as the War Room.</div>' : '<div class="quiet">No ranked move yet. The War Room one-thing fills this.</div>';
     var bars = [30, 45, 25, 60, 40, 70, Math.min(100, 20 + doneWeek * 8)].map(function (n) { return '<div class="bar" style="height:' + Math.max(8, n) + '%"></div>'; }).join('');
     var meetings = (STATE.events || []).filter(function (ev) { return ev.start >= Date.now() - 60000; }).sort(function (a, b) { return a.start - b.start; }).slice(0, 3);
     var meet = meetings.length ? meetings.map(function (ev) { return '<div class="m"><span class="dot"></span>' + alarmMeetLine(ev) + '</div>'; }).join('') : '<div class="quiet">No meetings on the calendar.</div>';
@@ -278,13 +304,23 @@
     }).catch(function () { STATE.mail = STATE.mail || []; });
     authFetch('/api/pipeline', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
       if (data && data.pipelines && data.pipelines.length) STATE.ghlPipes = data.pipelines;
+      if (typeof stampWarmth === 'function') stampWarmth();
       if (STATE.desk === 'contacts' && typeof renderContacts === 'function') renderContacts(document.getElementById('cSearch') ? document.getElementById('cSearch').value : '');
+      if (STATE.desk === 'people' && typeof renderPeople === 'function') renderPeople(document.getElementById('pSearch') ? document.getElementById('pSearch').value : '');
       if (STATE.desk === 'room' || !STATE.desk) renderOpsDash();
     }).catch(function () {});
     authFetch('/api/content', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
       STATE.content = data || { empty: true };
       if (STATE.desk === 'room' || !STATE.desk) renderOpsDash();
     }).catch(function () { STATE.content = { empty: true }; });
+    loadMeetingActions();
+  }
+
+  function loadMeetingActions() {
+    authFetch('/api/meeting-actions', { credentials: 'same-origin', quiet: true }).then(function (r) { return r.json(); }).then(function (data) {
+      STATE.meetingActions = (data && data.actions) || [];
+      if (STATE.desk === 'war') renderWar();
+    }).catch(function () { STATE.meetingActions = STATE.meetingActions || []; });
   }
 
   function renderOpsDash() {
@@ -543,7 +579,6 @@
     });
     var openH = Math.max(0, Math.round((15 * 60 - busyMin) / 60));
     var budget = (STATE.events || []).length ? (openH + 'h still open today between 6am and 9pm after what is already booked. Block the morning for the one thing.') : 'Open focus sits next to the calendar. Block the morning for the one thing.';
-    var steps = (one && one.how && one.how.length ? one.how : (one && one.steps && one.steps.length ? one.steps : ['Confirm the next cheque', 'Send the paper', 'Lock a date this week'])).slice(0, 3);
     var streak = 0;
     for (var sd = 0; sd < 60; sd += 1) {
       var sk = laDay(Date.now() - sd * 86400000);
@@ -554,13 +589,22 @@
       var on = !!(needleOn.ids && needleOn.ids[String(move.id || i)]);
       return '<div class="line"><span class="ic ' + (on ? 'ok' : 'no') + '">' + (on ? '\u2713' : '\u2717') + '</span>' + esc(moveLabel(move)) + (on ? '' : ' - not done') + '</div>';
     }).join('');
-    cmd.innerHTML = '<div class="command" style="padding:10px 16px"><div class="cmdtop"><div class="vital"><span class="k">Cash</span><span class="v">$100</span></div><div class="vital"><span class="k">Runway</span><span class="v red">~1 day</span></div><div class="vital"><span class="k">Raise - F&amp;F</span><span class="v">$80K / $250K</span></div><div class="vital"><span class="k">To Oct 30</span><span class="v">' + daysToClose() + ' days</span></div><div class="vital" style="margin-left:auto;text-align:right"><span class="k">Focus streak</span><span class="v streak">' + (streak ? '\ud83d\udd25 ' + streak + ' day' + (streak === 1 ? '' : 's') : 'Start today') + '</span></div></div></div>'
+    var actions = (STATE.meetingActions || []).filter(function (row) { return row.status !== 'done' && row.status !== 'tasked'; });
+    var actionHtml = '<div class="meet-act"><div class="h">After your meetings - what you owe</div><div class="sub2">Scraped from Zoom notes after each call</div>' + (actions.length ? actions.slice(0, 5).map(function (row) {
+      return '<div class="arow"><span class="kind ' + (row.kind === 'follow_up' ? 'fu' : 'you') + '">' + (row.kind === 'follow_up' ? 'Follow up' : 'You said') + '</span><div class="tx"><div class="nm">' + esc(row.text) + '</div><div class="meta">' + esc(row.meetingTitle || 'Meeting') + (row.meetingDate ? ' - ' + esc(row.meetingDate) : '') + '</div></div><div class="acts"><button type="button" class="btn sm" data-act-col="today" data-act-id="' + esc(row.id) + '">+ Today</button><button type="button" class="btn sm" data-act-col="week" data-act-id="' + esc(row.id) + '">+ Week</button></div></div>';
+    }).join('') + (actions.length > 5 ? '<button type="button" class="lk" id="meetActAll">Review all ' + actions.length + ' meeting action items</button>' : '') : '<div class="quiet" style="padding:4px 0">No commitments scraped from Zoom notes yet.</div>') + '</div>';
+    var ranked = moves.slice(0, 4);
+    var rankHtml = '<div class="ceo-rank"><div class="rh"><span class="t">4orm Intelligence - CEO ranked moves</span><span class="badge">Rebuilt every morning 6:30am</span><button type="button" class="btn sm" id="ceoRerun">Re-run</button></div>' + (ranked.length ? ranked.map(function (move, i) {
+      var zone = String(move.zone || move.area || 'Raise');
+      var zn = /regulat/i.test(zone) ? 'regulator' : /partner/i.test(zone) ? 'partners' : /cash|runway/i.test(zone) ? 'cash' : /product|dev/i.test(zone) ? 'product' : 'raise';
+      return '<div class="mv' + (i === 0 ? ' first' : '') + '"><span class="rk">' + (i + 1) + '</span><div><span class="zn ' + zn + '">' + esc(zone) + '</span><div class="tt">' + esc(moveLabel(move)) + '</div><div class="why">' + esc(move.whyNow || move.why || '') + '</div></div><div class="acts"><button type="button" class="btn sm pri" data-ceo-do="' + esc(move.id) + '">Do</button><button type="button" class="btn sm" data-ceo-steps="' + esc(move.id) + '">Steps</button><button type="button" class="btn sm" data-ceo-plan="' + esc(move.id) + '">Plan</button><button type="button" class="btn sm" data-ceo-later="' + esc(move.id) + '">Not now</button></div></div>';
+    }).join('') : '<div class="quiet">No ranked moves yet. Re-run builds today\'s list from live signals.</div>') + '</div>';
+    var alarmOn = alarmPrefs().on;
+    cmd.innerHTML = '<div class="command slim"><div class="cmdtop"><div class="vital"><span class="k">Cash</span><span class="v">$100</span></div><div class="vital"><span class="k">Runway</span><span class="v red">~1 day</span></div><div class="vital"><span class="k">Raise - F&amp;F</span><span class="v">$80K / $250K</span></div><div class="vital"><span class="k">To Oct 30</span><span class="v">' + daysToClose() + ' days</span></div><div class="vital" style="margin-left:auto;text-align:right"><span class="k">Focus streak</span><span class="v streak">' + (streak ? '\ud83d\udd25 ' + streak + ' day' + (streak === 1 ? '' : 's') : 'Start today') + '</span></div></div></div>'
       + '<div class="lb-add capbar"><input id="opsAdd" type="text" placeholder="Capture a task - or type an idea to park it, so you don\'t lose focus" style="flex:1"/><button class="btn pri sm" id="opsAddBtn" type="button">Add</button></div>'
-      + '<div class="focus-hero"><div class="l"><div class="lab">4orm Intelligence - today\'s one move</div><div class="big">' + esc(one ? moveLabel(one) : 'Pick the one thing') + '</div><div class="why">' + esc(one && (one.whyNow || one.why) ? 'Why: ' + (one.whyNow || one.why) : 'Tied to runway and the raise. Cash first.') + '</div><div class="steps">' + steps.map(function (step, i) { return '<span class="step">' + (i + 1) + ' ' + esc(typeof step === 'string' ? step : (step.title || step.text || 'Step')) + '</span>'; }).join('') + '</div><div class="cap" style="background:transparent;border:0;box-shadow:none;padding:0"><button class="btn pri sm" type="button" id="focusStart">\u25b6 Start 25-min focus</button><button class="btn sm" type="button" id="focusCommit">Commit this as my one thing</button><button class="btn sm" type="button" id="focusPlan">Plan</button><button class="btn sm" type="button" id="focusLater">Not now</button></div></div><div class="r"><div class="timer" style="--deg:' + deg + 'deg"><div class="in"><div class="t" id="focusClock">' + mm + ':' + ss + '</div><div class="s">focus</div></div></div><div class="quiet" style="color:#8fa3c6"><b style="color:#eaf1ff">' + doneN + ' of 3</b> needle-movers done</div></div></div>'
-      + '<div class="nm-wrap"><div class="nm-head"><span>Today\'s 1-3 needle movers</span><span class="s">the only things that count as a win today</span><span class="prog2"><b>' + doneN + '</b> / 3 done</span></div><div class="nm-row">' + slots + '</div></div>'
-      + '<div class="ctrl" style="grid-template-columns:1.3fr 1fr"><div class="coach"><b>Coaching note</b><p>Regulators can wait. Do not let them take a cash-first morning. Drop them or give them 10 minutes, then come back to the one thing.</p></div><div class="mcard" style="padding:12px"><b>Momentum</b><div class="week">' + week + '</div><div class="budget">' + esc(budget) + '</div></div></div>'
-      + '<div class="card" id="nextUp" style="padding:8px 12px;margin-top:8px;display:flex;align-items:center;gap:12px"><div style="flex:1">' + (next.length ? next.map(function (ev) { return '<div data-count="' + ev.start + '">' + alarmMeetLine(ev) + '</div>'; }).join('') : '<div class="kick">No more events today.</div>') + '</div><button class="btn sm" id="findSlot" type="button">Find a 30-min slot</button></div>'
-      + '<div class="card rox"><div class="ch"><span class="t">Reach out</span><span class="sub2">people to contact - added from Pipeline or Contacts, check off when done</span></div><div class="chips">' + kinds.map(function (pair) { var n = people.filter(function (person) { return pair[0] === 'all' || person.kind === pair[0]; }).length; return '<button type="button" class="chip' + (filter === pair[0] ? ' on' : '') + '" data-reach-kind="' + pair[0] + '">' + pair[1] + ' <span class="n">' + n + '</span></button>'; }).join('') + '</div><div class="people">' + (shown.length ? shown.map(function (person) { var bits = String(person.name || '?').split(/\s+/).slice(0, 2).map(function (part) { return part.slice(0, 1); }).join('').toUpperCase(); var tagCls = { vc: 'vc', regulator: 'reg', design: 'partner', client: 'client', corporate: 'corp' }[person.kind] || 'corp'; return '<div class="person' + (person.done ? ' done' : '') + '"><div class="top"><span class="av">' + esc(bits) + '</span><div><div class="nm">' + esc(person.name) + '</div><div class="co">' + esc(person.company || '') + '</div></div></div><span class="tag ' + tagCls + '">' + esc(reachNames[person.kind] || 'Corporate') + '</span><div class="act"><label class="ckl"><input type="checkbox" data-reach-done="' + esc(person.id) + '"' + (person.done ? ' checked' : '') + ' aria-label="Done"/><span class="ck"></span></label><span class="what">' + esc(person.nextAction || 'Reach out') + '</span><button type="button" class="go" data-reach-task="' + esc(person.id) + '">+ task</button></div></div>'; }).join('') : '<div class="rox-empty">Add people from Pipeline or Contacts.</div>') + '</div></div><div class="rox-hint">From the Pipeline or Contacts, click a person and choose Add to Reach Out with a type. Checking a person off, or + task, creates an actionable task below.</div>';
+      + '<div class="war-split"><div class="focus-hero compact"><div class="l"><div class="lab">4orm Intelligence - today\'s one move</div><div class="big">' + esc(one ? moveLabel(one) : 'Pick the one thing') + '</div><div class="why">' + esc(one && (one.whyNow || one.why) ? 'Why: ' + (one.whyNow || one.why) : 'Tied to runway and the raise. Cash first.') + '</div><div class="cap" style="background:transparent;border:0;box-shadow:none;padding:0"><button class="btn pri sm" type="button" id="focusStart">\u25b6 Start 25-min focus</button><button class="btn sm" type="button" id="focusCommit">Commit this as my one thing</button><button class="btn sm" type="button" id="focusPlan">Plan</button><button class="btn sm" type="button" id="focusLater">Not now</button></div><div class="nm-fold">' + slots + '</div></div><div class="r"><div class="timer" style="--deg:' + deg + 'deg"><div class="in"><div class="t" id="focusClock">' + mm + ':' + ss + '</div><div class="s">focus</div></div></div><div class="quiet" style="color:#8fa3c6"><b style="color:#eaf1ff">' + doneN + ' of 3</b> needle-movers done</div></div></div>' + actionHtml + '</div>'
+      + '<div class="war-strip"><div class="coach"><b>Coaching note</b><p>Regulators can wait. Do not let them take a cash-first morning. Drop them or give them 10 minutes, then come back to the one thing.</p></div><div class="mcard" style="padding:12px"><b>Momentum</b><div class="week">' + week + '</div><div class="budget">' + esc(budget) + '</div></div><div class="card thin" id="nextUp"><div style="flex:1">' + (next.length ? next.map(function (ev) { return '<div data-count="' + ev.start + '">' + alarmMeetLine(ev) + '</div>'; }).join('') : '<div class="kick">No more events today.</div>') + '</div><div class="cap" style="background:transparent;border:0;box-shadow:none;padding:0"><button class="btn sm" id="findSlot" type="button">Find a 30-min slot</button><button class="btn sm" id="alarmMaster" type="button">' + (alarmOn ? 'Alarms on' : 'Alarms off') + '</button></div></div></div>';
+    var reachHtml = '<div class="card rox"><div class="ch"><span class="t">Reach out</span><span class="sub2">people to contact - added from Pipeline or Contacts, check off when done</span></div><div class="chips">' + kinds.map(function (pair) { var n = people.filter(function (person) { return pair[0] === 'all' || person.kind === pair[0]; }).length; return '<button type="button" class="chip' + (filter === pair[0] ? ' on' : '') + '" data-reach-kind="' + pair[0] + '">' + pair[1] + ' <span class="n">' + n + '</span></button>'; }).join('') + '</div><div class="people">' + (shown.length ? shown.map(function (person) { var bits = String(person.name || '?').split(/\s+/).slice(0, 2).map(function (part) { return part.slice(0, 1); }).join('').toUpperCase(); var tagCls = { vc: 'vc', regulator: 'reg', design: 'partner', client: 'client', corporate: 'corp' }[person.kind] || 'corp'; return '<div class="person' + (person.done ? ' done' : '') + '"><div class="top"><span class="av">' + esc(bits) + '</span><div><div class="nm">' + esc(person.name) + '</div><div class="co">' + esc(person.company || '') + '</div></div></div><span class="tag ' + tagCls + '">' + esc(reachNames[person.kind] || 'Corporate') + '</span><div class="act"><label class="ckl"><input type="checkbox" data-reach-done="' + esc(person.id) + '"' + (person.done ? ' checked' : '') + ' aria-label="Done"/><span class="ck"></span></label><span class="what">' + esc(person.nextAction || 'Reach out') + '</span><button type="button" class="go" data-reach-task="' + esc(person.id) + '">+ task</button></div></div>'; }).join('') : '<div class="rox-empty">Add people from Pipeline or Contacts.</div>') + '</div></div><div class="rox-hint">From the Pipeline or Contacts, click a person and choose Add to Reach Out with a type. Checking a person off, or + task, creates an actionable task below.</div>';
     var cols = [
       ['today', 'Today'],
       ['week', 'This week'],
@@ -578,6 +622,8 @@
         return '<div class="exec-card" draggable="true" data-item="' + esc(it.id) + '"><input type="checkbox" data-done="' + esc(it.id) + '" aria-label="Done"/><button type="button" data-edit="' + esc(it.id) + '" style="flex:1;text-align:left;border:0;background:transparent;font:inherit;cursor:pointer"><b>' + esc(it.title) + '</b><div class="kick">' + esc(areaLabel(it.area, it)) + '</div></button>' + bucketPicks(it) + (it._err ? '<div class="soft-err">' + esc(it._err) + '</div>' : '') + '<button type="button" class="ghost-x" data-del="' + esc(it.id) + '" aria-label="Delete">x</button></div>';
       }).join('') + '</div>';
     }).join('') + '</div></div>'
+      + rankHtml
+      + reachHtml
       + (evening && moves.length ? '<div class="eod"><div class="h">End of day review <span class="time">' + doneN + ' of ' + Math.min(3, moves.length) + ' done</span></div>' + eodLines + '<div class="foot">You moved <b>' + doneN + ' of ' + Math.min(3, moves.length) + '</b> needle-movers. Lock tomorrow\'s one thing now, keep the streak alive.</div></div>' : '');
     bindWar();
   }
@@ -707,6 +753,71 @@
         setBucket(btn.getAttribute('data-set-bucket'), btn.getAttribute('data-col'));
       };
     });
+    document.querySelectorAll('[data-act-id]').forEach(function (btn) {
+      btn.onclick = function () {
+        var id = btn.getAttribute('data-act-id');
+        var col = btn.getAttribute('data-act-col') || 'today';
+        var row = (STATE.meetingActions || []).filter(function (item) { return String(item.id) === String(id); })[0];
+        if (!row) return;
+        saveItem(row.text, col);
+        row.status = 'tasked';
+        renderWar();
+        authFetch('/api/meeting-actions', { method: 'POST', quiet: true, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: id, status: 'tasked' }) }).then(function (r) { return r.json(); }).then(function (data) {
+          if (data && data.actions) STATE.meetingActions = data.actions;
+        }).catch(function () {});
+      };
+    });
+    var meetAll = document.getElementById('meetActAll');
+    if (meetAll) meetAll.onclick = function () {
+      var card = document.getElementById('modalCard');
+      var modal = document.getElementById('modal');
+      if (!card || !modal) return;
+      var rows = STATE.meetingActions || [];
+      card.innerHTML = '<div class="mhd"><div style="font-weight:700">Meeting action items</div><button class="x" id="mClose" type="button">x</button></div><div class="mbd">' + (rows.length ? rows.map(function (row) {
+        return '<div class="arow" style="display:flex;gap:8px;padding:8px 0;border-top:1px solid #eef1f6"><span class="kind ' + (row.kind === 'follow_up' ? 'fu' : 'you') + '">' + (row.kind === 'follow_up' ? 'Follow up' : 'You said') + '</span><div style="flex:1"><b>' + esc(row.text) + '</b><div class="kick">' + esc(row.meetingTitle || '') + '</div></div><button type="button" class="btn sm" data-act-col="today" data-act-id="' + esc(row.id) + '">+ Today</button></div>';
+      }).join('') : '<div class="quiet">None yet.</div>') + '</div>';
+      modal.classList.add('open');
+      modal.hidden = false;
+      document.getElementById('mClose').onclick = function () { if (typeof closeModal === 'function') closeModal(); };
+      card.querySelectorAll('[data-act-id]').forEach(function (btn) {
+        btn.onclick = function () {
+          var id = btn.getAttribute('data-act-id');
+          var row = (STATE.meetingActions || []).filter(function (item) { return String(item.id) === String(id); })[0];
+          if (row) { saveItem(row.text, 'today'); row.status = 'tasked'; }
+          if (typeof closeModal === 'function') closeModal();
+          authFetch('/api/meeting-actions', { method: 'POST', quiet: true, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: id, status: 'tasked' }) }).catch(function () {});
+        };
+      });
+    };
+    var rerun = document.getElementById('ceoRerun');
+    if (rerun) rerun.onclick = function () {
+      rerun.disabled = true;
+      rerun.textContent = 'Rebuilding...';
+      authFetch('/api/ceo/daily', { method: 'POST', quiet: true, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: '{}' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (data) {
+        if (typeof applyCeo === 'function') applyCeo(data);
+        renderWar();
+      }).catch(function () { rerun.disabled = false; rerun.textContent = 'Re-run'; }).then(function () { rerun.disabled = false; rerun.textContent = 'Re-run'; });
+    };
+    document.querySelectorAll('[data-ceo-do]').forEach(function (btn) {
+      btn.onclick = function () { if (typeof ceoDo === 'function') ceoDo(btn.getAttribute('data-ceo-do')); };
+    });
+    document.querySelectorAll('[data-ceo-later]').forEach(function (btn) {
+      btn.onclick = function () { if (typeof ceoSnooze === 'function') ceoSnooze(btn.getAttribute('data-ceo-later')); };
+    });
+    document.querySelectorAll('[data-ceo-plan],[data-ceo-steps]').forEach(function (btn) {
+      btn.onclick = function () {
+        var id = btn.getAttribute('data-ceo-plan') || btn.getAttribute('data-ceo-steps');
+        var move = ((STATE.ceo && STATE.ceo.moves) || []).filter(function (row) { return String(row.id) === String(id); })[0];
+        if (move && typeof openPlan === 'function') openPlan(move.id || 'one', moveLabel(move) || 'The one thing', 'investors');
+      };
+    });
+    var master = document.getElementById('alarmMaster');
+    if (master) master.onclick = function () {
+      var prefs = alarmPrefs();
+      prefs.on = !prefs.on;
+      saveAlarmPrefs(prefs);
+      renderWar();
+    };
   }
 
   function saveItem(title, col, category) {
@@ -1156,17 +1267,35 @@
     var box = document.getElementById('modalCard');
     if (!modal || !box) return;
     box.classList.remove('wide');
-    box.innerHTML = '<div class="mhd"><div style="font-weight:700">Pull from Drive</div><button class="x" id="mClose" type="button">x</button></div><div class="mbd dcx-pull"><label>Folder<select id="libCat" aria-label="Folder">' + folders.map(function (c) { return '<option' + (c === active ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></label><label>Drive file<select id="libFile" aria-label="Drive file"><option value="">Choose a Drive file</option>' + flatFiles(STATE.drives || [], []).map(function (file) { return '<option value="' + esc(file.id) + '" data-url="' + esc(file.url || '') + '" data-name="' + esc(file.name || '') + '">' + esc(file.name || 'File') + '</option>'; }).join('') + '</select></label><div class="cap"><button class="btn sm pri" id="libPull" type="button">Pull into this folder</button><button class="btn sm" id="libPush" type="button">Push this folder to Drive</button></div></div>';
+    var files = flatFiles(STATE.drives || [], []);
+    box.innerHTML = '<div class="mhd"><div style="font-weight:700">Pull from Drive</div><button class="x" id="mClose" type="button">x</button></div><div class="mbd dcx-pull"><label>Folder<div class="pills" id="libCat">' + folders.map(function (c, i) { return '<button type="button" data-cat="' + esc(c) + '"' + ((c === active || (!active && !i)) ? ' class="on"' : '') + '>' + esc(c) + '</button>'; }).join('') + '</div></label><label>Drive file<div class="plist" id="libFile">' + (files.length ? files.map(function (file) { return '<button type="button" data-id="' + esc(file.id) + '" data-url="' + esc(file.url || '') + '" data-name="' + esc(file.name || '') + '">' + esc(file.name || 'File') + '</button>'; }).join('') : '<div class="quiet">No Drive files to pull.</div>') + '</div></label><div class="cap"><button class="btn sm pri" id="libPull" type="button">Pull into this folder</button><button class="btn sm" id="libPush" type="button">Push this folder to Drive</button></div></div>';
     modal.classList.add('open');
     modal.hidden = false;
     document.getElementById('mClose').onclick = function () { if (typeof closeModal === 'function') closeModal(); };
+    var catBox = document.getElementById('libCat');
+    var fileBox = document.getElementById('libFile');
+    catBox.querySelectorAll('button').forEach(function (btn) {
+      btn.onclick = function () {
+        catBox.querySelectorAll('button').forEach(function (other) { other.classList.remove('on'); });
+        btn.classList.add('on');
+      };
+    });
+    fileBox.querySelectorAll('button').forEach(function (btn) {
+      btn.onclick = function () {
+        fileBox.querySelectorAll('button').forEach(function (other) { other.classList.remove('on'); });
+        btn.classList.add('on');
+      };
+    });
     document.getElementById('libPull').onclick = function () {
-      var sel = document.getElementById('libFile');
-      var opt = sel.options[sel.selectedIndex];
-      if (!opt || !opt.value) return;
-      authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'pull', category: document.getElementById('libCat').value, name: opt.getAttribute('data-name'), url: opt.getAttribute('data-url'), driveFileId: opt.value }) }).then(function () { if (typeof closeModal === 'function') closeModal(); loadLibrary(); }).catch(function () {});
+      var opt = fileBox.querySelector('button.on');
+      var folder = catBox.querySelector('button.on');
+      if (!opt || !opt.getAttribute('data-id') || !folder) return;
+      authFetch('/api/documents', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'pull', category: folder.getAttribute('data-cat'), name: opt.getAttribute('data-name'), url: opt.getAttribute('data-url'), driveFileId: opt.getAttribute('data-id') }) }).then(function () { if (typeof closeModal === 'function') closeModal(); loadLibrary(); }).catch(function () {});
     };
-    document.getElementById('libPush').onclick = function () { pushFolder(document.getElementById('libCat').value); };
+    document.getElementById('libPush').onclick = function () {
+      var folder = catBox.querySelector('button.on');
+      if (folder) pushFolder(folder.getAttribute('data-cat'));
+    };
   }
 
   function pushFolder(cat) {
@@ -1752,6 +1881,7 @@
     renderWar();
     renderDeskNotes();
     loadReach();
+    loadMeetingActions();
     if (STATE.desk === 'news') loadNews();
     if (STATE.desk === 'contacts') loadInbox();
   };
@@ -1764,7 +1894,7 @@
     if (v === 'contacts') { loadDeskFeeds(); loadInbox(); }
     if (v === 'people') loadDeskFeeds();
     if (v === 'room') { loadDeskFeeds(); renderOpsDash(); }
-    if (v === 'war') { loadReach(); renderWar(); }
+    if (v === 'war') { loadReach(); loadMeetingActions(); renderWar(); }
     if (v === 'notes') renderSticky();
     if (v === 'znotes') renderZNotes();
   };
@@ -2231,15 +2361,38 @@
     paintMeetViews();
     authFetch('/api/alarms', { method: 'POST', credentials: 'same-origin', quiet: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ eventId: id, muted: !!STATE.alarmMute[id] }) }).catch(function () {});
   }
+  function alarmCtx() {
+    var Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    if (!playBubble.ctx) playBubble.ctx = new Ctx();
+    if (playBubble.ctx.state === 'suspended') playBubble.ctx.resume();
+    return playBubble.ctx;
+  }
+  function playLongNote() {
+    try {
+      var ctx = alarmCtx();
+      if (!ctx) return;
+      var t0 = ctx.currentTime;
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, t0);
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.22, t0 + 0.08);
+      gain.gain.setValueAtTime(0.22, t0 + 1.0);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 1.22);
+    } catch (err) {}
+  }
   function playBubble() {
     try {
-      var Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return;
-      if (!playBubble.ctx) playBubble.ctx = new Ctx();
-      var ctx = playBubble.ctx;
-      if (ctx.state === 'suspended') ctx.resume();
+      var ctx = alarmCtx();
+      if (!ctx) return;
       var t0 = ctx.currentTime;
-      [0, 0.3, 0.6].forEach(function (offset) {
+      [0, 0.3, 0.6, 0.9, 1.2].forEach(function (offset) {
         var osc = ctx.createOscillator();
         var gain = ctx.createGain();
         osc.type = 'sine';
@@ -2259,13 +2412,7 @@
   function armAlarm() {
     if (alarmArmed) return;
     alarmArmed = true;
-    try {
-      var Ctx = window.AudioContext || window.webkitAudioContext;
-      if (Ctx) {
-        if (!playBubble.ctx) playBubble.ctx = new Ctx();
-        if (playBubble.ctx.state === 'suspended') playBubble.ctx.resume();
-      }
-    } catch (err) {}
+    try { alarmCtx(); } catch (err) {}
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
       try { Notification.requestPermission(); } catch (err) {}
     }
@@ -2295,23 +2442,33 @@
   function tickAlarms() {
     var prefs = alarmPrefs();
     if (!prefs.on) return;
-    var leadMs = prefs.lead * 60 * 1000;
     var now = Date.now();
     var fired = firedSet();
+    var stages = [{ id: '10', min: 10, kind: 'long' }, { id: '5', min: 5, kind: 'bubble' }, { id: '3', min: 3, kind: 'bubble' }];
     (STATE.events || []).forEach(function (ev) {
-      if (!ev || !ev.id || alarmMuted(ev.id) || fired.ids[ev.id]) return;
+      if (!ev || !ev.id || alarmMuted(ev.id)) return;
       var left = ev.start - now;
-      if (left > leadMs + 15000 || left < -30000) return;
-      fired.ids[ev.id] = 1;
-      try { localStorage.setItem('cr_alarm_fired', JSON.stringify(fired)); } catch (err) {}
-      showMeetAlarm(ev, prefs.lead);
-      if (alarmArmed) playBubble();
-      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        try {
-          var note = new Notification('Meeting in ' + prefs.lead + ' min - ' + (ev.title || 'Meeting'), { body: whenLine(ev), silent: false });
-          note.onclick = function () { window.focus(); };
-        } catch (err) {}
-      }
+      if (left < -30000 || left > 10 * 60 * 1000 + 15000) return;
+      stages.forEach(function (stage, i) {
+        var key = ev.id + ':' + stage.id;
+        if (fired.ids[key]) return;
+        var minMs = stage.min * 60 * 1000;
+        var nextMs = stages[i + 1] ? stages[i + 1].min * 60 * 1000 : -30000;
+        if (left > minMs + 15000 || left <= nextMs) return;
+        fired.ids[key] = 1;
+        try { localStorage.setItem('cr_alarm_fired', JSON.stringify(fired)); } catch (err) {}
+        showMeetAlarm(ev, stage.min);
+        if (alarmArmed) {
+          if (stage.kind === 'long') playLongNote();
+          else playBubble();
+        }
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          try {
+            var note = new Notification('Meeting in ' + stage.min + ' min - ' + (ev.title || 'Meeting'), { body: whenLine(ev), silent: false });
+            note.onclick = function () { window.focus(); };
+          } catch (err) {}
+        }
+      });
     });
   }
   function pollCalAlarms() {
@@ -2328,15 +2485,15 @@
   }
   function alarmSettingsHtml() {
     var prefs = alarmPrefs();
-    return '<div class="alarm-set"><div class="lab">Meeting alarm</div><div class="sub">Chime and banner 10 minutes before a meeting. Mute any event from the list. No sound until you click once on this page.</div><div class="row"><label><input type="checkbox" id="alarmOn"' + (prefs.on ? ' checked' : '') + '/> Alarm on</label><label>Lead <select id="alarmLead"><option value="5"' + (prefs.lead === 5 ? ' selected' : '') + '>5 min</option><option value="10"' + (prefs.lead === 10 ? ' selected' : '') + '>10 min</option><option value="15"' + (prefs.lead === 15 ? ' selected' : '') + '>15 min</option></select></label><button type="button" class="btn sm" id="alarmTest">Test sound</button></div></div>';
+    return '<div class="alarm-set"><div class="lab">Meeting alarm</div><div class="sub">T-10 one long note, then Bubble five times at T-5 and T-3. Mute any event from the list. Master off stops every alert. No sound until you click once on this page.</div><div class="row"><label><input type="checkbox" id="alarmOn"' + (prefs.on ? ' checked' : '') + '/> Alarm on</label><button type="button" class="btn sm" id="alarmTestLong">Test long note</button><button type="button" class="btn sm" id="alarmTest">Test Bubble</button></div></div>';
   }
   function bindAlarmSettings() {
     var on = document.getElementById('alarmOn');
-    var lead = document.getElementById('alarmLead');
     var test = document.getElementById('alarmTest');
+    var long = document.getElementById('alarmTestLong');
     if (on) on.onchange = function () { var prefs = alarmPrefs(); prefs.on = !!on.checked; saveAlarmPrefs(prefs); };
-    if (lead) lead.onchange = function () { var prefs = alarmPrefs(); var n = Number(lead.value); prefs.lead = n === 5 || n === 15 ? n : 10; saveAlarmPrefs(prefs); };
     if (test) test.onclick = function () { armAlarm(); playBubble(); };
+    if (long) long.onclick = function () { armAlarm(); playLongNote(); };
   }
   function bootAlarms() {
     STATE.alarmMute = STATE.alarmMute || muteMap();

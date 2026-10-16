@@ -11,6 +11,11 @@ export function newsKey() {
   return env('NEWS_INGEST_KEY');
 }
 
+/** Shared secret for the morning CEO ranking (x-ceo-key). Unset means header posts are refused. */
+export function ceoKey() {
+  return env('CEO_INGEST_KEY');
+}
+
 export function cronSecret() {
   return env('CRON_SECRET') || bakedCron || '';
 }
