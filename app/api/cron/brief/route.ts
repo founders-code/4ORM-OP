@@ -79,7 +79,7 @@ export async function GET(req: Request) {
       fail('ceo_failed');
     }
     try {
-      await sweepNews(sql, ownerId);
+      await sweepNews(sql, ownerId, 8000);
     } catch {
       fail('news_sweep');
     }

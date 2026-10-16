@@ -514,6 +514,19 @@ async function migrateWar(sql: Sql) {
     )`],
     ['db_news_url', () => sql`CREATE UNIQUE INDEX IF NOT EXISTS news_owner_url_uq ON news_items (owner_id, url) WHERE url <> ''`],
     ['db_news_image', () => sql`ALTER TABLE news_items ADD COLUMN IF NOT EXISTS image_url text`],
+    ['db_news_why', () => sql`ALTER TABLE news_items ADD COLUMN IF NOT EXISTS why_it_matters text`],
+    ['db_news_source', () => sql`ALTER TABLE news_items ADD COLUMN IF NOT EXISTS source text`],
+    ['db_news_impact', () => sql`ALTER TABLE news_items ADD COLUMN IF NOT EXISTS impact text`],
+    ['db_news_images', () => sql`CREATE TABLE IF NOT EXISTS news_images (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      source_url text NOT NULL,
+      mime text NOT NULL,
+      data bytea NOT NULL,
+      bytes integer NOT NULL DEFAULT 0,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      UNIQUE (owner_id, source_url)
+    )`],
     ['db_doc_folders', () => sql`CREATE TABLE IF NOT EXISTS doc_folders (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       owner_id text NOT NULL,

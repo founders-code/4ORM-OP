@@ -6,6 +6,11 @@ export function ingestToken() {
   return env('INGEST_TOKEN') || bakedIngest || '';
 }
 
+/** Shared secret for the scheduled news sweep (x-news-key). No baked fallback: unset means header posts are refused. */
+export function newsKey() {
+  return env('NEWS_INGEST_KEY');
+}
+
 export function cronSecret() {
   return env('CRON_SECRET') || bakedCron || '';
 }
