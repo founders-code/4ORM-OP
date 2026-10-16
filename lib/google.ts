@@ -485,24 +485,27 @@ export async function createGmailDraft(to: string, subject: string, text: string
 export async function recentMail() {
   if (!configured()) return { status: 'unavailable' as const, messages: [] as Array<{ id: string; title: string; from: string; at: number }> };
   const listed = (await gfetch(
-    'https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=8&q=' + encodeURIComponent('newer_than:1d'),
+    'https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=8&q=' + encodeURIComponent(`newer_than:1d ${CALENDAR_QUERY}`),
   )) as { messages?: Array<{ id: string }> } | null;
   if (!listed) return { status: 'unavailable' as const, messages: [] };
   const ids = listed.messages || [];
   const messages = [];
   for (const row of ids.slice(0, 8)) {
     const msg = (await gfetch(
-      `https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(row.id)}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`,
-    )) as { id?: string; internalDate?: string; payload?: { headers?: Array<{ name: string; value: string }> } } | null;
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(row.id)}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date&metadataHeaders=Content-Type`,
+    )) as { id?: string; internalDate?: string; payload?: GmailPart } | null;
     const headers = msg?.payload?.headers || [];
     const header = (name: string) => headers.find((h) => h.name.toLowerCase() === name)?.value || '';
     const subject = header('subject');
     const from = header('from').slice(0, 180);
     const at = Number(msg?.internalDate) || Date.parse(header('date')) || 0;
+    if (isCalendarMail(from, subject, msg?.payload)) continue;
     if (msg?.id && subject) messages.push({ id: msg.id, title: subject.slice(0, 180), from, at });
   }
   return { status: messages.length ? ('connected' as const) : ('reached_empty' as const), messages };
 }
+
+type GmailPart = { mimeType?: string; filename?: string; headers?: Array<{ name: string; value: string }>; parts?: GmailPart[] };
 
 type GmailMeta = {
   id?: string;
@@ -510,8 +513,29 @@ type GmailMeta = {
   snippet?: string;
   internalDate?: string;
   labelIds?: string[];
-  payload?: { headers?: Array<{ name: string; value: string }> };
+  payload?: GmailPart;
 };
+
+const CALENDAR_SENDERS = /^(calendar-notification|calendar-server)@google\.com$/i;
+const CALENDAR_SUBJECT = /^\s*(?:(?:re|fwd?|fw)\s*:\s*)*(?:invitation|updated invitation|accepted|declined|tentative|tentatively accepted|canceled|cancelled|canceled event|cancelled event)(?:\s+\(.*?\))?\s*:/i;
+const CALENDAR_QUERY = '-filename:ics -filename:vcs -from:calendar-notification@google.com -from:calendar-server@google.com';
+
+function calendarPart(part: GmailPart | undefined, depth = 0): boolean {
+  if (!part || depth > 6) return false;
+  if (/text\/calendar|application\/ics/i.test(part.mimeType || '')) return true;
+  if (/\.(ics|vcs)$/i.test(part.filename || '')) return true;
+  const type = (part.headers || []).find((h) => h.name.toLowerCase() === 'content-type')?.value || '';
+  if (/text\/calendar|application\/ics/i.test(type)) return true;
+  return (part.parts || []).some((child) => calendarPart(child, depth + 1));
+}
+
+/** Calendar invites and their accept, decline, update, and cancel notices. Never person-to-person mail. */
+function isCalendarMail(fromRaw: string, subject: string, payload?: GmailPart) {
+  const address = ((fromRaw.match(/<([^>]+)>/) || [])[1] || fromRaw).trim().toLowerCase();
+  if (CALENDAR_SENDERS.test(address)) return true;
+  if (CALENDAR_SUBJECT.test(subject || '')) return true;
+  return calendarPart(payload);
+}
 
 export type InboxRow = {
   id: string;
@@ -581,7 +605,7 @@ async function gmailList(q: string, max: number) {
     `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${max}&q=${encodeURIComponent(q)}`,
   )) as { messages?: Array<{ id: string }> } | null;
   if (!listed) return null;
-  const headers = ['From', 'To', 'Subject', 'Date', 'Message-ID', 'Delivered-To'].map((h) => `metadataHeaders=${h}`).join('&');
+  const headers = ['From', 'To', 'Subject', 'Date', 'Message-ID', 'Delivered-To', 'Content-Type'].map((h) => `metadataHeaders=${h}`).join('&');
   const ids = (listed.messages || []).slice(0, max);
   const rows = await Promise.all(ids.map((row) =>
     (gfetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(row.id)}?format=metadata&${headers}`) as Promise<GmailMeta | null>)
@@ -599,7 +623,7 @@ export async function inboxMail() {
   if (!configured()) return { status: 'unavailable' as const, messages: [] as InboxRow[] };
   if (!(await accessToken())) return { status: 'unavailable' as const, messages: [] as InboxRow[] };
   const self = await mailboxSelf().catch(() => ({ addresses: new Set<string>(), names: new Set<string>(), domain: '' }));
-  const rows = await gmailList('newer_than:14d in:inbox -category:promotions -category:social -from:linkedin.com', 20);
+  const rows = await gmailList(`newer_than:14d in:inbox -category:promotions -category:social -from:linkedin.com ${CALENDAR_QUERY}`, 20);
   if (!rows) return { status: 'unavailable' as const, messages: [] as InboxRow[] };
   const isSelf = (raw: string) => {
     const address = addressOf(raw);
@@ -623,6 +647,7 @@ export async function inboxMail() {
     const rawFrom = pick('from');
     const delivered = pick('delivered-to').toLowerCase();
     if (delivered.includes(LINKEDIN_ALIAS) || /linkedin\.com/i.test(addressOf(rawFrom))) continue;
+    if (isCalendarMail(rawFrom, pick('subject'), msg.payload)) continue;
     let party = rawFrom;
     let outbound = false;
     if (isSelf(rawFrom)) {
@@ -738,4 +763,47 @@ export async function createReplyDraft(input: { to: string; subject: string; tex
   } catch {
     return null;
   }
+}
+
+export type ZoomMail = { id: string; subject: string; at: number; text: string };
+
+function plainBody(part: GmailPart & { body?: { data?: string } } | undefined, depth = 0): string {
+  if (!part || depth > 6) return '';
+  const data = part.body?.data;
+  if (data && /^text\/plain/i.test(part.mimeType || '')) return Buffer.from(data, 'base64url').toString('utf8');
+  for (const child of (part.parts || []) as Array<GmailPart & { body?: { data?: string } }>) {
+    const hit = plainBody(child, depth + 1);
+    if (hit) return hit;
+  }
+  if (data && /^text\/html/i.test(part.mimeType || '')) {
+    return Buffer.from(data, 'base64url').toString('utf8').replace(/<br\s*\/?>|<\/(p|div|li|h\d|tr)>/gi, '\n').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&');
+  }
+  return '';
+}
+
+/** Zoom meeting summary and recording emails from the last 90 days. Skips ids already imported. */
+export async function zoomMail(known: Set<string>, max = 20) {
+  if (!configured()) return null;
+  const q = 'from:(no-reply@zoom.us OR noreply@zoom.us) newer_than:90d subject:(summary OR transcript OR recording OR assets)';
+  const ids: string[] = [];
+  let page = '';
+  for (let i = 0; i < 3; i += 1) {
+    const listed = (await gfetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=100&q=${encodeURIComponent(q)}${page ? `&pageToken=${encodeURIComponent(page)}` : ''}`,
+    )) as { messages?: Array<{ id: string }>; nextPageToken?: string } | null;
+    if (!listed) return i ? [] : null;
+    for (const row of listed.messages || []) if (row.id && !known.has(row.id)) ids.push(row.id);
+    page = listed.nextPageToken || '';
+    if (!page) break;
+  }
+  const out: ZoomMail[] = [];
+  for (const id of ids.slice(0, max)) {
+    const msg = (await gfetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(id)}?format=full`).catch(() => null)) as
+      | (GmailMeta & { payload?: GmailPart & { body?: { data?: string } } })
+      | null;
+    if (!msg?.id) continue;
+    const subject = headerOf(msg)('subject').slice(0, 300);
+    out.push({ id: msg.id, subject, at: Number(msg.internalDate) || Date.now(), text: plainBody(msg.payload).slice(0, 20000) });
+  }
+  return out;
 }
