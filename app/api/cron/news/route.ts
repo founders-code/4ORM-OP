@@ -7,7 +7,7 @@ import { cronSecret } from '@/lib/secrets';
 import { roomOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 function pacificHour(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -31,8 +31,8 @@ export async function GET(req: Request) {
     if (!sql) return NextResponse.json({ ok: false });
     const ownerId = await roomOwner(sql);
     if (!ownerId) return NextResponse.json({ ok: true });
-    const saved = await sweepNews(sql, ownerId);
-    if (saved.length) await markSwept(sql, ownerId);
+    await markSwept(sql, ownerId);
+    await sweepNews(sql, ownerId, 50000);
     return NextResponse.json({ ok: true });
   } catch (err) {
     fail('news_sweep', err);

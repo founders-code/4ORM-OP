@@ -755,6 +755,22 @@
     });
   }
 
+  var NEWS_CHIPS = ['Compliance', 'AI & governance', 'Mortgage/brokerage', 'Automation/regtech', 'Fraud', 'Payments/FINTRAC', 'Competitors', 'Housing market'];
+  var NEWS_OLD = { 'AI': 'AI & governance', 'Counseling': 'Compliance', 'Fintech & regulation': 'Compliance', 'Mortgage': 'Mortgage/brokerage', 'Fraud & scams': 'Fraud', 'Grants': 'Compliance', 'Payments / FINTRAC': 'Payments/FINTRAC', 'Competitors (Drata/Vanta/Aveni)': 'Competitors', 'Design-partner targets (Century 21/Remax)': 'Mortgage/brokerage', 'Fundraising / VC': 'Compliance' };
+  var NEWS_ICON = {
+    'Compliance': '<path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+    'AI & governance': '<path d="M12 3v18M5 7h14M8 21h8"/><path d="M5 7l-3 6a3 3 0 0 0 6 0zM19 7l-3 6a3 3 0 0 0 6 0z"/>',
+    'Mortgage/brokerage': '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+    'Automation/regtech': '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9L7 7M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>',
+    'Fraud': '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/>',
+    'Payments/FINTRAC': '<rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 10h19M6 15h4"/>',
+    'Competitors': '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
+    'Housing market': '<path d="M3 20h18"/><path d="M5 20v-9l5-4 5 4v9"/><path d="M15 20v-6l3-2 3 2v6"/>'
+  };
+  var NEWS_RIVALS = ['Vanta', 'Drata', 'Secureframe', 'Aveni', 'Thoropass', 'ComplyAdvantage'];
+  var NEWS_TOPICS = ['RPAA', 'safeguarding', 'suitability', 'AML', 'AI governance', 'mortgage compliance', 'non-dilutive', 'fraud'];
+  var NEWS_PRIMARY = /(^|\.)(canada\.ca|gc\.ca|bankofcanada\.ca|fintrac-canafe\.canada\.ca|osfi-bsif\.gc\.ca|fsrao\.ca|bcfsa\.ca|lautorite\.qc\.ca|osc\.ca|bcsc\.bc\.ca|asc\.ca|securities-administrators\.ca|fca\.org\.uk|competition-bureau\.canada\.ca)$/;
+
   function newsTs(item) {
     var raw = item && (item.publishedAt != null ? item.publishedAt : item.published_at);
     if (typeof raw === 'number') return raw;
@@ -763,163 +779,240 @@
     return Date.parse(raw || 0) || 0;
   }
 
-  function NEWS_SEED() {
-    var now = Date.now();
-    return [
-      ['Payments / FINTRAC', 'FINTRAC - latest guidance', 'Why it matters to 4orm: the reporting body for the payments desk.', 'https://fintrac-canafe.canada.ca/intro-eng', true],
-      ['Fintech & regulation', 'Bank of Canada - retail payments', 'Why it matters to 4orm: RPAA is the payments perimeter.', 'https://www.bankofcanada.ca/core-functions/financial-system/retail-payments-supervision/', false],
-      ['Compliance', 'OSFI - supervision', 'Why it matters to 4orm: federal prudential rules sit next to the raise.', 'https://www.osfi-bsif.gc.ca/en', false],
-      ['Mortgage', 'FCAC - consumer protection', 'Why it matters to 4orm: consumer rules around credit and housing.', 'https://www.canada.ca/en/financial-consumer-agency.html', false]
-    ].map(function (r, i) { return { id: 'seed-' + i, category: r[0], title: r[1], summary: r[2], url: r[3], image: '', publishedAt: now, isTop: r[4] }; });
+  function newsCat(item) {
+    var c = String(item.category || '');
+    return NEWS_CHIPS.indexOf(c) >= 0 ? c : (NEWS_OLD[c] || 'Compliance');
   }
 
-  function renderNews(items, categories) {
-    var el = document.getElementById('newsDesk');
-    if (!el) return;
-    var cats = categories && categories.length ? categories : ['All'];
-    var on = STATE.newsCat || 'All';
-    var q = String(STATE.newsQ || '').toLowerCase();
-    var all = items && items.length ? items : NEWS_SEED();
-    var rows = all.filter(function (item) { return on === 'All' || item.category === on; }).filter(function (item) { return !q || ((item.title || '') + ' ' + (item.summary || '')).toLowerCase().indexOf(q) >= 0; });
-    var miss = '';
-    if (!rows.length) {
-      miss = q ? 'No stories match "' + esc(STATE.newsQ) + '" - showing everything from the sweep.' : 'Nothing in ' + esc(on) + ' yet - showing everything from the sweep.';
-      rows = all.slice();
-    }
+  function newsImpact(item) {
+    var v = String(item.impact || '');
+    if (v === 'Opportunity' || v === 'Threat' || v === 'Regulatory') return v;
+    var blob = (newsCat(item) + ' ' + (item.title || '') + ' ' + (item.summary || '')).toLowerCase();
+    if (/competitor|vanta|drata|aveni|secureframe|thoropass|complyadvantage/.test(blob)) return 'Threat';
+    if (/regulat|fintrac|osfi|fcac|rpaa|guidance|consult|enforce|penalt|fraud/.test(blob)) return 'Regulatory';
+    return 'Opportunity';
+  }
+
+  function newsHost(url) { try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return ''; } }
+  function newsSource(item) { return String(item.source || '') || newsHost(item.url || '') || 'News'; }
+  function newsWhy(item) { return String(item.whyItMatters || item.why_it_matters || '').replace(/^why it matters to 4orm:\s*/i, '') || String(item.summary || '').replace(/^why it matters to 4orm:\s*/i, ''); }
+  function newsSummary(item) { var s = String(item.summary || ''); return /^why it matters to 4orm:/i.test(s) ? '' : s; }
+
+  function newsWhen(item) {
+    var ts = newsTs(item);
+    if (!ts) return '';
     var start = new Date();
     start.setHours(0, 0, 0, 0);
-    var isToday = function (item) { return newsTs(item) >= start.getTime(); };
-    if (STATE.newsSpan === 'today') {
-      var todays = rows.filter(isToday);
-      if (todays.length) rows = todays;
+    if (ts >= start.getTime()) return 'today';
+    var d = Math.floor((start.getTime() - ts) / 86400000) + 1;
+    return d === 1 ? 'yesterday' : d + 'd ago';
+  }
+
+  function newsCover(item, hero) {
+    var cat = newsCat(item);
+    var impact = newsImpact(item);
+    var cls = impact === 'Threat' ? 'threat' : impact === 'Regulatory' ? 'reg' : 'opp';
+    var img = String(item.image || item.image_url || '');
+    var ok = /^\/api\/news\/image\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(img);
+    var kick = hero ? '<span class="kick">Top release ' + (newsWhen(item) === 'today' ? 'today' : 'this ' + (STATE.newsSpan === 'week' ? 'week' : 'month')) + ' &middot; ' + esc(cat) + '</span>' : '<span class="cat">' + esc(cat) + '</span>';
+    return '<div class="img' + (ok ? '' : ' noimg') + '"><div class="tile"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + (NEWS_ICON[cat] || NEWS_ICON.Compliance) + '</svg></span><span class="sn">' + esc(newsSource(item)) + '</span></div>' + (ok ? '<img class="ph" src="' + esc(img) + '" alt="" loading="' + (hero ? 'eager' : 'lazy') + '" decoding="async" referrerpolicy="no-referrer"/>' : '') + '<span class="shade"></span>' + kick + '<span class="' + (hero ? 'impact' : 'tag') + ' ' + cls + '">' + impact + '</span><div class="h">' + esc(item.title || '') + '</div></div>';
+  }
+
+  function newsOpen(item) {
+    if (!item || !item.url) return;
+    if (typeof openLink === 'function') openLink(item.title || 'Story', item.url);
+    var btn = document.getElementById('docViewDrive');
+    if (btn) {
+      btn.hidden = false;
+      btn.setAttribute('data-href', item.url);
+      btn.textContent = 'Open on ' + (newsHost(item.url) || 'source');
     }
-    var top = rows.filter(function (item) { return item.is_top || item.isTop; })[0] || rows[0];
+  }
+
+  function newsToSpace(item) {
+    if (!item) return;
+    var spaces = (STATE.packages || []).filter(function (p) { return p && p.id; });
+    var modal = document.getElementById('modal');
+    var box = document.getElementById('modalCard');
+    if (!spaces.length || !modal || !box) {
+      saveItem('News for a space: ' + (item.title || 'Story'), 'week');
+      if (typeof deskNote === 'function') deskNote('No spaces yet - saved as a This week task.');
+      return;
+    }
+    var q = '';
+    function paint() {
+      var rows = spaces.filter(function (p) { return !q || String(p.name || p.title || '').toLowerCase().indexOf(q.toLowerCase()) >= 0; });
+      box.classList.add('wide');
+      box.innerHTML = '<div class="mhd"><div style="font-weight:700">Save to a Space</div><button class="x" id="mClose" type="button" aria-label="Close">\u00d7</button></div><div class="mbd"><div class="kick" style="margin-bottom:6px">' + esc(item.title || '') + '</div><input id="nwSpaceFind" type="text" placeholder="Search spaces" value="' + esc(q) + '" style="width:100%;margin:0 0 8px"/>' + (rows.map(function (p) { return '<button type="button" class="ops-row" data-nw-space="' + esc(p.id) + '"><b>' + esc(p.name || p.title || 'Space') + '</b><span class="kick">' + esc(p.stage || p.status || '') + '</span></button>'; }).join('') || '<div class="kick">No space matches.</div>') + '</div>';
+      modal.classList.add('open');
+      modal.hidden = false;
+      document.getElementById('mClose').onclick = function () { if (typeof closeModal === 'function') closeModal(); };
+      var find = document.getElementById('nwSpaceFind');
+      if (find) find.oninput = function () { q = find.value; paint(); var again = document.getElementById('nwSpaceFind'); if (again) { again.focus(); try { again.setSelectionRange(q.length, q.length); } catch (e) {} } };
+      box.querySelectorAll('[data-nw-space]').forEach(function (btn) {
+        btn.onclick = function () {
+          var id = btn.getAttribute('data-nw-space');
+          var sp = spaces.filter(function (p) { return p.id === id; })[0] || {};
+          if (typeof closeModal === 'function') closeModal();
+          authFetch('/api/spaces/' + encodeURIComponent(id) + '/items', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'link', name: item.title || 'Story', url: item.url || '', body: newsWhy(item) }) }).then(function (r) { return r.json(); }).then(function (d) {
+            if (typeof deskNote === 'function') deskNote(d && d.saved === false ? 'Not saved to ' + (sp.name || 'the space') + ' - try again.' : 'Saved to ' + (sp.name || 'the space') + '.');
+          }).catch(function () { if (typeof deskNote === 'function') deskNote('Not saved yet - try again.'); });
+        };
+      });
+    }
+    paint();
+  }
+
+  function renderNews(items) {
+    var el = document.getElementById('newsDesk');
+    if (!el) return;
+    var loading = !STATE.newsLoaded && !(items && items.length);
+    var all = (items || []).slice().sort(function (a, b) { return (b.isTop ? 1 : 0) - (a.isTop ? 1 : 0) || newsTs(b) - newsTs(a); });
+    var on = STATE.newsCat && (STATE.newsCat === 'All' || NEWS_CHIPS.indexOf(STATE.newsCat) >= 0) ? STATE.newsCat : 'All';
+    var q = String(STATE.newsQ || '').trim().toLowerCase();
+    var span = STATE.newsSpan === 'today' ? 'today' : STATE.newsSpan === 'week' ? 'week' : 'month';
+    var start = new Date();
+    start.setHours(0, 0, 0, 0);
+    var floor = span === 'today' ? start.getTime() : span === 'week' ? Date.now() - 7 * 86400000 : Date.now() - 31 * 86400000;
+    var miss = '';
+    var inSpan = all.filter(function (item) { return newsTs(item) >= floor; });
+    if (!inSpan.length && all.length) {
+      miss = span === 'today' ? 'Nothing new today yet - showing the last week.' : 'Nothing in this window - showing the latest sweep.';
+      inSpan = all.filter(function (item) { return newsTs(item) >= Date.now() - 7 * 86400000; });
+      if (!inSpan.length) inSpan = all.slice();
+    }
+    var rows = inSpan.filter(function (item) { return on === 'All' || newsCat(item) === on; }).filter(function (item) {
+      return !q || ((item.title || '') + ' ' + (item.summary || '') + ' ' + newsWhy(item) + ' ' + newsSource(item)).toLowerCase().indexOf(q) >= 0;
+    });
+    if (!rows.length && inSpan.length) {
+      miss = q ? 'No stories match "' + esc(STATE.newsQ) + '" - showing everything in this window.' : 'Nothing in ' + esc(on) + ' yet - showing everything in this window.';
+      rows = inSpan.slice();
+    }
+    STATE.newsView = rows;
+    var top = rows.filter(function (item) { return item.isTop || item.is_top; })[0] || rows[0];
     var rest = rows.filter(function (item) { return item !== top; });
-    function impactOf(item) {
-      var cat = String(item.category || '').toLowerCase();
-      var blob = (cat + ' ' + (item.title || '') + ' ' + (item.summary || '')).toLowerCase();
-      if (/competitor|vanta|drata|aveni|secureframe|\bthreat\b/.test(blob)) return ['threat', 'Threat', 'g2'];
-      if (/grant|non-dilutive|innovate/.test(blob)) return ['opp', 'Opportunity', 'g4'];
-      if (/mortgage|housing|broker/.test(cat)) return ['opp', 'Opportunity', 'g3'];
-      if (/fraud|scam|breach/.test(blob)) return ['reg', 'Regulatory', 'g6'];
-      if (/venture|fundraising|angel round|series [a-d]|pre-seed|seed round/.test(blob) && !/fintrac|osfi|fcac|aml/.test(cat)) return ['opp', 'Opportunity', 'g5'];
-      if (/regulat|fintrac|osfi|csa|fcac|compliance|rpaa|payment|aml/.test(blob)) return ['reg', 'Regulatory', 'g1'];
-      return ['opp', 'Opportunity', ['g1', 'g3', 'g4', 'g5'][String(item.title || '').length % 4]];
-    }
-    function host(url) { try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return ''; } }
-    function when(item) {
-      var ts = newsTs(item);
-      if (!ts) return '';
-      if (ts >= start.getTime()) return 'today';
-      var d = Math.floor((start.getTime() - ts) / 86400000) + 1;
-      return d === 1 ? 'yesterday' : d + 'd ago';
-    }
-    function face(item) { return item.image ? ' style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.35)),url(' + esc(item.image) + ');background-size:cover;background-position:center"' : ''; }
+    var idx = function (item) { return rows.indexOf(item); };
     function story(item) {
-      var hit = impactOf(item);
-      var src = [host(item.url || ''), when(item)].filter(Boolean).join(' &middot; ');
-      return '<div class="card story" data-news-url="' + esc(item.url || '') + '" data-news-title="' + esc(item.title || '') + '"><div class="img ' + hit[2] + '"' + face(item) + '><span class="cat">' + esc(item.category || 'News') + '</span><span class="tag ' + hit[0] + '">' + hit[1] + '</span></div><div class="b"><div class="h">' + esc(item.title || '') + '</div><div class="tk">' + esc(item.summary || '') + '</div><div class="foot">' + src + '<button type="button" class="save" data-news-save="' + esc(item.title || '') + '">Save &#8250;</button></div></div></div>';
+      var sum = newsSummary(item);
+      var why = newsWhy(item);
+      return '<div class="card story" data-nw-i="' + idx(item) + '" role="button" tabindex="0">' + newsCover(item, false) + '<div class="b">' + (sum ? '<div class="tk">' + esc(sum) + '</div>' : '') + (why ? '<div class="why"><b>Why it matters:</b> ' + esc(why) + '</div>' : '') + '<div class="foot"><span class="src">' + esc(newsSource(item)) + (newsWhen(item) ? ' &middot; ' + newsWhen(item) : '') + '</span><button type="button" class="save" data-nw-save="' + idx(item) + '">Save &#8250;</button></div></div></div>';
     }
     var hero = '';
     if (top) {
-      var hh = impactOf(top);
-      var heroSrc = [host(top.url || ''), top.publishedAt ? new Date(top.publishedAt).toLocaleDateString('en-CA') : ''].filter(Boolean).join(' &middot; ');
-      var t1 = esc(top.title || '');
-      hero = '<div class="card hero"><div class="img ' + hh[2] + '"' + face(top) + '><span class="kick">Top release ' + (isToday(top) ? 'today' : 'this ' + (STATE.newsSpan === 'week' ? 'week' : 'month')) + ' &middot; ' + esc(top.category || 'News') + '</span><span class="impact ' + hh[0] + '">' + hh[1] + '</span><div class="h">' + t1 + '</div></div><div class="b"><div class="take"><b>Why it matters to 4orm:</b> ' + esc(String(top.summary || '').replace(/^why it matters to 4orm:\s*/i, '') || 'Read the source and decide where it lands - deck, regulator note or a VC follow-up.') + '</div>' + (heroSrc ? '<div class="src">' + heroSrc + '</div>' : '') + '<div class="actions"><button type="button" class="act pri" data-news-act="post" data-news-title="' + t1 + '"><span class="mk">&#10022;</span> Draft a LinkedIn post</button><button type="button" class="act" data-news-act="letter" data-news-title="' + t1 + '"><span class="mk">&#10022;</span> Add to investor newsletter</button><button type="button" class="act" data-news-act="vc" data-news-title="' + t1 + '">Cite to a VC</button><button type="button" class="act" data-news-save="' + t1 + '">Save to ' + esc(top.category || 'a') + ' space</button><button type="button" class="act" data-news-act="open" data-news-title="' + t1 + '" data-news-url="' + esc(top.url || '') + '">Open source</button></div></div></div>';
+      var i = idx(top);
+      var host = newsHost(top.url || '');
+      var srcLine = [esc(newsSource(top)), top.publishedAt ? new Date(newsTs(top)).toLocaleDateString('en-CA') : '', NEWS_PRIMARY.test(host) ? 'credibility: primary source' : 'credibility: reported'].filter(Boolean).join(' &middot; ');
+      var sum = newsSummary(top);
+      hero = '<div class="card hero"><div data-nw-i="' + i + '" class="hero-open" role="button" tabindex="0">' + newsCover(top, true) + '</div><div class="b">' + (sum ? '<div class="sum">' + esc(sum) + '</div>' : '') + '<div class="take"><b>Why it matters to 4orm:</b> ' + esc(newsWhy(top) || 'Read the source and decide where it lands - deck, regulator note or a VC follow-up.') + '</div><div class="src">' + srcLine + '</div><div class="actions"><button type="button" class="act pri" data-nw-act="post" data-nw-at="' + i + '"><span class="mk">&#10022;</span> Draft a LinkedIn post</button><button type="button" class="act" data-nw-act="letter" data-nw-at="' + i + '"><span class="mk">&#10022;</span> Add to investor newsletter</button><button type="button" class="act" data-nw-act="vc" data-nw-at="' + i + '">Cite to a VC</button><button type="button" class="act" data-nw-save="' + i + '">Save to a Space</button><button type="button" class="act" data-nw-act="open" data-nw-at="' + i + '">Open source</button></div></div></div>';
     }
-    var empty = miss ? '<div class="nw-miss">' + miss + '</div>' : '';
     var briefRows = (top ? [top] : []).concat(rest).slice(0, 5);
-    var brief = briefRows.map(function (item, i) { return '<div class="r"><span class="n">' + (i + 1) + '</span>' + esc(item.title || '') + '</div>'; }).join('') || '<div class="r">The sweep fills the briefing.</div>';
-    var comps = ['Vanta', 'Drata', 'Aveni', 'Secureframe'].map(function (name) {
-      var hits = all.filter(function (item) { return ((item.title || '') + ' ' + (item.summary || '')).toLowerCase().indexOf(name.toLowerCase()) >= 0; }).sort(function (x, y) { return newsTs(y) - newsTs(x); });
-      var hit = hits[0];
+    var brief = briefRows.map(function (item, n) { return '<button type="button" class="r" data-nw-i="' + idx(item) + '"><span class="n">' + (n + 1) + '</span><span>' + esc(String(item.title || '').slice(0, 110)) + '</span></button>'; }).join('') || '<div class="r">The 8am sweep fills the briefing.</div>';
+    var comps = NEWS_RIVALS.map(function (name) {
+      var re = new RegExp('\\b' + name + '\\b', 'i');
+      var hit = all.filter(function (item) { return re.test((item.title || '') + ' ' + (item.summary || '')); })[0];
       var age = hit ? Math.max(0, Math.floor((Date.now() - newsTs(hit)) / 86400000)) : null;
       var color = age == null ? '#c6cfdd' : age <= 2 ? '#f23a4d' : age <= 7 ? '#f0a020' : '#c6cfdd';
-      var line = hit ? String(hit.title || '').slice(0, 46) : 'quiet';
-      return { age: age == null ? 999 : age, html: '<div class="comprow"><span class="d" style="background:' + color + '"></span>' + (hit && line.toLowerCase().indexOf(name.toLowerCase()) === 0 ? esc(line) : esc(name) + ' - ' + esc(line)) + '<span class="mt">' + (age == null ? '-' : age === 0 ? 'today' : age + 'd') + '</span></div>' };
+      var line = hit ? String(hit.title || '').slice(0, 54) : 'quiet';
+      return { age: age == null ? 999 : age, html: '<' + (hit ? 'button type="button" data-nw-url="' + esc(hit.url || '') + '" data-nw-title="' + esc(hit.title || '') + '"' : 'div') + ' class="comprow"><span class="d" style="background:' + color + '"></span><span class="cl">' + (hit && line.toLowerCase().indexOf(name.toLowerCase()) === 0 ? esc(line) : '<b>' + esc(name) + '</b> - ' + esc(line)) + '</span><span class="mt">' + (age == null ? '-' : age === 0 ? 'today' : age + 'd') + '</span></' + (hit ? 'button' : 'div') + '>' };
     }).sort(function (x, y) { return x.age - y.age; }).map(function (c) { return c.html; }).join('');
-    var topics = ['RPAA', 'suitability', 'broker conduct', 'AML', 'non-dilutive', 'safeguarding', 'consumer understanding'];
-    var trend = topics.map(function (topic) {
+    var trend = NEWS_TOPICS.map(function (topic) {
       var n = all.filter(function (item) { return ((item.title || '') + ' ' + (item.summary || '')).toLowerCase().indexOf(topic.toLowerCase()) >= 0; }).length;
       return { topic: topic, n: n };
     }).sort(function (x, y) { return y.n - x.n; }).map(function (row) {
-      return '<button type="button" class="tp' + (q === row.topic.toLowerCase() ? ' on' : '') + '" data-news-topic="' + esc(row.topic) + '">' + esc(row.topic) + (row.n >= 2 ? ' <b>&#9650;</b>' : '') + '</button>';
+      return '<button type="button" class="tp' + (q === row.topic.toLowerCase() ? ' on' : '') + '" data-nw-topic="' + esc(row.topic) + '">' + esc(row.topic) + (row.n >= 2 ? ' <b>&#9650;</b>' : '') + '</button>';
     }).join('');
-    var chips = ['All'].concat(cats.filter(function (c) { return c !== 'All'; })).map(function (c) {
-      return '<span class="chip' + (c === on ? ' on' : '') + '"><button type="button" data-news="' + esc(c) + '">' + esc(c) + '</button>' + (c === 'All' ? '' : '<button type="button" class="ghost-x" data-news-del="' + esc(c) + '" aria-label="Remove category"></button>') + '</span>';
+    var rank = { Threat: 0, Regulatory: 1, Opportunity: 2 };
+    var label = { Threat: ['threat', 'Act now'], Regulatory: ['reg', 'This week'], Opportunity: ['opp', 'Use it'] };
+    var pri = rows.slice(0, 16).sort(function (a, b) { return rank[newsImpact(a)] - rank[newsImpact(b)] || newsTs(b) - newsTs(a); }).slice(0, 4).map(function (item) {
+      var l = label[newsImpact(item)];
+      return '<button type="button" class="pr" data-nw-i="' + idx(item) + '"><span class="pl ' + l[0] + '">' + l[1] + '</span><span class="pt"><b>' + esc(String(item.title || '').slice(0, 80)) + '</b><span>' + esc(newsWhy(item)) + '</span></span></button>';
+    }).join('') || '<div class="pr-empty">Priorities appear after the sweep.</div>';
+    var chips = ['All'].concat(NEWS_CHIPS).map(function (c) {
+      return '<button type="button" class="chip' + (c === on ? ' on' : '') + '" data-nw-cat="' + esc(c) + '">' + esc(c) + '</button>';
     }).join('');
-    var span = STATE.newsSpan === 'today' ? 'today' : STATE.newsSpan === 'week' ? 'week' : 'month';
-    el.innerHTML = '<div class="nwx"><div class="top"><span class="t">News</span><div class="seg" id="newsSpan"><button type="button" data-span="today"' + (span === 'today' ? ' class="on"' : '') + '>Today</button><button type="button" data-span="week"' + (span === 'week' ? ' class="on"' : '') + '>Last week</button><button type="button" data-span="month"' + (span === 'month' ? ' class="on"' : '') + '>Last month</button></div><button class="btn" id="newsRefresh" type="button">Refresh</button><div class="right"><input class="search" id="newsSearch" type="text" placeholder="Search news..." value="' + esc(STATE.newsQ || '') + '"/><span class="sweeps">8AM + 11AM SWEEPS</span></div></div><div class="chips">' + chips + '</div><div class="wrap"><div>' + empty + hero + '<div class="grid">' + rest.map(story).join('') + '</div></div><div class="rail"><div class="card"><div class="ch"><span class="mk">4</span><span class="t">Your briefing</span><span class="s">' + briefRows.length + ' things ' + (span === 'today' ? 'today' : 'this ' + span) + '</span></div><div class="brief">' + brief + '</div></div><div class="card"><div class="ch"><span class="t">Competitor watch</span><span class="s">Drata / Vanta / Aveni</span></div><div class="comp">' + comps + '</div></div><div class="card"><div class="ch"><span class="t">Trending for 4orm</span></div><div class="trend">' + trend + '</div></div></div></div></div>';
+    var swept = STATE.newsSweptAt ? new Date(STATE.newsSweptAt).toLocaleTimeString('en-CA', { hour: 'numeric', minute: '2-digit' }) : '';
+    var body = loading ? '<div class="card nw-empty">Loading the sweep...</div>' : (rows.length ? hero + '<div class="grid">' + rest.map(story).join('') + '</div>' : '<div class="card nw-empty">No stories yet - press Refresh to run the sweep.</div>');
+    el.innerHTML = '<div class="nwx"><div class="top"><span class="t">News</span><div class="seg" id="newsSpan"><button type="button" data-span="today"' + (span === 'today' ? ' class="on"' : '') + '>Today</button><button type="button" data-span="week"' + (span === 'week' ? ' class="on"' : '') + '>Last week</button><button type="button" data-span="month"' + (span === 'month' ? ' class="on"' : '') + '>Last month</button></div><button class="btn" id="newsRefresh" type="button"' + (STATE.newsBusy ? ' disabled' : '') + '>' + (STATE.newsBusy ? 'Sweeping...' : 'Refresh') + '</button><div class="right"><input class="search" id="newsSearch" type="text" placeholder="Search news..." value="' + esc(STATE.newsQ || '') + '"/><span class="sweeps">8AM + 11AM SWEEPS' + (swept ? ' &middot; last ' + esc(swept) : '') + '</span></div></div><div class="chips">' + chips + '</div><div class="wrap"><div class="main">' + (miss ? '<div class="nw-miss">' + miss + '</div>' : '') + body + '</div><div class="rail"><div class="card"><div class="ch"><span class="mk">4</span><span class="t">Your briefing</span><span class="s">' + briefRows.length + ' things ' + (span === 'today' ? 'today' : 'this ' + span) + '</span></div><div class="brief">' + brief + '</div></div><div class="card"><div class="ch"><span class="t">Competitor watch</span><span class="s">' + NEWS_RIVALS.length + ' tracked</span></div><div class="comp">' + comps + '</div></div><div class="card"><div class="ch"><span class="t">Trending for 4orm</span></div><div class="trend">' + trend + '</div></div><div class="card"><div class="ch"><span class="t">What this means - priority</span></div><div class="prio">' + pri + '</div></div></div></div></div>';
+    el.querySelectorAll('img.ph').forEach(function (img) {
+      var drop = function () { var box = img.closest('.img'); if (box) box.classList.add('noimg'); img.remove(); };
+      img.addEventListener('error', drop);
+      if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) drop();
+    });
     var search = document.getElementById('newsSearch');
     if (search) search.oninput = function () {
       var pos = search.selectionStart;
       STATE.newsQ = search.value;
-      renderNews(STATE.news || [], STATE.newsCategories || cats);
+      renderNews(STATE.news || []);
       var again = document.getElementById('newsSearch');
       if (again) { again.focus(); try { again.setSelectionRange(pos, pos); } catch (e) {} }
     };
     el.querySelectorAll('[data-span]').forEach(function (btn) {
+      btn.onclick = function () { STATE.newsSpan = btn.getAttribute('data-span'); renderNews(STATE.news || []); };
+    });
+    el.querySelectorAll('[data-nw-cat]').forEach(function (btn) {
+      btn.onclick = function () { STATE.newsCat = btn.getAttribute('data-nw-cat'); renderNews(STATE.news || []); };
+    });
+    el.querySelectorAll('[data-nw-topic]').forEach(function (btn) {
       btn.onclick = function () {
-        var span = btn.getAttribute('data-span');
-        STATE.newsSpan = span === 'today' ? 'today' : (span === 'week' ? 'week' : 'month');
-        loadNews();
-      };
-    });
-    el.querySelectorAll('[data-news]').forEach(function (btn) {
-      btn.onclick = function () { STATE.newsCat = btn.getAttribute('data-news'); renderNews(STATE.news || [], STATE.newsCategories || cats); };
-    });
-    el.querySelectorAll('[data-news-act]').forEach(function (btn) {
-      btn.onclick = function () {
-        var title = btn.getAttribute('data-news-title') || 'Story';
-        var act = btn.getAttribute('data-news-act');
-        if (act === 'open') { if (typeof openLink === 'function') openLink(title, btn.getAttribute('data-news-url')); return; }
-        saveItem((act === 'post' ? 'LinkedIn: ' : act === 'letter' ? 'Newsletter: ' : 'Cite to a VC: ') + title, 'week');
-        if (typeof deskNote === 'function') deskNote('Added to This week.');
-      };
-    });
-    el.querySelectorAll('[data-news-url]').forEach(function (btn) {
-      btn.onclick = function () { if (typeof openLink === 'function') openLink(btn.getAttribute('data-news-title'), btn.getAttribute('data-news-url')); };
-    });
-    el.querySelectorAll('[data-news-save]').forEach(function (btn) {
-      btn.onclick = function (e) {
-        e.stopPropagation();
-        saveItem('News for a space: ' + (btn.getAttribute('data-news-save') || 'Story'), 'week');
-        if (typeof deskNote === 'function') deskNote('Saved as a This week task.');
-      };
-    });
-    el.querySelectorAll('[data-news-topic]').forEach(function (btn) {
-      btn.onclick = function () {
-        var topic = btn.getAttribute('data-news-topic');
+        var topic = btn.getAttribute('data-nw-topic');
         STATE.newsCat = 'All';
         STATE.newsQ = String(STATE.newsQ || '').toLowerCase() === topic.toLowerCase() ? '' : topic;
-        renderNews(STATE.news || [], STATE.newsCategories || cats);
+        renderNews(STATE.news || []);
+      };
+    });
+    var view = function (n) { return (STATE.newsView || [])[Number(n)]; };
+    el.querySelectorAll('[data-nw-i]').forEach(function (node) {
+      var go = function (e) { if (e.target.closest('[data-nw-save]')) return; newsOpen(view(node.getAttribute('data-nw-i'))); };
+      node.addEventListener('click', go);
+      node.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(e); });
+    });
+    el.querySelectorAll('[data-nw-url]').forEach(function (node) {
+      node.onclick = function () { newsOpen({ title: node.getAttribute('data-nw-title'), url: node.getAttribute('data-nw-url') }); };
+    });
+    el.querySelectorAll('[data-nw-save]').forEach(function (btn) {
+      btn.onclick = function (e) { e.stopPropagation(); newsToSpace(view(btn.getAttribute('data-nw-save'))); };
+    });
+    el.querySelectorAll('[data-nw-act]').forEach(function (btn) {
+      btn.onclick = function () {
+        var item = view(btn.getAttribute('data-nw-at'));
+        if (!item) return;
+        var act = btn.getAttribute('data-nw-act');
+        if (act === 'open') { newsOpen(item); return; }
+        var title = item.title || 'Story';
+        saveItem((act === 'post' ? 'LinkedIn post: ' : act === 'letter' ? 'Investor newsletter: ' : 'Cite to a VC: ') + title + (item.url ? ' - ' + item.url : ''), 'week');
+        if (typeof deskNote === 'function') deskNote(act === 'post' ? 'LinkedIn post draft added to This week.' : act === 'letter' ? 'Added to the investor newsletter list.' : 'Added to This week to cite to a VC.');
       };
     });
     var refresh = document.getElementById('newsRefresh');
     if (refresh) refresh.onclick = function () {
-      refresh.disabled = true;
+      if (STATE.newsBusy) return;
+      STATE.newsBusy = true;
+      var before = {};
+      (STATE.news || []).forEach(function (item) { before[item.id] = 1; });
+      renderNews(STATE.news || []);
       authFetch('/api/news/refresh', { method: 'POST', credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
+        STATE.newsBusy = false;
         if (data && data.items && data.items.length) STATE.news = data.items;
-        STATE.newsCategories = (data && data.categories) || STATE.newsCategories;
-        renderNews(STATE.news || [], STATE.newsCategories);
-        if (typeof deskNote === 'function') deskNote('News refreshed.');
-      }).catch(function () { refresh.disabled = false; });
+        if (data && data.sweptAt) STATE.newsSweptAt = data.sweptAt;
+        var fresh = (STATE.news || []).filter(function (item) { return !before[item.id]; }).length;
+        renderNews(STATE.news || []);
+        if (typeof deskNote === 'function') deskNote(data && data.swept === false ? 'Swept a minute ago - showing the latest.' : (fresh ? fresh + ' new ' + (fresh === 1 ? 'story' : 'stories') + ' from the sweep.' : 'Sweep done - nothing new since the last one.'));
+      }).catch(function () {
+        STATE.newsBusy = false;
+        renderNews(STATE.news || []);
+        if (typeof deskNote === 'function') deskNote('Sweep did not finish - showing the last one.');
+      });
     };
-    el.querySelectorAll('[data-news-del]').forEach(function (btn) {
-      btn.onclick = function (e) {
-        e.stopPropagation();
-        if (!window.confirm('Remove this category? Articles stay.')) return;
-        authFetch('/api/news/categories/' + encodeURIComponent(btn.getAttribute('data-news-del')), { method: 'DELETE', credentials: 'same-origin' }).then(loadNews).catch(function () {});
-      };
-    });
   }
 
   function loadNews() {
-    authFetch('/api/news' + (STATE.newsSpan === 'week' ? '?span=week' : '?span=month'), { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
+    renderNews(STATE.news || []);
+    authFetch('/api/news?span=month', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
+      STATE.newsLoaded = true;
       if (data && data.items && data.items.length) STATE.news = data.items;
-      STATE.newsCategories = (data && data.categories) || STATE.newsCategories || [];
-      renderNews(STATE.news || [], STATE.newsCategories);
-    }).catch(function () { renderNews(STATE.news || [], STATE.newsCategories || ['Compliance', 'Fintech & regulation', 'Mortgage', 'Payments / FINTRAC']); });
+      if (data && data.sweptAt) STATE.newsSweptAt = data.sweptAt;
+      renderNews(STATE.news || []);
+    }).catch(function () { STATE.newsLoaded = true; renderNews(STATE.news || []); });
   }
 
   function flatFiles(nodes, out) {
@@ -1499,6 +1592,7 @@
     }
     if (driveBtn) {
       driveBtn.hidden = !href;
+      driveBtn.textContent = 'Open in Drive';
       driveBtn.setAttribute('data-href', href);
       driveBtn.onclick = null;
     }

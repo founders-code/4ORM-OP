@@ -3,6 +3,7 @@ import { env } from './env.mjs';
 import { fail } from './log';
 import { allowArea, allowPriority, parseDue } from './guard.mjs';
 import { NEWS_CATEGORIES, asNeeds, asSteps, extractCommitments, fallbackPlan, todayKey } from './war.mjs';
+import { SEED_URLS } from './news-sources.mjs';
 
 type Sql = NeonQueryFunction<false, false>;
 
@@ -144,8 +145,12 @@ function newsRow(row: Record<string, unknown>, day: string) {
     category: String(row.category || ''),
     title: String(row.title || ''),
     summary: String(row.summary || ''),
+    whyItMatters: String(row.why_it_matters || ''),
+    source: String(row.source || ''),
+    impact: String(row.impact || ''),
     url: String(row.url || ''),
     image: String(row.image_url || ''),
+    image_url: String(row.image_url || ''),
     publishedAt: row.published_at ? new Date(String(row.published_at)).getTime() : null,
     isTop: row.is_top === true,
     sweptOn: row.swept_on ? String(row.swept_on).slice(0, 10) : day,
@@ -153,42 +158,51 @@ function newsRow(row: Record<string, unknown>, day: string) {
 }
 
 export async function listNews(sql: Sql, ownerId: string, day = todayKey(), span = 30) {
-  const days = span <= 7 ? 7 : 30;
+  const days = span <= 1 ? 1 : span <= 7 ? 7 : 30;
   const rows = await sql`
-    SELECT id, category, title, summary, url, published_at, is_top, swept_on, image_url
+    SELECT id, category, title, summary, why_it_matters, source, impact, url, published_at, is_top, swept_on, image_url
     FROM news_items
     WHERE owner_id = ${ownerId}
-      AND (
-        published_at >= now() - (${days}::int * interval '1 day')
-        OR swept_on >= CURRENT_DATE - ${days}::int
-      )
-    ORDER BY swept_on DESC NULLS LAST, is_top DESC, published_at DESC NULLS LAST
-    LIMIT 80
+      AND published_at >= now() - (${days}::int * interval '1 day')
+    ORDER BY is_top DESC, published_at DESC NULLS LAST
+    LIMIT 120
   `;
-  if (rows.length) return (rows as Array<Record<string, unknown>>).map((row) => newsRow(row, day));
+  const real = (rows as Array<Record<string, unknown>>).filter((row) => !SEED_URLS.has(String(row.url || '')));
+  if (real.length) return real.map((row) => newsRow(row, day));
   const latest = await sql`
-    SELECT id, category, title, summary, url, published_at, is_top, swept_on, image_url
+    SELECT id, category, title, summary, why_it_matters, source, impact, url, published_at, is_top, swept_on, image_url
     FROM news_items
     WHERE owner_id = ${ownerId}
-    ORDER BY published_at DESC NULLS LAST
-    LIMIT 40
+    ORDER BY is_top DESC, published_at DESC NULLS LAST
+    LIMIT 60
   `;
-  return (latest as Array<Record<string, unknown>>).map((row) => newsRow(row, day));
+  const all = latest as Array<Record<string, unknown>>;
+  const live = all.filter((row) => !SEED_URLS.has(String(row.url || '')));
+  return (live.length ? live : all).map((row) => newsRow(row, day));
 }
 
-export async function replaceNews(sql: Sql, ownerId: string, items: Array<Record<string, unknown>>, day = todayKey()) {
+const IMPACTS = ['Opportunity', 'Threat', 'Regulatory'];
+
+/** Upsert by url (title when there is no url). A stored image or summary is never wiped by an empty value. */
+export async function upsertNews(sql: Sql, ownerId: string, items: Array<Record<string, unknown>>, day = todayKey()) {
   const seen = new Set<string>();
-  for (const item of items.slice(0, 40)) {
+  let saved = 0;
+  for (const item of items.slice(0, 60)) {
     const title = String(item.title || '').trim().slice(0, 180);
     if (!title) continue;
     const category = String(item.category || 'Compliance').trim().slice(0, 80);
     const summary = String(item.summary || '').trim().slice(0, 500);
-    const url = String(item.url || item.link || '').trim().slice(0, 400);
+    const why = String(item.why_it_matters || item.whyItMatters || item.why || '').trim().slice(0, 300);
+    const source = String(item.source || '').trim().slice(0, 80);
+    const rawImpact = String(item.impact || '').trim();
+    const impact = IMPACTS.find((name) => name.toLowerCase() === rawImpact.toLowerCase()) || '';
+    const url = String(item.url || item.link || '').trim().slice(0, 600);
     if (url && !/^https?:\/\//i.test(url)) continue;
     const key = url || `title:${title.toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    const image = String(item.image || item.image_url || '').trim().slice(0, 500);
+    const rawImage = String(item.image_url || item.image || '').trim().slice(0, 600);
+    const image = /^\/api\/news\/image\/[0-9a-f-]{36}$/i.test(rawImage) ? rawImage : '';
     const isTop = item.is_top === true || item.isTop === true;
     const rawWhen = item.published_at || item.publishedAt;
     const when = rawWhen ? new Date(typeof rawWhen === 'number' ? rawWhen : String(rawWhen)) : new Date();
@@ -196,30 +210,41 @@ export async function replaceNews(sql: Sql, ownerId: string, items: Array<Record
     try {
       if (url) {
         const updated = await sql`
-          UPDATE news_items SET title = ${title}, summary = ${summary}, category = ${category}, image_url = ${image},
-            published_at = ${published}, is_top = ${isTop}, swept_on = ${day}::date
+          UPDATE news_items SET title = ${title}, category = ${category},
+            summary = COALESCE(NULLIF(${summary}, ''), summary),
+            why_it_matters = COALESCE(NULLIF(${why}, ''), why_it_matters),
+            source = COALESCE(NULLIF(${source}, ''), source),
+            impact = COALESCE(NULLIF(${impact}, ''), impact),
+            image_url = COALESCE(NULLIF(${image}, ''), image_url),
+            published_at = ${published}, is_top = (is_top OR ${isTop}), swept_on = ${day}::date
           WHERE owner_id = ${ownerId} AND url = ${url}
           RETURNING id
         `;
         if (!updated.length) {
           await sql`
-            INSERT INTO news_items (owner_id, category, title, summary, url, image_url, published_at, is_top, swept_on)
-            VALUES (${ownerId}, ${category}, ${title}, ${summary}, ${url}, ${image}, ${published}, ${isTop}, ${day}::date)
+            INSERT INTO news_items (owner_id, category, title, summary, why_it_matters, source, impact, url, image_url, published_at, is_top, swept_on)
+            VALUES (${ownerId}, ${category}, ${title}, ${summary}, ${why}, ${source}, ${impact}, ${url}, ${image}, ${published}, ${isTop}, ${day}::date)
           `;
         }
       } else {
         const dupe = await sql`SELECT id FROM news_items WHERE owner_id = ${ownerId} AND url = '' AND title = ${title} LIMIT 1`;
         if (!dupe.length) {
           await sql`
-            INSERT INTO news_items (owner_id, category, title, summary, url, published_at, is_top, swept_on)
-            VALUES (${ownerId}, ${category}, ${title}, ${summary}, ${url}, ${published}, ${isTop}, ${day}::date)
+            INSERT INTO news_items (owner_id, category, title, summary, why_it_matters, source, impact, url, published_at, is_top, swept_on)
+            VALUES (${ownerId}, ${category}, ${title}, ${summary}, ${why}, ${source}, ${impact}, ${url}, ${published}, ${isTop}, ${day}::date)
           `;
         }
       }
+      saved += 1;
     } catch (err) {
       fail('news_upsert', err);
     }
   }
+  return saved;
+}
+
+export async function replaceNews(sql: Sql, ownerId: string, items: Array<Record<string, unknown>>, day = todayKey()) {
+  await upsertNews(sql, ownerId, items, day);
   return listNews(sql, ownerId, day);
 }
 

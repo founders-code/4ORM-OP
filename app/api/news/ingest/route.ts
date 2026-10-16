@@ -2,18 +2,20 @@ import { NextResponse } from 'next/server';
 import { getSql } from '@/lib/db';
 import { tokenOk } from '@/lib/guard.mjs';
 import { fail } from '@/lib/log';
-import { markSwept } from '@/lib/news-sweep';
-import { ingestToken } from '@/lib/secrets';
+import { NEWS_CHIPS, ensureNewsTables, markSwept, saveStories } from '@/lib/news-sweep';
+import { ingestToken, newsKey } from '@/lib/secrets';
 import { openBoard, roomOwner } from '@/lib/session';
-import { replaceNews } from '@/lib/war';
-import { NEWS_CATEGORIES } from '@/lib/war.mjs';
+import { listNews } from '@/lib/war';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 async function target(req: Request) {
-  const presented = req.headers.get('x-ingest-token');
-  if (presented) {
-    if (!tokenOk(presented, ingestToken())) return null;
+  const key = req.headers.get('x-news-key');
+  const token = req.headers.get('x-ingest-token');
+  if (key || token) {
+    const expected = key ? newsKey() : ingestToken();
+    if (!expected || !tokenOk(String(key || token), expected)) return null;
     const sql = await getSql();
     if (!sql) return null;
     const ownerId = await roomOwner(sql);
@@ -29,13 +31,16 @@ export async function POST(req: Request) {
     const who = await target(req);
     if (!who) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const body = await req.json().catch(() => ({})) as { items?: unknown } | unknown[];
-    const items = Array.isArray(body) ? body : (Array.isArray(body.items) ? body.items : []);
-    if (!who.sql) return NextResponse.json({ items: [], categories: NEWS_CATEGORIES, saved: false });
-    const saved = await replaceNews(who.sql, who.userId, items as Array<Record<string, unknown>>);
+    const raw = Array.isArray(body) ? body : (Array.isArray(body.items) ? body.items : []);
+    const items = raw.filter((item): item is Record<string, unknown> => !!item && typeof item === 'object').slice(0, 60);
+    if (!who.sql) return NextResponse.json({ ok: false, saved: 0, chips: NEWS_CHIPS });
+    await ensureNewsTables(who.sql).catch(() => {});
+    const saved = await saveStories(who.sql, who.userId, items, Date.now() + 45000);
     if (items.length) await markSwept(who.sql, who.userId);
-    return NextResponse.json({ items: saved, saved: true });
+    const list = await listNews(who.sql, who.userId).catch(() => []);
+    return NextResponse.json({ ok: true, saved, items: list });
   } catch (err) {
     fail('news_ingest', err);
-    return NextResponse.json({ items: [], saved: false });
+    return NextResponse.json({ ok: false, saved: 0 });
   }
 }
