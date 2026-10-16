@@ -31,6 +31,7 @@ async function ghl(path: string, init?: { method?: string; body?: string }) {
         ...(init?.body ? { 'content-type': 'application/json' } : {}),
       },
       body: init?.body,
+      signal: AbortSignal.timeout(9000),
     });
     if (!res.ok) return null;
     return res.json();
@@ -100,41 +101,25 @@ export async function listSocialQueue() {
 }
 
 export async function listPipeline() {
-  const loc = encodeURIComponent(locationId());
-  const pipes = (await ghl(`/opportunities/pipelines?locationId=${loc}`)) as {
-    pipelines?: Array<{ stages?: Array<{ id?: string; name?: string }> }>;
-  } | null;
-  const names = new Map<string, string>();
-  for (const pipe of pipes?.pipelines || []) {
-    for (const stage of pipe.stages || []) {
-      if (stage.id && stage.name) names.set(stage.id, stage.name);
-    }
-  }
-  const json = (await ghl('/opportunities/search', {
-    method: 'POST',
-    body: JSON.stringify({ locationId: locationId(), limit: 100 }),
-  })) as {
-    opportunities?: Array<Record<string, unknown>>;
-  } | null;
-  if (!json) return { status: 'unavailable' as const, stages: [] as Array<{ stage: string; count: number; detail: string }>, touches: [] as Array<{ sourceId: string; name: string; at: string }> };
+  const all = await listPipelines();
+  if (all.status === 'unavailable') return { status: 'unavailable' as const, stages: [] as Array<{ stage: string; count: number; detail: string }>, touches: [] as Array<{ sourceId: string; name: string; at: string }> };
   const counts = new Map<string, number>();
   const touches: Array<{ sourceId: string; name: string; at: string }> = [];
-  for (const row of json.opportunities || []) {
-    const named = names.get(String(row.pipelineStageId || '')) || String(row.status || 'Open');
-    const stage = titleStage(named).slice(0, 80);
-    counts.set(stage, (counts.get(stage) || 0) + 1);
-    const at = String(row.updatedAt || row.lastStatusChangeAt || row.lastStageChangeAt || row.createdAt || '');
-    const contact = row.contact as { name?: string } | undefined;
-    const sourceId = String(row.contactId || '');
-    const name = String(contact?.name || row.name || '').slice(0, 120);
-    if (at && (sourceId || name)) touches.push({ sourceId, name, at });
+  for (const pipe of all.pipelines) {
+    for (const stage of pipe.stages) {
+      counts.set(stage.name, (counts.get(stage.name) || 0) + stage.count);
+      for (const opp of stage.opps) {
+        if (opp.updatedAt && (opp.contactId || opp.contact)) touches.push({ sourceId: opp.contactId, name: opp.contact, at: opp.updatedAt });
+      }
+    }
   }
   const stages = [...counts.entries()].map(([stage, count]) => ({
     stage,
     count,
     detail: count === 1 ? '1 opportunity' : `${count} opportunities`,
   }));
-  return { status: stages.length ? ('connected' as const) : ('reached_empty' as const), stages, touches };
+  touches.sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+  return { status: stages.length ? ('connected' as const) : ('reached_empty' as const), stages, touches: touches.slice(0, 120) };
 }
 
 export async function createContact(input: { name: string; company?: string; email?: string }) {
@@ -242,25 +227,16 @@ export async function pushOpportunity(input: { name: string; contactId: string; 
 }
 
 export async function opportunityStages() {
-  const pipes = (await ghl(`/opportunities/pipelines?locationId=${encodeURIComponent(locationId())}`)) as {
-    pipelines?: Array<{ stages?: Array<{ id?: string; name?: string }> }>;
-  } | null;
-  const names = new Map<string, string>();
-  for (const pipe of pipes?.pipelines || []) {
-    for (const stage of pipe.stages || []) {
-      const local = localStageName(String(stage.name || ''));
-      if (stage.id && local) names.set(String(stage.id), local);
+  const all = await listPipelines();
+  const out: Array<{ id: string; stage: string }> = [];
+  for (const pipe of all.pipelines) {
+    for (const stage of pipe.stages) {
+      const local = localStageName(stage.name);
+      if (!local) continue;
+      for (const opp of stage.opps) if (opp.id) out.push({ id: opp.id, stage: local });
     }
   }
-  const json = (await ghl('/opportunities/search', {
-    method: 'POST',
-    body: JSON.stringify({ locationId: locationId(), limit: 100 }),
-  })) as { opportunities?: Array<Record<string, unknown>> } | null;
-  if (!json) return [] as Array<{ id: string; stage: string }>;
-  return (json.opportunities || []).map((row) => ({
-    id: String(row.id || ''),
-    stage: names.get(String(row.pipelineStageId || '')) || '',
-  })).filter((row) => row.id && row.stage);
+  return out;
 }
 
 export async function repliedInbound(contactId: string) {
@@ -296,4 +272,78 @@ export async function listReminders() {
     due: row.dueDate ? String(row.dueDate) : null,
   })).filter((row) => row.id);
   return { status: tasks.length ? ('connected' as const) : ('reached_empty' as const), tasks };
+}
+
+export type GhlOpp = { id: string; name: string; contactId: string; contact: string; company: string; email: string; value: number; status: string; updatedAt: string };
+export type GhlStage = { id: string; name: string; count: number; value: number; opps: GhlOpp[] };
+export type GhlPipeline = { id: string; name: string; total: number; value: number; stages: GhlStage[] };
+
+async function pipelineOpps(pipelineId: string) {
+  const loc = encodeURIComponent(locationId());
+  const pid = encodeURIComponent(pipelineId);
+  const rows: Array<Record<string, unknown>> = [];
+  for (let page = 1; page <= 5; page += 1) {
+    let json = (await ghl(`/opportunities/search?location_id=${loc}&pipeline_id=${pid}&limit=100&page=${page}`)) as {
+      opportunities?: Array<Record<string, unknown>>;
+    } | null;
+    if (!json && page === 1) {
+      json = (await ghl('/opportunities/search', {
+        method: 'POST',
+        body: JSON.stringify({ locationId: locationId(), query: '', limit: 100, page, pipelineId }),
+      })) as { opportunities?: Array<Record<string, unknown>> } | null;
+    }
+    if (!json) return page === 1 ? null : rows;
+    const list = (json.opportunities || []).filter((row) => !row.pipelineId || String(row.pipelineId) === pipelineId);
+    rows.push(...list);
+    if ((json.opportunities || []).length < 100) break;
+  }
+  return rows;
+}
+
+export async function listPipelines() {
+  if (!configured() || !locationId()) return { status: 'unavailable' as const, pipelines: [] as GhlPipeline[] };
+  const pipes = (await ghl(`/opportunities/pipelines?locationId=${encodeURIComponent(locationId())}`)) as {
+    pipelines?: Array<{ id?: string; name?: string; stages?: Array<{ id?: string; name?: string; position?: number }> }>;
+  } | null;
+  if (!pipes) return { status: 'unavailable' as const, pipelines: [] as GhlPipeline[] };
+  const list = (pipes.pipelines || []).filter((pipe) => pipe.id).slice(0, 16);
+  const opps = await Promise.all(list.map((pipe) => pipelineOpps(String(pipe.id)).catch(() => null)));
+  const pipelines: GhlPipeline[] = list.map((pipe, ix) => {
+    const rows = opps[ix] || [];
+    const stages: GhlStage[] = (pipe.stages || [])
+      .filter((stage) => stage.id)
+      .slice()
+      .sort((a, b) => (Number(a.position) || 0) - (Number(b.position) || 0))
+      .map((stage) => ({ id: String(stage.id), name: String(stage.name || 'Stage').replace(/\s+/g, ' ').trim().slice(0, 80), count: 0, value: 0, opps: [] as GhlOpp[] }));
+    const byId = new Map(stages.map((stage) => [stage.id, stage]));
+    for (const row of rows) {
+      const stage = byId.get(String(row.pipelineStageId || ''));
+      if (!stage) continue;
+      const contact = (row.contact || {}) as { name?: string; companyName?: string; email?: string };
+      const value = Number(row.monetaryValue) || 0;
+      stage.count += 1;
+      stage.value += value;
+      if (stage.opps.length < 60) {
+        stage.opps.push({
+          id: String(row.id || ''),
+          name: String(row.name || '').slice(0, 120),
+          contactId: String(row.contactId || ''),
+          contact: String(contact.name || row.name || '').slice(0, 120),
+          company: String(contact.companyName || '').slice(0, 120),
+          email: String(contact.email || '').slice(0, 120),
+          value,
+          status: String(row.status || 'open').slice(0, 20),
+          updatedAt: String(row.updatedAt || row.lastStatusChangeAt || row.createdAt || '').slice(0, 40),
+        });
+      }
+    }
+    return {
+      id: String(pipe.id),
+      name: String(pipe.name || 'Pipeline').slice(0, 80),
+      total: stages.reduce((n, stage) => n + stage.count, 0),
+      value: stages.reduce((n, stage) => n + stage.value, 0),
+      stages,
+    };
+  });
+  return { status: pipelines.length ? ('connected' as const) : ('reached_empty' as const), pipelines };
 }

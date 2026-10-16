@@ -88,17 +88,54 @@
     var worryHtml = '<div class="worry">' + worries.map(function (row) {
       return '<div class="worryrow"><span class="ic ' + row[0] + '">!</span><div class="tx">' + row[1] + '</div></div>';
     }).join('') + '</div>';
-    var mail = (STATE.mail || []).slice().sort(function (a, b) {
-      var av = /vc|fund|capital|ventures|investor/i.test((a.from || '') + ' ' + (a.subject || '')) ? 0 : 1;
-      var bv = /vc|fund|capital|ventures|investor/i.test((b.from || '') + ' ' + (b.subject || '')) ? 0 : 1;
-      return av - bv;
+    var vcBook = (STATE.contacts || []).filter(function (c) {
+      return typeof catMatch === 'function' && typeof contactCategory === 'function' && (catMatch(contactCategory(c), 'vc') || catMatch(contactCategory(c), 'angel'));
     });
-    var vcMail = mail.filter(function (row) { return /vc|fund|capital|ventures|investor/i.test((row.from || '') + ' ' + (row.subject || '')); });
-    var inbox = mail.length ? mail.slice(0, 4).map(function (row) {
-      var vc = /vc|fund|capital|ventures|investor/i.test((row.from || '') + ' ' + (row.subject || ''));
-      var bits = String(row.from || '?').split(/\s+/).slice(0, 2).map(function (part) { return part.slice(0, 1); }).join('').toUpperCase();
-      return '<div class="ir"><span class="av' + (vc ? ' vc' : '') + '">' + esc(bits) + '</span><div><div class="su">' + esc(row.from || 'Sender') + '</div><div class="sn">' + esc(row.subject || row.snippet || '') + '</div><div class="age">' + esc(ageLabel(row.at)) + '</div></div><span class="flag ' + (vc ? 'vc' : 'rep') + '">' + (vc ? 'VC' : 'Reply') + '</span></div>';
-    }).join('') + '<div class="cmini"><b>' + vcMail.length + ' VC email' + (vcMail.length === 1 ? '' : 's') + '</b> in this set.</div>' : '<div class="quiet">Gmail has not returned messages. Investor mail pins here when it does.</div>';
+    var vcEmails = {};
+    var vcNames = {};
+    vcBook.forEach(function (c) {
+      if (c.email) vcEmails[String(c.email).toLowerCase()] = true;
+      if (c.name && String(c.name).length > 3) vcNames[String(c.name).toLowerCase()] = true;
+    });
+    (STATE.ghlPipes || []).forEach(function (pipe) {
+      if (!/vc|venture|investor|angel|capital|raise/i.test(pipe.name || '')) return;
+      (pipe.stages || []).forEach(function (stage) {
+        (stage.opps || []).forEach(function (o) {
+          if (o.email) vcEmails[String(o.email).toLowerCase()] = true;
+          if (o.contact && String(o.contact).length > 3) vcNames[String(o.contact).toLowerCase()] = true;
+        });
+      });
+    });
+    function isVcMail(row) {
+      if (row.internal || row.outbound) return false;
+      var email = String(row.email || '').toLowerCase();
+      var name = String(row.from || '').toLowerCase();
+      return !!((email && vcEmails[email]) || (name && vcNames[name]));
+    }
+    function isAction(row) {
+      return /\b(sign|signature|docusign|agreement|contract|invoice|action required|approve|approval|deadline|due by|by (mon|tue|wed|thu|fri)|wire)\b/i.test((row.subject || '') + ' ' + (row.snippet || ''));
+    }
+    var mail = (STATE.mail || []).slice().sort(function (a, b) {
+      var av = isVcMail(a) ? 0 : 1;
+      var bv = isVcMail(b) ? 0 : 1;
+      return av - bv || (Number(b.at) || 0) - (Number(a.at) || 0);
+    });
+    STATE.mailRows = mail.slice(0, 5);
+    var vcMail = mail.filter(isVcMail);
+    var inbox = mail.length ? '<div class="inbox">' + STATE.mailRows.map(function (row, ix) {
+      var vc = isVcMail(row);
+      var act = !vc && isAction(row);
+      var who = String(row.from || row.email || 'Sender');
+      var bits = who.replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/).slice(0, 2).map(function (part) { return part.slice(0, 1); }).join('').toUpperCase() || '?';
+      var flag = vc ? '<span class="flag vc">VC &middot; reply</span>' : act ? '<span class="flag act">Action</span>' : '<span class="flag rep">Reply</span>';
+      return '<div class="ir"><span class="av' + (vc ? ' vc' : '') + '">' + esc(bits) + '</span><div class="bd"><div class="su">' + (row.outbound ? '<span class="to">To</span> ' : '') + esc(who) + '</div><div class="sj">' + esc(row.subject || '(no subject)') + '</div>' + (row.snippet ? '<div class="sn">' + esc(row.snippet) + '</div>' : '') + '<div class="age">' + esc(ageLabel(row.at)) + '</div></div><div class="ra">' + flag + '<button type="button" class="rp" data-reply="' + ix + '">Reply</button></div></div>';
+    }).join('') + '<div class="cmini">' + (vcMail.length ? '<b>' + vcMail.length + ' VC email' + (vcMail.length === 1 ? '' : 's') + '</b> waiting on you - never let these sit.' : 'No investor mail waiting on you.') + '</div></div>' : '<div class="quiet">Gmail has not returned messages. Investor mail pins here when it does.</div>';
+    var linked = (STATE.linkedin || []).slice().sort(function (a, b) { return (Number(b.at) || 0) - (Number(a.at) || 0); });
+    var linkedNew = linked.filter(function (row) { return row.unread; }).length;
+    var kindWord = { message: 'sent you a message', inmail: 'sent you an InMail', invite: 'wants to connect', update: 'posted an update' };
+    var linkedHtml = linked.length ? '<div class="lnx">' + linked.slice(0, 8).map(function (row, ix) {
+      return '<div class="ln' + (ix === 0 ? ' pin' : '') + (row.unread ? ' new' : '') + '"><span class="inb">in</span><div class="bd"><div class="su">' + esc(row.name || 'LinkedIn') + (row.kind === 'update' && /^linkedin$/i.test(row.name || '') ? '' : ' <span class="kd">' + esc(kindWord[row.kind] || kindWord.update) + '</span>') + '</div><div class="sn">' + esc(row.snippet || '') + '</div></div><div class="ra"><span class="age">' + esc(ageLabel(row.at)) + '</span><a class="lo" href="https://www.linkedin.com/messaging/" target="_blank" rel="noopener noreferrer">Open in LinkedIn &#8250;</a></div></div>';
+    }).join('') + '</div>' : '<div class="quiet">No LinkedIn notifications in the last 30 days. They arrive by email to the connected inbox.</div>';
     var queue = STATE.content;
     var content = queue && !queue.empty ? '<div class="runway-gauge"><div class="rbig">' + queue.left + '</div><div class="rbar"><div class="track"><i style="width:' + Math.min(100, queue.left * 8) + '%"></i></div><div class="lab">posts left' + (queue.left ? ' - runs dry in about ' + Math.max(1, Math.round(queue.left / Math.max(queue.cadence || 1, 1))) + ' days' : '') + '</div></div></div><div class="cmini"><div class="r"><span>Scheduled / queued</span><b>' + queue.left + (queue.left === 1 ? ' post' : ' posts') + '</b></div><div class="r"><span>Posting cadence</span><b>~' + (queue.cadence || 0) + ' / day</b></div></div>' : '<div class="quiet">GoHighLevel has not returned a content queue. Posts left and the day it runs dry show here when it does.</div>';
     var vcs = (STATE.packages || []).filter(function (space) {
@@ -143,9 +180,11 @@
       + mc('raise', 'Raise tracker', '7 x $25K cheques', '<div class="cheques">' + cheques + '</div><div class="pace"><b>$170,000 to go</b> in ' + days + ' days. This week booked <b>$0</b> new. <span class="warn">Behind pace - widen the round today.</span></div>')
       + mc('worry', 'What I would worry about', 'blind spots', worryHtml)
       + '</div><div class="ctrl">'
-      + mc('inbox', 'Inbox - needs you', 'from Gmail', inbox)
+      + mc('inbox', 'Inbox - needs you', 'from Gmail &middot; VC flagged', inbox)
       + mc('content', 'Content runway', 'GoHighLevel', content)
       + mc('vc', 'VC watch', 'never let one go cold', watch)
+      + '</div><div class="ctrl ctrl-wide">'
+      + mc('linkedin', 'Notifications', linkedNew + ' new', linkedHtml)
       + '</div><div class="row3">'
       + mc('health', 'Company health', 'desk snapshot', '<div class="health"><div class="gauge" style="--p:' + score + '"><div class="in"><div class="n">' + score + '</div><div class="l">of 100</div></div></div><div class="subscore"><span>Cash / runway</span><span class="b"><i style="width:' + cash + '%;background:#f23a4d"></i></span></div><div class="subscore"><span>Raise</span><span class="b"><i style="width:' + raise + '%;background:#f0a020"></i></span></div><div class="subscore"><span>Pipeline</span><span class="b"><i style="width:' + pipeScore + '%;background:#17b86a"></i></span></div><div class="subscore"><span>Product</span><span class="b"><i style="width:' + product + '%;background:#f0a020"></i></span></div><div class="subscore"><span>Legal</span><span class="b"><i style="width:' + legal + '%;background:#f0a020"></i></span></div></div>')
       + mc('mom', 'Momentum', 'last 7 days', '<div class="spark">' + bars + '</div><div class="momrow"><span>Done last 7d <b>' + doneWeek + '</b></span><span>Open <b>' + open.length + '</b></span></div><div class="ch" style="cursor:default"><span class="t">Next meetings</span></div><div class="mlist">' + meet + '</div>')
@@ -153,7 +192,46 @@
       + '</div>';
   }
 
+  function openReply(row) {
+    var modal = document.getElementById('modal');
+    var box = document.getElementById('modalCard');
+    if (!modal || !box || !row) return;
+    var subject = String(row.subject || '');
+    if (!/^re:/i.test(subject)) subject = 'Re: ' + subject;
+    box.classList.add('wide');
+    box.innerHTML = '<div class="mhd"><div style="font-weight:700">Reply to ' + esc(row.from || row.email || 'sender') + '</div><button class="x" id="mClose" type="button" aria-label="Close">&#215;</button></div><div class="mbd rpx"><label>To<input id="rpTo" type="text" value="' + esc(row.email || '') + '"/></label><label>Subject<input id="rpSub" type="text" value="' + esc(subject) + '"/></label><label>Message<textarea id="rpBody" rows="9" placeholder="Write your reply"></textarea></label>' + (row.snippet ? '<div class="rpq">' + esc(row.snippet) + '</div>' : '') + '<div class="rpa"><span id="rpNote"></span><button class="btn" type="button" id="rpCancel">Cancel</button><button class="btn pri" type="button" id="rpSave">Save draft in Gmail</button></div></div>';
+    modal.classList.add('open');
+    modal.hidden = false;
+    var close = function () { if (typeof closeModal === 'function') closeModal(); };
+    document.getElementById('mClose').onclick = close;
+    document.getElementById('rpCancel').onclick = close;
+    var bodyEl = document.getElementById('rpBody');
+    if (bodyEl) bodyEl.focus();
+    document.getElementById('rpSave').onclick = function () {
+      var btn = this;
+      var note = document.getElementById('rpNote');
+      btn.disabled = true;
+      note.textContent = 'Saving...';
+      authFetch('/api/mail', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ to: document.getElementById('rpTo').value, subject: document.getElementById('rpSub').value, text: bodyEl.value, threadId: row.threadId || '', messageId: row.messageId || '' })
+      }).then(function (r) { return r.json(); }).then(function (d) {
+        if (d && d.saved) { close(); if (typeof deskNote === 'function') deskNote('Reply saved to Gmail drafts.'); return; }
+        btn.disabled = false;
+        note.textContent = 'Gmail did not take the draft. Check the address, or reconnect Google in Integrations.';
+      }).catch(function () { btn.disabled = false; note.textContent = 'Gmail did not take the draft. Try again in a moment.'; });
+    };
+  }
+
   function bindMission(el) {
+    el.querySelectorAll('[data-reply]').forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        openReply((STATE.mailRows || [])[Number(btn.getAttribute('data-reply'))]);
+      };
+    });
     el.querySelectorAll('[data-mc]').forEach(function (btn) {
       btn.onclick = function () {
         var map = missionShut();
@@ -181,11 +259,17 @@
     }).catch(function () {});
     authFetch('/api/mail', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
       STATE.mail = (data && data.messages) || [];
+      STATE.linkedin = (data && data.linkedin) || [];
       if (typeof stampWarmth === 'function') stampWarmth();
       if (STATE.desk === 'room' || !STATE.desk) renderOpsDash();
       if (STATE.desk === 'people' && typeof renderPeople === 'function') renderPeople(document.getElementById('pSearch') ? document.getElementById('pSearch').value : '');
       if (STATE.desk === 'contacts' && typeof renderContacts === 'function') renderContacts(document.getElementById('cSearch') ? document.getElementById('cSearch').value : '');
     }).catch(function () { STATE.mail = STATE.mail || []; });
+    authFetch('/api/pipeline', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
+      if (data && data.pipelines && data.pipelines.length) STATE.ghlPipes = data.pipelines;
+      if (STATE.desk === 'contacts' && typeof renderContacts === 'function') renderContacts(document.getElementById('cSearch') ? document.getElementById('cSearch').value : '');
+      if (STATE.desk === 'room' || !STATE.desk) renderOpsDash();
+    }).catch(function () {});
     authFetch('/api/content', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
       STATE.content = data || { empty: true };
       if (STATE.desk === 'room' || !STATE.desk) renderOpsDash();
@@ -666,17 +750,40 @@
     });
   }
 
+  function newsTs(item) {
+    var raw = item && (item.publishedAt != null ? item.publishedAt : item.published_at);
+    if (typeof raw === 'number') return raw;
+    var n = Number(raw);
+    if (raw && !isNaN(n) && n > 1e11) return n;
+    return Date.parse(raw || 0) || 0;
+  }
+
+  function NEWS_SEED() {
+    var now = Date.now();
+    return [
+      ['Payments / FINTRAC', 'FINTRAC - latest guidance', 'Why it matters to 4orm: the reporting body for the payments desk.', 'https://fintrac-canafe.canada.ca/intro-eng', true],
+      ['Fintech & regulation', 'Bank of Canada - retail payments', 'Why it matters to 4orm: RPAA is the payments perimeter.', 'https://www.bankofcanada.ca/core-functions/financial-system/retail-payments-supervision/', false],
+      ['Compliance', 'OSFI - supervision', 'Why it matters to 4orm: federal prudential rules sit next to the raise.', 'https://www.osfi-bsif.gc.ca/en', false],
+      ['Mortgage', 'FCAC - consumer protection', 'Why it matters to 4orm: consumer rules around credit and housing.', 'https://www.canada.ca/en/financial-consumer-agency.html', false]
+    ].map(function (r, i) { return { id: 'seed-' + i, category: r[0], title: r[1], summary: r[2], url: r[3], image: '', publishedAt: now, isTop: r[4] }; });
+  }
+
   function renderNews(items, categories) {
     var el = document.getElementById('newsDesk');
     if (!el) return;
     var cats = categories && categories.length ? categories : ['All'];
     var on = STATE.newsCat || 'All';
     var q = String(STATE.newsQ || '').toLowerCase();
-    var all = items || [];
+    var all = items && items.length ? items : NEWS_SEED();
     var rows = all.filter(function (item) { return on === 'All' || item.category === on; }).filter(function (item) { return !q || ((item.title || '') + ' ' + (item.summary || '')).toLowerCase().indexOf(q) >= 0; });
+    var miss = '';
+    if (!rows.length) {
+      miss = q ? 'No stories match "' + esc(STATE.newsQ) + '" - showing everything from the sweep.' : 'Nothing in ' + esc(on) + ' yet - showing everything from the sweep.';
+      rows = all.slice();
+    }
     var start = new Date();
     start.setHours(0, 0, 0, 0);
-    var isToday = function (item) { return Date.parse(item.publishedAt || item.published_at || 0) >= start.getTime(); };
+    var isToday = function (item) { return newsTs(item) >= start.getTime(); };
     if (STATE.newsSpan === 'today') {
       var todays = rows.filter(isToday);
       if (todays.length) rows = todays;
@@ -696,7 +803,7 @@
     }
     function host(url) { try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return ''; } }
     function when(item) {
-      var ts = Date.parse(item.publishedAt || item.published_at || 0);
+      var ts = newsTs(item);
       if (!ts) return '';
       if (ts >= start.getTime()) return 'today';
       var d = Math.floor((start.getTime() - ts) / 86400000) + 1;
@@ -713,15 +820,15 @@
       var hh = impactOf(top);
       var heroSrc = [host(top.url || ''), top.publishedAt ? new Date(top.publishedAt).toLocaleDateString('en-CA') : ''].filter(Boolean).join(' &middot; ');
       var t1 = esc(top.title || '');
-      hero = '<div class="card hero"><div class="img ' + hh[2] + '"' + face(top) + '><span class="kick">Top release ' + (isToday(top) ? 'today' : 'this ' + (STATE.newsSpan === 'week' ? 'week' : 'month')) + ' &middot; ' + esc(top.category || 'News') + '</span><span class="impact ' + hh[0] + '">' + hh[1] + '</span><div class="h">' + t1 + '</div></div><div class="b"><div class="take"><b>Why it matters to 4orm:</b> ' + esc(top.summary || 'Read the source and decide where it lands - deck, regulator note or a VC follow-up.') + '</div>' + (heroSrc ? '<div class="src">' + heroSrc + '</div>' : '') + '<div class="actions"><button type="button" class="act pri" data-news-act="post" data-news-title="' + t1 + '"><span class="mk">&#10022;</span> Draft a LinkedIn post</button><button type="button" class="act" data-news-act="letter" data-news-title="' + t1 + '"><span class="mk">&#10022;</span> Add to investor newsletter</button><button type="button" class="act" data-news-act="vc" data-news-title="' + t1 + '">Cite to a VC</button><button type="button" class="act" data-news-save="' + t1 + '">Save to ' + esc(top.category || 'a') + ' space</button><button type="button" class="act" data-news-act="open" data-news-title="' + t1 + '" data-news-url="' + esc(top.url || '') + '">Open source</button></div></div></div>';
+      hero = '<div class="card hero"><div class="img ' + hh[2] + '"' + face(top) + '><span class="kick">Top release ' + (isToday(top) ? 'today' : 'this ' + (STATE.newsSpan === 'week' ? 'week' : 'month')) + ' &middot; ' + esc(top.category || 'News') + '</span><span class="impact ' + hh[0] + '">' + hh[1] + '</span><div class="h">' + t1 + '</div></div><div class="b"><div class="take"><b>Why it matters to 4orm:</b> ' + esc(String(top.summary || '').replace(/^why it matters to 4orm:\s*/i, '') || 'Read the source and decide where it lands - deck, regulator note or a VC follow-up.') + '</div>' + (heroSrc ? '<div class="src">' + heroSrc + '</div>' : '') + '<div class="actions"><button type="button" class="act pri" data-news-act="post" data-news-title="' + t1 + '"><span class="mk">&#10022;</span> Draft a LinkedIn post</button><button type="button" class="act" data-news-act="letter" data-news-title="' + t1 + '"><span class="mk">&#10022;</span> Add to investor newsletter</button><button type="button" class="act" data-news-act="vc" data-news-title="' + t1 + '">Cite to a VC</button><button type="button" class="act" data-news-save="' + t1 + '">Save to ' + esc(top.category || 'a') + ' space</button><button type="button" class="act" data-news-act="open" data-news-title="' + t1 + '" data-news-url="' + esc(top.url || '') + '">Open source</button></div></div></div>';
     }
-    var empty = rows.length ? '' : '<div class="card nw-empty">The 8:00 and 11:00 Pacific sweeps fill this. Refresh pulls a fresh scrape.</div>';
+    var empty = miss ? '<div class="nw-miss">' + miss + '</div>' : '';
     var briefRows = (top ? [top] : []).concat(rest).slice(0, 5);
     var brief = briefRows.map(function (item, i) { return '<div class="r"><span class="n">' + (i + 1) + '</span>' + esc(item.title || '') + '</div>'; }).join('') || '<div class="r">The sweep fills the briefing.</div>';
     var comps = ['Vanta', 'Drata', 'Aveni', 'Secureframe'].map(function (name) {
-      var hits = all.filter(function (item) { return ((item.title || '') + ' ' + (item.summary || '')).toLowerCase().indexOf(name.toLowerCase()) >= 0; }).sort(function (x, y) { return Date.parse(y.publishedAt || 0) - Date.parse(x.publishedAt || 0); });
+      var hits = all.filter(function (item) { return ((item.title || '') + ' ' + (item.summary || '')).toLowerCase().indexOf(name.toLowerCase()) >= 0; }).sort(function (x, y) { return newsTs(y) - newsTs(x); });
       var hit = hits[0];
-      var age = hit ? Math.max(0, Math.floor((Date.now() - Date.parse(hit.publishedAt || 0)) / 86400000)) : null;
+      var age = hit ? Math.max(0, Math.floor((Date.now() - newsTs(hit)) / 86400000)) : null;
       var color = age == null ? '#c6cfdd' : age <= 2 ? '#f23a4d' : age <= 7 ? '#f0a020' : '#c6cfdd';
       var line = hit ? String(hit.title || '').slice(0, 46) : 'quiet';
       return { age: age == null ? 999 : age, html: '<div class="comprow"><span class="d" style="background:' + color + '"></span>' + (hit && line.toLowerCase().indexOf(name.toLowerCase()) === 0 ? esc(line) : esc(name) + ' - ' + esc(line)) + '<span class="mt">' + (age == null ? '-' : age === 0 ? 'today' : age + 'd') + '</span></div>' };
@@ -737,7 +844,7 @@
       return '<span class="chip' + (c === on ? ' on' : '') + '"><button type="button" data-news="' + esc(c) + '">' + esc(c) + '</button>' + (c === 'All' ? '' : '<button type="button" class="ghost-x" data-news-del="' + esc(c) + '" aria-label="Remove category"></button>') + '</span>';
     }).join('');
     var span = STATE.newsSpan === 'today' ? 'today' : STATE.newsSpan === 'week' ? 'week' : 'month';
-    el.innerHTML = '<div class="nwx"><div class="top"><span class="t">News</span><div class="seg" id="newsSpan"><button type="button" data-span="today"' + (span === 'today' ? ' class="on"' : '') + '>Today</button><button type="button" data-span="week"' + (span === 'week' ? ' class="on"' : '') + '>Last week</button><button type="button" data-span="month"' + (span === 'month' ? ' class="on"' : '') + '>Last month</button></div><button class="btn" id="newsRefresh" type="button">Refresh</button><div class="right"><input class="search" id="newsSearch" type="text" placeholder="Search news..." value="' + esc(STATE.newsQ || '') + '"/><span class="sweeps">8AM + 11AM SWEEPS</span></div></div><div class="chips">' + chips + '</div><div class="wrap"><div>' + hero + empty + '<div class="grid">' + rest.map(story).join('') + '</div></div><div class="rail"><div class="card"><div class="ch"><span class="mk">4</span><span class="t">Your briefing</span><span class="s">' + briefRows.length + ' things ' + (span === 'today' ? 'today' : 'this ' + span) + '</span></div><div class="brief">' + brief + '</div></div><div class="card"><div class="ch"><span class="t">Competitor watch</span><span class="s">Drata / Vanta / Aveni</span></div><div class="comp">' + comps + '</div></div><div class="card"><div class="ch"><span class="t">Trending for 4orm</span></div><div class="trend">' + trend + '</div></div></div></div></div>';
+    el.innerHTML = '<div class="nwx"><div class="top"><span class="t">News</span><div class="seg" id="newsSpan"><button type="button" data-span="today"' + (span === 'today' ? ' class="on"' : '') + '>Today</button><button type="button" data-span="week"' + (span === 'week' ? ' class="on"' : '') + '>Last week</button><button type="button" data-span="month"' + (span === 'month' ? ' class="on"' : '') + '>Last month</button></div><button class="btn" id="newsRefresh" type="button">Refresh</button><div class="right"><input class="search" id="newsSearch" type="text" placeholder="Search news..." value="' + esc(STATE.newsQ || '') + '"/><span class="sweeps">8AM + 11AM SWEEPS</span></div></div><div class="chips">' + chips + '</div><div class="wrap"><div>' + empty + hero + '<div class="grid">' + rest.map(story).join('') + '</div></div><div class="rail"><div class="card"><div class="ch"><span class="mk">4</span><span class="t">Your briefing</span><span class="s">' + briefRows.length + ' things ' + (span === 'today' ? 'today' : 'this ' + span) + '</span></div><div class="brief">' + brief + '</div></div><div class="card"><div class="ch"><span class="t">Competitor watch</span><span class="s">Drata / Vanta / Aveni</span></div><div class="comp">' + comps + '</div></div><div class="card"><div class="ch"><span class="t">Trending for 4orm</span></div><div class="trend">' + trend + '</div></div></div></div></div>';
     var search = document.getElementById('newsSearch');
     if (search) search.oninput = function () {
       var pos = search.selectionStart;
@@ -787,9 +894,10 @@
     if (refresh) refresh.onclick = function () {
       refresh.disabled = true;
       authFetch('/api/news/refresh', { method: 'POST', credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
-        STATE.news = data.items || [];
-        STATE.newsCategories = data.categories || STATE.newsCategories;
-        renderNews(STATE.news, STATE.newsCategories);
+        if (data && data.items && data.items.length) STATE.news = data.items;
+        STATE.newsCategories = (data && data.categories) || STATE.newsCategories;
+        renderNews(STATE.news || [], STATE.newsCategories);
+        if (typeof deskNote === 'function') deskNote('News refreshed.');
       }).catch(function () { refresh.disabled = false; });
     };
     el.querySelectorAll('[data-news-del]').forEach(function (btn) {
@@ -803,10 +911,10 @@
 
   function loadNews() {
     authFetch('/api/news' + (STATE.newsSpan === 'week' ? '?span=week' : '?span=month'), { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
-      STATE.news = data.items || [];
-      STATE.newsCategories = data.categories || [];
-      renderNews(STATE.news, STATE.newsCategories);
-    }).catch(function () { renderNews([], ['Compliance', 'AI', 'Counseling', 'Fintech & regulation', 'Mortgage', 'Fraud & scams', 'Grants', 'Payments / FINTRAC']); });
+      if (data && data.items && data.items.length) STATE.news = data.items;
+      STATE.newsCategories = (data && data.categories) || STATE.newsCategories || [];
+      renderNews(STATE.news || [], STATE.newsCategories);
+    }).catch(function () { renderNews(STATE.news || [], STATE.newsCategories || ['Compliance', 'Fintech & regulation', 'Mortgage', 'Payments / FINTRAC']); });
   }
 
   function flatFiles(nodes, out) {
