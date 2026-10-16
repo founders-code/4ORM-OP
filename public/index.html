@@ -50,10 +50,10 @@ h1 .d{color:var(--blue);}
     e.preventDefault();
     btn.setAttribute('aria-busy','true');
     boot().then(function(c){
-      if(!c||!c.client){window.location.href='/sign-in';return;}
-      if(c.user){window.location.href='/control-room';return;}
+      if(!c||!c.client){btn.removeAttribute('aria-busy');return;}
+      if(c.user){window.location.replace('/control-room');return;}
       return c.client.signIn.authenticateWithRedirect({strategy:'oauth_google',redirectUrl:'/sso-callback',redirectUrlComplete:'/control-room'});
-    }).catch(function(){window.location.href='/sign-in';});
+    }).catch(function(){btn.removeAttribute('aria-busy');});
   });
 })();
 </script>

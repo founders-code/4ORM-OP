@@ -12,5 +12,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   );
   // Wrap in ClerkProvider only when keys exist, so the build never fails before
   // Clerk is wired up.
-  return hasClerk ? <ClerkProvider>{shell}</ClerkProvider> : shell;
+  return hasClerk ? (
+    <ClerkProvider
+      signInForceRedirectUrl="/control-room"
+      signUpForceRedirectUrl="/control-room"
+      signInFallbackRedirectUrl="/control-room"
+      signUpFallbackRedirectUrl="/control-room"
+      afterSignInUrl="/control-room"
+      afterSignUpUrl="/control-room"
+    >
+      {shell}
+    </ClerkProvider>
+  ) : (
+    shell
+  );
 }
