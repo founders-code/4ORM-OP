@@ -22,7 +22,7 @@ export async function GET() {
     for (const message of messages) {
       const email = String(message.email || '').trim();
       const at = Number(message.at);
-      if (!email || !Number.isFinite(at) || message.outbound) continue;
+      if (!email || !Number.isFinite(at)) continue;
       const iso = new Date(at).toISOString();
       try {
         await session.sql`
