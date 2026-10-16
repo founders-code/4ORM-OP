@@ -9,13 +9,14 @@ import { loadCredsFor } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
 
-function shapeEvents(events: Array<{ id: string; start: number; dur: number; title: string }>) {
+function shapeEvents(events: Array<{ id: string; start: number; dur: number; title: string; join?: string }>) {
   return events.map((event) => ({
     id: event.id,
     start: event.start,
     dur: event.dur,
     title: event.title,
     color: '#2E6BF2',
+    join: event.join || '',
   }));
 }
 
