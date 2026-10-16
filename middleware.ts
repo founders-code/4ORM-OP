@@ -45,6 +45,7 @@ const gated = clerkMiddleware(async (auth, req) => {
     // 1) Must be signed in (Google, restricted to the 4ormfinance.com domain in
     //    the Clerk dashboard). Sends them to Clerk sign-in, then back here.
     if (!userId) {
+      if (isControlRoom(req)) return NextResponse.redirect(new URL('/', req.url));
       return redirectToSignIn({ returnBackUrl: req.url });
     }
 

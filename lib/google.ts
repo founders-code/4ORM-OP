@@ -231,15 +231,15 @@ function safeId(id: string) {
 }
 
 async function listChildren(parentId: string, driveId: string) {
-  if (!safeId(parentId) || !safeId(driveId)) return null;
+  if (!safeId(parentId) || (driveId && !safeId(driveId))) return null;
   const q = new URLSearchParams({
     q: `'${parentId}' in parents and trashed = false`,
     fields: 'files(id,name,mimeType,webViewLink,thumbnailLink,modifiedTime,owners(displayName,me))',
-    pageSize: '100',
+    pageSize: '200',
+    orderBy: 'folder,name',
     supportsAllDrives: 'true',
     includeItemsFromAllDrives: 'true',
-    corpora: 'drive',
-    driveId,
+    ...(driveId ? { corpora: 'drive', driveId } : { corpora: 'user' }),
   });
   const json = (await gfetch(`https://www.googleapis.com/drive/v3/files?${q}`)) as { files?: FileRow[] } | null;
   return json?.files || null;
@@ -248,7 +248,7 @@ async function listChildren(parentId: string, driveId: string) {
 function asFiles(rows: FileRow[]) {
   return rows
     .filter((f) => f.mimeType !== 'application/vnd.google-apps.folder')
-    .slice(0, 40)
+    .slice(0, 200)
     .map((f) => ({
       id: f.id,
       name: f.name,
@@ -261,32 +261,52 @@ function asFiles(rows: FileRow[]) {
     }));
 }
 
-const DRIVE_LIMIT = { drives: 38 };
+const DRIVE_LIMIT = { drives: 34 };
 
-/** drives.list plus one files.list per shared drive. 39 calls, under the 40 ceiling. Deeper folders load on open. */
-export const DRIVE_CALLS = 1 + DRIVE_LIMIT.drives;
+/** Up to two drives.list pages, My Drive (root lookup plus listing), Shared with me, and one files.list per shared drive. 39 calls, under the 40 ceiling. Deeper folders load on open. */
+export const DRIVE_CALLS = 5 + DRIVE_LIMIT.drives;
+
+function asFolders(rows: FileRow[]): DriveNode[] {
+  return rows
+    .filter((row) => row.mimeType === 'application/vnd.google-apps.folder')
+    .map((folder) => ({ id: folder.id, name: folder.name, url: folder.webViewLink || '', files: [], children: [] }));
+}
 
 /** Every shared drive, with every top-level folder from that drive's listing. */
 export async function listDriveTree() {
   if (!configured()) return { status: 'unavailable' as const, drives: [] as Array<{ id: string; name: string; folders: DriveNode[] }> };
-  const listed = (await gfetch('https://www.googleapis.com/drive/v3/drives?pageSize=100')) as {
-    drives?: Array<{ id: string; name: string }>;
-  } | null;
-  if (!listed) return { status: 'unavailable' as const, drives: [] };
-  const out = [];
-  for (const drive of (listed.drives || []).slice(0, DRIVE_LIMIT.drives)) {
+  type Listed = { drives?: Array<{ id: string; name: string }>; nextPageToken?: string } | null;
+  const listed = (await gfetch('https://www.googleapis.com/drive/v3/drives?pageSize=100')) as Listed;
+  const out: Array<{ id: string; name: string; folders: DriveNode[]; files: DriveFile[] }> = [];
+  const root = (await gfetch('https://www.googleapis.com/drive/v3/files/root?fields=id')) as { id?: string } | null;
+  if (root?.id && safeId(root.id)) {
+    const mine = await listChildren(root.id, '');
+    if (mine) out.push({ id: root.id, name: 'My Drive', folders: asFolders(mine), files: asFiles(mine) });
+  }
+  const sharedQ = new URLSearchParams({
+    q: 'sharedWithMe = true and trashed = false',
+    fields: 'files(id,name,mimeType,webViewLink,thumbnailLink,modifiedTime,owners(displayName,me))',
+    pageSize: '200',
+    orderBy: 'folder,name',
+    supportsAllDrives: 'true',
+    includeItemsFromAllDrives: 'true',
+    corpora: 'user',
+  });
+  const shared = (await gfetch(`https://www.googleapis.com/drive/v3/files?${sharedQ}`)) as { files?: FileRow[] } | null;
+  if (shared?.files?.length) {
+    out.push({ id: 'shared-with-me', name: 'Shared with me', folders: asFolders(shared.files), files: asFiles(shared.files) });
+  }
+  if (!listed && !out.length) return { status: 'unavailable' as const, drives: [] };
+  const all = [...(listed?.drives || [])];
+  if (listed?.nextPageToken) {
+    const more = (await gfetch(`https://www.googleapis.com/drive/v3/drives?pageSize=100&pageToken=${encodeURIComponent(listed.nextPageToken)}`)) as Listed;
+    all.push(...(more?.drives || []));
+  }
+  for (const drive of all.slice(0, DRIVE_LIMIT.drives)) {
     if (!safeId(drive.id)) continue;
     const top = await listChildren(drive.id, drive.id);
     if (!top) continue;
-    const folders: DriveNode[] = top
-      .filter((row) => row.mimeType === 'application/vnd.google-apps.folder')
-      .map((folder) => ({
-        id: folder.id,
-        name: folder.name,
-        url: folder.webViewLink || '',
-        files: [],
-        children: [],
-      }));
+    const folders = asFolders(top);
     out.push({
       id: drive.id,
       name: drive.name,
@@ -350,15 +370,17 @@ export async function listFolderFiles(folderId: string) {
   const q = new URLSearchParams({
     q: `'${folderId}' in parents and trashed = false`,
     fields: 'files(id,name,mimeType,webViewLink,thumbnailLink,modifiedTime,owners(displayName,me))',
-    pageSize: '40',
+    pageSize: '200',
+    orderBy: 'folder,name',
     supportsAllDrives: 'true',
     includeItemsFromAllDrives: 'true',
+    corpora: 'allDrives',
   });
   const json = (await gfetch(`https://www.googleapis.com/drive/v3/files?${q}`)) as { files?: FileRow[] } | null;
   if (!json?.files) return null;
   return json.files
     .filter((file) => file.mimeType !== 'application/vnd.google-apps.folder' && file.id && file.name)
-    .slice(0, 40)
+    .slice(0, 200)
     .map((file) => ({
       id: file.id,
       name: file.name,
@@ -376,9 +398,11 @@ export async function listFolderContents(folderId: string) {
   const q = new URLSearchParams({
     q: `'${folderId}' in parents and trashed = false`,
     fields: 'files(id,name,mimeType,webViewLink,thumbnailLink,modifiedTime,owners(displayName,me))',
-    pageSize: '40',
+    pageSize: '200',
+    orderBy: 'folder,name',
     supportsAllDrives: 'true',
     includeItemsFromAllDrives: 'true',
+    corpora: 'allDrives',
   });
   const json = (await gfetch(`https://www.googleapis.com/drive/v3/files?${q}`)) as { files?: FileRow[] } | null;
   if (!json?.files) return null;
@@ -386,7 +410,7 @@ export async function listFolderContents(folderId: string) {
   return {
     folders: rows
       .filter((file) => file.mimeType === 'application/vnd.google-apps.folder' && file.id && file.name)
-      .slice(0, 40)
+      .slice(0, 200)
       .map((file) => ({
         id: file.id,
         name: file.name,

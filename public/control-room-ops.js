@@ -1475,67 +1475,75 @@
     });
   }
 
-  openDocView = function (name, url, note) {
+  openDocView = function (name, url, extra) {
+    var raw = String(url || '');
+    var tag = String(extra || '');
+    var fid = /^[\w-]{8,}$/.test(tag) && !/^[0-9a-f-]{36}$/i.test(tag) ? tag : '';
+    var note = fid ? '' : tag;
     var view = document.getElementById('docView');
     document.getElementById('docViewName').textContent = name || 'Document';
     var driveBtn = document.getElementById('docViewDrive');
     var frame = document.getElementById('docViewFrame');
-    var fail = document.getElementById('docFallback');
-    if (!fail) {
-      fail = document.createElement('div');
-      fail.id = 'docFallback';
-      fail.style.padding = '24px';
-      frame.parentNode.insertBefore(fail, frame.nextSibling);
+    var miss = document.getElementById('docViewMiss');
+    var preview = typeof drivePreview === 'function' ? drivePreview(raw) : '';
+    if (!preview && fid) preview = 'https://drive.google.com/file/d/' + fid + '/preview';
+    var href = /^https:\/\//.test(raw) ? raw : (fid ? 'https://drive.google.com/file/d/' + fid + '/view' : '');
+    if (!fid && preview) {
+      var hit = preview.match(/\/d\/([^/]+)/);
+      fid = hit ? hit[1] : '';
     }
-    frame.hidden = false;
-    fail.hidden = true;
-    view.hidden = false;
-    var preview = typeof drivePreview === 'function' ? drivePreview(url) : '';
     if (driveBtn) {
-      driveBtn.hidden = !preview;
-      driveBtn.onclick = function () { if (preview) frame.src = preview; };
+      driveBtn.hidden = !href;
+      driveBtn.setAttribute('data-href', href);
+      driveBtn.onclick = null;
+    }
+    function showMiss() {
+      frame.hidden = true;
+      frame.src = 'about:blank';
+      if (miss) {
+        miss.hidden = false;
+        var line = miss.querySelector('.s');
+        if (line) line.textContent = note || 'Google Drive does not offer an embedded preview for this file type.';
+        var go = miss.querySelector('button');
+        if (go) go.hidden = !href;
+      }
+    }
+    function showFrame(src) {
+      if (miss) miss.hidden = true;
+      frame.hidden = false;
+      frame.src = src;
     }
     if (typeof deskBusy === 'function') deskBusy(true);
     function done() { if (typeof deskBusy === 'function') deskBusy(false); }
-    function showBlob(blob) {
-      var type = blob && blob.type || '';
-      var ok = type.indexOf('image/') === 0 || type === 'application/pdf' || type.indexOf('text/') === 0;
-      if (!ok) throw 0;
-      frame.hidden = false;
-      fail.hidden = true;
-      frame.src = URL.createObjectURL(blob);
+    function asBlob(r) {
+      if (!r.ok) throw 0;
+      return r.blob();
     }
-    if (url && (url.indexOf('/api/documents/file') === 0 || url.indexOf('/api/spaces/') === 0)) {
+    function okBlob(blob) {
+      var type = blob && blob.type || '';
+      return type.indexOf('image/') === 0 || type === 'application/pdf' || type.indexOf('text/') === 0;
+    }
+    view.hidden = false;
+    if (raw && (raw.indexOf('/api/documents/file') === 0 || raw.indexOf('/api/spaces/') === 0)) {
       frame.src = 'about:blank';
-      authFetch(url, { credentials: 'same-origin' }).then(function (r) {
-        if (!r.ok) throw 0;
-        return r.blob();
-      }).then(showBlob).catch(function () {
-        frame.hidden = true;
-        fail.hidden = false;
-        fail.innerHTML = '<p>' + esc(note || 'This file cannot be previewed here.') + '</p>';
-      }).then(done, done);
+      authFetch(raw, { credentials: 'same-origin' }).then(asBlob).then(function (blob) {
+        if (!okBlob(blob)) throw 0;
+        showFrame(URL.createObjectURL(blob));
+      }).catch(showMiss).then(done, done);
       return;
     }
     if (!preview) {
-      frame.hidden = true;
-      fail.hidden = false;
-      fail.innerHTML = '<p>' + esc(note || 'This file cannot be previewed here.') + '</p>';
+      if (!raw && !note) { view.hidden = true; done(); return; }
+      showMiss();
       done();
       return;
     }
-    frame.src = preview;
-    var id = '';
-    try {
-      var parsed = new URL(preview);
-      var match = parsed.pathname.match(/\/d\/([^/]+)/);
-      id = match ? match[1] : '';
-    } catch (err) { id = ''; }
-    if (!id) { done(); return; }
-    authFetch('/api/drive/file?id=' + encodeURIComponent(id), { credentials: 'same-origin' }).then(function (r) {
-      if (!r.ok) throw 0;
-      return r.blob();
-    }).then(showBlob).catch(function () {}).then(done, done);
+    showFrame(preview);
+    if (!fid) { done(); return; }
+    authFetch('/api/drive/file?id=' + encodeURIComponent(fid), { credentials: 'same-origin' }).then(asBlob).then(function (blob) {
+      if (!okBlob(blob) || view.hidden || frame.src !== preview) return;
+      showFrame(URL.createObjectURL(blob));
+    }).catch(function () {}).then(done, done);
   };
 
   var priorPeople = renderPeople;

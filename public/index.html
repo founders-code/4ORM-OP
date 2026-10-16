@@ -30,5 +30,32 @@ h1 .d{color:var(--blue);}
   <a class="signin" id="signin" href="/control-room">Sign in<span aria-hidden="true">&#8594;</span></a>
  </main>
  <footer class="foot">4orm Finance &middot; Members only</footer>
+<script>
+(function(){
+  var btn=document.getElementById('signin');
+  if(!btn)return;
+  var ready=null;
+  function hostOf(key){var raw=String(key||'').replace(/^pk_(test|live)_/,'').replace(/-/g,'+').replace(/_/g,'/');while(raw.length%4)raw+='=';var host='';try{host=atob(raw).replace(/\$$/,'');}catch(e){return '';}if(!/^[A-Za-z0-9.-]+$/.test(host)||host.indexOf('..')>=0)return '';return host;}
+  function boot(){
+    if(ready)return ready;
+    ready=fetch('/api/clerk-publishable-key',{credentials:'same-origin'}).then(function(r){return r.ok?r.json():{};}).then(function(d){
+      var key=d&&d.publishableKey;var host=hostOf(key);
+      if(!key||!host)return null;
+      return new Promise(function(resolve,reject){var s=document.createElement('script');s.async=true;s.crossOrigin='anonymous';s.src='https://'+host+'/npm/@clerk/clerk-js@5/dist/clerk.browser.js';s.setAttribute('data-clerk-publishable-key',key);s.onload=function(){resolve(window.Clerk);};s.onerror=reject;document.head.appendChild(s);}).then(function(C){var c=typeof C==='function'?new C(key):C;return c.load().then(function(){return c;});});
+    }).catch(function(){return null;});
+    return ready;
+  }
+  boot().then(function(c){if(!c||!c.user)return;var last=0;try{last=Number(sessionStorage.getItem('cr_hop')||0);}catch(e){}if(Date.now()-last<10000)return;try{sessionStorage.setItem('cr_hop',String(Date.now()));}catch(e){}window.location.replace('/control-room');});
+  btn.addEventListener('click',function(e){
+    e.preventDefault();
+    btn.setAttribute('aria-busy','true');
+    boot().then(function(c){
+      if(!c||!c.client){window.location.href='/sign-in';return;}
+      if(c.user){window.location.href='/control-room';return;}
+      return c.client.signIn.authenticateWithRedirect({strategy:'oauth_google',redirectUrl:'/sso-callback',redirectUrlComplete:'/control-room'});
+    }).catch(function(){window.location.href='/sign-in';});
+  });
+})();
+</script>
 </body>
 </html>
