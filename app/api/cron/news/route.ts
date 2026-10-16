@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import { getSql } from '@/lib/db';
 import { tokenOk } from '@/lib/guard.mjs';
 import { fail } from '@/lib/log';
-import { sweepNews } from '@/lib/news-sweep';
+import { markSwept, sweepNews } from '@/lib/news-sweep';
 import { cronSecret } from '@/lib/secrets';
 import { roomOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 function pacificHour(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -30,7 +31,8 @@ export async function GET(req: Request) {
     if (!sql) return NextResponse.json({ ok: false });
     const ownerId = await roomOwner(sql);
     if (!ownerId) return NextResponse.json({ ok: true });
-    await sweepNews(sql, ownerId);
+    const saved = await sweepNews(sql, ownerId);
+    if (saved.length) await markSwept(sql, ownerId);
     return NextResponse.json({ ok: true });
   } catch (err) {
     fail('news_sweep', err);

@@ -50,6 +50,7 @@ async function gfetch(url: string, init?: RequestInit) {
   const res = await fetch(url, {
     ...init,
     headers: { authorization: `Bearer ${access}`, 'content-type': 'application/json', ...(init?.headers || {}) },
+    signal: init?.signal || AbortSignal.timeout(8000),
   });
   if (!res.ok) return null;
   return res.json();
@@ -479,31 +480,238 @@ export async function recentMail() {
   return { status: messages.length ? ('connected' as const) : ('reached_empty' as const), messages };
 }
 
-export async function inboxMail() {
-  if (!configured()) return { status: 'unavailable' as const, messages: [] as Array<{ from: string; email: string; subject: string; snippet: string; at: number }> };
+type GmailMeta = {
+  id?: string;
+  threadId?: string;
+  snippet?: string;
+  internalDate?: string;
+  labelIds?: string[];
+  payload?: { headers?: Array<{ name: string; value: string }> };
+};
+
+export type InboxRow = {
+  id: string;
+  threadId: string;
+  messageId: string;
+  from: string;
+  email: string;
+  subject: string;
+  snippet: string;
+  at: number;
+  unread: boolean;
+  outbound: boolean;
+  internal: boolean;
+};
+
+export type LinkedinRow = { id: string; name: string; kind: 'message' | 'invite' | 'inmail' | 'update'; snippet: string; at: number; unread: boolean };
+
+const LINKEDIN_ALIAS = 'chadsapps@4ormfinance.com';
+const LINKEDIN_SENDERS = ['messaging-digest@linkedin.com', 'invitations@linkedin.com', 'inmail-hit-reply@linkedin.com', 'messages-noreply@bounce.linkedin.com'];
+
+function addressOf(raw: string) {
+  const inside = (raw.match(/<([^>]+)>/) || [])[1];
+  const bare = inside || (raw.includes('@') ? raw : '');
+  return bare.replace(/["']/g, '').trim().toLowerCase().slice(0, 120);
+}
+
+function displayOf(raw: string) {
+  return raw.replace(/<[^>]+>/g, '').replace(/"/g, '').trim().slice(0, 80);
+}
+
+function splitAddresses(raw: string) {
+  return String(raw || '').split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map((part) => part.trim()).filter(Boolean);
+}
+
+function decodeSnippet(value: string) {
+  return String(value || '')
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 160);
+}
+
+async function mailboxSelf() {
+  const addresses = new Set<string>();
+  const names = new Set<string>();
+  const profile = (await gfetch('https://gmail.googleapis.com/gmail/v1/users/me/profile')) as { emailAddress?: string } | null;
+  const primary = String(profile?.emailAddress || '').toLowerCase();
+  if (primary) addresses.add(primary);
+  const sendAs = (await gfetch('https://gmail.googleapis.com/gmail/v1/users/me/settings/sendAs')) as {
+    sendAs?: Array<{ sendAsEmail?: string; displayName?: string }>;
+  } | null;
+  for (const row of sendAs?.sendAs || []) {
+    if (row.sendAsEmail) addresses.add(String(row.sendAsEmail).toLowerCase());
+    if (row.displayName) names.add(String(row.displayName).trim().toLowerCase());
+  }
+  addresses.add(LINKEDIN_ALIAS);
+  const domain = primary.split('@')[1] || '';
+  return { addresses, names, domain };
+}
+
+async function gmailList(q: string, max: number) {
   const listed = (await gfetch(
-    'https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=8&q=' + encodeURIComponent('newer_than:14d'),
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${max}&q=${encodeURIComponent(q)}`,
   )) as { messages?: Array<{ id: string }> } | null;
-  if (!listed) return { status: 'unavailable' as const, messages: [] };
-  const messages = [];
-  for (const row of (listed.messages || []).slice(0, 8)) {
-    const msg = (await gfetch(
-      `https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(row.id)}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`,
-    )) as { snippet?: string; internalDate?: string; payload?: { headers?: Array<{ name: string; value: string }> } } | null;
-    const headers = msg?.payload?.headers || [];
-    const pick = (name: string) => headers.find((h) => h.name.toLowerCase() === name)?.value || '';
+  if (!listed) return null;
+  const headers = ['From', 'To', 'Subject', 'Date', 'Message-ID', 'Delivered-To'].map((h) => `metadataHeaders=${h}`).join('&');
+  const ids = (listed.messages || []).slice(0, max);
+  const rows = await Promise.all(ids.map((row) =>
+    (gfetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(row.id)}?format=metadata&${headers}`) as Promise<GmailMeta | null>)
+      .catch(() => null),
+  ));
+  return rows.filter((row): row is GmailMeta => !!row && !!row.id);
+}
+
+function headerOf(msg: GmailMeta) {
+  const headers = msg.payload?.headers || [];
+  return (name: string) => headers.filter((h) => h.name.toLowerCase() === name).map((h) => h.value).join(', ');
+}
+
+export async function inboxMail() {
+  if (!configured()) return { status: 'unavailable' as const, messages: [] as InboxRow[] };
+  if (!(await accessToken())) return { status: 'unavailable' as const, messages: [] as InboxRow[] };
+  const self = await mailboxSelf().catch(() => ({ addresses: new Set<string>(), names: new Set<string>(), domain: '' }));
+  const rows = await gmailList('newer_than:14d in:inbox -category:promotions -category:social -from:linkedin.com', 20);
+  if (!rows) return { status: 'unavailable' as const, messages: [] as InboxRow[] };
+  const isSelf = (raw: string) => {
+    const address = addressOf(raw);
+    const name = displayOf(raw).toLowerCase();
+    return (!!address && self.addresses.has(address)) || (!!name && self.names.has(name));
+  };
+  const sent = (await gmailList('in:sent', 2).catch(() => null)) || [];
+  for (const msg of sent) {
+    const rawFrom = headerOf(msg)('from');
+    if (addressOf(rawFrom)) self.addresses.add(addressOf(rawFrom));
+    if (displayOf(rawFrom)) self.names.add(displayOf(rawFrom).toLowerCase());
+  }
+  for (const msg of rows) {
+    const rawFrom = headerOf(msg)('from');
+    const name = displayOf(rawFrom).toLowerCase();
+    if (name && self.addresses.has(addressOf(rawFrom))) self.names.add(name);
+  }
+  const messages: InboxRow[] = [];
+  for (const msg of rows) {
+    const pick = headerOf(msg);
     const rawFrom = pick('from');
-    const email = ((rawFrom.match(/<([^>]+)>/) || [])[1] || (rawFrom.includes('@') ? rawFrom : '')).trim().slice(0, 120);
-    const from = rawFrom.replace(/<[^>]+>/g, '').replace(/"/g, '').trim().slice(0, 80);
+    const delivered = pick('delivered-to').toLowerCase();
+    if (delivered.includes(LINKEDIN_ALIAS) || /linkedin\.com/i.test(addressOf(rawFrom))) continue;
+    let party = rawFrom;
+    let outbound = false;
+    if (isSelf(rawFrom)) {
+      const other = splitAddresses(pick('to')).find((raw) => !isSelf(raw));
+      if (!other) continue;
+      party = other;
+      outbound = true;
+    }
+    const email = addressOf(party);
+    if (/^(no-?reply|do-?not-?reply|mailer-daemon|notifications?)@/.test(email)) continue;
+    const from = displayOf(party) || email || 'Sender';
     const subject = pick('subject').slice(0, 180);
     if (!from && !subject) continue;
     messages.push({
-      from: from || 'Sender',
+      id: String(msg.id),
+      threadId: String(msg.threadId || ''),
+      messageId: pick('message-id').slice(0, 300),
+      from: from.includes('@') ? from.split('@')[0] : from,
       email,
       subject: subject || '(no subject)',
-      snippet: String(msg?.snippet || '').slice(0, 160),
-      at: Number(msg?.internalDate) || Date.parse(pick('date')) || Date.now(),
+      snippet: decodeSnippet(String(msg.snippet || '')),
+      at: Number(msg.internalDate) || Date.parse(pick('date')) || Date.now(),
+      unread: (msg.labelIds || []).includes('UNREAD'),
+      outbound,
+      internal: !!self.domain && email.endsWith('@' + self.domain),
     });
   }
-  return { status: messages.length ? ('connected' as const) : ('reached_empty' as const), messages };
+  messages.sort((a, b) => b.at - a.at);
+  const top = messages.slice(0, 8);
+  return { status: top.length ? ('connected' as const) : ('reached_empty' as const), messages: top };
+}
+
+function linkedinName(subject: string, fromRaw: string) {
+  const s = subject.replace(/\s+/g, ' ').trim();
+  const patterns = [
+    /^(.+?) (?:has )?(?:just )?sent you (?:a )?(?:new )?message/i,
+    /^(.+?) (?:just )?messaged you/i,
+    /^(.+?) (?:wants to connect|would like to connect|has invited you|invited you to connect)/i,
+    /^(.+?) (?:accepted|has accepted) your invitation/i,
+    /^(.+?) replied to your (?:inmail|message)/i,
+    /^(?:re: )?(.+?) (?:is waiting for your response|is waiting for your reply)/i,
+    /^(?:you have )?(?:a )?new messages? from (.+?)$/i,
+    /^invitation (?:from|to connect with) (.+?)$/i,
+    /^(?:inmail|new inmail) from (.+?)$/i,
+    /^(.+?) (?:viewed your profile|mentioned you|commented on|reacted to|endorsed you)/i,
+  ];
+  for (const pattern of patterns) {
+    const match = s.match(pattern);
+    if (match && match[1]) {
+      const name = match[1].replace(/^(?:fwd?|re):\s*/i, '').replace(/[,.:;!]+$/, '').trim();
+      if (name && name.length <= 60 && !/^(you|your|linkedin)$/i.test(name)) return name;
+    }
+  }
+  const display = displayOf(fromRaw).replace(/\s+via linkedin$/i, '').trim();
+  if (display && !/^linkedin/i.test(display) && !display.includes('@')) return display.slice(0, 60);
+  return '';
+}
+
+function linkedinKind(subject: string, address: string): LinkedinRow['kind'] {
+  const blob = `${subject} ${address}`.toLowerCase();
+  if (/inmail/.test(blob)) return 'inmail';
+  if (/invitation|invite|connect/.test(blob)) return 'invite';
+  if (/messag/.test(blob)) return 'message';
+  return 'update';
+}
+
+export async function linkedinMail() {
+  if (!configured()) return { status: 'unavailable' as const, items: [] as LinkedinRow[] };
+  if (!(await accessToken())) return { status: 'unavailable' as const, items: [] as LinkedinRow[] };
+  const senders = LINKEDIN_SENDERS.map((s) => `from:${s}`).join(' OR ');
+  const rows = await gmailList(`newer_than:30d (${senders} OR from:linkedin.com OR to:${LINKEDIN_ALIAS} OR deliveredto:${LINKEDIN_ALIAS})`, 15);
+  if (!rows) return { status: 'unavailable' as const, items: [] as LinkedinRow[] };
+  const items: LinkedinRow[] = [];
+  for (const msg of rows) {
+    const pick = headerOf(msg);
+    const fromRaw = pick('from');
+    const address = addressOf(fromRaw);
+    const toBlob = `${pick('to')} ${pick('delivered-to')}`.toLowerCase();
+    const isLinkedin = address.endsWith('linkedin.com') || toBlob.includes(LINKEDIN_ALIAS);
+    if (!isLinkedin) continue;
+    const subject = pick('subject').slice(0, 180);
+    items.push({
+      id: String(msg.id),
+      name: linkedinName(subject, fromRaw) || 'LinkedIn',
+      kind: linkedinKind(subject, address),
+      snippet: decodeSnippet(String(msg.snippet || subject)),
+      at: Number(msg.internalDate) || Date.parse(pick('date')) || Date.now(),
+      unread: (msg.labelIds || []).includes('UNREAD'),
+    });
+  }
+  items.sort((a, b) => b.at - a.at);
+  return { status: items.length ? ('connected' as const) : ('reached_empty' as const), items: items.slice(0, 12) };
+}
+
+export async function createReplyDraft(input: { to: string; subject: string; text: string; threadId?: string; messageId?: string }) {
+  if (!configured()) return null;
+  const cleanTo = String(input.to || '').trim();
+  if (!/^[^\s@,<>]+@[^\s@,<>]+\.[^\s@,<>]+$/.test(cleanTo)) return null;
+  const base = String(input.subject || '').replace(/[\r\n]/g, ' ').slice(0, 200);
+  const subject = /^re:/i.test(base) ? base : `Re: ${base}`;
+  const ref = String(input.messageId || '').replace(/[\r\n]/g, '').slice(0, 300);
+  const lines = [`To: ${cleanTo}`, `Subject: ${subject}`];
+  if (/^<[^<>\s]+>$/.test(ref)) lines.push(`In-Reply-To: ${ref}`, `References: ${ref}`);
+  lines.push('MIME-Version: 1.0', 'Content-Type: text/plain; charset=utf-8', '', String(input.text || '').slice(0, 20000));
+  const raw = Buffer.from(lines.join('\r\n')).toString('base64url');
+  const threadId = /^[A-Za-z0-9]{6,40}$/.test(String(input.threadId || '')) ? String(input.threadId) : undefined;
+  try {
+    const json = (await gfetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
+      method: 'POST',
+      body: JSON.stringify({ message: threadId ? { raw, threadId } : { raw } }),
+    })) as { id?: string } | null;
+    return json?.id ? String(json.id) : null;
+  } catch {
+    return null;
+  }
 }

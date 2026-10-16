@@ -35,7 +35,7 @@ function decode(value: string) {
 
 async function pullFeed(feed: (typeof FEEDS)[number]) {
   const url = `https://news.google.com/rss/search?q=${encodeURIComponent(feed.q)}&hl=en-CA&gl=CA&ceid=CA:en`;
-  const res = await fetch(url, { headers: { accept: 'application/rss+xml, application/xml, text/xml' } });
+  const res = await fetch(url, { headers: { accept: 'application/rss+xml, application/xml, text/xml' }, signal: AbortSignal.timeout(6000) });
   if (!res.ok) return [];
   const xml = await res.text();
   const out = [];
@@ -77,4 +77,83 @@ export async function sweepNews(sql: Sql, ownerId: string) {
     fail('news_sweep', err);
     return [];
   }
+}
+
+let sweepTable: Promise<boolean> | null = null;
+
+function ensureSweepTable(sql: Sql) {
+  if (!sweepTable) {
+    sweepTable = (async () => {
+      try {
+        await sql`CREATE TABLE IF NOT EXISTS news_sweeps (owner_id text PRIMARY KEY, swept_at timestamptz NOT NULL DEFAULT now())`;
+        return true;
+      } catch (err) {
+        fail('news_sweeps_table', err);
+        sweepTable = null;
+        return false;
+      }
+    })();
+  }
+  return sweepTable;
+}
+
+function pacificParts(at: Date) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(at);
+  const get = (type: string) => Number(parts.find((part) => part.type === type)?.value || 0);
+  return { y: get('year'), m: get('month'), d: get('day'), h: get('hour'), min: get('minute'), s: get('second') };
+}
+
+/** The most recent 8:00 or 11:00 America/Los_Angeles that has already passed. */
+export function lastSweepSlot(now = new Date()) {
+  const p = pacificParts(now);
+  const offset = Date.UTC(p.y, p.m - 1, p.d, p.h, p.min, p.s) - Math.floor(now.getTime() / 1000) * 1000;
+  const slots: number[] = [];
+  for (const back of [0, 1]) {
+    for (const hour of [11, 8]) slots.push(Date.UTC(p.y, p.m - 1, p.d - back, hour, 0, 0) - offset);
+  }
+  return slots.filter((ms) => ms <= now.getTime()).sort((a, b) => b - a)[0] || now.getTime();
+}
+
+export async function lastSweptAt(sql: Sql, ownerId: string) {
+  if (!(await ensureSweepTable(sql))) return 0;
+  try {
+    const rows = await sql`SELECT swept_at FROM news_sweeps WHERE owner_id = ${ownerId} LIMIT 1`;
+    return rows[0]?.swept_at ? new Date(String(rows[0].swept_at)).getTime() : 0;
+  } catch (err) {
+    fail('news_sweeps_read', err);
+    return 0;
+  }
+}
+
+export async function markSwept(sql: Sql, ownerId: string) {
+  if (!(await ensureSweepTable(sql))) return;
+  try {
+    await sql`
+      INSERT INTO news_sweeps (owner_id, swept_at) VALUES (${ownerId}, now())
+      ON CONFLICT (owner_id) DO UPDATE SET swept_at = EXCLUDED.swept_at
+    `;
+  } catch (err) {
+    fail('news_sweeps_write', err);
+  }
+}
+
+/** Sweep when the latest 8am or 11am Pacific slot has not been swept yet. Bounded so a slow feed never stalls the page. */
+export async function sweepIfDue(sql: Sql, ownerId: string, force = false, budgetMs = 9000) {
+  const due = force || (await lastSweptAt(sql, ownerId)) < lastSweepSlot();
+  if (!due) return false;
+  const run = (async () => {
+    const saved = await sweepNews(sql, ownerId);
+    if (saved.length) await markSwept(sql, ownerId);
+    return true;
+  })();
+  return Promise.race([run, new Promise<boolean>((resolve) => setTimeout(() => resolve(false), budgetMs))]);
 }
