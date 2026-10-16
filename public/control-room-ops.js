@@ -349,7 +349,7 @@
     var meetHtml = upcoming.length ? upcoming.map(function (ev) { return alarmMeetLine(ev); }).join('') : '<div class="kick">No meetings on the calendar.</div>';
     var talkHtml = talks.map(function (ev) { return '<div>' + esc(ev.title || 'Call') + '</div>'; }).join('') + reachToday.map(function (person) { return '<div>' + esc(person.name) + ' <span class="kick">' + esc(person.nextAction || 'Reach out') + '</span></div>'; }).join('');
     if (!talkHtml) talkHtml = '<div class="kick">Nothing to call today.</div>';
-    var topHtml = top.length ? top.map(function (it) { return '<div>' + esc(it.title) + '</div>'; }).join('') : '<div class="kick">No open tasks.</div>';
+    var topHtml = top.length ? top.map(function (it) { return '<div class="dash-task">' + esc(it.title) + (it._err ? '<div class="soft-err">' + esc(it._err) + '</div>' : '') + '<button type="button" class="ghost-x" data-task-del="' + esc(it.id) + '" aria-label="Delete">x</button></div>'; }).join('') : '<div class="kick">No open tasks.</div>';
     var trend = [];
     for (var day = 6; day >= 0; day -= 1) {
       var start = new Date(); start.setHours(0, 0, 0, 0); start = start.getTime() - day * 86400000;
@@ -379,6 +379,12 @@
     el.querySelectorAll('[data-ops]').forEach(function (btn) {
       btn.onclick = function () { openOpsList(btn.getAttribute('data-ops'), lists); };
     });
+    el.querySelectorAll('[data-task-del]').forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        dropItem(btn.getAttribute('data-task-del'));
+      };
+    });
     bindMission(el);
   }
 
@@ -388,7 +394,7 @@
     if (!modal || !card) return;
     var rows = (lists && lists[key]) || [];
     card.classList.add('wide');
-    card.innerHTML = '<div class="mhd"><div style="font-weight:700">' + esc(key.split(':').slice(1).join(':') || 'Items') + '</div><button class="x" id="mClose" type="button">x</button></div><div class="mbd">' + (rows.length ? rows.map(function (it) { return '<div class="ops-row"><button type="button" data-ops-item="' + esc(it.id) + '"><b>' + esc(it.title) + '</b><span class="kick">' + esc(areaLabel(it.area, it)) + '</span></button>' + bucketPicks(it) + '<button type="button" class="ghost-x" data-ops-del="' + esc(it.id) + '" aria-label="Delete">x</button></div>'; }).join('') : '<div class="kick">Nothing in this group.</div>') + '</div>';
+    card.innerHTML = '<div class="mhd"><div style="font-weight:700">' + esc(key.split(':').slice(1).join(':') || 'Items') + '</div><button class="x" id="mClose" type="button">x</button></div><div class="mbd">' + (rows.length ? rows.map(function (it) { return '<div class="ops-row"><button type="button" data-ops-item="' + esc(it.id) + '"><b>' + esc(it.title) + '</b><span class="kick">' + esc(areaLabel(it.area, it)) + '</span></button>' + bucketPicks(it) + (it._err ? '<div class="soft-err">' + esc(it._err) + '</div>' : '') + '<button type="button" class="ghost-x" data-ops-del="' + esc(it.id) + '" aria-label="Delete">x</button></div>'; }).join('') : '<div class="kick">Nothing in this group.</div>') + '</div>';
     modal.classList.add('open');
     modal.hidden = false;
     document.getElementById('mClose').onclick = function () { if (typeof closeModal === 'function') closeModal(); };
@@ -403,14 +409,15 @@
       btn.onclick = function () { if (typeof closeModal === 'function') closeModal(); editItem(btn.getAttribute('data-ops-item')); };
     });
     card.querySelectorAll('[data-ops-del]').forEach(function (btn) {
-      btn.onclick = function () {
+      btn.onclick = function (e) {
+        e.stopPropagation();
         var id = btn.getAttribute('data-ops-del');
-        STATE.items = (STATE.items || []).filter(function (it) { return it.id !== id; });
         lists[key] = (lists[key] || []).filter(function (it) { return it.id !== id; });
-        if (typeof renderWar === 'function') renderWar();
-        renderOpsDash();
-        authFetch('/api/items/' + id, { method: 'DELETE', credentials: 'same-origin' }).catch(function () {});
-        openOpsList(key, lists);
+        dropItem(id, function () {
+          var restored = (STATE.items || []).filter(function (it) { return it.id === id; })[0];
+          if (restored) lists[key] = (lists[key] || []).concat([restored]);
+          openOpsList(key, lists);
+        });
       };
     });
   }
@@ -462,6 +469,26 @@
     if (col === 'today') return Date.now();
     if (col === 'week') return Date.now() + 3 * 86400000;
     return null;
+  }
+
+  function dropItem(id, after) {
+    if (!id) return;
+    var it = (STATE.items || []).filter(function (row) { return row.id === id; })[0];
+    if (!it) return;
+    STATE.items = (STATE.items || []).filter(function (row) { return row.id !== id; });
+    renderWar();
+    if (typeof renderOpsDash === 'function') renderOpsDash();
+    if (after) after();
+    if (String(id).indexOf('tmp-') === 0) return;
+    authFetch('/api/items/' + id, { method: 'DELETE', quiet: true, credentials: 'same-origin' }).then(function (r) {
+      if (!r.ok) throw 0;
+    }).catch(function () {
+      it._err = 'Not deleted yet';
+      if (!(STATE.items || []).some(function (row) { return row.id === id; })) STATE.items = (STATE.items || []).concat([it]);
+      renderWar();
+      if (typeof renderOpsDash === 'function') renderOpsDash();
+      if (after) after();
+    });
   }
 
   function renderWar() {
@@ -642,11 +669,10 @@
         send().catch(function () { return send(); }).catch(function () {});
       };
     });
-    document.querySelectorAll('[data-del]').forEach(function (btn) {
+    document.querySelectorAll('#execBoard [data-del]').forEach(function (btn) {
       btn.onclick = function (e) {
         e.stopPropagation();
-        if (!window.confirm('Delete this task?')) return;
-        authFetch('/api/items/' + btn.getAttribute('data-del'), { method: 'DELETE', credentials: 'same-origin' }).then(function () { return authFetch('/api/board', { credentials: 'same-origin' }); }).then(function (r) { return r.json(); }).then(applyBoard).catch(function () {});
+        dropItem(btn.getAttribute('data-del'));
       };
     });
     document.querySelectorAll('[data-edit]').forEach(function (btn) {
