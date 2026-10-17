@@ -30,6 +30,7 @@ type MoveRow = {
   suggested_due: string | null;
   status: string;
   source_key: string | null;
+  source_line?: string | null;
   how?: unknown;
 };
 
@@ -127,6 +128,7 @@ function shapeMove(row: MoveRow) {
     severity: rank === 1 ? 'high' : rank === 2 ? 'medium' : 'low',
     suggestedDue: asDate(row.suggested_due),
     status: String(row.status || 'open'),
+    source: String(row.source_line || '').trim(),
   };
 }
 
@@ -163,12 +165,23 @@ export async function readCeo(sql: Sql, ownerId: string) {
     WHERE owner_id = ${ownerId}
     ORDER BY key
   `;
-  const moves = await sql`
-    SELECT id, rank, text, principle, why_now, how, area, suggested_due, status, source_key
-    FROM ceo_moves
-    WHERE owner_id = ${ownerId} AND status = 'open'
-    ORDER BY rank
-  `;
+  let moves: MoveRow[] = [];
+  try {
+    moves = await sql`
+      SELECT id, rank, text, principle, why_now, how, area, suggested_due, status, source_key, source_line
+      FROM ceo_moves
+      WHERE owner_id = ${ownerId} AND status = 'open'
+      ORDER BY rank
+    ` as MoveRow[];
+  } catch (err) {
+    fail('ceo_moves_source', err);
+    moves = await sql`
+      SELECT id, rank, text, principle, why_now, how, area, suggested_due, status, source_key
+      FROM ceo_moves
+      WHERE owner_id = ${ownerId} AND status = 'open'
+      ORDER BY rank
+    ` as MoveRow[];
+  }
   const decisions = await sql`
     SELECT id, move_id, context, options, evidence, case_against, decision, owner, review_date, created_at
     FROM ceo_decisions
@@ -419,7 +432,7 @@ function areaForZone(zone: string) {
 
 async function writeDailyMoves(sql: Sql, ownerId: string, rows: Array<Record<string, unknown>>) {
   const day = pacificDay();
-  const cleaned = rows.slice(0, 4).map((row, i) => {
+  const cleaned = rows.slice(0, 3).map((row, i) => {
     const text = String(row.title || row.text || '').replace(/[\u2013\u2014]/g, '-').trim().slice(0, 180);
     const why = String(row.why || row.whyNow || '').replace(/[\u2013\u2014]/g, '-').trim().slice(0, 280);
     const zone = String(row.zone || 'Raise').slice(0, 24);
@@ -433,15 +446,24 @@ async function writeDailyMoves(sql: Sql, ownerId: string, rows: Array<Record<str
       principle: principleForZone(zone),
       area: areaForZone(zone),
       sourceKey: `daily:${day}:${i + 1}`,
+      sourceLine: String(row.source || row.signals || '').replace(/[\u2013\u2014]/g, '-').trim().slice(0, 180),
     };
   }).filter((row) => row.text);
   if (!cleaned.length) return null;
   await sql`DELETE FROM ceo_moves WHERE owner_id = ${ownerId} AND status = 'open'`;
   for (const move of cleaned) {
-    await sql`
-      INSERT INTO ceo_moves (owner_id, rank, text, principle, why_now, area, suggested_due, status, source_key, how)
-      VALUES (${ownerId}, ${move.rank}, ${move.text}, ${move.principle}, ${move.why}, ${move.area}, ${null}, 'open', ${move.sourceKey}, ${JSON.stringify(move.how)}::jsonb)
-    `;
+    try {
+      await sql`
+        INSERT INTO ceo_moves (owner_id, rank, text, principle, why_now, area, suggested_due, status, source_key, how, source_line)
+        VALUES (${ownerId}, ${move.rank}, ${move.text}, ${move.principle}, ${move.why}, ${move.area}, ${null}, 'open', ${move.sourceKey}, ${JSON.stringify(move.how)}::jsonb, ${move.sourceLine})
+      `;
+    } catch (err) {
+      fail('ceo_daily_insert', err);
+      await sql`
+        INSERT INTO ceo_moves (owner_id, rank, text, principle, why_now, area, suggested_due, status, source_key, how)
+        VALUES (${ownerId}, ${move.rank}, ${move.text}, ${move.principle}, ${move.why}, ${move.area}, ${null}, 'open', ${move.sourceKey}, ${JSON.stringify(move.how)}::jsonb)
+      `;
+    }
   }
   return readCeo(sql, ownerId);
 }
@@ -516,8 +538,9 @@ export async function dailyCeo(sql: Sql, ownerId: string, incoming: unknown[] | 
       files.voice,
       files.profile,
       'Ground today in leverage, cash-first, focus, and sequencing. Regulator is the lowest priority. Hyphens only. Do not describe 4orm as an AI company. Do not invent a name, Gmail, post count, or cheque name. Use only names and numbers in the live context JSON.',
+      'Each title must be one actionable move for today (a conversation to open, a send, a call, a follow-up). Never use the big goal as the title (the raise target belongs in the stakes ribbon, not the one-move). Rank 1 is today\'s one move.',
     ].filter(Boolean).join('\n\n');
-    const prompt = `Live context JSON:\n${JSON.stringify(context)}\n\nReturn ONLY a JSON array of 3 or 4 objects: [{"rank":1,"title":"...","zone":"Raise|Partners|Regulator|Cash|Product","severity":"high|medium|low","why":"one line tied to a live number","how":["step","step"]}]. Highest-leverage first.`;
+    const prompt = `Live context JSON:\n${JSON.stringify(context)}\n\nReturn ONLY a JSON array of 3 objects: [{"rank":1,"title":"...","zone":"Raise|Partners|Regulator|Cash|Product","severity":"high|medium|low","why":"one line tied to a live number","source":"short signal names, e.g. Raise tracker + a meeting name","how":["step","step"]}]. Highest-leverage first. Title = the action, not the goal.`;
     const raw = await dailyBrainJson(system, prompt);
     const parsed = parseDailyMoves(raw);
     const saved = await writeDailyMoves(sql, ownerId, parsed);
@@ -588,6 +611,7 @@ export async function doMove(sql: Sql, ownerId: string, id: string) {
     SET status = 'done', snooze_until = now() + interval '3 days'
     WHERE id = ${move.id} AND owner_id = ${ownerId}
   `;
+  await rerankOpenMoves(sql, ownerId);
   await logDecision(sql, ownerId, move.id, {
     context: move.text,
     options: 'Do | Not now | Ask',
@@ -596,7 +620,7 @@ export async function doMove(sql: Sql, ownerId: string, id: string) {
     decision: 'Do',
     reviewDate: due,
   });
-  return refreshCeo(sql, ownerId);
+  return readCeo(sql, ownerId);
 }
 
 function edmontonDay(now = new Date()) {
@@ -625,6 +649,12 @@ export async function snoozeMove(sql: Sql, ownerId: string, id: string, reason: 
     return null;
   }
   const why = reason.trim().slice(0, 500);
+  await sql`
+    UPDATE ceo_moves
+    SET status = 'snoozed', snooze_until = (${today}::date + interval '1 day')
+    WHERE id = ${move.id} AND owner_id = ${ownerId}
+  `;
+  await rerankOpenMoves(sql, ownerId);
   await logDecision(sql, ownerId, move.id, {
     context: move.text,
     options: 'Do | Not now | Ask',
@@ -633,7 +663,25 @@ export async function snoozeMove(sql: Sql, ownerId: string, id: string, reason: 
     decision: 'Not now',
     reviewDate: `${today}T23:59:00`,
   });
-  return refreshCeo(sql, ownerId);
+  return readCeo(sql, ownerId);
+}
+
+async function rerankOpenMoves(sql: Sql, ownerId: string) {
+  try {
+    const rows = await sql`
+      SELECT id FROM ceo_moves
+      WHERE owner_id = ${ownerId} AND status = 'open'
+      ORDER BY rank, created_at
+    `;
+    let rank = 1;
+    for (const row of rows as Array<{ id: string }>) {
+      await sql`UPDATE ceo_moves SET rank = ${rank} WHERE id = ${row.id} AND owner_id = ${ownerId}`;
+      rank += 1;
+      if (rank > 3) break;
+    }
+  } catch (err) {
+    fail('ceo_rerank', err);
+  }
 }
 
 export async function setWeight(sql: Sql, ownerId: string, principle: string, boost: number) {

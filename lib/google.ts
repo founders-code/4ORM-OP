@@ -565,6 +565,7 @@ export type InboxRow = {
   unread: boolean;
   outbound: boolean;
   internal: boolean;
+  bulk: boolean;
 };
 
 export type LinkedinRow = { id: string; name: string; kind: 'message' | 'invite' | 'inmail' | 'update'; snippet: string; at: number; unread: boolean };
@@ -621,7 +622,7 @@ async function gmailList(q: string, max: number) {
     `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${max}&q=${encodeURIComponent(q)}`,
   )) as { messages?: Array<{ id: string }> } | null;
   if (!listed) return null;
-  const headers = ['From', 'To', 'Subject', 'Date', 'Message-ID', 'Delivered-To', 'Content-Type'].map((h) => `metadataHeaders=${h}`).join('&');
+  const headers = ['From', 'To', 'Subject', 'Date', 'Message-ID', 'Delivered-To', 'Content-Type', 'List-Unsubscribe', 'List-Id', 'Precedence', 'Auto-Submitted', 'Return-Path', 'X-Auto-Response-Suppress'].map((h) => `metadataHeaders=${h}`).join('&');
   const ids = (listed.messages || []).slice(0, max);
   const rows = await Promise.all(ids.map((row) =>
     (gfetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(row.id)}?format=metadata&${headers}`) as Promise<GmailMeta | null>)
@@ -635,11 +636,32 @@ function headerOf(msg: GmailMeta) {
   return (name: string) => headers.filter((h) => h.name.toLowerCase() === name).map((h) => h.value).join(', ');
 }
 
+const BULK_LOCAL = /^(no-?reply|do-?not-?reply|donotreply|mailer-daemon|notifications?|updates?|news(?:letter)?|marketing|bounce|support|info|hello|hi|team|alerts?|digest|invitations?|messages-noreply)$/i;
+const BULK_HOST = /(mailchimp|sendgrid|constantcontact|hubspot|intercom|mailgun|amazonses|amazonaws\.com|sparkpost|postmarkapp|sendinblue|brevo|klaviyo|convertkit|substack|beehiiv|upwork|shortform|facebookmail|twitter\.com|x\.com|linkedin\.com|googleusercontent|mailer\.|bounce\.|email\.|emarketing|createsend|campaign-archive|mcsv\.net|sendibt3)/i;
+
+function isBulkMail(email: string, pick: (name: string) => string) {
+  if (pick('list-unsubscribe').trim()) return true;
+  if (pick('list-id').trim()) return true;
+  const prec = pick('precedence').toLowerCase();
+  if (/(^|[,;\s])(bulk|list|junk)([,;\s]|$)/.test(prec)) return true;
+  const auto = pick('auto-submitted').toLowerCase();
+  if (auto && auto !== 'no') return true;
+  if (/auto/i.test(pick('x-auto-response-suppress'))) return true;
+  const addr = String(email || '').toLowerCase();
+  const local = addr.split('@')[0] || '';
+  const host = addr.split('@')[1] || '';
+  if (BULK_LOCAL.test(local)) return true;
+  if (BULK_HOST.test(addr) || BULK_HOST.test(host)) return true;
+  const path = pick('return-path').toLowerCase();
+  if (/bounce|noreply|no-reply|mailer-daemon/.test(path)) return true;
+  return false;
+}
+
 export async function inboxMail() {
   if (!configured()) return { status: 'unavailable' as const, messages: [] as InboxRow[] };
   if (!(await accessToken())) return { status: 'unavailable' as const, messages: [] as InboxRow[] };
   const self = await mailboxSelf().catch(() => ({ addresses: new Set<string>(), names: new Set<string>(), domain: '' }));
-  const rows = await gmailList(`newer_than:14d in:inbox -category:promotions -category:social -from:linkedin.com ${CALENDAR_QUERY}`, 20);
+  const rows = await gmailList(`newer_than:14d in:inbox -category:promotions -category:social -from:linkedin.com ${CALENDAR_QUERY}`, 40);
   if (!rows) return { status: 'unavailable' as const, messages: [] as InboxRow[] };
   const isSelf = (raw: string) => {
     const address = addressOf(raw);
@@ -673,10 +695,10 @@ export async function inboxMail() {
       outbound = true;
     }
     const email = addressOf(party);
-    if (/^(no-?reply|do-?not-?reply|mailer-daemon|notifications?)@/.test(email)) continue;
     const from = displayOf(party) || email || 'Sender';
     const subject = pick('subject').slice(0, 180);
     if (!from && !subject) continue;
+    const bulk = isBulkMail(email, pick);
     messages.push({
       id: String(msg.id),
       threadId: String(msg.threadId || ''),
@@ -689,11 +711,14 @@ export async function inboxMail() {
       unread: (msg.labelIds || []).includes('UNREAD'),
       outbound,
       internal: !!self.domain && email.endsWith('@' + self.domain),
+      bulk,
     });
   }
   messages.sort((a, b) => b.at - a.at);
-  const top = messages.slice(0, 8);
-  return { status: top.length ? ('connected' as const) : ('reached_empty' as const), messages: top };
+  const people = messages.filter((row) => !row.bulk);
+  const top = (people.length ? people : messages).slice(0, 12);
+  const extra = messages.filter((row) => row.bulk && !top.some((hit) => hit.id === row.id)).slice(0, 12);
+  return { status: top.length || extra.length ? ('connected' as const) : ('reached_empty' as const), messages: top.concat(extra) };
 }
 
 function linkedinName(subject: string, fromRaw: string) {

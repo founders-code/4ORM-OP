@@ -12,13 +12,26 @@ export async function GET() {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ messages: [], linkedin: [] });
+    if (!session.sql) return NextResponse.json({ messages: [], linkedin: [], hidden: [] });
     const creds = await loadCredsFor(session.userId);
     const [mail, linked] = await Promise.all([
       withCreds(creds, () => inboxMail()).catch((err) => { fail('mail_inbox', err); return null; }),
       withCreds(creds, () => linkedinMail()).catch((err) => { fail('mail_linkedin', err); return null; }),
     ]);
     const messages = mail?.messages || [];
+    let hidden: string[] = [];
+    try {
+      await session.sql`CREATE TABLE IF NOT EXISTS inbox_hidden (
+        owner_id text NOT NULL,
+        email text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (owner_id, email)
+      )`;
+      const rows = await session.sql`SELECT email FROM inbox_hidden WHERE owner_id = ${session.userId}`;
+      hidden = (rows as Array<{ email?: string }>).map((row) => String(row.email || '').toLowerCase()).filter(Boolean);
+    } catch (err) {
+      fail('mail_hidden', err);
+    }
     for (const message of messages) {
       const email = String(message.email || '').trim();
       const at = Number(message.at);
@@ -34,10 +47,10 @@ export async function GET() {
         fail('mail_touch', err);
       }
     }
-    return NextResponse.json({ messages, linkedin: linked?.items || [] });
+    return NextResponse.json({ messages, linkedin: linked?.items || [], hidden });
   } catch (err) {
     fail('mail_inbox', err);
-    return NextResponse.json({ messages: [], linkedin: [] });
+    return NextResponse.json({ messages: [], linkedin: [], hidden: [] });
   }
 }
 
@@ -47,6 +60,28 @@ export async function POST(req: Request) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     if (!session.sql || !body) return NextResponse.json({ saved: false });
+    const hide = String(body.hide || body.hideEmail || '').trim().toLowerCase().slice(0, 180);
+    const show = String(body.show || body.showEmail || '').trim().toLowerCase().slice(0, 180);
+    if (hide || show) {
+      try {
+        await session.sql`CREATE TABLE IF NOT EXISTS inbox_hidden (
+          owner_id text NOT NULL,
+          email text NOT NULL,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          PRIMARY KEY (owner_id, email)
+        )`;
+        if (hide && hide.includes('@')) {
+          await session.sql`INSERT INTO inbox_hidden (owner_id, email) VALUES (${session.userId}, ${hide}) ON CONFLICT (owner_id, email) DO NOTHING`;
+        }
+        if (show && show.includes('@')) {
+          await session.sql`DELETE FROM inbox_hidden WHERE owner_id = ${session.userId} AND email = ${show}`;
+        }
+      } catch (err) {
+        fail('mail_hidden', err);
+        return NextResponse.json({ saved: false });
+      }
+      return NextResponse.json({ saved: true });
+    }
     const creds = await loadCredsFor(session.userId);
     const id = await withCreds(creds, () => createReplyDraft({
       to: String(body.to || ''),

@@ -47,6 +47,79 @@
     return '<section class="mcard' + (shut ? ' collapsed' : '') + '" data-card="' + id + '"><button type="button" class="ch" data-mc="' + id + '"><span class="t">' + title + '</span><span class="s">' + sub + '</span><span class="cx">' + (shut ? '>' : 'v') + '</span></button>' + body + '</section>';
   }
 
+  function showMoney() {
+    try { return localStorage.getItem('cr_show_money') === '1'; } catch (err) { return false; }
+  }
+  function setShowMoney(on) {
+    try { localStorage.setItem('cr_show_money', on ? '1' : '0'); } catch (err) {}
+    if (typeof renderOpsDash === 'function') renderOpsDash();
+    if (typeof renderWar === 'function') renderWar();
+  }
+  function cashText(raw) {
+    return showMoney() ? raw : '$••••';
+  }
+  function maskDollars(s) {
+    if (showMoney()) return s;
+    return String(s).replace(/~?\$[0-9][0-9,]*(?:\.\d+)?(?:K|M)?/g, '$••••');
+  }
+  function moneyEye() {
+    return '<button type="button" class="eye" data-money-eye="1">' + (showMoney() ? 'Hide $' : 'View $') + '</button>';
+  }
+  function peopleInboxOn() {
+    try { return localStorage.getItem('cr_inbox_people') !== '0'; } catch (err) { return true; }
+  }
+  function hiddenSenders() {
+    var map = {};
+    (STATE.mailHidden || []).forEach(function (email) { if (email) map[String(email).toLowerCase()] = true; });
+    try {
+      JSON.parse(localStorage.getItem('cr_inbox_hide') || '[]').forEach(function (email) { if (email) map[String(email).toLowerCase()] = true; });
+    } catch (err) {}
+    return map;
+  }
+  function hideSender(email) {
+    email = String(email || '').toLowerCase();
+    if (!email) return;
+    var rows = [];
+    try { rows = JSON.parse(localStorage.getItem('cr_inbox_hide') || '[]'); } catch (err) { rows = []; }
+    if (rows.indexOf(email) < 0) rows.push(email);
+    try { localStorage.setItem('cr_inbox_hide', JSON.stringify(rows)); } catch (err) {}
+    STATE.mailHidden = (STATE.mailHidden || []).concat([email]);
+    authFetch('/api/mail', { method: 'POST', quiet: true, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ hide: email }) }).catch(function () {});
+    renderOpsDash();
+  }
+  function dismissMove(id) {
+    id = String(id || '');
+    if (!id) return;
+    var data = STATE.ceo || { moves: [] };
+    var prev = (data.moves || []).slice();
+    STATE.ceo = Object.assign({}, data, { moves: prev.filter(function (m) { return String(m.id) !== id; }) });
+    var map = {};
+    try { map = JSON.parse(localStorage.getItem('cr_needle') || '{}'); } catch (err) { map = {}; }
+    if (String(map.one || '') === id) map.one = '';
+    try { localStorage.setItem('cr_needle', JSON.stringify(map)); } catch (err) {}
+    renderWar();
+    if (typeof renderOpsDash === 'function') renderOpsDash();
+    authFetch('/api/ceo/moves/' + id + '/snooze', { method: 'POST', quiet: true, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reason: 'dismissed' }) }).then(function (r) {
+      if (!r.ok) throw 0;
+      return r.json();
+    }).then(function (next) {
+      if (typeof applyCeo === 'function') applyCeo(next);
+      else STATE.ceo = next;
+      renderWar();
+      if (typeof renderOpsDash === 'function') renderOpsDash();
+    }).catch(function () {
+      STATE.ceo = Object.assign({}, data, { moves: prev });
+      renderWar();
+    });
+  }
+  function mailIsContact(row) {
+    var email = String((row && row.email) || '').toLowerCase();
+    var name = String((row && row.from) || '').toLowerCase();
+    return (STATE.contacts || []).some(function (c) {
+      return (email && c.email && String(c.email).toLowerCase() === email) || (name && c.name && String(c.name).toLowerCase() === name);
+    });
+  }
+
   function ageLabel(ms) {
     var gap = Date.now() - Number(ms || 0);
     if (!ms || gap < 0) return '';
@@ -77,7 +150,7 @@
     var needHtml = needs.map(function (row) {
       return '<div class="alert"><span class="sev ' + row[0] + '"></span><div>' + esc(row[1]) + '<span class="src">' + esc(row[2]) + '</span></div><button type="button" class="go" data-go="room">Open</button></div>';
     }).join('');
-    var labels = [['in', 'In'], ['in', 'In'], ['in', '$80K'], ['pend', 'Pend'], ['open', '5'], ['open', '6'], ['open', '7']];
+    var labels = [['in', 'In'], ['in', 'In'], ['in', cashText('$80K')], ['pend', 'Pend'], ['open', '5'], ['open', '6'], ['open', '7']];
     var cheques = labels.map(function (pair) { return '<div class="cq ' + pair[0] + '">' + pair[1] + '</div>'; }).join('');
     var worries = [
       ['r', '<b>Concentration.</b> The $80K in is one friends-and-family track. One delayed cheque is the whole pace.'],
@@ -115,9 +188,14 @@
     function isAction(row) {
       return /\b(sign|signature|docusign|agreement|contract|invoice|action required|approve|approval|deadline|due by|by (mon|tue|wed|thu|fri)|wire)\b/i.test((row.subject || '') + ' ' + (row.snippet || ''));
     }
+    var hidden = hiddenSenders();
+    var peopleOnly = peopleInboxOn();
     var mail = (STATE.mail || []).filter(function (row) {
       var who = String(row.from || '').replace(/\s+/g, ' ').trim();
+      var email = String(row.email || '').toLowerCase();
       if (/^chad r\.?\s*johnston$/i.test(who) && !row.outbound) return false;
+      if (email && hidden[email]) return false;
+      if (peopleOnly && row.bulk && !mailIsContact(row)) return false;
       return true;
     }).slice().sort(function (a, b) {
       var av = isVcMail(a) ? 0 : 1;
@@ -126,14 +204,15 @@
     });
     STATE.mailRows = mail.slice(0, 5);
     var vcMail = mail.filter(isVcMail);
-    var inbox = mail.length ? '<div class="inbox">' + STATE.mailRows.map(function (row, ix) {
+    var tog = '<div class="tog"><button type="button" data-inbox-mode="people"' + (peopleOnly ? ' class="on"' : '') + '>People only</button><button type="button" data-inbox-mode="all"' + (peopleOnly ? '' : ' class="on"') + '>All mail</button></div>';
+    var inbox = '<div class="inbox">' + tog + (mail.length ? STATE.mailRows.map(function (row, ix) {
       var vc = isVcMail(row);
       var act = !vc && isAction(row);
       var who = String(row.from || row.email || 'Sender');
       var bits = who.replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/).slice(0, 2).map(function (part) { return part.slice(0, 1); }).join('').toUpperCase() || '?';
       var flag = vc ? '<span class="flag vc">VC &middot; reply</span>' : act ? '<span class="flag act">Action</span>' : '<span class="flag rep">Reply</span>';
-      return '<div class="ir"><span class="av' + (vc ? ' vc' : '') + '">' + esc(bits) + '</span><div class="bd"><div class="su">' + (row.outbound ? '<span class="to">To</span> ' : '') + esc(who) + '</div><div class="sj">' + esc(row.subject || '(no subject)') + '</div>' + (row.snippet ? '<div class="sn">' + esc(row.snippet) + '</div>' : '') + '<div class="age">' + esc(ageLabel(row.at)) + '</div></div><div class="ra">' + flag + '<button type="button" class="rp" data-reply="' + ix + '">Reply</button></div></div>';
-    }).join('') + '<div class="cmini">' + (vcMail.length ? '<b>' + vcMail.length + ' VC email' + (vcMail.length === 1 ? '' : 's') + '</b> waiting on you - never let these sit.' : 'No investor mail waiting on you.') + '</div></div>' : '<div class="quiet">Gmail has not returned messages. Investor mail pins here when it does.</div>';
+      return '<div class="ir"><span class="av' + (vc ? ' vc' : '') + '">' + esc(bits) + '</span><div class="bd"><div class="su">' + (row.outbound ? '<span class="to">To</span> ' : '') + esc(who) + '</div><div class="sj">' + esc(row.subject || '(no subject)') + '</div>' + (row.snippet ? '<div class="sn">' + esc(row.snippet) + '</div>' : '') + '<div class="age">' + esc(ageLabel(row.at)) + '</div><button type="button" class="hide" data-hide-mail="' + esc(row.email || '') + '">Not a person / bulk</button></div><div class="ra">' + flag + '<button type="button" class="rp" data-reply="' + ix + '">Reply</button></div></div>';
+    }).join('') + '<div class="cmini">' + (vcMail.length ? '<b>' + vcMail.length + ' VC email' + (vcMail.length === 1 ? '' : 's') + '</b> waiting on you - never let these sit.' : 'No investor mail waiting on you.') + '</div>' : '<div class="quiet">No person-to-person mail in the last 14 days.</div>') + '</div>';
     var linked = (STATE.linkedin || []).slice().sort(function (a, b) { return (Number(b.at) || 0) - (Number(a.at) || 0); });
     var linkedNew = linked.filter(function (row) { return row.unread; }).length;
     var kindWord = { message: 'sent you a message', inmail: 'sent you an InMail', invite: 'wants to connect', update: 'posted an update' };
@@ -201,16 +280,16 @@
       ['Concentration', 'r', 'High', 'work'],
       ['Integrations', 'g', 'Live', 'int']
     ];
-    var strip = '<div class="command"><div class="cmdtop"><div class="vital"><span class="k">Cash</span><span class="v">$100</span><span class="sub">in the bank</span></div><div class="vital"><span class="k">Burn</span><span class="v">~$3K</span><span class="sub">implied / month</span></div><div class="vital"><span class="k">Runway</span><span class="v red">~1 day</span><span class="sub">at this cash</span></div><div class="vital"><span class="k">Raise - F&amp;F</span><span class="v">$80K / $250K</span><span class="prog"><i></i></span></div><div class="countdown"><div class="big">' + days + 'd</div><div class="k">to close - Oct 30</div></div></div><div class="lamps">' + lamps.map(function (lamp) {
+    var strip = '<div class="command"><div class="cmdtop"><div class="vital"><span class="k">Cash</span><span class="v">' + cashText('$100') + '</span><span class="sub">in the bank</span></div><div class="vital"><span class="k">Burn</span><span class="v">' + cashText('~$3K') + '</span><span class="sub">implied / month</span></div><div class="vital"><span class="k">Runway</span><span class="v red">~1 day</span><span class="sub">at this cash</span></div><div class="vital"><span class="k">Raise - F&amp;F</span><span class="v">' + cashText('$80K / $250K') + '</span><span class="prog"><i></i></span></div><div class="countdown"><div class="big">' + days + 'd</div><div class="k">to close - Oct 30</div></div>' + moneyEye() + '</div><div class="lamps">' + lamps.map(function (lamp) {
       return '<button type="button" class="lamp" data-go="' + lamp[3] + '"><span class="led ' + lamp[1] + '"></span><div class="nm">' + lamp[0] + '</div><div class="st ' + lamp[1] + '">' + lamp[2] + '</div></button>';
     }).join('') + '</div></div>';
     return strip
       + '<div class="ctrl">'
       + mc('needs', 'What needs you now', 'across the desk', needHtml)
-      + mc('raise', 'Raise tracker', '7 x $25K cheques', '<div class="cheques">' + cheques + '</div><div class="pace"><b>$170,000 to go</b> in ' + days + ' days. This week booked <b>$0</b> new. <span class="warn">Behind pace - widen the round today.</span></div>')
-      + mc('worry', 'What I would worry about', 'blind spots', worryHtml)
+      + mc('raise', 'Raise tracker', '7 x $25K cheques', '<div class="cheques">' + cheques + '</div><div class="pace"><b>' + cashText('$170,000') + ' to go</b> in ' + days + ' days. This week booked <b>' + cashText('$0') + '</b> new. <span class="warn">Behind pace - widen the round today.</span></div>')
+      + mc('worry', 'What I would worry about', 'blind spots', maskDollars(worryHtml))
       + '</div><div class="ctrl">'
-      + mc('inbox', 'Inbox - needs you', 'from Gmail &middot; VC flagged', inbox)
+      + mc('inbox', 'Inbox - needs you', peopleOnly ? 'people only' : 'all mail', inbox)
       + mc('content', 'Content runway', 'GoHighLevel', content)
       + mc('vc', 'VC watch', 'never let one go cold', watch)
       + '</div><div class="ctrl ctrl-wide">'
@@ -277,6 +356,25 @@
         if (typeof switchView === 'function') switchView(btn.getAttribute('data-go'));
       };
     });
+    el.querySelectorAll('[data-money-eye]').forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        setShowMoney(!showMoney());
+      };
+    });
+    el.querySelectorAll('[data-inbox-mode]').forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        try { localStorage.setItem('cr_inbox_people', btn.getAttribute('data-inbox-mode') === 'all' ? '0' : '1'); } catch (err) {}
+        renderOpsDash();
+      };
+    });
+    el.querySelectorAll('[data-hide-mail]').forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        hideSender(btn.getAttribute('data-hide-mail'));
+      };
+    });
   }
 
   function loadDeskFeeds() {
@@ -297,6 +395,7 @@
         return !/^\s*(?:(?:re|fwd?|fw)\s*:\s*)*(?:invitation|updated invitation|accepted|declined|tentative|tentatively accepted|canceled|cancelled|canceled event|cancelled event)(?:\s+\(.*?\))?\s*:/i.test(subject);
       });
       STATE.linkedin = (data && data.linkedin) || [];
+      STATE.mailHidden = data && data.hidden ? data.hidden : (STATE.mailHidden || []);
       if (typeof stampWarmth === 'function') stampWarmth();
       if (STATE.desk === 'room' || !STATE.desk) renderOpsDash();
       if (STATE.desk === 'people' && typeof renderPeople === 'function') renderPeople(document.getElementById('pSearch') ? document.getElementById('pSearch').value : '');
@@ -393,7 +492,7 @@
       trend.push(count);
     }
     loadDeskFeeds();
-    el.innerHTML = missionHtml(rows, doneWeek) + '<div class="money"><div><div class="k">Raise - friends &amp; family</div><div class="n">$80K / $250K</div><div class="bar"><span></span></div><div class="kick" style="color:#C5D4E6;margin-top:8px">$170K to go - 3/7 cheques - 18 days to Oct 30</div></div><div><div class="k">Runway</div><div class="n bad">~1 day</div></div><div><div class="k">Cash</div><div class="n">$100</div></div></div>'
+    el.innerHTML = missionHtml(rows, doneWeek) + '<div class="money"><div><div class="k">Raise - friends &amp; family</div><div class="n">' + cashText('$80K / $250K') + '</div><div class="bar"><span></span></div><div class="kick" style="color:#C5D4E6;margin-top:8px">' + cashText('$170K') + ' to go - 3/7 cheques - 18 days to Oct 30</div></div><div><div class="k">Runway</div><div class="n bad">~1 day</div></div><div><div class="k">Cash</div><div class="n">' + cashText('$100') + '</div></div>' + moneyEye() + '</div>'
       + '<div class="metrics">' + tiles.map(function (t) { return '<div class="metric ' + t[2] + '"><div class="k">' + esc(t[0]) + '</div><div class="n">' + esc(String(t[1])) + '</div><div class="kick">' + esc(t[3]) + '</div></div>'; }).join('') + '</div>'
       + '<div class="ops-2"><div class="card" style="padding:14px"><h3>Operations overview</h3><div class="kick">Status</div>' + meters([['Done', done.length, 'status:done', done], ['Active', active.length, 'status:active', active], ['Waiting', waiting.length, 'status:waiting', waiting], ['Blocked', blocked.length, 'status:blocked', blocked]], maxStatus) + '<div class="kick" style="margin-top:10px">Departments</div>' + meters(Object.keys(areas).map(function (k) { return [k, areas[k], 'area:' + k, areaRows[k]]; }), maxArea) + '<div class="kick" style="margin-top:10px">Priority</div>' + meters(Object.keys(pri).map(function (k) { return [k, pri[k], 'pri:' + k, rows.filter(function (it) { return it.priority === k; })]; }), maxPri) + '</div>'
       + '<div class="card" style="padding:14px"><h3>Quick insights</h3><div class="insights">'
@@ -539,10 +638,14 @@
     var filter = STATE.reachKind || 'all';
     var shown = people.filter(function (person) { return filter === 'all' || person.kind === filter; });
     var moves = ((STATE.ceo && STATE.ceo.moves) || []).filter(function (move) { return moveLabel(move); });
-    var one = moves[0];
     var needleOn = {};
     try { needleOn = JSON.parse(localStorage.getItem('cr_needle') || '{}'); } catch (err) { needleOn = {}; }
     if (needleOn.day !== laDay(Date.now())) needleOn = { day: laDay(Date.now()), ids: {} };
+    var one = moves[0];
+    if (needleOn.one) {
+      var held = moves.filter(function (move) { return String(move.id) === String(needleOn.one); })[0];
+      if (held) one = held;
+    }
     var doneN = 0;
     var slots = [0, 1, 2].map(function (i) {
       var move = moves[i];
@@ -593,16 +696,17 @@
     var actionHtml = '<div class="meet-act"><div class="h">After your meetings - what you owe</div><div class="sub2">Scraped from Zoom notes after each call</div>' + (actions.length ? actions.slice(0, 5).map(function (row) {
       return '<div class="arow"><span class="kind ' + (row.kind === 'follow_up' ? 'fu' : 'you') + '">' + (row.kind === 'follow_up' ? 'Follow up' : 'You said') + '</span><div class="tx"><div class="nm">' + esc(row.text) + '</div><div class="meta">' + esc(row.meetingTitle || 'Meeting') + (row.meetingDate ? ' - ' + esc(row.meetingDate) : '') + '</div></div><div class="acts"><button type="button" class="btn sm" data-act-col="today" data-act-id="' + esc(row.id) + '">+ Today</button><button type="button" class="btn sm" data-act-col="week" data-act-id="' + esc(row.id) + '">+ Week</button></div></div>';
     }).join('') + (actions.length > 5 ? '<button type="button" class="lk" id="meetActAll">Review all ' + actions.length + ' meeting action items</button>' : '') : '<div class="quiet" style="padding:4px 0">No commitments scraped from Zoom notes yet.</div>') + '</div>';
-    var ranked = moves.slice(0, 4);
+    var ranked = moves.slice(0, 3);
     var rankHtml = '<div class="ceo-rank"><div class="rh"><span class="t">4orm Intelligence - CEO ranked moves</span><span class="badge">Rebuilt every morning 6:30am</span><button type="button" class="btn sm" id="ceoRerun">Re-run</button></div>' + (ranked.length ? ranked.map(function (move, i) {
       var zone = String(move.zone || move.area || 'Raise');
       var zn = /regulat/i.test(zone) ? 'regulator' : /partner/i.test(zone) ? 'partners' : /cash|runway/i.test(zone) ? 'cash' : /product|dev/i.test(zone) ? 'product' : 'raise';
-      return '<div class="mv' + (i === 0 ? ' first' : '') + '"><span class="rk">' + (i + 1) + '</span><div><span class="zn ' + zn + '">' + esc(zone) + '</span><div class="tt">' + esc(moveLabel(move)) + '</div><div class="why">' + esc(move.whyNow || move.why || '') + '</div></div><div class="acts"><button type="button" class="btn sm pri" data-ceo-do="' + esc(move.id) + '">Do</button><button type="button" class="btn sm" data-ceo-steps="' + esc(move.id) + '">Steps</button><button type="button" class="btn sm" data-ceo-plan="' + esc(move.id) + '">Plan</button><button type="button" class="btn sm" data-ceo-later="' + esc(move.id) + '">Not now</button></div></div>';
+      var src = move.source || move.sourceLine || '';
+      return '<div class="mv' + (i === 0 ? ' first' : '') + '"><span class="rk">' + (i + 1) + '</span><div><span class="zn ' + zn + '">' + esc(zone) + '</span>' + (i === 0 ? '<span class="one-tag">Your one move</span>' : '') + '<div class="tt">' + esc(moveLabel(move)) + '</div><div class="why">' + esc(move.whyNow || move.why || '') + '</div>' + (src ? '<div class="src">source: ' + esc(src) + '</div>' : '') + '</div><div class="acts"><button type="button" class="btn sm pri" data-ceo-do="' + esc(move.id) + '">Do</button><button type="button" class="btn sm" data-ceo-steps="' + esc(move.id) + '">Steps</button><button type="button" class="btn sm" data-ceo-plan="' + esc(move.id) + '">Plan</button></div><button type="button" class="ghost-x" data-ceo-later="' + esc(move.id) + '" aria-label="Dismiss">x</button></div>';
     }).join('') : '<div class="quiet">No ranked moves yet. Re-run builds today\'s list from live signals.</div>') + '</div>';
     var alarmOn = alarmPrefs().on;
-    cmd.innerHTML = '<div class="command slim"><div class="cmdtop"><div class="vital"><span class="k">Cash</span><span class="v">$100</span></div><div class="vital"><span class="k">Runway</span><span class="v red">~1 day</span></div><div class="vital"><span class="k">Raise - F&amp;F</span><span class="v">$80K / $250K</span></div><div class="vital"><span class="k">To Oct 30</span><span class="v">' + daysToClose() + ' days</span></div><div class="vital" style="margin-left:auto;text-align:right"><span class="k">Focus streak</span><span class="v streak">' + (streak ? '\ud83d\udd25 ' + streak + ' day' + (streak === 1 ? '' : 's') : 'Start today') + '</span></div></div></div>'
+    cmd.innerHTML = '<div class="command slim"><div class="cmdtop"><div class="vital"><span class="k">Cash</span><span class="v">' + cashText('$100') + '</span></div><div class="vital"><span class="k">Runway</span><span class="v red">~1 day</span></div><div class="vital"><span class="k">Raise - F&amp;F</span><span class="v">' + cashText('$80K / $250K') + '</span></div><div class="vital"><span class="k">To Oct 30</span><span class="v">' + daysToClose() + ' days</span></div><div class="vital" style="margin-left:auto;text-align:right"><span class="k">Focus streak</span><span class="v streak">' + (streak ? '\ud83d\udd25 ' + streak + ' day' + (streak === 1 ? '' : 's') : 'Start today') + '</span></div>' + moneyEye() + '</div></div>'
       + '<div class="lb-add capbar"><input id="opsAdd" type="text" placeholder="Capture a task - or type an idea to park it, so you don\'t lose focus" style="flex:1"/><button class="btn pri sm" id="opsAddBtn" type="button">Add</button></div>'
-      + '<div class="war-split"><div class="focus-hero compact"><div class="l"><div class="lab">4orm Intelligence - today\'s one move</div><div class="big">' + esc(one ? moveLabel(one) : 'Pick the one thing') + '</div><div class="why">' + esc(one && (one.whyNow || one.why) ? 'Why: ' + (one.whyNow || one.why) : 'Tied to runway and the raise. Cash first.') + '</div><div class="cap" style="background:transparent;border:0;box-shadow:none;padding:0"><button class="btn pri sm" type="button" id="focusStart">\u25b6 Start 25-min focus</button><button class="btn sm" type="button" id="focusCommit">Commit this as my one thing</button><button class="btn sm" type="button" id="focusPlan">Plan</button><button class="btn sm" type="button" id="focusLater">Not now</button></div><div class="nm-fold">' + slots + '</div></div><div class="r"><div class="timer" style="--deg:' + deg + 'deg"><div class="in"><div class="t" id="focusClock">' + mm + ':' + ss + '</div><div class="s">focus</div></div></div><div class="quiet" style="color:#8fa3c6"><b style="color:#eaf1ff">' + doneN + ' of 3</b> needle-movers done</div></div></div>' + actionHtml + '</div>'
+      + '<div class="war-split"><div class="focus-hero compact"><div class="l"><div class="lab">Today\'s one move</div><div class="big">' + esc(one ? moveLabel(one) : 'Pick the one thing') + '</div><div class="why">' + esc(one && (one.whyNow || one.why) ? 'Why: ' + (one.whyNow || one.why) : 'Tied to runway and the raise. Cash first.') + '</div><div class="cap" style="background:transparent;border:0;box-shadow:none;padding:0"><button class="btn pri sm" type="button" id="focusStart">\u25b6 Start 25-min focus</button><button class="btn sm" type="button" id="focusCommit">Commit this as my one thing</button><button class="btn sm" type="button" id="focusPlan">Plan</button><button class="btn sm" type="button" id="focusLater">Cancel this move</button></div>' + rankHtml + '</div><div class="r"><div class="timer" style="--deg:' + deg + 'deg"><div class="in"><div class="t" id="focusClock">' + mm + ':' + ss + '</div><div class="s">focus</div></div></div></div></div>' + actionHtml + '</div>'
       + '<div class="war-strip"><div class="coach"><b>Coaching note</b><p>Regulators can wait. Do not let them take a cash-first morning. Drop them or give them 10 minutes, then come back to the one thing.</p></div><div class="mcard" style="padding:12px"><b>Momentum</b><div class="week">' + week + '</div><div class="budget">' + esc(budget) + '</div></div><div class="card thin" id="nextUp"><div style="flex:1">' + (next.length ? next.map(function (ev) { return '<div data-count="' + ev.start + '">' + alarmMeetLine(ev) + '</div>'; }).join('') : '<div class="kick">No more events today.</div>') + '</div><div class="cap" style="background:transparent;border:0;box-shadow:none;padding:0"><button class="btn sm" id="findSlot" type="button">Find a 30-min slot</button><button class="btn sm" id="alarmMaster" type="button">' + (alarmOn ? 'Alarms on' : 'Alarms off') + '</button></div></div></div>';
     var reachHtml = '<div class="card rox"><div class="ch"><span class="t">Reach out</span><span class="sub2">people to contact - added from Pipeline or Contacts, check off when done</span></div><div class="chips">' + kinds.map(function (pair) { var n = people.filter(function (person) { return pair[0] === 'all' || person.kind === pair[0]; }).length; return '<button type="button" class="chip' + (filter === pair[0] ? ' on' : '') + '" data-reach-kind="' + pair[0] + '">' + pair[1] + ' <span class="n">' + n + '</span></button>'; }).join('') + '</div><div class="people">' + (shown.length ? shown.map(function (person) { var bits = String(person.name || '?').split(/\s+/).slice(0, 2).map(function (part) { return part.slice(0, 1); }).join('').toUpperCase(); var tagCls = { vc: 'vc', regulator: 'reg', design: 'partner', client: 'client', corporate: 'corp' }[person.kind] || 'corp'; return '<div class="person' + (person.done ? ' done' : '') + '"><div class="top"><span class="av">' + esc(bits) + '</span><div><div class="nm">' + esc(person.name) + '</div><div class="co">' + esc(person.company || '') + '</div></div></div><span class="tag ' + tagCls + '">' + esc(reachNames[person.kind] || 'Corporate') + '</span><div class="act"><label class="ckl"><input type="checkbox" data-reach-done="' + esc(person.id) + '"' + (person.done ? ' checked' : '') + ' aria-label="Done"/><span class="ck"></span></label><span class="what">' + esc(person.nextAction || 'Reach out') + '</span><button type="button" class="go" data-reach-task="' + esc(person.id) + '">+ task</button></div></div>'; }).join('') : '<div class="rox-empty">Add people from Pipeline or Contacts.</div>') + '</div></div><div class="rox-hint">From the Pipeline or Contacts, click a person and choose Add to Reach Out with a type. Checking a person off, or + task, creates an actionable task below.</div>';
     var cols = [
@@ -622,7 +726,6 @@
         return '<div class="exec-card" draggable="true" data-item="' + esc(it.id) + '"><input type="checkbox" data-done="' + esc(it.id) + '" aria-label="Done"/><button type="button" data-edit="' + esc(it.id) + '" style="flex:1;text-align:left;border:0;background:transparent;font:inherit;cursor:pointer"><b>' + esc(it.title) + '</b><div class="kick">' + esc(areaLabel(it.area, it)) + '</div></button>' + bucketPicks(it) + (it._err ? '<div class="soft-err">' + esc(it._err) + '</div>' : '') + '<button type="button" class="ghost-x" data-del="' + esc(it.id) + '" aria-label="Delete">x</button></div>';
       }).join('') + '</div>';
     }).join('') + '</div></div>'
-      + rankHtml
       + reachHtml
       + (evening && moves.length ? '<div class="eod"><div class="h">End of day review <span class="time">' + doneN + ' of ' + Math.min(3, moves.length) + ' done</span></div>' + eodLines + '<div class="foot">You moved <b>' + doneN + ' of ' + Math.min(3, moves.length) + '</b> needle-movers. Lock tomorrow\'s one thing now, keep the streak alive.</div></div>' : '');
     bindWar();
@@ -676,9 +779,21 @@
     var later = document.getElementById('focusLater');
     if (later) later.onclick = function () {
       var move = ((STATE.ceo && STATE.ceo.moves) || [])[0];
+      var map = {};
+      try { map = JSON.parse(localStorage.getItem('cr_needle') || '{}'); } catch (err) { map = {}; }
+      if (map.one) {
+        var held = ((STATE.ceo && STATE.ceo.moves) || []).filter(function (row) { return String(row.id) === String(map.one); })[0];
+        if (held) move = held;
+      }
       if (!move || !move.id) return;
-      authFetch('/api/ceo/moves/' + move.id + '/snooze', { method: 'POST', quiet: true, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reason: 'not now' }) }).catch(function () {});
+      dismissMove(move.id);
     };
+    document.querySelectorAll('[data-money-eye]').forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        setShowMoney(!showMoney());
+      };
+    });
     document.querySelectorAll('[data-needle]').forEach(function (box) {
       box.onclick = function (e) {
         e.stopPropagation();
@@ -802,7 +917,7 @@
       btn.onclick = function () { if (typeof ceoDo === 'function') ceoDo(btn.getAttribute('data-ceo-do')); };
     });
     document.querySelectorAll('[data-ceo-later]').forEach(function (btn) {
-      btn.onclick = function () { if (typeof ceoSnooze === 'function') ceoSnooze(btn.getAttribute('data-ceo-later')); };
+      btn.onclick = function () { dismissMove(btn.getAttribute('data-ceo-later')); };
     });
     document.querySelectorAll('[data-ceo-plan],[data-ceo-steps]').forEach(function (btn) {
       btn.onclick = function () {
@@ -2548,5 +2663,7 @@
   window.bindAlarmSettings = bindAlarmSettings;
   window.bootAlarms = bootAlarms;
   window.saveItem = saveItem;
+  window.renderWar = renderWar;
+  window.renderOpsDash = renderOpsDash;
   if (document.getElementById('opsDash')) renderOpsDash();
 })();
