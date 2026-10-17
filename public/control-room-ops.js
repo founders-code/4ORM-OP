@@ -2021,6 +2021,7 @@
     if (v === 'war') { loadReach(); loadMeetingActions(); renderWar(); }
     if (v === 'notes') renderSticky();
     if (v === 'znotes') renderZNotes();
+    if (v === 'mail' && typeof loadMailBoard === 'function') loadMailBoard();
   };
 
   var brand = document.querySelector('.brand');

@@ -44,16 +44,33 @@ async function accessToken() {
   return next.access;
 }
 
-async function gfetch(url: string, init?: RequestInit) {
+async function gfetch(url: string, init?: RequestInit & { timeoutMs?: number }) {
   const access = await accessToken();
   if (!access) return null;
+  const timeoutMs = Number(init?.timeoutMs) || 8000;
+  const headers = { authorization: `Bearer ${access}`, 'content-type': 'application/json', ...(init?.headers || {}) };
   const res = await fetch(url, {
-    ...init,
-    headers: { authorization: `Bearer ${access}`, 'content-type': 'application/json', ...(init?.headers || {}) },
-    signal: init?.signal || AbortSignal.timeout(8000),
+    method: init?.method,
+    headers,
+    body: init?.body,
+    signal: init?.signal || AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) return null;
   return res.json();
+}
+
+async function gcall(url: string, init?: RequestInit & { timeoutMs?: number }) {
+  const access = await accessToken();
+  if (!access) return { ok: false, status: 0, json: null as unknown };
+  const timeoutMs = Number(init?.timeoutMs) || 12000;
+  const res = await fetch(url, {
+    method: init?.method,
+    headers: { authorization: `Bearer ${access}`, 'content-type': 'application/json', ...(init?.headers || {}) },
+    body: init?.body,
+    signal: init?.signal || AbortSignal.timeout(timeoutMs),
+  });
+  const json = await res.json().catch(() => null);
+  return { ok: res.ok, status: res.status, json };
 }
 
 function eventJoin(ev: Record<string, unknown>) {
@@ -639,7 +656,7 @@ function headerOf(msg: GmailMeta) {
 const BULK_LOCAL = /^(no-?reply|do-?not-?reply|donotreply|mailer-daemon|notifications?|updates?|news(?:letter)?|marketing|bounce|support|info|hello|hi|team|alerts?|digest|invitations?|messages-noreply)$/i;
 const BULK_HOST = /(mailchimp|sendgrid|constantcontact|hubspot|intercom|mailgun|amazonses|amazonaws\.com|sparkpost|postmarkapp|sendinblue|brevo|klaviyo|convertkit|substack|beehiiv|upwork|shortform|facebookmail|twitter\.com|x\.com|linkedin\.com|googleusercontent|mailer\.|bounce\.|email\.|emarketing|createsend|campaign-archive|mcsv\.net|sendibt3)/i;
 
-function isBulkMail(email: string, pick: (name: string) => string) {
+export function isBulkMail(email: string, pick: (name: string) => string) {
   if (pick('list-unsubscribe').trim()) return true;
   if (pick('list-id').trim()) return true;
   const prec = pick('precedence').toLowerCase();
@@ -847,4 +864,146 @@ export async function zoomMail(known: Set<string>, max = 20) {
     out.push({ id: msg.id, subject, at: Number(msg.internalDate) || Date.now(), text: plainBody(msg.payload).slice(0, 20000) });
   }
   return out;
+}
+
+export type BoardMail = InboxRow & { labels: string[]; preview: string };
+
+async function gmailPages(q: string, max: number) {
+  const ids: string[] = [];
+  let page = '';
+  for (let i = 0; i < 4 && ids.length < max; i += 1) {
+    const listed = (await gfetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&q=${encodeURIComponent(q)}${page ? `&pageToken=${encodeURIComponent(page)}` : ''}`,
+      { timeoutMs: 12000 },
+    )) as { messages?: Array<{ id: string }>; nextPageToken?: string } | null;
+    if (!listed) return i ? ids : null;
+    for (const row of listed.messages || []) if (row.id) ids.push(row.id);
+    page = listed.nextPageToken || '';
+    if (!page) break;
+  }
+  return ids.slice(0, max);
+}
+
+function chunk<T>(rows: T[], size: number) {
+  const out: T[][] = [];
+  for (let i = 0; i < rows.length; i += size) out.push(rows.slice(i, i + size));
+  return out;
+}
+
+export async function boardMail(query = '', max = 80) {
+  if (!configured()) return { status: 'unavailable' as const, messages: [] as BoardMail[] };
+  if (!(await accessToken())) return { status: 'unavailable' as const, messages: [] as BoardMail[] };
+  const q = String(query || '').trim().slice(0, 200);
+  const search = q
+    ? `${q} newer_than:90d ${CALENDAR_QUERY}`
+    : `newer_than:45d in:inbox ${CALENDAR_QUERY}`;
+  const ids = await gmailPages(search, max);
+  if (!ids) return { status: 'unavailable' as const, messages: [] as BoardMail[] };
+  const headers = ['From', 'To', 'Subject', 'Date', 'Message-ID', 'Delivered-To', 'Content-Type', 'List-Unsubscribe', 'List-Id', 'Precedence', 'Auto-Submitted', 'Return-Path', 'X-Auto-Response-Suppress'].map((h) => `metadataHeaders=${h}`).join('&');
+  const metas: GmailMeta[] = [];
+  for (const group of chunk(ids, 12)) {
+    const rows = await Promise.all(group.map((id) =>
+      (gfetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(id)}?format=metadata&${headers}`, { timeoutMs: 10000 }) as Promise<GmailMeta | null>).catch(() => null),
+    ));
+    for (const row of rows) if (row?.id) metas.push(row);
+  }
+  const self = await mailboxSelf().catch(() => ({ addresses: new Set<string>(), names: new Set<string>(), domain: '' }));
+  const isSelf = (raw: string) => {
+    const address = addressOf(raw);
+    const name = displayOf(raw).toLowerCase();
+    return (!!address && self.addresses.has(address)) || (!!name && self.names.has(name));
+  };
+  const messages: BoardMail[] = [];
+  for (const msg of metas) {
+    const pick = headerOf(msg);
+    const rawFrom = pick('from');
+    if (isCalendarMail(rawFrom, pick('subject'), msg.payload)) continue;
+    let party = rawFrom;
+    let outbound = false;
+    if (isSelf(rawFrom)) {
+      const other = splitAddresses(pick('to')).find((raw) => !isSelf(raw));
+      if (!other) continue;
+      party = other;
+      outbound = true;
+    }
+    const email = addressOf(party);
+    const from = displayOf(party) || email || 'Sender';
+    const subject = pick('subject').slice(0, 180);
+    const snippet = decodeSnippet(String(msg.snippet || ''));
+    messages.push({
+      id: String(msg.id),
+      threadId: String(msg.threadId || ''),
+      messageId: pick('message-id').slice(0, 300),
+      from: from.includes('@') ? from.split('@')[0] : from,
+      email,
+      subject: subject || '(no subject)',
+      snippet,
+      preview: snippet.slice(0, 280),
+      at: Number(msg.internalDate) || Date.parse(pick('date')) || Date.now(),
+      unread: (msg.labelIds || []).includes('UNREAD'),
+      outbound,
+      internal: !!self.domain && email.endsWith('@' + self.domain),
+      bulk: isBulkMail(email, pick),
+      labels: msg.labelIds || [],
+    });
+  }
+  messages.sort((a, b) => b.at - a.at);
+  return { status: messages.length ? ('connected' as const) : ('reached_empty' as const), messages };
+}
+
+export async function gmailThread(id: string) {
+  if (!configured() || !/^[A-Za-z0-9_-]{6,64}$/.test(id)) return null;
+  const msg = (await gfetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(id)}?format=full`,
+    { timeoutMs: 15000 },
+  )) as (GmailMeta & { payload?: GmailPart & { body?: { data?: string } } }) | null;
+  if (!msg?.id) return null;
+  const pick = headerOf(msg);
+  return {
+    id: String(msg.id),
+    threadId: String(msg.threadId || ''),
+    from: pick('from').slice(0, 180),
+    to: pick('to').slice(0, 300),
+    subject: pick('subject').slice(0, 180),
+    at: Number(msg.internalDate) || Date.now(),
+    unread: (msg.labelIds || []).includes('UNREAD'),
+    labels: msg.labelIds || [],
+    text: plainBody(msg.payload).slice(0, 40000),
+    snippet: decodeSnippet(String(msg.snippet || '')),
+  };
+}
+
+function mimeRaw(input: { to: string; subject: string; text: string; messageId?: string; reply?: boolean }) {
+  const cleanTo = String(input.to || '').trim();
+  if (!/^[^\s@,<>]+@[^\s@,<>]+\.[^\s@,<>]+$/.test(cleanTo)) return null;
+  const base = String(input.subject || '').replace(/[\r\n]/g, ' ').slice(0, 200);
+  const subject = input.reply && !/^re:/i.test(base) ? `Re: ${base}` : base;
+  const ref = String(input.messageId || '').replace(/[\r\n]/g, '').slice(0, 300);
+  const lines = [`To: ${cleanTo}`, `Subject: ${subject}`];
+  if (/^<[^<>\s]+>$/.test(ref)) lines.push(`In-Reply-To: ${ref}`, `References: ${ref}`);
+  lines.push('MIME-Version: 1.0', 'Content-Type: text/plain; charset=utf-8', '', String(input.text || '').slice(0, 20000));
+  return Buffer.from(lines.join('\r\n')).toString('base64url');
+}
+
+export async function gmailSend(input: { to: string; subject: string; text: string; threadId?: string; messageId?: string; reply?: boolean }) {
+  const raw = mimeRaw(input);
+  if (!raw) return { ok: false, status: 0, drafted: false };
+  const threadId = /^[A-Za-z0-9_-]{6,64}$/.test(String(input.threadId || '')) ? String(input.threadId) : undefined;
+  const sent = await gcall('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+    method: 'POST',
+    body: JSON.stringify({ raw, ...(threadId ? { threadId } : {}) }),
+    timeoutMs: 15000,
+  });
+  if (sent.ok) return { ok: true, status: sent.status, drafted: false };
+  const draft = await createReplyDraft(input);
+  return { ok: !!draft, status: sent.status, drafted: !!draft };
+}
+
+export async function gmailModify(id: string, add: string[] = [], remove: string[] = []) {
+  if (!configured() || !/^[A-Za-z0-9_-]{6,64}$/.test(id)) return { ok: false, status: 0 };
+  const sent = await gcall(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(id)}/modify`, {
+    method: 'POST',
+    body: JSON.stringify({ addLabelIds: add.slice(0, 8), removeLabelIds: remove.slice(0, 8) }),
+  });
+  return { ok: sent.ok, status: sent.status };
 }

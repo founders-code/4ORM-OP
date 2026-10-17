@@ -54,7 +54,7 @@ function tone(status: string | undefined) {
 }
 
 const INTEGRATIONS = [
-  { source: 'gmail', nm: 'Gmail', feeds: 'Mail that becomes tasks, drafts for packages', color: '#D6334E', ic: '@', scopes: 'read · drafts', action: 'google' },
+  { source: 'gmail', nm: 'Gmail', feeds: 'Mail that becomes tasks, drafts for packages', color: '#D6334E', ic: '@', scopes: 'read · send · modify', action: 'google' },
   { source: 'calendar', nm: 'Google Calendar', feeds: 'Calendar tab, drag to reschedule', color: '#2E6BF2', ic: '#', scopes: 'read · write', action: 'google' },
   { source: 'drive', nm: 'Google Drive', feeds: 'Documents and Drive, one folder tree', color: '#0E8A5F', ic: 'D', scopes: 'read · write', action: 'google' },
   { source: 'ghl', nm: 'GoHighLevel', feeds: 'Pipeline, reminders, contacts', color: '#8A5200', ic: 'G', scopes: 'read', action: 'ghl' },
