@@ -4,6 +4,7 @@ import { createSpace, listSpaces } from '@/lib/spaces';
 import { openBoard } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 function askedName(body: Record<string, unknown> | null) {
   return String(body?.name || body?.title || '').trim().slice(0, 120) || 'Untitled space';
