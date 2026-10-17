@@ -33,12 +33,14 @@ export async function GET(req: Request, ctx: { params: { id: string } }) {
     if (!session.sql) return NextResponse.json({ space: null, items: [], recipients: [], email: { subject: '', body: '' }, package: null });
     const view = await spaceOrNull(session.userId, ctx.params.id, session.sql);
     if (view) {
+      const pack = { ...view };
       return NextResponse.json({
         space: view.space,
         items: view.items,
         recipients: view.recipients,
         email: view.email,
-        package: view,
+        package: pack,
+        id: view.id,
       });
     }
     return packageGet(req, ctx);

@@ -101,6 +101,16 @@ export async function ensureSpaceTables(sql: Sql) {
       subject text,
       body text
     )`],
+    ['db_space_recipients', () => sql`CREATE TABLE IF NOT EXISTS space_recipients (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      space_id uuid NOT NULL,
+      contact_id text,
+      name text NOT NULL DEFAULT '',
+      email text,
+      note text,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
     ['db_space_recipients_role', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS role text`],
     ['db_space_recipients_listed', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS listed boolean NOT NULL DEFAULT true`],
     ['db_space_recipients_send', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS send_status text`],
@@ -265,7 +275,6 @@ export async function readSpace(sql: Sql, ownerId: string, id: string) {
       ...view,
       space: { id: view.id, name: view.name, driveFolderId: view.driveFolderId, pushedToDriveAt: view.pushedToDriveAt },
       email: { subject: view.emailSubject, body: view.emailBody },
-      package: view,
     };
   } catch (err) {
     fail('spaces_read', err);
@@ -301,54 +310,100 @@ function plain(value: string) {
   return value.replace(/\u2014/g, ' - ').replace(/\u2013/g, '-');
 }
 
+async function insertRecipient(sql: Sql, ownerId: string, spaceId: string, who: string, role: string) {
+  try {
+    await sql`
+      INSERT INTO space_recipients (owner_id, space_id, name, email, role, listed)
+      VALUES (${ownerId}, ${spaceId}, ${who}, ${''}, ${role}, ${true})
+    `;
+  } catch (err) {
+    fail('spaces_seed_person', err);
+    try {
+      await sql`
+        INSERT INTO space_recipients (owner_id, space_id, name, email)
+        VALUES (${ownerId}, ${spaceId}, ${who}, ${''})
+      `;
+    } catch (inner) {
+      fail('spaces_seed_person', inner);
+    }
+  }
+}
+
+async function insertOutreachRow(sql: Sql, ownerId: string, item: Record<string, unknown>) {
+  const name = clip(item.name, 120);
+  if (!name) return;
+  const kinds: Record<string, string> = { angel: 'investor', prospect: 'partner', regulator: 'regulator' };
+  const kind = kinds[String(item.kind || '')] || 'data_room';
+  const notes = plain((Array.isArray(item.intel) ? item.intel : []).map((line) => String(line || '').trim()).filter(Boolean).join('\n')).slice(0, 8000);
+  const category = clip(item.category, 40);
+  const role = clip(item.role, 120);
+  let id = '';
+  try {
+    const rows = await sql`
+      INSERT INTO spaces (owner_id, name, kind, notes, category, updated_at)
+      VALUES (${ownerId}, ${name}, ${kind}, ${notes}, ${category}, now())
+      RETURNING id
+    `;
+    id = String(rows[0]?.id || '');
+  } catch (err) {
+    fail('spaces_outreach', err);
+    try {
+      const rows = await sql`
+        INSERT INTO spaces (owner_id, name, kind, notes, updated_at)
+        VALUES (${ownerId}, ${name}, ${kind}, ${notes}, now())
+        RETURNING id
+      `;
+      id = String(rows[0]?.id || '');
+    } catch (inner) {
+      fail('spaces_outreach', inner);
+      try {
+        const rows = await sql`
+          INSERT INTO spaces (owner_id, name, updated_at)
+          VALUES (${ownerId}, ${name}, now())
+          RETURNING id
+        `;
+        id = String(rows[0]?.id || '');
+      } catch (last) {
+        fail('spaces_outreach', last);
+        return;
+      }
+    }
+  }
+  if (!id) return;
+  try {
+    await sql`
+      INSERT INTO space_email (space_id, owner_id, subject, body)
+      VALUES (${id}, ${ownerId}, ${plain(clip(item.email_subject, 200))}, ${plain(clip(item.email_body, 8000))})
+      ON CONFLICT (space_id) DO NOTHING
+    `;
+  } catch (err) {
+    fail('spaces_seed', err);
+  }
+  const people = Array.isArray(item.people) ? item.people : [];
+  for (const person of people) {
+    const who = clip(person, 120);
+    if (who) await insertRecipient(sql, ownerId, id, who, role);
+  }
+}
+
 async function seedOutreach(sql: Sql, ownerId: string) {
   const entries = (outreachSeed.spaces || []) as Array<Record<string, unknown>>;
-  const kinds: Record<string, string> = { angel: 'investor', prospect: 'partner', regulator: 'regulator' };
   let taken = new Set<string>();
   try {
     const rows = await sql`SELECT name FROM spaces WHERE owner_id = ${ownerId}`;
     taken = new Set((rows as Array<{ name?: string }>).map((row) => String(row.name || '')));
   } catch (err) {
     fail('spaces_seed_names', err);
-    return;
   }
-  for (const item of entries) {
+  const missing = entries.filter((item) => {
     const name = clip(item.name, 120);
-    if (!name || taken.has(name)) continue;
+    if (!name || taken.has(name)) return false;
     taken.add(name);
-    const kind = kinds[String(item.kind || '')] || 'data_room';
-    const notes = plain((Array.isArray(item.intel) ? item.intel : []).map((line) => String(line || '').trim()).filter(Boolean).join('\n')).slice(0, 8000);
-    const category = clip(item.category, 40);
-    const role = clip(item.role, 120);
-    try {
-      const rows = await sql`
-        INSERT INTO spaces (owner_id, name, kind, notes, category, updated_at)
-        VALUES (${ownerId}, ${name}, ${kind}, ${notes}, ${category}, now())
-        RETURNING id
-      `;
-      const id = String(rows[0]?.id || '');
-      if (!id) continue;
-      await sql`
-        INSERT INTO space_email (space_id, owner_id, subject, body)
-        VALUES (${id}, ${ownerId}, ${plain(clip(item.email_subject, 200))}, ${plain(clip(item.email_body, 8000))})
-        ON CONFLICT (space_id) DO NOTHING
-      `;
-      const people = Array.isArray(item.people) ? item.people : [];
-      for (const person of people) {
-        const who = clip(person, 120);
-        if (!who) continue;
-        try {
-          await sql`
-            INSERT INTO space_recipients (owner_id, space_id, name, email, role, listed)
-            VALUES (${ownerId}, ${id}, ${who}, ${''}, ${role}, ${true})
-          `;
-        } catch (err) {
-          fail('spaces_seed_person', err);
-        }
-      }
-    } catch (err) {
-      fail('spaces_outreach', err);
-    }
+    return true;
+  });
+  const chunk = 8;
+  for (let i = 0; i < missing.length; i += chunk) {
+    await Promise.all(missing.slice(i, i + chunk).map((item) => insertOutreachRow(sql, ownerId, item)));
   }
 }
 
@@ -453,10 +508,83 @@ export async function followSpaceGhl(sql: Sql, ownerId: string, spaceId: string)
   return { ok, note: ok ? 'Follow up is on the desk and in GoHighLevel.' : 'Follow up is on the desk. GoHighLevel did not take the task.' };
 }
 
+type SpaceCardMeta = {
+  docCount: number;
+  recipientCount: number;
+  linkCount: number;
+  preview: string;
+  emailSubject: string;
+  thumbs: Array<{ name: string; thumb: string }>;
+};
+
+function emptyMeta(): SpaceCardMeta {
+  return { docCount: 0, recipientCount: 0, linkCount: 0, preview: '', emailSubject: '', thumbs: [] };
+}
+
+async function spaceCardMeta(sql: Sql, ownerId: string) {
+  const byId = new Map<string, SpaceCardMeta>();
+  try {
+    const items = await sql`
+      SELECT space_id, kind, name, thumb_url, mime
+      FROM space_items
+      WHERE owner_id = ${ownerId}
+      ORDER BY position, created_at
+    `;
+    for (const row of items as Array<Record<string, unknown>>) {
+      const id = String(row.space_id || '');
+      if (!id) continue;
+      const meta = byId.get(id) || emptyMeta();
+      const mime = String(row.mime || '');
+      const folder = mime === 'text/x-folder';
+      if (!folder) {
+        meta.docCount += 1;
+        if (String(row.kind || '') === 'link') meta.linkCount += 1;
+        if (meta.thumbs.length < 6) {
+          meta.thumbs.push({ name: String(row.name || ''), thumb: String(row.thumb_url || '') });
+        }
+      }
+      const names = meta.preview ? meta.preview.split('\n') : [];
+      if (names.length < 4 && row.name) names.push(String(row.name));
+      meta.preview = names.join('\n');
+      byId.set(id, meta);
+    }
+  } catch (err) {
+    fail('spaces_counts', err);
+  }
+  try {
+    const people = await sql`
+      SELECT space_id FROM space_recipients WHERE owner_id = ${ownerId}
+    `;
+    for (const row of people as Array<{ space_id?: string }>) {
+      const id = String(row.space_id || '');
+      if (!id) continue;
+      const meta = byId.get(id) || emptyMeta();
+      meta.recipientCount += 1;
+      byId.set(id, meta);
+    }
+  } catch (err) {
+    fail('spaces_counts', err);
+  }
+  try {
+    const mail = await sql`
+      SELECT space_id, subject FROM space_email WHERE owner_id = ${ownerId}
+    `;
+    for (const row of mail as Array<{ space_id?: string; subject?: string }>) {
+      const id = String(row.space_id || '');
+      if (!id) continue;
+      const meta = byId.get(id) || emptyMeta();
+      meta.emailSubject = String(row.subject || '');
+      byId.set(id, meta);
+    }
+  } catch (err) {
+    fail('spaces_counts', err);
+  }
+  return byId;
+}
+
 export async function listSpaces(sql: Sql, ownerId: string) {
   try {
     await ensureSpaceTables(sql);
-    await pullGhlStages(sql, ownerId);
     let packages: Array<Record<string, unknown>> = [];
     try {
       const rows = await sql`
@@ -471,55 +599,34 @@ export async function listSpaces(sql: Sql, ownerId: string) {
     }
     await seedTemplates(sql, ownerId, new Set(packages.map((row) => String(row.name || ''))));
     await seedOutreach(sql, ownerId);
-    const rows = await sql`
-      SELECT id, name, kind, notes, category, stage, sent_at, drive_folder_id, drive_folder_url, pushed_to_drive_at, created_at
-      FROM spaces
-      WHERE owner_id = ${ownerId}
-      ORDER BY created_at
-    `;
-    const cards = [];
-    for (const row of rows as Record<string, unknown>[]) {
-      const id = String(row.id);
-      let docCount = 0;
-      let recipientCount = 0;
-      let linkCount = 0;
-      let preview = '';
-      let emailSubject = '';
-      let thumbs: Array<{ name: string; thumb: string }> = [];
+    let rows: Record<string, unknown>[] = [];
+    try {
+      rows = await sql`
+        SELECT id, name, kind, notes, category, stage, sent_at, drive_folder_id, drive_folder_url, pushed_to_drive_at, created_at
+        FROM spaces
+        WHERE owner_id = ${ownerId}
+        ORDER BY created_at
+      ` as Record<string, unknown>[];
+    } catch (err) {
+      fail('spaces_list_cols', err);
       try {
-        const docs = await sql`
-          SELECT id FROM space_items
-          WHERE space_id = ${id} AND owner_id = ${ownerId} AND coalesce(mime, '') <> 'text/x-folder'
-        `;
-        const people = await sql`SELECT id FROM space_recipients WHERE space_id = ${id} AND owner_id = ${ownerId}`;
-        docCount = docs.length;
-        recipientCount = people.length;
-        const names = await sql`
-          SELECT name FROM space_items
-          WHERE space_id = ${id} AND owner_id = ${ownerId}
-          ORDER BY position
-          LIMIT 4
-        `;
-        preview = (names as Array<{ name?: string }>).map((row) => String(row.name || '')).filter(Boolean).join('\n');
-        const shots = await sql`
-          SELECT name, thumb_url, kind FROM space_items
-          WHERE space_id = ${id} AND owner_id = ${ownerId} AND coalesce(mime, '') <> 'text/x-folder'
-          ORDER BY position
-          LIMIT 6
-        `;
-        thumbs = (shots as Array<{ name?: string; thumb_url?: string }>).map((shot) => ({
-          name: String(shot.name || ''),
-          thumb: String(shot.thumb_url || ''),
-        }));
-        const links = await sql`SELECT id FROM space_items WHERE space_id = ${id} AND owner_id = ${ownerId} AND kind = 'link'`;
-        linkCount = links.length;
-        const mail = await sql`SELECT subject FROM space_email WHERE space_id = ${id} AND owner_id = ${ownerId} LIMIT 1`;
-        emailSubject = String(mail[0]?.subject || '');
-      } catch (err) {
-        fail('spaces_counts', err);
+        rows = await sql`
+          SELECT id, name, kind, notes, created_at
+          FROM spaces
+          WHERE owner_id = ${ownerId}
+          ORDER BY created_at
+        ` as Record<string, unknown>[];
+      } catch (inner) {
+        fail('spaces_list', inner);
+        rows = [];
       }
+    }
+    const meta = await spaceCardMeta(sql, ownerId);
+    const cards = rows.map((row) => {
+      const id = String(row.id);
+      const bits = meta.get(id) || emptyMeta();
       const pushed = row.pushed_to_drive_at ? new Date(String(row.pushed_to_drive_at)) : null;
-      cards.push({
+      return {
         id,
         name: String(row.name || 'Untitled space'),
         kind: String(row.kind || 'data_room'),
@@ -531,15 +638,15 @@ export async function listSpaces(sql: Sql, ownerId: string) {
         subjectLabel: String(row.name || ''),
         description: String(row.notes || ''),
         spaceCategory: String(row.category || ''),
-        preview,
-        emailSubject,
-        thumbs,
-        linkCount,
+        preview: bits.preview,
+        emailSubject: bits.emailSubject,
+        thumbs: bits.thumbs,
+        linkCount: bits.linkCount,
         pushedToDriveAt: pushed && !Number.isNaN(pushed.getTime()) ? pushed.toISOString() : '',
-        docCount,
-        recipientCount,
-      });
-    }
+        docCount: bits.docCount,
+        recipientCount: bits.recipientCount,
+      };
+    });
     const names = new Set(cards.map((card) => card.name));
     const extras = packages.filter((row) => !names.has(String(row.name || '')));
     const merged = cards.concat(extras as typeof cards);

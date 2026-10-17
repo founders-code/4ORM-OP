@@ -16,6 +16,8 @@ const nextConfig = {
     '/api/news': ['./NEWS_SOURCES.md'],
     '/api/news/refresh': ['./NEWS_SOURCES.md'],
     '/api/news/ingest': ['./NEWS_SOURCES.md'],
+    '/api/spaces': ['./data/spaces_seed.json'],
+    '/api/spaces/[id]': ['./data/spaces_seed.json'],
   },
   // Serve the public landing at "/" so the look is preserved exactly.
   // The gated rooms live at /advisor.html, /employee.html, /engineering.html.
