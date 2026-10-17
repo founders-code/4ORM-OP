@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email - reader</title>
+<style>
+:root{color-scheme:light;--bg:#f4f6f9;--panel:#fff;--ink:#0b1220;--muted:#5b6472;--line:#e7e9ee;--blue:#1f5fff;--navy:#0b1f55;--green:#17b86a;--r:12px;--shadow:0 1px 2px rgba(16,24,40,.04),0 8px 22px rgba(16,24,40,.06);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#0b1220}
+.stage{position:relative;height:100%;background:var(--bg)}
+.dim{position:absolute;inset:0;background:rgba(11,18,32,.18)}
+.emx-reader{position:absolute;top:0;right:0;bottom:0;width:520px;background:var(--panel);box-shadow:-18px 0 40px rgba(16,24,40,.16);display:flex;flex-direction:column;color:var(--ink)}
+.emx-rh{position:absolute;left:0;top:0;bottom:0;width:10px;cursor:col-resize}
+.emx-rh::after{content:"";position:absolute;left:4px;top:12px;bottom:12px;width:2px;border-radius:2px;background:#d7deea}
+.emx-rhead{padding:14px 18px 10px 18px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:flex-start}
+.emx-rhead .av{width:34px;height:34px;border-radius:50%;background:#e9eefb;color:#2a4c9c;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+.emx-rhead .su{font-size:14px;font-weight:750}
+.emx-rhead .sj{font-size:13px;font-weight:600;margin-top:2px}
+.emx-rhead .meta{font-size:11px;color:var(--muted);margin-top:3px}
+.emx-rhead .x{margin-left:auto;border:0;background:#f3f5f9;border-radius:8px;width:28px;height:28px;cursor:pointer;color:#5b6472}
+.emx-chips{display:flex;flex-wrap:wrap;gap:6px;padding:8px 18px;border-bottom:1px solid var(--line)}
+.emx-chips span{font-size:10.5px;font-weight:650;border-radius:999px;padding:3px 8px;background:#eef2fb;color:#3a5bbf}
+.emx-assist{margin:12px 16px;background:#f6f8ff;border:1px solid #dce6fb;border-radius:12px;padding:12px 14px}
+.emx-assist .k{font-size:11px;font-weight:750;color:var(--navy);margin-bottom:8px}
+.emx-assist .row{font-size:12px;line-height:1.45;margin:0 0 7px;color:#30384a}
+.emx-assist .row b{color:var(--ink)}
+.emx-assist .draft{background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px;font-size:12.5px;line-height:1.45;white-space:pre-wrap}
+.emx-body{flex:1;overflow:auto;padding:12px 18px 16px;font-size:13px;line-height:1.55;color:#243044}
+.emx-body .msg{border-top:1px solid var(--line);padding:12px 0}
+.emx-body .who{font-size:12px;font-weight:650;margin-bottom:6px}
+.emx-acts{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px 14px;border-top:1px solid var(--line);background:#fafbfe}
+.emx-acts .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:650;cursor:pointer;color:#33405a}
+.emx-acts .btn.pri{background:var(--navy);color:#fff;border-color:var(--navy)}
+</style></head><body>
+<div class="stage">
+  <div class="dim"></div>
+  <aside class="emx-reader">
+    <div class="emx-rh" title="Drag to resize"></div>
+    <div class="emx-rhead">
+      <span class="av">DH</span>
+      <div>
+        <div class="su">Don Hickling</div>
+        <div class="sj">Follow-up on the cheque</div>
+        <div class="meta">don@example-not-used · 2 hours ago</div>
+      </div>
+      <button type="button" class="x" aria-label="Close">x</button>
+    </div>
+    <div class="emx-chips"><span>Contact</span><span>Investor</span><span>Friends &amp; family</span></div>
+    <div class="emx-assist">
+      <div class="k">4orm Intelligence</div>
+      <div class="row"><b>Who:</b> Angel in the friends-and-family close. Last touch was this thread.</div>
+      <div class="row"><b>Asking:</b> Wire instructions so the cheque can land this week.</div>
+      <div class="draft">Don -
+
+Wire instructions are in the note I just sent. Confirm when it leaves your bank so I can mark the cheque in.
+
+Chad</div>
+    </div>
+    <div class="emx-body">
+      <div class="msg"><div class="who">Don Hickling</div>Chad - confirming the $25K lands this week. Can you send the wire instructions this afternoon?</div>
+    </div>
+    <div class="emx-acts">
+      <button type="button" class="btn pri">Reply</button>
+      <button type="button" class="btn">Add to Space</button>
+      <button type="button" class="btn">Create task</button>
+      <button type="button" class="btn">Snooze</button>
+      <button type="button" class="btn">Move column</button>
+      <button type="button" class="btn">Promote in pipeline</button>
+      <button type="button" class="btn">Mark done</button>
+    </div>
+  </aside>
+</div>
+</body></html>

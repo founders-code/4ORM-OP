@@ -594,6 +594,45 @@ async function migrateWar(sql: Sql) {
     ['db_spaces_sent', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS sent_at timestamptz`],
     ['db_spaces_ghl', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS ghl_opportunity_id text`],
     ['db_space_recipients_send', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS send_status text`],
+    ['db_email_columns', () => sql`CREATE TABLE IF NOT EXISTS email_columns (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      key text NOT NULL,
+      name text NOT NULL,
+      position int NOT NULL DEFAULT 0,
+      width int NOT NULL DEFAULT 280,
+      collapsed boolean NOT NULL DEFAULT false,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      UNIQUE (owner_id, key)
+    )`],
+    ['db_email_rules', () => sql`CREATE TABLE IF NOT EXISTS email_rules (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      match_type text NOT NULL,
+      match_value text NOT NULL,
+      target_column text NOT NULL,
+      sticky boolean NOT NULL DEFAULT true,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_email_file', () => sql`CREATE TABLE IF NOT EXISTS email_file (
+      owner_id text NOT NULL,
+      message_id text NOT NULL,
+      column_key text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (owner_id, message_id)
+    )`],
+    ['db_email_snooze', () => sql`CREATE TABLE IF NOT EXISTS email_snooze (
+      owner_id text NOT NULL,
+      message_id text NOT NULL,
+      until timestamptz NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (owner_id, message_id)
+    )`],
+    ['db_mail_cache', () => sql`CREATE TABLE IF NOT EXISTS mail_cache (
+      owner_id text PRIMARY KEY,
+      payload jsonb NOT NULL,
+      fetched_at timestamptz NOT NULL DEFAULT now()
+    )`],
   ];
   for (const [code, run] of steps) {
     try {
