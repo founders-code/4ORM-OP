@@ -1,10 +1,5 @@
 {
   "framework": "nextjs",
-  "functions": {
-    "app/api/news/sweep/route.ts": { "maxDuration": 60 },
-    "app/api/news/refresh/route.ts": { "maxDuration": 60 },
-    "app/api/cron/news/route.ts": { "maxDuration": 60 }
-  },
   "crons": [
     {
       "path": "/api/cron/brief",
