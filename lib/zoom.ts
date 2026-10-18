@@ -57,6 +57,28 @@ function zoomUser() {
   return encodeURIComponent(process.env.ZOOM_USER || 'me');
 }
 
+export async function createZoomMeeting(startIso: string, durMin: number, topic: string) {
+  if (!zoomConfigured()) return null;
+  const token = await zoomToken();
+  if (!token) return null;
+  const res = await fetch(`https://api.zoom.us/v2/users/${zoomUser()}/meetings`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      topic: String(topic || '4orm call').slice(0, 180),
+      type: 2,
+      start_time: startIso,
+      duration: Math.max(15, Math.min(Number(durMin) || 30, 120)),
+      timezone: 'America/Los_Angeles',
+      settings: { join_before_host: true, waiting_room: false },
+    }),
+    signal: AbortSignal.timeout(9000),
+  }).catch(() => null);
+  if (!res?.ok) return null;
+  const json = (await res.json().catch(() => null)) as { join_url?: string } | null;
+  return json?.join_url ? String(json.join_url).slice(0, 500) : null;
+}
+
 /** Meeting UUIDs that start with "/" or contain "//" must be double-encoded in the path. */
 function uuidPath(uuid: string) {
   return uuid.startsWith('/') || uuid.includes('//') ? encodeURIComponent(encodeURIComponent(uuid)) : encodeURIComponent(uuid);

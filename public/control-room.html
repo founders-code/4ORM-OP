@@ -1828,6 +1828,95 @@ body.rz-drag,body.rz-drag *{cursor:col-resize!important;user-select:none!importa
 .fin-scen:first-of-type{border-top:0;padding-top:0}
 .fin-scen .nm{font-size:13px;font-weight:750;margin-bottom:4px}
 .fin-scen p{margin:0;font-size:13px;color:#44506a;line-height:1.45}
+
+.iq-mark{display:flex;align-items:center;gap:6px;font-weight:800;letter-spacing:-.03em;color:#fff}
+.iq-mark b{width:22px;height:22px;border-radius:6px;background:#2E6BF2;display:grid;place-items:center;font-size:12px}
+.pb-page{color:#e8eefc;min-height:calc(100vh - 58px)}
+.pb-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.pb-head h2{margin:0;font-size:22px;font-weight:800;letter-spacing:-.03em;color:#fff}
+.pb-week{font-size:12px;color:rgba(226,234,252,.7);font-weight:650}
+.pb-run{background:#17b86a;color:#fff;border:0;border-radius:10px;font:650 13px var(--sans);padding:9px 14px;cursor:pointer}
+.pb-run.off{background:#2a3a58;color:#9db0d0}
+.pb-score{margin-left:auto;font-size:12px;color:#9db0d0}
+.pb-score b{color:#fff;font-size:16px}
+.pb-calbtn{width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:#13224a;color:#fff;cursor:pointer}
+.pb-grid{display:grid;grid-template-columns:220px repeat(7,1fr) 64px;gap:8px;align-items:stretch}
+.pb-dayh{font-size:11px;color:#9db0d0;text-align:center;padding:6px 0}
+.pb-dayh.on{color:#fff;background:rgba(46,107,242,.22);border-radius:8px}
+.pb-rowname{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.04);border-radius:10px;padding:8px 10px}
+.pb-sw{width:10px;height:10px;border-radius:3px;flex:none}
+.pb-rowname .nm{font-size:13px;font-weight:650;color:#fff}
+.pb-rowname .go{font-size:11px;color:#8fb0ff;cursor:pointer;background:none;border:0;padding:0;font-family:var(--sans)}
+.pb-rowname .note{font-size:10px;color:#7d8eab}
+.pb-pad{height:42px;border-radius:10px;display:grid;place-items:center;cursor:pointer;font-size:11px;font-weight:750;color:#fff;position:relative}
+.pb-pad.empty{background:transparent;border:1px dashed rgba(255,255,255,.18);color:transparent}
+.pb-pad.due{filter:none}
+.pb-pad.dim,.pb-pad.done,.pb-pad.scheduled,.pb-pad.snoozed{filter:saturate(.45) brightness(.55)}
+.pb-pad.done:after{content:'✓';position:absolute;right:6px;top:4px;font-size:10px}
+.pb-pad.missed{background:#5a1d24!important;color:#ffd0d4;filter:none}
+.pb-streak{display:grid;place-items:center;font-size:12px;color:#9db0d0}
+.pb-add{margin-top:12px;background:none;border:1px dashed rgba(255,255,255,.2);color:#9db8ff;border-radius:10px;padding:10px;width:100%;cursor:pointer;font:650 13px var(--sans)}
+.pb-beats{display:grid;grid-template-columns:1.4fr repeat(5,1fr);gap:12px;margin-top:18px}
+.pb-tile{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px}
+.pb-tile .t{font-size:13px;font-weight:750;color:#fff}
+.pb-tile .s{font-size:11px;color:#9db0d0;margin-top:4px}
+.pb-bar{height:6px;border-radius:99px;background:#1a2744;margin-top:10px;overflow:hidden}
+.pb-bar i{display:block;height:100%;background:#2E6BF2}
+.pb-pop{position:absolute;z-index:40;background:#0f1b38;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;min-width:200px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.pb-pop .t{font-weight:750;color:#fff;margin-bottom:8px}
+.pb-pop button{display:block;width:100%;margin-top:6px;border:0;border-radius:8px;padding:8px;cursor:pointer;font:650 12px var(--sans)}
+.pb-stack{position:fixed;inset:0;background:rgba(6,12,28,.72);z-index:80;overflow:auto;padding:28px}
+.pb-stack .box{max-width:1100px;margin:0 auto;background:#0d1730;border-radius:16px;padding:18px}
+.pb-month{margin-bottom:36px}
+.pb-month h3{color:#fff;margin:0 0 10px}
+.cal-app{display:grid;grid-template-columns:260px 1fr;gap:12px;min-height:calc(100vh - 70px);color:#e8eefc}
+.cal-side{background:#0c1733;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.cal-side input,.cal-side textarea{width:100%;border:1px solid rgba(255,255,255,.12);background:#13224a;color:#fff;border-radius:10px;padding:8px 10px;font:13px var(--sans)}
+.cal-mini{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;font-size:10px;text-align:center}
+.cal-mini b{color:#9db0d0;font-weight:600}
+.cal-mini span{display:grid;place-items:center;height:22px;border-radius:50%;color:#c5d2ea}
+.cal-mini span.on{background:#2E6BF2;color:#fff}
+.cal-mini span.wk{background:rgba(46,107,242,.18)}
+.cal-ribbon{height:46px;background:#13224a;border-radius:10px;position:relative;overflow:hidden}
+.cal-ribbon i{position:absolute;top:8px;bottom:8px;border-radius:4px;background:#5b8cff}
+.cal-ribbon .now{position:absolute;top:0;bottom:0;width:2px;background:#e0483a}
+.cal-next{background:rgba(255,255,255,.05);border-radius:12px;padding:10px}
+.cal-next .t{font-weight:750;color:#fff}
+.cal-next .s{font-size:12px;color:#9db0d0;margin:4px 0 8px}
+.cal-shape{display:flex;height:10px;border-radius:99px;overflow:hidden}
+.cal-shape i{display:block;height:100%}
+.cal-tog{display:flex;flex-direction:column;gap:6px;font-size:12px;color:#c5d2ea}
+.cal-main{min-width:0}
+.cal-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.cal-bar h2{margin:0;font-size:20px;color:#fff}
+.cal-bar h2 .y{color:#5b8cff}
+.cal-views{display:flex;background:#13224a;border-radius:99px;padding:3px;margin:0 auto}
+.cal-views button{border:0;background:none;color:#9db0d0;padding:6px 12px;border-radius:99px;cursor:pointer;font:650 12px var(--sans)}
+.cal-views button.on{background:#2E6BF2;color:#fff}
+.cal-week{position:relative}
+.cal-wlab{position:sticky;top:0;z-index:3;display:flex;gap:8px;align-items:center;background:#0a1326;padding:8px 0;color:#fff;font-weight:750}
+.cal-wlab .pill{font-size:11px;background:#1a2c55;border-radius:99px;padding:3px 8px;color:#c5d2ea}
+.cal-wlab .pill.this{background:#2E6BF2;color:#fff}
+.cal-wlab .gold{background:#c79a3a;color:#1a1406}
+.cal-grid{display:grid;grid-template-columns:42px repeat(7,1fr);gap:2px;background:#0a1326}
+.cal-cell{min-height:720px;background:#101c3a;position:relative}
+.cal-cell.today{background:#15244c}
+.cal-allday{min-height:22px;background:#0d1730}
+.cal-ev{position:absolute;left:3px;right:3px;border-radius:6px;padding:0 6px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:9.5px;line-height:1;display:flex;align-items:center;color:#0b1f55;background:#9bb6ff}
+.cal-ev .tm{font-size:8.5px;opacity:.8;margin-right:4px}
+.cal-ev.gold{background:#e0c07a;color:#3a2a08}
+.cal-ev.violet{background:#c4b3ff;color:#2a185a}
+.cal-ev.lime{background:#c6e87a;color:#1f3308}
+.cal-ev.teal{background:#8fe3d4;color:#08332c}
+.cal-ev.dash{background:transparent;border:1.5px dashed currentColor;color:#8fb0ff}
+.cal-now{position:absolute;left:0;right:0;height:2px;background:#e0483a;z-index:2}
+.cal-plan{background:rgba(46,107,242,.12);border:1px solid rgba(46,107,242,.3);border-radius:10px;padding:8px 12px;margin-bottom:10px;display:flex;gap:8px;align-items:center;font-size:12px}
+.cal-q{display:grid;gap:16px}
+.cal-mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-mcell{min-height:92px;background:#101c3a;border-radius:8px;padding:6px;font-size:11px}
+.cal-mcell.today{outline:2px solid #2E6BF2}
+.cal-yp{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.cal-book{margin-left:auto;background:#13224a;color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:8px 12px;cursor:pointer;font:650 12px var(--sans)}
 </style>
 </head>
 <body class="dk-page">
@@ -1851,6 +1940,8 @@ body.rz-drag,body.rz-drag *{cursor:col-resize!important;user-select:none!importa
  <div class="tab" data-v="docs"><span class="ni">D</span><span class="nl">Documents</span></div>
  <div class="tab" data-v="links"><span class="ni">L</span><span class="nl">Links</span></div>
  <div class="tab" data-v="mail"><span class="ni">@</span><span class="nl">Email</span></div>
+ <div class="tab" data-v="playbook"><span class="ni">B</span><span class="nl">Playbook</span></div>
+ <div class="tab" data-v="calendar"><span class="ni">C</span><span class="nl">Calendar</span></div>
  <div class="tab" data-v="znotes"><span class="ni">Z</span><span class="nl">Zoom</span></div>
  <div class="tab" data-v="notes"><span class="ni">N</span><span class="nl">Notes</span></div>
  <div class="tab" data-v="done"><span class="ni">C</span><span class="nl">Completed</span></div>
@@ -2054,6 +2145,14 @@ body.rz-drag,body.rz-drag *{cursor:col-resize!important;user-select:none!importa
    <div id="doneList"></div>
    <div id="doneRead" hidden></div>
   </section>
+ </div>
+
+ <div class="view" id="v-playbook" hidden>
+  <section class="pb-page" id="playDesk"></section>
+ </div>
+
+ <div class="view" id="v-calendar" hidden>
+  <section class="cal-app" id="calDesk"></section>
  </div>
 
  <div class="view" id="v-finance" hidden>
@@ -2322,7 +2421,7 @@ function unlockFinance(){STATE.finUnlocked=true;var gate=document.getElementById
 function renderFinance(){var el=document.getElementById('finBody');if(!el||!STATE.finUnlocked)return;var f=STATE.finance||{};if(!f.cash&&!f.cashLabel)f={cashLabel:'$100',burnLabel:'~$90,050/mo',runwayLabel:'~1 day',asOf:'12 Oct 2026',raise:{inLabel:'$80K',targetLabel:'$250K',toGoLabel:'$170K',chunks:'3/7',pace:'behind'},cheques:[{label:'In',state:'in'},{label:'In',state:'in'},{label:'$80K',state:'in'},{label:'Pend',state:'pend'},{label:'5',state:'open'},{label:'6',state:'open'},{label:'7',state:'open'}],expenses:[{name:'Speer build',amount:40000},{name:'Team and contractors',amount:22862},{name:'Legal / regulatory / security / audit',amount:15900},{name:'Running the company',amount:11288}],scenarios:[{name:'Ground Floor',line:'Desk now. Cash $100. Burn ~$90,050/mo. Runway ~1 day. Friends & family $80K of $250K.'},{name:'Base',line:'Model Oct-Dec path. Opening assumed $25,000. Burn ~$90,050/mo through Dec. Trough $15,622 in Aug 2027 if every tranche lands.'},{name:'Blue Sky',line:'Jan 2027 go-to-market ramp. Burn steps to ~$228,016/mo when GTM and the full team begin. Pre-seed model is $3M at $10M pre-money.'}]};var r=f.raise||{};var cheques=(f.cheques||[]).map(function(c){return '<div class="cq '+esc(c.state||'open')+'">'+esc(c.label||'')+'</div>';}).join('');var exp=(f.expenses||[]).map(function(e){return '<div class="fin-row"><span>'+esc(e.name)+'</span><b>$'+Number(e.amount||0).toLocaleString('en-US')+'</b></div>';}).join('');var sc=(f.scenarios||[]).map(function(s){return '<div class="fin-scen"><div class="nm">'+esc(s.name)+'</div><p>'+esc(s.line)+'</p></div>';}).join('');el.innerHTML='<div class="fin-grid"><div class="fin-vital"><span class="k">Cash</span><span class="v">'+esc(f.cashLabel||('$'+Number(f.cash||0).toLocaleString('en-US')))+'</span><span class="sub">in the bank · '+esc(f.asOf||'')+'</span></div><div class="fin-vital"><span class="k">Burn</span><span class="v">'+esc(f.burnLabel||'')+'</span><span class="sub">Oct-Dec</span></div><div class="fin-vital"><span class="k">Runway</span><span class="v red">'+esc(f.runwayLabel||'')+'</span><span class="sub">at this cash</span></div><div class="fin-vital"><span class="k">Raise</span><span class="v">'+esc((r.inLabel||'')+' / '+(r.targetLabel||''))+'</span><span class="sub">'+esc((r.toGoLabel||'')+' to go · '+(r.chunks||'')+' · '+(r.pace||''))+'</span></div></div><div class="fin-card-block"><div class="t">7 cheques</div><div class="cheques">'+cheques+'</div><div class="kick">'+esc(r.toGoLabel||'$170K')+' to go. Pace: '+esc(r.pace||'behind')+'.</div></div><div class="fin-card-block"><div class="t">Expense / burn breakdown</div>'+(exp||'<div class="kick">Burn detail is in the company profile.</div>')+'</div><div class="fin-card-block"><div class="t">Model scenarios</div>'+(sc||'<div class="kick">Scenarios are in the five-year model.</div>')+'</div>';}
 function loadFinance(){if(!STATE.finUnlocked)lockFinance();authFetch('/api/finance',{credentials:'same-origin'}).then(function(r){return r.json();}).then(function(d){if(!d)return;STATE.finance=d;if(d.code)STATE.finCode=String(d.code);if(STATE.finUnlocked)renderFinance();}).catch(function(){});}
 function submitFinance(e){if(e)e.preventDefault();var box=document.getElementById('finCode');var card=document.getElementById('finCard');var got=String(box&&box.value||'').replace(/\s+/g,'');var want=String(STATE.finCode||'1313');if(got===want){unlockFinance();return;}if(card){card.classList.remove('bad');void card.offsetWidth;card.classList.add('bad');}if(box)box.value='';setTimeout(focusFinCode,0);}
-function switchView(v){var prev=STATE.desk;STATE.desk=v;if(prev==='finance'&&v!=='finance')lockFinance();if(v==='znotes')setTimeout(zoomAutoRefresh,0);document.body.classList.toggle('dk-page',['room','war','contacts','work','docs','links'].indexOf(v)>=0);document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('on',t.getAttribute('data-v')===v);});['room','war','cal','docs','drive','contacts','int','notes','znotes','people','work','links','news','mail','done','finance'].forEach(function(k){var el=document.getElementById('v-'+k);if(el)el.hidden=(k!==v);});if(v!=='mail'){var er=document.getElementById('emailReader');if(er)er.hidden=true;}if(v==='cal')calInit();if(v==='docs'||v==='drive')renderDocs();if(v==='contacts')renderContacts(document.getElementById('cSearch').value||'');if(v==='notes')renderNotes();if(v==='znotes')renderZNotes();if(v==='people')renderPeople(document.getElementById('pSearch').value||'');if(v==='work')loadPackages();if(v==='int'){renderInt();renderPlugins();}if(v==='mail'&&typeof loadMailBoard==='function')loadMailBoard();if(v==='done')loadSnapshots();if(v==='finance'){lockFinance();loadFinance();}window.scrollTo({top:0,behavior:'smooth'});}
+function switchView(v){var prev=STATE.desk;STATE.desk=v;if(prev==='finance'&&v!=='finance')lockFinance();if(v==='znotes')setTimeout(zoomAutoRefresh,0);document.body.classList.toggle('dk-page',['room','war','contacts','work','docs','links','playbook','calendar'].indexOf(v)>=0);document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('on',t.getAttribute('data-v')===v);});['room','war','cal','docs','drive','contacts','int','notes','znotes','people','work','links','news','mail','done','finance','playbook','calendar'].forEach(function(k){var el=document.getElementById('v-'+k);if(el)el.hidden=(k!==v);});if(v!=='mail'){var er=document.getElementById('emailReader');if(er)er.hidden=true;}if(v==='cal')calInit();if(v==='calendar'&&typeof loadCalendarPage==='function')loadCalendarPage();if(v==='playbook'&&typeof loadPlaybook==='function')loadPlaybook();if(v==='docs'||v==='drive')renderDocs();if(v==='contacts')renderContacts(document.getElementById('cSearch').value||'');if(v==='notes')renderNotes();if(v==='znotes')renderZNotes();if(v==='people')renderPeople(document.getElementById('pSearch').value||'');if(v==='work')loadPackages();if(v==='int'){renderInt();renderPlugins();}if(v==='mail'&&typeof loadMailBoard==='function')loadMailBoard();if(v==='done')loadSnapshots();if(v==='finance'){lockFinance();loadFinance();}window.scrollTo({top:0,behavior:'smooth'});}
 function startVoice(){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;var mic=document.getElementById('mic');var heard=document.getElementById('heard');if(!SR){var t=prompt('Say what to add (voice needs Safari/Chrome):');if(t)command(t);return;}var rec=new SR();rec.lang='en-US';rec.interimResults=false;mic.classList.add('live');heard.textContent='Listening…';rec.onresult=function(e){var txt=e.results[0][0].transcript;heard.textContent='“'+txt+'”';command(txt);setTimeout(function(){heard.textContent='';},4000);};rec.onerror=function(){heard.textContent='';mic.classList.remove('live');};rec.onend=function(){mic.classList.remove('live');};try{rec.start();}catch(e){mic.classList.remove('live');}}
 function command(raw){raw=(raw||'').trim();if(!raw)return;var low=raw.toLowerCase();if(/^weight\s+p(?:1[0-2]|[1-9])\s+-?\d+\s*$/i.test(raw)){setCeoWeight(raw);return;}if(low.indexOf('overdue')>-1){switchView('war');alert(openItems().filter(function(i){return i.due&&days(i.due)<0;}).map(function(i){return '• '+i.title;}).join('\n')||'Nothing overdue.');}else if(low.indexOf('done ')===0){var q=low.slice(5);var h=openItems().filter(function(i){return i.title.toLowerCase().indexOf(q)>-1;})[0];if(h)act('done',h.id);}else{addItem(raw.replace(/^add /i,''));switchView('war');}}
 function clock(){var d=new Date();var when=new Intl.DateTimeFormat('en-US',{timeZone:'America/Los_Angeles',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(d);document.getElementById('clock').textContent=when+'  Los Angeles';}
@@ -2335,7 +2434,7 @@ document.getElementById('modal').addEventListener('click',function(e){if(e.targe
 document.getElementById('tabs').addEventListener('click',function(e){var t=e.target.closest('.tab');if(t)switchView(t.getAttribute('data-v'));});
 var snapNowBtn=document.getElementById('snapNow');if(snapNowBtn)snapNowBtn.addEventListener('click',snapshotNow);
 var finForm=document.getElementById('finForm');if(finForm)finForm.addEventListener('submit',submitFinance);
-document.getElementById('openCal').addEventListener('click',function(){switchView('cal');});
+document.getElementById('openCal').addEventListener('click',function(){switchView('calendar');});
 document.getElementById('mic').addEventListener('click',startVoice);
 document.getElementById('todayBtn').addEventListener('click',function(e){e.stopPropagation();renderTodayPop();document.getElementById('todayPop').classList.toggle('open');});
 document.addEventListener('click',function(){document.getElementById('todayPop').classList.remove('open');});
@@ -2482,5 +2581,7 @@ document.addEventListener('click',function(e){var t=e.target.closest&&e.target.c
 <script src="/control-room-war.js"></script>
 <script src="/control-room-ops.js"></script>
 <script src="/control-room-mail.js"></script>
+<script src="/control-room-play.js"></script>
+<script src="/control-room-cal.js"></script>
 </body>
 </html>

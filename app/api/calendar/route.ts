@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { claimBudget } from '@/lib/db';
 import { withCreds } from '@/lib/creds';
-import { moveEvent } from '@/lib/google';
+import { createEvent, moveEvent } from '@/lib/google';
 import { fail } from '@/lib/log';
 import { openBoard } from '@/lib/session';
 import { calendarPayload, extendCalendar } from '@/lib/sync';
@@ -55,17 +55,27 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => null);
     const id = String(body?.id || '');
     const start = Number(body?.start);
-    if (!/^[\w-]+$/.test(id) || !Number.isFinite(start)) {
+    const dur = Math.max(15, Math.min(Number(body?.dur) || 30, 180));
+    const title = String(body?.title || '').trim().slice(0, 180);
+    if (!Number.isFinite(start)) {
       return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     }
-    const events = (await calendarPayload(session.sql, session.userId)) as Array<{ id: string; dur: number; start: number; title: string }>;
-    const current = events.find((event) => event.id === id);
-    const dur = current?.dur || Number(body?.dur) || 30;
     if (!(await claimBudget(session.sql, session.userId, 'google_calendar', 1))) {
       return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });
     }
     const creds = await loadCredsFor(session.userId);
-    const moved = await withCreds(creds, () => moveEvent(id, start, dur));
+    if (!id && title) {
+      const created = await withCreds(creds, () => createEvent(start, dur, title));
+      if (!created) return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });
+      return NextResponse.json({ id: created, start, dur, title });
+    }
+    if (!/^[\w-]+$/.test(id)) {
+      return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    }
+    const events = (await calendarPayload(session.sql, session.userId)) as Array<{ id: string; dur: number; start: number; title: string }>;
+    const current = events.find((event) => event.id === id);
+    const length = current?.dur || dur;
+    const moved = await withCreds(creds, () => moveEvent(id, start, length));
     if (!moved) return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });
     const next = events.map((event) => (event.id === id ? { ...event, start } : event));
     await session.sql`

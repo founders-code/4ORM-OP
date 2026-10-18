@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendar</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#0a1326;color:#e8eefc}
+.cal-app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.cal-side{background:#0c1733;padding:14px}
+.iq-mark{display:flex;align-items:center;gap:6px;font-weight:800;color:#fff;margin-bottom:12px}
+.iq-mark b{width:22px;height:22px;border-radius:6px;background:#2E6BF2;display:grid;place-items:center;font-size:12px}
+.cal-side input{width:100%;border:1px solid rgba(255,255,255,.12);background:#13224a;color:#fff;border-radius:10px;padding:8px 10px}
+.cal-bar{display:flex;align-items:center;gap:10px;padding:14px 16px}
+.cal-bar h2{margin:0;font-size:20px;color:#fff}
+.cal-bar h2 .y{color:#5b8cff}
+.cal-views{display:flex;background:#13224a;border-radius:99px;padding:3px;margin-left:auto}
+.cal-views button{border:0;background:none;color:#9db0d0;padding:6px 12px;border-radius:99px;font:650 12px inherit}
+.cal-views button.on{background:#2E6BF2;color:#fff}
+.cal-wlab{display:flex;gap:8px;align-items:center;padding:8px 16px;font-weight:750}
+.pill{font-size:11px;background:#1a2c55;border-radius:99px;padding:3px 8px;color:#c5d2ea}
+.pill.this{background:#2E6BF2;color:#fff}
+.gold{background:#c79a3a;color:#1a1406}
+.cal-grid{display:grid;grid-template-columns:42px repeat(7,1fr);gap:2px;padding:0 16px 24px}
+.cal-cell{min-height:420px;background:#101c3a;position:relative}
+.cal-cell.today{background:#15244c}
+.cal-ev{position:absolute;left:3px;right:3px;border-radius:6px;padding:0 6px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:9.5px;line-height:1;display:flex;align-items:center;color:#0b1f55;background:#9bb6ff;height:36px}
+.cal-ev.dash{background:transparent;border:1.5px dashed #8fb0ff;color:#8fb0ff}
+.cal-plan{margin:0 16px 10px;background:rgba(46,107,242,.12);border:1px solid rgba(46,107,242,.3);border-radius:10px;padding:8px 12px;font-size:12px}
+</style></head><body>
+<div class="cal-app">
+ <aside class="cal-side">
+  <div class="iq-mark"><b>4</b><span>ormIQ</span></div>
+  <input placeholder="Coffee with Bruce Tue 3pm"/>
+  <p style="font-size:12px;color:#9db0d0">Today ribbon · Next up · Next week's shape</p>
+ </aside>
+ <div>
+  <div class="cal-bar"><h2>CW 42 · October <span class="y">2026</span></h2><div class="cal-views"><button>Day</button><button class="on">Week</button><button>Month</button><button>Quarter</button><button>Year</button></div></div>
+  <div class="cal-plan">4orm Intelligence fitted plays around meetings. Accept all · Re-plan</div>
+  <div class="cal-wlab">CW 43 - Oct 18-24 <span class="pill this">this week</span> <span class="pill gold">1 month out</span></div>
+  <div class="cal-grid">
+   <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+   <div></div>
+   <div class="cal-cell"></div><div class="cal-cell"></div><div class="cal-cell today"><div class="cal-ev" style="top:80px">Focus</div><div class="cal-ev dash" style="top:180px">Outreach block</div></div><div class="cal-cell"></div><div class="cal-cell"></div><div class="cal-cell"></div><div class="cal-cell"></div>
+  </div>
+ </div>
+</div>
+</body></html>
