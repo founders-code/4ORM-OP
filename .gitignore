@@ -3,3 +3,6 @@ node_modules
 .env
 .env*.local
 lib/generated-secrets.mjs
+visual-diff
+test-results
+playwright-report

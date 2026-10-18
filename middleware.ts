@@ -28,6 +28,12 @@ const isDataRoom = createRouteMatcher(['/road-ahead.html','/path-to-revenue.html
 const isControlRoom = createRouteMatcher([
   '/control-room',
   '/control-room.html',
+  '/playbook',
+  '/calendar',
+  '/news',
+  '/email-board',
+  '/war-room',
+  '/space-detail',
 ]);
 const isDesign = createRouteMatcher(['/design', '/design/(.*)']);
 // Legal pages are public. Members read them before they sign in.
@@ -87,6 +93,12 @@ export const config = {
     '/filing.html',
     '/control-room',
     '/control-room.html',
+    '/playbook',
+    '/calendar',
+    '/news',
+    '/email-board',
+    '/war-room',
+    '/space-detail',
     '/design',
     '/design/:path*',
     '/terms-of-service',
