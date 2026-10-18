@@ -608,7 +608,7 @@ export async function doMove(sql: Sql, ownerId: string, id: string) {
   }
   await sql`
     UPDATE ceo_moves
-    SET status = 'done', snooze_until = now() + interval '3 days'
+    SET status = 'done', snooze_until = now() + interval '3 days', updated_at = now()
     WHERE id = ${move.id} AND owner_id = ${ownerId}
   `;
   await rerankOpenMoves(sql, ownerId);
@@ -651,7 +651,7 @@ export async function snoozeMove(sql: Sql, ownerId: string, id: string, reason: 
   const why = reason.trim().slice(0, 500);
   await sql`
     UPDATE ceo_moves
-    SET status = 'snoozed', snooze_until = (${today}::date + interval '1 day')
+    SET status = 'snoozed', snooze_until = (${today}::date + interval '1 day'), updated_at = now()
     WHERE id = ${move.id} AND owner_id = ${ownerId}
   `;
   await rerankOpenMoves(sql, ownerId);

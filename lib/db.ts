@@ -633,6 +633,17 @@ async function migrateWar(sql: Sql) {
       payload jsonb NOT NULL,
       fetched_at timestamptz NOT NULL DEFAULT now()
     )`],
+    ['db_daily_snapshots', () => sql`CREATE TABLE IF NOT EXISTS daily_snapshots (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      snap_date date NOT NULL,
+      summary text NOT NULL DEFAULT '',
+      payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      UNIQUE (owner_id, snap_date)
+    )`],
+    ['db_ceo_moves_updated', () => sql`ALTER TABLE ceo_moves ADD COLUMN IF NOT EXISTS updated_at timestamptz`],
+    ['db_finance_code', () => sql`ALTER TABLE owner_settings ADD COLUMN IF NOT EXISTS finance_code text`],
   ];
   for (const [code, run] of steps) {
     try {

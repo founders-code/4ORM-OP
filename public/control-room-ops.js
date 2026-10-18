@@ -2022,6 +2022,8 @@
     if (v === 'notes') renderSticky();
     if (v === 'znotes') renderZNotes();
     if (v === 'mail' && typeof loadMailBoard === 'function') loadMailBoard();
+    if (v === 'done' && typeof loadSnapshots === 'function') loadSnapshots();
+    if (v === 'finance' && typeof loadFinance === 'function') loadFinance();
   };
 
   var brand = document.querySelector('.brand');

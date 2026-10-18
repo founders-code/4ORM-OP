@@ -12,6 +12,10 @@
     {
       "path": "/api/cron/ceo",
       "schedule": "30 13,14 * * *"
+    },
+    {
+      "path": "/api/cron/snapshot",
+      "schedule": "55 6,7 * * *"
     }
   ]
 }
