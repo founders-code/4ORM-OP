@@ -657,6 +657,8 @@ async function migrateWar(sql: Sql) {
       created_at timestamptz NOT NULL DEFAULT now(),
       UNIQUE (owner_id, name)
     )`],
+    ['db_playbook_rhythms_sub', () => sql`ALTER TABLE playbook_rhythms ADD COLUMN IF NOT EXISTS sub text`],
+    ['db_playbook_rhythms_grp', () => sql`ALTER TABLE playbook_rhythms ADD COLUMN IF NOT EXISTS grp text`],
     ['db_playbook_log', () => sql`CREATE TABLE IF NOT EXISTS playbook_log (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       owner_id text NOT NULL,

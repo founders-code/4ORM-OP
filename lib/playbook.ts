@@ -7,22 +7,22 @@ type Sql = NeonQueryFunction<false, false>;
 const DOW = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 export const SEED_RHYTHMS = [
-  { name: 'One move', color: '#1f5fff', route: 'war', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 1 },
-  { name: '30-min video', color: '#7a5bd0', route: 'war', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 2 },
-  { name: 'Post today\'s clip', color: '#c79a3a', route: 'room', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 3 },
-  { name: 'Engage 10 min', color: '#3b5bdb', route: 'room', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '5', sort: 4 },
-  { name: 'Reach out 5', color: '#1a9d5a', route: 'contacts', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '5', sort: 5 },
-  { name: 'Raise touch', color: '#e0a81e', route: 'work', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 6 },
-  { name: 'Inbox zero', color: '#1667b5', route: 'mail', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 7 },
-  { name: 'Clear commitments', color: '#0f8a8a', route: 'war', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 8 },
-  { name: 'Check 4ormIQ', color: '#2E6BF2', route: 'room', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 9 },
-  { name: 'News sweep', color: '#17b86a', route: 'news', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 10 },
-  { name: 'Shutdown + snapshot', color: '#44506a', route: 'done', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 11 },
-  { name: 'Schedule clips', color: '#7a5bd0', route: 'war', schedule: ['mon'], target: '', sort: 12 },
-  { name: 'Chase cold', color: '#e0483a', route: 'people', schedule: ['tue'], target: '', sort: 13 },
-  { name: 'Speer sync', color: '#0f8a8a', route: 'work', schedule: ['wed'], target: '', sort: 14 },
-  { name: 'Metrics snapshot', color: '#1f5fff', route: 'room', schedule: ['thu'], target: '', sort: 15 },
-  { name: 'Weekly review', color: '#0b1f55', route: 'room', schedule: ['fri'], target: '', sort: 16 },
+  { name: 'One move', color: '--blue', route: 'war', sub: '', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 1, nw: 0 },
+  { name: '30-min video', color: '--red', route: 'studio', sub: 'Mon-Fri', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 2, nw: 0 },
+  { name: 'Post today\'s clip', color: '--pink', route: 'li', sub: '', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 3, nw: 1 },
+  { name: 'Engage 10 min', color: '--sky', route: 'li', sub: 'comment on 5', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '5', sort: 4, nw: 1 },
+  { name: 'Reach out 5', color: '--green', route: 'pipe', sub: '', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '5', sort: 5, nw: 0 },
+  { name: 'Raise touch', color: '--gold', route: 'spaces', sub: 'one cheque closer', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 6, nw: 1 },
+  { name: 'Inbox zero', color: '--violet', route: 'msg', sub: '', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat'], target: '', sort: 7, nw: 0 },
+  { name: 'Clear commitments', color: '--orange', route: 'war', sub: 'after calls', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 8, nw: 1 },
+  { name: 'Check 4ormIQ', color: '--lime', route: 'iq', sub: 'launch prep → users', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 9, nw: 1 },
+  { name: 'News sweep', color: '--teal', route: 'news', sub: '', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 10, nw: 0 },
+  { name: 'Shutdown + snapshot', color: '--slate', route: 'done', sub: '5 min', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '6pm', sort: 11, nw: 1 },
+  { name: 'Schedule clips', color: '--pink', route: 'studio', sub: 'Mon', grp: 'Weekly', schedule: ['mon'], target: '', sort: 12, nw: 0 },
+  { name: 'Chase cold', color: '--amber', route: 'contacts', sub: 'Tue', grp: 'Weekly', schedule: ['tue'], target: '', sort: 13, nw: 0 },
+  { name: 'Speer sync', color: '--teal', route: 'team', sub: 'Wed', grp: 'Weekly', schedule: ['wed'], target: '', sort: 14, nw: 1 },
+  { name: 'Metrics snapshot', color: '--sky', route: 'dash', sub: 'Thu', grp: 'Weekly', schedule: ['thu'], target: '', sort: 15, nw: 1 },
+  { name: 'Weekly review', color: '--white', route: 'dash', sub: 'Fri', grp: 'Weekly', schedule: ['fri'], target: '', sort: 16, nw: 0 },
 ];
 
 function weekdayOf(day: string) {
@@ -45,29 +45,71 @@ function addDays(day: string, n: number) {
   return utc.toISOString().slice(0, 10);
 }
 
+function firstOfMonth(day: string, offset = 0) {
+  const [y, m] = String(day).split('-').map(Number);
+  const utc = new Date(Date.UTC(y, (m || 1) - 1 + offset, 1));
+  return utc.toISOString().slice(0, 10);
+}
+
+function lastOfMonth(day: string, offset = 0) {
+  const [y, m] = String(day).split('-').map(Number);
+  const utc = new Date(Date.UTC(y, (m || 1) + offset, 0));
+  return utc.toISOString().slice(0, 10);
+}
+
 function shape(row: Record<string, unknown>) {
   const raw = row.schedule;
   const list = Array.isArray(raw) ? raw : (typeof raw === 'string' ? (() => { try { return JSON.parse(raw); } catch { return []; } })() : []);
   const schedule = (Array.isArray(list) ? list : []).map((x) => String(x));
+  const created = String(row.created_at || '').slice(0, 10);
   return {
     id: String(row.id),
     name: String(row.name || ''),
-    color: String(row.color || '#1f5fff'),
+    color: String(row.color || '--blue'),
     route: String(row.route || 'war'),
+    sub: String(row.sub || ''),
+    grp: String(row.grp || 'Daily'),
     schedule,
     target: String(row.target || ''),
     sort: Number(row.sort) || 0,
     active: row.active !== false,
+    nw: Number(row.nw) || 0,
+    created_at: created,
   };
+}
+
+function padState(opts: {
+  due: boolean;
+  day: string;
+  today: string;
+  created: string;
+  hit?: { status: string; value: string };
+  laterToday: boolean;
+}) {
+  const { due, day, today, created, hit, laterToday } = opts;
+  if (!due) return 'off';
+  if (created && day < created) return 'before';
+  if (hit?.status === 'done') return 'done';
+  if (hit?.status === 'snoozed') return 'next';
+  if (day < today) return 'miss';
+  if (day === today) return laterToday ? 'next' : 'due';
+  return 'next';
 }
 
 export async function seedRhythms(sql: Sql, ownerId: string) {
   for (const row of SEED_RHYTHMS) {
     try {
       await sql`
-        INSERT INTO playbook_rhythms (owner_id, name, color, route, schedule, target, sort, active)
-        VALUES (${ownerId}, ${row.name}, ${row.color}, ${row.route}, ${JSON.stringify(row.schedule)}::jsonb, ${row.target}, ${row.sort}, true)
+        INSERT INTO playbook_rhythms (owner_id, name, color, route, schedule, target, sort, active, sub, grp)
+        VALUES (${ownerId}, ${row.name}, ${row.color}, ${row.route}, ${JSON.stringify(row.schedule)}::jsonb, ${row.target}, ${row.sort}, true, ${row.sub}, ${row.grp})
         ON CONFLICT (owner_id, name) DO NOTHING
+      `;
+      await sql`
+        UPDATE playbook_rhythms
+        SET color = ${row.color}, route = ${row.route}, schedule = ${JSON.stringify(row.schedule)}::jsonb,
+            target = ${row.target}, sort = ${row.sort}, sub = ${row.sub}, grp = ${row.grp}
+        WHERE owner_id = ${ownerId} AND name = ${row.name}
+          AND (color LIKE '#%' OR color = '' OR route IN ('room','contacts','work','mail','people'))
       `;
     } catch (err) {
       fail('playbook_seed', err);
@@ -80,8 +122,10 @@ export async function listPlaybook(sql: Sql, ownerId: string, weekStart?: string
   const today = pacificDay();
   const start = weekStart && /^\d{4}-\d{2}-\d{2}$/.test(weekStart) ? weekStart : mondayOf(today);
   const days = [0, 1, 2, 3, 4, 5, 6].map((n) => addDays(start, n));
+  const monthFrom = firstOfMonth(today, 0);
+  const monthTo = lastOfMonth(today, 2);
   const rhythms = await sql`
-    SELECT id, name, color, route, schedule, target, sort, active
+    SELECT id, name, color, route, schedule, target, sort, active, created_at, sub, grp
     FROM playbook_rhythms
     WHERE owner_id = ${ownerId} AND active = true
     ORDER BY sort, name
@@ -89,22 +133,21 @@ export async function listPlaybook(sql: Sql, ownerId: string, weekStart?: string
   const logs = await sql`
     SELECT rhythm_id, day, status, value
     FROM playbook_log
-    WHERE owner_id = ${ownerId} AND day >= ${days[0]}::date AND day <= ${days[6]}::date
+    WHERE owner_id = ${ownerId} AND day >= ${monthFrom}::date AND day <= ${monthTo}::date
   `;
   const logMap = new Map<string, { status: string; value: string }>();
   for (const row of logs as Array<{ rhythm_id?: string; day?: string; status?: string; value?: string }>) {
     logMap.set(`${row.rhythm_id}|${String(row.day).slice(0, 10)}`, { status: String(row.status || ''), value: String(row.value || '') });
   }
-  const rows = (rhythms as Array<Record<string, unknown>>).map(shape).map((rhythm) => {
+  const seedNw = new Map(SEED_RHYTHMS.map((row) => [row.name, row.nw]));
+  const hour = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', hour: 'numeric', hourCycle: 'h23' }).format(new Date()));
+  const rows = (rhythms as Array<Record<string, unknown>>).map((raw) => {
+    const rhythm = { ...shape(raw), nw: seedNw.get(String(raw.name || '')) || 0 };
+    const laterToday = /shutdown/i.test(rhythm.name) && hour < 18;
     const pads = days.map((day) => {
       const due = rhythm.schedule.includes(weekdayOf(day));
       const hit = logMap.get(`${rhythm.id}|${day}`);
-      let state = 'empty';
-      if (due && hit?.status === 'done') state = 'done';
-      else if (due && hit?.status === 'snoozed') state = 'snoozed';
-      else if (due && day < today) state = 'missed';
-      else if (due && day === today) state = 'due';
-      else if (due) state = 'scheduled';
+      const state = padState({ due, day, today, created: rhythm.created_at, hit, laterToday });
       return { day, due, state, value: hit?.value || '' };
     });
     return { ...rhythm, pads };
@@ -114,12 +157,18 @@ export async function listPlaybook(sql: Sql, ownerId: string, weekStart?: string
   let todayLit = 0;
   for (const row of rows) {
     for (const pad of row.pads) {
-      if (!pad.due) continue;
+      if (!pad.due || pad.state === 'before' || pad.state === 'off') continue;
       scheduled += 1;
       if (pad.state === 'done') done += 1;
-      if (pad.day === today && pad.state === 'due') todayLit += 1;
+      if (pad.day === today && (pad.state === 'due' || pad.state === 'next')) todayLit += 1;
     }
   }
+  const monthLogs = (logs as Array<{ rhythm_id?: string; day?: string; status?: string; value?: string }>).map((row) => ({
+    rhythmId: String(row.rhythm_id || ''),
+    day: String(row.day || '').slice(0, 10),
+    status: String(row.status || ''),
+    value: String(row.value || ''),
+  }));
   return {
     today,
     weekStart: start,
@@ -127,7 +176,10 @@ export async function listPlaybook(sql: Sql, ownerId: string, weekStart?: string
     rows,
     score: scheduled ? Math.round((done / scheduled) * 100) : 0,
     todayLit,
-    weekLabel: `Week ${isoWeek(start)} - ${labelRange(start)}`,
+    weekLabel: `WEEK ${isoWeek(start)} · ${labelRange(start)}`,
+    monthFrom,
+    monthTo,
+    monthLogs,
   };
 }
 
@@ -143,8 +195,8 @@ function labelRange(start: string) {
   const end = addDays(start, 6);
   const a = new Date(`${start}T12:00:00Z`);
   const b = new Date(`${end}T12:00:00Z`);
-  const fmt = (dt: Date) => dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-  return `${fmt(a)}-${fmt(b)}`.toUpperCase();
+  const fmt = (dt: Date) => dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).toUpperCase();
+  return `${fmt(a)} - ${fmt(b)}`;
 }
 
 export async function logPlay(sql: Sql, ownerId: string, rhythmId: string, day: string, status: string, value = '') {
@@ -162,22 +214,24 @@ export async function logPlay(sql: Sql, ownerId: string, rhythmId: string, day: 
   return listPlaybook(sql, ownerId);
 }
 
-export async function addRhythm(sql: Sql, ownerId: string, input: { name: string; color?: string; route?: string; schedule?: string[]; target?: string }) {
+export async function addRhythm(sql: Sql, ownerId: string, input: { name: string; color?: string; route?: string; schedule?: string[]; target?: string; sub?: string; grp?: string }) {
   const name = String(input.name || '').trim().slice(0, 80);
   if (!name) return listPlaybook(sql, ownerId);
   const rows = await sql`SELECT coalesce(max(sort), 0)::int AS n FROM playbook_rhythms WHERE owner_id = ${ownerId}`;
   const sort = Number(rows[0]?.n || 0) + 1;
   await sql`
-    INSERT INTO playbook_rhythms (owner_id, name, color, route, schedule, target, sort, active)
+    INSERT INTO playbook_rhythms (owner_id, name, color, route, schedule, target, sort, active, sub, grp)
     VALUES (
       ${ownerId},
       ${name},
-      ${String(input.color || '#1f5fff').slice(0, 20)},
+      ${String(input.color || '--blue').slice(0, 20)},
       ${String(input.route || 'war').slice(0, 40)},
       ${JSON.stringify(input.schedule || ['mon', 'tue', 'wed', 'thu', 'fri'])}::jsonb,
       ${String(input.target || '').slice(0, 40)},
       ${sort},
-      true
+      true,
+      ${String(input.sub || '').slice(0, 80)},
+      ${String(input.grp || 'Daily').slice(0, 20)}
     )
     ON CONFLICT (owner_id, name) DO NOTHING
   `;
