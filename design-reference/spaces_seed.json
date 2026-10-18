@@ -1,0 +1,1230 @@
+{
+ "spaces": [
+  {
+   "kind": "angel",
+   "name": "Joe Canavan",
+   "city": "Toronto",
+   "role": "Former CEO, Assante Wealth; fintech angel",
+   "category": "VC",
+   "intel": [
+    "~80% of his angel book is fintech: Wealthsimple, Borrowell, CapIntel, Homewise, YouSet.",
+    "Ran Assante Wealth and GGOF - lived the suitability/advice-evidence problem from the top.",
+    "Connect-on: CapIntel and Homewise both sit near our wedge (advice + suitability evidence)."
+   ],
+   "email_subject": "A quick one on the evidence gap you funded around",
+   "email_body": "Joe,\n\nYou've probably seen a dozen \"compliance\" pitches this month, so I'll be quick.\n\nYou backed CapIntel and Homewise - companies that live right next to the thing I keep running into: regulated firms can sell the product, but they can't easily prove the client understood what they were sold. 4orm builds that missing evidence layer - an auditable record of consumer suitability and understanding - for mortgage, auto, insurance and investments.\n\nIt seems like you've seen this gap from the Assante seat better than almost anyone.\n\nWould it be a bad idea to grab 15 minutes so I can show you where this breaks and get your read on whether we're pointed at the right wedge?\n\nChad\n4orm Finance",
+   "people": [
+    "Joe Canavan"
+   ],
+   "suggested_docs": [
+    "Investor Deck",
+    "Founder Vision & North Star",
+    "Company Brief",
+    "Pre-Seed Financial Summary"
+   ]
+  },
+  {
+   "kind": "angel",
+   "name": "Neil Mitchell",
+   "city": "Toronto",
+   "role": "Former MD, Marsh Canada; insurtech angel",
+   "category": "VC",
+   "intel": [
+    "Advises early-stage insurtech founders; backed YouSet and QuickFacts.",
+    "Marsh Canada MD - deep in insurance distribution and conduct risk.",
+    "Connect-on: QuickFacts is adjacent to our suitability-evidence angle in insurance."
+   ],
+   "email_subject": "The insurtech evidence problem you keep funding",
+   "email_body": "Neil,\n\nYou back insurtech founders for a living, so you'll spot in ten seconds whether this is real.\n\nYouSet and QuickFacts both touch it: the carrier or broker can bind the policy, but proving the client understood the coverage and the alternatives is still manual and thin. 4orm is the evidence layer that records consumer suitability and understanding, built for regulated lines including insurance.\n\nIt sounds like conduct and suitability evidence is exactly the risk you've spent a career pricing.\n\nWould you be against a short call where I show you the failure point and you tell me where I'm wrong?\n\nChad\n4orm Finance",
+   "people": [
+    "Neil Mitchell"
+   ],
+   "suggested_docs": [
+    "Investor Deck",
+    "Founder Vision & North Star",
+    "Company Brief",
+    "Pre-Seed Financial Summary"
+   ]
+  },
+  {
+   "kind": "angel",
+   "name": "Norm Cappell",
+   "city": "Toronto",
+   "role": "Co-founder Borrowell; Partner, North Exit Ventures",
+   "category": "VC",
+   "intel": [
+    "North Exit Ventures invests pre-seed in insurance, lending and wealth - our exact lanes.",
+    "Co-founded Borrowell - built a consumer-finance product inside Canadian regulation.",
+    "Connect-on: the pre-seed thesis at North Exit maps directly onto 4orm."
+   ],
+   "email_subject": "Pre-seed, insurance/lending/wealth - this is in your lane",
+   "email_body": "Norm,\n\nNorth Exit's thesis - pre-seed insurance, lending, wealth - is almost exactly the ground 4orm sits on, so I wanted you to see it early.\n\nBuilding Borrowell, you know the hard part isn't the product, it's proving to a regulator that the consumer understood it. 4orm is the auditable evidence layer for that, across mortgage, auto, insurance and investments.\n\nIt seems like you've already lived both sides of this - founder and investor.\n\nIs it ridiculous to ask for 15 minutes to get your honest take before I take it further?\n\nChad\n4orm Finance",
+   "people": [
+    "Norm Cappell"
+   ],
+   "suggested_docs": [
+    "Investor Deck",
+    "Founder Vision & North Star",
+    "Company Brief",
+    "Pre-Seed Financial Summary"
+   ]
+  },
+  {
+   "kind": "angel",
+   "name": "Daniel Moore",
+   "city": "Toronto",
+   "role": "Former Chief Risk Officer, Canadian bank; fintech angel",
+   "category": "VC",
+   "intel": [
+    "Writes $5K-$300K cheques into financial services.",
+    "Former bank CRO - owned the risk and evidence burden at scale.",
+    "Connect-on: the suitability/record-of-advice problem is one he carried personally."
+   ],
+   "email_subject": "A risk officer's version of the suitability problem",
+   "email_body": "Daniel,\n\nYou carried the risk seat at a Canadian bank, so you've felt this from the inside: when a file gets reviewed months later, can anyone actually show what the client understood and consented to?\n\n4orm builds that record - an auditable evidence layer for consumer suitability and understanding - for the regulated lines you write cheques into.\n\nIt seems like you already know exactly where this breaks.\n\nWould it be unreasonable to take 15 minutes so I can show you the workflow and hear where a former CRO would poke holes?\n\nChad\n4orm Finance",
+   "people": [
+    "Daniel Moore"
+   ],
+   "suggested_docs": [
+    "Investor Deck",
+    "Founder Vision & North Star",
+    "Company Brief",
+    "Pre-Seed Financial Summary"
+   ]
+  },
+  {
+   "kind": "angel",
+   "name": "Paul Hill",
+   "city": "Toronto",
+   "role": "Former CEO, Carta Worldwide; angel",
+   "category": "VC",
+   "intel": [
+    "Backed Verafin, QuickFacts, DisclosureNet, Una - compliance/regtech heavy.",
+    "Ran Carta Worldwide (payments) - knows regulated infrastructure.",
+    "Connect-on: Verafin and DisclosureNet are right next to the evidence/audit wedge."
+   ],
+   "email_subject": "Next to Verafin and DisclosureNet, one gap left",
+   "email_body": "Paul,\n\nYour book - Verafin, DisclosureNet, Una - tells me you already believe regtech is a real category, so I'll keep this tight.\n\nThere's a gap those don't fill: proving the individual consumer understood and was suited to what they bought. 4orm is that evidence layer, for mortgage, auto, insurance and investments.\n\nIt seems like you've funded the neighbours of this problem for years.\n\nWould you be opposed to a 15-minute look so you can tell me whether it's a feature or a company?\n\nChad\n4orm Finance",
+   "people": [
+    "Paul Hill"
+   ],
+   "suggested_docs": [
+    "Investor Deck",
+    "Founder Vision & North Star",
+    "Company Brief",
+    "Pre-Seed Financial Summary"
+   ]
+  },
+  {
+   "kind": "angel",
+   "name": "Philip Daniel",
+   "city": "Calgary",
+   "role": "C-suite fintech/payments exec, board member, angel",
+   "category": "VC",
+   "intel": [
+    "C-suite fintech and payments leader; sits on boards; lists angel investing.",
+    "Calgary-based - local to Chad; payments background touches RPAA/FINTRAC.",
+    "Connect-on: payments + board lens on conduct and evidence."
+   ],
+   "email_subject": "Calgary fintech - 15 minutes on an evidence gap",
+   "email_body": "Philip,\n\nWe're both in Calgary fintech, so I'll just put it in front of you.\n\nFrom the payments and board seat you've probably watched conduct and evidence expectations climb - RPAA, FINTRAC, suitability. 4orm is the layer that records consumer understanding and suitability so a firm can actually prove it later, across the regulated lines.\n\nIt seems like you've seen this pressure build from the inside.\n\nWould it be a bad idea to grab coffee or 15 minutes and have you tell me where this is weak?\n\nChad\n4orm Finance",
+   "people": [
+    "Philip Daniel"
+   ],
+   "suggested_docs": [
+    "Investor Deck",
+    "Founder Vision & North Star",
+    "Company Brief",
+    "Pre-Seed Financial Summary"
+   ]
+  },
+  {
+   "kind": "angel",
+   "name": "Glenn Yuen",
+   "city": "Calgary",
+   "role": "Founder POPcodes (payments); VA Angels",
+   "category": "VC",
+   "intel": [
+    "Founded POPcodes (payments); VA Angels member; Invest-Tech at Innovate Calgary.",
+    "Local Calgary angel with a payments build behind him.",
+    "Connect-on: VA Angels / Innovate Calgary network - and the payments-evidence overlap."
+   ],
+   "email_subject": "From one Calgary founder to a VA Angels member",
+   "email_body": "Glenn,\n\nFounder to founder - you built POPcodes, so you know the regulated-payments world doesn't forgive thin records.\n\n4orm builds the evidence layer that proves a consumer understood and was suited to what they bought, for mortgage, auto, insurance and investments. We're raising a small friends-and-family round and I'd rather have sharp local people in it than strangers.\n\nIt seems like VA Angels sees a lot of these - so you'll know fast if it's nothing.\n\nWould you be against 15 minutes to pressure-test it?\n\nChad\n4orm Finance",
+   "people": [
+    "Glenn Yuen"
+   ],
+   "suggested_docs": [
+    "Investor Deck",
+    "Founder Vision & North Star",
+    "Company Brief",
+    "Pre-Seed Financial Summary"
+   ]
+  },
+  {
+   "kind": "angel",
+   "name": "Hanif Joshaghani",
+   "city": "Calgary",
+   "role": "Co-founder/CEO, Symend; angel",
+   "category": "VC",
+   "intel": [
+    "Built Symend, a Calgary fintech selling to banks; MIT fintech; angels in fintech.",
+    "Warm intro available via John Brix.",
+    "Connect-on: Symend sells into banks - he knows the compliance-buyer motion."
+   ],
+   "email_subject": "Via John Brix - a quick 4orm look",
+   "email_body": "Hanif,\n\nJohn Brix thought we should connect, and after seeing what you built at Symend I agree.\n\nYou sell into banks, so you know how much the buyer cares about provable compliance. 4orm is the consumer-suitability evidence layer for regulated financial businesses - the record a firm can show a regulator later.\n\nIt seems like you've already run the exact enterprise motion we'll need.\n\nWould it be ridiculous to borrow 15 minutes for your read on the wedge and the buyer?\n\nChad\n4orm Finance",
+   "people": [
+    "Hanif Joshaghani"
+   ],
+   "suggested_docs": [
+    "Investor Deck",
+    "Founder Vision & North Star",
+    "Company Brief",
+    "Pre-Seed Financial Summary"
+   ]
+  },
+  {
+   "kind": "angel",
+   "name": "Darby Sieben",
+   "city": "Calgary",
+   "role": "Built Ampli inside RBC; operator-investor",
+   "category": "VC",
+   "intel": [
+    "Built Ampli inside RBC; active angel and fund LP.",
+    "Operator-investor who shipped a consumer fintech inside a big bank.",
+    "Connect-on: building inside RBC = lived the bank compliance/evidence reality."
+   ],
+   "email_subject": "You built Ampli inside RBC - you'll get this in a line",
+   "email_body": "Darby,\n\nBuilding Ampli inside RBC, you lived the thing I'm building around: the bank can ship the product, but proving the consumer understood and was suited to it is still a mess.\n\n4orm is that evidence layer, for mortgage, auto, insurance and investments. Small friends-and-family round, and I'd value an operator who's actually been inside the machine.\n\nIt sounds like you've seen both the startup and the bank side of this.\n\nWould you be opposed to a 15-minute call to tell me where it's thin?\n\nChad\n4orm Finance",
+   "people": [
+    "Darby Sieben"
+   ],
+   "suggested_docs": [
+    "Investor Deck",
+    "Founder Vision & North Star",
+    "Company Brief",
+    "Pre-Seed Financial Summary"
+   ]
+  },
+  {
+   "kind": "angel",
+   "name": "Anshul Ruparell",
+   "city": "Toronto",
+   "role": "Founder Properly (mortgage), CFO Clutch (auto); angel",
+   "category": "VC",
+   "intel": [
+    "Founded Properly (mortgage), now CFO of Clutch (auto); invested in Float.",
+    "Has built in BOTH mortgage and auto - our two biggest wedge markets.",
+    "Connect-on: mortgage + auto is literally where 4orm starts."
+   ],
+   "email_subject": "Mortgage and auto - you've built in both of our wedges",
+   "email_body": "Anshul,\n\nYou've built in mortgage (Properly) and now auto (Clutch) - which happens to be exactly where 4orm starts.\n\nIn both, the firm can close the deal but can't cleanly prove the consumer understood and was suited to what they signed. 4orm is the evidence layer for that. We're raising a small friends-and-family round.\n\nIt seems like you've felt this gap from inside two of our target markets.\n\nWould it be a bad idea to take 15 minutes and have a builder-CFO tell me whether the economics hold?\n\nChad\n4orm Finance",
+   "people": [
+    "Anshul Ruparell"
+   ],
+   "suggested_docs": [
+    "Investor Deck",
+    "Founder Vision & North Star",
+    "Company Brief",
+    "Pre-Seed Financial Summary"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Tom Robertson",
+   "company": "Continental Currency Exchange",
+   "category": "Business",
+   "email": "info@continentalcurrency.ca",
+   "phone": "19056236739",
+   "intel": [
+    "Company: Continental Currency Exchange (https://www.continentalcurrency.ca)",
+    "Industry: Money Services",
+    "Pain drivers: RPAA / safeguarding, AML / FINTRAC, Trust / reconciliation",
+    "Regulators: FINTRAC, provincial consumer protection",
+    "Discovery question: How much manual work goes into client identification, 24-hour aggregation, transaction evidence and preparing for FINTRAC reviews or effectiveness testing?",
+    "Call objective: Ask for the owner / CAMLO or compliance officer, then book a 20-minute workflow discovery.",
+    "Best route: Tom Robertson — CEO | +19056236739 | info@continentalcurrency.ca | Route type: Functional company inbox",
+    "Other contacts: Lorne Penfound — President; Scott Mason — Vice President, Operations; Brooke Johnston — Comptroller"
+   ],
+   "email_subject": "A 20-minute question about money services evidence",
+   "email_body": "Tom,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for money services - it records that the customer actually understood what they were buying, so Continental Currency Exchange can prove suitability later instead of rebuilding files by hand.\n\nIt seems like rpaa / safeguarding is already eating real hours on your side.\n\nHere's the one I'd love your read on: How much manual work goes into client identification, 24-hour aggregation, transaction evidence and preparing for FINTRAC reviews or effectiveness testing??\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for Continental Currency Exchange?\n\nChad\n4orm Finance",
+   "people": [
+    "Tom Robertson"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Elizabeth Wood",
+   "company": "CMI Canadian Mortgages Inc. (CMI Financial Group)",
+   "category": "Business",
+   "email": "info@thecmigroup.ca",
+   "phone": "18557782175",
+   "intel": [
+    "Company: CMI Canadian Mortgages Inc. (CMI Financial Group) (https://thecmigroup.ca)",
+    "Industry: Mortgage & Lending",
+    "Pain drivers: Trust / reconciliation, Review / filing",
+    "Regulators: FSRA Ontario brokerage and administrator, BCFSA, RECA Alberta",
+    "Discovery question: When a mortgage file is reviewed months later, can another person quickly show the client's goals, options considered, disclosures, changes and rationale without rebuilding the file from email, CRM and documents?",
+    "Call objective: Ask for the principal broker, head of operations or compliance, then book a 20-minute workflow discovery.",
+    "Best route: Elizabeth Wood — Chief Operating Officer & Chief Compliance Officer | +18557782175 | info@thecmigroup.ca | Route type: Functional company inbox",
+    "Other contacts: Bryan Jaskolka — Founder & CEO; Kevin Fettig — President; Blue McClellan — Chief Information Officer"
+   ],
+   "email_subject": "A 20-minute question about mortgage & lending evidence",
+   "email_body": "Elizabeth,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for mortgage & lending - it records that the customer actually understood what they were buying, so CMI Canadian Mortgages Inc. (CMI Financial Group) can prove suitability later instead of rebuilding files by hand.\n\nIt seems like trust / reconciliation is already eating real hours on your side.\n\nHere's the one I'd love your read on: When a mortgage file is reviewed months later, can another person quickly show the client's goals, options considered, disclosures, changes and rationale without?\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for CMI Canadian Mortgages Inc. (CMI Financial Group)?\n\nChad\n4orm Finance",
+   "people": [
+    "Elizabeth Wood"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Léopold Beaudoin",
+   "company": "Credit Bail Globale (Globale Leasing)",
+   "category": "Business",
+   "email": "lbeaudoin@globaleleasing.com",
+   "phone": "15149444815",
+   "intel": [
+    "Company: Credit Bail Globale (Globale Leasing) (https://creditbailglobale.com)",
+    "Industry: Auto Finance & Leasing",
+    "Pain drivers: AML / FINTRAC, Review / filing",
+    "Regulators: FINTRAC; OPC Quebec, Quebec Law 25 privacy",
+    "Discovery question: Across F&I, how do you prove which lenders or options were considered, what the customer consented to, what changed and why the final financing structure was selected?",
+    "Call objective: Book a 20-minute workflow discovery with Leopold Beaudoin, Partner.",
+    "Best route: Léopold Beaudoin — Partner | +15149444815 | lbeaudoin@globaleleasing.com | Route type: Direct executive email",
+    "Other contacts: Pierre Addison — Partner — paddison@globaleleasing.com — 514-952-2270; Anne Marie Champagne — Partner — amchampagne@globaleleasing.com — 514-947-7748; Mitch A. Leblanc — Partner — mleblanc@globaleleasing.com — 514-945-9982"
+   ],
+   "email_subject": "A 20-minute question about auto finance & leasing evidence",
+   "email_body": "Léopold,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for auto finance & leasing - it records that the customer actually understood what they were buying, so Credit Bail Globale (Globale Leasing) can prove suitability later instead of rebuilding files by hand.\n\nIt seems like aml / fintrac is already eating real hours on your side.\n\nHere's the one I'd love your read on: Across F&I, how do you prove which lenders or options were considered, what the customer consented to, what changed and why the final financing structure was selected??\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for Credit Bail Globale (Globale Leasing)?\n\nChad\n4orm Finance",
+   "people": [
+    "Léopold Beaudoin"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Rasha Katabi",
+   "company": "Brim Financial Inc.",
+   "category": "Business",
+   "email": "partnerships@brimfinancial.com",
+   "phone": "18663052746",
+   "intel": [
+    "Company: Brim Financial Inc. (https://brimfinancial.com)",
+    "Industry: Payments & PSPs",
+    "Pain drivers: RPAA / safeguarding, AML / FINTRAC, Trust / reconciliation, Review / filing",
+    "Regulators: Bank of Canada RPAA",
+    "Discovery question: Can you produce the evidence behind end-user funds, safeguarding, incidents, reconciliations and controls without turning it into a manual reconstruction project?",
+    "Call objective: Ask for the CCO / CAMLO, COO or safeguarding / operations lead, then book a 20-minute workflow discovery.",
+    "Best route: Rasha Katabi — Founder & CEO | +18663052746 | partnerships@brimfinancial.com | Route type: Functional partnerships inbox"
+   ],
+   "email_subject": "A 20-minute question about payments & psps evidence",
+   "email_body": "Rasha,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for payments & psps - it records that the customer actually understood what they were buying, so Brim Financial Inc. can prove suitability later instead of rebuilding files by hand.\n\nIt seems like rpaa / safeguarding is already eating real hours on your side.\n\nHere's the one I'd love your read on: Can you produce the evidence behind end-user funds, safeguarding, incidents, reconciliations and controls without turning it into a manual reconstruction project??\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for Brim Financial Inc.?\n\nChad\n4orm Finance",
+   "people": [
+    "Rasha Katabi"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Scott Charlton",
+   "company": "Cowan Insurance Group",
+   "category": "Business",
+   "email": "Scott.Charlton@cowangroup.ca",
+   "phone": "18669126926",
+   "intel": [
+    "Company: Cowan Insurance Group (https://www.cowangroup.ca)",
+    "Industry: Insurance",
+    "Pain drivers: Trust / reconciliation, Review / filing",
+    "Regulators: RIBO, plus provincial insurance councils where licensed",
+    "Discovery question: If a policy recommendation is reviewed later, can someone reproduce the needs analysis, alternatives, rationale, disclosures and later changes from one record?",
+    "Call objective: Ask for the president / owner, compliance or operations lead, then book a 20-minute workflow discovery.",
+    "Best route: Scott Charlton — Vice President, Marketing, Sales & Sales Operations | +18669126926 | Scott.Charlton@cowangroup.ca | Route type: Direct executive email",
+    "Other contacts: John Haas — President & CEO"
+   ],
+   "email_subject": "A 20-minute question about insurance evidence",
+   "email_body": "Scott,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for insurance - it records that the customer actually understood what they were buying, so Cowan Insurance Group can prove suitability later instead of rebuilding files by hand.\n\nIt seems like trust / reconciliation is already eating real hours on your side.\n\nHere's the one I'd love your read on: If a policy recommendation is reviewed later, can someone reproduce the needs analysis, alternatives, rationale, disclosures and later changes from one record??\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for Cowan Insurance Group?\n\nChad\n4orm Finance",
+   "people": [
+    "Scott Charlton"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Dan Scarrow",
+   "company": "Macdonald Realty Ltd.",
+   "category": "Business",
+   "email": "",
+   "phone": "16042631911",
+   "intel": [
+    "Company: Macdonald Realty Ltd. (https://www.macrealty.com)",
+    "Industry: Real Estate",
+    "Pain drivers: AML / FINTRAC, Trust / reconciliation, Review / filing",
+    "Regulators: FINTRAC; BC Financial Services Authority (BCFSA)",
+    "Discovery question: If a client disputes instructions, disclosures or a trust/deposit item, how quickly can the brokerage reconstruct the transaction across CRM, email, texts and trust records?",
+    "Call objective: Ask for the broker of record / managing broker or compliance lead, then book a 20-minute workflow discovery.",
+    "Best route: Dan Scarrow — President & CEO | +16042631911 | Route type: Direct phone; email not publicly exposed",
+    "Other contacts: Lynn Hsu — Executive Chair; Rosey Hudson — Senior Vice President, Operations; Drew McLean — Managing Director"
+   ],
+   "email_subject": "A 20-minute question about real estate evidence",
+   "email_body": "Dan,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for real estate - it records that the customer actually understood what they were buying, so Macdonald Realty Ltd. can prove suitability later instead of rebuilding files by hand.\n\nIt seems like aml / fintrac is already eating real hours on your side.\n\nHere's the one I'd love your read on: If a client disputes instructions, disclosures or a trust/deposit item, how quickly can the brokerage reconstruct the transaction across CRM, email, texts and trust?\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for Macdonald Realty Ltd.?\n\nChad\n4orm Finance",
+   "people": [
+    "Dan Scarrow"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Harman Dhillon",
+   "company": "Equipment Finance Canada",
+   "category": "Business",
+   "email": "info@equipmentfinancecanada.com",
+   "phone": "18555135050",
+   "intel": [
+    "Company: Equipment Finance Canada (https://www.equipmentfinancecanada.com)",
+    "Industry: Auto Finance & Leasing",
+    "Pain drivers: AML / FINTRAC, Trust / reconciliation, Review / filing, Manual reconstruction",
+    "Regulators: FINTRAC; provincial commercial lending rules",
+    "Discovery question: Across F&I, how do you prove which lenders or options were considered, what the customer consented to, what changed and why the final financing structure was selected?",
+    "Call objective: Ask for the owner, F&I director or compliance lead, then book a 20-minute workflow discovery.",
+    "Best route: Harman Dhillon — Director / Managing Director | +18555135050 | info@equipmentfinancecanada.com | Route type: Functional company inbox",
+    "Other contacts: Gurminder Heran — Director"
+   ],
+   "email_subject": "A 20-minute question about auto finance & leasing evidence",
+   "email_body": "Harman,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for auto finance & leasing - it records that the customer actually understood what they were buying, so Equipment Finance Canada can prove suitability later instead of rebuilding files by hand.\n\nIt seems like aml / fintrac is already eating real hours on your side.\n\nHere's the one I'd love your read on: Across F&I, how do you prove which lenders or options were considered, what the customer consented to, what changed and why the final financing structure was selected??\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for Equipment Finance Canada?\n\nChad\n4orm Finance",
+   "people": [
+    "Harman Dhillon"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Matthew Turner",
+   "company": "Guardian Capital Group Limited",
+   "category": "Business",
+   "email": "mturner@guardiancapital.com",
+   "phone": "14163648341",
+   "intel": [
+    "Company: Guardian Capital Group Limited (https://www.guardiancapital.com)",
+    "Industry: Investments & Securities",
+    "Pain drivers: AML / FINTRAC, Trust / reconciliation",
+    "Regulators: FINTRAC, Ontario Securities Commission, CIRO",
+    "Discovery question: If a recommendation is challenged later, can another qualified person reproduce the client context, options, suitability rationale, disclosures and changes from the record that existed at the time?",
+    "Call objective: Ask for the CCO, COO or head of compliance, then book a 20-minute workflow discovery.",
+    "Best route: Matthew Turner — Senior Vice-President, Chief Compliance Officer & Secretary | +14163648341 | mturner@guardiancapital.com | Route type: Direct executive email",
+    "Other contacts: Sherry Lee Gregory — VP, Institutional Sales & Consultant Relations — slgregory@guardiancapital.com — 416-947-4086; Gregory Chai — VP — gchai@guardiancapital.com — 416-947-4039"
+   ],
+   "email_subject": "A 20-minute question about investments & securities evidence",
+   "email_body": "Matthew,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for investments & securities - it records that the customer actually understood what they were buying, so Guardian Capital Group Limited can prove suitability later instead of rebuilding files by hand.\n\nIt seems like aml / fintrac is already eating real hours on your side.\n\nHere's the one I'd love your read on: If a recommendation is challenged later, can another qualified person reproduce the client context, options, suitability rationale, disclosures and changes from the?\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for Guardian Capital Group Limited?\n\nChad\n4orm Finance",
+   "people": [
+    "Matthew Turner"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Peter Pogue",
+   "company": "Kal-Mor Mortgages & Investments Ltd",
+   "category": "Business",
+   "email": "peter@kal-mor.com",
+   "phone": "12505493250",
+   "intel": [
+    "Company: Kal-Mor Mortgages & Investments Ltd (kal-mor.com)",
+    "Industry: Mortgage & Lending",
+    "Pain drivers: AML / FINTRAC, Trust / reconciliation",
+    "Regulators: BCFSA",
+    "Discovery question: When a mortgage file is reviewed months later, can another person quickly show the client's goals, options considered, disclosures, changes and rationale without rebuilding the file from email, CRM and documents?",
+    "Call objective: Book a 20-minute workflow discovery with Peter Pogue.",
+    "Best route: Peter Pogue — President & Founder / Mortgage Broker | +12505493250 | peter@kal-mor.com | Route type: Direct executive email"
+   ],
+   "email_subject": "A 20-minute question about mortgage & lending evidence",
+   "email_body": "Peter,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for mortgage & lending - it records that the customer actually understood what they were buying, so Kal-Mor Mortgages & Investments Ltd can prove suitability later instead of rebuilding files by hand.\n\nIt seems like aml / fintrac is already eating real hours on your side.\n\nHere's the one I'd love your read on: When a mortgage file is reviewed months later, can another person quickly show the client's goals, options considered, disclosures, changes and rationale without?\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for Kal-Mor Mortgages & Investments Ltd?\n\nChad\n4orm Finance",
+   "people": [
+    "Peter Pogue"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Deb Sands",
+   "company": "Priority Leasing",
+   "category": "Business",
+   "email": "debbie@priorityleasing.net",
+   "phone": "14032161930",
+   "intel": [
+    "Company: Priority Leasing (https://priorityleasing.net)",
+    "Industry: Auto Finance & Leasing",
+    "Pain drivers: AML / FINTRAC, Review / filing",
+    "Regulators: FINTRAC; provincial commercial lending rules",
+    "Discovery question: Across F&I, how do you prove which lenders or options were considered, what the customer consented to, what changed and why the final financing structure was selected?",
+    "Call objective: Book a 20-minute workflow discovery with Deb Sands.",
+    "Best route: Deb Sands — Founder & President | +14032161930 | debbie@priorityleasing.net | Route type: Direct executive email",
+    "Other contacts: Bob Wall — General Manager"
+   ],
+   "email_subject": "A 20-minute question about auto finance & leasing evidence",
+   "email_body": "Deb,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for auto finance & leasing - it records that the customer actually understood what they were buying, so Priority Leasing can prove suitability later instead of rebuilding files by hand.\n\nIt seems like aml / fintrac is already eating real hours on your side.\n\nHere's the one I'd love your read on: Across F&I, how do you prove which lenders or options were considered, what the customer consented to, what changed and why the final financing structure was selected??\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for Priority Leasing?\n\nChad\n4orm Finance",
+   "people": [
+    "Deb Sands"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "John McLane",
+   "company": "Plooto Inc.",
+   "category": "Business",
+   "email": "support@plooto.com",
+   "phone": "18444756686",
+   "intel": [
+    "Company: Plooto Inc. (https://www.plooto.com)",
+    "Industry: Payments & PSPs",
+    "Pain drivers: AML / FINTRAC, Review / filing",
+    "Regulators: Bank of Canada RPAA, Payments Canada",
+    "Discovery question: Can you produce the evidence behind end-user funds, safeguarding, incidents, reconciliations and controls without turning it into a manual reconstruction project?",
+    "Call objective: Ask for the CCO / CAMLO, COO or safeguarding / operations lead, then book a 20-minute workflow discovery.",
+    "Best route: John McLane — Chief Executive Officer | +18444756686 | support@plooto.com | Route type: Functional company inbox",
+    "Other contacts: Christopher Wassenaar — Chief Compliance Officer; Abe Knell — Chief Revenue Officer; Chelsea Bailey — Chief People Officer"
+   ],
+   "email_subject": "A 20-minute question about payments & psps evidence",
+   "email_body": "John,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for payments & psps - it records that the customer actually understood what they were buying, so Plooto Inc. can prove suitability later instead of rebuilding files by hand.\n\nIt seems like aml / fintrac is already eating real hours on your side.\n\nHere's the one I'd love your read on: Can you produce the evidence behind end-user funds, safeguarding, incidents, reconciliations and controls without turning it into a manual reconstruction project??\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for Plooto Inc.?\n\nChad\n4orm Finance",
+   "people": [
+    "John McLane"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Arif Manji",
+   "company": "PSR Brokerage",
+   "category": "Business",
+   "email": "arifmanji29@gmail.com",
+   "phone": "14167315477",
+   "intel": [
+    "Company: PSR Brokerage (https://www.psrbrokerage.com)",
+    "Industry: Real Estate",
+    "Pain drivers: AML / FINTRAC, Trust / reconciliation, Review / filing, Manual reconstruction",
+    "Regulators: FINTRAC; Real Estate Council of Ontario (RECO) under TRESA",
+    "Discovery question: If a client disputes instructions, disclosures or a trust/deposit item, how quickly can the brokerage reconstruct the transaction across CRM, email, texts and trust records?",
+    "Call objective: Ask for the broker of record / managing broker or compliance lead, then book a 20-minute workflow discovery.",
+    "Best route: Arif Manji — Managing Director / President | +14167315477 | arifmanji29@gmail.com | Route type: Direct public executive email",
+    "Other contacts: Oral Karol — Broker of Record; Richelle King — Director, Executive Office Operations"
+   ],
+   "email_subject": "A 20-minute question about real estate evidence",
+   "email_body": "Arif,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for real estate - it records that the customer actually understood what they were buying, so PSR Brokerage can prove suitability later instead of rebuilding files by hand.\n\nIt seems like aml / fintrac is already eating real hours on your side.\n\nHere's the one I'd love your read on: If a client disputes instructions, disclosures or a trust/deposit item, how quickly can the brokerage reconstruct the transaction across CRM, email, texts and trust?\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for PSR Brokerage?\n\nChad\n4orm Finance",
+   "people": [
+    "Arif Manji"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Shyam Nagarajan",
+   "company": "HomeEquity Bank (CHIP Reverse Mortgage)",
+   "category": "Business",
+   "email": "info@heb.ca",
+   "phone": "14169254757",
+   "intel": [
+    "Company: HomeEquity Bank (CHIP Reverse Mortgage) (https://www.chip.ca)",
+    "Industry: Mortgage & Lending",
+    "Pain drivers: AML / FINTRAC, Review / filing, Manual reconstruction",
+    "Regulators: OSFI as a Schedule I bank, FSRA Ontario, provincial regulators",
+    "Discovery question: When a mortgage file is reviewed months later, can another person quickly show the client's goals, options considered, disclosures, changes and rationale without rebuilding the file from email, CRM and documents?",
+    "Call objective: Ask for the principal broker, head of operations or compliance, then book a 20-minute workflow discovery.",
+    "Best route: Shyam Nagarajan — Chief Risk Officer | +14169254757 | info@heb.ca | Route type: Functional company inbox",
+    "Other contacts: Richard Thomas — Chief Operations Officer; Yousry Bissada — President & CEO"
+   ],
+   "email_subject": "A 20-minute question about mortgage & lending evidence",
+   "email_body": "Shyam,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for mortgage & lending - it records that the customer actually understood what they were buying, so HomeEquity Bank (CHIP Reverse Mortgage) can prove suitability later instead of rebuilding files by hand.\n\nIt seems like aml / fintrac is already eating real hours on your side.\n\nHere's the one I'd love your read on: When a mortgage file is reviewed months later, can another person quickly show the client's goals, options considered, disclosures, changes and rationale without?\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for HomeEquity Bank (CHIP Reverse Mortgage)?\n\nChad\n4orm Finance",
+   "people": [
+    "Shyam Nagarajan"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Hanif Harji",
+   "company": "MTFX Group",
+   "category": "Business",
+   "email": "complianceinquiries@mtfxgroup.com",
+   "phone": "18008325104",
+   "intel": [
+    "Company: MTFX Group (https://www.mtfxgroup.com)",
+    "Industry: Payments & PSPs",
+    "Pain drivers: RPAA / safeguarding, AML / FINTRAC, Trust / reconciliation, Review / filing",
+    "Regulators: Bank of Canada RPAA, FINTRAC",
+    "Discovery question: Can you produce the evidence behind end-user funds, safeguarding, incidents, reconciliations and controls without turning it into a manual reconstruction project?",
+    "Call objective: Ask for the CCO / CAMLO, COO or safeguarding / operations lead, then book a 20-minute workflow discovery.",
+    "Best route: Hanif Harji — CEO / Executive Leader | +18008325104 | complianceinquiries@mtfxgroup.com | Route type: Functional compliance inbox",
+    "Other contacts: Arif Harji — Chief Market Strategist"
+   ],
+   "email_subject": "A 20-minute question about payments & psps evidence",
+   "email_body": "Hanif,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for payments & psps - it records that the customer actually understood what they were buying, so MTFX Group can prove suitability later instead of rebuilding files by hand.\n\nIt seems like rpaa / safeguarding is already eating real hours on your side.\n\nHere's the one I'd love your read on: Can you produce the evidence behind end-user funds, safeguarding, incidents, reconciliations and controls without turning it into a manual reconstruction project??\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for MTFX Group?\n\nChad\n4orm Finance",
+   "people": [
+    "Hanif Harji"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Brett Oland",
+   "company": "Bow Valley Credit Union",
+   "category": "Business",
+   "email": "boland@bowvalleycu.com",
+   "phone": "14039324693",
+   "intel": [
+    "Company: Bow Valley Credit Union (https://www.bowvalleycu.com)",
+    "Industry: Banking & Credit Unions",
+    "Pain drivers: AML / FINTRAC, Trust / reconciliation",
+    "Regulators: Credit Union Deposit Guarantee Corporation of Alberta; Alberta Treasury Board and Finance; FINTRAC",
+    "Discovery question: Which compliance or reconciliation workflow still requires your team to pull evidence from multiple systems before you can prove what happened?",
+    "Call objective: Book a 20-minute workflow discovery with Brett Oland.",
+    "Best route: Brett Oland — President & CEO | +14039324693 | boland@bowvalleycu.com | Route type: Direct executive email",
+    "Other contacts: Lynn Dunlop — VP, Banking Operations & Systems; Trina McKay — VP, Finance; Liz Robichaud — VP, Operations"
+   ],
+   "email_subject": "A 20-minute question about banking & credit unions evidence",
+   "email_body": "Brett,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for banking & credit unions - it records that the customer actually understood what they were buying, so Bow Valley Credit Union can prove suitability later instead of rebuilding files by hand.\n\nIt seems like aml / fintrac is already eating real hours on your side.\n\nHere's the one I'd love your read on: Which compliance or reconciliation workflow still requires your team to pull evidence from multiple systems before you can prove what happened??\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for Bow Valley Credit Union?\n\nChad\n4orm Finance",
+   "people": [
+    "Brett Oland"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Pascal St-Jean",
+   "company": "3iQ Corp",
+   "category": "Business",
+   "email": "info@3iq.ca",
+   "phone": "14166392130",
+   "intel": [
+    "Company: 3iQ Corp (https://3iq.io)",
+    "Industry: Crypto & Digital Assets",
+    "Pain drivers: Trust / reconciliation",
+    "Regulators: OSC, CSA, investment fund manager and portfolio manager",
+    "Discovery question: When a transaction or customer case is reviewed, how do you connect the customer, transaction, custody and compliance evidence across systems without rebuilding the case?",
+    "Call objective: Ask for the compliance, operations or custody lead, then book a 20-minute workflow discovery.",
+    "Best route: Pascal St-Jean — Chief Executive Officer | +14166392130 | info@3iq.ca | Route type: Official executive contact route"
+   ],
+   "email_subject": "A 20-minute question about crypto & digital assets evidence",
+   "email_body": "Pascal,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for crypto & digital assets - it records that the customer actually understood what they were buying, so 3iQ Corp can prove suitability later instead of rebuilding files by hand.\n\nIt seems like trust / reconciliation is already eating real hours on your side.\n\nHere's the one I'd love your read on: When a transaction or customer case is reviewed, how do you connect the customer, transaction, custody and compliance evidence across systems without rebuilding the case??\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for 3iQ Corp?\n\nChad\n4orm Finance",
+   "people": [
+    "Pascal St-Jean"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Samuel Cochrane",
+   "company": "AutoCanada Inc.",
+   "category": "Business",
+   "email": "scochrane@autocan.ca",
+   "phone": "16049105509",
+   "intel": [
+    "Company: AutoCanada Inc. (https://www.autocan.ca)",
+    "Industry: Auto Finance & Leasing",
+    "Pain drivers: AML / FINTRAC, Review / filing",
+    "Regulators: FINTRAC; AMVIC (Alberta) plus provincial dealer regulators",
+    "Discovery question: Across F&I, how do you prove which lenders or options were considered, what the customer consented to, what changed and why the final financing structure was selected?",
+    "Call objective: Ask for the owner, F&I director or compliance lead, then book a 20-minute workflow discovery.",
+    "Best route: Samuel Cochrane — Chief Executive Officer | +16049105509 | scochrane@autocan.ca | Route type: Direct executive email"
+   ],
+   "email_subject": "A 20-minute question about auto finance & leasing evidence",
+   "email_body": "Samuel,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for auto finance & leasing - it records that the customer actually understood what they were buying, so AutoCanada Inc. can prove suitability later instead of rebuilding files by hand.\n\nIt seems like aml / fintrac is already eating real hours on your side.\n\nHere's the one I'd love your read on: Across F&I, how do you prove which lenders or options were considered, what the customer consented to, what changed and why the final financing structure was selected??\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for AutoCanada Inc.?\n\nChad\n4orm Finance",
+   "people": [
+    "Samuel Cochrane"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Ron Butler",
+   "company": "Butler Mortgage Inc.",
+   "category": "Business",
+   "email": "",
+   "phone": "18665405489",
+   "intel": [
+    "Company: Butler Mortgage Inc. (https://www.butlermortgage.ca)",
+    "Industry: Mortgage & Lending",
+    "Pain drivers: Trust / reconciliation, Review / filing",
+    "Regulators: FSRA Ontario, BCFSA",
+    "Discovery question: When a mortgage file is reviewed months later, can another person quickly show the client's goals, options considered, disclosures, changes and rationale without rebuilding the file from email, CRM and documents?",
+    "Call objective: Book a 20-minute workflow discovery with Ronald Butler.",
+    "Best route: Ron Butler — Mortgage Broker / Principal Broker | +18665405489 | Route type: Direct office route; no public direct email found",
+    "Other contacts: William Butler — Mortgage Broker"
+   ],
+   "email_subject": "A 20-minute question about mortgage & lending evidence",
+   "email_body": "Ron,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for mortgage & lending - it records that the customer actually understood what they were buying, so Butler Mortgage Inc. can prove suitability later instead of rebuilding files by hand.\n\nIt seems like trust / reconciliation is already eating real hours on your side.\n\nHere's the one I'd love your read on: When a mortgage file is reviewed months later, can another person quickly show the client's goals, options considered, disclosures, changes and rationale without?\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for Butler Mortgage Inc.?\n\nChad\n4orm Finance",
+   "people": [
+    "Ron Butler"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Ryan Smith",
+   "company": "CIR Realty",
+   "category": "Business",
+   "email": "",
+   "phone": "14032710600",
+   "intel": [
+    "Company: CIR Realty (https://www.cirrealty.ca)",
+    "Industry: Real Estate",
+    "Pain drivers: AML / FINTRAC, Trust / reconciliation, Review / filing",
+    "Regulators: FINTRAC; Real Estate Council of Alberta (RECA)",
+    "Discovery question: If a client disputes instructions, disclosures or a trust/deposit item, how quickly can the brokerage reconstruct the transaction across CRM, email, texts and trust records?",
+    "Call objective: Book a 20-minute workflow discovery with Ryan Smith.",
+    "Best route: Ryan Smith — Broker | +14032710600 | Route type: Direct office route; public email is form/obfuscated"
+   ],
+   "email_subject": "A 20-minute question about real estate evidence",
+   "email_body": "Ryan,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for real estate - it records that the customer actually understood what they were buying, so CIR Realty can prove suitability later instead of rebuilding files by hand.\n\nIt seems like aml / fintrac is already eating real hours on your side.\n\nHere's the one I'd love your read on: If a client disputes instructions, disclosures or a trust/deposit item, how quickly can the brokerage reconstruct the transaction across CRM, email, texts and trust?\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for CIR Realty?\n\nChad\n4orm Finance",
+   "people": [
+    "Ryan Smith"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "John Webster",
+   "company": "Wealth One Bank of Canada",
+   "category": "Business",
+   "email": "operations@wealthonebank.ca",
+   "phone": "18663921088",
+   "intel": [
+    "Company: Wealth One Bank of Canada (https://www.wealthonebankofcanada.com)",
+    "Industry: Mortgage & Lending",
+    "Pain drivers: Public enforcement / remediation, AML / FINTRAC",
+    "Regulators: OSFI as a Schedule I bank, FINTRAC",
+    "Discovery question: When a mortgage file is reviewed months later, can another person quickly show the client's goals, options considered, disclosures, changes and rationale without rebuilding the file from email, CRM and documents?",
+    "Call objective: Book a 20-minute workflow discovery with John Webster.",
+    "Best route: John Webster — President & CEO | +18663921088 | operations@wealthonebank.ca | Route type: Functional operations inbox",
+    "Other contacts: Casey Antolak — Chief Financial Officer"
+   ],
+   "email_subject": "A 20-minute question about mortgage & lending evidence",
+   "email_body": "John,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for mortgage & lending - it records that the customer actually understood what they were buying, so Wealth One Bank of Canada can prove suitability later instead of rebuilding files by hand.\n\nIt seems like public enforcement / remediation is already eating real hours on your side.\n\nHere's the one I'd love your read on: When a mortgage file is reviewed months later, can another person quickly show the client's goals, options considered, disclosures, changes and rationale without?\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for Wealth One Bank of Canada?\n\nChad\n4orm Finance",
+   "people": [
+    "John Webster"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Farhan Ali Khan",
+   "company": "LendCare Capital Inc.",
+   "category": "Business",
+   "email": "",
+   "phone": "18662914045",
+   "intel": [
+    "Company: LendCare Capital Inc. (https://lendcare.ca)",
+    "Industry: Auto Finance & Leasing",
+    "Pain drivers: AML / FINTRAC, Review / filing, Manual reconstruction",
+    "Regulators: FINTRAC; provincial consumer lending regimes",
+    "Discovery question: Across F&I, how do you prove which lenders or options were considered, what the customer consented to, what changed and why the final financing structure was selected?",
+    "Call objective: Ask for the owner, F&I director or compliance lead, then book a 20-minute workflow discovery.",
+    "Best route: Farhan Ali Khan — Head of LendCare | +18662914045 | Route type: Executive name + company phone; no public direct email found"
+   ],
+   "email_subject": "A 20-minute question about auto finance & leasing evidence",
+   "email_body": "Farhan,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for auto finance & leasing - it records that the customer actually understood what they were buying, so LendCare Capital Inc. can prove suitability later instead of rebuilding files by hand.\n\nIt seems like aml / fintrac is already eating real hours on your side.\n\nHere's the one I'd love your read on: Across F&I, how do you prove which lenders or options were considered, what the customer consented to, what changed and why the final financing structure was selected??\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for LendCare Capital Inc.?\n\nChad\n4orm Finance",
+   "people": [
+    "Farhan Ali Khan"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Richard Munroe",
+   "company": "Atrium Mortgage Investment Corporation",
+   "category": "Business",
+   "email": "richard.munroe@atriummic.com",
+   "phone": "14166074205",
+   "intel": [
+    "Company: Atrium Mortgage Investment Corporation (https://www.atriummic.com)",
+    "Industry: Mortgage & Lending",
+    "Pain drivers: Trust / reconciliation, Review / filing",
+    "Regulators: FSRA Ontario, BCFSA, securities regulators as a reporting issuer",
+    "Discovery question: When a mortgage file is reviewed months later, can another person quickly show the client's goals, options considered, disclosures, changes and rationale without rebuilding the file from email, CRM and documents?",
+    "Call objective: Book a 20-minute workflow discovery with Richard Munroe.",
+    "Best route: Richard Munroe — President & COO | +14166074205 | richard.munroe@atriummic.com | Route type: Direct executive email",
+    "Other contacts: Rob Goodall — CEO & Founder; Chris Anastasopoulos — CFO — chris.a@atriummic.com — 416-607-4216"
+   ],
+   "email_subject": "A 20-minute question about mortgage & lending evidence",
+   "email_body": "Richard,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for mortgage & lending - it records that the customer actually understood what they were buying, so Atrium Mortgage Investment Corporation can prove suitability later instead of rebuilding files by hand.\n\nIt seems like trust / reconciliation is already eating real hours on your side.\n\nHere's the one I'd love your read on: When a mortgage file is reviewed months later, can another person quickly show the client's goals, options considered, disclosures, changes and rationale without?\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for Atrium Mortgage Investment Corporation?\n\nChad\n4orm Finance",
+   "people": [
+    "Richard Munroe"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Peter Roberts",
+   "company": "Prospera Credit Union",
+   "category": "Business",
+   "email": "info@prospera.ca",
+   "phone": "18884404480",
+   "intel": [
+    "Company: Prospera Credit Union (https://www.prospera.ca)",
+    "Industry: Banking & Credit Unions",
+    "Pain drivers: RPAA / safeguarding, AML / FINTRAC, Trust / reconciliation, Manual reconstruction",
+    "Regulators: BCFSA; CUDIC",
+    "Discovery question: Which compliance or reconciliation workflow still requires your team to pull evidence from multiple systems before you can prove what happened?",
+    "Call objective: Book a 20-minute workflow discovery with Greg Dyck.",
+    "Best route: Peter Roberts — Chief Risk Officer | +18884404480 | info@prospera.ca | Route type: Functional company inbox",
+    "Other contacts: Gavin Toy — President & CEO; Ania Cox — Chief Integration & Operational Effectiveness Officer; Daryl Hosein — Chief Financial Officer"
+   ],
+   "email_subject": "A 20-minute question about banking & credit unions evidence",
+   "email_body": "Peter,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for banking & credit unions - it records that the customer actually understood what they were buying, so Prospera Credit Union can prove suitability later instead of rebuilding files by hand.\n\nIt seems like rpaa / safeguarding is already eating real hours on your side.\n\nHere's the one I'd love your read on: Which compliance or reconciliation workflow still requires your team to pull evidence from multiple systems before you can prove what happened??\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for Prospera Credit Union?\n\nChad\n4orm Finance",
+   "people": [
+    "Peter Roberts"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Brett Kanuka",
+   "company": "CMB Insurance Brokers",
+   "category": "Business",
+   "email": "bkanuka@cmbinsurance.ca",
+   "phone": "17804287253",
+   "intel": [
+    "Company: CMB Insurance Brokers (https://cmbinsurance.ca/)",
+    "Industry: Insurance",
+    "Pain drivers: Trust / reconciliation, Review / filing",
+    "Regulators: Alberta Insurance Council",
+    "Discovery question: If a policy recommendation is reviewed later, can someone reproduce the needs analysis, alternatives, rationale, disclosures and later changes from one record?",
+    "Call objective: Book a 20-minute workflow discovery with Brett Kanuka.",
+    "Best route: Brett Kanuka — President | +17804287253 | bkanuka@cmbinsurance.ca | Route type: Direct executive email",
+    "Other contacts: Mobile: 780-964-8265"
+   ],
+   "email_subject": "A 20-minute question about insurance evidence",
+   "email_body": "Brett,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for insurance - it records that the customer actually understood what they were buying, so CMB Insurance Brokers can prove suitability later instead of rebuilding files by hand.\n\nIt seems like trust / reconciliation is already eating real hours on your side.\n\nHere's the one I'd love your read on: If a policy recommendation is reviewed later, can someone reproduce the needs analysis, alternatives, rationale, disclosures and later changes from one record??\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for CMB Insurance Brokers?\n\nChad\n4orm Finance",
+   "people": [
+    "Brett Kanuka"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "prospect",
+   "name": "Rob Khazzam",
+   "company": "Float Financial Solutions Inc.",
+   "category": "Business",
+   "email": "compliance@floatfinancial.com",
+   "phone": "18339443175",
+   "intel": [
+    "Company: Float Financial Solutions Inc. (https://floatfinancial.com)",
+    "Industry: Payments & PSPs",
+    "Pain drivers: RPAA / safeguarding, AML / FINTRAC",
+    "Regulators: FINTRAC (MSB)",
+    "Discovery question: Can you produce the evidence behind end-user funds, safeguarding, incidents, reconciliations and controls without turning it into a manual reconstruction project?",
+    "Call objective: Book a 20-minute workflow discovery with Rob Khazzam.",
+    "Best route: Rob Khazzam — Co-Founder & CEO | +18339443175 | compliance@floatfinancial.com | Route type: Functional compliance inbox",
+    "Other contacts: Ruslan Nikolaev — Co-Founder & Head of Product; Privacy Officer / Senior Director Risk & Compliance — privacy@floatfinancial.com"
+   ],
+   "email_subject": "A 20-minute question about payments & psps evidence",
+   "email_body": "Rob,\n\nYou probably get cold notes like this every week, so no hard feelings if the answer is no.\n\nWe built 4orm as a transaction-evidence layer for payments & psps - it records that the customer actually understood what they were buying, so Float Financial Solutions Inc. can prove suitability later instead of rebuilding files by hand.\n\nIt seems like rpaa / safeguarding is already eating real hours on your side.\n\nHere's the one I'd love your read on: Can you produce the evidence behind end-user funds, safeguarding, incidents, reconciliations and controls without turning it into a manual reconstruction project??\n\nWould it be a bad idea to take 20 minutes so I can show you how we handle that and you tell me where it would break for Float Financial Solutions Inc.?\n\nChad\n4orm Finance",
+   "people": [
+    "Rob Khazzam"
+   ],
+   "suggested_docs": [
+    "4orm Business Overview",
+    "Investor Deck",
+    "Evidence Book"
+   ]
+  },
+  {
+   "kind": "regulator",
+   "name": "FINTRAC",
+   "full": "Financial Transactions and Reports Analysis Centre of Canada",
+   "category": "Regulatory",
+   "intel": [
+    "Federal AML/ATF regulator; oversees MSBs and reporting entities.",
+    "Sign-up / engage: MSB registration, and FINTRAC guidance channels on client ID + record keeping.",
+    "4orm angle: an auditable evidence layer for suitability + understanding supports the record-keeping and reporting burden."
+   ],
+   "email_subject": "4orm Finance - consumer evidence layer and FINTRAC record-keeping",
+   "email_body": "Hello,\n\nI'm Chad, founder of 4orm Finance. We build an auditable evidence layer that records that a consumer understood and was suited to a regulated financial product, across mortgage, auto, insurance and investments.\n\nWe want to make sure what we build fits FINTRAC's record-keeping and reporting expectations rather than cutting across them. Could you point me to the right guidance contact, or a short call, so we design to the standard from day one?\n\nThank you,\nChad Johnston\n4orm Finance",
+   "people": [],
+   "suggested_docs": [
+    "RPAA Evidence Note",
+    "Evidence Book",
+    "Company Brief",
+    "Summary Information Memorandum"
+   ]
+  },
+  {
+   "kind": "regulator",
+   "name": "Bank of Canada - Retail Payments Supervision",
+   "full": "Retail Payment Activities Act (RPAA) supervisor",
+   "category": "Regulatory",
+   "intel": [
+    "Supervises payment service providers under the RPAA (registration + safeguarding).",
+    "Sign-up / engage: RPAA registration readiness and safeguarding requirements.",
+    "4orm angle: our evidence layer helps PSPs document consumer understanding and safeguarding controls."
+   ],
+   "email_subject": "RPAA registration readiness - 4orm Finance",
+   "email_body": "Hello,\n\nI'm Chad, founder of 4orm Finance. As the RPAA regime comes into force we want to be early and correct on registration and safeguarding, and to understand how a consumer-evidence layer should sit alongside those requirements.\n\nWould it be possible to speak with the right person on the supervision team, or be pointed to the registration guidance, so we build to the RPAA standard from the start?\n\nThank you,\nChad Johnston\n4orm Finance",
+   "people": [],
+   "suggested_docs": [
+    "RPAA Evidence Note",
+    "Evidence Book",
+    "Company Brief",
+    "Summary Information Memorandum"
+   ]
+  },
+  {
+   "kind": "regulator",
+   "name": "CSA",
+   "full": "Canadian Securities Administrators",
+   "category": "Regulatory",
+   "intel": [
+    "Umbrella of provincial/territorial securities regulators; client-focused reforms (KYC/KYP/suitability).",
+    "Sign-up / engage: CSA Regulatory Sandbox for novel models.",
+    "4orm angle: recorded suitability and understanding is the exact evidence the client-focused reforms want."
+   ],
+   "email_subject": "Client-focused reforms - a suitability-evidence layer",
+   "email_body": "Hello,\n\nI'm Chad, founder of 4orm Finance. The client-focused reforms raised the bar on proving suitability and understanding; we build the evidence layer that records exactly that.\n\nI'd value a short conversation on whether this fits the CSA Regulatory Sandbox, and how to align with the reforms. Who would be the right contact?\n\nThank you,\nChad Johnston\n4orm Finance",
+   "people": [],
+   "suggested_docs": [
+    "RPAA Evidence Note",
+    "Evidence Book",
+    "Company Brief",
+    "Summary Information Memorandum"
+   ]
+  },
+  {
+   "kind": "regulator",
+   "name": "ASC",
+   "full": "Alberta Securities Commission",
+   "category": "Regulatory",
+   "intel": [
+    "Alberta's securities regulator; home province for 4orm.",
+    "Sign-up / engage: ASC's regulatory sandbox / innovation contact.",
+    "4orm angle: local, and directly relevant to suitability evidence. Warm intro possible via Michael Stevens (Fasken)."
+   ],
+   "email_subject": "Alberta fintech - suitability evidence layer (intro via Fasken)",
+   "email_body": "Hello,\n\nI'm Chad, founder of 4orm Finance, based in Alberta. We build an auditable record that a consumer understood and was suited to a regulated financial product.\n\nMichael Stevens at Fasken suggested the ASC would be the right first regulator conversation. Could we find 20 minutes, or could you point me to the innovation/sandbox contact?\n\nThank you,\nChad Johnston\n4orm Finance",
+   "people": [
+    "Michael Stevens"
+   ],
+   "suggested_docs": [
+    "RPAA Evidence Note",
+    "Evidence Book",
+    "Company Brief",
+    "Summary Information Memorandum"
+   ]
+  },
+  {
+   "kind": "regulator",
+   "name": "BCSC",
+   "full": "British Columbia Securities Commission",
+   "category": "Regulatory",
+   "intel": [
+    "BC securities regulator; active on investor protection and tech.",
+    "Sign-up / engage: BCSC Tech Team / sandbox.",
+    "4orm angle: suitability and understanding evidence for BC-registered firms."
+   ],
+   "email_subject": "Suitability-evidence layer - BCSC Tech Team",
+   "email_body": "Hello,\n\nI'm Chad, founder of 4orm Finance. We record that a consumer understood and was suited to a regulated product - the evidence a review needs later.\n\nWould the BCSC Tech Team be open to a short call on where this fits investor-protection expectations and any sandbox path?\n\nThank you,\nChad Johnston\n4orm Finance",
+   "people": [],
+   "suggested_docs": [
+    "RPAA Evidence Note",
+    "Evidence Book",
+    "Company Brief",
+    "Summary Information Memorandum"
+   ]
+  },
+  {
+   "kind": "regulator",
+   "name": "OSC",
+   "full": "Ontario Securities Commission",
+   "category": "Regulatory",
+   "intel": [
+    "Largest Canadian market; runs OSC LaunchPad for fintech.",
+    "Sign-up / engage: OSC LaunchPad.",
+    "4orm angle: LaunchPad is the natural door for a suitability-evidence tool."
+   ],
+   "email_subject": "OSC LaunchPad - a suitability-evidence layer",
+   "email_body": "Hello,\n\nI'm Chad, founder of 4orm Finance. We build an auditable evidence layer for consumer suitability and understanding across regulated financial products.\n\nLaunchPad looks like the right first conversation. Could we book time to walk through it and get your read on fit and any sandbox path?\n\nThank you,\nChad Johnston\n4orm Finance",
+   "people": [],
+   "suggested_docs": [
+    "RPAA Evidence Note",
+    "Evidence Book",
+    "Company Brief",
+    "Summary Information Memorandum"
+   ]
+  },
+  {
+   "kind": "regulator",
+   "name": "AMF",
+   "full": "Autorite des marches financiers (Quebec)",
+   "category": "Regulatory",
+   "intel": [
+    "Quebec's integrated financial regulator.",
+    "Sign-up / engage: AMF fintech/innovation contact; note Quebec Law 25 privacy.",
+    "4orm angle: evidence layer that also respects Law 25."
+   ],
+   "email_subject": "4orm Finance - suitability evidence (Quebec / Law 25 aware)",
+   "email_body": "Bonjour,\n\nI'm Chad, founder of 4orm Finance. We record that a consumer understood and was suited to a regulated product, built with Quebec's Law 25 privacy expectations in mind.\n\nCould you point me to the AMF innovation contact for a short conversation on fit?\n\nMerci,\nChad Johnston\n4orm Finance",
+   "people": [],
+   "suggested_docs": [
+    "RPAA Evidence Note",
+    "Evidence Book",
+    "Company Brief",
+    "Summary Information Memorandum"
+   ]
+  },
+  {
+   "kind": "regulator",
+   "name": "FCAC",
+   "full": "Financial Consumer Agency of Canada",
+   "category": "Regulatory",
+   "intel": [
+    "Federal consumer-protection + market-conduct supervisor; financial literacy mandate.",
+    "Sign-up / engage: FCAC consumer-understanding and market-conduct resources.",
+    "4orm angle: proving consumer understanding is squarely FCAC's mandate."
+   ],
+   "email_subject": "Consumer understanding - a measurable evidence layer",
+   "email_body": "Hello,\n\nI'm Chad, founder of 4orm Finance. Your mandate is consumer understanding and fair market conduct; we build the layer that actually records and proves a consumer understood what they bought.\n\nCould we have a short conversation on how this could support the consumer-protection outcomes FCAC cares about?\n\nThank you,\nChad Johnston\n4orm Finance",
+   "people": [],
+   "suggested_docs": [
+    "RPAA Evidence Note",
+    "Evidence Book",
+    "Company Brief",
+    "Summary Information Memorandum"
+   ]
+  },
+  {
+   "kind": "regulator",
+   "name": "OSFI",
+   "full": "Office of the Superintendent of Financial Institutions",
+   "category": "Regulatory",
+   "intel": [
+    "Federal prudential + conduct regulator for banks and insurers.",
+    "Sign-up / engage: OSFI contact on operational/conduct expectations.",
+    "4orm angle: evidence layer supports conduct and operational-risk controls at FRFIs."
+   ],
+   "email_subject": "Conduct evidence for FRFIs - 4orm Finance",
+   "email_body": "Hello,\n\nI'm Chad, founder of 4orm Finance. We build an auditable evidence layer for consumer suitability and understanding that supports conduct and operational-risk controls.\n\nWould the right team at OSFI be open to a brief conversation on where this is useful?\n\nThank you,\nChad Johnston\n4orm Finance",
+   "people": [],
+   "suggested_docs": [
+    "RPAA Evidence Note",
+    "Evidence Book",
+    "Company Brief",
+    "Summary Information Memorandum"
+   ]
+  },
+  {
+   "kind": "regulator",
+   "name": "FSRA",
+   "full": "Financial Services Regulatory Authority of Ontario",
+   "category": "Regulatory",
+   "intel": [
+    "Ontario regulator for mortgage brokers and insurance - two of 4orm's core markets.",
+    "Sign-up / engage: FSRA innovation office; broker suitability expectations.",
+    "4orm angle: mortgage + insurance suitability evidence is directly FSRA's turf."
+   ],
+   "email_subject": "Mortgage + insurance suitability evidence - FSRA innovation",
+   "email_body": "Hello,\n\nI'm Chad, founder of 4orm Finance. We record that a consumer understood and was suited to a mortgage or insurance product - the evidence a file review needs.\n\nFSRA's broker-suitability focus makes you a priority conversation. Could we book 20 minutes with the innovation office?\n\nThank you,\nChad Johnston\n4orm Finance",
+   "people": [],
+   "suggested_docs": [
+    "RPAA Evidence Note",
+    "Evidence Book",
+    "Company Brief",
+    "Summary Information Memorandum"
+   ]
+  },
+  {
+   "kind": "regulator",
+   "name": "RECA",
+   "full": "Real Estate Council of Alberta",
+   "category": "Regulatory",
+   "intel": [
+    "Alberta regulator for real-estate and mortgage brokerage conduct/disclosure.",
+    "Sign-up / engage: RECA conduct + disclosure standards; design-partner angle with brokerages.",
+    "4orm angle: disclosure/understanding evidence for brokerage transactions."
+   ],
+   "email_subject": "Disclosure evidence for Alberta brokerages",
+   "email_body": "Hello,\n\nI'm Chad, founder of 4orm Finance, in Alberta. We build an auditable record that a consumer understood the disclosures and options in a brokerage transaction.\n\nCould we have a short conversation on how this supports RECA's conduct and disclosure standards?\n\nThank you,\nChad Johnston\n4orm Finance",
+   "people": [],
+   "suggested_docs": [
+    "RPAA Evidence Note",
+    "Evidence Book",
+    "Company Brief",
+    "Summary Information Memorandum"
+   ]
+  },
+  {
+   "kind": "regulator",
+   "name": "RCMP - Financial Crime",
+   "full": "Royal Canadian Mounted Police (financial crime / fraud)",
+   "category": "Regulatory",
+   "intel": [
+    "Federal policing of fraud and financial crime.",
+    "Sign-up / engage: fraud-evidence and consumer-protection collaboration.",
+    "4orm angle: a clean evidence trail helps distinguish fraud from legitimate transactions."
+   ],
+   "email_subject": "Fraud evidence trail - 4orm Finance",
+   "email_body": "Hello,\n\nI'm Chad, founder of 4orm Finance. We build an auditable record of what a consumer understood in a financial transaction - useful evidence when separating fraud from legitimate activity.\n\nWould the right financial-crime contact be open to a short conversation on where this could help?\n\nThank you,\nChad Johnston\n4orm Finance",
+   "people": [],
+   "suggested_docs": [
+    "RPAA Evidence Note",
+    "Evidence Book",
+    "Company Brief",
+    "Summary Information Memorandum"
+   ]
+  },
+  {
+   "kind": "regulator",
+   "name": "Competition Bureau Canada",
+   "full": "Competition Bureau",
+   "category": "Regulatory",
+   "intel": [
+    "Federal body on deceptive marketing and consumer harm.",
+    "Sign-up / engage: consumer-harm and deceptive-practice evidence.",
+    "4orm angle: records of consumer understanding counter deceptive-marketing harm."
+   ],
+   "email_subject": "Consumer-understanding evidence and deceptive marketing",
+   "email_body": "Hello,\n\nI'm Chad, founder of 4orm Finance. We record that consumers understood what they were sold, which is directly relevant to deceptive-marketing and consumer-harm questions.\n\nCould we have a brief conversation on how this evidence could be useful?\n\nThank you,\nChad Johnston\n4orm Finance",
+   "people": [],
+   "suggested_docs": [
+    "RPAA Evidence Note",
+    "Evidence Book",
+    "Company Brief",
+    "Summary Information Memorandum"
+   ]
+  },
+  {
+   "kind": "regulator",
+   "name": "Public Council (80-company registry)",
+   "full": "Confirm exact body - the public council where the ~80 companies are listed",
+   "category": "Regulatory",
+   "intel": [
+    "CONFIRM THE EXACT NAME with Chad - the public council/registry listing ~80 companies we can sign up with.",
+    "Sign-up / engage: registration/membership + visibility to the 80 listed companies.",
+    "4orm angle: membership puts 4orm in front of the regulated firms on the registry."
+   ],
+   "email_subject": "Registering with the council - 4orm Finance",
+   "email_body": "Hello,\n\nI'm Chad, founder of 4orm Finance. We build a consumer-suitability evidence layer for regulated financial businesses, and we'd like to register/engage with the council and the firms it lists.\n\nCould you tell me the steps to sign up and who to speak with?\n\nThank you,\nChad Johnston\n4orm Finance",
+   "people": [],
+   "suggested_docs": [
+    "RPAA Evidence Note",
+    "Evidence Book",
+    "Company Brief",
+    "Summary Information Memorandum"
+   ]
+  },
+  {
+   "kind": "regulator",
+   "name": "OSC LaunchPad / CSA Sandbox signup",
+   "full": "Regulatory sandbox + innovation program registrations",
+   "category": "Regulatory",
+   "intel": [
+    "Action space: the sign-up/application items - OSC LaunchPad, CSA Regulatory Sandbox, provincial innovation offices.",
+    "Sign-up / engage: submit applications; track status per program.",
+    "4orm angle: sandboxes let us test the evidence layer with regulatory cover."
+   ],
+   "email_subject": "Sandbox applications - 4orm Finance",
+   "email_body": "Hello,\n\nI'm Chad, founder of 4orm Finance. We'd like to apply to the regulatory sandbox / innovation program for our consumer-suitability evidence layer.\n\nCould you confirm the application steps and the right contact?\n\nThank you,\nChad Johnston\n4orm Finance",
+   "people": [],
+   "suggested_docs": [
+    "RPAA Evidence Note",
+    "Evidence Book",
+    "Company Brief",
+    "Summary Information Memorandum"
+   ]
+  }
+ ]
+}
