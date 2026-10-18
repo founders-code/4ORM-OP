@@ -20,7 +20,10 @@
   var cur = null;
   var bound = false;
 
-  function $(id) { return document.getElementById(id); }
+  function $(id) {
+    if (id === 'v-playbook') return document.getElementById(id);
+    return (window.portEl && window.portEl('v-playbook', id)) || document.getElementById(id);
+  }
   function colOf(r) { return r.c === '--white' ? '#ffffff' : 'var(' + r.c + ')'; }
   function padClass(s) {
     if (s === 'done' || s === 'before') return D;
@@ -45,19 +48,19 @@
     return '';
   }
   function streakHtml(r) {
-    var pads = r.d || [];
-    var n = 0;
-    for (var i = pads.length - 1; i >= 0; i--) {
-      if (pads[i] === D) n += 1;
-      else if (pads[i] === O) continue;
-      else break;
-    }
     if (r.grp === 'Weekly') return 'weekly';
-    if (/reach/i.test(r.n)) return '<b>' + (r.pads || []).reduce(function (a, p) { return a + (Number(p.value) || (p.state === 'done' ? 5 : 0)); }, 0) + '</b> sent';
-    if (/4ormiq/i.test(r.n)) return '<b>0</b> / 1,000';
-    if (/raise/i.test(r.n)) return '<b>$170K</b> to go';
-    if (/clear/i.test(r.n)) return '<b>3</b> open';
-    if (/video/i.test(r.n) || /clip/i.test(r.n) || /engage/i.test(r.n)) return '<b>' + n + '</b> / 5';
+    var pads = r.pads || [];
+    var today = desk.today || '';
+    var n = 0;
+    var seen = false;
+    for (var i = pads.length - 1; i >= 0; i--) {
+      var pad = pads[i] || {};
+      if (today && pad.day && pad.day > today) continue;
+      if (pad.state === 'off' || pad.state === 'before' || pad.state === O) continue;
+      if (pad.state === 'done' || pad.state === D) { n += 1; seen = true; continue; }
+      break;
+    }
+    if (!seen || !n) return '—';
     return '<b>' + n + '</b> days';
   }
   function fromApi(d) {
@@ -126,10 +129,11 @@
     count();
     var pct = $('pb-pct');
     if (pct) pct.textContent = (desk.score || 0) + '%';
-    var wk = document.querySelector('#v-playbook .wk');
+    var root = window.portRoot ? window.portRoot('v-playbook') : document;
+    var wk = root.querySelector ? root.querySelector('.wk') : document.querySelector('#v-playbook .wk');
     if (wk) wk.innerHTML = desk.weekLabel || wk.innerHTML;
     var iq = daysTo('2026-10-23');
-    var beat = document.querySelector('#v-playbook .beat.goal .d');
+    var beat = root.querySelector ? root.querySelector('.beat.goal .d') : document.querySelector('#v-playbook .beat.goal .d');
     if (beat) beat.innerHTML = iq + '<small>d to launch</small>';
   }
   function daysTo(iso) {
@@ -140,17 +144,23 @@
   }
   function place() {
     var f = $('pb-fri');
-    if (!f) return;
-    var ph = $('pb-ph'), s = f.closest('.seq');
-    if (!ph || !s) return;
+    var g = $('pb-g');
+    var ph = $('pb-ph');
+    if (!f || !ph) return;
+    var s = f.closest('.seq');
+    if (!s) return;
     var box = s.getBoundingClientRect(), r = f.getBoundingClientRect();
+    var grid = g ? g.getBoundingClientRect() : r;
     ph.style.left = (r.left - box.left - 4) + 'px';
     ph.style.width = (r.width + 8) + 'px';
+    ph.style.top = (grid.top - box.top) + 'px';
+    ph.style.height = grid.height + 'px';
+    ph.style.bottom = 'auto';
   }
   function count() {
     var left = 0;
     var idx = todayIdx();
-    rows.forEach(function (r) { if (r.d && (r.d[idx] === U || r.d[idx] === N)) left++; });
+    rows.forEach(function (r) { if (r.d && r.d[idx] === U) left++; });
     var el = $('pb-runTxt');
     if (el) el.textContent = left ? "Run today's plays · " + left + ' lit' : "All lights off — day done";
   }
@@ -174,33 +184,34 @@
     var g = $('pb-g');
     var pop = $('pb-pop');
     document.addEventListener('click', function (e) {
+      var t = (window.portClickTarget && window.portClickTarget(e)) || e.target;
       if (!$('v-playbook') || $('v-playbook').hidden) return;
-      if (e.target.id === 'pb-openCal') { $('pb-ov').classList.add('open'); return; }
-      if (e.target.id === 'pb-closeCal') { $('pb-ov').classList.remove('open'); return; }
-      if (e.target.id === 'pb-ov') { e.target.classList.remove('open'); return; }
-      if (e.target.id === 'pb-runBtn' || e.target.closest && e.target.closest('#pb-runBtn')) {
+      if (t.id === 'pb-openCal') { $('pb-ov').classList.add('open'); return; }
+      if (t.id === 'pb-closeCal') { $('pb-ov').classList.remove('open'); return; }
+      if (t.id === 'pb-ov') { t.classList.remove('open'); return; }
+      if (t.id === 'pb-runBtn' || (t.closest && t.closest('#pb-runBtn'))) {
         var idx = todayIdx();
         var due = rows.filter(function (r) { return r.d && (r.d[idx] === U || r.d[idx] === N); })[0];
         if (due) switchView((ROOMS[due.room] || ['', 'war'])[1]);
         return;
       }
-      var go = e.target.closest && e.target.closest('[data-pb-go]');
+      var go = t.closest && t.closest('[data-pb-go]');
       if (go) { e.preventDefault(); switchView(go.getAttribute('data-pb-go')); return; }
-      if (e.target.id === 'pb-add' || (e.target.classList && e.target.classList.contains('add'))) {
+      if (t.id === 'pb-add' || (t.classList && t.classList.contains('add'))) {
         var name = prompt('Rhythm name');
         if (!name) return;
         authFetch('/api/playbook', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: name }) })
           .then(function (r) { return r.json(); }).then(function (d) { fromApi(d); render(); }).catch(function () {});
         return;
       }
-      if (e.target.id === 'pb-popGo' && cur) {
+      if (t.id === 'pb-popGo' && cur) {
         var rm = ROOMS[cur.r.room] || ['Room', 'war'];
         toast('Opening ' + rm[0] + '…');
         pop.classList.remove('show');
         switchView(rm[1]);
         return;
       }
-      if (e.target.id === 'pb-popDone' && cur) {
+      if (t.id === 'pb-popDone' && cur) {
         var pad = cur.r.pads[cur.i];
         var next = cur.r.d[cur.i] === D ? 'open' : 'done';
         pop.classList.remove('show');
@@ -208,14 +219,14 @@
         toast(next === 'done' ? '✓ Light off — ' + cur.r.n + ' done' : cur.r.n + ' turned back on');
         return;
       }
-      if (e.target.id === 'pb-popLater' && cur) {
+      if (t.id === 'pb-popLater' && cur) {
         var p = cur.r.pads[cur.i];
         pop.classList.remove('show');
         setPad(cur.r.id, p.day, 'snoozed');
         toast(cur.r.n + ' snoozed 2 hours');
         return;
       }
-      var p = e.target.closest && e.target.closest('#pb-g .pad');
+      var p = t.closest && t.closest('#pb-g .pad');
       if (p && p.dataset.r) {
         var r = rows[+p.dataset.r], i = +p.dataset.i, rm2 = ROOMS[r.room] || ['Room', 'war'], st = r.d[i];
         cur = { r: r, i: i, el: p };
@@ -234,7 +245,7 @@
         e.stopPropagation();
         return;
       }
-      if (pop && !pop.contains(e.target)) pop.classList.remove('show');
+      if (pop && !pop.contains(t)) pop.classList.remove('show');
     });
   }
   function monthStack() {
@@ -295,8 +306,34 @@
     });
     host.innerHTML = H;
   }
+  function loadFixture() {
+    desk = { today: '2026-10-16', days: ['2026-10-12', '2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16', '2026-10-17', '2026-10-18'], score: 78, weekLabel: 'WEEK 42 · OCT 12 – 18', monthLogs: [] };
+    rows = [
+      { s: 'Daily' },
+      { n: 'One move', room: 'war', c: '--blue', d: [D, D, M, D, D, O, O], lab: ['', '', '', '', '✓'], st: '<b>2</b> days' },
+      { n: '30-min video', room: 'studio', sub: 'Mon-Fri', c: '--red', d: [D, D, D, M, U, O, O], lab: ['', '', '', '', 'GO'], st: '<b>3</b> / 5' },
+      { n: "Post today’s clip", room: 'li', c: '--pink', d: [D, D, D, D, U, O, O], lab: ['', '', '', '', 'GO'], st: '<b>4</b> / 5', nw: 1 },
+      { n: 'Engage 10 min', room: 'li', sub: 'comment on 5', c: '--sky', d: [D, M, D, D, U, O, O], lab: ['', '', '', '', '0/5'], st: '<b>3</b> / 5', nw: 1 },
+      { n: 'Reach out 5', room: 'pipe', c: '--green', d: [D, D, D, D, U, O, O], lab: ['5', '5', '4', '5', '2/5'], st: '<b>21</b> sent' },
+      { n: 'Raise touch', room: 'spaces', sub: 'one cheque closer', c: '--gold', d: [D, D, M, D, U, O, O], lab: ['', '', '', '', 'GO'], st: '<b>$170K</b> to go', nw: 1 },
+      { n: 'Inbox zero', room: 'msg', c: '--violet', d: [D, D, D, D, U, D, O], lab: ['', '', '', '', '5'], st: '<b>4</b> days' },
+      { n: 'Clear commitments', room: 'war', sub: 'after calls', c: '--orange', d: [D, D, D, M, U, O, O], lab: ['', '', '', '', '3'], st: '<b>3</b> open', nw: 1 },
+      { n: 'Check 4ormIQ', room: 'iq', sub: 'launch prep → users', c: '--lime', d: [D, D, D, D, U, O, O], lab: ['', '', '', '', '7d'], st: '<b>0</b> / 1,000', nw: 1 },
+      { n: 'News sweep', room: 'news', c: '--teal', d: [D, D, D, D, D, O, O], lab: ['', '', '', '', '✓'], st: '<b>9</b> days' },
+      { n: 'Shutdown + snapshot', room: 'done', sub: '5 min', c: '--slate', d: [D, D, D, D, N, O, O], lab: ['', '', '', '', '6pm'], st: '<b>4</b> days', nw: 1 },
+      { s: 'Weekly' },
+      { n: 'Schedule clips', room: 'studio', sub: 'Mon', c: '--pink', d: [D, O, O, O, O, O, O], lab: ['✓'], st: 'weekly' },
+      { n: 'Chase cold', room: 'contacts', sub: 'Tue', c: '--amber', d: [O, D, O, O, O, O, O], lab: ['', '✓'], st: 'weekly' },
+      { n: 'Speer sync', room: 'team', sub: 'Wed', c: '--teal', d: [O, O, D, O, O, O, O], lab: ['', '', '✓'], st: 'weekly', nw: 1 },
+      { n: 'Metrics snapshot', room: 'dash', sub: 'Thu', c: '--sky', d: [O, O, O, D, O, O, O], lab: ['', '', '', '✓'], st: 'weekly', nw: 1 },
+      { n: 'Weekly review', room: 'dash', sub: 'Fri', c: '--white', d: [O, O, O, O, U, O, O], lab: ['', '', '', '', 'GO'], st: 'weekly' }
+    ];
+    render();
+    monthStack();
+  }
   function loadPlaybook() {
     bind();
+    if (window.fixtureMockup) { loadFixture(); return; }
     authFetch('/api/playbook', { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
       .then(function (d) { fromApi(d); render(); monthStack(); })

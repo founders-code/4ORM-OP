@@ -30,6 +30,12 @@ const nextConfig = {
     return [
       { source: '/', destination: '/index.html' },
       { source: '/control-room', destination: '/control-room.html' },
+      { source: '/playbook', destination: '/control-room.html' },
+      { source: '/calendar', destination: '/control-room.html' },
+      { source: '/news', destination: '/control-room.html' },
+      { source: '/email-board', destination: '/control-room.html' },
+      { source: '/war-room', destination: '/control-room.html' },
+      { source: '/space-detail', destination: '/control-room.html' },
       { source: '/terms-of-service', destination: '/terms-of-service.html' },
       { source: '/privacy-policy', destination: '/privacy-policy.html' },
       { source: '/book', destination: '/book.html' },

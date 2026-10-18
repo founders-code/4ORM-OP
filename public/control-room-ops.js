@@ -1080,9 +1080,12 @@
     var impact = newsImpact(item);
     var cls = impact === 'Threat' ? 'threat' : impact === 'Regulatory' ? 'reg' : 'opp';
     var img = String(item.image || item.image_url || '');
-    var ok = /^\/api\/news\/image\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(img);
-    var kick = hero ? '<span class="kick">Top release ' + (newsWhen(item) === 'today' ? 'today' : 'this ' + (STATE.newsSpan === 'week' ? 'week' : 'month')) + ' &middot; ' + esc(cat) + '</span>' : '<span class="cat">' + esc(cat) + '</span>';
-    return '<div class="img' + (ok ? '' : ' noimg') + '"><div class="tile"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + (NEWS_ICON[cat] || NEWS_ICON.Compliance) + '</svg></span><span class="sn">' + esc(newsSource(item)) + '</span></div>' + (ok ? '<img class="ph" src="' + esc(img) + '" alt="" loading="' + (hero ? 'eager' : 'lazy') + '" decoding="async" referrerpolicy="no-referrer"/>' : '') + '<span class="shade"></span>' + kick + '<span class="' + (hero ? 'impact' : 'tag') + ' ' + cls + '">' + impact + '</span><div class="h">' + esc(item.title || '') + '</div></div>';
+    var ok = /^\/api\/news\/(?:image|thumb)\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(img);
+    var kick = hero
+      ? '<span class="kick">Top release ' + (newsWhen(item) === 'today' ? 'today' : 'this ' + (STATE.newsSpan === 'week' ? 'week' : 'month')) + ' · ' + esc(cat) + '</span>'
+      : '<span class="cat">' + esc(cat) + '</span>';
+    var title = hero ? '<div class="h">' + esc(item.title || '') + '</div>' : '';
+    return '<div class="img' + (ok ? '' : ' noimg') + '">' + (ok ? '' : '<div class="tile"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + (NEWS_ICON[cat] || NEWS_ICON.Compliance) + '</svg></span><span class="sn">' + esc(newsSource(item)) + '</span></div>') + (ok ? '<img class="ph" src="' + esc(img) + '" alt="" loading="' + (hero ? 'eager' : 'lazy') + '" decoding="async"/>' : '') + '<span class="shade"></span>' + kick + '<span class="' + (hero ? 'impact' : 'tag') + ' ' + cls + '">' + impact + '</span>' + title + '</div>';
   }
 
   function newsOpen(item) {
@@ -1131,7 +1134,7 @@
   }
 
   function renderNews(items) {
-    var el = document.getElementById('newsDesk');
+    var el = (window.portEl && window.portEl('v-news', 'newsDesk')) || document.getElementById('newsDesk');
     if (!el) return;
     var loading = !STATE.newsLoaded && !(items && items.length);
     var all = (items || []).slice().sort(function (a, b) { return (b.isTop ? 1 : 0) - (a.isTop ? 1 : 0) || newsTs(b) - newsTs(a); });
@@ -1162,7 +1165,7 @@
     function story(item) {
       var sum = newsSummary(item);
       var why = newsWhy(item);
-      return '<div class="card story" data-nw-i="' + idx(item) + '" role="button" tabindex="0">' + newsCover(item, false) + '<div class="b">' + (sum ? '<div class="tk">' + esc(sum) + '</div>' : '') + (why ? '<div class="why"><b>Why it matters:</b> ' + esc(why) + '</div>' : '') + '<div class="foot"><span class="src">' + esc(newsSource(item)) + (newsWhen(item) ? ' &middot; ' + newsWhen(item) : '') + '</span><button type="button" class="save" data-nw-save="' + idx(item) + '">Save &#8250;</button></div></div></div>';
+      return '<div class="card story" data-nw-i="' + idx(item) + '" role="button" tabindex="0">' + newsCover(item, false) + '<div class="b"><h3 class="hdline">' + esc(item.title || '') + '</h3>' + (sum ? '<div class="tk">' + esc(sum) + '</div>' : '') + (why ? '<div class="why"><b>Why it matters:</b> ' + esc(why) + '</div>' : '') + '<div class="foot"><span class="src">' + esc(newsSource(item)) + (newsWhen(item) ? ' · ' + newsWhen(item) : '') + '</span><button type="button" class="save" data-nw-save="' + idx(item) + '">Save ›</button></div></div></div>';
     }
     var hero = '';
     if (top) {
@@ -1172,7 +1175,7 @@
       var sum = newsSummary(top);
       hero = '<div class="card hero"><div data-nw-i="' + i + '" class="hero-open" role="button" tabindex="0">' + newsCover(top, true) + '</div><div class="b">' + (sum ? '<div class="sum">' + esc(sum) + '</div>' : '') + '<div class="take"><b>Why it matters to 4orm:</b> ' + esc(newsWhy(top) || 'Read the source and decide where it lands - deck, regulator note or a VC follow-up.') + '</div><div class="src">' + srcLine + '</div><div class="actions"><button type="button" class="act pri" data-nw-act="post" data-nw-at="' + i + '"><span class="mk">&#10022;</span> Draft a LinkedIn post</button><button type="button" class="act" data-nw-act="letter" data-nw-at="' + i + '"><span class="mk">&#10022;</span> Add to investor newsletter</button><button type="button" class="act" data-nw-act="vc" data-nw-at="' + i + '">Cite to a VC</button><button type="button" class="act" data-nw-save="' + i + '">Save to a Space</button><button type="button" class="act" data-nw-act="open" data-nw-at="' + i + '">Open source</button></div></div></div>';
     }
-    var briefRows = (top ? [top] : []).concat(rest).slice(0, 5);
+    var briefRows = (top ? [top] : []).concat(rest).slice(0, 4);
     var brief = briefRows.map(function (item, n) { return '<button type="button" class="r" data-nw-i="' + idx(item) + '"><span class="n">' + (n + 1) + '</span><span>' + esc(String(item.title || '').slice(0, 110)) + '</span></button>'; }).join('') || '<div class="r">The 8am sweep fills the briefing.</div>';
     var comps = NEWS_RIVALS.map(function (name) {
       var re = new RegExp('\\b' + name + '\\b', 'i');
@@ -1205,12 +1208,12 @@
       img.addEventListener('error', drop);
       if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) drop();
     });
-    var search = document.getElementById('newsSearch');
+    var search = el.querySelector('#newsSearch');
     if (search) search.oninput = function () {
       var pos = search.selectionStart;
       STATE.newsQ = search.value;
       renderNews(STATE.news || []);
-      var again = document.getElementById('newsSearch');
+      var again = ((window.portEl && window.portEl('v-news', 'newsDesk')) || document.getElementById('newsDesk') || el).querySelector('#newsSearch');
       if (again) { again.focus(); try { again.setSelectionRange(pos, pos); } catch (e) {} }
     };
     el.querySelectorAll('[data-span]').forEach(function (btn) {
@@ -1250,7 +1253,7 @@
         if (typeof deskNote === 'function') deskNote(act === 'post' ? 'LinkedIn post draft added to This week.' : act === 'letter' ? 'Added to the investor newsletter list.' : 'Added to This week to cite to a VC.');
       };
     });
-    var refresh = document.getElementById('newsRefresh');
+    var refresh = el.querySelector('#newsRefresh');
     if (refresh) refresh.onclick = function () {
       if (STATE.newsBusy) return;
       STATE.newsBusy = true;

@@ -11,8 +11,10 @@ import {
   finish,
   hostOf,
   impactOf,
+  isArticleUrl,
   pool,
   readArticle,
+  screenshotArticle,
   titleKey,
   whyFor,
 } from './news-sources.mjs';
@@ -25,7 +27,8 @@ type Row = Record<string, unknown>;
 export const FALLBACK = SEED as Array<Record<string, unknown>>;
 export { NEWS_CHIPS };
 
-const CACHED = '/api/news/image/';
+const CACHED = '/api/news/thumb/';
+const CACHED_OLD = '/api/news/image/';
 const GOOGLE = /news\.google\.com\//;
 
 /** Fail-soft table create. Existing columns and rows are never dropped or altered. */
@@ -82,7 +85,11 @@ export async function cacheImage(sql: Sql, ownerId: string, src: string, referer
   return rows[0]?.id ? CACHED + String(rows[0].id) : '';
 }
 
-/** og:image for the article, downloaded and cached; the feed image is the second choice. */
+function hasCachedImage(value: string) {
+  return String(value || '').startsWith(CACHED) || String(value || '').startsWith(CACHED_OLD);
+}
+
+/** og:image, twitter:image, first large body img, then a first-screen screenshot — stored same-origin. */
 async function imageFor(sql: Sql, ownerId: string, url: string, feedImage = '') {
   let summary = '';
   let og = '';
@@ -98,6 +105,15 @@ async function imageFor(sql: Sql, ownerId: string, url: string, feedImage = '') 
       fail('news_image', err);
       return '';
     });
+  }
+  if (!image && url && !GOOGLE.test(url)) {
+    const shot = await screenshotArticle(url).catch(() => '');
+    if (shot) {
+      image = await cacheImage(sql, ownerId, shot, url).catch((err) => {
+        fail('news_shot', err);
+        return '';
+      });
+    }
   }
   return { image, summary };
 }
@@ -117,7 +133,7 @@ type Candidate = {
   score: number;
 };
 
-function pickStories(all: Candidate[], max = 40) {
+function pickStories(all: Candidate[], max = 80) {
   const perSource: Record<string, number> = {};
   const out: Candidate[] = [];
   let google = 0;
@@ -140,7 +156,7 @@ async function backfill(sql: Sql, ownerId: string, deadline: number) {
     FROM news_items
     WHERE owner_id = ${ownerId}
       AND published_at >= now() - interval '35 days'
-      AND (impact IS NULL OR impact = '' OR source IS NULL OR source = '' OR image_url IS NULL OR image_url NOT LIKE '/api/news/image/%')
+      AND (impact IS NULL OR impact = '' OR source IS NULL OR source = '' OR image_url IS NULL OR image_url = '' OR (image_url NOT LIKE '/api/news/image/%' AND image_url NOT LIKE '/api/news/thumb/%'))
     ORDER BY published_at DESC
     LIMIT 40
   `;
@@ -162,7 +178,7 @@ async function backfill(sql: Sql, ownerId: string, deadline: number) {
       }
     }
   }
-  const needImage = rows.filter((row) => !String(row.image_url || '').startsWith(CACHED) && row.url && !GOOGLE.test(String(row.url))).slice(0, 20);
+  const needImage = rows.filter((row) => !hasCachedImage(String(row.image_url || '')) && row.url && !GOOGLE.test(String(row.url))).slice(0, 40);
   await pool(needImage, 5, async (row: Row) => {
     const found = await imageFor(sql, ownerId, String(row.url), /^https?:/i.test(String(row.image_url || '')) ? String(row.image_url) : '');
     if (found.image || found.summary) {
@@ -189,7 +205,7 @@ async function markTop(sql: Sql, ownerId: string) {
     if (row.impact === 'Regulatory') score += 3;
     if (row.impact === 'Threat') score += 2;
     if (/\.ca$/.test(hostOf(url)) || /canad|fsra|bcfsa|fintrac|osfi|fcac/i.test(String(row.source || ''))) score += 2;
-    if (String(row.image_url || '').startsWith(CACHED)) score += 2;
+    if (hasCachedImage(String(row.image_url || ''))) score += 2;
     const age = (Date.now() - new Date(String(row.published_at)).getTime()) / 86400000;
     score += age <= 1 ? 3 : age <= 2 ? 2 : 1;
     return { url, score };
@@ -207,7 +223,7 @@ export async function saveStories(sql: Sql, ownerId: string, stories: Row[], dea
   await pool(stories, 6, async (story: Row) => {
     const url = String(story.url || '');
     const posted = String(story.image_url || story.image || '');
-    const found = posted.startsWith(CACHED) ? { image: posted, summary: '' } : await imageFor(sql, ownerId, url, posted);
+    const found = hasCachedImage(posted) ? { image: posted, summary: '' } : await imageFor(sql, ownerId, url, posted);
     const summary = String(story.summary || '') || found.summary;
     const blob = `${story.title || ''} ${summary}`;
     const meta = finish({ title: String(story.title || ''), summary, topic: String(story.topic || ''), tier: String(story.tier || '') });
@@ -242,7 +258,7 @@ export async function sweepNews(sql: Sql, ownerId: string, budgetMs = 45000) {
       SELECT title FROM news_items WHERE owner_id = ${ownerId} AND published_at >= now() - interval '40 days'
     `;
     const skip = new Set((known as Row[]).map((row) => titleKey(String(row.title || ''))));
-    const candidates = (await collectCandidates(skip)) as Candidate[];
+    const candidates = ((await collectCandidates(skip)) as Candidate[]).filter((row) => isArticleUrl(row.link || row.url || ''));
     const picked = pickStories(candidates);
     let blocked = false;
     let decoded = 0;
@@ -271,7 +287,7 @@ export async function sweepNews(sql: Sql, ownerId: string, budgetMs = 45000) {
       image: row.image,
       topic: row.topic,
       tier: row.tier,
-    }));
+    })).filter((row) => isArticleUrl(String(row.url || '')));
     saved = await saveStories(sql, ownerId, stories, deadline - 6000);
   } catch (err) {
     fail('news_sweep', err);
@@ -287,9 +303,6 @@ export async function sweepNews(sql: Sql, ownerId: string, budgetMs = 45000) {
     fail('news_top', err);
   }
   try {
-    const items = await listNews(sql, ownerId);
-    if (items.length || saved) return items;
-    await upsertNews(sql, ownerId, FALLBACK);
     return listNews(sql, ownerId);
   } catch (err) {
     fail('news_sweep', err);

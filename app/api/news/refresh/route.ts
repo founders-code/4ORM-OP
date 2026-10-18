@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
-import { FALLBACK, NEWS_CHIPS, ensureNewsTables, lastSweptAt, markSwept, sweepNews } from '@/lib/news-sweep';
+import { NEWS_CHIPS, ensureNewsTables, lastSweptAt, markSwept, sweepNews } from '@/lib/news-sweep';
 import { openBoard } from '@/lib/session';
-import { listNews, newsCategories, replaceNews } from '@/lib/war';
+import { listNews, newsCategories } from '@/lib/war';
 import { NEWS_CATEGORIES } from '@/lib/war.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +22,6 @@ export async function POST() {
       swept = true;
     }
     let items = await listNews(session.sql, session.userId).catch(() => []);
-    if (!items.length) items = await replaceNews(session.sql, session.userId, FALLBACK).catch(() => []);
     const categories = await newsCategories(session.sql, session.userId).catch(() => NEWS_CATEGORIES.slice());
     return NextResponse.json({ items, chips: NEWS_CHIPS, categories, swept, sweptAt: Date.now() });
   } catch (err) {

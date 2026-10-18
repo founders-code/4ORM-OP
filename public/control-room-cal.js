@@ -14,6 +14,8 @@
   var shown = { meet: true, inv: true, pay: true, mile: true, hol: true, sug: true };
   var notice = '';
   var bound = false;
+  function calEl(id) { return (window.portEl && window.portEl('v-calendar', id)) || document.getElementById(id); }
+  function calRoot() { return (window.portRoot && window.portRoot('v-calendar')) || document.getElementById('v-calendar') || document; }
 
   function laParts(ms) {
     var bag = {};
@@ -96,7 +98,7 @@
     }
   }
   function mini() {
-    var m = document.getElementById('cal-mini');
+    var m = calEl('cal-mini');
     if (!m) return;
     var h = '';
     DOW.forEach(function (x, i) { h += '<div class="h' + (i === 6 ? ' sat' : '') + '">' + x + '</div>'; });
@@ -113,13 +115,13 @@
       h += '<div class="d' + (d.getMonth() !== TODAY.getMonth() ? ' o' : '') + (wk ? ' wk' : '') + (same(d, TODAY) ? ' td' : '') + '" data-cal-day="' + k + '"><span>' + d.getDate() + '</span>' + (cols.length ? '<i>' + cols.map(function (c) { return '<b style="background:' + c + '"></b>'; }).join('') + '</i>' : '') + '</div>';
     }
     m.innerHTML = h;
-    var title = document.querySelector('#v-calendar .mtitle h2');
+    var title = calRoot().querySelector ? calRoot().querySelector('.mtitle h2') : document.querySelector('#v-calendar .mtitle h2');
     if (title) title.innerHTML = MON[TODAY.getMonth()] + ' <span>' + TODAY.getFullYear() + '</span>';
-    var sec = document.querySelector('#v-calendar .rail .sec');
+    var sec = calRoot().querySelector ? calRoot().querySelector('.rail .sec') : document.querySelector('#v-calendar .rail .sec');
     if (sec) sec.innerHTML = 'Today · ' + ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][TODAY.getDay()] + ' ' + MON[TODAY.getMonth()].slice(0, 3) + ' ' + TODAY.getDate();
   }
   function ribbon() {
-    var r = document.getElementById('cal-ribbon');
+    var r = calEl('cal-ribbon');
     if (!r) return;
     var k = ymd(TODAY);
     var span = 13;
@@ -132,7 +134,7 @@
     r.innerHTML = h;
   }
   function nextUp() {
-    var card = document.querySelector('#v-calendar .nextcard');
+    var card = calRoot().querySelector('.nextcard');
     if (!card) return;
     var nowH = laHour();
     var todayK = ymd(TODAY);
@@ -158,9 +160,9 @@
       });
     }
     var free = Math.max(0, 45 - hours.meet - hours.focus - hours.plays);
-    var shape = document.querySelector('#v-calendar .shape');
+    var shape = calRoot().querySelector('.shape');
     if (shape) shape.innerHTML = '<i style="flex:' + hours.meet.toFixed(1) + ';background:var(--meet)"></i><i style="flex:' + hours.focus.toFixed(1) + ';background:var(--blue)"></i><i style="flex:' + hours.plays.toFixed(1) + ';background:var(--green)"></i><i style="flex:' + free.toFixed(1) + ';background:#26324f"></i>';
-    var legend = document.querySelector('#v-calendar .slegend');
+    var legend = calRoot().querySelector('.slegend');
     if (legend) legend.innerHTML = '<span><em style="background:var(--meet)"></em>Meetings <b>' + hours.meet.toFixed(1) + 'h</b></span><span><em style="background:var(--blue)"></em>Focus <b>' + hours.focus.toFixed(1) + 'h</b></span><span><em style="background:var(--green)"></em>Plays <b>' + hours.plays.toFixed(1) + 'h</b></span><span><em style="background:#26324f"></em>Free <b>' + free.toFixed(1) + 'h</b></span>';
   }
   function timeGrid(days, showSug) {
@@ -209,10 +211,11 @@
     return p;
   }
   function render() {
-    var body = document.getElementById('cal-body');
-    var title = document.getElementById('cal-title');
+    var body = calEl('cal-body');
+    var title = calEl('cal-title');
     if (!body || !title) return;
-    document.querySelectorAll('#cal-views span').forEach(function (s) { s.classList.toggle('on', s.dataset.v === view); });
+    var views = calEl('cal-views');
+    if (views) views.querySelectorAll('span').forEach(function (s) { s.classList.toggle('on', s.dataset.v === view); });
     var first = add(weekStart(TODAY), -21);
     if (view === 'week') {
       var focusWs = ymd(weekStart(focus));
@@ -298,21 +301,23 @@
   function bind() {
     if (bound) return;
     bound = true;
-    var root = document.getElementById('v-calendar');
-    if (!root) return;
+    var host = document.getElementById('v-calendar');
+    if (!host) return;
+    var root = host.shadowRoot || host;
     root.addEventListener('click', function (e) {
-      var v = e.target.dataset && e.target.dataset.v;
-      if (v && e.target.closest('#cal-views')) { view = v; render(); return; }
-      if (e.target.hasAttribute('data-cal-accept')) { S = []; render(); return; }
-      if (e.target.hasAttribute('data-cal-replan')) {
+      var t = e.target;
+      var v = t.dataset && t.dataset.v;
+      if (v && t.closest && t.closest('#cal-views')) { view = v; render(); return; }
+      if (t.hasAttribute && t.hasAttribute('data-cal-accept')) { S = []; render(); return; }
+      if (t.hasAttribute && t.hasAttribute('data-cal-replan')) {
         var first = add(weekStart(TODAY), -21);
         rebuildPlays(first, add(first, 7 * 18));
         render();
         return;
       }
-      var go = e.target.closest && e.target.closest('[data-cal-go]');
+      var go = t.closest && t.closest('[data-cal-go]');
       if (go) { switchView(go.getAttribute('data-cal-go')); return; }
-      var day = e.target.closest && e.target.closest('[data-cal-day]');
+      var day = t.closest && t.closest('[data-cal-day]');
       if (day) {
         var p = day.getAttribute('data-cal-day').split('-');
         focus = new Date(+p[0], +p[1] - 1, +p[2]);
@@ -321,9 +326,9 @@
         mini();
         return;
       }
-      if (e.target.closest && e.target.closest('#v-calendar .nav span')) {
-        var spans = [].slice.call(document.querySelectorAll('#v-calendar .nav span'));
-        var i = spans.indexOf(e.target.closest('span'));
+      if (t.closest && t.closest('.nav span')) {
+        var spans = [].slice.call(calRoot().querySelectorAll('.nav span'));
+        var i = spans.indexOf(t.closest('span'));
         if (i === 1) { focus = TODAY; view = 'day'; }
         else if (i === 0) focus = add(focus, view === 'year' ? -365 : view === 'quarter' ? -90 : view === 'month' ? -30 : view === 'day' ? -1 : -7);
         else if (i === 2) focus = add(focus, view === 'year' ? 365 : view === 'quarter' ? 90 : view === 'month' ? 30 : view === 'day' ? 1 : 7);
@@ -331,10 +336,10 @@
         mini();
         return;
       }
-      var lab = e.target.closest && e.target.closest('#v-calendar .cals label');
+      var lab = t.closest && t.closest('.cals label');
       if (lab) {
         var keys = ['meet', 'inv', 'pay', 'mile', 'sug'];
-        var labels = [].slice.call(document.querySelectorAll('#v-calendar .cals label'));
+        var labels = [].slice.call(calRoot().querySelectorAll('.cals label'));
         var idx = labels.indexOf(lab);
         if (idx >= 0) {
           shown[keys[idx]] = !shown[keys[idx]];
@@ -348,13 +353,13 @@
           ribbon();
         }
       }
-      var ok = e.target.closest && e.target.closest('.ev.sug .ok b');
+      var ok = t.closest && t.closest('.ev.sug .ok b');
       if (ok) {
         var ev = ok.closest('.ev');
         if (ev) ev.remove();
       }
     });
-    var nl = document.querySelector('#v-calendar .nl');
+    var nl = calRoot().querySelector('.nl');
     if (nl) {
       nl.style.cursor = 'text';
       nl.addEventListener('click', function () {
@@ -381,12 +386,41 @@
   }
   function loadCalendarPage() {
     bind();
-    TODAY = laNow();
-    focus = add(weekStart(TODAY), 7);
+    TODAY = window.fixtureMockup ? new Date(2026, 9, 17) : laNow();
+    focus = window.fixtureMockup ? new Date(2026, 9, 19) : add(weekStart(TODAY), 7);
     var first = add(weekStart(TODAY), -21);
     var last = add(first, 7 * 18);
     var from = new Date(first.getFullYear(), first.getMonth(), first.getDate()).getTime();
     var to = new Date(last.getFullYear(), last.getMonth(), last.getDate(), 23, 59).getTime();
+    if (window.fixtureMockup) {
+      E = [];
+      function ev(d, s, e, t, c) { E.push({ d: d, s: s, e: e, t: t, c: c || 'meet', all: false }); }
+      function ad(d, t, c) { E.push({ d: d, s: 0, e: 24, t: t, c: c || 'hol', all: true }); }
+      [['2026-10-02', 9, 10, 'Zed and Chad 1on1'], ['2026-10-02', 12, 13, 'Dean and Chad'], ['2026-10-02', 16, 17, "4orm's first investor call", 'inv'],
+        ['2026-10-05', 9, 10, '4orm Dev'], ['2026-10-05', 14, 15, 'Bruce and Chad 1on1'], ['2026-10-06', 11, 12, 'Zed and Chad 1on1'], ['2026-10-06', 14.75, 15.5, 'Kevin and Chad'],
+        ['2026-10-08', 15, 16, 'Speer and 4orm'], ['2026-10-09', 11.5, 12.5, 'Jeff intro | Bruce'], ['2026-10-13', 12, 13, 'Content Posting Run'], ['2026-10-14', 9, 10, 'Mike Stephens | Bruce'],
+        ['2026-10-15', 10, 11, 'Development End to End'], ['2026-10-15', 11, 12, 'Dean and Chad 1on1'], ['2026-10-16', 9.5, 10.5, 'Call the Fraud Prevention Centre'],
+        ['2026-10-16', 13, 14, 'Quinton and Chad'], ['2026-10-16', 14, 15, 'Kevin Zahar | 4orm', 'inv'], ['2026-10-17', 10.5, 12, 'Shawn and Chad | Meet at home'], ['2026-10-17', 14, 15, 'Bruce and Chad 1on1'],
+        ['2026-10-19', 12, 13, 'Chad Fournier | 4orm Investment review', 'inv']].forEach(function (a) { ev(a[0], a[1], a[2], a[3], a[4] || 'meet'); });
+      [['2026-10-09', 'Hack a thon', 'hol'], ['2026-10-12', 'Thanksgiving', 'hol'], ['2026-10-20', 'Marketing drop', 'mile'], ['2026-10-23', '4ormIQ launch', 'mile'],
+        ['2026-10-30', 'F&F close - $250K', 'inv'], ['2026-10-31', 'Newsletter + paper + update', 'mile'], ['2026-10-31', 'Halloween', 'hol'], ['2026-11-01', 'Daylight Saving ends', 'hol'],
+        ['2026-11-03', 'Marketing drop', 'mile'], ['2026-11-11', 'Remembrance Day', 'hol'], ['2026-11-17', 'Marketing drop', 'mile'], ['2026-11-30', 'Newsletter + paper + update', 'mile'],
+        ['2026-12-01', 'Marketing drop', 'mile'], ['2026-12-15', 'Marketing drop', 'mile'], ['2026-12-25', 'Christmas', 'hol'], ['2026-12-29', 'Marketing drop', 'mile'], ['2026-12-31', 'Q4 investor letter', 'mile']].forEach(function (a) { ad(a[0], a[1], a[2]); });
+      for (var d = new Date(2026, 8, 27); d <= new Date(2027, 0, 31); d = add(d, 1)) {
+        var k = ymd(d), w = d.getDay(), m = d.getDate();
+        if (w === 1) { ev(k, 9, 10, "Executive Advisor's | War Room", 'meet'); ev(k, 11, 12, 'Dean and Chad Weekly Call', 'meet'); }
+        if (w === 3 && d >= new Date(2026, 9, 7)) ev(k, 10, 10.5, 'Kevin and Chad | 1on1 GTM', 'meet');
+        if (w === 5 && d >= new Date(2026, 9, 23)) ev(k, 10, 11, 'Don and Chad 1on1', 'inv');
+        if (m === 14 || m === 28) ad(k, 'Car Payment $285.21', 'pay');
+        if (m === 7) ad(k, 'Zoom $22.56', 'pay');
+        if (m === 8) ad(k, 'Canva $16', 'pay');
+        if (m === 22) ad(k, 'Quick Books $53.76', 'pay');
+        if (w === 0 && Math.round((d - new Date(2026, 8, 27)) / 864e5) % 14 === 0) ad(k, 'Delayed communication', 'hol');
+      }
+      rebuildPlays(first, last);
+      mini(); ribbon(); nextUp(); shapeWeek(); render();
+      return;
+    }
     authFetch('/api/calendar?from=' + new Date(from).toISOString() + '&to=' + new Date(to).toISOString(), { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
       .then(function (d) {
