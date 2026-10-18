@@ -35,7 +35,8 @@ export async function POST(req: Request) {
     const items = raw.filter((item): item is Record<string, unknown> => !!item && typeof item === 'object').slice(0, 60);
     if (!who.sql) return NextResponse.json({ ok: false, saved: 0, chips: NEWS_CHIPS });
     await ensureNewsTables(who.sql).catch(() => {});
-    const saved = await saveStories(who.sql, who.userId, items, Date.now() + 45000);
+    const result = await saveStories(who.sql, who.userId, items, Date.now() + 45000);
+    const saved = typeof result === 'number' ? result : result.saved;
     if (items.length) await markSwept(who.sql, who.userId);
     const list = await listNews(who.sql, who.userId).catch(() => []);
     return NextResponse.json({ ok: true, saved, items: list });

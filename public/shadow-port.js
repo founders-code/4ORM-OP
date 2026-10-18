@@ -46,6 +46,7 @@
     window.attachPort('v-playbook', '/port-css/playbook.css');
     window.attachPort('v-calendar', '/port-css/calendar.css');
     window.attachPort('v-news', '/port-css/news.css');
+    window.attachPort('v-znotes', '/port-css/zoom.css');
   };
   window.paintMockupFixture = function (hostId, html, cssHref) {
     var host = document.getElementById(hostId);

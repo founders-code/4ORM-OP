@@ -13,6 +13,7 @@ const PAGES = [
   { page: 'playbook', mockup: 'playbook.html', live: 'control-room.html?view=playbook&fixture=mockup', host: 'v-playbook', css: '/port-css/playbook.css', fixture: '', wait: '.pad.due' },
   { page: 'calendar', mockup: 'calendar.html', live: 'calendar.html', host: '', css: '', fixture: '', from: 'design' },
   { page: 'news', mockup: 'news-redesign.html', live: 'news-redesign.html', host: '', css: '', fixture: '', from: 'design' },
+  { page: 'zoom', mockup: 'zoom-redesign.html', live: 'zoom-redesign.html', host: '', css: '', fixture: '', from: 'design', wait: '.mc' },
   { page: 'space-detail', mockup: 'space-detail-redesign.html', live: 'space-detail-redesign.html', host: '', css: '', fixture: '', from: 'design' },
   { page: 'email-board', mockup: 'email-board.html', live: 'email-board.html', host: '', css: '', fixture: '', from: 'design' },
   { page: 'warroom-reorg', mockup: 'warroom-reorg.html', live: 'warroom-reorg.html', host: '', css: '', fixture: '', from: 'design' },
@@ -81,9 +82,20 @@ async function paintLive(page, spec, appPort, designPort) {
     await page.waitForTimeout(400);
   }
   if (spec.wait) {
-    try { await page.waitForSelector(spec.host ? `#${spec.host}` : spec.wait, { timeout: 4000 }); } catch (e) {}
-    await page.waitForTimeout(300);
+    try {
+      await page.waitForFunction(({ host, wait }) => {
+        const el = host ? document.getElementById(host) : document;
+        const root = el && el.shadowRoot ? el.shadowRoot : el;
+        return !!(root && root.querySelector && root.querySelector(wait));
+      }, spec, { timeout: 5000 });
+    } catch (e) {}
+    await page.waitForTimeout(400);
   }
+  await page.evaluate(() => {
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    document.body.style.margin = '0';
+  });
   return page.screenshot({ type: 'png', fullPage: false });
 }
 
@@ -102,6 +114,11 @@ async function main() {
       const page = await context.newPage();
       await page.goto(`http://127.0.0.1:${designPort}/${spec.mockup}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForTimeout(400);
+      await page.evaluate(() => {
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+        document.body.style.margin = '0';
+      });
       const mockBuf = await page.screenshot({ type: 'png', fullPage: false });
       const liveBuf = await paintLive(page, spec, appPort, designPort);
       await page.close();

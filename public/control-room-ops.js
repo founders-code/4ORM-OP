@@ -935,6 +935,7 @@
     };
   }
 
+  window.saveItem = saveItem;
   function saveItem(title, col, category) {
     title = String(title || '').trim() || 'Untitled task';
     var temp = { id: 'tmp-' + Date.now(), title: title, area: 'other', status: 'new', priority: 'normal', due: dueFor(col), notes: '', category: category || '' };
@@ -1081,11 +1082,15 @@
     var cls = impact === 'Threat' ? 'threat' : impact === 'Regulatory' ? 'reg' : 'opp';
     var img = String(item.image || item.image_url || '');
     var ok = /^\/api\/news\/(?:image|thumb)\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(img);
+    var failed = !!item._noimg;
     var kick = hero
       ? '<span class="kick">Top release ' + (newsWhen(item) === 'today' ? 'today' : 'this ' + (STATE.newsSpan === 'week' ? 'week' : 'month')) + ' · ' + esc(cat) + '</span>'
       : '<span class="cat">' + esc(cat) + '</span>';
     var title = hero ? '<div class="h">' + esc(item.title || '') + '</div>' : '';
-    return '<div class="img' + (ok ? '' : ' noimg') + '">' + (ok ? '' : '<div class="tile"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + (NEWS_ICON[cat] || NEWS_ICON.Compliance) + '</svg></span><span class="sn">' + esc(newsSource(item)) + '</span></div>') + (ok ? '<img class="ph" src="' + esc(img) + '" alt="" loading="' + (hero ? 'eager' : 'lazy') + '" decoding="async"/>' : '') + '<span class="shade"></span>' + kick + '<span class="' + (hero ? 'impact' : 'tag') + ' ' + cls + '">' + impact + '</span>' + title + '</div>';
+    if (!ok && failed) {
+      return '<div class="img noimg"><div class="tile"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + (NEWS_ICON[cat] || NEWS_ICON.Compliance) + '</svg></span><span class="sn">' + esc(newsSource(item)) + '</span></div><span class="shade"></span>' + kick + '<span class="' + (hero ? 'impact' : 'tag') + ' ' + cls + '">' + impact + '</span>' + title + '</div>';
+    }
+    return '<div class="img shimmer' + (ok ? '' : '') + '">' + (ok ? '<img class="ph" src="' + esc(img) + '" alt="" loading="' + (hero ? 'eager' : 'lazy') + '" decoding="async"/>' : '') + '<span class="shade"></span>' + kick + '<span class="' + (hero ? 'impact' : 'tag') + ' ' + cls + '">' + impact + '</span>' + title + '</div>';
   }
 
   function newsOpen(item) {
@@ -1204,9 +1209,19 @@
     var body = loading ? '<div class="card nw-empty">Loading the sweep...</div>' : (rows.length ? hero + '<div class="grid">' + rest.map(story).join('') + '</div>' : '<div class="card nw-empty">No stories yet - press Refresh to run the sweep.</div>');
     el.innerHTML = '<div class="nwx"><div class="top"><span class="t">News</span><div class="seg" id="newsSpan"><button type="button" data-span="today"' + (span === 'today' ? ' class="on"' : '') + '>Today</button><button type="button" data-span="week"' + (span === 'week' ? ' class="on"' : '') + '>Last week</button><button type="button" data-span="month"' + (span === 'month' ? ' class="on"' : '') + '>Last month</button></div><button class="btn" id="newsRefresh" type="button"' + (STATE.newsBusy ? ' disabled' : '') + '>' + (STATE.newsBusy ? 'Sweeping...' : 'Refresh') + '</button><div class="right"><input class="search" id="newsSearch" type="text" placeholder="Search news..." value="' + esc(STATE.newsQ || '') + '"/><span class="sweeps">8AM + 11AM SWEEPS' + (swept ? ' &middot; last ' + esc(swept) : '') + '</span></div></div><div class="chips">' + chips + '</div><div class="wrap"><div class="main">' + (miss ? '<div class="nw-miss">' + miss + '</div>' : '') + body + '</div><div class="rail"><div class="card"><div class="ch"><span class="mk">4</span><span class="t">Your briefing</span><span class="s">' + briefRows.length + ' things ' + (span === 'today' ? 'today' : 'this ' + span) + '</span></div><div class="brief">' + brief + '</div></div><div class="card"><div class="ch"><span class="t">Competitor watch</span><span class="s">' + NEWS_RIVALS.length + ' tracked</span></div><div class="comp">' + comps + '</div></div><div class="card"><div class="ch"><span class="t">Trending for 4orm</span></div><div class="trend">' + trend + '</div></div><div class="card"><div class="ch"><span class="t">What this means - priority</span></div><div class="prio">' + pri + '</div></div></div></div></div>';
     el.querySelectorAll('img.ph').forEach(function (img) {
-      var drop = function () { var box = img.closest('.img'); if (box) box.classList.add('noimg'); img.remove(); };
+      var box = img.closest('.img');
+      var ready = function () { if (box) box.classList.add('ready'); };
+      var drop = function () {
+        var i = Number((img.closest('[data-nw-i]') || {}).getAttribute && (img.closest('[data-nw-i]').getAttribute('data-nw-i')));
+        var hit = (STATE.newsView || [])[i];
+        if (hit) hit._noimg = true;
+        if (box) { box.classList.remove('shimmer'); box.classList.add('noimg'); }
+        img.remove();
+      };
+      img.addEventListener('load', ready);
       img.addEventListener('error', drop);
-      if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) drop();
+      if (img.complete && img.naturalWidth) ready();
+      else if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) drop();
     });
     var search = el.querySelector('#newsSearch');
     if (search) search.oninput = function () {
@@ -1254,25 +1269,51 @@
       };
     });
     var refresh = el.querySelector('#newsRefresh');
-    if (refresh) refresh.onclick = function () {
-      if (STATE.newsBusy) return;
-      STATE.newsBusy = true;
-      var before = {};
-      (STATE.news || []).forEach(function (item) { before[item.id] = 1; });
+    if (refresh) refresh.onclick = function () { runNewsSweep(false); };
+  }
+
+  function newsNeedThumbs(items) {
+    return (items || []).some(function (item) {
+      var img = String(item.image || item.image_url || '');
+      return !item._noimg && !/^\/api\/news\/(?:image|thumb)\//i.test(img);
+    });
+  }
+
+  function pollNewsThumbs() {
+    if (pollNewsThumbs.timer) return;
+    pollNewsThumbs.timer = setTimeout(function () {
+      pollNewsThumbs.timer = 0;
+      if (STATE.desk !== 'news' || STATE.newsBusy) return;
+      authFetch('/api/news?span=month', { credentials: 'same-origin', quiet: true }).then(function (r) { return r.json(); }).then(function (data) {
+        if (data && data.items) STATE.news = data.items;
+        renderNews(STATE.news || []);
+        if (newsNeedThumbs(STATE.news)) pollNewsThumbs();
+      }).catch(function () {});
+    }, 4000);
+  }
+
+  function runNewsSweep(quiet) {
+    if (STATE.newsBusy) return;
+    STATE.newsBusy = true;
+    var before = {};
+    (STATE.news || []).forEach(function (item) { before[item.id] = 1; });
+    renderNews(STATE.news || []);
+    if (!quiet && typeof deskNote === 'function') deskNote('Sweeping...');
+    authFetch('/api/news/sweep', { method: 'POST', credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
+      STATE.newsBusy = false;
+      STATE.newsLoaded = true;
+      if (data && data.items && data.items.length) STATE.news = data.items;
+      if (data && data.sweptAt) STATE.newsSweptAt = data.sweptAt;
+      var fresh = typeof data.saved === 'number' ? data.saved : (STATE.news || []).filter(function (item) { return !before[item.id]; }).length;
       renderNews(STATE.news || []);
-      authFetch('/api/news/refresh', { method: 'POST', credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
-        STATE.newsBusy = false;
-        if (data && data.items && data.items.length) STATE.news = data.items;
-        if (data && data.sweptAt) STATE.newsSweptAt = data.sweptAt;
-        var fresh = (STATE.news || []).filter(function (item) { return !before[item.id]; }).length;
-        renderNews(STATE.news || []);
-        if (typeof deskNote === 'function') deskNote(data && data.swept === false ? 'Swept a minute ago - showing the latest.' : (fresh ? fresh + ' new ' + (fresh === 1 ? 'story' : 'stories') + ' from the sweep.' : 'Sweep done - nothing new since the last one.'));
-      }).catch(function () {
-        STATE.newsBusy = false;
-        renderNews(STATE.news || []);
-        if (typeof deskNote === 'function') deskNote('Sweep did not finish - showing the last one.');
-      });
-    };
+      if (!quiet && typeof deskNote === 'function') deskNote('Sweeping... found ' + fresh + ' new');
+      if (newsNeedThumbs(STATE.news)) pollNewsThumbs();
+    }).catch(function () {
+      STATE.newsBusy = false;
+      STATE.newsLoaded = true;
+      renderNews(STATE.news || []);
+      if (!quiet && typeof deskNote === 'function') deskNote('Sweep did not finish - showing the last one.');
+    });
   }
 
   function loadNews() {
@@ -1282,6 +1323,8 @@
       if (data && data.items && data.items.length) STATE.news = data.items;
       if (data && data.sweptAt) STATE.newsSweptAt = data.sweptAt;
       renderNews(STATE.news || []);
+      if (!(STATE.news || []).length) runNewsSweep(true);
+      else if (newsNeedThumbs(STATE.news)) pollNewsThumbs();
     }).catch(function () { STATE.newsLoaded = true; renderNews(STATE.news || []); });
   }
 

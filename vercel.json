@@ -6,8 +6,12 @@
       "schedule": "0 12,13 * * 1-5"
     },
     {
-      "path": "/api/cron/news",
-      "schedule": "0 15,16,18,19 * * *"
+      "path": "/api/news/sweep",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/news/sweep",
+      "schedule": "0 18 * * *"
     },
     {
       "path": "/api/cron/ceo",
