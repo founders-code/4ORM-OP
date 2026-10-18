@@ -29,6 +29,7 @@ const isControlRoom = createRouteMatcher([
   '/control-room',
   '/control-room.html',
 ]);
+const isDesign = createRouteMatcher(['/design', '/design/(.*)']);
 // Legal pages are public. Members read them before they sign in.
 const isPublicPage = createRouteMatcher([
   '/terms-of-service',
@@ -42,13 +43,13 @@ const isPublicPage = createRouteMatcher([
 
 const gated = clerkMiddleware(async (auth, req) => {
   if (isPublicPage(req)) return NextResponse.next();
-  if (isRoom(req) || isDocuments(req) || isDataRoom(req) || isControlRoom(req)) {
+  if (isRoom(req) || isDocuments(req) || isDataRoom(req) || isControlRoom(req) || isDesign(req)) {
     const { userId, redirectToSignIn, sessionClaims } = await auth();
 
     // 1) Must be signed in (Google, restricted to the 4ormfinance.com domain in
     //    the Clerk dashboard). Sends them to Clerk sign-in, then back here.
     if (!userId) {
-      if (isControlRoom(req)) return NextResponse.redirect(new URL('/', req.url));
+      if (isControlRoom(req) || isDesign(req)) return NextResponse.redirect(new URL('/', req.url));
       return redirectToSignIn({ returnBackUrl: req.url });
     }
 
@@ -86,6 +87,8 @@ export const config = {
     '/filing.html',
     '/control-room',
     '/control-room.html',
+    '/design',
+    '/design/:path*',
     '/terms-of-service',
     '/terms-of-service.html',
     '/privacy-policy',
