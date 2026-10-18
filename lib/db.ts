@@ -644,6 +644,44 @@ async function migrateWar(sql: Sql) {
     )`],
     ['db_ceo_moves_updated', () => sql`ALTER TABLE ceo_moves ADD COLUMN IF NOT EXISTS updated_at timestamptz`],
     ['db_finance_code', () => sql`ALTER TABLE owner_settings ADD COLUMN IF NOT EXISTS finance_code text`],
+    ['db_playbook_rhythms', () => sql`CREATE TABLE IF NOT EXISTS playbook_rhythms (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      name text NOT NULL,
+      color text NOT NULL DEFAULT '#1f5fff',
+      route text NOT NULL DEFAULT 'war',
+      schedule jsonb NOT NULL DEFAULT '[]'::jsonb,
+      target text,
+      sort int NOT NULL DEFAULT 0,
+      active boolean NOT NULL DEFAULT true,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      UNIQUE (owner_id, name)
+    )`],
+    ['db_playbook_log', () => sql`CREATE TABLE IF NOT EXISTS playbook_log (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      rhythm_id uuid NOT NULL,
+      day date NOT NULL,
+      status text NOT NULL DEFAULT 'done',
+      value text,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      UNIQUE (owner_id, rhythm_id, day)
+    )`],
+    ['db_bookings', () => sql`CREATE TABLE IF NOT EXISTS bookings (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      name text NOT NULL,
+      email text NOT NULL,
+      topics text,
+      notes text,
+      start_at timestamptz NOT NULL,
+      end_at timestamptz NOT NULL,
+      tz text,
+      zoom_url text,
+      gcal_event_id text,
+      status text NOT NULL DEFAULT 'booked',
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
   ];
   for (const [code, run] of steps) {
     try {

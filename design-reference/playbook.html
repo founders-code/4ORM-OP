@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Playbook</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(120deg,#0a1326,#13224a);color:#e8eefc;padding:20px}
+.iq-mark{display:flex;align-items:center;gap:6px;font-weight:800;letter-spacing:-.03em;color:#fff;margin-bottom:14px}
+.iq-mark b{width:22px;height:22px;border-radius:6px;background:#2E6BF2;display:grid;place-items:center;font-size:12px}
+.pb-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.pb-head h2{margin:0;font-size:22px;font-weight:800;letter-spacing:-.03em;color:#fff}
+.pb-week{font-size:12px;color:rgba(226,234,252,.7);font-weight:650}
+.pb-run{background:#17b86a;color:#fff;border:0;border-radius:10px;font:650 13px inherit;padding:9px 14px}
+.pb-score{margin-left:auto;font-size:12px;color:#9db0d0}
+.pb-score b{color:#fff;font-size:16px}
+.pb-grid{display:grid;grid-template-columns:220px repeat(7,1fr) 64px;gap:8px}
+.pb-dayh{font-size:11px;color:#9db0d0;text-align:center;padding:6px 0}
+.pb-dayh.on{color:#fff;background:rgba(46,107,242,.22);border-radius:8px}
+.pb-rowname{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.04);border-radius:10px;padding:8px 10px}
+.pb-sw{width:10px;height:10px;border-radius:3px}
+.pb-rowname .nm{font-size:13px;font-weight:650;color:#fff}
+.pb-rowname .go{font-size:11px;color:#8fb0ff}
+.pb-pad{height:42px;border-radius:10px;display:grid;place-items:center;font-size:11px;font-weight:750;color:#fff}
+.pb-pad.empty{background:transparent;border:1px dashed rgba(255,255,255,.18)}
+.pb-pad.dim{filter:saturate(.45) brightness(.55)}
+.pb-pad.missed{background:#5a1d24!important;filter:none}
+.pb-beats{display:grid;grid-template-columns:1.4fr repeat(5,1fr);gap:12px;margin-top:18px}
+.pb-tile{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px}
+.pb-tile .t{font-size:13px;font-weight:750;color:#fff}
+.pb-tile .s{font-size:11px;color:#9db0d0;margin-top:4px}
+</style></head><body>
+<div class="iq-mark"><b>4</b><span>ormIQ</span></div>
+<div class="pb-head"><h2>Playbook</h2><span class="pb-week">WEEK 42 - OCT 12-18</span><button class="pb-run">Run today's plays - 7 lit</button><div class="pb-score"><b>64%</b> week on beat</div></div>
+<div class="pb-grid">
+ <div></div><div class="pb-dayh">Mon</div><div class="pb-dayh">Tue</div><div class="pb-dayh">Wed</div><div class="pb-dayh">Thu</div><div class="pb-dayh">Fri</div><div class="pb-dayh">Sat</div><div class="pb-dayh">Sun</div><div class="pb-dayh">Streak</div>
+ <div class="pb-rowname"><span class="pb-sw" style="background:#1f5fff"></span><div><div class="nm">One move</div><div class="go">War Room →</div></div></div>
+ <div class="pb-pad dim" style="background:#1f5fff"></div><div class="pb-pad dim" style="background:#1f5fff"></div><div class="pb-pad dim" style="background:#1f5fff"></div><div class="pb-pad dim" style="background:#1f5fff"></div><div class="pb-pad" style="background:#1f5fff">GO</div><div class="pb-pad empty"></div><div class="pb-pad empty"></div><div class="pb-dayh">4d</div>
+ <div class="pb-rowname"><span class="pb-sw" style="background:#1a9d5a"></span><div><div class="nm">Reach out 5</div><div class="go">Pipeline →</div></div></div>
+ <div class="pb-pad dim" style="background:#1a9d5a"></div><div class="pb-pad dim" style="background:#1a9d5a"></div><div class="pb-pad missed">x</div><div class="pb-pad dim" style="background:#1a9d5a"></div><div class="pb-pad" style="background:#1a9d5a">5</div><div class="pb-pad empty"></div><div class="pb-pad empty"></div><div class="pb-dayh">3d</div>
+</div>
+<div class="pb-beats">
+ <div class="pb-tile"><div class="t">4ormIQ - 1,000 users</div><div class="s">Launch Oct 23</div></div>
+ <div class="pb-tile"><div class="t">Marketing drop</div><div class="s">Every 14 days</div></div>
+ <div class="pb-tile"><div class="t">Newsletter</div><div class="s">Monthly</div></div>
+ <div class="pb-tile"><div class="t">Research paper</div><div class="s">Monthly</div></div>
+ <div class="pb-tile"><div class="t">Investor update</div><div class="s">Monthly</div></div>
+ <div class="pb-tile"><div class="t">Investor letter</div><div class="s">Quarterly</div></div>
+</div>
+</body></html>

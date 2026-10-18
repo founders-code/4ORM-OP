@@ -158,6 +158,57 @@ export async function createEvent(startMs: number, durMin: number, title: string
   return postEvent('primary', startMs, durMin, title);
 }
 
+export async function createInviteEvent(input: {
+  startMs: number;
+  durMin: number;
+  title: string;
+  attendee: string;
+  description?: string;
+  location?: string;
+}) {
+  if (!configured()) return null;
+  const email = String(input.attendee || '').trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return null;
+  const start = new Date(input.startMs);
+  const end = new Date(input.startMs + Math.max(15, Number(input.durMin) || 30) * 60 * 1000);
+  const calendarId = process.env.GOOGLE_CALENDAR_ID || 'primary';
+  const body = {
+    summary: String(input.title || 'Call with Chad Johnston').slice(0, 180),
+    description: String(input.description || '').slice(0, 4000),
+    location: String(input.location || '').slice(0, 500),
+    start: { dateTime: start.toISOString(), timeZone: 'America/Los_Angeles' },
+    end: { dateTime: end.toISOString(), timeZone: 'America/Los_Angeles' },
+    attendees: [{ email }],
+    reminders: {
+      useDefault: false,
+      overrides: [
+        { method: 'email', minutes: 60 },
+        { method: 'popup', minutes: 60 },
+      ],
+    },
+    conferenceData: {
+      createRequest: {
+        requestId: `4orm-${Date.now()}`,
+        conferenceSolutionKey: { type: 'hangoutsMeet' },
+      },
+    },
+  };
+  const json = (await gfetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?conferenceDataVersion=1&sendUpdates=all`,
+    { method: 'POST', body: JSON.stringify(body), timeoutMs: 12000 },
+  )) as { id?: string; hangoutLink?: string; conferenceData?: { entryPoints?: Array<{ uri?: string }> } } | null;
+  if (!json?.id && calendarId !== 'primary') {
+    const alt = (await gfetch(
+      'https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1&sendUpdates=all',
+      { method: 'POST', body: JSON.stringify(body), timeoutMs: 12000 },
+    )) as { id?: string; hangoutLink?: string; conferenceData?: { entryPoints?: Array<{ uri?: string }> } } | null;
+    if (!alt?.id) return null;
+    return { id: String(alt.id), join: eventJoin(alt as Record<string, unknown>) };
+  }
+  if (!json?.id) return null;
+  return { id: String(json.id), join: eventJoin(json as Record<string, unknown>) };
+}
+
 const OFFICE_AS_GOOGLE: Record<string, string> = {
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'application/vnd.google-apps.document',
   'application/msword': 'application/vnd.google-apps.document',

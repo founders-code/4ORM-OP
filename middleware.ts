@@ -35,6 +35,9 @@ const isPublicPage = createRouteMatcher([
   '/terms-of-service.html',
   '/privacy-policy',
   '/privacy-policy.html',
+  '/book',
+  '/book.html',
+  '/chad',
 ]);
 
 const gated = clerkMiddleware(async (auth, req) => {
@@ -87,6 +90,9 @@ export const config = {
     '/terms-of-service.html',
     '/privacy-policy',
     '/privacy-policy.html',
+    '/book',
+    '/book.html',
+    '/chad',
     '/(api|trpc)(.*)',
   ],
 };

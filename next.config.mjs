@@ -31,6 +31,8 @@ const nextConfig = {
       { source: '/control-room', destination: '/control-room.html' },
       { source: '/terms-of-service', destination: '/terms-of-service.html' },
       { source: '/privacy-policy', destination: '/privacy-policy.html' },
+      { source: '/book', destination: '/book.html' },
+      { source: '/chad', destination: '/book.html' },
     ];
   },
 };
