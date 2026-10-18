@@ -1,0 +1,40 @@
+{
+  "regulators": [
+    {"name":"FINTRAC","body":"Financial Transactions and Reports Analysis Centre of Canada","category":"regulatory","why":"PSP / MSB reporting + suitability-evidence angle","ask":"Intro on RPAA evidence expectations"},
+    {"name":"Bank of Canada - Retail Payments Supervision","body":"RPAA supervisor for PSPs","category":"regulatory","why":"RPAA registration + safeguarding regime","ask":"Registration / supervision questions"},
+    {"name":"CSA","body":"Canadian Securities Administrators","category":"regulatory","why":"Client-focused reforms, suitability & understanding","ask":"Reforms alignment"},
+    {"name":"ASC","body":"Alberta Securities Commission","category":"regulatory","why":"Home-province securities regulator","ask":"Intro via Michael Stevens / Fasken"},
+    {"name":"BCSC","body":"British Columbia Securities Commission","category":"regulatory","why":"Suitability / KYC","ask":"Evidence standard discussion"},
+    {"name":"OSC","body":"Ontario Securities Commission","category":"regulatory","why":"Largest market, OSC LaunchPad","ask":"LaunchPad / sandbox intro"},
+    {"name":"AMF","body":"Autorite des marches financiers (Quebec)","category":"regulatory","why":"Quebec regulator","ask":"Intro"},
+    {"name":"FCAC","body":"Financial Consumer Agency of Canada","category":"regulatory","why":"Consumer protection + market conduct","ask":"Consumer understanding angle"},
+    {"name":"OSFI","body":"Office of the Superintendent of Financial Institutions","category":"regulatory","why":"Federally regulated FIs","ask":"Prudential / conduct"},
+    {"name":"FSRA","body":"Financial Services Regulatory Authority of Ontario","category":"regulatory","why":"Mortgage brokers + insurance suitability","ask":"Broker suitability expectations"},
+    {"name":"RECA","body":"Real Estate Council of Alberta","category":"regulatory","why":"Brokerage conduct / disclosure","ask":"Design-partner + conduct angle"},
+    {"name":"RCMP - Financial Crime","body":"Royal Canadian Mounted Police","category":"regulatory","why":"Fraud / scam evidence","ask":"Fraud-evidence collaboration"},
+    {"name":"Competition Bureau Canada","body":"Competition Bureau","category":"regulatory","why":"Deceptive marketing / consumer harm","ask":"Consumer-harm evidence"}
+  ],
+  "vc_platforms": [
+    {"name":"OpenVC","url":"openvc.com","note":"Angel + VC sourcing, $100K-$1M checks - sign up and start outreach"},
+    {"name":"Signal (NFX)","url":"signal.nfx.com","note":"Find and warm-intro to VCs"},
+    {"name":"AngelList","url":"angellist.com","note":"Angel syndicates + rolling fund scouts"},
+    {"name":"Visible","url":"visible.vc","note":"Investor updates + fundraising CRM"},
+    {"name":"Foundersuite","url":"foundersuite.com","note":"Investor CRM + database"},
+    {"name":"DocSend","url":"docsend.com","note":"Deck tracking / data room analytics"},
+    {"name":"Crunchbase Pro","url":"crunchbase.com","note":"Investor + firm research"},
+    {"name":"Dealroom","url":"dealroom.co","note":"European + global investor data"},
+    {"name":"Gust","url":"gust.com","note":"Angel group applications"}
+  ],
+  "incumbents": [
+    {"name":"Vanta","what":"Compliance automation (SOC 2, audit trail)","threat":"Evidence/audit-trail overlap"},
+    {"name":"Drata","what":"Continuous compliance monitoring","threat":"Audit evidence"},
+    {"name":"Secureframe","what":"Security & privacy compliance","threat":"Adjacent"},
+    {"name":"Thoropass","what":"Audit + compliance","threat":"Adjacent"},
+    {"name":"AutoRek","what":"Financial controls / reconciliation","threat":"Machine-intelligence controls"},
+    {"name":"Aveni","what":"UK - AI for financial advice compliance","threat":"Closest on suitability/advice"},
+    {"name":"Fenergo","what":"KYC / client lifecycle","threat":"Onboarding suitability"},
+    {"name":"Hummingbird","what":"AML / investigations","threat":"Evidence workflow"},
+    {"name":"ComplyAdvantage","what":"AML screening","threat":"Adjacent"},
+    {"name":"Trulioo","what":"Identity verification (Canada)","threat":"KYC adjacent"}
+  ]
+}

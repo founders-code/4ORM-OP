@@ -1,70 +1,208 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Email - reader</title>
+<title>Email - command center</title>
 <style>
-:root{color-scheme:light;--bg:#f4f6f9;--panel:#fff;--ink:#0b1220;--muted:#5b6472;--line:#e7e9ee;--blue:#1f5fff;--navy:#0b1f55;--green:#17b86a;--r:12px;--shadow:0 1px 2px rgba(16,24,40,.04),0 8px 22px rgba(16,24,40,.06);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;}
-*{box-sizing:border-box}html,body{margin:0;height:100%;background:#0b1220}
-.stage{position:relative;height:100%;background:var(--bg)}
-.dim{position:absolute;inset:0;background:rgba(11,18,32,.18)}
-.emx-reader{position:absolute;top:0;right:0;bottom:0;width:520px;background:var(--panel);box-shadow:-18px 0 40px rgba(16,24,40,.16);display:flex;flex-direction:column;color:var(--ink)}
-.emx-rh{position:absolute;left:0;top:0;bottom:0;width:10px;cursor:col-resize}
-.emx-rh::after{content:"";position:absolute;left:4px;top:12px;bottom:12px;width:2px;border-radius:2px;background:#d7deea}
-.emx-rhead{padding:14px 18px 10px 18px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:flex-start}
-.emx-rhead .av{width:34px;height:34px;border-radius:50%;background:#e9eefb;color:#2a4c9c;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
-.emx-rhead .su{font-size:14px;font-weight:750}
-.emx-rhead .sj{font-size:13px;font-weight:600;margin-top:2px}
-.emx-rhead .meta{font-size:11px;color:var(--muted);margin-top:3px}
-.emx-rhead .x{margin-left:auto;border:0;background:#f3f5f9;border-radius:8px;width:28px;height:28px;cursor:pointer;color:#5b6472}
-.emx-chips{display:flex;flex-wrap:wrap;gap:6px;padding:8px 18px;border-bottom:1px solid var(--line)}
-.emx-chips span{font-size:10.5px;font-weight:650;border-radius:999px;padding:3px 8px;background:#eef2fb;color:#3a5bbf}
-.emx-assist{margin:12px 16px;background:#f6f8ff;border:1px solid #dce6fb;border-radius:12px;padding:12px 14px}
-.emx-assist .k{font-size:11px;font-weight:750;color:var(--navy);margin-bottom:8px}
-.emx-assist .row{font-size:12px;line-height:1.45;margin:0 0 7px;color:#30384a}
-.emx-assist .row b{color:var(--ink)}
-.emx-assist .draft{background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px;font-size:12.5px;line-height:1.45;white-space:pre-wrap}
-.emx-body{flex:1;overflow:auto;padding:12px 18px 16px;font-size:13px;line-height:1.55;color:#243044}
-.emx-body .msg{border-top:1px solid var(--line);padding:12px 0}
-.emx-body .who{font-size:12px;font-weight:650;margin-bottom:6px}
-.emx-acts{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px 14px;border-top:1px solid var(--line);background:#fafbfe}
-.emx-acts .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:650;cursor:pointer;color:#33405a}
-.emx-acts .btn.pri{background:var(--navy);color:#fff;border-color:var(--navy)}
+:root{--bg:#eef1f7;--ink:#101828;--muted:#6b7488;--line:#e7ebf2;--blue:#1f5fff;--navy:#0b1326;--gold:#c79a3a;--green:#1a9d5a;--red:#e0483a;--amber:#e08b1e;--purple:#7a5bd0;
+font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-size:13px}
+/* command bar */
+.cmd{display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,#0a1326,#13224a);color:#fff;padding:10px 18px}
+.cmd .t{font-size:16px;font-weight:750}
+.cmd .search{flex:1;max-width:460px;background:#ffffff14;border:1px solid #ffffff22;border-radius:10px;padding:9px 13px;color:#aeb9d6;font-size:12.5px;display:flex;align-items:center;gap:8px}
+.cmd .chips{display:flex;gap:8px;margin-left:auto}
+.cmd .c{font-size:11px;font-weight:600;border-radius:999px;padding:5px 11px;background:#ffffff12;border:1px solid #ffffff1f}
+.cmd .c b{color:#fff}.c.red b{color:#ff8a7a}.c.gold b{color:#ffcf6a}
+.cmd .plan{background:var(--blue);border:none;border-radius:9px;padding:8px 13px;font-size:12px;font-weight:650;color:#fff;cursor:pointer}
+/* layout */
+.wrap{display:grid;grid-template-columns:186px 348px 1fr;height:calc(100vh - 56px)}
+.rail,.list,.read{overflow:auto}
+/* rail */
+.rail{background:#fff;border-right:1px solid var(--line);padding:12px 9px}
+.seg{font-size:9.5px;font-weight:750;letter-spacing:.06em;color:#9aa3b5;text-transform:uppercase;margin:14px 7px 5px}
+.ln{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:9px;cursor:pointer;color:#33405a;font-weight:550;font-size:12.5px}
+.ln:hover{background:#f2f5fb}.ln.on{background:#eaf0ff;color:var(--blue);font-weight:650}
+.ln .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+.ln .ct{margin-left:auto;font-size:11px;color:#9aa3b5;background:#f0f2f7;border-radius:999px;padding:1px 7px}
+.ln.on .ct{background:#dbe6ff;color:var(--blue)}
+.ln .ct.red{background:#ffe1dd;color:#c0392b}.ln .ct.gold{background:#fff0d6;color:#9a6a00}
+.zero{margin:12px 7px 0;background:#f4f7ff;border:1px solid #e2ebff;border-radius:11px;padding:11px}
+.zero .h{font-size:11px;font-weight:700;color:#1b45c7;margin-bottom:7px}
+.bar{height:7px;border-radius:5px;background:#dfe7fb;overflow:hidden}.bar i{display:block;height:100%;width:62%;background:linear-gradient(90deg,#1f5fff,#5f87e0)}
+.zero .s{font-size:10.5px;color:#55607a;margin-top:6px}
+/* list */
+.list{background:#fafbfe;border-right:1px solid var(--line)}
+.grp{font-size:10px;font-weight:750;letter-spacing:.05em;color:#8a93a6;text-transform:uppercase;padding:11px 14px 5px;position:sticky;top:0;background:#fafbfe}
+.row{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:10px 13px;border-bottom:1px solid #eef1f6;cursor:pointer}
+.row:hover{background:#fff}.row.sel{background:#fff;box-shadow:inset 3px 0 0 var(--blue)}
+.av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700}
+.row .top{display:flex;align-items:center;gap:6px}
+.row .nm{font-weight:680;font-size:12.5px}.row .nm.unread::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--blue);margin-right:6px;vertical-align:middle}
+.row .age{margin-left:auto;font-size:10.5px;color:#9aa3b5}
+.row .subj{font-size:12px;color:#26324a;font-weight:600;margin:2px 0 1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .snip{font-size:11px;color:#8a93a6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tags{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap}
+.tag{font-size:8.5px;font-weight:750;letter-spacing:.03em;border-radius:5px;padding:2px 6px;text-transform:uppercase}
+.t-vc{background:#e7edff;color:#1b45c7}.t-reply{background:#fde6e2;color:#c0392b}.t-wait{background:#fff0d6;color:#9a6a00}.t-dp{background:#e3f6ea;color:#107a43}.t-commit{background:#efeaff;color:#5b3bc0}.t-pipe{background:#eef1f6;color:#55607a}
+/* reading */
+.read{background:#fff;padding:0}
+.rhead{padding:16px 20px 12px;border-bottom:1px solid var(--line)}
+.rhead h2{font-size:17px;font-weight:720;margin:0 0 7px}
+.rmeta{display:flex;align-items:center;gap:10px}
+.rmeta .who{font-weight:650}.rmeta .em{color:var(--muted);font-size:12px}
+.linkchips{display:flex;gap:6px;margin-left:auto}
+.lc{font-size:10px;color:#1b52c7;background:#eef3ff;border-radius:6px;padding:3px 8px;cursor:pointer}
+/* AI assist */
+.assist{margin:14px 20px;background:linear-gradient(135deg,#0c1836,#142a5c);border-radius:14px;padding:14px 16px;color:#fff}
+.assist .h{font-size:11px;font-weight:720;letter-spacing:.03em;color:#9fb4ff;display:flex;align-items:center;gap:7px;margin-bottom:9px}
+.assist .sum{font-size:12.5px;line-height:1.5;color:#dfe6f7}
+.assist .ask{background:#0e1a3a;border:1px solid #22325f;border-radius:10px;padding:10px 12px;margin:10px 0;font-size:12px}
+.assist .ask b{color:#7fe3c8}
+.assist .draft{background:#0e1a3a;border:1px solid #22325f;border-radius:10px;padding:11px 13px;font-size:12px;line-height:1.5;color:#e8eefc}
+.assist .dh{font-size:9.5px;font-weight:750;letter-spacing:.05em;color:#8fa0c8;text-transform:uppercase;margin-bottom:6px}
+.arow{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
+.arow button{border:none;border-radius:8px;padding:8px 12px;font-size:11.5px;font-weight:650;cursor:pointer}
+.arow .pri{background:var(--blue);color:#fff}.arow .g{background:#17224a;color:#cdd8f2;border:1px solid #27386c}
+/* message body */
+.msg{padding:4px 20px 16px}
+.msg p{font-size:13px;line-height:1.6;color:#2a3652}
+.quick{display:flex;gap:7px;flex-wrap:wrap;padding:0 20px 18px}
+.quick .q{font-size:11.5px;font-weight:600;border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 12px;cursor:pointer;color:#33405a}
+.quick .q.b{background:var(--blue);border-color:var(--blue);color:#fff}
 </style></head><body>
-<div class="stage">
-  <div class="dim"></div>
-  <aside class="emx-reader">
-    <div class="emx-rh" title="Drag to resize"></div>
-    <div class="emx-rhead">
-      <span class="av">DH</span>
-      <div>
-        <div class="su">Don Hickling</div>
-        <div class="sj">Follow-up on the cheque</div>
-        <div class="meta">don@example-not-used · 2 hours ago</div>
+
+<div class="cmd">
+  <span class="t">Email</span>
+  <div class="search">&#128269; Search people, companies, "waiting on", "needs reply"...</div>
+  <div class="chips">
+    <span class="c red">&#9679; <b>3</b> investors waiting</span>
+    <span class="c gold">&#9679; <b>5</b> need a reply</span>
+    <span class="c">&#9679; <b>42</b> muted today</span>
+  </div>
+  <button class="plan">&#10022; Today's inbox game plan</button>
+</div>
+
+<div class="wrap">
+  <!-- RAIL -->
+  <div class="rail">
+    <div class="seg">Focus</div>
+    <div class="ln on"><span class="dot" style="background:#e0483a"></span>Needs you now <span class="ct red">6</span></div>
+    <div class="ln"><span class="dot" style="background:#9a6a00"></span>Needs a reply <span class="ct gold">5</span></div>
+    <div class="ln"><span class="dot" style="background:#1b45c7"></span>Investors &amp; VCs <span class="ct">8</span></div>
+    <div class="ln"><span class="dot" style="background:#107a43"></span>Design partners <span class="ct">4</span></div>
+    <div class="ln"><span class="dot" style="background:#5b3bc0"></span>Commitments <span class="ct">3</span></div>
+    <div class="ln"><span class="dot" style="background:#e08b1e"></span>Waiting on them <span class="ct">7</span></div>
+
+    <div class="seg">People</div>
+    <div class="ln">&#128100; Friends &amp; family <span class="ct">11</span></div>
+    <div class="ln">&#129309; Advisors <span class="ct">5</span></div>
+    <div class="ln">&#128188; Everyone else <span class="ct">19</span></div>
+
+    <div class="seg">Quiet (auto-muted)</div>
+    <div class="ln">&#128236; Newsletters <span class="ct">42</span></div>
+    <div class="ln">&#129534; Receipts &amp; bills <span class="ct">9</span></div>
+    <div class="ln">&#128276; App notifications <span class="ct">23</span></div>
+
+    <div class="seg">&nbsp;</div>
+    <div class="ln">&#128564; Snoozed <span class="ct">4</span></div>
+    <div class="ln">&#9993; Sent</div>
+    <div class="ln">&#128193; All mail</div>
+
+    <div class="zero">
+      <div class="h">Inbox game plan</div>
+      <div class="bar"><i></i></div>
+      <div class="s">6 of today's 10 cleared. 2 investor replies left - do those first (~8 min).</div>
+    </div>
+  </div>
+
+  <!-- LIST -->
+  <div class="list">
+    <div class="grp">&#128293; Needs you now</div>
+    <div class="row sel">
+      <div class="av" style="background:#1b45c7">NM</div>
+      <div><div class="top"><span class="nm unread">Neil Mitchell</span><span class="age">18m</span></div>
+      <div class="subj">Re: 4orm - the evidence standard</div>
+      <div class="snip">Happy to take a look - send the deck and the data room and I'll...</div>
+      <div class="tags"><span class="tag t-vc">VC</span><span class="tag t-pipe">Pipeline &middot; Proposal</span><span class="tag t-reply">Reply owed</span></div></div>
+    </div>
+    <div class="row">
+      <div class="av" style="background:#e0a81e">JC</div>
+      <div><div class="top"><span class="nm unread">Joe Canavan</span><span class="age">1h</span></div>
+      <div class="subj">Interesting - what's the evidence standard?</div>
+      <div class="snip">You mentioned a defensible record. Walk me through how that...</div>
+      <div class="tags"><span class="tag t-vc">Angel</span><span class="tag t-commit">Opened 3x</span><span class="tag t-reply">Reply owed</span></div></div>
+    </div>
+    <div class="row">
+      <div class="av" style="background:#107a43">TM</div>
+      <div><div class="top"><span class="nm unread">Tanya Mehta</span><span class="age">3h</span></div>
+      <div class="subj">Northbridge pilot - next steps</div>
+      <div class="snip">Let's get the pilot scoped. Can you send what you'd need from...</div>
+      <div class="tags"><span class="tag t-dp">Design partner</span><span class="tag t-reply">Reply owed</span></div></div>
+    </div>
+    <div class="row">
+      <div class="av" style="background:#b02a54">DH</div>
+      <div><div class="top"><span class="nm">Don Hickling</span><span class="age">5h</span></div>
+      <div class="subj">Call me when you have the date - ready to wire</div>
+      <div class="snip">Ready on the $25K. Just need the date and the subscription...</div>
+      <div class="tags"><span class="tag t-commit">Commitment</span><span class="tag t-reply">Reply owed</span></div></div>
+    </div>
+
+    <div class="grp">&#9203; Waiting on them &middot; nudge?</div>
+    <div class="row">
+      <div class="av" style="background:#1667b5">BF</div>
+      <div><div class="top"><span class="nm">Bruce Fair</span><span class="age">2d</span></div>
+      <div class="subj">You sent: the 3 angel intros</div>
+      <div class="snip">No reply in 2 days. 4orm Intelligence suggests a soft nudge.</div>
+      <div class="tags"><span class="tag t-wait">Waiting 2d</span><span class="tag t-pipe">Advisor</span></div></div>
+    </div>
+    <div class="row">
+      <div class="av" style="background:#7a5bd0">AR</div>
+      <div><div class="top"><span class="nm">Anshul Ruparell</span><span class="age">4d</span></div>
+      <div class="subj">You sent: deck + data room</div>
+      <div class="snip">Opened once, no reply. Newsletter him or nudge before it goes cold.</div>
+      <div class="tags"><span class="tag t-wait">Waiting 4d</span><span class="tag t-vc">VC</span></div></div>
+    </div>
+  </div>
+
+  <!-- READING -->
+  <div class="read">
+    <div class="rhead">
+      <h2>Re: 4orm - the evidence standard</h2>
+      <div class="rmeta"><div class="av" style="width:30px;height:30px;font-size:11px;background:#1b45c7">NM</div><div><div class="who">Neil Mitchell</div><div class="em">neil@earlwork.vc &middot; to you &middot; 18m ago</div></div>
+        <div class="linkchips"><span class="lc">&#9873; Neil Mitchell - VC space</span><span class="lc">&#128100; Contact</span></div>
       </div>
-      <button type="button" class="x" aria-label="Close">x</button>
     </div>
-    <div class="emx-chips"><span>Contact</span><span>Investor</span><span>Friends &amp; family</span></div>
-    <div class="emx-assist">
-      <div class="k">4orm Intelligence</div>
-      <div class="row"><b>Who:</b> Angel in the friends-and-family close. Last touch was this thread.</div>
-      <div class="row"><b>Asking:</b> Wire instructions so the cheque can land this week.</div>
-      <div class="draft">Don -
 
-Wire instructions are in the note I just sent. Confirm when it leaves your bank so I can mark the cheque in.
+    <!-- 4orm assist -->
+    <div class="assist">
+      <div class="h">&#10022; 4orm Intelligence &middot; this email</div>
+      <div class="sum">Neil (Earlwork VC, already in your pipeline at <b style="color:#fff">Proposal</b>) is warm and asking for the deck + data room. He's opened your last two emails. This is a hot one - reply today.</div>
+      <div class="ask">He's asking for: <b>the investor deck + data room link, and the evidence-standard one-liner.</b></div>
+      <div class="draft">
+        <div class="dh">Suggested reply &middot; your voice</div>
+        Neil - glad it landed. You've probably seen a dozen "compliance" pitches, so I'll keep it to the part that's different: 4orm turns the suitability conversation into a defensible, time-stamped record - the thing firms currently pay to reconstruct after the fact.<br><br>Deck and data room are here: [link]. Happy to walk you through the evidence standard live - does Thursday work?
+      </div>
+      <div class="arow">
+        <button class="pri">Use draft &amp; reply</button>
+        <button class="g">Tighten</button>
+        <button class="g">Attach deck + data room</button>
+        <button class="g">Book Thursday</button>
+      </div>
+    </div>
 
-Chad</div>
+    <div class="msg">
+      <p>Hey Chad - good to reconnect. Happy to take a look at what you're building. Send over the deck and the data room and I'll get through it this week.</p>
+      <p>Mostly curious how you're defining the "evidence standard" - that's the part that would make or break it for the firms I talk to.</p>
+      <p>- Neil</p>
     </div>
-    <div class="emx-body">
-      <div class="msg"><div class="who">Don Hickling</div>Chad - confirming the $25K lands this week. Can you send the wire instructions this afternoon?</div>
+
+    <div class="quick">
+      <span class="q b">&#9993; Reply</span>
+      <span class="q">&#9873; Add to his Space</span>
+      <span class="q">&#9745; Create task</span>
+      <span class="q">&#128338; Snooze to 9am</span>
+      <span class="q">&#8593; Promote in pipeline</span>
+      <span class="q">&#10003; Mark done</span>
     </div>
-    <div class="emx-acts">
-      <button type="button" class="btn pri">Reply</button>
-      <button type="button" class="btn">Add to Space</button>
-      <button type="button" class="btn">Create task</button>
-      <button type="button" class="btn">Snooze</button>
-      <button type="button" class="btn">Move column</button>
-      <button type="button" class="btn">Promote in pipeline</button>
-      <button type="button" class="btn">Mark done</button>
-    </div>
-  </aside>
+  </div>
 </div>
 </body></html>
