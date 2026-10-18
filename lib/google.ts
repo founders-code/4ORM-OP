@@ -890,6 +890,30 @@ function chunk<T>(rows: T[], size: number) {
   return out;
 }
 
+export async function snapshotMail(day: string) {
+  const empty = { sent: [] as Array<{ title: string; to: string }>, replies: [] as Array<{ title: string; from: string }> };
+  if (!configured()) return empty;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(day || ''));
+  if (!m) return empty;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  const next = new Date(Date.UTC(y, mo - 1, d + 1));
+  const after = `${y}/${mo}/${d}`;
+  const before = `${next.getUTCFullYear()}/${next.getUTCMonth() + 1}/${next.getUTCDate()}`;
+  const sentRows = (await gmailList(`in:sent after:${after} before:${before} ${CALENDAR_QUERY}`, 12).catch(() => null)) || [];
+  const replyRows = (await gmailList(`in:inbox after:${after} before:${before} (subject:re OR subject:fwd) ${CALENDAR_QUERY}`, 12).catch(() => null)) || [];
+  const sent = sentRows.slice(0, 12).map((msg) => {
+    const pick = headerOf(msg);
+    return { title: (pick('subject') || '').slice(0, 180), to: (pick('to') || '').slice(0, 180) };
+  }).filter((row) => row.title);
+  const replies = replyRows.slice(0, 12).map((msg) => {
+    const pick = headerOf(msg);
+    return { title: (pick('subject') || '').slice(0, 180), from: (pick('from') || '').slice(0, 180) };
+  }).filter((row) => row.title);
+  return { sent, replies };
+}
+
 export async function boardMail(query = '', max = 80) {
   if (!configured()) return { status: 'unavailable' as const, messages: [] as BoardMail[] };
   if (!(await accessToken())) return { status: 'unavailable' as const, messages: [] as BoardMail[] };
