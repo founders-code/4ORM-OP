@@ -7,6 +7,9 @@ type Sql = NeonQueryFunction<false, false>;
 
 let ready: Promise<Sql> | null = null;
 
+/** Bump when migrate() gains a new step so cold starts skip the full IF NOT EXISTS pass. */
+const SCHEMA_VERSION = '2026-10-18-news-sweep';
+
 export async function databaseUrl() {
   const envUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
   if (envUrl) return envUrl;
@@ -16,6 +19,18 @@ export async function databaseUrl() {
 }
 
 async function migrate(sql: Sql) {
+  try {
+    await sql`CREATE TABLE IF NOT EXISTS schema_meta (
+      key text PRIMARY KEY,
+      value text NOT NULL,
+      applied_at timestamptz NOT NULL DEFAULT now()
+    )`;
+    const rows = await sql`SELECT value FROM schema_meta WHERE key = 'version' LIMIT 1`;
+    if (String(rows[0]?.value || '') === SCHEMA_VERSION) return;
+  } catch (err) {
+    fail('db_schema_meta', err);
+  }
+
   await sql`CREATE TABLE IF NOT EXISTS items (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id text NOT NULL,
@@ -303,6 +318,14 @@ async function migrate(sql: Sql) {
     PRIMARY KEY (owner_id, key)
   )`;
   await migrateWar(sql);
+  try {
+    await sql`
+      INSERT INTO schema_meta (key, value) VALUES ('version', ${SCHEMA_VERSION})
+      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, applied_at = now()
+    `;
+  } catch (err) {
+    fail('db_schema_meta_write', err);
+  }
 }
 
 /** New War Room tables. A failure here is logged and skipped so the rest of the desk still opens. */
