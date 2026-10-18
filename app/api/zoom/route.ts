@@ -13,11 +13,13 @@ export async function POST(req: Request) {
     const title = String(body?.title || '').trim().slice(0, 180) || 'Untitled meeting';
     const noteId = `manual-${Date.now()}`;
     const others = JSON.stringify(String(body?.others || '').split('\n').map((line) => line.trim()).filter(Boolean).slice(0, 40));
-    const attendees = JSON.stringify(String(body?.attendees || '').split(',').map((line) => line.trim()).filter(Boolean).slice(0, 20));
+    const names = String(body?.attendees || '').split(',').map((line) => line.trim()).filter(Boolean).slice(0, 20);
+    const attendees = JSON.stringify(names);
+    const solo = body?.solo === true || !names.length;
     const rows = await session.sql`
       INSERT INTO zoom_notes (owner_id, note_id, note_date, title, attendees, solo, others, intel, improve, sources)
       VALUES (
-        ${session.userId}, ${noteId}, CURRENT_DATE, ${title}, ${attendees}::jsonb, false,
+        ${session.userId}, ${noteId}, CURRENT_DATE, ${title}, ${attendees}::jsonb, ${solo},
         ${others}::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb
       )
       RETURNING id, note_id, note_date::text AS note_date, title, attendees, solo, others, intel, improve, sources

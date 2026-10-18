@@ -89,33 +89,39 @@ function hasCachedImage(value: string) {
   return String(value || '').startsWith(CACHED) || String(value || '').startsWith(CACHED_OLD);
 }
 
-/** og:image, twitter:image, first large body img, then a first-screen screenshot — stored same-origin. */
+function withTimeout<T>(run: Promise<T>, ms: number, fallback: T) {
+  return Promise.race([run, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))]);
+}
+
+/** og:image, twitter:image, first large body img, then a first-screen screenshot — stored same-origin. 6s cap so the sweep never stalls on one photo. */
 async function imageFor(sql: Sql, ownerId: string, url: string, feedImage = '') {
-  let summary = '';
-  let og = '';
-  if (url && !GOOGLE.test(url)) {
-    const art = await readArticle(url).catch(() => ({ image: '', description: '', url }));
-    og = art.image;
-    summary = art.description;
-  }
-  let image = '';
-  for (const src of [og, feedImage]) {
-    if (!src || image) continue;
-    image = await cacheImage(sql, ownerId, src, url).catch((err) => {
-      fail('news_image', err);
-      return '';
-    });
-  }
-  if (!image && url && !GOOGLE.test(url)) {
-    const shot = await screenshotArticle(url).catch(() => '');
-    if (shot) {
-      image = await cacheImage(sql, ownerId, shot, url).catch((err) => {
-        fail('news_shot', err);
+  return withTimeout((async () => {
+    let summary = '';
+    let og = '';
+    if (url && !GOOGLE.test(url)) {
+      const art = await readArticle(url).catch(() => ({ image: '', description: '', url }));
+      og = art.image;
+      summary = art.description;
+    }
+    let image = '';
+    for (const src of [og, feedImage]) {
+      if (!src || image) continue;
+      image = await cacheImage(sql, ownerId, src, url).catch((err) => {
+        fail('news_image', err);
         return '';
       });
     }
-  }
-  return { image, summary };
+    if (!image && url && !GOOGLE.test(url)) {
+      const shot = await screenshotArticle(url).catch(() => '');
+      if (shot) {
+        image = await cacheImage(sql, ownerId, shot, url).catch((err) => {
+          fail('news_shot', err);
+          return '';
+        });
+      }
+    }
+    return { image, summary };
+  })(), 6000, { image: '', summary: '' });
 }
 
 type Candidate = {
@@ -179,7 +185,7 @@ async function backfill(sql: Sql, ownerId: string, deadline: number) {
     }
   }
   const needImage = rows.filter((row) => !hasCachedImage(String(row.image_url || '')) && row.url && !GOOGLE.test(String(row.url))).slice(0, 40);
-  await pool(needImage, 5, async (row: Row) => {
+  await pool(needImage, 8, async (row: Row) => {
     const found = await imageFor(sql, ownerId, String(row.url), /^https?:/i.test(String(row.image_url || '')) ? String(row.image_url) : '');
     if (found.image || found.summary) {
       await sql`
@@ -215,12 +221,67 @@ async function markTop(sql: Sql, ownerId: string) {
   await sql`UPDATE news_items SET is_top = (url = ${top}) WHERE owner_id = ${ownerId} AND (is_top OR url = ${top})`;
 }
 
+async function enrichWithLlm(stories: Row[]) {
+  const key = process.env.OPENAI_API_KEY || '';
+  if (!key || !stories.length) return stories;
+  const slice = stories.slice(0, 24).map((story) => ({
+    title: String(story.title || ''),
+    summary: String(story.summary || '').slice(0, 280),
+    url: String(story.url || ''),
+  }));
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        max_tokens: 2200,
+        temperature: 0.2,
+        messages: [
+          {
+            role: 'system',
+            content: 'You tag Canadian fintech/compliance news for 4orm Finance (recorded consumer suitability evidence, not an AI company). Return JSON only: {"items":[{"url":"","summary":"one line","why":"Why it matters to 4orm","category":"Compliance|AI & governance|Mortgage/brokerage|Automation/regtech|Fraud|Payments/FINTRAC|Competitors|Housing market","impact":"Opportunity|Threat|Regulatory"}]}. Hyphens, not dashes. Never invent a URL.',
+          },
+          { role: 'user', content: JSON.stringify({ items: slice }) },
+        ],
+      }),
+      signal: AbortSignal.timeout(18000),
+    });
+    if (!res.ok) return stories;
+    const body = await res.json() as { choices?: Array<{ message?: { content?: string } }> };
+    const text = body.choices?.[0]?.message?.content || '';
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start < 0 || end <= start) return stories;
+    const parsed = JSON.parse(text.slice(start, end + 1)) as { items?: Array<Record<string, string>> };
+    const byUrl = new Map((parsed.items || []).map((row) => [String(row.url || ''), row]));
+    return stories.map((story) => {
+      const hit = byUrl.get(String(story.url || ''));
+      if (!hit) return story;
+      const category = NEWS_CHIPS.includes(String(hit.category || '')) ? hit.category : story.category;
+      const impact = ['Opportunity', 'Threat', 'Regulatory'].includes(String(hit.impact || '')) ? hit.impact : story.impact;
+      return {
+        ...story,
+        summary: hit.summary || story.summary,
+        why_it_matters: hit.why || story.why_it_matters,
+        category,
+        impact,
+      };
+    });
+  } catch (err) {
+    fail('news_llm', err);
+    return stories;
+  }
+}
+
 /** Enrich posted or swept stories (cover photo, summary, tags) and save each one as soon as it is ready. */
 export async function saveStories(sql: Sql, ownerId: string, stories: Row[], deadline: number) {
   const day = todayKey();
   let saved = 0;
+  let thumbs = 0;
   const done = new Set<Row>();
-  await pool(stories, 6, async (story: Row) => {
+  const enriched = await enrichWithLlm(stories);
+  await pool(enriched, 8, async (story: Row) => {
     const url = String(story.url || '');
     const posted = String(story.image_url || story.image || '');
     const found = hasCachedImage(posted) ? { image: posted, summary: '' } : await imageFor(sql, ownerId, url, posted);
@@ -228,6 +289,7 @@ export async function saveStories(sql: Sql, ownerId: string, stories: Row[], dea
     const blob = `${story.title || ''} ${summary}`;
     const meta = finish({ title: String(story.title || ''), summary, topic: String(story.topic || ''), tier: String(story.tier || '') });
     const category = NEWS_CHIPS.includes(String(story.category || '')) ? String(story.category) : meta.category;
+    if (found.image) thumbs += 1;
     saved += await upsertNews(sql, ownerId, [{
       ...story,
       category,
@@ -239,13 +301,13 @@ export async function saveStories(sql: Sql, ownerId: string, stories: Row[], dea
     }], day);
     done.add(story);
   }, deadline);
-  const rest = stories.filter((story) => !done.has(story)).map((story) => {
+  const rest = enriched.filter((story) => !done.has(story)).map((story) => {
     const blob = `${story.title || ''} ${story.summary || ''}`;
     const category = NEWS_CHIPS.includes(String(story.category || '')) ? String(story.category) : classify(blob, String(story.topic || 'Compliance'));
     return { ...story, category, impact: story.impact || impactOf(category, blob, String(story.tier || '')), why_it_matters: story.why_it_matters || whyFor(category, blob), source: story.source || hostOf(String(story.url || '')), image_url: '' };
   });
   if (rest.length) saved += await upsertNews(sql, ownerId, rest, day);
-  return saved;
+  return { saved, thumbs };
 }
 
 /** The daily sweep: every source, 4orm-relevant only, newest and Canadian first, cover photos cached. */
@@ -253,11 +315,13 @@ export async function sweepNews(sql: Sql, ownerId: string, budgetMs = 45000) {
   await ensureNewsTables(sql);
   const deadline = Date.now() + budgetMs;
   let saved = 0;
+  let thumbs = 0;
   try {
     const known = await sql`
-      SELECT title FROM news_items WHERE owner_id = ${ownerId} AND published_at >= now() - interval '40 days'
+      SELECT title, url FROM news_items WHERE owner_id = ${ownerId} AND published_at >= now() - interval '40 days'
     `;
     const skip = new Set((known as Row[]).map((row) => titleKey(String(row.title || ''))));
+    const skipUrl = new Set((known as Row[]).map((row) => String(row.url || '')).filter(Boolean));
     const candidates = ((await collectCandidates(skip)) as Candidate[]).filter((row) => isArticleUrl(row.link || row.url || ''));
     const picked = pickStories(candidates);
     let blocked = false;
@@ -267,7 +331,7 @@ export async function sweepNews(sql: Sql, ownerId: string, budgetMs = 45000) {
         row.url = row.link;
         continue;
       }
-      if (!blocked && decoded < 12 && Date.now() < deadline - 18000) {
+      if (!blocked && decoded < 16 && Date.now() < deadline - 12000) {
         try {
           const real = await decodeGoogle(row.link);
           if (real) row.url = real;
@@ -287,8 +351,10 @@ export async function sweepNews(sql: Sql, ownerId: string, budgetMs = 45000) {
       image: row.image,
       topic: row.topic,
       tier: row.tier,
-    })).filter((row) => isArticleUrl(String(row.url || '')));
-    saved = await saveStories(sql, ownerId, stories, deadline - 6000);
+    })).filter((row) => isArticleUrl(String(row.url || '')) && !skipUrl.has(String(row.url || '')));
+    const result = await saveStories(sql, ownerId, stories, deadline - 4000);
+    saved = typeof result === 'number' ? result : result.saved;
+    thumbs = typeof result === 'number' ? 0 : result.thumbs;
   } catch (err) {
     fail('news_sweep', err);
   }
@@ -303,11 +369,19 @@ export async function sweepNews(sql: Sql, ownerId: string, budgetMs = 45000) {
     fail('news_top', err);
   }
   try {
-    return listNews(sql, ownerId);
+    const items = await listNews(sql, ownerId);
+    return { items, saved, thumbs };
   } catch (err) {
     fail('news_sweep', err);
-    return [];
+    return { items: [], saved, thumbs };
   }
+}
+
+/** Full sweep then stamp the last-run time so Refresh can report "found N new". */
+export async function runNewsSweep(sql: Sql, ownerId: string, budgetMs = 55000) {
+  const result = await sweepNews(sql, ownerId, budgetMs);
+  await markSwept(sql, ownerId);
+  return result;
 }
 
 let sweepTable: Promise<boolean> | null = null;
@@ -377,14 +451,11 @@ export async function markSwept(sql: Sql, ownerId: string) {
   }
 }
 
-/** Sweep when the latest 8am or 11am Pacific slot has not been swept yet. Bounded so a slow feed never stalls the page. */
-export async function sweepIfDue(sql: Sql, ownerId: string, force = false, budgetMs = 9000) {
+/** Sweep when the latest 8am or 11am Pacific slot has not been swept yet. Marks swept only after the run finishes. */
+export async function sweepIfDue(sql: Sql, ownerId: string, force = false, budgetMs = 50000) {
   const due = force || (await lastSweptAt(sql, ownerId)) < lastSweepSlot();
   if (!due) return false;
+  await sweepNews(sql, ownerId, Math.max(budgetMs - 2000, 8000));
   await markSwept(sql, ownerId);
-  const run = (async () => {
-    await sweepNews(sql, ownerId, Math.max(budgetMs - 2000, 8000));
-    return true;
-  })();
-  return Promise.race([run, new Promise<boolean>((resolve) => setTimeout(() => resolve(false), budgetMs))]);
+  return true;
 }

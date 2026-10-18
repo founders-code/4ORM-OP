@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
 import { openBoard } from '@/lib/session';
-import { NEWS_CHIPS, ensureNewsTables, lastSweptAt, sweepIfDue } from '@/lib/news-sweep';
+import { NEWS_CHIPS, ensureNewsTables, lastSweptAt } from '@/lib/news-sweep';
 import { listNews, newsCategories } from '@/lib/war';
 import { NEWS_CATEGORIES } from '@/lib/war.mjs';
 
@@ -16,14 +16,7 @@ export async function GET(req: Request) {
     await ensureNewsTables(session.sql).catch(() => {});
     const asked = new URL(req.url).searchParams.get('span');
     const span = asked === 'today' ? 1 : asked === 'week' ? 7 : 30;
-    let items = await listNews(session.sql, session.userId, undefined, span).catch((err) => { fail('news_list', err); return []; });
-    try {
-      if (await sweepIfDue(session.sql, session.userId, !items.length)) {
-        items = await listNews(session.sql, session.userId, undefined, span);
-      }
-    } catch (err) {
-      fail('news_sweep', err);
-    }
+    const items = await listNews(session.sql, session.userId, undefined, span).catch((err) => { fail('news_list', err); return []; });
     const categories = await newsCategories(session.sql, session.userId).catch(() => NEWS_CATEGORIES.slice());
     const sweptAt = await lastSweptAt(session.sql, session.userId).catch(() => 0);
     return NextResponse.json({ items, chips: NEWS_CHIPS, categories, sweptAt });

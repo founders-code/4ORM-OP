@@ -207,7 +207,7 @@ export async function upsertNews(sql: Sql, ownerId: string, items: Array<Record<
     if (seen.has(key)) continue;
     seen.add(key);
     const rawImage = String(item.image_url || item.image || '').trim().slice(0, 600);
-    const image = /^\/api\/news\/image\/[0-9a-f-]{36}$/i.test(rawImage) ? rawImage : '';
+    const image = /^\/api\/news\/(?:image|thumb)\/[0-9a-f-]{36}$/i.test(rawImage) ? rawImage : '';
     const isTop = item.is_top === true || item.isTop === true;
     const rawWhen = item.published_at || item.publishedAt;
     const when = rawWhen ? new Date(typeof rawWhen === 'number' ? rawWhen : String(rawWhen)) : new Date();
