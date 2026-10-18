@@ -5,7 +5,7 @@ import { fail } from '@/lib/log';
 import { NEWS_CHIPS, ensureNewsTables, runNewsSweep } from '@/lib/news-sweep';
 import { cronSecret, newsKey } from '@/lib/secrets';
 import { openBoard, roomOwner } from '@/lib/session';
-import { newsCategories } from '@/lib/war';
+import { listNews, newsCategories } from '@/lib/war';
 import { NEWS_CATEGORIES } from '@/lib/war.mjs';
 
 export const dynamic = 'force-dynamic';
@@ -31,12 +31,15 @@ async function who(req: Request) {
 }
 
 async function run(req: Request) {
+  let session: { sql: Awaited<ReturnType<typeof getSql>>; userId: string } | null = null;
   try {
-    const session = await who(req);
+    session = await who(req);
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ items: [], saved: 0, thumbs: 0, chips: NEWS_CHIPS, categories: NEWS_CATEGORIES });
+    if (!session.sql) return NextResponse.json({ items: [], saved: 0, thumbs: 0, chips: NEWS_CHIPS, categories: NEWS_CATEGORIES, swept: false });
     await ensureNewsTables(session.sql).catch(() => {});
-    const result = await runNewsSweep(session.sql, session.userId, 55000);
+    const capSec = Number(process.env.AWS_LAMBDA_FUNCTION_TIMEOUT || 60);
+    const left = Math.max(7000, Math.min(55000, (Number.isFinite(capSec) ? capSec : 60) * 1000 - 1500));
+    const result = await runNewsSweep(session.sql, session.userId, left);
     const categories = await newsCategories(session.sql, session.userId).catch(() => NEWS_CATEGORIES.slice());
     return NextResponse.json({
       items: result.items,
@@ -50,7 +53,13 @@ async function run(req: Request) {
     });
   } catch (err) {
     fail('news_sweep_route', err);
-    return NextResponse.json({ items: [], saved: 0, thumbs: 0, chips: NEWS_CHIPS, categories: NEWS_CATEGORIES });
+    let items: unknown[] = [];
+    try {
+      if (session?.sql && session.userId) items = await listNews(session.sql, session.userId);
+    } catch {
+      items = [];
+    }
+    return NextResponse.json({ items, saved: items.length, thumbs: 0, chips: NEWS_CHIPS, categories: NEWS_CATEGORIES, swept: false });
   }
 }
 

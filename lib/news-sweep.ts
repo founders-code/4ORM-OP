@@ -277,36 +277,38 @@ async function enrichWithLlm(stories: Row[]) {
 /** Enrich posted or swept stories (cover photo, summary, tags) and save each one as soon as it is ready. */
 export async function saveStories(sql: Sql, ownerId: string, stories: Row[], deadline: number) {
   const day = todayKey();
-  let saved = 0;
-  let thumbs = 0;
-  const done = new Set<Row>();
-  const enriched = await enrichWithLlm(stories);
-  await pool(enriched, 8, async (story: Row) => {
+  const enriched = Date.now() < deadline - 8000 ? await enrichWithLlm(stories) : stories;
+  const prepared = enriched.map((story) => {
     const url = String(story.url || '');
     const posted = String(story.image_url || story.image || '');
-    const found = hasCachedImage(posted) ? { image: posted, summary: '' } : await imageFor(sql, ownerId, url, posted);
-    const summary = String(story.summary || '') || found.summary;
+    const summary = String(story.summary || '');
     const blob = `${story.title || ''} ${summary}`;
     const meta = finish({ title: String(story.title || ''), summary, topic: String(story.topic || ''), tier: String(story.tier || '') });
     const category = NEWS_CHIPS.includes(String(story.category || '')) ? String(story.category) : meta.category;
-    if (found.image) thumbs += 1;
-    saved += await upsertNews(sql, ownerId, [{
+    return {
       ...story,
       category,
       summary,
-      image_url: found.image,
+      feed_image: posted,
+      image_url: hasCachedImage(posted) ? posted : '',
       impact: story.impact || impactOf(category, blob, String(story.tier || '')),
       why_it_matters: story.why_it_matters || story.whyItMatters || whyFor(category, blob),
       source: story.source || hostOf(url),
-    }], day);
-    done.add(story);
-  }, deadline);
-  const rest = enriched.filter((story) => !done.has(story)).map((story) => {
-    const blob = `${story.title || ''} ${story.summary || ''}`;
-    const category = NEWS_CHIPS.includes(String(story.category || '')) ? String(story.category) : classify(blob, String(story.topic || 'Compliance'));
-    return { ...story, category, impact: story.impact || impactOf(category, blob, String(story.tier || '')), why_it_matters: story.why_it_matters || whyFor(category, blob), source: story.source || hostOf(String(story.url || '')), image_url: '' };
+    };
   });
-  if (rest.length) saved += await upsertNews(sql, ownerId, rest, day);
+  let saved = await upsertNews(sql, ownerId, prepared, day);
+  let thumbs = prepared.filter((story) => hasCachedImage(String(story.image_url || ''))).length;
+  const need = prepared.filter((story) => !hasCachedImage(String(story.image_url || '')) && String(story.url || ''));
+  await pool(need, 8, async (story: Row) => {
+    const found = await imageFor(sql, ownerId, String(story.url || ''), String(story.feed_image || ''));
+    if (!found.image && !found.summary) return;
+    if (found.image) thumbs += 1;
+    saved += await upsertNews(sql, ownerId, [{
+      ...story,
+      summary: String(story.summary || '') || found.summary,
+      image_url: found.image || story.image_url,
+    }], day);
+  }, deadline);
   return { saved, thumbs };
 }
 
@@ -322,7 +324,8 @@ export async function sweepNews(sql: Sql, ownerId: string, budgetMs = 45000) {
     `;
     const skip = new Set((known as Row[]).map((row) => titleKey(String(row.title || ''))));
     const skipUrl = new Set((known as Row[]).map((row) => String(row.url || '')).filter(Boolean));
-    const candidates = ((await collectCandidates(skip)) as Candidate[]).filter((row) => isArticleUrl(row.link || row.url || ''));
+    const feedBudget = Math.max(2500, Math.min(14000, deadline - Date.now() - 6000));
+    const candidates = ((await collectCandidates(skip, feedBudget)) as Candidate[]).filter((row) => isArticleUrl(row.link || row.url || ''));
     const picked = pickStories(candidates);
     let blocked = false;
     let decoded = 0;
@@ -331,7 +334,7 @@ export async function sweepNews(sql: Sql, ownerId: string, budgetMs = 45000) {
         row.url = row.link;
         continue;
       }
-      if (!blocked && decoded < 16 && Date.now() < deadline - 12000) {
+      if (!blocked && decoded < 16 && Date.now() < deadline - 4000) {
         try {
           const real = await decodeGoogle(row.link);
           if (real) row.url = real;
@@ -352,16 +355,18 @@ export async function sweepNews(sql: Sql, ownerId: string, budgetMs = 45000) {
       topic: row.topic,
       tier: row.tier,
     })).filter((row) => isArticleUrl(String(row.url || '')) && !skipUrl.has(String(row.url || '')));
-    const result = await saveStories(sql, ownerId, stories, deadline - 4000);
+    const result = await saveStories(sql, ownerId, stories, Math.max(Date.now() + 500, deadline - 1500));
     saved = typeof result === 'number' ? result : result.saved;
     thumbs = typeof result === 'number' ? 0 : result.thumbs;
   } catch (err) {
     fail('news_sweep', err);
   }
-  try {
-    await backfill(sql, ownerId, deadline);
-  } catch (err) {
-    fail('news_backfill', err);
+  if (Date.now() < deadline - 800) {
+    try {
+      await backfill(sql, ownerId, deadline);
+    } catch (err) {
+      fail('news_backfill', err);
+    }
   }
   try {
     await markTop(sql, ownerId);
