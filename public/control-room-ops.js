@@ -383,8 +383,12 @@
     var from = new Date(Date.now() - 86400000).toISOString();
     var to = new Date(Date.now() + 14 * 86400000).toISOString();
     authFetch('/api/calendar?from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to), { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
-      if (data && data.events && data.events.length) { STATE.events = data.events; if (STATE.desk === 'room' || !STATE.desk) renderOpsDash(); if (STATE.desk === 'war') renderWar(); }
-    }).catch(function () {});
+      var events = (data && data.events) || [];
+      if (events.length) STATE.events = events;
+      console.info('[live-map] /api/calendar', { count: events.length, keys: events[0] ? Object.keys(events[0]) : [] });
+      if (STATE.desk === 'room' || !STATE.desk) renderOpsDash();
+      if (STATE.desk === 'war') renderWar();
+    }).catch(function () { STATE.feedsAsked = false; });
     authFetch('/api/mail', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
       STATE.mail = ((data && data.messages) || []).filter(function (m) {
         var subject = String(m && m.subject || '');
@@ -396,11 +400,21 @@
       });
       STATE.linkedin = (data && data.linkedin) || [];
       STATE.mailHidden = data && data.hidden ? data.hidden : (STATE.mailHidden || []);
+      console.info('[live-map] /api/mail', { messages: STATE.mail.length, mailKeys: STATE.mail[0] ? Object.keys(STATE.mail[0]) : [], linkedin: STATE.linkedin.length, linkedinKeys: STATE.linkedin[0] ? Object.keys(STATE.linkedin[0]) : [] });
       if (typeof stampWarmth === 'function') stampWarmth();
       if (STATE.desk === 'room' || !STATE.desk) renderOpsDash();
       if (STATE.desk === 'people' && typeof renderPeople === 'function') renderPeople(document.getElementById('pSearch') ? document.getElementById('pSearch').value : '');
       if (STATE.desk === 'contacts' && typeof renderContacts === 'function') renderContacts(document.getElementById('cSearch') ? document.getElementById('cSearch').value : '');
-    }).catch(function () { STATE.mail = STATE.mail || []; });
+    }).catch(function () { STATE.mail = STATE.mail || []; STATE.feedsAsked = false; });
+    authFetch('/api/ceo/moves', { credentials: 'same-origin', quiet: true }).then(function (r) { return r.json(); }).then(function (data) {
+      var moves = (data && data.moves) || [];
+      console.info('[live-map] /api/ceo/moves', { count: moves.length, keys: moves[0] ? Object.keys(moves[0]) : [] });
+      if (moves.length) {
+        STATE.ceo = Object.assign({}, STATE.ceo || {}, { moves: moves, lamps: (data && data.lamps) || (STATE.ceo && STATE.ceo.lamps) || [] });
+        if (STATE.desk === 'room' || !STATE.desk) renderOpsDash();
+        if (STATE.desk === 'war') renderWar();
+      }
+    }).catch(function () {});
     authFetch('/api/pipeline', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
       if (data && data.pipelines && data.pipelines.length) STATE.ghlPipes = data.pipelines;
       if (typeof stampWarmth === 'function') stampWarmth();
@@ -415,11 +429,25 @@
     loadMeetingActions();
   }
 
-  function loadMeetingActions() {
-    authFetch('/api/meeting-actions', { credentials: 'same-origin', quiet: true }).then(function (r) { return r.json(); }).then(function (data) {
-      STATE.meetingActions = (data && data.actions) || [];
-      if (STATE.desk === 'war') renderWar();
-    }).catch(function () { STATE.meetingActions = STATE.meetingActions || []; });
+  function loadMeetingActions(tries) {
+    tries = tries || 0;
+    function go() {
+      authFetch('/api/meeting-actions', { credentials: 'include', quiet: true }).then(function (r) {
+        if (r.status === 401 && tries < 4) {
+          setTimeout(function () { loadMeetingActions(tries + 1); }, 350);
+          return null;
+        }
+        return r.json();
+      }).then(function (data) {
+        if (!data) return;
+        STATE.meetingActions = (data && data.actions) || [];
+        console.info('[live-map] /api/meeting-actions', { count: STATE.meetingActions.length, keys: STATE.meetingActions[0] ? Object.keys(STATE.meetingActions[0]) : [] });
+        if (STATE.desk === 'war') renderWar();
+      }).catch(function () { STATE.meetingActions = STATE.meetingActions || []; });
+    }
+    if (window.__clerk && window.__clerk.session) go();
+    else if (window.__clerkBoot) Promise.resolve(window.__clerkBoot).then(go).catch(go);
+    else go();
   }
 
   function renderOpsDash() {
@@ -958,6 +986,21 @@
       if (STATE.desk === 'war') renderWar();
       if (STATE.desk === 'room') renderOpsDash();
     }).catch(function () { STATE.reachOut = STATE.reachOut || []; });
+  }
+  function loadStickies() {
+    authFetch('/api/notes/sticky', { credentials: 'include', quiet: true }).then(function (r) { return r.json(); }).then(function (d) {
+      STATE.stickies = (d && d.notes) || STATE.stickies || [];
+      console.info('[live-map] /api/notes/sticky', { count: STATE.stickies.length, keys: STATE.stickies[0] ? Object.keys(STATE.stickies[0]) : [] });
+      if (STATE.desk === 'notes' && typeof renderNotes === 'function') renderNotes();
+    }).catch(function () { STATE.stickies = STATE.stickies || []; });
+  }
+  function loadNotes() {
+    authFetch('/api/notes', { credentials: 'include', quiet: true }).then(function (r) { return r.json(); }).then(function (d) {
+      var rows = (d && d.notes) || [];
+      console.info('[live-map] /api/notes', { count: rows.length, keys: rows[0] ? Object.keys(rows[0]) : [] });
+      if (rows.length) STATE.notes = rows;
+      if (STATE.desk === 'notes' && typeof renderNotes === 'function') renderNotes();
+    }).catch(function () {});
   }
 
   function editItem(id) {
@@ -2047,7 +2090,15 @@
   if (typeof applyCeo === 'function') {
     var priorCeo = applyCeo;
     applyCeo = function (data) {
-      priorCeo(data);
+      var nextMoves = (data && data.moves) || [];
+      var prevMoves = (STATE.ceo && STATE.ceo.moves) || [];
+      var nextLamps = (data && data.lamps) || [];
+      var prevLamps = (STATE.ceo && STATE.ceo.lamps) || [];
+      priorCeo(Object.assign({}, data || {}, {
+        moves: nextMoves.length ? nextMoves : prevMoves,
+        lamps: nextLamps.length ? nextLamps : prevLamps
+      }));
+      console.info('[live-map] /api/ceo', { moves: ((STATE.ceo && STATE.ceo.moves) || []).length, moveKeys: STATE.ceo && STATE.ceo.moves && STATE.ceo.moves[0] ? Object.keys(STATE.ceo.moves[0]) : [], lamps: ((STATE.ceo && STATE.ceo.lamps) || []).length });
       if (!STATE.desk || STATE.desk === 'room') renderOpsDash();
       if (STATE.desk === 'war') renderWar();
     };
@@ -2055,11 +2106,17 @@
   var priorApply = applyBoard;
   applyBoard = function (data) {
     priorApply(data);
+    console.info('[live-map] /api/board', { items: (STATE.items || []).length, itemKeys: STATE.items && STATE.items[0] ? Object.keys(STATE.items[0]) : [], notes: (STATE.notes || []).length, noteKeys: STATE.notes && STATE.notes[0] ? Object.keys(STATE.notes[0]) : [], events: (STATE.events || []).length, plugins: (STATE.plugins || []).length });
     renderOpsDash();
     renderWar();
     renderDeskNotes();
+    if (typeof renderNotes === 'function') renderNotes();
+    loadDeskFeeds();
     loadReach();
     loadMeetingActions();
+    loadStickies();
+    loadNotes();
+    if (typeof loadFinance === 'function') loadFinance();
     if (STATE.desk === 'news') loadNews();
     if (STATE.desk === 'contacts') loadInbox();
   };
@@ -2072,8 +2129,8 @@
     if (v === 'contacts') { loadDeskFeeds(); loadInbox(); }
     if (v === 'people') loadDeskFeeds();
     if (v === 'room') { loadDeskFeeds(); renderOpsDash(); }
-    if (v === 'war') { loadReach(); loadMeetingActions(); renderWar(); }
-    if (v === 'notes') renderSticky();
+    if (v === 'war') { loadDeskFeeds(); loadReach(); loadMeetingActions(); renderWar(); }
+    if (v === 'notes') { loadStickies(); loadNotes(); if (typeof renderNotes === 'function') renderNotes(); renderSticky(); }
     if (v === 'znotes') renderZNotes();
     if (v === 'mail' && typeof loadMailBoard === 'function') loadMailBoard();
     if (v === 'done' && typeof loadSnapshots === 'function') loadSnapshots();
@@ -2465,7 +2522,7 @@
         };
       });
     }
-    authFetch('/api/notes/sticky', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) { paint(data.notes || []); }).catch(function () { paint([]); var board = document.getElementById('stickBoard'); if (board) board.insertAdjacentHTML('afterbegin', '<div class="soft-err">Notes could not load. A new note still stays on this board.</div>'); });
+    authFetch('/api/notes/sticky', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) { STATE.stickies = data.notes || []; paint(STATE.stickies); if (typeof renderNotes === 'function') renderNotes(); }).catch(function () { paint([]); var board = document.getElementById('stickBoard'); if (board) board.insertAdjacentHTML('afterbegin', '<div class="soft-err">Notes could not load. A new note still stays on this board.</div>'); });
   }
   document.addEventListener('click', function (e) {
     var link = e.target.closest('a[target="_blank"]');

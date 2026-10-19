@@ -415,7 +415,7 @@
       STATE.zoomSyncedAt = Date.now();
       if (d && Array.isArray(d.notes) && d.notes.length) STATE.zoomNotes = d.notes;
       if (typeof loadMeetingActions === 'function') loadMeetingActions();
-      else authFetch('/api/meeting-actions', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (a) { STATE.meetingActions = (a && a.actions) || []; renderZNotes(); });
+      else authFetch('/api/meeting-actions', { credentials: 'include' }).then(function (r) { return r.json(); }).then(function (a) { STATE.meetingActions = (a && a.actions) || []; renderZNotes(); });
       if (STATE.desk === 'znotes') renderZNotes();
       if (quiet) return;
       if (!d || (d.error && !d.busy)) { toast('Zoom could not be reached. Try again.'); return; }
@@ -446,7 +446,7 @@
       if (v === 'znotes' && !window.fixtureMockup) {
         document.body.classList.add('dk-page');
         try { history.replaceState({}, '', STATE.zOpenId ? '/zoom?m=' + encodeURIComponent(STATE.zOpenId) : '/zoom'); } catch (e) {}
-        authFetch('/api/meeting-actions', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) { STATE.meetingActions = (d && d.actions) || []; renderZNotes(); }).catch(function () { renderZNotes(); });
+        authFetch('/api/meeting-actions', { credentials: 'include' }).then(function (r) { return r.json(); }).then(function (d) { STATE.meetingActions = (d && d.actions) || []; renderZNotes(); }).catch(function () { renderZNotes(); });
       }
     };
   }
