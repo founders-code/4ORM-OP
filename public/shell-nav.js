@@ -59,7 +59,13 @@
     }
     paint();
   }
+  function fixtureOn() {
+    return !!window.fixtureMockup;
+  }
   function badges() {
+    if (fixtureOn() && window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.navBadges) {
+      return window.REDESIGN_FIXTURE.navBadges;
+    }
     var pipe = (typeof STATE !== 'undefined' && STATE.contacts) ? STATE.contacts.length : 0;
     var plugs = 0;
     if (typeof STATE !== 'undefined' && Array.isArray(STATE.plugins)) {
@@ -80,6 +86,20 @@
     var active = activeName();
     var bag = badges();
     var html = '';
+    if (fixtureOn()) {
+      NAV.forEach(function (n) {
+        if (n.length === 1) { html += '<div class="grp">' + n[0] + '</div>'; return; }
+        var badge = bag[n[0]] || '';
+        html += '<div class="nav' + (n[0] === active ? ' on' : '') + '" data-v="' + n[3] + '" data-name="' + n[0] + '"><svg viewBox="0 0 24 24"><path d="' + n[1] + '"/></svg>' + n[0] + (badge ? '<span class="n">' + badge + '</span>' : '') + '</div>';
+      });
+      side.innerHTML = html;
+      var crumbF = document.getElementById('pageCrumb');
+      if (crumbF) crumbF.textContent = active;
+      var titleF = document.querySelector('title');
+      if (titleF) titleF.textContent = active + ' - 4orm Finance';
+      bind();
+      return;
+    }
     var seen = {};
     var grouped = groups();
     var names = applied();
@@ -93,14 +113,14 @@
         seen[name] = 1;
         var badge = bag[name];
         if (badge === '' || badge == null) badge = it[2] || '';
-        html += '<div class="nav tab' + (it[0] === active ? ' on' : '') + '" data-v="' + it[3] + '" data-name="' + it[0] + '" draggable="false"><span class="grip" aria-hidden="true"></span><svg viewBox="0 0 24 24"><path d="' + it[1] + '"/></svg><span class="nl">' + it[0] + '</span>' + (badge ? '<span class="n" id="' + (name === 'Pipeline' ? 'cCount' : name === 'Integrations' ? 'iCount' : '') + '">' + badge + '</span>' : '') + '</div>';
+        html += '<div class="nav' + (it[0] === active ? ' on' : '') + '" data-v="' + it[3] + '" data-name="' + it[0] + '" draggable="false"><span class="grip" aria-hidden="true"></span><svg viewBox="0 0 24 24"><path d="' + it[1] + '"/></svg><span class="nl">' + it[0] + '</span>' + (badge ? '<span class="n" id="' + (name === 'Pipeline' ? 'cCount' : name === 'Integrations' ? 'iCount' : '') + '">' + badge + '</span>' : '') + '</div>';
       });
     });
     names.forEach(function (name) {
       if (seen[name]) return;
       var it = itemByName(name);
       if (!it) return;
-      html += '<div class="nav tab' + (it[0] === active ? ' on' : '') + '" data-v="' + it[3] + '" data-name="' + it[0] + '"><span class="grip" aria-hidden="true"></span><svg viewBox="0 0 24 24"><path d="' + it[1] + '"/></svg><span class="nl">' + it[0] + '</span></div>';
+      html += '<div class="nav' + (it[0] === active ? ' on' : '') + '" data-v="' + it[3] + '" data-name="' + it[0] + '"><span class="grip" aria-hidden="true"></span><svg viewBox="0 0 24 24"><path d="' + it[1] + '"/></svg><span class="nl">' + it[0] + '</span></div>';
     });
     var arranging = document.body.classList.contains('arranging');
     html += '<div class="arr-row"><button type="button" class="arr" id="navArrange">' + (arranging ? 'Done' : 'Arrange') + '</button><button type="button" class="arr-reset" id="navReset">Reset to default</button></div>';
@@ -173,7 +193,7 @@
   }
   window.paintShellNav = paint;
   window.shellPageName = activeName;
-  if (typeof authFetch === 'function') {
+  if (typeof authFetch === 'function' && !fixtureOn()) {
     authFetch('/api/nav-prefs', { credentials: 'same-origin', quiet: true }).then(function (r) { return r.json(); }).then(function (d) {
       if (d && Array.isArray(d.order) && d.order.length) {
         order = d.order;

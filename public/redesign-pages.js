@@ -1,36 +1,34 @@
+/* Same ShadowPage + paint*Live for live STATE and ?fixture=mockup.
+   Fixture swaps data via pageModel() / REDESIGN_FIXTURE constants — never fetch design HTML.
+   Parts B/C/D must use this same provider split. */
 (function () {
   var TOKEN = ':host,:root{--ground:#0b1430;--ground2:#13224a;--side:#08102a;--card:#fff;--ink:#101a33;--ink2:#4a5672;--ink3:#7a86a0;--line:#e8ecf3;--soft:#f5f7fb;--blue:#2e6bf2;--blue50:#eaf1fe;--green:#12a36a;--green50:#e4f6ee;--amber:#c98408;--amber50:#fff4e0;--red:#e0364f;--red50:#fde9ec;--violet:#6b4fd8;font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}'
     + '*{box-sizing:border-box}'
-    + ':host{display:block;min-width:0;color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}'
+    + ':host{display:block;min-width:0;color:var(--ink);font-size:16px;line-height:normal;font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}'
     + 'button{font:inherit;cursor:pointer}'
     + '.card{background:var(--card);border-radius:16px;box-shadow:0 10px 30px rgba(3,10,30,.22);min-width:0}'
     + '.ch{display:flex;align-items:center;gap:8px;padding:14px 16px 10px}'
     + '.ch h3{margin:0;font-size:14px;font-weight:800}'
     + '.ch .s{margin-left:auto;font-size:12px;color:var(--ink3);font-weight:600;white-space:nowrap}'
     + '.lnk{color:var(--blue);font-weight:700;font-size:12.5px;white-space:nowrap;cursor:pointer}'
-    + '.foot{padding:10px 16px 14px;font-size:12.5px;color:var(--ink3);border-top:1px solid var(--line)}';
+    + '.foot{padding:10px 16px 14px;font-size:12.5px;color:var(--ink3);border-top:1px solid var(--line)}'
+    + '.port-body{display:block;min-width:0}';
   var CSS = { room: '/port-css/dashboard.css', war: '/port-css/war-room.css', notes: '/port-css/notes.css' };
-  var MAIN = { room: '/port-fixtures/01-dashboard-main.html', war: '/port-fixtures/02-war-room-main.html', notes: '/port-fixtures/03-notes-main.html' };
-  var cache = {};
+  var cssText = {};
+  var cssWait = [];
 
   function fixtureOn() {
     try { return /(?:^|[?&])fixture=mockup(?:&|$)/.test(String(location.search || '')); } catch (e) { return false; }
   }
 
-  window.ShadowPage = function (hostId, cssHref) {
+  window.ShadowPage = function (hostId, pageKey) {
     var host = document.getElementById(hostId);
     if (!host) return null;
     if (host.shadowRoot) return host.shadowRoot;
     var root = host.attachShadow({ mode: 'open' });
     var style = document.createElement('style');
-    style.textContent = TOKEN;
+    style.textContent = TOKEN + (cssText[pageKey] || '');
     root.appendChild(style);
-    if (cssHref) {
-      var link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = cssHref;
-      root.appendChild(link);
-    }
     var wrap = document.createElement('div');
     wrap.className = 'port-body';
     root.appendChild(wrap);
@@ -38,17 +36,46 @@
   };
 
   function wrapOf(hostId) {
-    var root = window.ShadowPage(hostId, CSS[hostId === 'opsDash' ? 'room' : hostId === 'warDesk' ? 'war' : 'notes']);
+    var key = hostId === 'opsDash' ? 'room' : hostId === 'warDesk' ? 'war' : 'notes';
+    var root = window.ShadowPage(hostId, key);
     if (!root) return null;
+    var style = root.querySelector('style');
+    if (style && cssText[key] && style.textContent.indexOf(cssText[key]) < 0) style.textContent = TOKEN + cssText[key];
     return root.querySelector('.port-body') || root;
   }
 
-  function loadMain(key, cb) {
-    if (cache[key]) { cb(cache[key]); return; }
-    fetch(MAIN[key]).then(function (r) { return r.text(); }).then(function (html) {
-      cache[key] = html;
-      cb(html);
-    }).catch(function () { cb(''); });
+  function whenCss(fn) {
+    if (cssText.room && cssText.war && cssText.notes) fn();
+    else cssWait.push(fn);
+  }
+  Object.keys(CSS).forEach(function (key) {
+    fetch(CSS[key]).then(function (r) { return r.text(); }).then(function (t) {
+      cssText[key] = t;
+      if (cssText.room && cssText.war && cssText.notes) {
+        var q = cssWait.splice(0);
+        q.forEach(function (fn) { fn(); });
+      }
+    }).catch(function () {
+      cssText[key] = cssText[key] || '';
+      if (Object.keys(CSS).every(function (k) { return cssText[k] != null; })) {
+        var q = cssWait.splice(0);
+        q.forEach(function (fn) { fn(); });
+      }
+    });
+  });
+
+  function pageModel(page) {
+    var F = window.REDESIGN_FIXTURE || {};
+    if (!fixtureOn()) return null;
+    if (page === 'dashboard') return { html: F.dashboardHtml, bind: bindDashboardFixture };
+    if (page === 'war') return { html: F.warHtml, bind: bindWarFixture };
+    if (page === 'notes') return { html: F.notesHtml, bind: bindNotesFixture };
+    return null;
+  }
+
+  function markReady(hostId) {
+    var host = document.getElementById(hostId);
+    if (host) host.setAttribute('data-port-ready', '1');
   }
 
   function esc(s) {
@@ -100,47 +127,62 @@
     return { yellow: 'y', pink: 'p', green: 'g', blue: 'b', orange: 'o', violet: 'v', white: 'w', purple: 'v' }[String(c || 'yellow')] || 'y';
   }
 
-  function paintFixture(hostId, key) {
-    var wrap = wrapOf(hostId);
-    if (!wrap) return;
-    loadMain(key, function (html) {
-      wrap.innerHTML = html;
-      var root = wrap.getRootNode();
-      bindSample(root, key);
+  function bindDashboardFixture(root) {
+    var MAIL = (window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.mail) || [];
+    var FL = { vc: 'Investor', dp: 'Design partner', rg: 'Regulator' };
+    var box = root.getElementById && root.getElementById('mail');
+    if (box) {
+      box.innerHTML = MAIL.map(function (m) {
+        return '<div class="mail"><span class="av" style="background:' + m[1] + '">' + m[0].split(' ').map(function (x) { return x[0]; }).join('').slice(0, 2) + '</span><div style="min-width:0"><div class="mn"><span>' + m[0] + '</span>' + (m[2] ? '<em class="flag ' + m[2] + '" style="font-style:normal">' + FL[m[2]] + '</em>' : '') + '</div><div class="ms">' + m[3] + '</div><div class="mp">' + m[4] + '</div></div><div class="mr"><span class="age">' + m[5] + '</span><button class="rb">Reply</button><button class="more" title="More: not a person, snooze, file">&middot;&middot;&middot;</button></div></div>';
+      }).join('');
+    }
+    var shown = false;
+    var eye = root.getElementById && root.getElementById('eye');
+    if (eye) eye.onclick = function () {
+      shown = !shown;
+      root.querySelectorAll('.mask').forEach(function (e) {
+        if (!e.dataset.hide) e.dataset.hide = e.innerHTML;
+        e.innerHTML = shown ? e.dataset.real : e.dataset.hide;
+      });
+    };
+    root.querySelectorAll('.rb').forEach(function (b) {
+      b.onclick = function () {
+        var t = root.getElementById('toast');
+        if (!t) return;
+        t.textContent = 'Opens the reply drafted in your voice';
+        t.classList.add('show');
+        setTimeout(function () { t.classList.remove('show'); }, 1500);
+      };
     });
   }
-
-  function bindSample(root, key) {
-    if (key === 'room') {
-      var shown = false;
-      var eye = root.getElementById && root.getElementById('eye');
-      if (eye) eye.onclick = function () {
-        shown = !shown;
-        root.querySelectorAll('.mask').forEach(function (e) {
-          if (!e.dataset.hide) e.dataset.hide = e.innerHTML;
-          e.innerHTML = shown ? e.dataset.real : e.dataset.hide;
-        });
+  function bindWarFixture(root) {
+    var btn = root.getElementById && root.getElementById('coachbtn');
+    var pop = root.getElementById && root.getElementById('coachpop');
+    if (btn && pop) {
+      btn.onclick = function (e) { e.stopPropagation(); pop.classList.toggle('open'); };
+      document.addEventListener('click', function () { pop.classList.remove('open'); });
+    }
+  }
+  function bindNotesFixture(root) {
+    root.querySelectorAll('.ck').forEach(function (c) {
+      c.onclick = function () {
+        c.classList.toggle('done');
+        var i = c.querySelector('i');
+        if (i) i.innerHTML = c.classList.contains('done') ? '&#10003;' : '';
       };
-    }
-    if (key === 'war') {
-      var btn = root.getElementById && root.getElementById('coachbtn');
-      var pop = root.getElementById && root.getElementById('coachpop');
-      if (btn && pop) {
-        btn.onclick = function (e) { e.stopPropagation(); pop.classList.toggle('open'); };
-        document.addEventListener('click', function () { pop.classList.remove('open'); });
-      }
-    }
-    if (key === 'notes') {
-      root.querySelectorAll('.ck').forEach(function (c) {
-        c.onclick = function () { c.classList.toggle('done'); var i = c.querySelector('i'); if (i) i.innerHTML = c.classList.contains('done') ? '&#10003;' : ''; };
-      });
-    }
+    });
   }
 
   function paintDashboardLive() {
     var wrap = wrapOf('opsDash');
     if (!wrap) return;
-    if (fixtureOn()) { paintFixture('opsDash', 'room'); return; }
+    var model = pageModel('dashboard');
+    if (model && model.html) {
+      wrap.innerHTML = model.html + '<div class="toast" id="toast"></div>';
+      model.bind(wrap.getRootNode());
+      markReady('opsDash');
+      return;
+    }
     var S = window.STATE || {};
     var days = daysToClose();
     var items = (S.items || []).filter(function (it) { return it.status !== 'dropped'; });
@@ -240,13 +282,21 @@
     root.querySelectorAll('.lnk').forEach(function (el) {
       if (el.textContent === 'Open Email') el.onclick = function () { if (typeof switchView === 'function') switchView('mail'); };
     });
+    markReady('opsDash');
   }
 
   function paintWarLive() {
     var wrap = wrapOf('warDesk');
     if (!wrap) return;
-    if (fixtureOn()) { paintFixture('warDesk', 'war'); return; }
-    loadMain('war', function (html) {
+    var model = pageModel('war');
+    if (model && model.html) {
+      wrap.innerHTML = model.html + '<div class="toast" id="toast"></div>';
+      model.bind(wrap.getRootNode());
+      markReady('warDesk');
+      return;
+    }
+    var html = (window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.warHtml) || '';
+    (function (html) {
       wrap.innerHTML = html;
       var root = wrap.getRootNode();
       var S = window.STATE || {};
@@ -294,15 +344,23 @@
         }).join('') || '<div class="empty">Nothing set for this column.<br>Drag a task here or press +.</div>';
         col.innerHTML = (head ? head.outerHTML.replace(/<span class="c">\d+<\/span>/, '<span class="c">' + (colItems(key).length) + '</span>') : '') + body + (more ? '<div class="more2">+ ' + more + ' more</div>' : '');
       });
-      bindSample(root, 'war');
-    });
+      bindWarFixture(root);
+      markReady('warDesk');
+    })(html);
   }
 
   function paintNotesLive() {
     var wrap = wrapOf('notesDesk');
     if (!wrap) return;
-    if (fixtureOn()) { paintFixture('notesDesk', 'notes'); return; }
-    loadMain('notes', function (html) {
+    var model = pageModel('notes');
+    if (model && model.html) {
+      wrap.innerHTML = model.html + '<div class="toast" id="toast"></div>';
+      model.bind(wrap.getRootNode());
+      markReady('notesDesk');
+      return;
+    }
+    var html = (window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.notesHtml) || '';
+    (function (html) {
       wrap.innerHTML = html;
       var S = window.STATE || {};
       var notes = S.notes || [];
@@ -315,13 +373,21 @@
           return '<div class="note ' + colorClass(n.color) + '"><div class="nh"><span class="ty">Note</span><span class="nx" style="margin-left:auto">&times;</span></div>' + title + body + '<div class="na"><span class="conv">✦ Convert to task</span><span class="sp"></span><span class="ic">✎</span><span class="ic">⋯</span></div></div>';
         }).join('');
       }
-      bindSample(wrap.getRootNode(), 'notes');
-    });
+      bindNotesFixture(wrap.getRootNode());
+      markReady('notesDesk');
+    })(html);
   }
 
-  window.paintRedesignDashboard = paintDashboardLive;
-  window.paintRedesignWar = paintWarLive;
-  window.paintRedesignNotes = paintNotesLive;
+  function gated(fn) {
+    return function () {
+      var args = arguments;
+      var self = this;
+      whenCss(function () { fn.apply(self, args); });
+    };
+  }
+  window.paintRedesignDashboard = gated(paintDashboardLive);
+  window.paintRedesignWar = gated(paintWarLive);
+  window.paintRedesignNotes = gated(paintNotesLive);
 
   var _ops = window.renderOpsDash;
   Object.defineProperty(window, 'renderOpsDash', {
@@ -329,7 +395,7 @@
     set: function (fn) { _ops = fn; },
     get: function () {
       return function () {
-        paintDashboardLive();
+        window.paintRedesignDashboard();
         if (typeof window.paintShellNav === 'function') window.paintShellNav();
       };
     }
@@ -340,7 +406,7 @@
     if (typeof window.renderWar !== 'function' || window.renderWar.__redesign) return;
     origWar = window.renderWar;
     window.renderWar = function () {
-      paintWarLive();
+      window.paintRedesignWar();
       if (typeof window.paintShellNav === 'function') window.paintShellNav();
     };
     window.renderWar.__redesign = true;
@@ -350,7 +416,7 @@
     if (typeof window.renderNotes !== 'function' || window.renderNotes.__redesign) return;
     origNotes = window.renderNotes;
     window.renderNotes = function () {
-      paintNotesLive();
+      window.paintRedesignNotes();
       if (typeof window.paintShellNav === 'function') window.paintShellNav();
     };
     window.renderNotes.__redesign = true;
