@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
 import { openBoard } from '@/lib/session';
-import { fallbackPlan } from '@/lib/war.mjs';
+import { fallbackPlan } from '@/lib/war-core.mjs';
 import { advisePlan } from '@/lib/war';
 
 export const dynamic = 'force-dynamic';

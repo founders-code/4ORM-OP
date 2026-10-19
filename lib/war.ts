@@ -2,7 +2,7 @@ import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { env } from './env.mjs';
 import { fail } from './log';
 import { allowArea, allowPriority, parseDue } from './guard.mjs';
-import { NEWS_CATEGORIES, asNeeds, asSteps, extractCommitments, fallbackPlan, todayKey } from './war.mjs';
+import { NEWS_CATEGORIES, asNeeds, asSteps, extractCommitments, fallbackPlan, todayKey } from './war-core.mjs';
 import { SEED_URLS, isArticleUrl } from './news-sources.mjs';
 
 type Sql = NeonQueryFunction<false, false>;

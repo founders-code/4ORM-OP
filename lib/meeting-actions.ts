@@ -1,6 +1,6 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { fail } from './log';
-import { extractCommitments } from './war.mjs';
+import { extractCommitments } from './war-core.mjs';
 import { listZoomNotes } from './zoom-notes';
 
 type Sql = NeonQueryFunction<false, false>;

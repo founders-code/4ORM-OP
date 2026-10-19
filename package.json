@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "node scripts/ensure-secrets.mjs && next build",
     "start": "next start",
-    "check": "node scripts/ensure-secrets.mjs && node --test scripts/secure.test.mjs && node scripts/scan.mjs",
+    "check": "node scripts/twin-check.mjs && node scripts/ensure-secrets.mjs && node --test scripts/secure.test.mjs && node scripts/scan.mjs",
     "visual-check": "node scripts/visual-check.mjs"
   },
   "dependencies": {

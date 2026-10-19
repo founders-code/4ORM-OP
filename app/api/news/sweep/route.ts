@@ -6,7 +6,7 @@ import { NEWS_CHIPS, ensureNewsTables, runNewsSweep } from '@/lib/news-sweep';
 import { cronSecret, newsKey } from '@/lib/secrets';
 import { openBoard, roomOwner } from '@/lib/session';
 import { listNews, newsCategories } from '@/lib/war';
-import { NEWS_CATEGORIES } from '@/lib/war.mjs';
+import { NEWS_CATEGORIES } from '@/lib/war-core.mjs';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
