@@ -278,7 +278,7 @@ async function enrichWithLlm(stories: Row[]) {
 export async function saveStories(sql: Sql, ownerId: string, stories: Row[], deadline: number) {
   const day = todayKey();
   const enriched = Date.now() < deadline - 8000 ? await enrichWithLlm(stories) : stories;
-  const prepared = enriched.map((story) => {
+  const prepared: Row[] = enriched.map((story) => {
     const url = String(story.url || '');
     const posted = String(story.image_url || story.image || '');
     const summary = String(story.summary || '');
@@ -287,6 +287,7 @@ export async function saveStories(sql: Sql, ownerId: string, stories: Row[], dea
     const category = NEWS_CHIPS.includes(String(story.category || '')) ? String(story.category) : meta.category;
     return {
       ...story,
+      url,
       category,
       summary,
       feed_image: posted,
