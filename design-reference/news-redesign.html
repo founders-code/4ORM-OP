@@ -1,214 +1,140 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>News - real thumbnails</title>
+<title>News - real articles, real photos</title>
 <style>
 :root{--bg:#f4f6fb;--ink:#101828;--muted:#6b7488;--line:#e7ebf2;--blue:#1f5fff;--navy:#0b1f55;
-font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-size:13px;padding:14px 18px}
+font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-size:13px;padding:18px 22px}
+a{color:inherit;text-decoration:none}
 .bar{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.bar h1{font-size:19px;font-weight:750;margin:0}
+.bar h1{font-size:21px;font-weight:800;margin:0;letter-spacing:-.02em}
 .seg{display:flex;gap:4px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:3px}
-.seg button{border:none;background:none;font-size:12px;font-weight:600;color:#51607a;padding:5px 11px;border-radius:7px;cursor:pointer}
+.seg button{border:none;background:none;font:inherit;font-size:12px;font-weight:600;color:#51607a;padding:5px 11px;border-radius:7px;cursor:pointer}
 .seg button.on{background:var(--navy);color:#fff}
-.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 12px;font-size:12px;font-weight:600;color:#33405a;cursor:pointer}
-.bar .s{margin-left:auto;display:flex;align-items:center;gap:8px}
-.bar .search{width:220px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 12px;color:var(--muted);font-size:12px}
-.bar .sweep{font-size:10px;color:#9aa3b5;letter-spacing:.04em}
+.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 12px;font:inherit;font-size:12px;font-weight:650;color:#33405a;cursor:pointer}
+.bar .s{margin-left:auto;display:flex;align-items:center;gap:10px}
+.search{width:240px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 12px;font:inherit;font-size:12px}
+.sweep{font-size:11px;color:#8a94a8;font-weight:600}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-.chip{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;background:#fff;color:#44506a;cursor:pointer;white-space:nowrap}
+.chip{font-size:11.5px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;background:#fff;color:#44506a;cursor:pointer;white-space:nowrap}
 .chip.on{background:#eaf0ff;border-color:#c9d8ff;color:var(--blue);font-weight:650}
-.wrap{display:grid;grid-template-columns:1fr 268px;gap:14px}
-.hero{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(16,24,40,.04);margin-bottom:14px}
-.cover{position:relative;height:210px;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:16px;overflow:hidden}
-.cover .thumb,.cv .thumb{position:absolute;inset:0;width:100%;height:100%}
-.cover .ov{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,10,26,0) 35%,rgba(6,10,26,.72) 100%)}
-.cover>.z,.cv>.z{position:relative;z-index:2}
-.kick{font-size:10px;font-weight:750;letter-spacing:.09em;text-transform:uppercase;opacity:.92;margin-bottom:6px}
-.cover h2{font-size:23px;font-weight:760;margin:0;line-height:1.15;max-width:82%;text-shadow:0 1px 10px rgba(0,0,0,.35)}
-.tag{position:absolute;top:12px;right:14px;z-index:3;font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border-radius:6px;padding:4px 9px}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:16px}
+/* HERO */
+.hero{display:grid;grid-template-columns:1.25fr 1fr;background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(16,24,40,.05);margin-bottom:16px}
+.hero .ph{position:relative;min-height:300px;background:#dfe5ef}
+.hero .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.chipc{position:absolute;top:12px;left:12px;font-size:10.5px;font-weight:700;background:rgba(255,255,255,.94);color:#24324d;border-radius:6px;padding:4px 9px}
+.imp{position:absolute;top:12px;right:12px;font-size:10.5px;font-weight:700;border-radius:6px;padding:4px 9px}
 .t-reg{background:#efeaff;color:#5b3bc0}.t-opp{background:#e3f6ea;color:#107a43}.t-threat{background:#fde6e2;color:#c0392b}
-.herobody{padding:14px 16px}
-.wim{font-size:12.5px;line-height:1.5}.wim b{color:var(--ink)}
-.src{font-size:11px;color:var(--muted);margin:8px 0 10px}
-.acts{display:flex;gap:7px;flex-wrap:wrap}
-.acts .a{font-size:11.5px;font-weight:600;border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 11px;cursor:pointer;color:#33405a}
+.hero .bd{padding:20px 22px;display:flex;flex-direction:column;gap:10px}
+.top{font-size:11px;font-weight:700;color:var(--blue)}
+.hero h2{font-size:24px;font-weight:800;line-height:1.18;margin:0;letter-spacing:-.02em}
+.dek{font-size:13.5px;line-height:1.55;color:#33405a;margin:0}
+.wim{font-size:13px;line-height:1.5;background:#f6f8fc;border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:9px 12px}
+.wim b{color:var(--ink)}
+.src{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.src i{width:16px;height:16px;border-radius:4px;background:#c8102e;color:#fff;font-style:normal;font-size:8px;font-weight:800;display:grid;place-items:center}
+.acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto}
+.acts .a{font:inherit;font-size:11.5px;font-weight:650;border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 11px;cursor:pointer;color:#33405a}
 .acts .a.pri{background:var(--blue);border-color:var(--blue);color:#fff}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}
-.card{background:#fff;border:1px solid var(--line);border-radius:13px;overflow:hidden;box-shadow:0 1px 6px rgba(16,24,40,.04);display:flex;flex-direction:column}
-.card .cv{position:relative;height:104px;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;overflow:hidden}
-.card .cv .ov{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,10,26,0) 38%,rgba(6,10,26,.68) 100%)}
-.card .cat{font-size:9px;font-weight:750;letter-spacing:.07em;text-transform:uppercase;opacity:.95}
-.card .cv h3{font-size:12.5px;font-weight:700;margin:3px 0 0;line-height:1.18;text-shadow:0 1px 8px rgba(0,0,0,.4)}
-.card .cat{font-size:8.5px!important}
-.card .wim2{font-size:11px}
-.card .body{padding:11px 12px;display:flex;flex-direction:column;gap:7px;flex:1}
-.card .wim2{font-size:11.5px;line-height:1.45;color:#33405a}
-.card .foot{display:flex;align-items:center;justify-content:space-between;margin-top:auto;font-size:10.5px;color:var(--muted)}
-.card .save{color:var(--blue);font-weight:650;cursor:pointer}
-.rel{display:inline-block;font-size:9px;font-weight:700;color:#9a6a00;background:#fff4de;border-radius:5px;padding:2px 6px}
+/* GRID */
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 1px 6px rgba(16,24,40,.05);display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s}
+.card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(16,24,40,.10)}
+.card .ph{position:relative;aspect-ratio:16/9;background:#dfe5ef}
+.card .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.card .bd{padding:12px 13px;display:flex;flex-direction:column;gap:7px;flex:1}
+.card h3{font-size:14px;font-weight:750;line-height:1.3;margin:0}
+.card .w{font-size:12px;line-height:1.45;color:#33405a}.card .w b{color:var(--ink)}
+.card .ft{display:flex;align-items:center;justify-content:space-between;margin-top:auto;font-size:11px;color:var(--muted);padding-top:4px}
+.card .save{color:var(--blue);font-weight:700;cursor:pointer}
+/* shimmer = thumbnails still arriving / next sweep */
+.sk .ph{background:linear-gradient(90deg,#e6ebf3 0%,#f3f6fa 50%,#e6ebf3 100%);background-size:200% 100%;animation:sh 1.4s infinite}
+.sk .l{height:10px;border-radius:5px;background:#eef1f6}
+@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+/* RAIL */
 .rail{display:flex;flex-direction:column;gap:12px}
-.panel{background:#fff;border:1px solid var(--line);border-radius:13px;padding:13px}
-.panel h4{margin:0 0 10px;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:space-between}
-.panel h4 .mini{font-size:10px;color:#9aa3b5;font-weight:600}
-.brief{display:flex;gap:9px;padding:7px 0;border-bottom:1px solid #f0f2f7;font-size:11.5px;line-height:1.35}
-.brief:last-child{border:none}.brief .n{color:var(--blue);font-weight:750}
-.cw{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:11.5px;border-bottom:1px solid #f0f2f7}
-.cw:last-child{border:none}.cw .d{width:7px;height:7px;border-radius:50%}
-.cw .st{margin-left:auto;font-size:10.5px;color:var(--muted)}
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}
+.panel h4{margin:0 0 10px;font-size:13.5px;font-weight:750;display:flex;align-items:center;justify-content:space-between}
+.panel h4 .mini{font-size:10.5px;color:#9aa3b5;font-weight:600}
+.brief{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #f0f2f7;font-size:12px;line-height:1.4}
+.brief:last-child{border:none}.brief .n{color:var(--blue);font-weight:800;flex:0 0 12px}
+.cw{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px;border-bottom:1px solid #f0f2f7}
+.cw:last-child{border:none}.cw .d{width:7px;height:7px;border-radius:50%;background:#c7cfdc}
+.cw .st{margin-left:auto;font-size:11px;color:var(--muted)}
 .trend{display:flex;gap:6px;flex-wrap:wrap}
-.trend span{font-size:10.5px;border:1px solid var(--line);border-radius:999px;padding:4px 9px;color:#44506a}
-.badge{width:20px;height:20px;border-radius:5px;background:var(--navy);color:#fff;display:inline-grid;place-items:center;font-size:11px;font-weight:700;margin-right:6px}
-.note{font-size:10.5px;color:#9aa3b5;margin-top:10px;text-align:center}
+.trend span{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:#44506a;background:#fff}
+.pri2{display:flex;gap:9px;padding:8px 0;border-bottom:1px solid #f0f2f7;font-size:12px;line-height:1.4}.pri2:last-child{border:none}
+.pri2 em{font-style:normal;font-size:10px;font-weight:700;border-radius:5px;padding:2px 6px;height:max-content;white-space:nowrap}
+.note{font-size:11px;color:#8a94a8;margin-top:14px}
 </style></head><body>
 
 <div class="bar">
   <h1>News</h1>
   <div class="seg"><button>Today</button><button>Last week</button><button class="on">Last month</button></div>
   <button class="btn">&#8635; Refresh</button>
-  <div class="s"><input class="search" placeholder="Search news..."><span class="sweep">8AM + 11AM SWEEPS</span></div>
+  <div class="s"><input class="search" placeholder="Search news..."><span class="sweep">Swept 8:00 am &middot; next 11:00 am</span></div>
 </div>
 <div class="chips">
   <span class="chip on">All</span><span class="chip">Compliance</span><span class="chip">AI &amp; governance</span><span class="chip">Mortgage / brokerage</span>
-  <span class="chip">Automation / regtech</span><span class="chip">Fraud</span><span class="chip">Payments / FINTRAC</span><span class="chip">Competitors</span>
-  <span class="chip">Housing market</span>
+  <span class="chip">Automation / regtech</span><span class="chip">Fraud</span><span class="chip">Payments / FINTRAC</span><span class="chip">Competitors</span><span class="chip">Housing market</span>
 </div>
 
 <div class="wrap">
-  <div class="main">
-    <!-- HERO: OSFI / AI in finance -->
-    <div class="hero">
-      <div class="cover">
-        <svg class="thumb" viewBox="0 0 800 420" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-          <defs><linearGradient id="h1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1b2b6b"/><stop offset="1" stop-color="#24357e"/></linearGradient></defs>
-          <rect width="800" height="420" fill="url(#h1)"/>
-          <g fill="#2f407f" opacity=".9"><rect x="250" y="150" width="300" height="200"/><polygon points="250,150 400,70 550,150"/></g>
-          <g stroke="#9fb4ff" stroke-width="10" opacity=".85"><line x1="275" y1="180" x2="275" y2="350"/><line x1="330" y1="180" x2="330" y2="350"/><line x1="385" y1="180" x2="385" y2="350"/><line x1="440" y1="180" x2="440" y2="350"/><line x1="495" y1="180" x2="495" y2="350"/><line x1="525" y1="180" x2="525" y2="350"/></g>
-          <rect x="250" y="340" width="300" height="16" fill="#9fb4ff"/>
-          <g stroke="#7fe3c8" stroke-width="2.5" fill="#7fe3c8" opacity=".9"><circle cx="120" cy="90" r="7"/><circle cx="220" cy="55" r="7"/><circle cx="640" cy="80" r="7"/><circle cx="700" cy="150" r="7"/><circle cx="90" cy="180" r="7"/><line x1="120" y1="90" x2="220" y2="55"/><line x1="220" y1="55" x2="400" y2="70"/><line x1="640" y1="80" x2="700" y2="150"/><line x1="120" y1="90" x2="90" y2="180"/><line x1="640" y1="80" x2="550" y2="150"/></g>
-        </svg>
-        <div class="ov"></div>
-        <span class="tag t-reg">Regulatory</span>
-        <div class="z"><div class="kick">Top release &middot; AI &amp; governance &middot; Oct 8</div><h2>OSFI raises concerns about advanced AI in finance</h2></div>
-      </div>
-      <div class="herobody">
-        <div class="wim"><b>Why it matters to 4orm:</b> Canada's banking regulator published a risk outlook on advanced AI, cybersecurity, third-party tech and institutional accountability. Firms adopting AI will need credible controls and oversight - 4orm's permission-based, auditable records fit this direction.</div>
-        <div class="src">osfi-bsif.gc.ca &middot; 2026-10-08 &middot; High relevance</div>
-        <div class="acts"><span class="a pri">&#10022; Draft a LinkedIn post</span><span class="a">+ Add to investor newsletter</span><span class="a">Cite to a VC</span><span class="a">Save to Regulator space</span><span class="a">Open source</span></div>
-      </div>
+<div>
+  <!-- HERO: real article -->
+  <a class="hero" href="https://www.canadianmortgagetrends.com/mortgage-wire/2026/10/12/fintrac-fines-four-credit-unions-816750/" target="_blank" rel="noopener">
+    <div class="ph"><img src="https://www.canadianmortgagetrends.com/wp-content/uploads/2026/07/Court-ruling_sm.jpg" alt="FINTRAC fines four credit unions"><span class="chipc">Payments / FINTRAC</span><span class="imp t-reg">Regulatory</span></div>
+    <div class="bd">
+      <div class="top">Top story this week</div>
+      <h2>FINTRAC fines four credit unions $816,750</h2>
+      <p class="dek">Penalties for failing to apply compliance procedures, assess risk and monitor clients. At one, 46 of 118 high-risk client files went more than a year without review.</p>
+      <div class="wim"><b>Why it matters to 4orm:</b> regulators are penalising missed reviews and undocumented risk assessments - exactly the record a 4orm session produces automatically. Use it as the "why now" proof point.</div>
+      <div class="src"><i>CMT</i>Canadian Mortgage Trends &middot; Oct 12, 2026 &middot; 1 min read</div>
+      <div class="acts"><span class="a pri">&#10022; Draft a LinkedIn post</span><span class="a">Add to investor newsletter</span><span class="a">Cite to a VC</span><span class="a">Save to a Space</span><span class="a">Open source &#8599;</span></div>
     </div>
+  </a>
 
-    <div class="grid">
-      <!-- Equifax fraud -->
-      <div class="card"><div class="cv">
-        <svg class="thumb" viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-          <rect width="400" height="240" fill="#6d2430"/><rect width="400" height="240" fill="#8a2d33" opacity=".5"/>
-          <rect x="120" y="40" width="170" height="170" rx="6" fill="#f3e6d8"/><g fill="#b98f6a"><rect x="140" y="66" width="130" height="12"/><rect x="140" y="92" width="130" height="12"/><rect x="140" y="118" width="90" height="12"/><rect x="140" y="144" width="110" height="12"/></g>
-          <circle cx="250" cy="150" r="46" fill="none" stroke="#fff" stroke-width="9"/><circle cx="250" cy="150" r="40" fill="#ffffff" opacity=".12"/><line x1="282" y1="182" x2="320" y2="214" stroke="#fff" stroke-width="12" stroke-linecap="round"/>
-          <text x="250" y="160" font-size="40" text-anchor="middle" fill="#e0483a" font-family="Arial" font-weight="bold">!</text>
-        </svg>
-        <div class="ov"></div><div class="z"><div class="cat">Fraud &middot; Mortgage</div><h3>Equifax: AI is making mortgage fraud harder to detect</h3></div>
-      </div><div class="body"><span class="rel">High relevance</span><div class="wim2"><b>Why it matters:</b> AI-generated income/employment docs are harder to flag. Strengthens the case for richer discovery and defensible borrower records.</div><div class="foot"><span>CMT / Equifax &middot; Oct 13</span><span class="save">Save &rsaquo;</span></div></div></div>
-
-      <!-- B.C. Mortgage Act -->
-      <div class="card"><div class="cv">
-        <svg class="thumb" viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-          <defs><linearGradient id="bc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d5fa8"/><stop offset="1" stop-color="#0e3c74"/></linearGradient></defs>
-          <rect width="400" height="240" fill="url(#bc)"/>
-          <polygon points="0,150 90,70 170,150" fill="#2c6fb0"/><polygon points="120,150 220,60 320,150" fill="#3a7cc0"/><polygon points="90,70 110,90 70,90" fill="#eaf2ff"/><polygon points="220,60 242,86 198,86" fill="#eaf2ff"/>
-          <rect x="250" y="120" width="110" height="90" fill="#f4f7fb"/><polygon points="245,120 305,78 365,120" fill="#d7e3f2"/><rect x="290" y="160" width="30" height="50" fill="#1d5fa8"/>
-          <rect x="40" y="186" width="330" height="22" fill="#0b2e59"/>
-        </svg>
-        <div class="ov"></div><div class="z"><div class="cat">Mortgage &middot; B.C.</div><h3>B.C. Mortgage Services Act hits a key milestone</h3></div>
-      </div><div class="body"><span class="rel" style="color:#b0242e;background:#fde6e2">Priority 1 - Critical</span><div class="wim2"><b>Why it matters:</b> 4orm starts with B.C. brokers - immediate reason to ask brokerages what changed in their day-to-day compliance workload.</div><div class="foot"><span>BCFSA &middot; Oct 13</span><span class="save">Save &rsaquo;</span></div></div></div>
-
-      <!-- Ontario enforcement -->
-      <div class="card"><div class="cv">
-        <svg class="thumb" viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-          <rect width="400" height="240" fill="#6a4a16"/><rect width="400" height="240" fill="#8a6220" opacity=".5"/>
-          <g stroke="#f3e3c0" stroke-width="7" fill="none"><line x1="200" y1="60" x2="200" y2="180"/><line x1="130" y1="90" x2="270" y2="90"/></g>
-          <g fill="#f3e3c0"><polygon points="130,90 110,140 150,140"/><polygon points="270,90 250,140 290,140"/><path d="M95 140 a35 22 0 0 0 70 0 z"/><path d="M235 140 a35 22 0 0 0 70 0 z"/><circle cx="200" cy="58" r="10"/><rect x="170" y="180" width="60" height="12"/></g>
-        </svg>
-        <div class="ov"></div><div class="z"><div class="cat">Compliance &middot; Ontario</div><h3>Ontario continues mortgage enforcement actions</h3></div>
-      </div><div class="body"><div class="wim2"><b>Why it matters:</b> FSRA enforcement shows supervision is active, not theoretical. (An allegation is not a final finding.)</div><div class="foot"><span>FSRA &middot; Oct 15</span><span class="save">Save &rsaquo;</span></div></div></div>
-
-      <!-- Global AI -->
-      <div class="card"><div class="cv">
-        <svg class="thumb" viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-          <defs><radialGradient id="g1" cx="50%" cy="45%" r="70%"><stop offset="0" stop-color="#3a3a7a"/><stop offset="1" stop-color="#1b1b3f"/></radialGradient></defs>
-          <rect width="400" height="240" fill="url(#g1)"/>
-          <circle cx="200" cy="120" r="78" fill="none" stroke="#8fa6e8" stroke-width="3"/><ellipse cx="200" cy="120" rx="30" ry="78" fill="none" stroke="#8fa6e8" stroke-width="3"/><ellipse cx="200" cy="120" rx="78" ry="30" fill="none" stroke="#8fa6e8" stroke-width="3"/><line x1="122" y1="120" x2="278" y2="120" stroke="#8fa6e8" stroke-width="3"/>
-          <g fill="#7fe3c8"><circle cx="200" cy="42" r="6"/><circle cx="278" cy="120" r="6"/><circle cx="200" cy="198" r="6"/><circle cx="122" cy="120" r="6"/><circle cx="252" cy="70" r="5"/><circle cx="150" cy="170" r="5"/></g>
-        </svg>
-        <div class="ov"></div><div class="z"><div class="cat">AI &amp; governance &middot; Global</div><h3>Regulators worldwide step up scrutiny of AI</h3></div>
-      </div><div class="body"><div class="wim2"><b>Why it matters:</b> US/EU and UK FCA moves mean the ability to explain and reconstruct tech-assisted decisions becomes more valuable.</div><div class="foot"><span>Reuters &middot; Oct 13-15</span><span class="save">Save &rsaquo;</span></div></div></div>
-
-      <!-- Consumer AI survey -->
-      <div class="card"><div class="cv">
-        <svg class="thumb" viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-          <rect width="400" height="240" fill="#0d6b45"/><rect width="400" height="240" fill="#108a53" opacity=".45"/>
-          <rect x="150" y="40" width="100" height="170" rx="14" fill="#07331f"/><rect x="160" y="54" width="80" height="128" rx="4" fill="#eafff4"/>
-          <rect x="172" y="72" width="56" height="18" rx="9" fill="#bfe6d2"/><rect x="172" y="98" width="40" height="18" rx="9" fill="#9adcbb" /><rect x="188" y="124" width="40" height="18" rx="9" fill="#8fd0f0"/>
-          <circle cx="300" cy="95" r="30" fill="#eafff4"/><rect x="286" y="86" width="8" height="8" fill="#0d6b45"/><rect x="306" y="86" width="8" height="8" fill="#0d6b45"/><rect x="290" y="104" width="20" height="5" rx="2" fill="#0d6b45"/><line x1="300" y1="65" x2="300" y2="52" stroke="#eafff4" stroke-width="4"/><circle cx="300" cy="50" r="4" fill="#eafff4"/>
-        </svg>
-        <div class="ov"></div><span class="tag t-opp">Opportunity</span><div class="z"><div class="cat">Consumer demand</div><h3>Consumers already turn to AI for financial guidance</h3></div>
-      </div><div class="body"><div class="wim2"><b>Why it matters:</b> Survey - 48% used an AI chatbot for money guidance in the past year, ~78% acted on it. Validation of AI-assisted exploration (US data).</div><div class="foot"><span>Barron&apos;s &middot; Oct 16</span><span class="save">Save &rsaquo;</span></div></div></div>
-
-      <!-- Housing market -->
-      <div class="card"><div class="cv">
-        <svg class="thumb" viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-          <defs><linearGradient id="hz" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a4f16"/><stop offset="1" stop-color="#4a2f0b"/></linearGradient></defs>
-          <rect width="400" height="240" fill="url(#hz)"/>
-          <rect x="70" y="120" width="130" height="90" fill="#f0e2cf"/><polygon points="60,120 135,66 210,120" fill="#d8c3a2"/><rect x="110" y="150" width="34" height="60" fill="#8a5a1a"/><rect x="156" y="140" width="28" height="26" fill="#9fc4e6"/>
-          <polyline points="230,90 265,120 300,105 340,160" fill="none" stroke="#ff7b6b" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><polygon points="340,160 322,150 338,138" fill="#ff7b6b"/>
-        </svg>
-        <div class="ov"></div><div class="z"><div class="cat">Housing market &middot; Canada</div><h3>Canadian housing weakened again in September</h3></div>
-      </div><div class="body"><div class="wim2"><b>Why it matters:</b> CREA: sales -7.7% y/y, HPI -3.4% y/y. Reason to help consumers model scenarios - but lower volumes pressure broker budgets.</div><div class="foot"><span>Reuters / CREA &middot; Oct 16</span><span class="save">Save &rsaquo;</span></div></div></div>
-
-      <!-- FINTRAC -->
-      <div class="card"><div class="cv">
-        <svg class="thumb" viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-          <defs><linearGradient id="ft" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a2a7a"/><stop offset="1" stop-color="#5b3bc0"/></linearGradient></defs>
-          <rect width="400" height="240" fill="url(#ft)"/>
-          <rect x="150" y="60" width="100" height="140" rx="6" fill="#efe9ff"/><g fill="#8a6fd6"><rect x="166" y="82" width="68" height="9"/><rect x="166" y="100" width="68" height="9"/><rect x="166" y="118" width="48" height="9"/></g>
-          <circle cx="238" cy="150" r="34" fill="#5b3bc0" stroke="#efe9ff" stroke-width="5"/><path d="M224 150 l10 10 l20 -22" stroke="#efe9ff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <div class="ov"></div><span class="tag t-reg">Regulatory</span><div class="z"><div class="cat">Payments / FINTRAC</div><h3>FINTRAC updates PSP registration guidance</h3></div>
-      </div><div class="body"><div class="wim2"><b>Why it matters:</b> The exact evidence-and-suitability perimeter 4orm builds to - use it in the regulator note and the deck.</div><div class="foot"><span>fintrac-canafe &middot; Oct 16</span><span class="save">Save &rsaquo;</span></div></div></div>
-
-      <!-- Competitor Aveni -->
-      <div class="card"><div class="cv">
-        <svg class="thumb" viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-          <rect width="400" height="240" fill="#143a33"/><rect width="400" height="240" fill="#1d5a4a" opacity=".5"/>
-          <polyline points="40,190 110,150 170,165 240,110 320,70" fill="none" stroke="#5be3b0" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><polygon points="320,70 300,74 312,90" fill="#5be3b0"/>
-          <g fill="#bdeedd"><circle cx="110" cy="150" r="6"/><circle cx="170" cy="165" r="6"/><circle cx="240" cy="110" r="6"/></g>
-          <text x="40" y="60" font-size="34" fill="#eafff4" font-family="Arial" font-weight="bold">AI</text>
-        </svg>
-        <div class="ov"></div><span class="tag t-threat">Threat</span><div class="z"><div class="cat">Competitors</div><h3>Aveni expands AI compliance for advice</h3></div>
-      </div><div class="body"><div class="wim2"><b>Why it matters:</b> A UK player moving on the AI-advice/evidence story - watch positioning; their audit-trail angle overlaps our wedge.</div><div class="foot"><span>Finextra &middot; Oct 14</span><span class="save">Save &rsaquo;</span></div></div></div>
-    </div>
+  <div class="grid">
+    <a class="card" href="https://www.canadianmortgagetrends.com/2026/10/osfi-warns-ai-could-amplify-cyber-and-technology-risks-for-lenders/" target="_blank" rel="noopener">
+      <div class="ph"><img src="https://www.canadianmortgagetrends.com/wp-content/uploads/2025/10/Peter-Routledge_med.jpg" alt="OSFI Superintendent Peter Routledge"><span class="chipc">AI &amp; governance</span><span class="imp t-reg">Regulatory</span></div>
+      <div class="bd"><h3>OSFI warns AI could amplify cyber and technology risks for lenders</h3>
+        <div class="w"><b>Why it matters:</b> OSFI says governance and testing must keep pace with AI adoption - boards stay accountable. Supports the auditable-AI pitch.</div>
+        <div class="ft"><span>CMT &middot; Oct 8</span><span class="save">Save &rsaquo;</span></div></div>
+    </a>
+    <a class="card" href="https://www.canadianmortgagetrends.com/2026/10/ai-is-making-mortgage-fraud-harder-to-spot-equifax-warns/" target="_blank" rel="noopener">
+      <div class="ph"><img src="https://www.canadianmortgagetrends.com/wp-content/uploads/2026/10/Mortgage-fraud2_sm.jpg" alt="Mortgage fraud"><span class="chipc">Fraud</span><span class="imp t-opp">Opportunity</span></div>
+      <div class="bd"><h3>AI is making mortgage fraud harder to spot, Equifax warns</h3>
+        <div class="w"><b>Why it matters:</b> AI-forged income letters are slipping past underwriting, and Equifax says brokers should flag suspect files earlier. A design-partner talking point.</div>
+        <div class="ft"><span>CMT &middot; Oct 13</span><span class="save">Save &rsaquo;</span></div></div>
+    </a>
+    <div class="card sk"><div class="ph"></div><div class="bd"><div class="l" style="width:90%"></div><div class="l" style="width:70%"></div><div class="l" style="width:40%;margin-top:auto"></div></div></div>
+    <div class="card sk"><div class="ph"></div><div class="bd"><div class="l" style="width:85%"></div><div class="l" style="width:60%"></div><div class="l" style="width:40%;margin-top:auto"></div></div></div>
   </div>
+  <div class="note">Shimmer tiles = more stories from the sweep still loading their photos. Every card opens the article in a new tab.</div>
+</div>
 
-  <div class="rail">
-    <div class="panel"><h4><span><span class="badge">4</span>Your briefing</span><span class="mini">6 this month</span></h4>
-      <div class="brief"><span class="n">1</span><span>B.C. Mortgage Services Act in force - open B.C. brokerage conversations (Priority 1).</span></div>
-      <div class="brief"><span class="n">2</span><span>OSFI AI risk outlook - lean into governance + evidence.</span></div>
-      <div class="brief"><span class="n">3</span><span>Equifax fraud warning - push borrower understanding + verification.</span></div>
-      <div class="brief"><span class="n">4</span><span>Consumer AI-adoption survey - demand validation for the deck.</span></div>
-    </div>
-    <div class="panel"><h4><span>Competitor watch</span><span class="mini">Drata / Vanta / Aveni</span></h4>
-      <div class="cw"><span class="d" style="background:#9aa3b5"></span>Vanta<span class="st">quiet</span></div>
-      <div class="cw"><span class="d" style="background:#9aa3b5"></span>Drata<span class="st">quiet</span></div>
-      <div class="cw"><span class="d" style="background:#e08b1e"></span>Aveni (UK)<span class="st">AI advice</span></div>
-      <div class="cw"><span class="d" style="background:#9aa3b5"></span>Secureframe<span class="st">quiet</span></div>
-    </div>
-    <div class="panel"><h4>Trending for 4orm</h4><div class="trend"><span>RPAA</span><span>suitability</span><span>broker conduct</span><span>AML</span><span>non-dilutive</span><span>safeguarding</span><span>AI governance</span><span>B.C. brokers</span></div></div>
-    <div class="panel"><h4>What this means - priority</h4>
-      <div class="cw"><span class="rel" style="background:#fde6e2;color:#b0242e">1</span>B.C. brokerage outreach<span class="st">Critical</span></div>
-      <div class="cw"><span class="rel">2</span>OSFI governance angle<span class="st">High</span></div>
-      <div class="cw"><span class="rel">3</span>Fraud / verification<span class="st">High</span></div>
-      <div class="cw"><span class="rel">4</span>Consumer demand proof<span class="st">High</span></div>
-    </div>
+<div class="rail">
+  <div class="panel"><h4>Your briefing <span class="mini">3 this week</span></h4>
+    <div class="brief"><span class="n">1</span>FINTRAC fines four credit unions $816,750 for missed client reviews</div>
+    <div class="brief"><span class="n">2</span>OSFI: AI governance and testing must keep pace with adoption</div>
+    <div class="brief"><span class="n">3</span>Equifax: AI-forged documents are making mortgage fraud harder to spot</div>
+  </div>
+  <div class="panel"><h4>Competitor watch <span class="mini">6 tracked</span></h4>
+    <div class="cw"><span class="d"></span>Vanta<span class="st">quiet</span></div>
+    <div class="cw"><span class="d"></span>Drata<span class="st">quiet</span></div>
+    <div class="cw"><span class="d"></span>Secureframe<span class="st">quiet</span></div>
+    <div class="cw"><span class="d"></span>Aveni<span class="st">quiet</span></div>
+    <div class="cw"><span class="d"></span>Thoropass<span class="st">quiet</span></div>
+    <div class="cw"><span class="d"></span>ComplyAdvantage<span class="st">quiet</span></div>
+  </div>
+  <div class="panel"><h4>Trending for 4orm</h4>
+    <div class="trend"><span>FINTRAC</span><span>AI governance</span><span>mortgage fraud</span><span>OSFI</span><span>RPAA</span><span>suitability</span></div>
+  </div>
+  <div class="panel"><h4>What this means - priority</h4>
+    <div class="pri2"><em class="t-reg">This week</em>Put the FINTRAC fines in the "why now" slide and the investor newsletter.</div>
+    <div class="pri2"><em class="t-opp">Next</em>Send the Equifax piece to Century 21 / Remax desks as a fraud-flag opener.</div>
   </div>
 </div>
-<div class="note">Thumbnails here are illustrated stand-ins so they render offline. In the live build each card shows the article's REAL photo (og:image); this illustrated style is only the fallback when a story has no photo.</div>
+</div>
 </body></html>

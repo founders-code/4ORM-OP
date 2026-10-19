@@ -73,6 +73,48 @@ body{margin:0;background:var(--bg);color:var(--txt);padding:24px 28px 40px}
 .bar{height:8px;border-radius:6px;background:#262a32;margin:12px 0 9px;overflow:hidden}.bar i{display:block;height:100%;border-radius:6px}
 .beat .f{font-size:10.5px;color:var(--mut);font-weight:600;display:flex;justify-content:space-between;gap:6px}.rdy{color:var(--green)}
 
+
+/* VOICE LOG */
+.vlog{display:grid;grid-template-columns:190px minmax(0,1.4fr) minmax(300px,1fr);gap:12px}
+@media(max-width:1000px){.vlog{grid-template-columns:170px minmax(0,1fr)}.vlog>.vcard:last-child{grid-column:1/-1}}
+.vcard{background:var(--panel);border:1px solid var(--edge);border-radius:16px;padding:16px}
+.vrec{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center}
+.recbtn{width:78px;height:78px;border-radius:50%;border:none;background:var(--red);cursor:pointer;display:grid;place-items:center;box-shadow:0 0 0 6px rgba(255,84,112,.14);transition:transform .15s}
+.recbtn:hover{transform:scale(1.05)}
+.recbtn i{width:24px;height:24px;border-radius:50%;background:#fff;display:block;transition:all .2s}
+.recbtn.on i{border-radius:5px;width:22px;height:22px}
+.recbtn.on{animation:ring 1.4s infinite}
+@keyframes ring{0%{box-shadow:0 0 0 0 rgba(255,84,112,.45)}100%{box-shadow:0 0 0 18px rgba(255,84,112,0)}}
+.vtime{font-size:22px;font-weight:850;font-variant-numeric:tabular-nums}
+.vhint{font-size:11px;color:var(--mut);font-weight:600;line-height:1.4}
+.wave{display:flex;align-items:center;gap:3px;height:28px}.wave b{width:3px;border-radius:2px;background:#3a3f4a;height:6px;transition:height .1s}
+.wave.on b{background:var(--red)}
+.vh{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.vh .t{font-size:13.5px;font-weight:750}.vh .s{font-size:11px;color:var(--mut);font-weight:600}
+.vtx{min-height:118px;font-size:13.5px;line-height:1.6;color:#d9dee8;outline:none;border-radius:10px;padding:10px 12px;background:#14171c;border:1px solid #23272f}
+.vtx:empty::before{content:"Hit record and say what you got done. \201CPosted today\2019s clip, reached out to three brokers, and I owe Kevin the GTM deck.\201D";color:#5c6372}
+.vtx .live{color:var(--mut)}
+.dest{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center}
+.dest span{font-size:11px;color:var(--mut);font-weight:700;margin-right:2px}
+.dest em{font-style:normal;font-size:11px;font-weight:700;border:1px solid #343a46;border-radius:999px;padding:5px 10px;cursor:pointer;color:#cfd5e1}
+.dest em.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.heard{display:flex;flex-direction:column;gap:7px;min-height:118px}
+.hi{display:flex;align-items:center;gap:9px;background:#14171c;border:1px solid #23272f;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:650}
+.hi .sw{width:6px;height:22px;border-radius:3px;flex:0 0 auto}
+.hi .k{margin-left:auto;font-size:10px;font-weight:800;padding:3px 7px;border-radius:6px;background:#262b34;color:#cfd5e1;white-space:nowrap}
+.hi .k.g{background:rgba(47,224,139,.14);color:var(--green)}.hi .k.b{background:rgba(77,124,255,.16);color:#9db6ff}.hi .k.a{background:rgba(255,179,64,.14);color:var(--amber)}
+.hi input{accent-color:var(--green)}
+.hempty{font-size:12px;color:#5c6372;font-weight:600;padding:8px 2px}
+.vact{display:flex;gap:8px;margin-top:12px}
+.vact button{flex:1;border-radius:10px;padding:10px;font-weight:800;font-size:12.5px;cursor:pointer;border:1px solid #343a46;background:#262b34;color:#e6eaf2}
+.vact .save{background:var(--green);border-color:var(--green);color:#06210f}
+.vact button:disabled{opacity:.4;cursor:default}
+.vhist{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.vrow{display:flex;gap:12px;align-items:center;font-size:12px;color:#cfd5e1;padding:8px 12px;background:var(--panel);border:1px solid var(--edge);border-radius:10px}
+.vrow .tm{color:var(--mut);font-weight:700;width:62px;font-variant-numeric:tabular-nums}
+.vrow .pl{width:22px;height:22px;border-radius:50%;background:#262b34;display:grid;place-items:center;font-size:8px;color:#cfd5e1;cursor:pointer}
+.vrow .c{margin-left:auto;font-size:10.5px;color:var(--mut);font-weight:700}
+
 /* MONTH STACK */
 .ov{position:fixed;inset:0;background:rgba(5,7,10,.78);backdrop-filter:blur(4px);display:none;justify-content:center;padding:30px 20px;z-index:50;overflow:auto}
 .ov.open{display:flex}
@@ -129,6 +171,31 @@ body{margin:0;background:var(--bg);color:var(--txt);padding:24px 28px 40px}
   <div class="beat"><div class="top"><span class="n">Research paper</span><span class="d">15<small>d</small></span></div><div class="bar"><i style="width:52%;background:var(--violet)"></i></div><div class="f"><span>monthly</span><span>outline</span></div></div>
   <div class="beat"><div class="top"><span class="n">Investor update</span><span class="d">15<small>d</small></span></div><div class="bar"><i style="width:52%;background:var(--red)"></i></div><div class="f"><span>monthly</span><span class="rdy">metrics ready</span></div></div>
   <div class="beat"><div class="top"><span class="n">Investor letter</span><span class="d">76<small>d</small></span></div><div class="bar"><i style="width:18%;background:var(--amber)"></i></div><div class="f"><span>quarterly</span><span>-</span></div></div>
+</div>
+
+
+<div class="lh">VOICE LOG &middot; SAY WHAT YOU DID</div>
+<div class="vlog">
+  <div class="vcard vrec">
+    <button class="recbtn" id="recBtn" title="Record"><i></i></button>
+    <div class="vtime" id="vTime">0:00</div>
+    <div class="wave" id="wave"></div>
+    <div class="vhint" id="vHint">Tap to record.<br>Tap again to stop.</div>
+  </div>
+  <div class="vcard">
+    <div class="vh"><span class="t">Transcript</span><span class="s" id="vState">ready</span></div>
+    <div class="vtx" id="vTx" contenteditable="true"></div>
+    <div class="dest"><span>Save to</span><em class="on">Today&rsquo;s log</em><em>Completed</em><em>A Space&hellip;</em><em>Notes</em><em>Drive doc</em></div>
+  </div>
+  <div class="vcard">
+    <div class="vh"><span class="t">4orm Intelligence heard</span><span class="s" id="vCount">0 items</span></div>
+    <div class="heard" id="heard"><div class="hempty">Plays it matches will light off here, and new to-dos land in Execution.</div></div>
+    <div class="vact"><button id="vDiscard" disabled>Discard</button><button class="save" id="vSave" disabled>Save to today</button></div>
+  </div>
+</div>
+<div class="vhist" id="vHist">
+  <div class="vrow"><span class="pl">&#9654;</span><span class="tm">9:12 am</span><span>&ldquo;Video done, 28 minutes on RPAA safeguarding. Inbox at zero.&rdquo;</span><span class="c">2 plays &middot; 0 tasks</span></div>
+  <div class="vrow"><span class="pl">&#9654;</span><span class="tm">Thu 4:40 pm</span><span>&ldquo;Speer sync moved to Monday. Need to send Bruce the pilot outline.&rdquo;</span><span class="c">1 task &middot; 1 note</span></div>
 </div>
 
 <!-- popover + toast -->
@@ -251,5 +318,38 @@ document.getElementById('months').innerHTML=H;
 document.getElementById('openCal').onclick=()=>document.getElementById('ov').classList.add('open');
 document.getElementById('closeCal').onclick=()=>document.getElementById('ov').classList.remove('open');
 document.getElementById('ov').onclick=e=>{if(e.target.id=='ov')e.target.classList.remove('open')};
+
+// ---------- VOICE LOG (demo) ----------
+(function(){
+ const btn=document.getElementById('recBtn'),tm=document.getElementById('vTime'),wave=document.getElementById('wave'),tx=document.getElementById('vTx'),st=document.getElementById('vState'),heard=document.getElementById('heard'),cnt=document.getElementById('vCount'),sv=document.getElementById('vSave'),ds=document.getElementById('vDiscard'),hint=document.getElementById('vHint');
+ for(let i=0;i<26;i++)wave.appendChild(document.createElement('b'));
+ const SAY="Posted today's clip on LinkedIn. Reached out to three brokers from the Century 21 list. Commented on four posts. I owe Kevin the GTM deck by Tuesday. Note for the newsletter: the RPAA review deadline angle is landing well.";
+ let on=false,t0=0,iv=null,wv=null,ti=null;
+ document.querySelectorAll('.dest em').forEach(e=>e.onclick=()=>{document.querySelectorAll('.dest em').forEach(x=>x.classList.remove('on'));e.classList.add('on')});
+ function start(){on=true;btn.classList.add('on');wave.classList.add('on');hint.innerHTML='Listening&hellip;<br>Tap to stop.';st.textContent='recording - transcribing live';tx.innerHTML='';heard.innerHTML='<div class="hempty">Listening&hellip;</div>';cnt.textContent='0 items';sv.disabled=ds.disabled=true;
+  t0=Date.now();iv=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);tm.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0')},250);
+  wv=setInterval(()=>wave.querySelectorAll('b').forEach(b=>b.style.height=(4+Math.random()*24)+'px'),110);
+  const words=SAY.split(' ');let i=0;ti=setInterval(()=>{if(i>=words.length){stop();return}tx.textContent+=(i?' ':'')+words[i++]},140);}
+ function stop(){on=false;clearInterval(iv);clearInterval(wv);clearInterval(ti);btn.classList.remove('on');wave.classList.remove('on');wave.querySelectorAll('b').forEach(b=>b.style.height='6px');hint.innerHTML='Tap to record again.';st.textContent='done - edit before saving';tx.textContent=SAY;parse();}
+ function parse(){
+  const items=[
+   {c:'var(--pink)',t:'Post today\u2019s clip',k:'play done',cls:'g',r:2},
+   {c:'var(--green)',t:'Reach out 5',k:'3 / 5',cls:'g',r:4,v:'3/5'},
+   {c:'var(--sky)',t:'Engage 10 min',k:'4 / 5',cls:'g',r:3,v:'4/5'},
+   {c:'var(--blue)',t:'Send Kevin the GTM deck',k:'+ Execution &middot; Tue',cls:'b'},
+   {c:'var(--amber)',t:'Newsletter: RPAA deadline angle',k:'note &rarr; Newsletter',cls:'a'}];
+  heard.innerHTML=items.map((x,i)=>`<label class="hi"><input type="checkbox" checked data-i="${i}"><span class="sw" style="background:${x.c}"></span>${x.t}<span class="k ${x.cls}">${x.k}</span></label>`).join('');
+  heard._items=items;cnt.textContent=items.length+' items';sv.disabled=ds.disabled=false;}
+ btn.onclick=()=>on?stop():start();
+ ds.onclick=()=>{tx.innerHTML='';heard.innerHTML='<div class="hempty">Discarded.</div>';cnt.textContent='0 items';sv.disabled=ds.disabled=true;tm.textContent='0:00';st.textContent='ready'};
+ sv.onclick=()=>{const it=heard._items||[];let plays=0,tasks=0,notes=0;
+  heard.querySelectorAll('input').forEach(cb=>{if(!cb.checked)return;const x=it[+cb.dataset.i];
+   if(x.r!=null&&rows[x.r]){if(x.v&&x.v.split('/')[0]<x.v.split('/')[1]){rows[x.r].lab[4]=x.v}else{rows[x.r].d[4]='done'}plays++}
+   else if(x.cls=='b')tasks++;else notes++;});
+  if(typeof render=='function')render();if(typeof count=='function')count();
+  const now=new Date(),h=now.getHours(),m=String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('vHist').insertAdjacentHTML('afterbegin',`<div class="vrow"><span class="pl">&#9654;</span><span class="tm">${(h%12||12)+':'+m} ${h<12?'am':'pm'}</span><span>&ldquo;${tx.textContent.slice(0,90)}&hellip;&rdquo;</span><span class="c">${plays} plays &middot; ${tasks} task &middot; ${notes} note</span></div>`);
+  toast('Saved to today\u2019s log - '+plays+' plays updated');ds.onclick();};
+})();
 </script>
 </body></html>

@@ -1,0 +1,128 @@
+[
+ {
+  "file": "redesign/01-dashboard.html",
+  "page": "Dashboard",
+  "route": "/control-room",
+  "bytes": 51255,
+  "sha256": "6518f67329934bf0"
+ },
+ {
+  "file": "redesign/02-war-room.html",
+  "page": "War Room",
+  "route": "/war-room",
+  "bytes": 50562,
+  "sha256": "f18b36cc2fca3906"
+ },
+ {
+  "file": "redesign/03-notes.html",
+  "page": "Notes",
+  "route": "/notes",
+  "bytes": 41805,
+  "sha256": "0a8ae863e5d4b859"
+ },
+ {
+  "file": "redesign/04-pipeline.html",
+  "page": "Pipeline",
+  "route": "/pipeline",
+  "bytes": 41965,
+  "sha256": "d52170e9a2cf6436"
+ },
+ {
+  "file": "redesign/05-spaces.html",
+  "page": "Spaces",
+  "route": "/spaces",
+  "bytes": 38056,
+  "sha256": "91da0d0e4e5efc54"
+ },
+ {
+  "file": "redesign/06-documents.html",
+  "page": "Documents",
+  "route": "/documents",
+  "bytes": 40668,
+  "sha256": "b211dc1b7178bd22"
+ },
+ {
+  "file": "redesign/07-links.html",
+  "page": "Links",
+  "route": "/links",
+  "bytes": 38028,
+  "sha256": "c83307c2ecb73065"
+ },
+ {
+  "file": "redesign/08-email.html",
+  "page": "Email",
+  "route": "/email",
+  "bytes": 50201,
+  "sha256": "e7e8df5b9388044c"
+ },
+ {
+  "file": "redesign/08b-email-compose.html",
+  "page": "Email compose panel",
+  "route": "/email (Compose open)",
+  "bytes": 50268,
+  "sha256": "088843ced1425517"
+ },
+ {
+  "file": "redesign/09-playbook.html",
+  "page": "Playbook",
+  "route": "/playbook",
+  "bytes": 75181,
+  "sha256": "057f7e8e4558b943"
+ },
+ {
+  "file": "redesign/10-calendar.html",
+  "page": "Calendar",
+  "route": "/calendar",
+  "bytes": 90628,
+  "sha256": "c960215f6a131634"
+ },
+ {
+  "file": "redesign/11-zoom.html",
+  "page": "Zoom",
+  "route": "/zoom",
+  "bytes": 50454,
+  "sha256": "154c9f7cfa119371"
+ },
+ {
+  "file": "redesign/12-completed.html",
+  "page": "Completed",
+  "route": "/completed",
+  "bytes": 38716,
+  "sha256": "f1d69f4c8b58afc2"
+ },
+ {
+  "file": "redesign/13-news.html",
+  "page": "News",
+  "route": "/news",
+  "bytes": 46011,
+  "sha256": "bf1509c6d62e2ad8"
+ },
+ {
+  "file": "redesign/14-drive.html",
+  "page": "Drive",
+  "route": "/drive",
+  "bytes": 38943,
+  "sha256": "ce597390eeb451e5"
+ },
+ {
+  "file": "redesign/15-contacts.html",
+  "page": "Contacts",
+  "route": "/contacts",
+  "bytes": 39296,
+  "sha256": "1a2549675fcec84d"
+ },
+ {
+  "file": "redesign/16-financials.html",
+  "page": "Financials",
+  "route": "/financials",
+  "bytes": 36805,
+  "sha256": "562a86a18601eb2d"
+ },
+ {
+  "file": "redesign/17-integrations.html",
+  "page": "Integrations",
+  "route": "/integrations",
+  "bytes": 36154,
+  "sha256": "720ba2d1b196eb7f"
+ }
+]
