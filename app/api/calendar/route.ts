@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { claimBudget } from '@/lib/db';
 import { withCreds } from '@/lib/creds';
-import { createEvent, moveEvent } from '@/lib/google';
+import { createEvent, deleteCalendarEvent, moveEvent, patchCalendarEvent } from '@/lib/google';
 import { fail } from '@/lib/log';
 import { openBoard } from '@/lib/session';
 import { calendarPayload, extendCalendar } from '@/lib/sync';
@@ -52,11 +52,14 @@ export async function POST(req: Request) {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!session.sql) return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });
-    const body = await req.json().catch(() => null);
+    const body = await req.json().catch(() => null) as Record<string, unknown> | null;
     const id = String(body?.id || '');
     const start = Number(body?.start);
-    const dur = Math.max(15, Math.min(Number(body?.dur) || 30, 180));
+    const dur = Math.max(15, Math.min(Number(body?.dur) || 30, 24 * 60));
     const title = String(body?.title || '').trim().slice(0, 180);
+    const attendees = Array.isArray(body?.attendees)
+      ? (body?.attendees as unknown[]).map((x) => String(x || '').trim()).filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)).slice(0, 8)
+      : [];
     if (!Number.isFinite(start)) {
       return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     }
@@ -67,7 +70,10 @@ export async function POST(req: Request) {
     if (!id && title) {
       const created = await withCreds(creds, () => createEvent(start, dur, title));
       if (!created) return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });
-      return NextResponse.json({ id: created, start, dur, title });
+      if (attendees.length) {
+        await withCreds(creds, () => patchCalendarEvent(created, { attendees: attendees.map((email) => ({ email })) }));
+      }
+      return NextResponse.json({ id: created, start, dur, title, attendees });
     }
     if (!/^[\w-]+$/.test(id)) {
       return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
@@ -84,6 +90,75 @@ export async function POST(req: Request) {
       ON CONFLICT (owner_id) DO UPDATE SET events = EXCLUDED.events, fetched_at = now()
     `;
     return NextResponse.json({ id, start });
+  } catch (err) {
+    fail('calendar_failed', err);
+    return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const session = await openBoard();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session.sql) return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });
+    const body = await req.json().catch(() => null) as Record<string, unknown> | null;
+    const id = String(body?.id || '');
+    if (!/^[\w-]+$/.test(id)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    if (!(await claimBudget(session.sql, session.userId, 'google_calendar', 1))) {
+      return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });
+    }
+    const creds = await loadCredsFor(session.userId);
+    const start = Number(body?.start);
+    const dur = Math.max(15, Math.min(Number(body?.dur) || 30, 24 * 60));
+    const title = String(body?.title || '').trim().slice(0, 180);
+    const location = String(body?.location || '').slice(0, 500);
+    const description = String(body?.description || '').slice(0, 4000);
+    const attendees = Array.isArray(body?.attendees)
+      ? (body?.attendees as unknown[]).map((x) => String(x || '').trim()).filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)).slice(0, 8)
+      : [];
+    const fields: Record<string, unknown> = {};
+    if (Number.isFinite(start)) {
+      const begin = new Date(start);
+      const end = new Date(start + dur * 60 * 1000);
+      fields.start = { dateTime: begin.toISOString(), timeZone: 'America/Los_Angeles' };
+      fields.end = { dateTime: end.toISOString(), timeZone: 'America/Los_Angeles' };
+    }
+    if (title) fields.summary = title;
+    if (location) fields.location = location;
+    if (description) fields.description = description;
+    if (attendees.length) fields.attendees = attendees.map((email) => ({ email }));
+    const patched = await withCreds(creds, () => patchCalendarEvent(id, fields));
+    if (!patched) return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });
+    return NextResponse.json({
+      id,
+      start: Number.isFinite(start) ? start : undefined,
+      dur,
+      title,
+      attendees,
+      location,
+    });
+  } catch (err) {
+    fail('calendar_failed', err);
+    return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const session = await openBoard();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session.sql) return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });
+    const url = new URL(req.url);
+    const body = await req.json().catch(() => null) as Record<string, unknown> | null;
+    const id = String(body?.id || url.searchParams.get('id') || '');
+    if (!/^[\w-]+$/.test(id)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    if (!(await claimBudget(session.sql, session.userId, 'google_calendar', 1))) {
+      return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });
+    }
+    const creds = await loadCredsFor(session.userId);
+    const gone = await withCreds(creds, () => deleteCalendarEvent(id));
+    if (!gone) return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });
+    return NextResponse.json({ id, deleted: true });
   } catch (err) {
     fail('calendar_failed', err);
     return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });

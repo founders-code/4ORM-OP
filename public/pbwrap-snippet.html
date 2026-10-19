@@ -1,0 +1,74 @@
+<div class="pbwrap">
+
+
+<div class="head">
+  <div class="calbtn" id="openCal" title="Month view"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c9d3ea" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/><rect x="7" y="13" width="3" height="3" rx=".6" fill="#4d7cff" stroke="none"/><rect x="11" y="13" width="3" height="3" rx=".6" fill="#ff5470" stroke="none"/><rect x="15" y="13" width="3" height="3" rx=".6" fill="#2fe08b" stroke="none"/></svg></div>
+  <div class="iqbrand"><img src="/assets/mark-4orm-iq.png" alt="4orm"><b>IQ</b></div><h1>Playbook</h1>
+  <span class="wk">WEEK 43 &middot; OCT 19 - 25</span>
+  <button class="play" id="runBtn"><span class="tri">&#9654;</span><span id="runTxt">Run today's plays</span></button>
+  <div class="score"><div><div class="big" id="pct">0%</div><div class="s">week on beat &middot; day 1<br>best streak: 9 days</div></div></div>
+</div>
+
+<div class="seq">
+  <div class="ph" id="ph"></div>
+  <div class="grid" id="g"></div>
+  <div class="legend">
+    <span><i style="background:#ff5470"></i>bright = due today, click it</span>
+    <span><i style="background:#4d7cff;filter:saturate(.55) brightness(.62)"></i>dimmed = done / other days</span>
+    <span><i style="background:#26181c;border:1.5px solid #4a2530"></i>missed</span>
+    <span><i style="border:1.5px dashed #3a3f4a"></i>not scheduled</span>
+  </div>
+</div>
+
+<div class="lh">LONGER BEATS</div>
+<div class="beats">
+  <div class="beat goal"><div class="btop"><span class="n">4ormIQ &middot; 1,000 users</span><span class="d">7<small>d to launch</small></span></div><div class="bar"><i style="width:3%;background:var(--lime)"></i></div><div class="f"><span><b style="color:#fff">0</b> / 1,000 &middot; launch Oct 23</span><span style="color:var(--lime)">~143 / day</span></div></div>
+  <div class="beat"><div class="btop"><span class="n">Marketing drop</span><span class="d">4<small>d</small></span></div><div class="bar"><i style="width:72%;background:var(--green)"></i></div><div class="f"><span>every 14 days</span><span class="rdy">material ready</span></div></div>
+  <div class="beat"><div class="btop"><span class="n">Newsletter</span><span class="d">15<small>d</small></span></div><div class="bar"><i style="width:52%;background:var(--blue)"></i></div><div class="f"><span>monthly</span><span class="rdy">draft ready</span></div></div>
+  <div class="beat"><div class="btop"><span class="n">Research paper</span><span class="d">15<small>d</small></span></div><div class="bar"><i style="width:52%;background:var(--violet)"></i></div><div class="f"><span>monthly</span><span>outline</span></div></div>
+  <div class="beat"><div class="btop"><span class="n">Investor update</span><span class="d">15<small>d</small></span></div><div class="bar"><i style="width:52%;background:var(--red)"></i></div><div class="f"><span>monthly</span><span class="rdy">metrics ready</span></div></div>
+  <div class="beat"><div class="btop"><span class="n">Investor letter</span><span class="d">76<small>d</small></span></div><div class="bar"><i style="width:18%;background:var(--amber)"></i></div><div class="f"><span>quarterly</span><span>-</span></div></div>
+</div>
+
+
+<div class="lh">VOICE LOG &middot; SAY WHAT YOU DID</div>
+<div class="vlog">
+  <div class="vcard vrec">
+    <button class="recbtn" id="recBtn" title="Record"><i></i></button>
+    <div class="vtime" id="vTime">0:00</div>
+    <div class="wave" id="wave"></div>
+    <div class="vhint" id="vHint">Tap to record.<br>Tap again to stop.</div>
+  </div>
+  <div class="vcard">
+    <div class="vh"><span class="t">Transcript</span><span class="s" id="vState">ready</span></div>
+    <div class="vtx" id="vTx" contenteditable="true"></div>
+    <div class="dest"><span>Save to</span><em class="on">Today&rsquo;s log</em><em>Completed</em><em>A Space&hellip;</em><em>Notes</em><em>Drive doc</em></div>
+  </div>
+  <div class="vcard">
+    <div class="vh"><span class="t">4orm Intelligence heard</span><span class="s" id="vCount">0 items</span></div>
+    <div class="heard" id="heard"><div class="hempty">Plays it matches will light off here, and new to-dos land in Execution.</div></div>
+    <div class="vact"><button id="vDiscard" disabled>Discard</button><button class="save" id="vSave" disabled>Save to today</button></div>
+  </div>
+</div>
+<div class="vhist" id="vHist">
+  <div class="vrow"><span class="pl">&#9654;</span><span class="tm">9:12 am</span><span>&ldquo;Video done, 28 minutes on RPAA safeguarding. Inbox at zero.&rdquo;</span><span class="c">2 plays &middot; 0 tasks</span></div>
+  <div class="vrow"><span class="pl">&#9654;</span><span class="tm">Thu 4:40 pm</span><span>&ldquo;Speer sync moved to Monday. Need to send Bruce the pilot outline.&rdquo;</span><span class="c">1 task &middot; 1 note</span></div>
+</div>
+
+<!-- popover + toast -->
+<div class="pop" id="pop">
+  <div class="pt"><i id="popSw"></i><span id="popT">One move</span></div>
+  <div class="ps" id="popS">War Room &middot; due today</div>
+  <button class="gobtn" id="popGo">Go to War Room &rarr;</button>
+  <div class="row2"><button id="popDone">&#10003; Mark done</button><button id="popLater">Snooze</button></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- MONTH STACK -->
+<div class="ov" id="ov">
+  <div class="mwrap">
+    <div class="mtop"><h2>Your rhythm by month</h2><span class="stat"><b>81%</b> on beat in October &middot; <b>16</b>-day news streak &middot; <b>9</b> videos</span><span class="x" id="closeCal">&times;</span></div>
+    <div id="months"></div>
+  </div>
+</div>
+

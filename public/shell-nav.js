@@ -12,7 +12,7 @@
     ['Calendar', 'M4 6h16v14H4zM4 10h16M9 3v4M15 3v4', '', 'calendar', '/calendar'],
     ['Zoom', 'M3 7h12v10H3zM15 10l6-3v10l-6-3', '', 'znotes', '/zoom'],
     ['Notes', 'M5 3h14v18l-4-3H5z', '', 'notes', '/notes'],
-    ['Completed', 'M4 12l5 5L20 6', '', 'done', '/control-room?view=done'],
+    ['Completed', 'M4 12l5 5L20 6', '', 'done', '/completed'],
     ['Signals & data'],
     ['News', 'M4 5h13v14H6a2 2 0 0 1-2-2zM17 9h3v8a2 2 0 0 1-2 2M8 9h5M8 13h5', '', 'news', '/news'],
     ['Drive', 'M8 3h8l6 10-4 7H6l-4-7z', '', 'drive', '/control-room?view=drive'],

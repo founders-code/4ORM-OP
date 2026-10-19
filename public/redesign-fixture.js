@@ -387,6 +387,9 @@
           { name: 'Shortform', color: '#7a86a0', age: '4h', subject: 'Take this quiz', preview: 'What kind of reader are you? Find out in 2 minutes\u2026', tags: [['t-biz', 'Bulk']] }
         ] }
       ]
-    }
+    },
+    playbook: { weekLabel: 'WEEK 43 · OCT 19 - 25', dates: [19, 20, 21, 22, 23, 24, 25], todayIdx: 0, pct: '0%' },
+    zoom: { meta: '43 meetings · synced 2 min ago' },
+    completed: {}
   };
 })();

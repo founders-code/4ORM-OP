@@ -16,11 +16,14 @@
   var CSS = {
     room: '/port-css/dashboard.css', war: '/port-css/war-room.css', notes: '/port-css/notes.css',
     contacts: '/port-css/pipeline.css', work: '/port-css/spaces.css', docs: '/port-css/documents.css',
-    links: '/port-css/links.css', mail: '/port-css/email.css'
+    links: '/port-css/links.css', mail: '/port-css/email.css',
+    playbook: '/port-css/playbook.css', calendar: '/port-css/calendar.css', zoom: '/port-css/zoom.css',
+    completed: '/port-css/completed.css'
   };
   var HOSTS = {
     opsDash: 'room', warDesk: 'war', notesDesk: 'notes',
-    pipeDesk: 'contacts', spacesDesk: 'work', docsDesk: 'docs', linksDesk: 'links', mailDesk: 'mail'
+    pipeDesk: 'contacts', spacesDesk: 'work', docsDesk: 'docs', linksDesk: 'links', mailDesk: 'mail',
+    playDesk: 'playbook', calDesk: 'calendar', zoomDesk: 'zoom', doneDesk: 'completed'
   };
   var cssText = {};
   var cssWait = [];
@@ -32,8 +35,21 @@
     try { return /(?:^|[?&])fixture=mockup(?:&|$)/.test(String(location.search || '')); } catch (e) { return false; }
   }
 
-  window.ShadowPage = function (hostId, pageKey) {
+  function findHost(hostId) {
     var host = document.getElementById(hostId);
+    if (host) return host;
+    var views = ['v-playbook', 'v-calendar', 'v-znotes', 'v-done', 'v-news'];
+    for (var i = 0; i < views.length; i++) {
+      var v = document.getElementById(views[i]);
+      if (v && v.shadowRoot && v.shadowRoot.getElementById) {
+        host = v.shadowRoot.getElementById(hostId);
+        if (host) return host;
+      }
+    }
+    return null;
+  }
+  window.ShadowPage = function (hostId, pageKey) {
+    var host = findHost(hostId);
     if (!host) return null;
     if (host.shadowRoot) return host.shadowRoot;
     var root = host.attachShadow({ mode: 'open' });
@@ -79,7 +95,7 @@
   });
 
   function markReady(hostId) {
-    var host = document.getElementById(hostId);
+    var host = findHost(hostId);
     if (host) host.setAttribute('data-port-ready', '1');
   }
   function esc(s) {

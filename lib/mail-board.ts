@@ -231,9 +231,12 @@ export function tagsFor(mail: BoardMail, column: string, contacts: ContactHit[])
   const tags: string[] = [];
   if (needsNow(mail, column)) tags.push('Needs reply');
   const hit = contacts.find((c) => c.email && c.email === mail.email);
-  if (hit && /vc/i.test(hit.category)) tags.push('VC');
-  else if (hit && /angel|friend/i.test(hit.category)) tags.push('Investor');
-  else if (hit && hit.category) tags.push(hit.category);
+  if (hit && hit.category) {
+    if (/friend/i.test(hit.category)) tags.push('Friends & family');
+    else if (/angel|invest/i.test(hit.category) && !/vc/i.test(hit.category)) tags.push('Investor');
+    else if (/vc/i.test(hit.category)) tags.push('VC');
+    else tags.push(hit.category);
+  }
   if (mail.outbound) tags.push('Sent');
   return tags.slice(0, 3);
 }
