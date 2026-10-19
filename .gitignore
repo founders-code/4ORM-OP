@@ -6,3 +6,12 @@ lib/generated-secrets.mjs
 visual-diff
 test-results
 playwright-report
+playwright/.auth
+.DS_Store
+*.zip
+tsconfig.tsbuildinfo
+/4orm-landing/
+/4orm-ops-package/
+/CURSOR-PROMPT.md
+/index.html
+/public/zz-news-test.json

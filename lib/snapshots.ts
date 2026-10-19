@@ -270,25 +270,43 @@ export async function saveSnapshot(sql: Sql, ownerId: string, day = pacificDay()
   return built;
 }
 
+function sqlDay(raw: unknown) {
+  const iso = String(raw || '').match(/(\d{4}-\d{2}-\d{2})/);
+  if (iso) return iso[1];
+  if (raw instanceof Date && Number.isFinite(raw.getTime())) {
+    const y = raw.getUTCFullYear();
+    const m = String(raw.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(raw.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  const dt = new Date(String(raw || ''));
+  if (!Number.isFinite(dt.getTime())) return '';
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
 export async function listSnapshots(sql: Sql, ownerId: string) {
   const rows = await sql`
-    SELECT snap_date, summary, payload, created_at
+    SELECT snap_date::text AS snap_date, summary, payload, created_at
     FROM daily_snapshots
     WHERE owner_id = ${ownerId}
     ORDER BY snap_date DESC
     LIMIT 120
   `;
-  return (rows as Array<{ snap_date?: string; summary?: string; payload?: { counts?: Record<string, number> }; created_at?: string }>).map((row) => ({
-    date: String(row.snap_date || '').slice(0, 10),
-    summary: String(row.summary || ''),
-    counts: row.payload?.counts || {},
-    createdAt: row.created_at ? new Date(String(row.created_at)).toISOString() : '',
-  }));
+  return (rows as Array<{ snap_date?: string; summary?: string; payload?: { headline?: string; counts?: Record<string, number> }; created_at?: string }>).map((row) => {
+    const payload = row.payload && typeof row.payload === 'object' ? row.payload : {};
+    return {
+      date: sqlDay(row.snap_date),
+      summary: String(row.summary || ''),
+      counts: payload.counts || {},
+      payload,
+      createdAt: row.created_at ? new Date(String(row.created_at)).toISOString() : '',
+    };
+  });
 }
 
 export async function getSnapshot(sql: Sql, ownerId: string, day: string) {
   const rows = await sql`
-    SELECT snap_date, summary, payload, created_at
+    SELECT snap_date::text AS snap_date, summary, payload, created_at
     FROM daily_snapshots
     WHERE owner_id = ${ownerId} AND snap_date = ${day}::date
     LIMIT 1
@@ -296,7 +314,7 @@ export async function getSnapshot(sql: Sql, ownerId: string, day: string) {
   const row = rows[0] as { snap_date?: string; summary?: string; payload?: unknown; created_at?: string } | undefined;
   if (!row) return null;
   return {
-    date: String(row.snap_date || '').slice(0, 10),
+    date: sqlDay(row.snap_date) || day,
     summary: String(row.summary || ''),
     payload: row.payload || {},
     createdAt: row.created_at ? new Date(String(row.created_at)).toISOString() : '',

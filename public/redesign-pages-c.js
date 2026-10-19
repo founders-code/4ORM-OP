@@ -89,38 +89,104 @@
     var map = { '#2e6bf2': '--blue', '#e0364f': '--red', '#ff6fb5': '--pink', '#47b8ff': '--sky', '#12a36a': '--green', '#f5c542': '--gold', '#6b4fd8': '--violet', '#ff8a3d': '--orange', '#b6f35a': '--lime', '#2fd6c6': '--teal', '#8a93a8': '--slate', '#c98408': '--amber' };
     return map[s.toLowerCase()] || '--blue';
   }
+  function padClass(st) {
+    var s = String(st || '');
+    if (s === 'done' || s === 'before') return D;
+    if (s === 'miss' || s === 'missed') return M;
+    if (s === 'due') return U;
+    if (s === 'next' || s === 'snoozed' || s === 'scheduled') return N;
+    return O;
+  }
+  function padLabel(r, pad, i, todayIdx) {
+    var s = padClass(pad && pad.state);
+    if (s === M) return '×';
+    if (s === D) return i === todayIdx ? '✓' : ((pad && pad.value) || '');
+    if (s === U) {
+      if (r.target === '5' && /reach/i.test(r.n)) return ((pad && pad.value) || '2') + '/5';
+      if (/engage/i.test(r.n)) return (pad && pad.value) || '0/5';
+      if (/inbox/i.test(r.n)) return (pad && pad.value) || '5';
+      if (/4ormiq/i.test(r.n)) return (pad && pad.value) || '7d';
+      if (/clear/i.test(r.n)) return (pad && pad.value) || '3';
+      return (pad && pad.value) || 'GO';
+    }
+    if (s === N) return r.target === '6pm' ? '6pm' : ((pad && pad.value) || '');
+    return '';
+  }
+  function weekdayIso(day) {
+    var m = String(day).match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) return '';
+    return ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]))).getUTCDay()];
+  }
+  function defaultSched(r) {
+    var sched = asList(r.schedule).map(String);
+    if (sched.length) return sched;
+    var sub = String(r.sub || '').toLowerCase();
+    var days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    var hit = days.filter(function (k) { return sub.indexOf(k) >= 0; });
+    if ((r.grp || 'Daily') === 'Weekly') return hit.length ? hit : ['mon'];
+    if (/inbox|news/.test(String(r.route || r.room || '') + ' ' + String(r.name || ''))) return hit.length ? hit : ['mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    return hit.length ? hit : ['mon', 'tue', 'wed', 'thu', 'fri'];
+  }
+  function fillPads(r, days, today) {
+    var pads = asList(r.pads);
+    var allOff = !pads.length || pads.every(function (p) { return padClass(p && p.state) === O; });
+    if (!allOff && pads.length >= days.length) return pads.slice(0, 7);
+    var sched = defaultSched(r);
+    return days.map(function (day, i) {
+      var prev = pads[i] || {};
+      var due = sched.indexOf(weekdayIso(day)) >= 0;
+      var st = prev.state;
+      if (!st || padClass(st) === O) {
+        if (!due) st = 'off';
+        else if (day < today) st = 'miss';
+        else if (day === today) st = 'due';
+        else st = 'next';
+      }
+      return { day: day, due: due, state: st, value: prev.value || '' };
+    });
+  }
   function livePlaybookState() {
     var pb = (window.STATE || {}).playbook || {};
     var days = asList(pb.days);
     var today = String(pb.today || '');
     var todayIdx = days.indexOf(today);
     if (todayIdx < 0) todayIdx = 0;
-    var dates = days.map(function (d) { return Number(String(d).slice(8)); });
+    var dates = days.map(function (d) {
+      var m = String(d).match(/(\d{4})-(\d{2})-(\d{2})/);
+      return m ? Number(m[3]) : Number(String(d).slice(8));
+    });
     while (dates.length < 7) dates.push(dates.length ? dates[dates.length - 1] + 1 : 19);
-    var rows = asList(pb.rows).map(function (r) {
-      if (r.s || r.grp && !r.name) return { s: r.s || r.grp || r.name };
-      var pads = asList(r.pads);
-      var d = pads.map(function (p) {
-        var st = String(p.state || '');
-        if (st === 'done') return D;
-        if (st === 'miss') return M;
-        if (st === 'due') return U;
-        if (st === 'next') return N;
-        return O;
-      });
+    if (!days.length) {
+      days = dates.map(function (n, i) { return '2026-10-' + String(n).padStart(2, '0'); });
+    }
+    var apiRows = asList(pb.rows);
+    var rows = [];
+    var weekly = false;
+    apiRows.forEach(function (r) {
+      if (r.s || (r.grp && !r.name)) { rows.push({ s: r.s || r.grp || r.name }); return; }
+      if ((r.grp || 'Daily') === 'Weekly' && !weekly) { rows.push({ s: 'Weekly' }); weekly = true; }
+      else if ((r.grp || 'Daily') === 'Daily' && !rows.length) rows.push({ s: 'Daily' });
+      var pads = fillPads(r, days, today);
+      var d = pads.map(function (p) { return padClass(p.state); });
       while (d.length < 7) d.push(O);
-      var lab = pads.map(function (p) { return p.value || ''; });
-      return { n: r.name, room: roomOf(r.route || r.room), c: colorVar(r.color || r.c), d: d, lab: lab, st: r.target || r.st || '', sub: r.sub, nw: r.nw };
+      var mapped = {
+        id: r.id, n: r.name, room: roomOf(r.route || r.room), c: colorVar(r.color || r.c),
+        d: d, pads: pads, lab: pads.map(function (p, i) { return padLabel({ n: r.name, target: r.target }, p, i, todayIdx); }),
+        st: r.st || (r.grp === 'Weekly' ? 'weekly' : ''), sub: r.sub, nw: r.nw, target: r.target || '', grp: r.grp
+      };
+      rows.push(mapped);
     });
-    if (!rows.length) rows = PB_ROWS.map(function (r) {
-      if (r.s) return r;
-      return Object.assign({}, r, { d: r.d.map(function () { return O; }) });
-    });
-    return { rows: rows, weekLabel: pb.weekLabel || 'WEEK', dates: dates, todayIdx: todayIdx, pct: (pb.score == null ? 0 : pb.score) + '%' };
+    var left = 0;
+    rows.forEach(function (r) { if (r.d && r.d[todayIdx] === U) left++; });
+    return {
+      rows: rows, weekLabel: pb.weekLabel || 'WEEK', dates: dates, todayIdx: todayIdx,
+      pct: (pb.score == null ? 0 : pb.score) + '%', todayLit: left, live: true
+    };
   }
 
   function mountPlaybook(root, wrap, data) {
-    var rows = (data.rows || PB_ROWS).map(function (r) { return r.s ? r : Object.assign({}, r, { d: (r.d || []).slice(), lab: (r.lab || []).slice() }); });
+    var srcRows = data.rows && data.rows.length ? data.rows : (data.live ? [] : PB_ROWS);
+    var rows = srcRows.map(function (r) { return r.s ? r : Object.assign({}, r, { d: (r.d || []).slice(), lab: (r.lab || []).slice() }); });
     var dates = data.dates || [19, 20, 21, 22, 23, 24, 25];
     var todayIdx = data.todayIdx == null ? 0 : data.todayIdx;
     var document = root;
@@ -164,7 +230,9 @@
       var left = 0;
       rows.forEach(function (r) { if (r.d && r.d[todayIdx] === U) left++; });
       var run = gid('runTxt');
-      if (run) run.textContent = left ? ("Run today's plays · " + left + ' lit') : 'All lights off — day done';
+      if (!run) return;
+      if (data.live) run.textContent = left ? (left + ' lights left today') : 'All lights off — day done';
+      else run.textContent = left ? ("Run today's plays · " + left + ' lit') : 'All lights off — day done';
     }
     window.addEventListener('resize', place);
     var pop = gid('pop'); var cur = null;
@@ -487,24 +555,76 @@
     if (d >= startLast) return 'Last week';
     return 'Sep 28 - Oct 4';
   }
+  function ymdOf(raw) {
+    var s = String(raw || '');
+    var m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return m[1];
+    var d = new Date(s);
+    if (!Number.isFinite(d.getTime())) return '';
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function actionMatches(a, n) {
+    var mid = String(a.meetingId || a.meeting_id || '');
+    var nid = String(n.id || '');
+    var noteId = String(n.noteId || n.note_id || '');
+    if (mid && (mid === nid || mid === noteId)) return true;
+    var title = String(a.meetingTitle || a.meeting_title || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    var nt = String(n.title || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    var ad = ymdOf(a.meetingDate || a.meeting_date);
+    var nd = ymdOf(n.date || n.note_date);
+    if (title && nt && title === nt) return true;
+    if (title && nt && ad && nd && ad === nd && (title.indexOf(nt) >= 0 || nt.indexOf(title) >= 0)) return true;
+    return false;
+  }
+  function stripLead(text, people) {
+    var s = String(text || '').replace(/^Note to self:\s*/i, '').replace(/^["“]+|["”]+$/g, '').trim();
+    var names = [];
+    asList(people).forEach(function (p) {
+      var full = String(p || '').trim();
+      if (!full) return;
+      names.push(full);
+      names.push(full.split(/\s+/)[0]);
+    });
+    names.forEach(function (n) {
+      if (!n) return;
+      var re = new RegExp('^' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*:\\s*', 'i');
+      for (var i = 0; i < 3; i++) s = s.replace(re, '');
+    });
+    return s.replace(/^["“]+|["”]+$/g, '').trim();
+  }
   function liveZoomState() {
     var notes = asList((window.STATE || {}).zoomNotes);
-    var actions = asList((window.STATE || {}).meetingActions);
+    var actions = asList((window.STATE || {}).meetingActions).filter(function (a) {
+      return a.status !== 'done' && a.status !== 'tasked';
+    });
+    var used = {};
     var meetings = notes.map(function (n) {
       var people = asList(n.attendees).filter(function (p) { return p && !isChad(p); });
       var id = String(n.id || n.noteId || '');
-      var owe = actions.filter(function (a) {
-        var mid = String(a.meetingId || a.meeting_id || '');
-        return (mid === id || mid === String(n.noteId || '')) && a.status !== 'done' && a.status !== 'tasked';
-      }).length;
-      if (!owe && n.owe) owe = Number(n.owe) || 0;
+      var mine = actions.filter(function (a, i) {
+        if (!actionMatches(a, n)) return false;
+        used[i] = 1;
+        return true;
+      });
+      var owe = mine.length || Number(n.owe) || 0;
       var quote = asList(n.others)[0] || (asList(n.intel)[0] && (n.intel[0].value || n.intel[0])) || '';
-      var dt = String(n.date || n.note_date || '').slice(0, 10).split('-');
+      var ymd = ymdOf(n.date || n.note_date);
+      var dt = ymd.split('-');
       var mon = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][Number(dt[1] || 1) - 1] || 'OCT';
+      var oweRows = mine.map(function (a) {
+        return [a.kind === 'follow_up' ? 'fu' : 'you', a.text];
+      });
+      var quotes = asList(n.quotes).map(function (q) {
+        var who = Array.isArray(q) ? q[0] : (q.who || '');
+        var text = Array.isArray(q) ? q[1] : (q.text || q);
+        return [who, stripLead(text, [who].concat(people))];
+      });
       return {
-        id: id, wk: weekOf(n.date), m: mon, d: Number(dt[2] || 0), t: n.title, p: people, solo: n.solo || !people.length ? 1 : 0,
-        owe: owe, s: String(quote || ''), src: /granola/i.test(String(n.origin || '') + JSON.stringify(n.sources || [])) ? 'Granola' : 'Zoom',
-        improve: n.improve, aiSummary: n.aiSummary, quotes: n.quotes, decided: n.decided, said: n.said, roles: n.roles, actions: n.actions
+        id: id, noteId: n.noteId, wk: weekOf(ymd || n.date), m: mon, d: Number(dt[2] || 0), t: n.title, p: people,
+        solo: n.solo || !people.length ? 1 : 0, owe: owe, s: stripLead(quote, people),
+        src: /granola/i.test(String(n.origin || '') + JSON.stringify(n.sources || [])) ? 'Granola' : 'Zoom',
+        improve: n.improve, aiSummary: n.aiSummary, quotes: quotes, decided: n.decided, said: n.said, roles: n.roles,
+        actions: oweRows.length ? oweRows : n.actions
       };
     });
     return { meetings: meetings, meta: notes.length + ' meetings' };
@@ -539,7 +659,7 @@
         var leadName = people[0] ? people[0].split(' ')[0] : '';
         h += '<div class="mc" data-i="' + i + '"><div class="d">' + esc(x.m) + ' ' + x.d + ', 2026<span class="src">' + esc(x.src) + '</span></div><div class="t">' + esc(x.t) + '</div>'
           + '<div class="pp2">' + (people.map(function (n) { return '<span class="av" style="background:' + zcol(n) + '">' + esc(ini(n)) + '</span>'; }).join('') || '<span class="av" style="background:#8a96ad;margin:0">CJ</span>') + '<span class="n">' + esc(who) + '</span></div>'
-          + '<div class="sn' + (x.solo ? ' self' : '') + '">' + (x.solo ? '<b style="color:#46556E">Note to self:</b> ' : '<b>' + esc(leadName) + ':</b> ') + esc(String(x.s || '').replace(/^Note to self:\s*/i, '')) + '</div>'
+          + '<div class="sn' + (x.solo ? ' self' : '') + '">' + (x.solo ? '<b style="color:#46556E">Note to self:</b> ' : (leadName ? '<b>' + esc(leadName) + ':</b> ' : '')) + esc(stripLead(x.s, x.p)) + '</div>'
           + '<div class="ft">' + (x.solo ? '<span class="tag solo">Solo</span>' : x.owe ? '<span class="tag owe">You owe ' + x.owe + '</span>' : '<span class="tag solo">Nothing owed</span>') + '<span class="op">Open &rarr;</span><span class="ib" title="Edit">&#9998;</span><span class="ib" title="Delete">&#128465;</span></div></div>';
       });
       if (box) box.innerHTML = h + (w ? '</div>' : '');
@@ -566,7 +686,7 @@
           + '<div class="grid2"><div>'
           + (x.solo ? '' : '<div class="sec" style="margin-bottom:14px"><div class="sh"><b>What others said</b><span>intel first</span></div>' + Object.keys(r.said || {}).map(function (n) { return '<div class="said"><div class="who">' + av(n) + esc(n) + (r.roles[n] ? ' <em>' + esc(r.roles[n]) + '</em>' : '') + '</div><ul>' + asList(r.said[n]).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>'; }).join('') + '</div>')
           + (asList(r.improve).length ? '<div class="sec imp" style="margin-bottom:14px"><div class="sh"><b>Where you can improve</b><span>coaching</span></div>' + r.improve.map(function (t, k) { return '<div class="iv"><span>' + (k + 1) + '</span>' + esc(t) + '</div>'; }).join('') + '</div>' : '')
-          + (asList(r.quotes).length ? '<div class="sec"><div class="sh"><b>Worth quoting</b><span>from the transcript</span></div>' + r.quotes.map(function (q) { return '<div class="q"><b>' + esc(q[0]) + ':</b> "' + esc(q[1]) + '"</div>'; }).join('') + '</div>' : '')
+          + (asList(r.quotes).length ? '<div class="sec"><div class="sh"><b>Worth quoting</b><span>from the transcript</span></div>' + r.quotes.map(function (q) { return '<div class="q"><b>' + esc(q[0]) + ':</b> "' + esc(stripLead(q[1], [q[0]].concat(people))) + '"</div>'; }).join('') + '</div>' : '')
           + '</div><div>'
           + '<div class="sec" style="margin-bottom:14px"><div class="sh"><b>What you owe</b><span>' + asList(r.owe).length + ' open</span></div>' + (asList(r.owe).length ? r.owe.map(function (o) { return '<div class="owe"><span class="k ' + esc(o[0]) + '">' + (o[0] === 'you' ? 'You said' : 'Follow up') + '</span><span class="t">' + esc(o[1]) + '</span><span class="ad"><button>+ Today</button><button>+ Week</button></span></div>'; }).join('') : '<div class="emp">Nothing owed from this meeting.</div>') + '</div>'
           + '<div class="sec" style="margin-bottom:14px"><div class="sh"><b>Decided</b><span>' + asList(r.decided).length + '</span></div>' + (asList(r.decided).length ? r.decided.map(function (d) { return '<div class="dec"><i>&#10003;</i>' + esc(d) + '</div>'; }).join('') : '<div class="emp">No decisions captured.</div>') + '</div>'
@@ -610,32 +730,88 @@
       });
       return;
     }
-    var snaps = asList((window.STATE || {}).snaps);
+    var snaps = asList((window.STATE || {}).snaps).map(function (s) {
+      var p = s.payload && typeof s.payload === 'object' ? s.payload : {};
+      return Object.assign({}, s, { date: ymdOf(s.date), payload: p, counts: s.counts || p.counts || {} });
+    });
+    var openDate = ymdOf((window.STATE || {}).snapOpenDate || ((window.STATE || {}).snapOpen && (window.STATE || {}).snapOpen.date) || (snaps[0] && snaps[0].date));
     var open = (window.STATE || {}).snapOpen;
-    var list = snaps.length ? snaps.map(function (s, i) {
-      var d = String(s.date || '').slice(0, 10).split('-');
-      var day = Number(d[2] || 0);
-      var dow = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][new Date(s.date + 'T12:00:00').getDay()] || '';
-      var on = (open && open.date === s.date) || (!open && i === 0);
-      var p = s.payload || {};
-      var chips = [];
-      if ((p.meetings || []).length) chips.push((p.meetings.length) + ' meeting');
-      if ((p.tasks || []).length) chips.push((p.tasks.length) + ' tasks');
-      if ((p.sent || []).length) chips.push((p.sent.length) + ' sent');
-      return '<div class="day' + (on ? ' on' : '') + '" data-date="' + esc(s.date) + '"><div class="dt"><b>' + day + '</b><small>' + dow + '</small></div><div style="min-width:0"><div class="sm">' + esc(s.summary || p.headline || 'Day saved') + '</div><div class="ct">' + chips.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div></div></div>';
+    if (open && ymdOf(open.date) === openDate) {
+      snaps = snaps.map(function (s) { return s.date === openDate ? Object.assign({}, s, { payload: open.payload || s.payload, summary: open.summary || s.summary, counts: (open.payload && open.payload.counts) || s.counts }) : s; });
+    }
+    function chipsOf(s) {
+      var c = s.counts || {};
+      var bits = [];
+      function add(n, one, many) { n = Number(n) || 0; if (n) bits.push(n + ' ' + (n === 1 ? one : many)); }
+      add(c.meetings, 'meeting', 'meetings');
+      add(c.replies, 'reply', 'replies');
+      add(c.sent, 'sent', 'sent');
+      add(c.tasks, 'task', 'tasks');
+      add(c.news, 'news', 'news');
+      add(c.commitments, 'owed', 'owed');
+      add(c.pipeline, 'pipeline', 'pipeline');
+      if (bits.length) return bits;
+      return String(s.summary || '').split(/\s*·\s*/).filter(Boolean);
+    }
+    var list = snaps.length ? snaps.map(function (s) {
+      var parts = (s.date || '').split('-');
+      var day = Number(parts[2] || 0);
+      var dow = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][new Date((s.date || '') + 'T12:00:00').getDay()] || '';
+      var on = s.date === openDate;
+      var chips = chipsOf(s);
+      return '<div class="day' + (on ? ' on' : '') + '" data-date="' + esc(s.date) + '"><div class="dt"><b>' + day + '</b><small>' + dow + '</small></div><div style="min-width:0"><div class="sm">' + esc(s.summary || (s.payload && s.payload.headline) || 'Day saved') + '</div><div class="ct">' + chips.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div></div></div>';
     }).join('') : '<div class="today"><span class="pulse"></span>No snapshots yet</div>';
-    var det = open && open.payload ? open.payload : (snaps[0] && snaps[0].payload) || {};
-    var title = open && open.date ? open.date : (snaps[0] && snaps[0].date) || 'Today';
+    var cur = snaps.filter(function (s) { return s.date === openDate; })[0] || snaps[0] || {};
+    var det = cur.payload || {};
+    var counts = cur.counts || det.counts || {};
+    var headline = det.headline || cur.summary || 'Nothing captured yet.';
+    var titleDate = cur.date ? new Date(cur.date + 'T12:00:00') : null;
+    var title = titleDate && Number.isFinite(titleDate.getTime())
+      ? titleDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })
+      : (cur.date || 'Today');
+    function lines(arr, tag) {
+      return asList(arr).map(function (row) {
+        var t = typeof row === 'string' ? row : (row.title || row.text || '');
+        var extra = typeof row === 'string' ? '' : (row.extra || row.to || row.from || '');
+        return '<div class="li">' + (tag ? '<span class="tag t1">' + esc(tag) + '</span>' : '<i>&#10003;</i>') + '<span>' + esc(t) + '</span>' + (extra ? '<em>' + esc(extra) + '</em>' : '') + '</div>';
+      }).join('');
+    }
     wrap.innerHTML = '<div class="bar"><h1>Completed</h1><span class="sub">A snapshot of every day, saved at 11:55 pm — what moved, who you met, what you owe</span><div class="r"><button class="btn" type="button">Search days</button><button class="btn pri" type="button" id="snapNowLive">Snapshot now</button></div></div>'
       + '<div class="lay"><section class="card"><div class="today"><span class="pulse"></span>Today is being recorded — snapshot at 11:55 pm</div>' + list + '</section>'
       + '<section class="card det"><div class="dh"><div><h2>' + esc(title) + '</h2><div class="meta">Snapshot saved · read-only</div></div><div class="r2"><button class="btn" type="button">Export PDF</button><button class="btn" type="button">Add to investor update</button></div></div>'
-      + '<div class="moved"><b>&#10022; What moved today</b><p>' + esc(det.headline || det.summary || 'Nothing captured yet.') + '</p></div></section></div>';
+      + '<div class="moved"><b>&#10022; What moved today</b><p>' + esc(headline) + '</p></div>'
+      + '<div class="tiles">'
+      + '<div class="tl"><b>' + (counts.tasks || 0) + '</b><span>tasks done</span></div>'
+      + '<div class="tl"><b>' + (counts.meetings || 0) + '</b><span>meeting</span></div>'
+      + '<div class="tl"><b>' + (counts.sent || 0) + '</b><span>emails sent</span></div>'
+      + '<div class="tl' + (counts.replies ? ' g' : '') + '"><b>' + (counts.replies || 0) + '</b><span>reply in</span></div>'
+      + '<div class="tl"><b>' + (counts.pipeline || 0) + '</b><span>pipeline moves</span></div>'
+      + '<div class="tl"><b>$0</b><span>raised today</span></div>'
+      + '</div>'
+      + '<div class="cols">'
+      + '<div class="sec"><div class="sh"><b>Done</b><span>' + asList(det.tasks).length + ' tasks</span></div>' + (lines(det.tasks) || '<div class="emp">No tasks captured.</div>') + '</div>'
+      + '<div class="sec"><div class="sh"><b>Meetings &amp; commitments</b><span>' + asList(det.meetings).length + ' meeting</span></div>' + (lines(det.meetings, 'Zoom') + lines(det.commitments, 'You said') || '<div class="emp">Nothing captured yet.</div>') + '</div>'
+      + '<div class="sec"><div class="sh"><b>Email</b><span>' + (counts.replies || 0) + ' in &middot; ' + (counts.sent || 0) + ' out</span></div>' + (lines(det.replies, 'In') + lines(det.sent, 'Out') || '<div class="emp">No mail captured.</div>') + '</div>'
+      + '<div class="sec"><div class="sh"><b>News saved</b><span>' + asList(det.news).length + '</span></div>' + (lines(det.news, 'News') || '<div class="emp">No news saved.</div>') + '</div>'
+      + '</div></section></div>';
     wrap.querySelectorAll('.day').forEach(function (d) {
-      d.onclick = function () { if (typeof window.openSnapshot === 'function') window.openSnapshot(d.getAttribute('data-date')); };
+      d.onclick = function () {
+        var date = d.getAttribute('data-date');
+        if (window.STATE) window.STATE.snapOpenDate = date;
+        auth('/api/snapshots?date=' + encodeURIComponent(date), { credentials: 'include', quiet: true }).then(function (r) { return r.json(); }).then(function (one) {
+          if (window.STATE) {
+            window.STATE.snapOpen = one;
+            window.STATE.snaps = asList(window.STATE.snaps).map(function (s) {
+              return ymdOf(s.date) === date ? Object.assign({}, s, { payload: one.payload || s.payload, summary: one.summary || s.summary, counts: (one.payload && one.payload.counts) || s.counts }) : s;
+            });
+          }
+          paintCompletedLive();
+        }).catch(function () { paintCompletedLive(); });
+      };
     });
     var snapBtn = wrap.querySelector('#snapNowLive');
     if (snapBtn) snapBtn.onclick = function () { var b = document.getElementById('snapNow'); if (b) b.click(); };
-    liveLog('completed', { snaps: snaps.length });
+    liveLog('completed', { snaps: snaps.length, open: openDate });
     markReady('doneDesk');
   }
 
@@ -663,11 +839,20 @@
       }).catch(function () {});
     }
     if (desk === 'znotes' || desk === 'zoom') {
-      auth('/api/meeting-actions', { credentials: 'include', quiet: true }).then(function (r) { return r.json(); }).then(function (d) {
-        if (window.STATE) window.STATE.meetingActions = (d && d.actions) || [];
-        console.info('[live-map] /api/meeting-actions', { count: asList(window.STATE.meetingActions).length });
+      Promise.all([
+        auth('/api/zoom-notes', { credentials: 'include', quiet: true }).then(function (r) { return r.json(); }).catch(function () { return {}; }),
+        auth('/api/meeting-actions', { credentials: 'include', quiet: true }).then(function (r) { return r.json(); }).catch(function () { return {}; })
+      ]).then(function (pair) {
+        var notes = pair[0];
+        var acts = pair[1];
+        if (window.STATE) {
+          if (notes && asList(notes.notes).length) window.STATE.zoomNotes = notes.notes;
+          window.STATE.meetingActions = (acts && acts.actions) || [];
+        }
+        console.info('[live-map] /api/zoom-notes', { count: asList((window.STATE || {}).zoomNotes).length });
+        console.info('[live-map] /api/meeting-actions', { count: asList((window.STATE || {}).meetingActions).length });
         paintZoomLive();
-      }).catch(function () {});
+      });
     }
     if (desk === 'done') {
       auth('/api/snapshots', { credentials: 'include', quiet: true }).then(function (r) { return r.json(); }).then(function (d) {
