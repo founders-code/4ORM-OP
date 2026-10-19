@@ -248,6 +248,14 @@
     var dups = {};
     wall.forEach(function (w) { var k = String(w[5] || w[1]).replace(/\/$/, ''); dups[k] = (dups[k] || 0) + 1; });
     wall.forEach(function (w) { if (dups[String(w[5] || w[1]).replace(/\/$/, '')] > 1) w[4] = 2; });
+    var seenUrl = {};
+    wall = wall.filter(function (w) {
+      var k = String(w[5] || w[1]).replace(/\/$/, '').toLowerCase();
+      if (seenUrl[k]) return false;
+      seenUrl[k] = 1;
+      w[4] = 1;
+      return true;
+    });
     liveLog('links', { cats: cats.length, links: links.length, wall: wall.length });
     return { tree: tree, crumb: active, crumbN: wall.length, wall: wall };
   }
