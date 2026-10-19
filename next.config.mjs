@@ -38,6 +38,7 @@ const nextConfig = {
       { source: '/war-room', destination: '/control-room.html' },
       { source: '/space-detail', destination: '/control-room.html' },
       { source: '/zoom', destination: '/control-room.html' },
+      { source: '/notes', destination: '/control-room.html' },
       { source: '/terms-of-service', destination: '/terms-of-service.html' },
       { source: '/privacy-policy', destination: '/privacy-policy.html' },
       { source: '/book', destination: '/book.html' },
