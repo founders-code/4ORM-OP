@@ -707,6 +707,7 @@
         if (desk === 'contacts' && key === 'pipe') paintPipelineLive();
         if (desk === 'work' && key === 'spaces') paintSpacesLive();
         if (desk === 'docs' && key === 'docs') paintDocumentsLive();
+        if (desk === 'docs' && key === 'spaces') paintDocumentsLive();
         if (desk === 'mail' && key === 'mail') paintEmailLive();
         if (desk === 'links') paintLinksLive();
         console.info('[live-map] ' + url, d && typeof d === 'object' ? Object.keys(d) : typeof d);
@@ -714,7 +715,10 @@
     }
     if (desk === 'contacts') go('/api/pipeline', 'pipe');
     if (desk === 'work') go('/api/spaces', 'spaces');
-    if (desk === 'docs') go('/api/documents', 'docs');
+    if (desk === 'docs') {
+      go('/api/documents', 'docs');
+      go('/api/spaces', 'spaces');
+    }
     if (desk === 'mail') go('/api/mail/board', 'mail');
     if (desk === 'links') liveLog('links', { links: asList((window.STATE || {}).links).length });
   }

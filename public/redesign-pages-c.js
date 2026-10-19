@@ -548,12 +548,12 @@
   function weekOf(iso) {
     var d = new Date(String(iso).slice(0, 10) + 'T12:00:00');
     if (!Number.isFinite(d.getTime())) return 'Earlier';
-    var today = new Date(2026, 9, 19);
-    var startThis = new Date(today); startThis.setDate(today.getDate() - today.getDay());
-    var startLast = new Date(startThis); startLast.setDate(startThis.getDate() - 7);
-    if (d >= startThis) return 'This week';
-    if (d >= startLast) return 'Last week';
-    return 'Sep 28 - Oct 4';
+    var start = new Date(d);
+    start.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    var end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[start.getMonth()] + ' ' + start.getDate() + ' – ' + months[end.getMonth()] + ' ' + end.getDate();
   }
   function ymdOf(raw) {
     var s = String(raw || '');
@@ -618,13 +618,14 @@
         return [who, stripLead(text, [who].concat(people))];
       });
       return {
-        id: id, noteId: n.noteId, wk: weekOf(ymd || n.date), m: mon, d: Number(dt[2] || 0), t: n.title, p: people,
+        id: id, noteId: n.noteId, ymd: ymd, wk: weekOf(ymd || n.date), m: mon, d: Number(dt[2] || 0), t: n.title, p: people,
         solo: n.solo || !people.length ? 1 : 0, owe: owe, s: stripLead(quote, people),
         src: /granola/i.test(String(n.origin || '') + JSON.stringify(n.sources || [])) ? 'Granola' : 'Zoom',
         improve: n.improve, aiSummary: n.aiSummary, quotes: quotes, decided: n.decided, said: n.said, roles: n.roles,
         actions: oweRows.length ? oweRows : n.actions
       };
     });
+    meetings.sort(function (a, b) { return String(b.ymd || '').localeCompare(String(a.ymd || '')); });
     return { meetings: meetings, meta: notes.length + ' meetings' };
   }
 
@@ -767,11 +768,26 @@
     var title = titleDate && Number.isFinite(titleDate.getTime())
       ? titleDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })
       : (cur.date || 'Today');
+    function personName(raw) {
+      var s = String(raw || '').trim();
+      var m = s.match(/^"?([^"<]+?)"?\s*</);
+      if (m) return m[1].trim();
+      return s.replace(/<[^>]+>/g, '').trim() || s;
+    }
     function lines(arr, tag) {
       return asList(arr).map(function (row) {
         var t = typeof row === 'string' ? row : (row.title || row.text || '');
         var extra = typeof row === 'string' ? '' : (row.extra || row.to || row.from || '');
         return '<div class="li">' + (tag ? '<span class="tag t1">' + esc(tag) + '</span>' : '<i>&#10003;</i>') + '<span>' + esc(t) + '</span>' + (extra ? '<em>' + esc(extra) + '</em>' : '') + '</div>';
+      }).join('');
+    }
+    function mailLines(arr, tag) {
+      return asList(arr).map(function (row) {
+        var subj = typeof row === 'string' ? row : (row.title || row.text || row.subject || '');
+        var who = typeof row === 'string' ? '' : personName(row.from || row.to || row.name || '');
+        var label = who && subj ? who + ' — ' + subj : (who || subj);
+        var time = typeof row === 'string' ? '' : (row.time || row.when || (tag === 'Out' ? 'sent' : 'in'));
+        return '<div class="li"><span class="tag t4">' + esc(tag) + '</span><span>' + esc(label) + '</span>' + (time ? '<em>' + esc(time) + '</em>' : '') + '</div>';
       }).join('');
     }
     wrap.innerHTML = '<div class="bar"><h1>Completed</h1><span class="sub">A snapshot of every day, saved at 11:55 pm — what moved, who you met, what you owe</span><div class="r"><button class="btn" type="button">Search days</button><button class="btn pri" type="button" id="snapNowLive">Snapshot now</button></div></div>'
@@ -789,7 +805,7 @@
       + '<div class="cols">'
       + '<div class="sec"><div class="sh"><b>Done</b><span>' + asList(det.tasks).length + ' tasks</span></div>' + (lines(det.tasks) || '<div class="emp">No tasks captured.</div>') + '</div>'
       + '<div class="sec"><div class="sh"><b>Meetings &amp; commitments</b><span>' + asList(det.meetings).length + ' meeting</span></div>' + (lines(det.meetings, 'Zoom') + lines(det.commitments, 'You said') || '<div class="emp">Nothing captured yet.</div>') + '</div>'
-      + '<div class="sec"><div class="sh"><b>Email</b><span>' + (counts.replies || 0) + ' in &middot; ' + (counts.sent || 0) + ' out</span></div>' + (lines(det.replies, 'In') + lines(det.sent, 'Out') || '<div class="emp">No mail captured.</div>') + '</div>'
+      + '<div class="sec"><div class="sh"><b>Email</b><span>' + (counts.replies || 0) + ' in &middot; ' + (counts.sent || 0) + ' out</span></div>' + (mailLines(det.replies, 'In') + mailLines(det.sent, 'Out') || '<div class="emp">No mail captured.</div>') + '</div>'
       + '<div class="sec"><div class="sh"><b>News saved</b><span>' + asList(det.news).length + '</span></div>' + (lines(det.news, 'News') || '<div class="emp">No news saved.</div>') + '</div>'
       + '</div></section></div>';
     wrap.querySelectorAll('.day').forEach(function (d) {

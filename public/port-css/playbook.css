@@ -147,6 +147,7 @@
 @media (max-width:1280px){
 .beats{grid-template-columns:minmax(0,1.6fr) repeat(5,minmax(0,1fr))}
 .beat,.beat .btop{min-width:0}
-.beat .n{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.beat .d{flex-shrink:0}
+.beat .btop{grid-template-columns:minmax(0,1fr);align-items:start}
+.beat .n{white-space:normal;overflow:visible;text-overflow:unset;line-height:1.25}
+.beat .d{justify-self:start}
 }
