@@ -102,6 +102,7 @@ export const config = {
     '/war-room',
     '/space-detail',
     '/zoom',
+    '/notes',
     '/design',
     '/design/:path*',
     '/terms-of-service',
