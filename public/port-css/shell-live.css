@@ -1,0 +1,39 @@
+/* Live-app glue for the redesign shell. Does not restyle Shadow DOM pages. */
+html{background:#0d1838;overflow-x:hidden}
+body{
+  background:linear-gradient(165deg,var(--ground),var(--ground2)) fixed!important;
+  min-height:100vh;
+  display:grid!important;
+  grid-template-columns:224px minmax(0,1fr);
+  grid-template-rows:56px auto;
+  overflow-x:hidden;
+}
+body > h1.sr-only{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);grid-column:1;grid-row:1;pointer-events:none}
+header.top{grid-column:1/-1;grid-row:1;position:relative!important;z-index:40;height:56px!important;flex-wrap:nowrap;padding:0 20px!important;background:#fff!important;border-bottom:1px solid var(--line)}
+header.top .logo img{height:30px;width:auto;display:block}
+header.top .crumb{font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif;font-size:14px;font-weight:700;color:var(--ink);letter-spacing:0;text-transform:none;border-left:1px solid var(--line);padding-left:12px}
+header.top .clock{font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif;font-size:12.5px;color:var(--ink3);font-weight:600;letter-spacing:0;text-transform:none}
+nav.side{grid-column:1;grid-row:2;min-height:calc(100vh - 56px);overflow:auto}
+main.wrap,main.main{grid-column:2;grid-row:2;max-width:none!important;margin:0!important;padding:20px 24px 40px!important;min-width:0;width:auto}
+.view{padding:0 0 8px!important}
+body.dk-page{background:linear-gradient(165deg,var(--ground),var(--ground2)) fixed!important}
+body > #meetAlarm,body > #busyBar,body > #writeErr,body > #actNote,body > #sideNav,body > #navToggle{position:fixed;left:224px;right:0;z-index:45}
+nav.tabs[hidden],.nav-toggle[hidden]{display:none!important}
+body.nav-collapsed{grid-template-columns:64px minmax(0,1fr)}
+body.nav-collapsed .nav span.nl,body.nav-collapsed .nav .n,body.nav-collapsed .grp,body.nav-collapsed .arr-row{display:none}
+body.nav-collapsed .nav{justify-content:center;padding:8px}
+.nav .grip{display:none;width:10px;height:16px;margin-right:2px;background-image:radial-gradient(#8fa0c8 1.1px,transparent 1.2px);background-size:4px 4px;background-repeat:repeat;opacity:.7;flex:none;cursor:grab}
+body.arranging .nav .grip{display:block}
+body.arranging .nav{cursor:grab}
+.nav.dragging{opacity:.55}
+.nav.insert{box-shadow:inset 0 2px 0 #5b8cff}
+.arr-row{margin-top:auto;padding:12px 12px 6px;display:flex;align-items:center;gap:10px}
+.arr{background:transparent;border:0;color:#6f7fa6;font-size:11px;font-weight:700;padding:0;cursor:pointer}
+.arr:hover{color:#cfd8ee}
+.arr-reset{background:transparent;border:0;color:#8fa0c8;font-size:11px;font-weight:600;padding:0;cursor:pointer;display:none}
+body.arranging .arr-reset{display:inline}
+#v-room,#v-war,#v-notes{min-width:0}
+#opsDash,#warDesk,#notesDesk{display:block;min-width:0}
+#opsDash:empty,#warDesk:empty,#notesDesk:empty{min-height:40px}
+.mic,.heard{display:none}
+body > .scrim,body > .drawer,body > .modal,body > .emx-reader,body > .docview,body > .plan-scrim{grid-column:1/-1}

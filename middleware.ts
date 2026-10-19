@@ -35,6 +35,7 @@ const isControlRoom = createRouteMatcher([
   '/war-room',
   '/space-detail',
   '/zoom',
+  '/notes',
 ]);
 const isDesign = createRouteMatcher(['/design', '/design/(.*)']);
 // Legal pages are public. Members read them before they sign in.

@@ -25,15 +25,16 @@ export async function GET(_req: Request, ctx: { params: { path: string[] } }) {
   }
   let rel = parts.join('/');
   if (!path.extname(rel) && !rel.startsWith('assets/')) rel = `${rel}.html`;
-  const abs = path.resolve(ROOT, rel);
-  if (!abs.startsWith(path.resolve(ROOT))) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  const rootAbs = path.resolve(ROOT);
+  const candidates = [path.resolve(ROOT, rel), path.resolve(ROOT, 'redesign', rel)].filter((p) => p.startsWith(rootAbs));
+  for (const abs of candidates) {
+    try {
+      const buf = await readFile(abs);
+      const ext = path.extname(abs).toLowerCase();
+      return new NextResponse(new Uint8Array(buf), { headers: { 'content-type': TYPES[ext] || 'application/octet-stream' } });
+    } catch {
+      /* try next */
+    }
   }
-  try {
-    const buf = await readFile(abs);
-    const ext = path.extname(abs).toLowerCase();
-    return new NextResponse(new Uint8Array(buf), { headers: { 'content-type': TYPES[ext] || 'application/octet-stream' } });
-  } catch {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  }
+  return NextResponse.json({ error: 'Not found' }, { status: 404 });
 }

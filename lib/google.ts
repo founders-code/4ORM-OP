@@ -838,9 +838,11 @@ export async function linkedinMail() {
     const isLinkedin = address.endsWith('linkedin.com') || toBlob.includes(LINKEDIN_ALIAS);
     if (!isLinkedin) continue;
     const subject = pick('subject').slice(0, 180);
+    const name = linkedinName(subject, fromRaw);
+    if (!name || /^linkedin$/i.test(name)) continue;
     items.push({
       id: String(msg.id),
-      name: linkedinName(subject, fromRaw) || 'LinkedIn',
+      name,
       kind: linkedinKind(subject, address),
       snippet: decodeSnippet(String(msg.snippet || subject)),
       at: Number(msg.internalDate) || Date.parse(pick('date')) || Date.now(),

@@ -423,6 +423,10 @@
   }
 
   function renderOpsDash() {
+    if (typeof window.paintRedesignDashboard === 'function' && document.getElementById('opsDash')) {
+      window.paintRedesignDashboard();
+      return;
+    }
     var el = document.getElementById('opsDash');
     if (!el) return;
     var rows = liveItems();
@@ -627,6 +631,10 @@
   }
 
   function renderWar() {
+    if (typeof window.paintRedesignWar === 'function' && document.getElementById('warDesk')) {
+      window.paintRedesignWar();
+      return;
+    }
     var cmd = document.getElementById('warCmd');
     var board = document.getElementById('execBoard');
     if (!cmd || !board) return;

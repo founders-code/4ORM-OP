@@ -67,6 +67,7 @@ function renderCeo(){
   }).join('');
 }
 function renderWar(){
+  if(typeof window.paintRedesignWar==='function'&&document.getElementById('warDesk')){window.paintRedesignWar();return;}
   var metrics=document.getElementById('warMetrics');
   if(metrics){
     var next=openItems().filter(function(it){return it.due!=null;}).sort(function(a,b){return a.due-b.due;})[0];
