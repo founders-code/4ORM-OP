@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   if (!HOST.test(raw)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
   const hit = cache.get(raw);
   if (hit && Date.now() - hit.at < DAY) {
-    return new NextResponse(hit.bytes, {
+    return new NextResponse(new Uint8Array(hit.bytes), {
       headers: { 'content-type': hit.type, 'cache-control': 'private, max-age=86400' },
     });
   }
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
     const bytes = Buffer.from(await res.arrayBuffer());
     if (bytes.length < 20) return NextResponse.json({ error: 'Unavailable' }, { status: 404 });
     cache.set(raw, { type, bytes, at: Date.now() });
-    return new NextResponse(bytes, {
+    return new NextResponse(new Uint8Array(bytes), {
       headers: { 'content-type': type, 'cache-control': 'private, max-age=86400' },
     });
   } catch {
