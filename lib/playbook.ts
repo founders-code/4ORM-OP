@@ -111,6 +111,12 @@ export async function seedRhythms(sql: Sql, ownerId: string) {
         WHERE owner_id = ${ownerId} AND name = ${row.name}
           AND (color LIKE '#%' OR color = '' OR route IN ('room','contacts','work','mail','people'))
       `;
+      await sql`
+        UPDATE playbook_rhythms
+        SET schedule = ${JSON.stringify(row.schedule)}::jsonb, sub = ${row.sub}, grp = ${row.grp}
+        WHERE owner_id = ${ownerId} AND name = ${row.name}
+          AND (schedule IS NULL OR jsonb_typeof(schedule) <> 'array' OR jsonb_array_length(schedule) = 0)
+      `;
     } catch (err) {
       fail('playbook_seed', err);
     }
@@ -131,13 +137,14 @@ export async function listPlaybook(sql: Sql, ownerId: string, weekStart?: string
     ORDER BY sort, name
   `;
   const logs = await sql`
-    SELECT rhythm_id, day, status, value
+    SELECT rhythm_id, day::text AS day, status, value
     FROM playbook_log
     WHERE owner_id = ${ownerId} AND day >= ${monthFrom}::date AND day <= ${monthTo}::date
   `;
   const logMap = new Map<string, { status: string; value: string }>();
   for (const row of logs as Array<{ rhythm_id?: string; day?: string; status?: string; value?: string }>) {
-    logMap.set(`${row.rhythm_id}|${String(row.day).slice(0, 10)}`, { status: String(row.status || ''), value: String(row.value || '') });
+    const day = String(row.day || '').match(/(\d{4}-\d{2}-\d{2})/)?.[1] || String(row.day || '').slice(0, 10);
+    logMap.set(`${row.rhythm_id}|${day}`, { status: String(row.status || ''), value: String(row.value || '') });
   }
   const seedNw = new Map(SEED_RHYTHMS.map((row) => [row.name, row.nw]));
   const hour = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', hour: 'numeric', hourCycle: 'h23' }).format(new Date()));
@@ -165,7 +172,7 @@ export async function listPlaybook(sql: Sql, ownerId: string, weekStart?: string
   }
   const monthLogs = (logs as Array<{ rhythm_id?: string; day?: string; status?: string; value?: string }>).map((row) => ({
     rhythmId: String(row.rhythm_id || ''),
-    day: String(row.day || '').slice(0, 10),
+    day: String(row.day || '').match(/(\d{4}-\d{2}-\d{2})/)?.[1] || String(row.day || '').slice(0, 10),
     status: String(row.status || ''),
     value: String(row.value || ''),
   }));

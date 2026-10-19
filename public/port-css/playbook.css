@@ -144,3 +144,9 @@
 .pbwrap{padding:2px 0 10px}
 .pbwrap .head h1{color:#fff}
 .pad.next{background:rgba(255,255,255,.03)!important;border:1.5px solid color-mix(in srgb,var(--c) 40%,transparent)!important;color:transparent!important}
+@media (max-width:1280px){
+.beats{grid-template-columns:minmax(0,1.6fr) repeat(5,minmax(0,1fr))}
+.beat,.beat .btop{min-width:0}
+.beat .n{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.beat .d{flex-shrink:0}
+}

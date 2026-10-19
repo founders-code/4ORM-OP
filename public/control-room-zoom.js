@@ -83,10 +83,24 @@
     return n.aiSummary || n.rawNotes || '';
   }
   function oweCount(n) {
-    if (n.owe != null) return Number(n.owe) || 0;
     if (n.actions && n.actions.length) return n.actions.length;
-    var id = n.id;
-    return (STATE.meetingActions || []).filter(function (a) { return a.meetingId === id && a.status !== 'done'; }).length;
+    var id = String(n.id || '');
+    var noteId = String(n.noteId || '');
+    var title = String(n.title || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    var date = String(n.date || '').slice(0, 10);
+    var nOpen = (STATE.meetingActions || []).filter(function (a) {
+      if (a.status === 'done' || a.status === 'tasked') return false;
+      var mid = String(a.meetingId || a.meeting_id || '');
+      if (mid && (mid === id || mid === noteId)) return true;
+      var at = String(a.meetingTitle || a.meeting_title || '').toLowerCase().replace(/\s+/g, ' ').trim();
+      var ad = String(a.meetingDate || a.meeting_date || '').slice(0, 10);
+      if (title && at && title === at) return true;
+      if (title && at && date && ad && date === ad && (title.indexOf(at) >= 0 || at.indexOf(title) >= 0)) return true;
+      return false;
+    }).length;
+    if (nOpen) return nOpen;
+    if (n.owe != null) return Number(n.owe) || 0;
+    return 0;
   }
   function zRows() {
     if (window.fixtureMockup) {
@@ -307,14 +321,18 @@
       var who = people.length ? people.slice(0, 2).join(', ') + (people.length > 2 ? ' +' + (people.length - 2) : '') : 'Just you';
       var solo = !!(x.solo || !people.length);
       var said = saidLine(x) || 'Nothing captured yet.';
-      var lead = solo ? '<b style="color:#46556E">Note to self:</b> ' : '<b>' + esc((people[0] || '').split(' ')[0]) + ':</b> ';
+      var leadName = (people[0] || '').split(' ')[0];
+      var quoted = String(said).replace(/^Note to self:\s*/i, '');
+      var nameRe = leadName ? new RegExp('^' + leadName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*:\\s*', 'i') : null;
+      if (nameRe) { quoted = quoted.replace(nameRe, '').replace(nameRe, ''); }
+      var lead = solo ? '<b style="color:#46556E">Note to self:</b> ' : (leadName ? '<b>' + esc(leadName) + ':</b> ' : '');
       var owe = oweCount(x);
       var tag = solo ? '<span class="tag solo">Solo</span>' : (owe ? '<span class="tag owe">You owe ' + owe + '</span>' : '<span class="tag solo">Nothing owed</span>');
       var d = String(x.date || '').slice(0, 10).split('-');
       var label = d.length === 3 ? MONTHS[Number(d[1]) - 1].slice(0, 3).toUpperCase() + ' ' + Number(d[2]) + ', ' + d[0] : fmtDate(x.date);
       boxes += '<div class="mc" data-z="' + esc(x.id) + '"><div class="d">' + esc(label) + '<span class="src">' + esc(srcOf(x)) + '</span></div><div class="t">' + esc(x.title) + '</div>'
         + '<div class="pp2">' + (people.map(function (name) { return '<span class="av" style="background:' + col(name) + '">' + esc(ini(name)) + '</span>'; }).join('') || '<span class="av" style="background:#8a96ad;margin:0">CJ</span>') + '<span class="n">' + esc(who) + '</span></div>'
-        + '<div class="sn' + (solo ? ' self' : '') + '">' + lead + esc(said.replace(/^Note to self:\s*/i, '')) + '</div>'
+        + '<div class="sn' + (solo ? ' self' : '') + '">' + lead + esc(quoted) + '</div>'
         + '<div class="ft">' + tag + '<span class="op">Open &rarr;</span><span class="ib" data-zedit="' + esc(x.id) + '" title="Edit">&#9998;</span><span class="ib" data-zdel="' + esc(x.id) + '" title="Delete">&#128465;</span></div></div>';
     });
     if (week) boxes += '</div>';
