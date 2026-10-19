@@ -61,7 +61,10 @@ function shape(row: Record<string, unknown>) {
   const raw = row.schedule;
   const list = Array.isArray(raw) ? raw : (typeof raw === 'string' ? (() => { try { return JSON.parse(raw); } catch { return []; } })() : []);
   const schedule = (Array.isArray(list) ? list : []).map((x) => String(x));
-  const created = String(row.created_at || '').slice(0, 10);
+  const created = String(row.created_at || '').match(/(\d{4}-\d{2}-\d{2})/)?.[1]
+    || (row.created_at instanceof Date && Number.isFinite(row.created_at.getTime())
+      ? row.created_at.toISOString().slice(0, 10)
+      : '');
   return {
     id: String(row.id),
     name: String(row.name || ''),
@@ -131,7 +134,7 @@ export async function listPlaybook(sql: Sql, ownerId: string, weekStart?: string
   const monthFrom = firstOfMonth(today, 0);
   const monthTo = lastOfMonth(today, 2);
   const rhythms = await sql`
-    SELECT id, name, color, route, schedule, target, sort, active, created_at, sub, grp
+    SELECT id, name, color, route, schedule, target, sort, active, created_at::text AS created_at, sub, grp
     FROM playbook_rhythms
     WHERE owner_id = ${ownerId} AND active = true
     ORDER BY sort, name
