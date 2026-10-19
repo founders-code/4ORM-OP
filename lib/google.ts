@@ -840,11 +840,15 @@ export async function linkedinMail() {
     const subject = pick('subject').slice(0, 180);
     const name = linkedinName(subject, fromRaw);
     if (!name || /^linkedin$/i.test(name)) continue;
+    if (/^team\b/i.test(name) || /\bon linkedin\b/i.test(name)) continue;
+    const kind = linkedinKind(subject, address);
+    const snippet = decodeSnippet(String(msg.snippet || subject));
+    if (kind === 'update' || /posted an update/i.test(`${subject} ${snippet}`)) continue;
     items.push({
       id: String(msg.id),
       name,
-      kind: linkedinKind(subject, address),
-      snippet: decodeSnippet(String(msg.snippet || subject)),
+      kind,
+      snippet,
       at: Number(msg.internalDate) || Date.parse(pick('date')) || Date.now(),
       unread: (msg.labelIds || []).includes('UNREAD'),
     });

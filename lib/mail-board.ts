@@ -157,7 +157,13 @@ function columnOfContact(category: string) {
 function ruleHit(rule: { matchType: string; matchValue: string }, mail: BoardMail) {
   const value = String(rule.matchValue || '').trim().toLowerCase();
   if (!value) return false;
-  if (rule.matchType === 'sender') return mail.email === value || String(mail.from || '').toLowerCase() === value;
+  if (rule.matchType === 'sender') {
+    const email = String(mail.email || '').toLowerCase();
+    const from = String(mail.from || '').toLowerCase();
+    if (email === value || from === value) return true;
+    if (value.endsWith('@')) return email.startsWith(value) || from.includes(value);
+    return email.includes(value) || from.includes(value);
+  }
   if (rule.matchType === 'domain') {
     const host = mail.email.split('@')[1] || '';
     const want = value.replace(/^@/, '');
@@ -166,6 +172,30 @@ function ruleHit(rule: { matchType: string; matchValue: string }, mail: BoardMai
   if (rule.matchType === 'subject') return String(mail.subject || '').toLowerCase().includes(value);
   if (rule.matchType === 'list') return mail.bulk && value === 'bulk';
   return false;
+}
+
+function investorMail(mail: BoardMail) {
+  const blob = `${mail.email || ''} ${mail.from || ''} ${mail.subject || ''} ${mail.snippet || ''}`.toLowerCase();
+  return /bruce@|don@|bruce fair|\bcheque\b|\bfriends.?and.?family\b/.test(blob);
+}
+
+const SEED_INVESTOR_RULES = [
+  { matchType: 'sender', matchValue: 'bruce@', target: 'investors' },
+  { matchType: 'sender', matchValue: 'don@', target: 'investors' },
+  { matchType: 'subject', matchValue: 'cheque', target: 'investors' },
+];
+
+export async function seedInvestorRules(sql: Sql, ownerId: string) {
+  const existing = await listRules(sql, ownerId);
+  for (const seed of SEED_INVESTOR_RULES) {
+    const hit = existing.some((row) =>
+      row.matchType === seed.matchType &&
+      String(row.matchValue || '').toLowerCase() === seed.matchValue &&
+      row.target === seed.target
+    );
+    if (hit) continue;
+    await saveRule(sql, ownerId, { matchType: seed.matchType, matchValue: seed.matchValue, target: seed.target, sticky: true });
+  }
 }
 
 const ACTION_RE = /\b(sign|signature|docusign|agreement|contract|invoice|action required|approve|approval|deadline|due by|wire|cheque|check|follow[- ]up|please|can you|need you)\b/i;
@@ -182,6 +212,7 @@ export function classifyMail(
   }
   if (mail.bulk) return 'quiet';
   if (mail.internal) return 'team';
+  if (investorMail(mail)) return 'investors';
   const hit = contacts.find((c) => (c.email && c.email === mail.email) || (c.name && c.name.toLowerCase() === String(mail.from || '').toLowerCase()));
   if (hit) {
     const col = columnOfContact(hit.category);

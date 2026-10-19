@@ -61,6 +61,7 @@ button{font:inherit;cursor:pointer}
 .col{background:var(--soft);border-radius:12px;padding:10px;min-width:0}
 .colh{display:flex;align-items:center;gap:8px;padding:2px 4px 8px}.colh b{font-size:13px;font-weight:800}.colh .c{font-size:11.5px;font-weight:700;color:var(--ink3);background:#fff;border-radius:999px;padding:1px 8px}.colh .plus{margin-left:auto;width:24px;height:24px;border-radius:7px;border:1px solid var(--line);background:#fff;color:var(--ink2);font-weight:800;line-height:1}
 .task{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:10px;align-items:start;background:#fff;border-radius:10px;padding:9px 10px;margin-bottom:6px;box-shadow:0 1px 2px rgba(16,32,64,.06);position:relative}
+.task > div{min-width:0}
 .task .cb{width:16px;height:16px;border-radius:5px;border:1.5px solid #c3cde0;margin-top:2px;cursor:pointer}
 .task .tt{font-size:13px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .task .tg{font-size:11px;color:var(--ink3);font-weight:650;margin-top:2px}

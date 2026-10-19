@@ -11,6 +11,7 @@ import {
   listRules,
   needsNow,
   readCache,
+  seedInvestorRules,
   tagsFor,
   writeCache,
 } from '@/lib/mail-board';
@@ -30,6 +31,7 @@ export async function GET(req: Request) {
     const q = String(url.searchParams.get('q') || '').slice(0, 200);
     const refresh = url.searchParams.get('refresh') === '1';
     const columns = await listColumns(session.sql, session.userId);
+    await seedInvestorRules(session.sql, session.userId);
     const rules = await listRules(session.sql, session.userId);
     const files = await listFiles(session.sql, session.userId);
     const contacts = await listContactHits(session.sql, session.userId);

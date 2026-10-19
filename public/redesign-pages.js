@@ -13,7 +13,15 @@
     + '.lnk{color:var(--blue);font-weight:700;font-size:12.5px;white-space:nowrap;cursor:pointer}'
     + '.foot{padding:10px 16px 14px;font-size:12.5px;color:var(--ink3);border-top:1px solid var(--line)}'
     + '.port-body{display:block;min-width:0}';
-  var CSS = { room: '/port-css/dashboard.css', war: '/port-css/war-room.css', notes: '/port-css/notes.css' };
+  var CSS = {
+    room: '/port-css/dashboard.css', war: '/port-css/war-room.css', notes: '/port-css/notes.css',
+    contacts: '/port-css/pipeline.css', work: '/port-css/spaces.css', docs: '/port-css/documents.css',
+    links: '/port-css/links.css', mail: '/port-css/email.css'
+  };
+  var HOSTS = {
+    opsDash: 'room', warDesk: 'war', notesDesk: 'notes',
+    pipeDesk: 'contacts', spacesDesk: 'work', docsDesk: 'docs', linksDesk: 'links', mailDesk: 'mail'
+  };
   var cssText = {};
   var cssWait = [];
   var BELL = '<svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>';
@@ -38,8 +46,11 @@
     return root;
   };
 
+  function cssReady() {
+    return Object.keys(CSS).every(function (k) { return cssText[k] != null; });
+  }
   function wrapOf(hostId) {
-    var key = hostId === 'opsDash' ? 'room' : hostId === 'warDesk' ? 'war' : 'notes';
+    var key = HOSTS[hostId] || 'notes';
     var root = window.ShadowPage(hostId, key);
     if (!root) return null;
     var style = root.querySelector('style');
@@ -48,19 +59,19 @@
   }
 
   function whenCss(fn) {
-    if (cssText.room && cssText.war && cssText.notes) fn();
+    if (cssReady()) fn();
     else cssWait.push(fn);
   }
   Object.keys(CSS).forEach(function (key) {
     fetch(CSS[key]).then(function (r) { return r.text(); }).then(function (t) {
       cssText[key] = t;
-      if (cssText.room && cssText.war && cssText.notes) {
+      if (cssReady()) {
         var q = cssWait.splice(0);
         q.forEach(function (fn) { fn(); });
       }
     }).catch(function () {
       cssText[key] = cssText[key] || '';
-      if (Object.keys(CSS).every(function (k) { return cssText[k] != null; })) {
+      if (cssReady()) {
         var q = cssWait.splice(0);
         q.forEach(function (fn) { fn(); });
       }
@@ -112,7 +123,9 @@
   function liPerson(row) {
     var name = String(row && row.name || '').trim();
     if (!name || /^linkedin$/i.test(name)) return false;
-    if (row.kind === 'update' && /^linkedin$/i.test(name)) return false;
+    if (/^team\b/i.test(name) || /\bon linkedin\b/i.test(name)) return false;
+    var kind = String(row.kind || row.type || '').toLowerCase();
+    if (kind === 'update' || /posted an update/i.test(String(row.snippet || row.preview || ''))) return false;
     return true;
   }
   function initials(name) {
@@ -133,7 +146,16 @@
     if (v && Array.isArray(v.notes)) return v.notes;
     if (v && Array.isArray(v.people)) return v.people;
     if (v && Array.isArray(v.actions)) return v.actions;
+    if (v && Array.isArray(v.reach)) return v.reach;
+    if (v && Array.isArray(v.contacts)) return v.contacts;
     return [];
+  }
+  function reachPeople() {
+    var S = window.STATE || {};
+    var list = asList(S.reachOut);
+    if (!list.length) list = asList(S.reach);
+    if (!list.length) list = asList(S.reachOut);
+    return list.filter(function (p) { return p && (p.name || p.fullName || p.who || p.title || p.company); });
   }
   function sampleKeys(arr) {
     var row = asList(arr)[0];
@@ -213,12 +235,12 @@
     return asList(S.linkedin).map(function (row) {
       return {
         name: String(row.name || row.from || row.who || '').trim(),
-        kind: row.kind || row.type || 'update',
+        kind: row.kind || row.type || '',
         snippet: row.snippet || row.preview || row.subject || '',
         at: Number(row.at || row.date) || 0,
         unread: !!row.unread
       };
-    }).filter(function (row) { return row.name && !/^linkedin$/i.test(row.name); });
+    }).filter(liPerson);
   }
   function upcomingEvents() {
     var S = window.STATE || {};
@@ -289,7 +311,7 @@
       ceoMoves: asList(S.ceo && S.ceo.moves).length, moveKeys: sampleKeys(S.ceo && S.ceo.moves),
       items: asList(S.items).length, itemKeys: sampleKeys(S.items),
       notes: asList(S.notes).length, stickies: asList(S.stickies).length,
-      meetingActions: asList(S.meetingActions).length, reachOut: asList(S.reachOut).length,
+      meetingActions: asList(S.meetingActions).length, reachOut: reachPeople().length,
       finance: S.finance ? Object.keys(S.finance) : null
     }, extra || {}));
   }
@@ -323,18 +345,23 @@
     var fin = S.finance || {};
     var raise = fin.raise || {};
     var ceoLamps = asList(S.ceo && S.ceo.lamps);
-    var lamps = ceoLamps.length ? ceoLamps.map(function (l) {
-      var led = lampLed(l.state);
-      return { led: led, name: l.label || l.name || l.key || 'Lamp', st: led, word: l.word || l.state || '' };
-    }) : [
-      { led: 'r', name: 'Runway', st: 'r', word: 'Critical' },
-      { led: 'a', name: 'Raise pace', st: 'a', word: 'Behind' },
-      { led: 'g', name: 'Pipeline', st: 'g', word: asList(S.pipeline).length ? 'Live' : 'Waiting' },
-      { led: 'a', name: 'Spend', st: 'a', word: 'Watch' },
-      { led: 'a', name: 'Legal docs', st: 'a', word: 'Open' },
-      { led: 'r', name: 'Concentration', st: 'r', word: 'High' },
-      { led: 'g', name: 'Integrations', st: 'g', word: (plugs || 0) + ' live' }
+    var lampSlots = [
+      { re: /runway/, name: 'Runway', led: 'r', word: 'Critical' },
+      { re: /raise/, name: 'Raise', led: 'a', word: 'Behind' },
+      { re: /pipe/, name: 'Pipeline', led: 'g', word: asList(S.pipeline).length ? 'Live' : 'Waiting' },
+      { re: /spend|burn/, name: 'Spend', led: 'a', word: 'Watch' },
+      { re: /legal/, name: 'Legal', led: 'a', word: 'Open' },
+      { re: /customer|concentrat/, name: 'Customer', led: 'r', word: 'High' },
+      { re: /integrat/, name: 'Integrations', led: 'g', word: (plugs || 0) + ' live' }
     ];
+    var lamps = lampSlots.map(function (slot) {
+      var hit = ceoLamps.filter(function (l) {
+        var blob = String(l.key || l.label || l.name || '');
+        return slot.re.test(blob);
+      })[0];
+      var led = hit ? lampLed(hit.state) : slot.led;
+      return { led: led, name: slot.name, st: led, word: (hit && (hit.word || hit.state)) || slot.word };
+    });
     liveLog('dashboard', { inboxOut: mail.length, linkedOut: linked.length, meetOut: meetings.length, moveOut: movers.length });
     return {
       cash: fin.cashLabel || (fin.cash != null ? ('$' + Number(fin.cash).toLocaleString('en-US')) : '$3,180'),
@@ -358,8 +385,8 @@
         { tone: 'a', title: 'Unsigned docs + short runway.', body: 'That pairing is what stalls a close.' }
       ],
       linkedin: linked.map(function (row) {
-        return { name: row.name, action: kindWord[row.kind] || 'update', snippet: row.snippet, age: ageLabel(row.at) };
-      }),
+        return { name: row.name, action: kindWord[row.kind] || '', snippet: row.snippet, age: ageLabel(row.at) };
+      }).filter(function (row) { return row.action && row.action !== 'posted an update'; }),
       inbox: mail.map(function (m, i) {
         return {
           from: m.from || m.name || m.email || 'Sender',
@@ -430,7 +457,7 @@
       }) };
     }
     var heroMove = moves[0] || {};
-    var people = asList(S.reachOut);
+    var people = reachPeople();
     var kinds = [['all', 'All'], ['vc', 'VC'], ['design', 'Design partner'], ['regulator', 'Regulator'], ['corporate', 'Corporate'], ['client', 'Client']];
     var reachChips = kinds.map(function (pair) {
       var n = people.filter(function (p) { return pair[0] === 'all' || p.kind === pair[0]; }).length;
@@ -470,8 +497,9 @@
       }),
       reachChips: reachChips,
       reach: people.filter(function (p) { return !p.done; }).slice(0, 8).map(function (p) {
-        var bits = [reachNames[p.kind] || p.kind || 'Corporate', p.company, p.nextAction || p.next_action].filter(Boolean);
-        return { name: p.name || 'Person', meta: bits.join(' · ') };
+        var kind = String(p.kind || p.type || p.role || '').toLowerCase();
+        var bits = [reachNames[kind] || p.kind || p.type || p.role || 'Corporate', p.company || p.org || p.organisation, p.nextAction || p.next_action || p.action].filter(Boolean);
+        return { name: p.name || p.fullName || p.who || p.title || 'Person', meta: bits.join(' · ') };
       }),
       today: pack('today'),
       week: pack('week'),
@@ -739,11 +767,15 @@
       + '<div class="toast" id="toast"></div>';
     var root = wrap.getRootNode();
     root.querySelectorAll('.ck').forEach(function (el) {
-      el.onclick = function () {
+      el.onclick = function (e) {
+        e.stopPropagation();
         el.classList.toggle('done');
         var i = el.querySelector('i');
         if (i) i.innerHTML = el.classList.contains('done') ? '&#10003;' : '';
       };
+    });
+    root.querySelectorAll('.note').forEach(function (el) {
+      el.onclick = function () { el.classList.toggle('open'); };
     });
     markReady('notesDesk');
   }
@@ -790,6 +822,11 @@
   setInterval(function () { hookWar(); hookNotes(); }, 400);
   hookWar();
   hookNotes();
+  window.__port = {
+    fixtureOn: fixtureOn, wrapOf: wrapOf, whenCss: whenCss, markReady: markReady,
+    esc: esc, asList: asList, liveLog: liveLog, initials: initials, ageLabel: ageLabel,
+    HOSTS: HOSTS, TOKEN: TOKEN
+  };
   whenCss(function () {
     try {
       var path = String(location.pathname || '');
