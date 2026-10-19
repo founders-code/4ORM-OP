@@ -4,7 +4,9 @@ import { openBoard } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
-async function ensureTable(sql: NonNullable<Awaited<ReturnType<typeof openBoard>>['sql']>) {
+type Sql = NonNullable<NonNullable<Awaited<ReturnType<typeof openBoard>>>['sql']>;
+
+async function ensureTable(sql: Sql) {
   await sql`
     CREATE TABLE IF NOT EXISTS nav_prefs (
       owner_id text PRIMARY KEY,
