@@ -239,14 +239,27 @@
   function liveDocumentsState() {
     var S = window.STATE || {};
     var docs = asList(S.staged).length ? asList(S.staged) : asList(S.docs);
-    var seenDrive = {};
-    docs = docs.filter(function (d) {
+    var keptDrive = {};
+    var keptName = {};
+    var uniq = [];
+    docs.forEach(function (d) {
       var id = String(d.driveFileId || d.fileId || '').trim();
-      if (!id) return true;
-      if (seenDrive[id]) return false;
-      seenDrive[id] = 1;
-      return true;
+      if (!id) return;
+      if (keptDrive[id]) return;
+      keptDrive[id] = 1;
+      var n = String(d.name || '').trim().toLowerCase();
+      if (n) keptName[n] = 1;
+      uniq.push(d);
     });
+    docs.forEach(function (d) {
+      var id = String(d.driveFileId || d.fileId || '').trim();
+      if (id) return;
+      var n = String(d.name || '').trim().toLowerCase();
+      if (n && keptName[n]) return;
+      if (n) keptName[n] = 1;
+      uniq.push(d);
+    });
+    docs = uniq;
     var folders = asList(S.docFolders);
     if (!folders.length) folders = ['Angel', 'Banking', 'Design partners', 'Dev', 'Dev partners', 'Friends & family', 'Government', 'Regulators'];
     var counts = { 'All documents': docs.length };
