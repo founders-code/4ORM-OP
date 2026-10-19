@@ -19,7 +19,7 @@ import {
   whyFor,
 } from './news-sources.mjs';
 import { listNews, upsertNews } from './war';
-import { todayKey } from './war.mjs';
+import { todayKey } from './war-core.mjs';
 
 type Sql = NeonQueryFunction<false, false>;
 type Row = Record<string, unknown>;

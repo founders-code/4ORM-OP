@@ -3,7 +3,7 @@ import { fail } from '@/lib/log';
 import { openBoard } from '@/lib/session';
 import { NEWS_CHIPS, ensureNewsTables, lastSweptAt } from '@/lib/news-sweep';
 import { listNews, newsCategories } from '@/lib/war';
-import { NEWS_CATEGORIES } from '@/lib/war.mjs';
+import { NEWS_CATEGORIES } from '@/lib/war-core.mjs';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;

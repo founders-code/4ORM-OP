@@ -1,6 +1,6 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { allowPackageKind, allowPackageStatus, allowSpaceType } from './guard.mjs';
-import { STARTERS, assembleMail, fillToken, orderSpaceFolders } from './packages.mjs';
+import { STARTERS, assembleMail, fillToken, orderSpaceFolders } from './packages-core.mjs';
 import { claimBudget } from './db';
 import { copyDriveFile, createGmailDraft, driveWrite, listFolderFiles, uploadDriveBytes } from './google';
 import { fail } from './log';

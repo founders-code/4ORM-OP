@@ -4,7 +4,7 @@ import { allowPackageKind } from './guard.mjs';
 import { addGhlTask, ensureGhlContact, ghlConfigured, opportunityStages, pushOpportunity, repliedInbound, sendViaGhl } from './ghl';
 import { copyDriveFile, createGmailDraft, driveWrite, uploadDriveBytes } from './google';
 import { fail } from './log';
-import { STARTERS, assembleMail, fillToken } from './packages.mjs';
+import { STARTERS, assembleMail, fillToken } from './packages-core.mjs';
 import outreachSeed from '../data/spaces_seed.json';
 
 type Sql = NeonQueryFunction<false, false>;
