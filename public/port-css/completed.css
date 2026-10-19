@@ -32,3 +32,6 @@
 .pads{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}.pads span{font-size:12px;font-weight:700;border-radius:8px;padding:5px 9px;color:#fff}
 .pads span.off{background:var(--soft)!important;color:var(--ink3);text-decoration:line-through}
 .quote{font-size:13px;color:var(--ink2);line-height:1.55;padding:8px 0 4px 10px;border-left:2px solid var(--line)}
+@media (max-width:1280px){
+.li > span:not(.tag){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
