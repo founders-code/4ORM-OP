@@ -7,6 +7,14 @@ body{
   grid-template-columns:224px minmax(0,1fr);
   grid-template-rows:56px auto;
   overflow-x:hidden;
+  font-size:16px!important;
+  line-height:normal!important;
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif!important;
+}
+header.top,nav.side,main.main,main.wrap{
+  font-size:16px;
+  line-height:normal!important;
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif!important;
 }
 body > h1.sr-only{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);grid-column:1;grid-row:1;pointer-events:none}
 header.top{grid-column:1/-1;grid-row:1;position:relative!important;z-index:40;height:56px!important;flex-wrap:nowrap;padding:0 20px!important;background:#fff!important;border-bottom:1px solid var(--line)}
@@ -15,7 +23,33 @@ header.top .crumb{font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Dis
 header.top .clock{font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif;font-size:12.5px;color:var(--ink3);font-weight:600;letter-spacing:0;text-transform:none}
 nav.side{grid-column:1;grid-row:2;min-height:calc(100vh - 56px);overflow:auto}
 main.wrap,main.main{grid-column:2;grid-row:2;max-width:none!important;margin:0!important;padding:20px 24px 40px!important;min-width:0;width:auto}
-.view{padding:0 0 8px!important}
+.view{padding:0!important}
+#todayPop{position:absolute;right:20px;top:56px;z-index:50}
+nav.side .nav{
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif!important;
+  font-size:13.5px!important;
+  font-weight:600!important;
+  line-height:normal!important;
+  letter-spacing:0!important;
+  text-transform:none!important;
+  color:#cfd8ee!important;
+  padding:8px 12px!important;
+  border:0!important;
+  border-bottom:0!important;
+  border-radius:9px!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:11px!important;
+}
+nav.side .nav.on{background:rgba(46,107,242,.22)!important;color:#fff!important}
+nav.side .nav .nl{font:inherit;color:inherit}
+html.fixture-mockup .arr-row,body.fixture-mockup .arr-row{display:none!important}
+html.fixture-mockup #todayPop,html.fixture-mockup .mic,html.fixture-mockup .heard,
+html.fixture-mockup #meetAlarm,html.fixture-mockup #sideNav,html.fixture-mockup #navToggle,
+html.fixture-mockup #busyBar,html.fixture-mockup #writeErr,html.fixture-mockup #actNote,
+html.fixture-mockup #scrim,html.fixture-mockup #drawer,html.fixture-mockup #modal,
+html.fixture-mockup #emailReader,html.fixture-mockup #docView,html.fixture-mockup #planWin,
+html.fixture-mockup h1.sr-only{display:none!important}
 body.dk-page{background:linear-gradient(165deg,var(--ground),var(--ground2)) fixed!important}
 body > #meetAlarm,body > #busyBar,body > #writeErr,body > #actNote,body > #sideNav,body > #navToggle{position:fixed;left:224px;right:0;z-index:45}
 nav.tabs[hidden],.nav-toggle[hidden]{display:none!important}

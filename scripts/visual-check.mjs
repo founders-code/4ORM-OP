@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { readFileSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { extname, join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
@@ -10,10 +10,11 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'visual-diff');
 const PASS = 0.5;
 const PAGES = [
-  { page: '01-dashboard', design: 'redesign/01-dashboard.html', live: 'control-room.html?view=room&fixture=mockup' },
-  { page: '02-war-room', design: 'redesign/02-war-room.html', live: 'control-room.html?view=war&fixture=mockup' },
-  { page: '03-notes', design: 'redesign/03-notes.html', live: 'control-room.html?view=notes&fixture=mockup' },
+  { page: '01-dashboard', design: 'redesign/01-dashboard.html', live: 'control-room.html?view=room&fixture=mockup', ready: '#opsDash[data-port-ready]' },
+  { page: '02-war-room', design: 'redesign/02-war-room.html', live: 'control-room.html?view=war&fixture=mockup', ready: '#warDesk[data-port-ready]' },
+  { page: '03-notes', design: 'redesign/03-notes.html', live: 'control-room.html?view=notes&fixture=mockup', ready: '#notesDesk[data-port-ready]' },
 ];
+const INTER = '<link rel="preconnect" href="https://fonts.googleapis.com"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -33,12 +34,8 @@ function serve() {
       const url = new URL(req.url, 'http://127.0.0.1');
       let pathName = decodeURIComponent(url.pathname);
       if (pathName === '/') pathName = '/index.html';
-      if ((pathName === '/control-room.html' || pathName === '/control-room' || pathName === '/war-room' || pathName === '/notes') && url.searchParams.get('fixture') === 'mockup') {
-        const view = url.searchParams.get('view') || (pathName === '/war-room' ? 'war' : pathName === '/notes' ? 'notes' : 'room');
-        const file = { room: '01-dashboard.html', war: '02-war-room.html', notes: '03-notes.html' }[view] || '01-dashboard.html';
-        res.writeHead(302, { Location: '/port-fixtures/' + file });
-        res.end();
-        return;
+      if (pathName === '/control-room' || pathName === '/war-room' || pathName === '/notes') {
+        pathName = '/control-room.html';
       }
       const tries = [];
       if (pathName.startsWith('/design/')) {
@@ -66,6 +63,13 @@ function serve() {
         res.end('not found ' + pathName);
         return;
       }
+      if (used.endsWith('.html') && pathName.startsWith('/design/')) {
+        let html = body.toString('utf8');
+        if (!html.includes('fonts.googleapis.com')) {
+          html = html.replace(/<head>/i, `<head>${INTER}`);
+        }
+        body = Buffer.from(html);
+      }
       res.writeHead(200, { 'content-type': MIME[extname(used)] || 'application/octet-stream', 'cache-control': 'no-store' });
       res.end(body);
     });
@@ -77,14 +81,7 @@ function pct(diff, total) {
   return total ? (100 * diff) / total : 0;
 }
 
-async function shot(page, url) {
-  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  if (url.includes('fixture=mockup')) {
-    await page.waitForURL(/\/port-fixtures\//, { timeout: 8000 });
-    await page.waitForLoadState('domcontentloaded');
-  }
-  await page.waitForSelector('.side .nav, .clock', { timeout: 8000 }).catch(() => {});
-  await page.waitForTimeout(500);
+async function prepare(page) {
   await page.evaluate(() => {
     const clock = document.querySelector('.clock');
     if (clock) {
@@ -95,7 +92,34 @@ async function shot(page, url) {
     document.body.style.overflow = 'hidden';
     document.body.style.margin = '0';
   });
-  await page.waitForTimeout(200);
+  await page.evaluate(async () => {
+    const faces = ['400 16px Inter', '500 16px Inter', '600 13.5px Inter', '700 14px Inter', '800 24px Inter', '900 30px Inter'];
+    if (document.fonts && document.fonts.load) {
+      await Promise.all(faces.map((f) => document.fonts.load(f).catch(() => {})));
+      await document.fonts.ready;
+    }
+  }).catch(() => {});
+  await page.waitForTimeout(300);
+}
+
+async function overflowAt(page, url, width, height, ready) {
+  await page.setViewportSize({ width, height });
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  if (ready) await page.waitForSelector(ready, { timeout: 12000, state: 'attached' }).catch(() => {});
+  else await page.waitForSelector('.side .nav, .clock', { timeout: 8000 }).catch(() => {});
+  await prepare(page);
+  return page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+}
+
+async function shot(page, url, ready) {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  if (url.includes('fixture=mockup')) {
+    await page.waitForSelector(ready, { timeout: 12000, state: 'attached' });
+  } else {
+    await page.waitForSelector('.side .nav, .clock', { timeout: 8000 }).catch(() => {});
+  }
+  await prepare(page);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   const buf = await page.screenshot({ type: 'png', fullPage: false });
   return { buf, overflow };
@@ -107,15 +131,17 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
   const rows = [];
+  const overflow1280 = [];
   let failed = 0;
   try {
     for (const spec of PAGES) {
       const page = await context.newPage();
       const designUrl = `http://127.0.0.1:${port}/design/${spec.page}`;
       const liveUrl = `http://127.0.0.1:${port}/${spec.live}`;
-      await page.setViewportSize({ width: 1440, height: 900 });
-      const design = await shot(page, designUrl);
-      const live = await shot(page, liveUrl);
+      const design = await shot(page, designUrl, spec.ready);
+      const live = await shot(page, liveUrl, spec.ready);
+      const live1280 = await overflowAt(page, liveUrl, 1280, 900, spec.ready);
+      const design1280 = await overflowAt(page, designUrl, 1280, 900, null);
       await page.close();
       const mock = PNG.sync.read(design.buf);
       const livePng = PNG.sync.read(live.buf);
@@ -130,21 +156,24 @@ async function main() {
       const total = w * h;
       const p = pct(n, total);
       const overflow = design.overflow || live.overflow;
-      const ok = p < PASS && !overflow;
+      const ok = p < PASS && !overflow && !live1280;
       if (!ok) failed += 1;
       writeFileSync(join(OUT, `${spec.page}-mockup.png`), PNG.sync.write(a));
       writeFileSync(join(OUT, `${spec.page}-live.png`), PNG.sync.write(b));
       writeFileSync(join(OUT, `${spec.page}.png`), PNG.sync.write(diff));
       rows.push({ page: spec.page, pct: p, pass: ok, pixels: n, total, overflow: overflow ? 'yes' : 'no' });
-      console.log(`${spec.page.padEnd(16)} ${p.toFixed(3)}%  overflow=${overflow ? 'yes' : 'no'}  ${ok ? 'PASS' : 'FAIL'}  (${n}/${total})`);
+      overflow1280.push({ page: spec.page, live: live1280 ? 'yes' : 'no', design: design1280 ? 'yes' : 'no' });
+      console.log(`${spec.page.padEnd(16)} ${p.toFixed(3)}%  overflow1440=${overflow ? 'yes' : 'no'}  overflow1280=${live1280 ? 'yes' : 'no'}  ${ok ? 'PASS' : 'FAIL'}  (${n}/${total})`);
     }
   } finally {
     await browser.close();
     server.close();
   }
   const table = ['page\t% diff\toverflow\tpass/fail'].concat(rows.map((r) => `${r.page}\t${r.pct.toFixed(3)}\t${r.overflow}\t${r.pass ? 'PASS' : 'FAIL'}`)).join('\n');
-  writeFileSync(join(OUT, 'results.txt'), table + '\n');
+  const table1280 = ['page\tlive 1280 overflow\tdesign 1280 overflow'].concat(overflow1280.map((r) => `${r.page}\t${r.live}\t${r.design}`)).join('\n');
+  writeFileSync(join(OUT, 'results.txt'), table + '\n\n' + table1280 + '\n');
   console.log('\n' + table);
+  console.log('\n' + table1280);
   if (failed) process.exitCode = 1;
 }
 
