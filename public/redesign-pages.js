@@ -122,25 +122,195 @@
     return { yellow: 'y', pink: 'p', green: 'g', blue: 'b', orange: 'o', violet: 'v', white: 'w', purple: 'v' }[String(c || 'yellow')] || 'y';
   }
   function typeCls(t) {
-    return { 'To-do': 'todo', Idea: 'idea', Person: 'person', Decision: 'dec' }[t] || '';
+    return { 'To-do': 'todo', Idea: 'idea', Person: 'person', Decision: 'dec', todo: 'todo', idea: 'idea', person: 'person', decision: 'dec', dec: 'dec' }[t] || '';
   }
+  function asList(v) {
+    if (Array.isArray(v)) return v;
+    if (v && Array.isArray(v.moves)) return v.moves;
+    if (v && Array.isArray(v.items)) return v.items;
+    if (v && Array.isArray(v.messages)) return v.messages;
+    if (v && Array.isArray(v.events)) return v.events;
+    if (v && Array.isArray(v.notes)) return v.notes;
+    if (v && Array.isArray(v.people)) return v.people;
+    if (v && Array.isArray(v.actions)) return v.actions;
+    return [];
+  }
+  function sampleKeys(arr) {
+    var row = asList(arr)[0];
+    return row && typeof row === 'object' ? Object.keys(row) : [];
+  }
+  function eventStart(ev) {
+    if (!ev) return 0;
+    var raw = ev.start != null ? ev.start : (ev.startMs != null ? ev.startMs : (ev.startAt != null ? ev.startAt : ev.begin));
+    var n = typeof raw === 'number' ? raw : Date.parse(raw || '');
+    if (!Number.isFinite(n) || n <= 0) return 0;
+    if (n < 1e12) n *= 1000;
+    return n;
+  }
+  function eventTitle(ev) {
+    return String((ev && (ev.title || ev.summary || ev.name || ev.event)) || 'Meeting').trim();
+  }
+  function moveText(m) {
+    return String((m && (m.text || m.title || m.name || m.label || m.move || (m.item && m.item.title))) || '').trim();
+  }
+  function moveWhy(m) {
+    return String((m && (m.whyNow || m.why_now || m.why || m.reason || m.detail)) || '').trim();
+  }
+  function ceoMoves() {
+    var S = window.STATE || {};
+    var desk = S.ceo || {};
+    var list = asList(desk.moves).length ? desk.moves : (asList(S.moves).length ? S.moves : (S.ceoMoves || []));
+    return asList(list).filter(function (m) { return moveText(m); }).sort(function (a, b) {
+      return (Number(a.rank) || 99) - (Number(b.rank) || 99);
+    });
+  }
+  function itemDue(it) {
+    if (!it || it.due == null || it.due === '') return null;
+    var n = typeof it.due === 'number' ? it.due : Date.parse(it.due);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    if (n < 1e12) n *= 1000;
+    return n;
+  }
+  function itemBucket(it) {
+    if (typeof bucket === 'function') return bucket(it);
+    var due = itemDue(it);
+    if (due == null) return 'later';
+    var a = new Date(due); a.setHours(0, 0, 0, 0);
+    var n = new Date(); n.setHours(0, 0, 0, 0);
+    var d = Math.round((a - n) / 86400000);
+    if (d < 0) return 'overdue';
+    if (d === 0) return 'today';
+    if (d <= 7) return 'week';
+    return 'later';
+  }
+  function peopleInboxOn() {
+    try { return localStorage.getItem('cr_inbox_people') !== '0'; } catch (e) { return true; }
+  }
+  function mailRows() {
+    var S = window.STATE || {};
+    var rows = asList(S.mail).length ? S.mail : asList(S.messages);
+    var hidden = {};
+    (S.mailHidden || []).forEach(function (email) { if (email) hidden[String(email).toLowerCase()] = true; });
+    try {
+      JSON.parse(localStorage.getItem('cr_inbox_hide') || '[]').forEach(function (email) { if (email) hidden[String(email).toLowerCase()] = true; });
+    } catch (e) {}
+    function byAt(a, b) {
+      return (Number(b.at || b.date || 0) - Number(a.at || a.date || 0));
+    }
+    var filtered = rows.filter(function (row) {
+      var who = String(row.from || row.name || '').replace(/\s+/g, ' ').trim();
+      var email = String(row.email || '').toLowerCase();
+      if (email && hidden[email]) return false;
+      if (/^chad r\.?\s*johnston$/i.test(who) && !row.outbound) return false;
+      return true;
+    });
+    var people = filtered.filter(function (row) { return !row.bulk; }).slice().sort(byAt);
+    var bulk = filtered.filter(function (row) { return !!row.bulk; }).slice().sort(byAt);
+    return peopleInboxOn() ? people : people.concat(bulk);
+  }
+  function linkedRows() {
+    var S = window.STATE || {};
+    return asList(S.linkedin).map(function (row) {
+      return {
+        name: String(row.name || row.from || row.who || '').trim(),
+        kind: row.kind || row.type || 'update',
+        snippet: row.snippet || row.preview || row.subject || '',
+        at: Number(row.at || row.date) || 0,
+        unread: !!row.unread
+      };
+    }).filter(function (row) { return row.name && !/^linkedin$/i.test(row.name); });
+  }
+  function upcomingEvents() {
+    var S = window.STATE || {};
+    var now = Date.now() - 60000;
+    return asList(S.events).map(function (ev) {
+      return { start: eventStart(ev), title: eventTitle(ev), join: ev.join || ev.htmlLink || ev.url || '', raw: ev };
+    }).filter(function (ev) { return ev.start >= now; }).sort(function (a, b) { return a.start - b.start; });
+  }
+  function lampLed(state) {
+    var s = String(state || '').toLowerCase();
+    if (s === 'red' || s === 'r' || s === 'critical' || s === 'off') return 'r';
+    if (s === 'green' || s === 'g' || s === 'ok' || s === 'live') return 'g';
+    return 'a';
+  }
+  function noteKind(raw) {
+    var k = String(raw || '').toLowerCase();
+    if (k === 'todo' || k === 'to-do') return { type: 'To-do', typeCls: 'todo', convert: 'Convert to tasks' };
+    if (k === 'idea') return { type: 'Idea', typeCls: 'idea', convert: 'Make a launch task' };
+    if (k === 'person') return { type: 'Person', typeCls: 'person', convert: 'Open his Space' };
+    if (k === 'decision' || k === 'dec') return { type: 'Decision', typeCls: 'dec', convert: 'Make a task' };
+    if (raw) return { type: String(raw), typeCls: typeCls(raw), convert: 'Convert to task' };
+    return { type: 'Note', typeCls: '', convert: 'Convert to task' };
+  }
+  function noteFromSticky(n) {
+    var meta = n.meta && typeof n.meta === 'object' ? n.meta : {};
+    var kind = noteKind(meta.kind || n.kind || n.type);
+    var body = String(n.body || '');
+    var title = String(meta.title || n.title || '');
+    if (!title && body.indexOf('\n') >= 0) {
+      title = body.split('\n')[0].trim();
+      body = body.slice(body.indexOf('\n') + 1).trim();
+    }
+    var checks = asList(meta.checks || n.checks || n.todos).map(function (c) {
+      if (typeof c === 'string') return { done: false, text: c };
+      return { done: !!(c.done || c.checked), text: c.text || c.t || c.title || '' };
+    });
+    var links = [];
+    if (meta.link && meta.link.name) links.push(meta.link.name);
+    asList(n.links).forEach(function (l) { links.push(typeof l === 'string' ? l : (l && l.name) || ''); });
+    return {
+      color: colorClass(n.color), type: kind.type, typeCls: kind.typeCls,
+      title: title, body: body, pin: !!(meta.pin || n.pin),
+      checks: checks, links: links.filter(Boolean),
+      reminder: meta.remind || meta.reminder || n.reminder || '',
+      convert: meta.convert || kind.convert,
+      archived: !!meta.archived
+    };
+  }
+  function noteFromBoard(n) {
+    var kind = noteKind(n.kind || n.type);
+    return {
+      color: colorClass(n.color), type: kind.type, typeCls: kind.typeCls,
+      title: n.title || '', body: n.body || '', pin: !!n.pin,
+      checks: asList(n.checks || n.todos).map(function (c) {
+        return { done: !!(c.done || c.checked), text: c.text || c.t || c.title || '' };
+      }),
+      links: asList(n.links).map(function (l) { return typeof l === 'string' ? l : (l && l.name) || ''; }).filter(Boolean),
+      reminder: n.reminder || '', convert: n.convert || kind.convert, archived: false
+    };
+  }
+  function liveLog(page, extra) {
+    if (fixtureOn()) return;
+    var S = window.STATE || {};
+    console.info('[live-map] ' + page, Object.assign({
+      mail: asList(S.mail).length, mailKeys: sampleKeys(S.mail),
+      linkedin: asList(S.linkedin).length, linkedinKeys: sampleKeys(S.linkedin),
+      events: asList(S.events).length, eventKeys: sampleKeys(S.events),
+      ceoMoves: asList(S.ceo && S.ceo.moves).length, moveKeys: sampleKeys(S.ceo && S.ceo.moves),
+      items: asList(S.items).length, itemKeys: sampleKeys(S.items),
+      notes: asList(S.notes).length, stickies: asList(S.stickies).length,
+      meetingActions: asList(S.meetingActions).length, reachOut: asList(S.reachOut).length,
+      finance: S.finance ? Object.keys(S.finance) : null
+    }, extra || {}));
+  }
+  var MAIL_COLORS = ['#2e6bf2', '#0f9fb5', '#c98408', '#6b4fd8', '#12a36a'];
 
   function liveDashboardState() {
     var S = window.STATE || {};
     var days = daysToClose();
-    var items = (S.items || []).filter(function (it) { return it.status !== 'dropped'; });
+    var items = asList(S.items).filter(function (it) { return it.status !== 'dropped'; });
     var open = items.filter(function (it) { return it.status !== 'done'; });
-    var overdue = open.filter(function (it) { return typeof bucket === 'function' ? bucket(it) === 'overdue' : false; });
-    var mail = (S.mail || []).filter(function (row) { return !row.bulk || (typeof mailIsContact === 'function' && mailIsContact(row)); }).slice(0, 5);
-    var linked = (S.linkedin || []).filter(liPerson).sort(function (a, b) { return (Number(b.at) || 0) - (Number(a.at) || 0); }).slice(0, 8);
-    var movers = ((S.ceo && S.ceo.moves) || []).slice(0, 3);
-    var meetings = (S.events || []).filter(function (ev) { return ev.start >= Date.now() - 60000; }).sort(function (a, b) { return a.start - b.start; }).slice(0, 3);
-    var plugs = (S.plugins || []).filter(function (p) { return p.connected || p.on; }).length;
+    var overdue = open.filter(function (it) { return itemBucket(it) === 'overdue'; });
+    var mail = mailRows().slice(0, 5);
+    var linked = linkedRows().sort(function (a, b) { return (Number(b.at) || 0) - (Number(a.at) || 0); }).slice(0, 8);
+    var movers = ceoMoves().slice(0, 3);
+    var meetings = upcomingEvents().slice(0, 3);
+    var plugs = asList(S.plugins).filter(function (p) { return p.connected || p.on; }).length;
     var queue = S.content || {};
     var kindWord = { message: 'sent you a message', inmail: 'sent you an InMail', invite: 'wants to connect', update: 'posted an update', comment: 'commented on your post', view: 'viewed your profile' };
     function flagOf(row) {
-      var blob = ((row.from || '') + ' ' + (row.subject || '')).toLowerCase();
-      if (/vc|venture|investor/.test(blob)) return 'vc';
+      var blob = ((row.from || '') + ' ' + (row.subject || '') + ' ' + (row.email || '')).toLowerCase();
+      if (/vc|venture|investor|angel/.test(blob)) return 'vc';
       if (/broker|design partner|century|remax/.test(blob)) return 'dp';
       if (/regulat|bcfsa|clhia|fcac/.test(blob)) return 'rg';
       return '';
@@ -151,27 +321,35 @@
     if (mail.length) alerts.push({ sev: 'b', text: mail.length + ' people are waiting on a reply.', area: 'Inbox' });
     if (!alerts.length) alerts.push({ sev: 'b', text: 'Desk is clear for now.', area: 'Desk' });
     var fin = S.finance || {};
+    var raise = fin.raise || {};
+    var ceoLamps = asList(S.ceo && S.ceo.lamps);
+    var lamps = ceoLamps.length ? ceoLamps.map(function (l) {
+      var led = lampLed(l.state);
+      return { led: led, name: l.label || l.name || l.key || 'Lamp', st: led, word: l.word || l.state || '' };
+    }) : [
+      { led: 'r', name: 'Runway', st: 'r', word: 'Critical' },
+      { led: 'a', name: 'Raise pace', st: 'a', word: 'Behind' },
+      { led: 'g', name: 'Pipeline', st: 'g', word: asList(S.pipeline).length ? 'Live' : 'Waiting' },
+      { led: 'a', name: 'Spend', st: 'a', word: 'Watch' },
+      { led: 'a', name: 'Legal docs', st: 'a', word: 'Open' },
+      { led: 'r', name: 'Concentration', st: 'r', word: 'High' },
+      { led: 'g', name: 'Integrations', st: 'g', word: (plugs || 0) + ' live' }
+    ];
+    liveLog('dashboard', { inboxOut: mail.length, linkedOut: linked.length, meetOut: meetings.length, moveOut: movers.length });
     return {
-      cash: fin.cashLabel || '$3,180',
+      cash: fin.cashLabel || (fin.cash != null ? ('$' + Number(fin.cash).toLocaleString('en-US')) : '$3,180'),
       burn: fin.burnLabel || 'see Financials',
       runway: fin.runwayLabel || '~1 day',
-      raise: (fin.raise && (fin.raise.inLabel + ' of ' + fin.raise.targetLabel)) || '$80K of $250K',
+      raise: (raise.inLabel && raise.targetLabel) ? (raise.inLabel + ' of ' + raise.targetLabel) : '$80K of $250K',
       daysToClose: days,
       closeWhen: 'Oct 30',
-      lamps: [
-        { led: 'r', name: 'Runway', st: 'r', word: 'Critical' },
-        { led: 'a', name: 'Raise pace', st: 'a', word: 'Behind' },
-        { led: 'g', name: 'Pipeline', st: 'g', word: (S.pipeline || []).length ? 'Live' : 'Waiting' },
-        { led: 'a', name: 'Spend', st: 'a', word: 'Watch' },
-        { led: 'a', name: 'Legal docs', st: 'a', word: 'Open' },
-        { led: 'r', name: 'Concentration', st: 'r', word: 'High' },
-        { led: 'g', name: 'Integrations', st: 'g', word: (plugs || '-') + ' live' }
-      ],
+      lamps: lamps,
       alerts: alerts,
-      cheques: (fin.cheques && fin.cheques.length) ? fin.cheques.map(function (c) {
-        return { cls: c.state === 'in' ? 'in' : c.state === 'pend' ? 'pd' : 'op', label: c.label };
+      cheques: asList(fin.cheques).length ? asList(fin.cheques).map(function (c) {
+        var st = String(c.state || c.status || '');
+        return { cls: st === 'in' ? 'in' : (st === 'pend' || st === 'pending' ? 'pd' : 'op'), label: c.label || c.name || '-' };
       }) : [{ cls: 'op', label: '-' }, { cls: 'op', label: '-' }, { cls: 'op', label: '-' }, { cls: 'op', label: '-' }, { cls: 'op', label: '-' }, { cls: 'op', label: '-' }, { cls: 'op', label: '-' }],
-      toGo: (fin.raise && fin.raise.toGoLabel) || '$170K',
+      toGo: raise.toGoLabel || '$170K',
       bookedWeek: '$0',
       paceNote: 'Behind pace — widen the round today.',
       worries: [
@@ -180,38 +358,48 @@
         { tone: 'a', title: 'Unsigned docs + short runway.', body: 'That pairing is what stalls a close.' }
       ],
       linkedin: linked.map(function (row) {
-        return { name: row.name, action: kindWord[row.kind] || 'update', snippet: row.snippet || '', age: ageLabel(row.at) };
+        return { name: row.name, action: kindWord[row.kind] || 'update', snippet: row.snippet, age: ageLabel(row.at) };
       }),
-      inbox: mail.map(function (m) {
-        return { from: m.from || m.email || 'Sender', color: '#2e6bf2', flag: flagOf(m), subject: m.subject || '(no subject)', preview: m.snippet || '', age: ageLabel(m.at) };
+      inbox: mail.map(function (m, i) {
+        return {
+          from: m.from || m.name || m.email || 'Sender',
+          color: m.color || MAIL_COLORS[i % MAIL_COLORS.length],
+          flag: flagOf(m),
+          subject: m.subject || '(no subject)',
+          preview: m.snippet || m.preview || m.body || '',
+          age: ageLabel(m.at || m.date),
+          email: m.email, threadId: m.threadId, messageId: m.messageId
+        };
       }),
       meetings: meetings.map(function (ev, i) {
-        return { when: soon(ev.start), title: ev.title || 'Meeting', kind: i === 0 ? 'join' : 'bell' };
+        return { when: soon(ev.start), title: ev.title, kind: (i === 0 || ev.join) ? 'join' : 'bell' };
       }),
       moves: movers.map(function (move) {
         var zone = String(move.zone || move.area || 'Raise');
         var zc = /partner/i.test(zone) ? 'z3' : /cash|runway/i.test(zone) ? 'z1' : 'z2';
-        return { title: move.title || move.text || move.name || '', why: move.whyNow || move.why || '', zone: zc, zoneLabel: zone };
+        return { title: moveText(move), why: moveWhy(move), zone: zc, zoneLabel: zone };
       }),
       health: {
-        score: 36, dash: '108.6 301.6',
+        score: '\u2014', dash: '0 301.6',
         bars: [
-          { name: 'Cash', pct: 12, color: 'var(--red)', n: 12 },
-          { name: 'Raise', pct: 34, color: 'var(--amber)', n: 34 },
-          { name: 'Pipeline', pct: 72, color: 'var(--green)', n: 72 },
-          { name: 'Product', pct: 30, color: 'var(--amber)', n: 30 },
-          { name: 'Legal', pct: 40, color: 'var(--amber)', n: 40 }
+          { name: 'Cash', pct: 0, color: 'var(--ink3)', n: '\u2014' },
+          { name: 'Raise', pct: 0, color: 'var(--ink3)', n: '\u2014' },
+          { name: 'Pipeline', pct: 0, color: 'var(--ink3)', n: '\u2014' },
+          { name: 'Product', pct: 0, color: 'var(--ink3)', n: '\u2014' },
+          { name: 'Legal', pct: 0, color: 'var(--ink3)', n: '\u2014' }
         ]
       },
       momentum: {
-        bars: [{ h: 28, day: 'Tue' }, { h: 40, day: 'Wed' }, { h: 22, day: 'Thu' }, { h: 52, day: 'Fri' }, { h: 36, day: 'Sat' }, { h: 58, day: 'Sun' }, { h: 70, day: 'Mon', now: true }],
-        desk: open.length, done: '-', overdue: overdue.length, blocked: '-'
+        bars: ['Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon'].map(function (day, i) {
+          return { h: 4, day: day, now: i === 6 };
+        }),
+        desk: '\u2014', done: '\u2014', overdue: '\u2014', blocked: '\u2014'
       },
       content: {
-        queued: typeof queue.left === 'number' ? queue.left : '-',
-        queuedNote: 'posts queued',
-        barPct: 4,
-        cadence: queue.cadence != null ? queue.cadence + ' a day' : '-',
+        queued: typeof queue.left === 'number' ? queue.left : 0,
+        queuedNote: queue.left ? 'posts queued' : 'posts queued — runs dry today',
+        barPct: Math.min(100, (Number(queue.left) || 0) * 8) || 4,
+        cadence: queue.cadence != null ? (queue.cadence + ' a day') : '-',
         newsletter: queue.newsletterDue || '-',
         nextClip: '-'
       }
@@ -222,13 +410,14 @@
     var S = window.STATE || {};
     var days = daysToClose();
     var fin = S.finance || {};
-    var moves = ((S.ceo && S.ceo.moves) || []).filter(function (m) { return m.title || m.text || m.name; }).slice(0, 3);
-    var actions = (S.meetingActions || []).filter(function (row) { return row.status !== 'done' && row.status !== 'tasked'; }).slice(0, 5);
-    var meetings = (S.events || []).filter(function (ev) { return ev.start >= Date.now() - 60000; }).sort(function (a, b) { return a.start - b.start; }).slice(0, 2);
+    var raise = fin.raise || {};
+    var moves = ceoMoves().slice(0, 3);
+    var actions = asList(S.meetingActions).filter(function (row) { return row.status !== 'done' && row.status !== 'tasked'; });
+    var meetings = upcomingEvents().slice(0, 2);
     function colItems(key) {
-      return (S.items || []).filter(function (it) {
+      return asList(S.items).filter(function (it) {
         if (it.status === 'done' || it.status === 'dropped') return false;
-        var b = typeof bucket === 'function' ? bucket(it) : 'later';
+        var b = itemBucket(it);
         if (key === 'today') return b === 'today' || b === 'overdue';
         if (key === 'week') return b === 'week';
         return b === 'later';
@@ -236,33 +425,54 @@
     }
     function pack(key) {
       var all = colItems(key);
-      return { count: all.length, more: Math.max(0, all.length - 5), tasks: all.slice(0, 5).map(function (it) { return { title: verbTitle(it), tag: it.area || 'Ops' }; }) };
+      return { count: all.length, more: Math.max(0, all.length - 5), tasks: all.slice(0, 5).map(function (it) {
+        return { title: verbTitle(it), tag: it.category || it.area || 'Ops' };
+      }) };
     }
     var heroMove = moves[0] || {};
+    var people = asList(S.reachOut);
+    var kinds = [['all', 'All'], ['vc', 'VC'], ['design', 'Design partner'], ['regulator', 'Regulator'], ['corporate', 'Corporate'], ['client', 'Client']];
+    var reachChips = kinds.map(function (pair) {
+      var n = people.filter(function (p) { return pair[0] === 'all' || p.kind === pair[0]; }).length;
+      return pair[1] + ' ' + n;
+    });
+    var reachNames = { vc: 'VC', design: 'Design partner', regulator: 'Regulator', corporate: 'Corporate', client: 'Client' };
+    liveLog('war', { moveOut: moves.length, actOut: actions.length, meetOut: meetings.length, reachOut: people.length, today: colItems('today').length, week: colItems('week').length, later: colItems('later').length });
     return {
       cash: fin.cashLabel || '$3,180',
       runway: fin.runwayLabel || '~1 day',
-      raise: (fin.raise && (fin.raise.inLabel + ' of ' + fin.raise.targetLabel)) || '$80K of $250K',
+      raise: (raise.inLabel && raise.targetLabel) ? (raise.inLabel + ' of ' + raise.targetLabel) : '$80K of $250K',
       daysToClose: days,
       launch: 'Oct 23',
-      momentumHours: '13h open today',
+      momentumHours: (function () {
+        var busy = 0;
+        asList(S.events).forEach(function (ev) {
+          if (Math.abs(eventStart(ev) - Date.now()) > 16 * 3600000) return;
+          busy += Number(ev.dur) || 30;
+        });
+        return Math.max(0, Math.round((15 * 60 - busy) / 60)) + 'h open today';
+      }()),
       coach: "Regulators can wait. Don't let them take a cash-first morning — drop them or give them 10 minutes, then back to the one thing.",
       streak: 'Focus streak · start today',
-      hero: { title: heroMove.title || heroMove.text || heroMove.name || 'Pick today’s one move', why: heroMove.whyNow || heroMove.why || '' },
+      hero: { title: moveText(heroMove) || 'Pick today’s one move', why: moveWhy(heroMove) },
       moves: moves.map(function (m, i) {
         var zone = String(m.zone || m.area || 'Raise');
         var zc = /cash|runway/i.test(zone) ? 'z-cash' : /partner/i.test(zone) ? 'z-part' : /reg/i.test(zone) ? 'z-reg' : 'z-raise';
-        return { title: m.title || m.text || m.name || '', zone: zc, zoneLabel: zone, one: i === 0, why: m.whyNow || m.why || '', src: m.source || '' };
+        return { title: moveText(m), zone: zc, zoneLabel: zone, one: i === 0, why: moveWhy(m), src: m.source || m.sourceLine || m.source_line || '' };
       }),
-      meetingActions: actions.map(function (row) {
-        return { tag: /said|you/i.test(row.kind || row.tag || '') ? 't-you' : 't-fu', tagLabel: /said|you/i.test(row.kind || row.tag || '') ? 'You said' : 'Follow up', text: row.text || '', from: (row.meetingTitle || 'Meeting') + (row.meetingDate ? ' · ' + row.meetingDate : '') };
+      meetingActions: actions.slice(0, 5).map(function (row) {
+        var you = String(row.kind || row.tag || '') === 'you_said' || /said|you/i.test(String(row.kind || row.tag || ''));
+        return { tag: you ? 't-you' : 't-fu', tagLabel: you ? 'You said' : 'Follow up', text: row.text || row.body || '', from: (row.meetingTitle || row.meeting_title || 'Meeting') + (row.meetingDate || row.meeting_date ? ' · ' + (row.meetingDate || row.meeting_date) : '') };
       }),
-      meetingActionTotal: (S.meetingActions || []).length,
+      meetingActionTotal: actions.length,
       nextUp: meetings.map(function (ev, i) {
-        return { when: soon(ev.start), title: ev.title || 'Meeting', link: i === 0 ? 'Join' : 'Prep' };
+        return { when: soon(ev.start), title: ev.title, link: (i === 0 || ev.join) ? 'Join' : 'Prep' };
       }),
-      reachChips: ['All 0'],
-      reach: [],
+      reachChips: reachChips,
+      reach: people.filter(function (p) { return !p.done; }).slice(0, 8).map(function (p) {
+        var bits = [reachNames[p.kind] || p.kind || 'Corporate', p.company, p.nextAction || p.next_action].filter(Boolean);
+        return { name: p.name || 'Person', meta: bits.join(' · ') };
+      }),
       today: pack('today'),
       week: pack('week'),
       later: pack('later')
@@ -271,17 +481,23 @@
 
   function liveNotesState() {
     var S = window.STATE || {};
-    var rows = (S.notes || []).map(function (n) {
-      return {
-        color: colorClass(n.color), type: n.kind || n.type || 'Note', typeCls: typeCls(n.kind || n.type),
-        title: n.title || '', body: n.body || '', pin: !!n.pin,
-        checks: (n.checks || n.todos || []).map(function (c) { return { done: !!(c.done || c.checked), text: c.text || c.title || '' }; }),
-        links: n.links || [], reminder: n.reminder || '', convert: n.convert || 'Convert to task'
-      };
-    });
+    var stickies = asList(S.stickies).length ? S.stickies : asList(S.stickyNotes);
+    var board = asList(S.notes);
+    var seen = {};
+    var rows = [];
+    function addNote(n, mapFn) {
+      var id = String(n && n.id || '') || (String(n && n.title || '') + '\n' + String(n && n.body || ''));
+      if (!id || seen[id]) return;
+      seen[id] = true;
+      var row = mapFn(n);
+      if (row && !row.archived) rows.push(row);
+    }
+    stickies.forEach(function (n) { addNote(n, noteFromSticky); });
+    board.forEach(function (n) { addNote(n, noteFromBoard); });
     var pinned = rows.filter(function (n) { return n.pin; });
     var rest = rows.filter(function (n) { return !n.pin; });
     function count(pred) { return rows.filter(pred).length; }
+    liveLog('notes', { stickies: stickies.length, boardNotes: board.length, out: rows.length, pinned: pinned.length });
     return {
       counts: {
         all: rows.length, pinned: pinned.length,
@@ -336,6 +552,7 @@
     var health = data.health || { score: '-', dash: '0 301.6', bars: [] };
     var mom = data.momentum || { bars: [], desk: '-', done: '-', overdue: '-', blocked: '-' };
     var content = data.content || {};
+    var peopleTab = fixtureOn() ? true : peopleInboxOn();
     wrap.innerHTML =
       '<section class="cmd"><div class="cmdtop">'
       + '<div class="vit"><div class="k">Cash</div><div class="v"><span class="mask" data-real="' + esc(data.cash) + '">' + mask(data.cash) + '</span></div><div class="sub">in the bank</div></div>'
@@ -360,7 +577,7 @@
         return '<div class="row"><span class="wic ' + w.tone + '">!</span><div class="rt"><b>' + esc(w.title) + '</b> ' + esc(w.body) + '</div></div>';
       }).join('') + '</section></div>'
       + '<section class="card" style="margin-bottom:16px"><div class="ch"><h3>LinkedIn</h3><span class="s">' + linked.length + ' new &middot; people only, system notices hidden</span><span class="lnk" style="margin-left:14px">Open LinkedIn</span></div><div class="ligrid">' + linkedHtml + '</div></section>'
-      + '<div class="g2"><section class="card"><div class="ch"><h3>Inbox &mdash; needs you</h3><div class="tabs"><span class="on">People only</span><span>All mail</span></div><span class="s">' + inbox.length + ' waiting</span></div><div id="mail">' + mailHtml + '</div><div class="foot">Bulk and notification mail is filed in Email &rarr; Quiet. <span class="lnk">Open Email</span></div></section>'
+      + '<div class="g2"><section class="card"><div class="ch"><h3>Inbox &mdash; needs you</h3><div class="tabs"><span' + (peopleTab ? ' class="on"' : '') + '>People only</span><span' + (peopleTab ? '' : ' class="on"') + '>All mail</span></div><span class="s">' + inbox.length + ' waiting</span></div><div id="mail">' + mailHtml + '</div><div class="foot">Bulk and notification mail is filed in Email &rarr; Quiet. <span class="lnk">Open Email</span></div></section>'
       + '<div class="stack"><section class="card"><div class="ch"><h3>Next meetings</h3><span class="s">today</span></div>' + meetHtml + '</section>'
       + '<section class="card"><div class="ch"><h3>Today\'s 1&ndash;3</h3><span class="s">from the War Room</span></div>' + mvHtml + '</section></div></div>'
       + '<div class="g3"><section class="card"><div class="ch"><h3>Company health</h3><span class="s">desk snapshot</span></div><div class="health"><svg viewBox="0 0 120 120" width="120" height="120"><circle cx="60" cy="60" r="48" fill="none" stroke="#eef1f6" stroke-width="14"/><circle cx="60" cy="60" r="48" fill="none" stroke="#f29b26" stroke-width="14" stroke-dasharray="' + esc(health.dash) + '" stroke-linecap="round" transform="rotate(-90 60 60)"/><text x="60" y="62" text-anchor="middle" font-size="30" font-weight="850" fill="#101a33">' + esc(health.score) + '</text><text x="60" y="80" text-anchor="middle" font-size="11" fill="#7a86a0">of 100</text></svg><div>'
@@ -397,6 +614,12 @@
     });
     root.querySelectorAll('.lnk').forEach(function (el) {
       if (el.textContent === 'Open Email') el.onclick = function () { if (typeof switchView === 'function') switchView('mail'); };
+    });
+    root.querySelectorAll('.tabs span').forEach(function (el, i) {
+      el.onclick = function () {
+        try { localStorage.setItem('cr_inbox_people', i === 0 ? '1' : '0'); } catch (e) {}
+        paintDashboardLive();
+      };
     });
     markReady('opsDash');
   }
@@ -567,4 +790,14 @@
   setInterval(function () { hookWar(); hookNotes(); }, 400);
   hookWar();
   hookNotes();
+  whenCss(function () {
+    try {
+      var path = String(location.pathname || '');
+      var notesView = /\/notes\/?$/.test(path) || /(?:^|[?&])view=notes(?:&|$)/.test(String(location.search || ''));
+      if (!notesView) return;
+      var vn = document.getElementById('v-notes');
+      if (vn) vn.hidden = false;
+      paintNotesLive();
+    } catch (e) {}
+  });
 })();

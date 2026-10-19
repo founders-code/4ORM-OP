@@ -38,6 +38,26 @@ async function inbox(sql: NeonQueryFunction<false, false>, userId: string) {
   return String(made[0].id);
 }
 
+export async function GET() {
+  try {
+    const session = await openBoard();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session.sql) return NextResponse.json({ notes: [] });
+    const rows = await session.sql`
+      SELECT id, cat_id, title, body, color, updated_at
+      FROM notes WHERE owner_id = ${session.userId}
+      ORDER BY updated_at DESC
+      LIMIT 400
+    `;
+    return NextResponse.json({
+      notes: (rows as Record<string, unknown>[]).map(noteShape),
+    });
+  } catch (err) {
+    fail('notes_failed', err);
+    return NextResponse.json({ notes: [] });
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const session = await openBoard();
