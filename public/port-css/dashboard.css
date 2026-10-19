@@ -10,7 +10,7 @@ button{font:inherit;cursor:pointer}
 .eye svg{width:14px;height:14px;stroke:#b9c8ea;fill:none;stroke-width:1.8}
 .raisebar{height:6px;background:#22345f;border-radius:6px;overflow:hidden;margin-top:8px;width:190px}.raisebar i{display:block;height:100%;width:43%;background:linear-gradient(90deg,#3f7bff,#7fd0ff)}
 .count{margin-left:auto;text-align:right}.count .big{font-size:30px;font-weight:850;color:#ff8da3;line-height:1}.count .k{font-size:12px;color:#93a6cf;font-weight:600;margin-top:4px}
-.lamps{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-top:14px}
+.lamps{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-top:14px;min-width:0}
 .lamp{background:rgba(5,12,32,.55);border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:9px 11px;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:8px;row-gap:2px;align-items:center;min-width:0}
 .lamp .led{width:8px;height:8px;border-radius:50%;flex:none}
 .led.r{background:#ff5470;box-shadow:0 0 8px #ff5470}.led.a{background:#ffb340;box-shadow:0 0 8px #ffb340}.led.g{background:#2fe08b;box-shadow:0 0 8px #2fe08b}

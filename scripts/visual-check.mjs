@@ -13,6 +13,12 @@ const PAGES = [
   { page: '01-dashboard', design: 'redesign/01-dashboard.html', live: 'control-room.html?view=room&fixture=mockup', ready: '#opsDash[data-port-ready]' },
   { page: '02-war-room', design: 'redesign/02-war-room.html', live: 'control-room.html?view=war&fixture=mockup', ready: '#warDesk[data-port-ready]' },
   { page: '03-notes', design: 'redesign/03-notes.html', live: 'control-room.html?view=notes&fixture=mockup', ready: '#notesDesk[data-port-ready]' },
+  { page: '04-pipeline', design: 'redesign/04-pipeline.html', live: 'control-room.html?view=contacts&fixture=mockup', ready: '#pipeDesk[data-port-ready]' },
+  { page: '05-spaces', design: 'redesign/05-spaces.html', live: 'control-room.html?view=work&fixture=mockup', ready: '#spacesDesk[data-port-ready]' },
+  { page: '06-documents', design: 'redesign/06-documents.html', live: 'control-room.html?view=docs&fixture=mockup', ready: '#docsDesk[data-port-ready]' },
+  { page: '07-links', design: 'redesign/07-links.html', live: 'control-room.html?view=links&fixture=mockup', ready: '#linksDesk[data-port-ready]' },
+  { page: '08-email', design: 'redesign/08-email.html', live: 'control-room.html?view=mail&fixture=mockup', ready: '#mailDesk[data-port-ready]' },
+  { page: '08b-email-compose', design: 'redesign/08b-email-compose.html', live: 'control-room.html?view=mail&fixture=mockup&compose=1', ready: '#mailDesk[data-port-ready]', wait: 800 },
 ];
 const INTER = '<link rel="preconnect" href="https://fonts.googleapis.com"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>';
 
@@ -34,7 +40,7 @@ function serve() {
       const url = new URL(req.url, 'http://127.0.0.1');
       let pathName = decodeURIComponent(url.pathname);
       if (pathName === '/') pathName = '/index.html';
-      if (pathName === '/control-room' || pathName === '/war-room' || pathName === '/notes') {
+      if (pathName === '/control-room' || pathName === '/war-room' || pathName === '/notes' || pathName === '/pipeline' || pathName === '/spaces' || pathName === '/documents' || pathName === '/links' || pathName === '/email' || pathName === '/email-board') {
         pathName = '/control-room.html';
       }
       const tries = [];
@@ -102,16 +108,17 @@ async function prepare(page) {
   await page.waitForTimeout(300);
 }
 
-async function overflowAt(page, url, width, height, ready) {
+async function overflowAt(page, url, width, height, ready, extraWait) {
   await page.setViewportSize({ width, height });
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   if (ready) await page.waitForSelector(ready, { timeout: 12000, state: 'attached' }).catch(() => {});
   else await page.waitForSelector('.side .nav, .clock', { timeout: 8000 }).catch(() => {});
   await prepare(page);
+  if (extraWait) await page.waitForTimeout(extraWait);
   return page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
 }
 
-async function shot(page, url, ready) {
+async function shot(page, url, ready, extraWait) {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   if (url.includes('fixture=mockup')) {
@@ -120,6 +127,7 @@ async function shot(page, url, ready) {
     await page.waitForSelector('.side .nav, .clock', { timeout: 8000 }).catch(() => {});
   }
   await prepare(page);
+  if (extraWait) await page.waitForTimeout(extraWait);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   const buf = await page.screenshot({ type: 'png', fullPage: false });
   return { buf, overflow };
@@ -138,10 +146,10 @@ async function main() {
       const page = await context.newPage();
       const designUrl = `http://127.0.0.1:${port}/design/${spec.page}`;
       const liveUrl = `http://127.0.0.1:${port}/${spec.live}`;
-      const design = await shot(page, designUrl, spec.ready);
-      const live = await shot(page, liveUrl, spec.ready);
-      const live1280 = await overflowAt(page, liveUrl, 1280, 900, spec.ready);
-      const design1280 = await overflowAt(page, designUrl, 1280, 900, null);
+      const design = await shot(page, designUrl, spec.ready, spec.wait);
+      const live = await shot(page, liveUrl, spec.ready, spec.wait);
+      const live1280 = await overflowAt(page, liveUrl, 1280, 900, spec.ready, spec.wait);
+      const design1280 = await overflowAt(page, designUrl, 1280, 900, null, spec.wait);
       await page.close();
       const mock = PNG.sync.read(design.buf);
       const livePng = PNG.sync.read(live.buf);

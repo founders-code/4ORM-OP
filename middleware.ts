@@ -36,6 +36,11 @@ const isControlRoom = createRouteMatcher([
   '/space-detail',
   '/zoom',
   '/notes',
+  '/pipeline',
+  '/spaces',
+  '/documents',
+  '/links',
+  '/email',
 ]);
 const isDesign = createRouteMatcher(['/design', '/design/(.*)']);
 // Legal pages are public. Members read them before they sign in.
@@ -103,6 +108,11 @@ export const config = {
     '/space-detail',
     '/zoom',
     '/notes',
+    '/pipeline',
+    '/spaces',
+    '/documents',
+    '/links',
+    '/email',
     '/design',
     '/design/:path*',
     '/terms-of-service',

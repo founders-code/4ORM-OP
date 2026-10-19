@@ -981,11 +981,23 @@
   }
 
   function loadReach() {
-    authFetch('/api/reach-out', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
-      STATE.reachOut = (d && d.people) || [];
-      if (STATE.desk === 'war') renderWar();
-      if (STATE.desk === 'room') renderOpsDash();
-    }).catch(function () { STATE.reachOut = STATE.reachOut || []; });
+    function go() {
+      authFetch('/api/reach-out', { credentials: 'include', quiet: true }).then(function (r) { return r.json(); }).then(function (d) {
+        var rows = [];
+        if (Array.isArray(d)) rows = d;
+        else if (d && Array.isArray(d.people)) rows = d.people;
+        else if (d && Array.isArray(d.items)) rows = d.items;
+        else if (d && Array.isArray(d.contacts)) rows = d.contacts;
+        else if (d && Array.isArray(d.reach)) rows = d.reach;
+        STATE.reachOut = rows;
+        console.info('[live-map] /api/reach-out', { count: rows.length, keys: rows[0] ? Object.keys(rows[0]) : [] });
+        if (STATE.desk === 'war') renderWar();
+        if (STATE.desk === 'room') renderOpsDash();
+      }).catch(function () { STATE.reachOut = STATE.reachOut || []; });
+    }
+    if (window.__clerk && window.__clerk.session) go();
+    else if (window.__clerkBoot) Promise.resolve(window.__clerkBoot).then(go).catch(go);
+    else go();
   }
   function loadStickies() {
     authFetch('/api/notes/sticky', { credentials: 'include', quiet: true }).then(function (r) { return r.json(); }).then(function (d) {

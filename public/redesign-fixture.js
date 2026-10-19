@@ -225,6 +225,168 @@
           checks: [], links: ['Bruce Fair'], reminder: '', convert: 'Convert to task'
         }
       ]
+    },
+    pipeline: {
+      pills: [
+        { name: 'Design partners', n: 128, on: true },
+        { name: 'Investors', n: 66 },
+        { name: 'Grants', n: 67 },
+        { name: 'Friends & family', n: 30 },
+        { name: 'Regulators & partners', n: 24 }
+      ],
+      more: 6,
+      kpis: [
+        { n: '128', label: 'opportunities', note: 'in Design partners', tone: 'nt' },
+        { n: '54', label: 'sent this week', note: '+12 vs last week', tone: 'up' },
+        { n: '\u2013', label: 'open rate', note: 'tracking starts next send', tone: 'nt' },
+        { n: '0', label: 'replies', note: 'none yet this week', tone: 'dn' },
+        { n: '9 days', label: 'average time in a stage', note: '2 stuck past 14 days', tone: 'dn' }
+      ],
+      funnel: [['Storage', 103], ['Cold', 21], ['1st reach out', 1], ['2nd reach out', 0], ['Contact made', 0], ['Send email', 2], ['Check back', 0], ['Call back', 1], ['Meeting booked', 0], ['Info pack sent', 0], ['Rebooked', 0], ['Meeting done', 0], ['2nd meeting', 0]],
+      funnelLabel: 'Design partners \u00b7 13 stages \u00b7 click a stage to filter the list',
+      needs: [
+        { name: 'AMF', color: '#e0364f', meta: 'Regulator \u00b7 cold, no touch on record' },
+        { name: 'ASC', color: '#2e6bf2', meta: 'Regulator \u00b7 cold, no touch on record' },
+        { name: 'Alan Goff', color: '#12a36a', meta: 'Network \u00b7 cold, no touch on record' },
+        { name: 'Alex Fontaine', color: '#c98408', meta: 'Network \u00b7 cold' },
+        { name: 'Mary Morris', color: '#6b4fd8', meta: 'Network \u00b7 cold' }
+      ],
+      matrix: [
+        { cat: 'Strategic', cells: [107, 3, 0, 0, 0] },
+        { cat: 'Network', cells: [36, 1, 0, 0, 0] },
+        { cat: 'Regulators', cells: [17, 0, 0, 0, 0] },
+        { cat: 'VC', cells: [8, 2, 1, 0, 0] },
+        { cat: 'Angel', cells: [1, 0, 0, 0, 0] }
+      ],
+      activity: [
+        { text: 'CLHIA Affiliates \u2014 email sent', when: 'today', tone: '' },
+        { text: 'Canadian Life and Health Insurance Association \u2014 email sent', when: 'today', tone: '' },
+        { text: 'Bruce Fair \u2014 email sent', when: '1d', tone: '' },
+        { text: 'Enrich Mortgage Group \u2014 moved to Send Email', when: '2d', tone: 'g' },
+        { text: 'Daniel Moore \u2014 email sent', when: '3d', tone: '' }
+      ],
+      storageHead: '103 of 128',
+      tableFoot: 'Showing 8 of 103',
+      rows: [
+        ['Enrich Mortgage Group', 'Mortgage Alliance', 'Strategic', 'Send email', 'warm', '2d', 'Follow up Thursday'],
+        ['BrokerSquared', '', 'Strategic', 'Storage', '', '3d', 'Add to a Space'],
+        ['Sukhwant Singh Samra', 'BC Best Mortgages Group', 'Strategic', 'Storage', '', '3d', 'Add to a Space'],
+        ['Zaheed Valli-Hasham', 'City Wide Mortgage Services', 'Strategic', 'Storage', '', '3d', 'Add to a Space'],
+        ['Geoff Lee', 'GLM Mortgage Group', 'Strategic', 'Storage', '', '3d', 'Add to a Space'],
+        ['Frances Hinojosa', 'Tribe Financial', 'Strategic', 'Storage', '', '3d', 'Add to a Space'],
+        ['Lisa Gryba', 'One-Link Mortgage & Financial', 'Strategic', 'Storage', '', '3d', 'Add to a Space'],
+        ['Surinderjit Khamba', 'Coast to Coast Mortgage Group', 'Strategic', 'Storage', '', '3d', 'Add to a Space']
+      ]
+    },
+    spaces: {
+      stats: [
+        { n: '53', label: 'spaces', cls: '' },
+        { n: '2', label: 'ready to send', cls: 'blue' },
+        { n: '0', label: 'sent this week', cls: '' },
+        { n: '0', label: 'replies', cls: '' },
+        { n: '0', label: 'meetings booked', cls: '' },
+        { n: '0', label: 'committed', cls: '' }
+      ],
+      groups: [
+        ['General', 'c-gen', 3, [['Regulator intro', 'RPAA note - independent review', 2, 'docs'], ['Friends & Family email', 'Friends and family - $25,000 for 5%', 2, 'docs'], ['Design partners', 'Design partner - brokerage discovery', 2, 'docs']]],
+        ['Venture Capital', 'c-vc', 10, [['Joe Canavan', '~80% of his angel book is fintech: Wealthsimple, Borrowell, CapIntel, Homewise.', 4, 'send'], ['Neil Mitchell', 'Advises early-stage insurtech founders; backed YouSet and QuickFacts.', 4, 'docs'], ['Norm Cappell', 'North Exit Ventures invests pre-seed in insurance, lending and wealth.', 4, 'docs'], ['Daniel Moore', 'Writes $5K-$300K cheques into financial services.', 4, 'send'], ['Paul Hill', 'Backed Verafin, QuickFacts, DisclosureNet, Una - compliance and regtech.', 4, 'docs'], ['Philip Daniel', 'C-suite fintech and payments leader; sits on boards; lists angel investing.', 4, 'docs'], ['Glenn Yuen', 'Founded POPcodes (payments); VA Angels member; Invest-Tech at Innovate BC.', 4, 'docs'], ['Hanif Joshaghani', 'Built Symend, a Calgary fintech selling to banks; MIT fintech; angels in fintech.', 4, 'docs']]],
+        ['Business', 'c-bus', 25, [['Tom Robertson', 'Continental Currency Exchange', 4, 'ppl'], ['Elizabeth Wood', 'CMI Canadian Mortgages Inc. (CMI Financial Group)', 4, 'ppl'], ['L\u00e9opold Beaudoin', 'Credit Bail Globale (Globale Leasing)', 4, 'ppl'], ['Rasha Katabi', 'Brim Financial Inc.', 4, 'ppl']]],
+        ['Regulators', 'c-reg', 15, [['FINTRAC', 'Federal AML regulator - reach-out only', 4, 'docs'], ['Bank of Canada - RPAA', 'Retail payment supervision', 4, 'docs'], ['CSA', 'Canadian Securities Administrators', 4, 'docs'], ['BCFSA', 'BC mortgage broker regulator', 4, 'docs']]]
+      ]
+    },
+    documents: {
+      folders: [
+        ['All documents', 9, true], ['Angel', 1], ['Banking', 0], ['Design partners', 2], ['Dev', 0],
+        ['Dev partners', 0], ['Friends & family', 2], ['Government', 1], ['Regulators', 3]
+      ],
+      sets: [['Investor data room', 1], ['Regulator pack', 0], ['F&F bundle', 0]],
+      files: [
+        ['img', 'Welcome to 4orm | 2026.png', 'Angel \u00b7 1.2 MB', 'loc', '#dfe8ff'],
+        ['ppt', 'Business Overview | 4orm | 2026', 'Design partners \u00b7 24 slides', 'ok', '#ffe6cf'],
+        ['pdf', '4orm VC and Design Partner Resources', 'Investor data room \u00b7 12 pages', 'ok', '#fde9ec'],
+        ['doc', 'Top incumbents', 'Research \u00b7 4 pages', 'ok', '#e1ecff'],
+        ['pdf', 'RPAA note - independent review', 'Regulators \u00b7 6 pages', 'ok', '#fde9ec'],
+        ['doc', 'Friends & family email', 'Friends & family \u00b7 1 page', 'loc', '#e1ecff'],
+        ['xls', 'Raise tracker - F&F', 'Friends & family \u00b7 sheet', 'ok', '#e4f6ee'],
+        ['pdf', 'BCFSA suitability guidance (summary)', 'Regulators \u00b7 3 pages', 'ok', '#fde9ec'],
+        ['ppt', 'Design partner pilot outline', 'Design partners \u00b7 9 slides', 'loc', '#ffe6cf']
+      ],
+      drops: [
+        { ini: 'RI', color: '#c98408', name: 'Regulator intro', meta: '0 docs' },
+        { ini: 'JC', color: '#e0364f', name: 'Joe Canavan', meta: '0 docs \u00b7 send today' },
+        { ini: 'NM', color: '#e0364f', name: 'Neil Mitchell', meta: '0 docs' },
+        { ini: 'DM', color: '#e0364f', name: 'Daniel Moore', meta: '0 docs \u00b7 send today' },
+        { ini: 'DP', color: '#2e6bf2', name: 'Design partners', meta: '2 docs' }
+      ],
+      recent: [
+        ['t-img', 'IMG', 'Welcome to 4orm | 2026.png'],
+        ['t-ppt', 'PPT', 'Business Overview | 4orm | 2026.pptx'],
+        ['t-pdf', 'PDF', '4orm VC and Design Partner Resources.pdf'],
+        ['t-doc', 'DOC', 'Top incumbents']
+      ]
+    },
+    links: {
+      tree: [
+        { name: 'AI', n: 9, on: true, car: 'closed' },
+        { name: 'Chad', n: 1, car: 'open' },
+        { name: 'Company', n: 6, car: 'closed' },
+        { name: 'Fund raising', n: 4, car: 'open' },
+        { name: 'Data Room', n: 3, car: 'open', indent: 2 },
+        { name: 'New folder', n: 0, car: '', indent: 3, noSub: true },
+        { name: 'Incumbents', n: 5, car: 'closed' },
+        { name: 'Market validation', n: 4, car: 'closed' },
+        { name: 'Music', n: 4, car: 'closed' },
+        { name: 'Notes & docs', n: 7, car: 'closed' },
+        { name: 'Partners & dev', n: 7, car: 'closed' },
+        { name: 'Regulation', n: 2, car: 'closed' },
+        { name: 'Research', n: 1, car: 'closed' },
+        { name: 'Resources', n: 2, car: 'closed' },
+        { name: 'Tools & ops', n: 10, car: 'closed' },
+        { name: 'VC', n: 7, car: 'closed' },
+        { name: 'Validation', n: 1, car: 'closed' },
+        { name: 'Uncategorized', n: 0, car: '', noHv: true }
+      ],
+      crumb: 'AI',
+      crumbN: 9,
+      wall: [
+        ['Lumo', 'proton.me/lumo', '#6d4aff', 'Private AI assistant from Proton', 1],
+        ['Riverside', 'riverside.fm', '#111827', 'Record the 30-min videos'],
+        ['Neon', 'neon.tech', '#00a77e', 'Database for 4ormop'],
+        ['Vercel', 'vercel.com', '#111827', 'Hosting + deploys'],
+        ['Cursor', 'cursor.com', '#2b2b2b', 'Build the site from prompts'],
+        ['Perplexity', 'perplexity.ai', '#1f6f78', ''],
+        ['ChatGPT', 'chatgpt.com', '#10a37f', ''],
+        ['Claude', 'claude.ai', '#d97757', 'Cowork + build prompts'],
+        ['Lumo', 'proton.me/lumo', '#6d4aff', 'Same link saved twice', 2]
+      ]
+    },
+    email: {
+      need: 5, investors: 2, unread: 56, rules: 4,
+      columns: [
+        { icon: '&#9888;&#65039;', name: 'Needs now', count: 5, rule: 'Real people owed a reply, investors first', messages: [
+          { name: 'Bruce Fair', color: '#c98408', age: '3d', subject: 'Deck \u2014 notes', preview: 'Need to tighten messaging with respect to "What is it that 4orm is providing?" Counselling\u2026', tags: [['t-rep', 'Reply'], ['t-vc', 'Investor']], unread: true },
+          { name: 'Cindy J. S. \u00b7 CLHIA', color: '#0f9fb5', age: '5h', subject: 'RE: Are we a bad fit for the Affiliates Program?', preview: 'Thank you for your email. Can you provide a list of Canadian life and health insurers you currently do business with?', tags: [['t-rep', 'Reply'], ['t-reg', 'Association']], unread: true },
+          { name: 'Mike Stephens', color: '#12a36a', age: '6d', subject: 'RE: 4orm Finance business overview', preview: 'That works. Please can you send an invite? Thanks Chad. All the best, Mike', tags: [['t-rep', 'Reply'], ['t-dp', 'Advisor']] },
+          { name: 'Antonia Pettenon', color: '#6b4fd8', age: '5d', subject: 'RE: Invoice payment', preview: 'Okay, thank you! Antonia Pettenon, Executive Assistant to Veronica Armstrong, Law Corporation', tags: [['t-rep', 'Reply'], ['t-biz', 'Legal']] }
+        ] },
+        { icon: '&#128176;', name: 'Investors', count: 2, rule: 'Rule: from bruce@, don@ \u00b7 subject has "cheque"', messages: [
+          { name: 'Bruce Fair', color: '#c98408', age: '21h', subject: '4orm Finance \u2013 2-pager overview', preview: 'This version may be better. Let me know your thoughts. B', tags: [['t-vc', 'Investor'], ['t-w', 'Waiting 1d']], unread: true },
+          { name: 'Bruce Fair', color: '#c98408', age: '6d', subject: 'RE: Welcome to 4orm Finance | Major Financial Decisions', preview: 'Chad, please check the number sequence at the top of each slide. Thanks, B', tags: [['t-vc', 'Investor']] }
+        ] },
+        { icon: '&#128200;', name: 'VCs', count: 0, rule: 'Rule: sender in the VC pipeline', messages: [] },
+        { icon: '&#127919;', name: 'Prospects', count: 2, rule: 'Rule: domain matches Pipeline \u203a Business', messages: [
+          { name: 'Ivan Pierce', color: '#2e6bf2', age: '3h', subject: 'Settlement finality', preview: 'Hi Chad, 4orm\u2019s settlement finality work for Canadian capital markets stood out to me. I\u2019m Ivan at Tactera Digital\u2026', tags: [['t-biz', 'New'], ['t-dp', 'Prospect']], unread: true },
+          { name: 'Brad Barrett', color: '#e0364f', age: '2d', subject: 'Hey Chad \u2014 credit card idea', preview: 'Hello, excited to share something we\u2019ve been building for brokers\u2026', tags: [['t-biz', 'New']] }
+        ] },
+        { icon: '&#129309;', name: 'Design partners', count: 0, rule: 'Rule: domain is a brokerage in Spaces', messages: [] },
+        { icon: '&#128101;', name: 'Team', count: 1, rule: 'Rule: @4ormfinance.com, Speer', messages: [
+          { name: 'Zed', color: '#7a86a0', age: '1d', subject: 'Spear design spec \u2014 v3', preview: 'File-based orchestration notes attached; each stage output feeds the next.', tags: [['t-biz', 'Team']] }
+        ] },
+        { icon: '&#128263;', name: 'Quiet', count: 48, rule: 'Bulk + notifications, auto-filed', quiet: true, messages: [
+          { name: 'Upwork', color: '#7a86a0', age: '1h', subject: 'Stay visible to clients', preview: 'Your profile could be shown to more clients this week\u2026', tags: [['t-biz', 'Bulk']] },
+          { name: 'Shortform', color: '#7a86a0', age: '4h', subject: 'Take this quiz', preview: 'What kind of reader are you? Find out in 2 minutes\u2026', tags: [['t-biz', 'Bulk']] }
+        ] }
+      ]
     }
   };
 })();
