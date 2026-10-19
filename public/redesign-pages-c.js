@@ -558,7 +558,7 @@
   function ymdOf(raw) {
     var s = String(raw || '');
     var m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
-    if (m) return m[1];
+    if (m) return m[1] + '-' + m[2] + '-' + m[3];
     var d = new Date(s);
     if (!Number.isFinite(d.getTime())) return '';
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -578,17 +578,15 @@
   }
   function stripLead(text, people) {
     var s = String(text || '').replace(/^Note to self:\s*/i, '').replace(/^["“]+|["”]+$/g, '').trim();
-    var names = [];
     asList(people).forEach(function (p) {
       var full = String(p || '').trim();
       if (!full) return;
-      names.push(full);
-      names.push(full.split(/\s+/)[0]);
-    });
-    names.forEach(function (n) {
-      if (!n) return;
-      var re = new RegExp('^' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*:\\s*', 'i');
-      for (var i = 0; i < 3; i++) s = s.replace(re, '');
+      var first = full.split(/\s+/)[0];
+      var esc = function (n) { return n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); };
+      for (var i = 0; i < 3; i++) {
+        s = s.replace(new RegExp('^' + esc(full) + '\\s*(?:\\([^)]{0,80}\\))?\\s*:\\s*', 'i'), '');
+        s = s.replace(new RegExp('^' + esc(first) + '\\s*:\\s*', 'i'), '');
+      }
     });
     return s.replace(/^["“]+|["”]+$/g, '').trim();
   }
