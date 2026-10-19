@@ -139,7 +139,7 @@ export async function listEvents(timeMin: string, timeMax: string, pageToken = '
 async function postEvent(calendarId: string, startMs: number, durMin: number, title: string) {
   const start = new Date(startMs);
   const end = new Date(startMs + durMin * 60 * 1000);
-  const json = (await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`, {
+  const json = (await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?sendUpdates=all`, {
     method: 'POST',
     body: JSON.stringify({
       summary: String(title || 'Focus').slice(0, 180),
@@ -274,14 +274,46 @@ export async function moveEvent(id: string, startMs: number, durMin: number) {
   const cal = encodeURIComponent(process.env.GOOGLE_CALENDAR_ID || 'chad@4ormfinance.com');
   const start = new Date(startMs);
   const end = new Date(startMs + durMin * 60 * 1000);
-  const json = await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${cal}/events/${encodeURIComponent(id)}`, {
+  const json = await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${cal}/events/${encodeURIComponent(id)}?sendUpdates=all`, {
     method: 'PATCH',
     body: JSON.stringify({
-      start: { dateTime: start.toISOString(), timeZone: 'America/Edmonton' },
-      end: { dateTime: end.toISOString(), timeZone: 'America/Edmonton' },
+      start: { dateTime: start.toISOString(), timeZone: 'America/Los_Angeles' },
+      end: { dateTime: end.toISOString(), timeZone: 'America/Los_Angeles' },
     }),
   });
   return !!json;
+}
+
+export async function patchCalendarEvent(id: string, fields: Record<string, unknown>) {
+  if (!configured()) return null;
+  if (!/^[\w-]+$/.test(id)) return null;
+  const named = process.env.GOOGLE_CALENDAR_ID || 'primary';
+  const json = await gfetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(named)}/events/${encodeURIComponent(id)}?sendUpdates=all`,
+    { method: 'PATCH', body: JSON.stringify(fields), timeoutMs: 12000 },
+  );
+  if (json || named === 'primary') return json;
+  return gfetch(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(id)}?sendUpdates=all`,
+    { method: 'PATCH', body: JSON.stringify(fields), timeoutMs: 12000 },
+  );
+}
+
+export async function deleteCalendarEvent(id: string) {
+  if (!configured()) return false;
+  if (!/^[\w-]+$/.test(id)) return false;
+  const named = process.env.GOOGLE_CALENDAR_ID || 'primary';
+  const first = await gcall(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(named)}/events/${encodeURIComponent(id)}?sendUpdates=all`,
+    { method: 'DELETE', timeoutMs: 12000 },
+  );
+  if (first.ok || first.status === 204 || first.status === 410) return true;
+  if (named === 'primary') return false;
+  const alt = await gcall(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(id)}?sendUpdates=all`,
+    { method: 'DELETE', timeoutMs: 12000 },
+  );
+  return alt.ok || alt.status === 204 || alt.status === 410;
 }
 
 type DriveFile = { id: string; name: string; url: string; kind: string; mime: string; thumb: string; modified?: string; owner?: string };

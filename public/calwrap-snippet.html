@@ -1,0 +1,63 @@
+<div class="calwrap">
+
+
+<aside class="rail">
+  <div class="brand"><img src="/assets/mark-4orm-iq.png" alt="4orm"><b>IQ</b></div>
+  <div class="nl">&#10022; <input id="nlIn" placeholder='Type it: "Coffee with Bruce Tue 3pm"' style="flex:1;background:transparent;border:none;outline:none;color:#e6ecfb;font:inherit;font-size:12.5px;min-width:0"></div>
+  <div class="mtitle"><h2>October <span>2026</span></h2><div class="ar"><span>&#8249;</span><span>&#8250;</span></div></div>
+  <div class="mini" id="mini"></div>
+
+  <div class="sec">Today &middot; Mon Oct 19</div>
+  <div class="ribbon" id="ribbon"></div>
+  <div class="rticks"><span>7a</span><span>10a</span><span>1p</span><span>4p</span><span>7p</span><span>8p</span></div>
+  <div class="nextcard">
+    <div class="k">NEXT UP &middot; MON 9:00</div>
+    <div class="t">Executive Advisor's | War Room</div>
+    <div class="c-s">Tomorrow is clear - a good day to batch next week's clips.</div>
+    <div class="row"><button class="b1">Prep notes</button><button class="b2">Open War Room</button></div>
+  </div>
+
+  <div class="sec">Next week's shape</div>
+  <div class="shape"><i style="flex:6.5;background:var(--meet)"></i><i style="flex:9;background:var(--blue)"></i><i style="flex:12;background:var(--green)"></i><i style="flex:17.5;background:#26324f"></i></div>
+  <div class="slegend">
+    <span><em style="background:var(--meet)"></em>Meetings <b>6.5h</b></span>
+    <span><em style="background:var(--blue)"></em>Focus <b>9h</b></span>
+    <span><em style="background:var(--green)"></em>Plays <b>12h</b></span>
+    <span><em style="background:#26324f"></em>Free <b>17.5h</b></span>
+  </div>
+
+  <div class="sec">Calendars</div>
+  <div class="cals">
+    <label><span class="bx" style="background:var(--meet)">&#10003;</span>Meetings</label>
+    <label><span class="bx" style="background:var(--inv)">&#10003;</span>Investors &amp; raise</label>
+    <label><span class="bx" style="background:var(--pay)">&#10003;</span>Payments &amp; bills</label>
+    <label><span class="bx" style="background:var(--mile)">&#10003;</span>Milestones</label>
+    <label><span class="bx d" style="border-color:var(--blue2);color:var(--blue2)">&#10022;</span>Playbook plays (suggested)</label>
+  </div>
+</aside>
+
+<div class="c-main">
+  <div class="c-top">
+    <div class="c-nav"><span>&#8249;</span><span>Today</span><span>&#8250;</span></div>
+    <div class="title" id="title"></div>
+    <div class="views" id="views"><span data-v="day">Day</span><span data-v="week" class="on">Week</span><span data-v="month">Month</span><span data-v="quarter">Quarter</span><span data-v="year">Year</span></div>
+  </div>
+  <div class="body" id="body"></div>
+</div>
+
+
+<div class="dtip" id="dtip"></div>
+<div class="pop" id="pop">
+  <div class="ph2"><span class="sw2" id="pSw"></span><input class="ti" id="pTitle" placeholder="New event"></div>
+  <div class="row2"><span class="ic">&#128339;</span><div class="tms"><input type="date" id="pDate"><input id="pS" placeholder="10:00a">&ndash;<input id="pE" placeholder="11:00a"></div></div>
+  <div class="row2"><span class="ic">&#9673;</span><select id="pCal"><option value="meet">Meetings</option><option value="inv">Investors &amp; raise</option><option value="pay">Payments &amp; bills</option><option value="mile">Milestones</option></select></div>
+  <div class="row2" style="position:relative"><span class="ic">&#128101;</span><div class="chips" id="pPpl"><input class="addin" id="pPplIn" placeholder="Add people"></div><div class="sugg" id="pSug" style="display:none;left:40px;top:36px"></div></div>
+  <div class="row2"><span class="ic">&#128249;</span><div class="chips" id="pLoc"><input class="addin" id="pLocIn" placeholder="Location or video link"><span class="zm" id="pZoom">+ Zoom</span></div></div>
+  <div class="row2"><span class="ic">&#128279;</span><div class="chips" id="pLinks"><input class="addin" id="pLinkIn" placeholder="Paste a link, press Enter"></div></div>
+  <div class="row2"><span class="ic">&#128206;</span><div><div class="chips" id="pDocs" style="margin-bottom:5px"></div><div class="dropz" id="pDrop">Drop a file here, or <span class="zm" id="pPick">attach from a Space</span></div></div></div>
+  <div class="row2"><span class="ic">&#128276;</span><div class="tms"><select id="pAlert"><option>10 min before (escalating alarm)</option><option>30 min before</option><option>No alert</option></select></div></div>
+  <div class="row2" style="align-items:start"><span class="ic">&#9998;</span><textarea id="pNotes" placeholder="Notes, agenda, prep"></textarea></div>
+  <div class="pf"><button class="dl" id="pDel">Delete</button><button id="pDup">Duplicate</button><button class="sv" id="pSave">Save</button></div>
+</div>
+<div class="undo" id="undo"><span id="undoT"></span><b id="undoB">Undo</b></div>
+<div class="hint2" id="hint2"><span class="x" onclick="this.parentNode.remove()">&times;</span><b>Try it</b><br>Drag an event to move it (day or time) &middot; drag its bottom edge to resize &middot; Option-drag to duplicate &middot; drag on empty time to create &middot; click an event to edit people, Zoom, links and files &middot; Delete key removes &middot; &#8984;Z undoes &middot; type in the box top-left to add.</div>

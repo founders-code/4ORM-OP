@@ -97,6 +97,54 @@
   function linksData() { return fixtureOn() ? (F().links || {}) : liveLinksState(); }
   function emailData() { return fixtureOn() ? (F().email || {}) : liveEmailState(); }
 
+  function normCat(raw) {
+    var s = String(raw || 'Other').trim();
+    if (!s) return 'Other';
+    if (/^vc$/i.test(s) || /venture\s*capital/i.test(s)) return 'VC';
+    if (/regulat/i.test(s)) return 'Regulatory';
+    if (/^ff$|friends/i.test(s)) return 'Friends & family';
+    return s.replace(/\w\S*/g, function (w) {
+      if (/^vc$/i.test(w)) return 'VC';
+      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+    });
+  }
+  function spaceReadiness(p) {
+    var docs = Number(p.docCount || 0);
+    if (!docs && Array.isArray(p.docs)) docs = p.docs.filter(function (d) { return d && d.kind !== 'link'; }).length;
+    var links = Number(p.linkCount || 0);
+    if (!links && Array.isArray(p.docs)) links = p.docs.filter(function (d) { return d && d.kind === 'link'; }).length;
+    if (!links && Array.isArray(p.links)) links = p.links.length;
+    var people = Number(p.recipientCount || 0);
+    if (!people && Array.isArray(p.recipients)) people = p.recipients.length;
+    if (!people && Array.isArray(p.people)) people = p.people.length;
+    var note = !!(String(p.notes || p.description || '').trim());
+    var sent = /ready|sent|send/i.test(String(p.stage || p.status || ''));
+    var n = 0;
+    if (docs) n += 1;
+    if (links) n += 1;
+    if (people) n += 1;
+    if (note) n += 1;
+    if (sent) n += 1;
+    return { n: n, docs: docs, links: links };
+  }
+  function senderName(row) {
+    var email = String(row.email || '').toLowerCase();
+    var people = asList((window.STATE || {}).contacts).concat(asList((window.STATE || {}).people));
+    var hit = people.filter(function (c) {
+      return String(c.email || '').toLowerCase() === email && c.name;
+    })[0];
+    if (hit && hit.name) return hit.name;
+    var from = String(row.from || row.name || '').trim();
+    var m = from.match(/^"?([^"<@][^"<]*)"?\s*</);
+    if (m && m[1].trim()) {
+      var named = m[1].trim();
+      if (named.indexOf(' ') >= 0 || /[A-Z]/.test(named)) return named;
+    }
+    if (from && from.indexOf('@') < 0 && from.indexOf(' ') >= 0) return from;
+    if (from && from.indexOf('@') < 0 && from !== from.toLowerCase()) return from;
+    var local = (email.split('@')[0] || from.split('@')[0] || from).replace(/[._+\-]+/g, ' ').trim();
+    return local.replace(/\b\w/g, function (c) { return c.toUpperCase(); }) || 'Sender';
+  }
   function livePipelineState() {
     var S = window.STATE || {};
     var pipes = asList(S.ghlPipes).map(function (p) {
@@ -116,8 +164,7 @@
     });
     var cats = {};
     contacts.forEach(function (c) {
-      var cat = String(c.category || c.type || 'Other');
-      cat = cat.charAt(0).toUpperCase() + cat.slice(1);
+      var cat = normCat(c.category || c.type || 'Other');
       if (!cats[cat]) cats[cat] = [0, 0, 0, 0, 0];
       var st = String(c.stage || '').toLowerCase();
       var ix = /meet|done/.test(st) ? 4 : /contact|replied/.test(st) ? 2 : /reach|send|email/.test(st) ? 1 : 0;
@@ -129,7 +176,7 @@
       var days = daysAgo(c.lastTouch || c.last_touch);
       var stage = c.ghlStage || c.stage || 'Storage';
       var warm = days <= 3 ? 'hot' : days <= 10 ? 'warm' : days >= 14 ? 'cold' : '';
-      return [c.name || 'Person', c.company || '', c.category || c.type || '', stage, warm, (days >= 99 ? '—' : days + 'd'), c.nextAction || c.next_action || 'Follow up'];
+      return [c.name || 'Person', c.company || '', normCat(c.category || c.type || ''), stage, warm, (days >= 99 ? '—' : days + 'd'), c.nextAction || c.next_action || 'Follow up'];
     });
     liveLog('pipeline', { pipes: pipes.length, contacts: contacts.length, funnel: funnel.length, rows: rows.length });
     return {
@@ -169,7 +216,8 @@
       var list = groups[name] || [];
       var cards = list.slice(0, 8).map(function (p) {
         var intel = p.notes || p.description || p.subjectLabel || p.company || '';
-        return [p.name || 'Space', intel || 'Add a one-line note', Math.min(5, 1 + (p.docCount ? 1 : 0) + (p.recipientCount ? 1 : 0) + (/ready|sent/.test(String(p.stage || '')) ? 1 : 0)), nextActionOf(p), p.id];
+        var rd = spaceReadiness(p);
+        return [p.name || 'Space', intel || 'Add a one-line note', rd.n, nextActionOf(p), p.id, rd.docs, rd.links];
       });
       return [name, CAT_CLS[name] || 'c-gen', list.length, cards];
     });
@@ -225,14 +273,18 @@
     var S = window.STATE || {};
     var cats = asList(S.categories);
     var links = asList(S.links);
+    var seenAll = {};
     var counts = {};
     links.forEach(function (l) {
       var key = l.cat || l.category || 'Uncategorized';
+      var uk = String(l.url || '').replace(/\/$/, '').toLowerCase();
+      if (seenAll[key + '|' + uk]) return;
+      seenAll[key + '|' + uk] = 1;
       counts[key] = (counts[key] || 0) + 1;
     });
     var tree = cats.map(function (c, i) {
       var name = c.name || c.title || 'Category';
-      return { name: name, n: counts[name] || (c.subs || []).length || 0, on: i === 0, car: i === 0 ? 'closed' : 'closed' };
+      return { name: name, n: counts[name] || 0, on: i === 0, car: i === 0 ? 'closed' : 'closed' };
     });
     if (!tree.length) tree = [{ name: 'Uncategorized', n: links.length, on: true, car: '', noHv: true }];
     var active = (tree.filter(function (t) { return t.on; })[0] || tree[0] || { name: '' }).name;
@@ -255,6 +307,10 @@
       seenUrl[k] = 1;
       w[4] = 1;
       return true;
+    });
+    tree = tree.map(function (t) {
+      if (t.on) return Object.assign({}, t, { n: wall.length });
+      return t;
     });
     liveLog('links', { cats: cats.length, links: links.length, wall: wall.length });
     return { tree: tree, crumb: active, crumbN: wall.length, wall: wall };
@@ -280,15 +336,21 @@
         if (/wait/i.test(s)) return ['t-w', s];
         return ['t-biz', s];
       });
+      var tagsOut = tags.slice();
+      var col = investorMail(row) ? 'investors' : (row.column || 'prospects');
+      tagsOut = tagsOut.map(function (t) {
+        if (Array.isArray(t) && /vc/i.test(String(t[1])) && col === 'investors') return ['t-vc', 'Investor'];
+        return t;
+      });
       return {
-        name: row.from || row.name || 'Sender',
+        name: senderName(row),
         color: row.color || mailColor(0),
         age: row.age || ageLabel(row.at || row.date),
         subject: row.subject || '(no subject)',
         preview: row.snippet || row.preview || '',
-        tags: tags,
+        tags: tagsOut,
         unread: !!row.unread,
-        column: investorMail(row) ? 'investors' : (row.column || 'prospects'),
+        column: col,
         needsNow: !!row.needsNow || (!row.bulk && !!row.unread),
         bulk: !!row.bulk
       };
@@ -296,10 +358,13 @@
     var shaped = messages.map(tagged);
     var cols = order.map(function (key) {
       var meta = COL_META[key] || { icon: '', name: key, rule: '' };
+      var WIN = { investors: 1, vcs: 1, prospects: 1 };
       var list = shaped.filter(function (m) {
-        if (key === 'needs_now') return m.needsNow && !m.bulk;
         if (key === 'quiet') return m.bulk || m.column === 'quiet';
-        return m.column === key && !m.bulk;
+        if (m.bulk) return false;
+        if (key === 'needs_now') return m.needsNow && !WIN[m.column];
+        if (WIN[key]) return m.column === key;
+        return m.column === key && !m.needsNow;
       });
       var col = columns.filter(function (c) { return c.key === key; })[0];
       var ruleHits = rules.filter(function (r) { return r.target === key; });
@@ -392,7 +457,7 @@
         return '<div class="gh"><span class="car">&#9662;</span><b>' + esc(g[0]) + '</b><span class="c">' + g[2] + '</span><span class="ln"></span>' + (rest > 0 ? '<span class="lnk">Show all ' + g[2] + '</span>' : '') + '</div><div class="grid">'
           + (g[3] || []).map(function (s) {
             var na = NA[s[3]] || NA.docs;
-            return '<div class="sp"><div class="top2"><span class="cat ' + g[1] + '">' + esc(g[0]) + '</span><span class="ms" title="More">&middot;&middot;&middot;</span></div><h4>' + esc(s[0]) + '</h4><p>' + esc(s[1]) + '</p><div class="rd">' + ring(s[2]) + '<span class="nxa ' + na[0] + '">' + na[1] + '</span><span class="cnt">0 files &middot; 0 links</span></div><div class="ft"><button class="op"' + (s[4] ? ' data-space="' + esc(s[4]) + '"' : '') + '>Open</button><button class="dr">Move to Drive</button></div></div>';
+            return '<div class="sp"><div class="top2"><span class="cat ' + g[1] + '">' + esc(g[0]) + '</span><span class="ms" title="More">&middot;&middot;&middot;</span></div><h4>' + esc(s[0]) + '</h4><p>' + esc(s[1]) + '</p><div class="rd">' + ring(s[2]) + '<span class="nxa ' + na[0] + '">' + na[1] + '</span><span class="cnt wrap">' + (Number(s[5]) || 0) + ' files &middot; ' + (Number(s[6]) || 0) + ' links</span></div><div class="ft"><button class="op"' + (s[4] ? ' data-space="' + esc(s[4]) + '"' : '') + '>Open</button><button class="dr">Move to Drive</button></div></div>';
           }).join('')
           + (g[0] === 'General' ? '<div class="addcard">+ New space</div>' : '') + '</div>';
       }).join('') + '</div>'
@@ -484,8 +549,11 @@
       + '<div class="add"><input placeholder="Title (optional - we\'ll read it from the site)"><input placeholder="Paste a link - https://"><button>Add link</button></div>'
       + '<div class="wall" id="wall">' + (data.wall || []).map(function (w) {
         var href = absUrl(w[5] || w[1]);
+        var letter = esc(String(w[0] || '?')[0]);
+        var hostName = hostOf(href);
+        var ico = fixtureOn() ? '' : '<img class="ico" alt="" src="/api/favicon?d=' + encodeURIComponent(hostName) + '" onerror="this.parentNode.classList.remove(\'has-ico\');this.remove()">';
         return '<a class="tile" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer">' + (w[4] == 2 ? '<span class="dup">Duplicate</span>' : '')
-          + '<div class="lg" style="background:' + w[2] + '14"><i style="background:' + w[2] + '">' + esc(String(w[0] || '?')[0]) + '</i></div>'
+          + '<div class="lg' + (ico ? ' has-ico' : '') + '" style="background:' + w[2] + '14">' + ico + '<i style="background:' + w[2] + '">' + letter + '</i></div>'
           + '<div class="tm"><span title="Edit">&#9998;</span><span title="Move">&#8644;</span><span title="Delete">&times;</span></div>'
           + '<div class="nb"><b>' + esc(w[0]) + '<em>&#8599;</em></b><div class="dm">' + esc(w[1]) + '</div><div class="nt' + (w[3] ? '' : ' empty') + '">' + (w[3] ? esc(w[3]) : 'Add a note') + '</div></div></a>';
       }).join('') + '</div>'
