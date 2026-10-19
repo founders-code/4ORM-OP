@@ -144,6 +144,7 @@ Add a "Financials" section/page locked behind a numeric code (default 1313, stor
 - Note: this code is screen-privacy (over-the-shoulder), layered on top of the existing Clerk auth - a simple client gate is fine; store the code so it can be changed later, default 1313.
 
 === W) LINKS OPEN IN A NEW TAB ===
+BUG SEEN LIVE (Oct 18): clicking the Riverside / Perplexity / OpenAI tiles opens the Drive file viewer ("This file can't be previewed here"). Every link tile must be a real <a href={url} target="_blank" rel="noopener noreferrer"> wrapping the whole tile, with NO onClick that opens the viewer. Only URLs on drive.google.com / docs.google.com (Drive files) use the in-app viewer. Normalise URLs missing https:// before opening. Self-check: click Perplexity, OpenAI, Riverside, Vercel - each opens its website in a new tab.
 On the Links page (and link tiles in Spaces), clicking a link must open the URL in a NEW BROWSER TAB (target="_blank" rel="noopener noreferrer") - NOT the in-app popup viewer. This overrides the in-app-popup rule for external web links only. (Google Docs/Drive FILES still open in the in-app viewer as before; this is only for web links / bookmarks / YouTube, which open as a real new tab.)
 
 === X) NEW "PLAYBOOK" PAGE - the operating rhythm (match design-reference/playbook.html exactly) ===
@@ -179,6 +180,39 @@ A public, no-login booking page (4orm Finance logo top-left - public page; a rou
 - Confirm form: heading "I look forward to connecting with you. Would love to grab your:" then fields Name, Email, Topics of interest (tap-to-select chips: Investing in 4orm, Design partnership, 4ormIQ, Regulation & compliance, Partnership, Something else), Notes. "Confirm booking" button.
 - ON BOOKING (these must actually happen - the page promises them): (1) create the event on Chad's Google Calendar with a Zoom meeting link; (2) send the booker a REAL calendar invitation (Google Calendar invite / .ics attachment) so it lands in THEIR calendar automatically with the Zoom link; (3) show and send times in the booker's own detected time zone (Chad's base = Pacific); (4) send a confirmation email from chad@4ormfinance.com via GoHighLevel; (5) create/update the person in Contacts and the matching GHL pipeline (investor topic -> investors, brokerage/design partnership -> design partners); (6) reminder to both parties 1 hour before; reschedule/cancel link in the email.
 - Persist bookings (owner_id, name, email, topics, notes, start, end, tz, zoom_url, gcal_event_id, status, created_at) IF NOT EXISTS, fail soft.
+
+=== AA) LEFT MENU - DRAG TO REORDER (Arrange mode) ===
+Chad wants to rearrange the left sidebar menu items himself (drag up/down) to find the best top-to-bottom flow. Keep the sidebar's current look exactly - this adds behaviour only.
+
+1. ARRANGE MODE: add a small "Arrange" control at the bottom of the sidebar (subtle text button, same style as the nav labels). Clicking it turns on arrange mode: each menu item shows a 6-dot grip on its left and can be dragged. The button becomes "Done" plus a small "Reset to default" link. Outside arrange mode the menu works exactly as now (no accidental drags).
+2. DRAG: drag any item up or down within its section, or across sections (between "Workspace" and "Signals & data"). Show a thin blue insertion line where it will drop; the dragged item follows the cursor slightly lifted. Use @dnd-kit (or the existing drag library if one is installed); works with mouse and trackpad. Keyboard: focus an item and press Alt+Up / Alt+Down to move it.
+3. SECTIONS: the two section headers can also be dragged to swap section order. Item badges (Pipeline 246, Integrations 0) and the active highlight move with their item.
+4. SAVE: order saves instantly on drop, per user. Persist in Neon: nav_prefs (owner_id text primary key, order jsonb, updated_at) CREATE TABLE IF NOT EXISTS; GET/PUT /api/nav-prefs, owner-scoped, fail soft. Also mirror to localStorage so the menu renders in the saved order with no flash on load. New pages added later that are not in the saved order appear at the end of their default section. "Reset to default" restores the shipped order.
+5. Do NOT change routes, page names, icons, colours, sidebar width, collapse behaviour, or the Clerk sign-in. DATA SAFETY: additive only.
+6. SELF-CHECK: drag Playbook to the top of Workspace, move News into Workspace, reload - order sticks; sign out/in - order sticks; Reset - back to default; outside arrange mode clicking items navigates normally. Report the result.
+
+=== AB) PLAYBOOK VOICE LOG (record, transcribe, file it) ===
+PRE-FLIGHT: confirm design-reference/playbook.html is the full file (~45KB) and contains the "VOICE LOG - SAY WHAT YOU DID" section (classes .vlog, .recbtn, .vtx, .heard, .vhist). Open it and match that section exactly, inside the same Shadow DOM root as the rest of the Playbook. Do not touch Clerk sign-in. DATA SAFETY: additive only.
+
+WHAT IT DOES: Chad taps record, says what he got done, and it is transcribed, understood and filed.
+1. RECORD: the round red button records from the mic (MediaRecorder, webm/opus). Timer counts up, the waveform moves with the real mic level (AnalyserNode). Tap again to stop. Ask for mic permission on first tap; if denied, show an inline note "Allow the microphone in your browser to record". Max 10 minutes. Also allow typing straight into the transcript box.
+2. TRANSCRIBE: while recording, show live words using the browser SpeechRecognition API where available (Chrome/Edge/Brave). On stop, send the audio to POST /api/voice/transcribe, which calls OpenAI transcription (gpt-4o-transcribe, or whisper-1) with env OPENAI_API_KEY, and replace the live text with the accurate transcript. The transcript stays editable before saving.
+3. UNDERSTAND: POST /api/voice/parse sends the transcript plus today's Playbook rhythms to the LLM and returns structured items:
+   - play updates: which rhythm it matches and the value (e.g. "Post today's clip" -> done; "Reach out 5" -> 3/5; "Engage 10 min" -> 4/5)
+   - new tasks: text + due (e.g. "Send Kevin the GTM deck" -> Execution, Tue), linked to a Contact if the name matches
+   - notes: text + where it belongs (Newsletter, a Space, Notes)
+   Render them in the "4orm Intelligence heard" card exactly as the mockup (checkbox, row-colour swatch, label, tag). Each item can be unticked.
+4. SAVE TO: chips "Today's log" (default), "Completed", "A Space...", "Notes", "Drive doc". "Save to today" then:
+   - writes the ticked play updates to playbook_log (pads light off / show progress immediately)
+   - creates the ticked tasks in War Room Execution (Today / This week by due date)
+   - files the notes to the chosen place (a Space's Notes, the Notes page, or the newsletter material bin)
+   - appends the whole entry (time, transcript, items) to TODAY'S LOG - a running daily file that the end-of-day Completed snapshot includes. "Drive doc" also appends it to a Google Doc in Drive named "Chad - Daily log - YYYY-MM" (one doc per month, newest entry on top).
+5. HISTORY: under the card, today's earlier voice entries as rows (play button to replay the audio, time, first line in quotes, counts). Click a row to reopen and edit it.
+6. STORAGE: voice_logs (id, owner_id, created_at, audio_url, duration_s, transcript, items jsonb, destination, saved bool) CREATE TABLE IF NOT EXISTS; audio in Vercel Blob (private, owner-scoped). Fail soft: if transcription or parsing fails, keep the audio and raw text and let Chad save it as a plain note.
+7. QUICK ACCESS: a small mic button next to "Run today's plays" in the Playbook header scrolls to the Voice log and starts recording. Keyboard: press "R" on the Playbook page to start/stop.
+
+=== AC) NEWS SELF-RUNNING SWEEP + ZOOM REDESIGN ===
+See FIX_NEWS_SWEEP_ZOOM.md in design-reference/ - build it exactly as written (POST /api/news/sweep from NEWS_SOURCES.md feeds + Google News RSS, ranking, og:image/screenshot thumbnails, Vercel Cron 8am/11am PT, Refresh runs the sweep; News rail inside the Shadow DOM; Zoom ported from the new design-reference/zoom-redesign.html: dark page, white meeting boxes grouped by week + slide-in reader with What others said / What you owe / Decided).
 
 LOGO RULE (all pages): use the 4ormIQ mark on internal pages (Playbook, Calendar, 4orm Intelligence, 4ormIQ, internal tools); use the 4orm Finance logo on public pages (booking).
 
