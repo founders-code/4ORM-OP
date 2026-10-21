@@ -206,18 +206,20 @@
       rows.forEach(function (r, ri) {
         if (r.s) { h += '<div class="sect">' + r.s.toUpperCase() + '</div>'; return; }
         var col = colOf(r), rm = ROOMS[r.room] || ROOMS.dash;
-        h += '<div class="track"><span class="swatch" style="background:' + col + '"></span><div><div class="t">' + r.n + (r.nw ? '<span class="new">NEW</span>' : '') + '</div><div class="r"><a href="' + rm[1] + '">' + rm[0] + ' &rarr;</a>' + (r.sub ? ' &middot; ' + r.sub : '') + '</div></div></div>';
+        h += '<div class="track"><span class="swatch" style="background:' + col + '"></span><div><div class="t">' + r.n + (r.nw ? '<span class="new">NEW</span>' : '') + '</div><div class="r"><a href="' + rm[1] + '" data-action="play-go" data-view="' + (r.room || 'dash') + '">' + rm[0] + ' &rarr;</a>' + (r.sub ? ' &middot; ' + r.sub : '') + '</div></div></div>';
         r.d.forEach(function (s, i) {
           var l = (r.lab && r.lab[i]) || '';
-          if (s === D) h += '<div class="pad done" style="--c:' + col + ';color:#fff" data-r="' + ri + '" data-i="' + i + '">' + l + '</div>';
-          else if (s === M) h += '<div class="pad miss">&times;</div>';
-          else if (s === U) h += '<div class="pad due" style="--c:' + col + ';color:#0b0d12" data-r="' + ri + '" data-i="' + i + '">' + l + '</div>';
-          else if (s === N) h += '<div class="pad next" style="--c:' + col + '" data-r="' + ri + '" data-i="' + i + '">' + l + '</div>';
-          else h += '<div class="pad off"></div>';
+          var day = (r.pads && r.pads[i] && r.pads[i].day) || '';
+          var ids = ' data-action="play-pad" data-r="' + ri + '" data-i="' + i + '" data-id="' + esc(r.id || '') + '" data-day="' + esc(day) + '"';
+          if (s === D) h += '<div class="pad done" style="--c:' + col + ';color:#fff"' + ids + '>' + l + '</div>';
+          else if (s === M) h += '<div class="pad miss" data-action="play-pad-off">&times;</div>';
+          else if (s === U) h += '<div class="pad due" style="--c:' + col + ';color:#0b0d12"' + ids + '>' + l + '</div>';
+          else if (s === N) h += '<div class="pad next" style="--c:' + col + '"' + ids + '>' + l + '</div>';
+          else h += '<div class="pad off" data-action="play-pad-off"></div>';
         });
         h += '<div class="streak">' + (r.st || '') + '</div>';
       });
-      h += '<div class="add">+ Add a rhythm</div>';
+      h += '<div class="add" data-action="play-add">+ Add a rhythm</div>';
       if (g) { g.innerHTML = h; place(); count(); }
     }
     function place() {
@@ -236,37 +238,30 @@
     }
     window.addEventListener('resize', place);
     var pop = gid('pop'); var cur = null;
-    if (g) g.addEventListener('click', function (e) {
-      var p = e.target.closest('.pad');
-      if (!p || !p.dataset.r) { pop.classList.remove('show'); return; }
+    function openPop(p) {
+      if (!p || !p.dataset.r || !pop) return;
       var r = rows[+p.dataset.r], i = +p.dataset.i, rm = ROOMS[r.room] || ROOMS.dash, st = r.d[i];
       cur = { r: r, i: i, el: p };
       var col = colOf(r);
       gid('popSw').style.background = col;
       gid('popT').textContent = r.n;
       gid('popS').textContent = rm[0] + ' · ' + (st === D ? 'done — light is off' : st === N ? 'later today' : 'due now');
-      var go = gid('popGo'); go.textContent = 'Go to ' + rm[0] + ' →'; go.style.background = col;
+      var goBtn = gid('popGo'); goBtn.textContent = 'Go to ' + rm[0] + ' →'; goBtn.style.background = col;
+      goBtn.setAttribute('data-view', r.room || 'dash');
       gid('popDone').innerHTML = st === D ? '↺ Turn back on' : '✓ Mark done';
       var b = p.getBoundingClientRect();
       pop.style.left = Math.min(b.left, window.innerWidth - 260) + 'px';
       pop.style.top = (b.bottom + 8) + 'px';
       pop.classList.add('show');
-      e.stopPropagation();
-    });
-    root.addEventListener('click', function (e) { if (!pop.contains(e.target) && !e.target.closest('.pad')) pop.classList.remove('show'); });
-    function toast(t) { var x = gid('toast'); x.textContent = t; x.classList.add('show'); setTimeout(function () { x.classList.remove('show'); }, 1800); }
-    if (gid('popGo')) gid('popGo').onclick = function () { var rm = ROOMS[cur.r.room] || ROOMS.dash; toast('Opening ' + rm[0] + '…  (' + rm[1] + ')'); pop.classList.remove('show'); if (rm[1]) location.href = rm[1]; };
-    if (gid('popDone')) gid('popDone').onclick = function () {
-      cur.r.d[cur.i] = cur.r.d[cur.i] === D ? U : D; pop.classList.remove('show'); render();
-      var el = g.querySelector('.pad[data-r="' + rows.indexOf(cur.r) + '"][data-i="' + cur.i + '"]');
-      if (el) el.classList.add('just');
-      toast(cur.r.d[cur.i] === D ? '✓ Light off — ' + cur.r.n + ' done' : cur.r.n + ' turned back on');
-    };
-    if (gid('popLater')) gid('popLater').onclick = function () { pop.classList.remove('show'); toast(cur.r.n + ' snoozed 2 hours'); };
+    }
+    root.addEventListener('click', function (e) { if (pop && !pop.contains(e.target) && !e.target.closest('.pad')) pop.classList.remove('show'); });
+    function toast(t) { var x = gid('toast'); if (!x) return; x.textContent = t; x.classList.add('show'); setTimeout(function () { x.classList.remove('show'); }, 1800); }
+    window.__playMount = { rows: rows, render: render, count: count, toast: toast, root: root, todayIdx: todayIdx, pop: pop, openPop: openPop, get cur() { return cur; }, set cur(v) { cur = v; } };
     render();
     mountMonths(root, rows);
     if (fixtureOn()) mountVoiceDemo(root, rows, render, count, toast);
     else mountVoiceLive(root, rows, render, count, toast);
+    if (P().finishPaint) P().finishPaint(wrap);
   }
 
   function mountMonths(root, rows) {
@@ -289,7 +284,7 @@
       H += '<div class="mlab" style="color:var(--mut);font-size:10px;letter-spacing:.1em">MILESTONES</div>';
       for (d = 1; d <= mo.days; d++) {
         var m = mo.ms[d];
-        H += m ? '<div class="ms" style="background:' + m[1] + '" title="' + m[0] + '">' + m[0] + '</div>' : '<div></div>';
+        H += m ? '<div class="ms" data-action="play-ms" style="background:' + m[1] + '" title="' + m[0] + '">' + m[0] + '</div>' : '<div></div>';
       }
       daily.forEach(function (r, k) {
         var col = colOf(r);
@@ -310,11 +305,7 @@
     });
     var monthsEl = root.getElementById('months');
     if (monthsEl) monthsEl.innerHTML = H;
-    var openCal = root.getElementById('openCal');
-    var closeCal = root.getElementById('closeCal');
     var ov = root.getElementById('ov');
-    if (openCal) openCal.onclick = function () { ov.classList.add('open'); };
-    if (closeCal) closeCal.onclick = function () { ov.classList.remove('open'); };
     if (ov) ov.onclick = function (e) { if (e.target.id === 'ov') e.target.classList.remove('open'); };
   }
 
@@ -435,6 +426,7 @@
         var root = wrap.getRootNode();
         mountPlaybook(root, wrap, data);
         liveLog('playbook', { rows: (data.rows || []).length, todayIdx: data.todayIdx });
+        if (P().finishPaint) P().finishPaint(wrap);
       } catch (err) {
         console.warn('playbook paint', err);
       }
@@ -522,6 +514,7 @@
             });
           }
           liveLog('calendar', { events: (events || []).length, live: live });
+          if (P().finishPaint) P().finishPaint(wrap);
         } catch (err) {
           console.warn('calendar paint', err);
         }
@@ -591,7 +584,9 @@
     return s.replace(/^["“]+|["”]+$/g, '').trim();
   }
   function liveZoomState() {
-    var notes = asList((window.STATE || {}).zoomNotes);
+    var notes = asList((window.STATE || {}).zoomNotes).filter(function (n) {
+      return !/^\[archived\]/i.test(String(n.title || ''));
+    });
     var actions = asList((window.STATE || {}).meetingActions).filter(function (a) {
       return a.status !== 'done' && a.status !== 'tasked';
     });
@@ -656,10 +651,10 @@
         var people = asList(x.p).filter(function (p) { return !isChad(p); });
         var who = people.length ? people.slice(0, 2).join(', ') + (people.length > 2 ? ' +' + (people.length - 2) : '') : 'Just you';
         var leadName = people[0] ? people[0].split(' ')[0] : '';
-        h += '<div class="mc" data-i="' + i + '"><div class="d">' + esc(x.m) + ' ' + x.d + ', 2026<span class="src">' + esc(x.src) + '</span></div><div class="t">' + esc(x.t) + '</div>'
+        h += '<div class="mc" data-action="zoom-open" data-i="' + i + '" data-id="' + esc(x.id || '') + '"><div class="d">' + esc(x.m) + ' ' + x.d + ', 2026<span class="src">' + esc(x.src) + '</span></div><div class="t">' + esc(x.t) + '</div>'
           + '<div class="pp2">' + (people.map(function (n) { return '<span class="av" style="background:' + zcol(n) + '">' + esc(ini(n)) + '</span>'; }).join('') || '<span class="av" style="background:#8a96ad;margin:0">CJ</span>') + '<span class="n">' + esc(who) + '</span></div>'
           + '<div class="sn' + (x.solo ? ' self' : '') + '">' + (x.solo ? '<b style="color:#46556E">Note to self:</b> ' : (leadName ? '<b>' + esc(leadName) + ':</b> ' : '')) + esc(stripLead(x.s, x.p)) + '</div>'
-          + '<div class="ft">' + (x.solo ? '<span class="tag solo">Solo</span>' : x.owe ? '<span class="tag owe">You owe ' + x.owe + '</span>' : '<span class="tag solo">Nothing owed</span>') + '<span class="op">Open &rarr;</span><span class="ib" title="Edit">&#9998;</span><span class="ib" title="Delete">&#128465;</span></div></div>';
+          + '<div class="ft">' + (x.solo ? '<span class="tag solo">Solo</span>' : x.owe ? '<span class="tag owe">You owe ' + x.owe + '</span>' : '<span class="tag solo">Nothing owed</span>') + '<span class="op" data-action="zoom-open" data-i="' + i + '" data-id="' + esc(x.id || '') + '">Open &rarr;</span><span class="ib" title="Edit" data-action="zoom-edit" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">&#9998;</span><span class="ib" title="Delete" data-action="zoom-archive" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">&#128465;</span></div></div>';
       });
       if (box) box.innerHTML = h + (w ? '</div>' : '');
       var dr = root.getElementById('drawer'), sc = root.getElementById('scrim');
@@ -677,33 +672,29 @@
         var x = meetings[i], r = (fixtureOn() && ZREADER[i]) ? ZREADER[i] : genR(x);
         function av(n) { return '<span class="av" style="background:' + zcol(n) + '">' + esc(ini(n)) + '</span>'; }
         var people = asList(x.p);
-        return '<div class="rh" style="margin-top:-6px"><h2>' + esc(x.t) + '</h2><div class="ic"><span class="ib" title="Edit">&#9998;</span><span class="ib" title="Delete">&#128465;</span></div></div>'
+        return '<div class="rh" style="margin-top:-6px"><h2>' + esc(x.t) + '</h2><div class="ic"><span class="ib" title="Edit" data-action="zoom-edit" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">&#9998;</span><span class="ib" title="Delete" data-action="zoom-archive" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">&#128465;</span></div></div>'
           + '<div class="when">' + esc(r.when) + ' &middot; ' + esc(x.src) + ' notes' + (x.src === 'Zoom' ? ' + recording + transcript' : '') + '</div>'
           + '<div class="ppl">' + people.map(function (n) { return '<span class="pp">' + av(n) + esc(n) + (r.roles[n] ? ' <em>&middot; ' + esc(r.roles[n]) + '</em>' : '') + '</span>'; }).join('') + '<span class="pp"><span class="av" style="background:#8a96ad">CJ</span>You</span></div>'
-          + '<div class="acts"><button class="btn sm pri">Open transcript</button>' + (x.src === 'Zoom' ? '<button class="btn sm">Play recording</button>' : '') + '<button class="btn sm">Draft follow-up email</button><button class="btn sm">Add to a Space</button>' + (people[0] ? '<button class="btn sm">Open ' + esc(people[0].split(' ')[0]) + ' in Contacts</button>' : '') + '</div>'
-          + '<div class="ai"><div class="sh"><b>&#10022; 4orm Intelligence on this meeting</b><span>summary</span></div><p>' + esc(r.summary) + '</p><div class="ask"><input placeholder="Ask about this meeting"><button class="btn sm pri">Ask</button></div></div>'
+          + '<div class="acts"><button class="btn sm pri" data-action="zoom-transcript">Open transcript</button>' + (x.src === 'Zoom' ? '<button class="btn sm" data-action="zoom-play">Play recording</button>' : '') + '<button class="btn sm" data-action="zoom-follow" data-name="' + esc(people[0] || '') + '">Draft follow-up email</button><button class="btn sm" data-action="coming-soon" data-label="Add to a Space">Add to a Space</button>' + (people[0] ? '<button class="btn sm" data-action="zoom-contact" data-name="' + esc(people[0]) + '">Open ' + esc(people[0].split(' ')[0]) + ' in Contacts</button>' : '') + '</div>'
+          + '<div class="ai"><div class="sh"><b>&#10022; 4orm Intelligence on this meeting</b><span>summary</span></div><p>' + esc(r.summary) + '</p><div class="ask"><input placeholder="Ask about this meeting" data-action="zoom-ask-input"><button class="btn sm pri" data-action="zoom-ask">Ask</button></div></div>'
           + '<div class="grid2"><div>'
           + (x.solo ? '' : '<div class="sec" style="margin-bottom:14px"><div class="sh"><b>What others said</b><span>intel first</span></div>' + Object.keys(r.said || {}).map(function (n) { return '<div class="said"><div class="who">' + av(n) + esc(n) + (r.roles[n] ? ' <em>' + esc(r.roles[n]) + '</em>' : '') + '</div><ul>' + asList(r.said[n]).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>'; }).join('') + '</div>')
           + (asList(r.improve).length ? '<div class="sec imp" style="margin-bottom:14px"><div class="sh"><b>Where you can improve</b><span>coaching</span></div>' + r.improve.map(function (t, k) { return '<div class="iv"><span>' + (k + 1) + '</span>' + esc(t) + '</div>'; }).join('') + '</div>' : '')
           + (asList(r.quotes).length ? '<div class="sec"><div class="sh"><b>Worth quoting</b><span>from the transcript</span></div>' + r.quotes.map(function (q) { return '<div class="q"><b>' + esc(q[0]) + ':</b> "' + esc(stripLead(q[1], [q[0]].concat(people))) + '"</div>'; }).join('') + '</div>' : '')
           + '</div><div>'
-          + '<div class="sec" style="margin-bottom:14px"><div class="sh"><b>What you owe</b><span>' + asList(r.owe).length + ' open</span></div>' + (asList(r.owe).length ? r.owe.map(function (o) { return '<div class="owe"><span class="k ' + esc(o[0]) + '">' + (o[0] === 'you' ? 'You said' : 'Follow up') + '</span><span class="t">' + esc(o[1]) + '</span><span class="ad"><button>+ Today</button><button>+ Week</button></span></div>'; }).join('') : '<div class="emp">Nothing owed from this meeting.</div>') + '</div>'
+          + '<div class="sec" style="margin-bottom:14px"><div class="sh"><b>What you owe</b><span>' + asList(r.owe).length + ' open</span></div>' + (asList(r.owe).length ? r.owe.map(function (o) { return '<div class="owe"><span class="k ' + esc(o[0]) + '">' + (o[0] === 'you' ? 'You said' : 'Follow up') + '</span><span class="t">' + esc(o[1]) + '</span><span class="ad"><button data-action="zoom-task" data-title="' + esc(o[1]) + '" data-bucket="today">+ Today</button><button data-action="zoom-task" data-title="' + esc(o[1]) + '" data-bucket="week">+ Week</button></span></div>'; }).join('') : '<div class="emp">Nothing owed from this meeting.</div>') + '</div>'
           + '<div class="sec" style="margin-bottom:14px"><div class="sh"><b>Decided</b><span>' + asList(r.decided).length + '</span></div>' + (asList(r.decided).length ? r.decided.map(function (d) { return '<div class="dec"><i>&#10003;</i>' + esc(d) + '</div>'; }).join('') : '<div class="emp">No decisions captured.</div>') + '</div>'
           + '<div class="sec"><div class="sh"><b>Full notes</b><span>as captured</span></div><div class="raw">' + esc(x.s) + '</div></div>'
           + '</div></div><div class="zfoot">Summarised by 4orm Intelligence from the ' + esc(x.src) + ' ' + (x.src === 'Zoom' ? 'transcript' : 'notes') + ' &middot; check the transcript before quoting anyone.</div>';
       }
       function openM(i) {
         root.getElementById('rd').innerHTML = reader(i);
-        root.querySelectorAll('.owe .ad button').forEach(function (b) { b.onclick = function () { b.closest('.owe').classList.add('added'); toast('Task added to War Room Execution'); }; });
         show(true);
+        if (P().finishPaint) P().finishPaint(wrap);
       }
-      if (box) box.onclick = function (e) {
-        if (e.target.closest('.ib')) { toast(e.target.closest('.ib').title + ' meeting'); return; }
-        var c = e.target.closest('.mc'); if (c) openM(+c.dataset.i);
-      };
       if (sc) sc.onclick = function () { show(false); };
-      var close = root.getElementById('close'); if (close) close.onclick = function () { show(false); };
       window.addEventListener('keydown', function (e) { if (e.key === 'Escape') show(false); });
+      window.__zoomMount = { open: openM, show: show, meetings: meetings, toast: toast };
       (function () {
         var g = root.getElementById('grab'); var on = false;
         if (!g) return;
@@ -712,6 +703,7 @@
         window.addEventListener('mouseup', function () { on = false; document.body.style.userSelect = ''; });
       })();
       liveLog('zoom', { meetings: meetings.length });
+      if (P().finishPaint) P().finishPaint(wrap);
       markReady('zoomDesk');
     });
   }
@@ -722,9 +714,7 @@
     if (fixtureOn()) {
       loadSnip('/done-snippet.html', function (html) {
         wrap.innerHTML = html;
-        wrap.querySelectorAll('.day').forEach(function (d) {
-          d.onclick = function () { wrap.querySelectorAll('.day').forEach(function (x) { x.classList.remove('on'); }); d.classList.add('on'); };
-        });
+        if (P().finishPaint) P().finishPaint(wrap);
         markReady('doneDesk');
       });
       return;
@@ -758,7 +748,7 @@
       var dow = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][new Date((s.date || '') + 'T12:00:00').getDay()] || '';
       var on = s.date === openDate;
       var chips = chipsOf(s);
-      return '<div class="day' + (on ? ' on' : '') + '" data-date="' + esc(s.date) + '"><div class="dt"><b>' + day + '</b><small>' + dow + '</small></div><div style="min-width:0"><div class="sm">' + esc(s.summary || (s.payload && s.payload.headline) || 'Day saved') + '</div><div class="ct">' + chips.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div></div></div>';
+      return '<div class="day' + (on ? ' on' : '') + '" data-action="done-day" data-date="' + esc(s.date) + '"><div class="dt"><b>' + day + '</b><small>' + dow + '</small></div><div style="min-width:0"><div class="sm">' + esc(s.summary || (s.payload && s.payload.headline) || 'Day saved') + '</div><div class="ct">' + chips.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div></div></div>';
     }).join('') : '<div class="today"><span class="pulse"></span>No snapshots yet</div>';
     var cur = snaps.filter(function (s) { return s.date === openDate; })[0] || snaps[0] || {};
     var det = cur.payload || {};
@@ -790,9 +780,9 @@
         return '<div class="li"><span class="tag t4">' + esc(tag) + '</span><span>' + esc(label) + '</span>' + (time ? '<em>' + esc(time) + '</em>' : '') + '</div>';
       }).join('');
     }
-    wrap.innerHTML = '<div class="bar"><h1>Completed</h1><span class="sub">A snapshot of every day, saved at 11:55 pm — what moved, who you met, what you owe</span><div class="r"><button class="btn" type="button">Search days</button><button class="btn pri" type="button" id="snapNowLive">Snapshot now</button></div></div>'
+    wrap.innerHTML = '<div class="bar"><h1>Completed</h1><span class="sub">A snapshot of every day, saved at 11:55 pm — what moved, who you met, what you owe</span><div class="r"><button class="btn" type="button" data-action="done-search">Search days</button><button class="btn pri" type="button" id="snapNowLive" data-action="done-snap">Snapshot now</button></div></div>'
       + '<div class="lay"><section class="card"><div class="today"><span class="pulse"></span>Today is being recorded — snapshot at 11:55 pm</div>' + list + '</section>'
-      + '<section class="card det"><div class="dh"><div><h2>' + esc(title) + '</h2><div class="meta">Snapshot saved · read-only</div></div><div class="r2"><button class="btn" type="button">Export PDF</button><button class="btn" type="button">Add to investor update</button></div></div>'
+      + '<section class="card det"><div class="dh"><div><h2>' + esc(title) + '</h2><div class="meta">Snapshot saved · read-only</div></div><div class="r2"><button class="btn" type="button" data-action="done-export">Export PDF</button><button class="btn" type="button" data-action="done-investor">Add to investor update</button></div></div>'
       + '<div class="moved"><b>&#10022; What moved today</b><p>' + esc(headline) + '</p></div>'
       + '<div class="tiles">'
       + '<div class="tl"><b>' + (counts.tasks || 0) + '</b><span>tasks done</span></div>'
@@ -808,24 +798,8 @@
       + '<div class="sec"><div class="sh"><b>Email</b><span>' + (counts.replies || 0) + ' in &middot; ' + (counts.sent || 0) + ' out</span></div>' + (mailLines(det.replies, 'In') + mailLines(det.sent, 'Out') || '<div class="emp">No mail captured.</div>') + '</div>'
       + '<div class="sec"><div class="sh"><b>News saved</b><span>' + asList(det.news).length + '</span></div>' + (lines(det.news, 'News') || '<div class="emp">No news saved.</div>') + '</div>'
       + '</div></section></div>';
-    wrap.querySelectorAll('.day').forEach(function (d) {
-      d.onclick = function () {
-        var date = d.getAttribute('data-date');
-        if (window.STATE) window.STATE.snapOpenDate = date;
-        auth('/api/snapshots?date=' + encodeURIComponent(date), { credentials: 'include', quiet: true }).then(function (r) { return r.json(); }).then(function (one) {
-          if (window.STATE) {
-            window.STATE.snapOpen = one;
-            window.STATE.snaps = asList(window.STATE.snaps).map(function (s) {
-              return ymdOf(s.date) === date ? Object.assign({}, s, { payload: one.payload || s.payload, summary: one.summary || s.summary, counts: (one.payload && one.payload.counts) || s.counts }) : s;
-            });
-          }
-          paintCompletedLive();
-        }).catch(function () { paintCompletedLive(); });
-      };
-    });
-    var snapBtn = wrap.querySelector('#snapNowLive');
-    if (snapBtn) snapBtn.onclick = function () { var b = document.getElementById('snapNow'); if (b) b.click(); };
     liveLog('completed', { snaps: snaps.length, open: openDate });
+    if (P().finishPaint) P().finishPaint(wrap);
     markReady('doneDesk');
   }
 

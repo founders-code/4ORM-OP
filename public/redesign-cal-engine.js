@@ -75,7 +75,7 @@ function isoWeek(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.get
 function mini(){const m=gid('mini');let h='';DOW.forEach((x,i)=>h+=`<div class="h${i==6?' sat':''}">${x}</div>`);
  const first=new Date(2026,9,1),start=add(first,-first.getDay());const ws=weekStart(focus);
  for(let i=0;i<42;i++){const d=add(start,i),k=ymd(d);const evs=E.filter(x=>x.d==k);const cols=[...new Set(evs.map(x=>C[x.c]))].slice(0,3);
-  const wk=d>=ws&&d<add(ws,7);h+=`<div class="d${d.getMonth()!=9?' o':''}${wk?' wk':''}${same(d,TODAY)?' td':''}"><span>${d.getDate()}</span>${cols.length?'<i>'+cols.map(c=>`<b style="background:${c}"></b>`).join('')+'</i>':''}</div>`;}
+  const wk=d>=ws&&d<add(ws,7);h+=`<div class="d${d.getMonth()!=9?' o':''}${wk?' wk':''}${same(d,TODAY)?' td':''}" data-action="cal-mini-day" data-d="${k}"><span>${d.getDate()}</span>${cols.length?'<i>'+cols.map(c=>`<b style="background:${c}"></b>`).join('')+'</i>':''}</div>`;}
  m.innerHTML=h;}
 function ribbon(){const r=gid('ribbon');const k=ymd(TODAY);const span=13;let h='';
  E.filter(x=>x.d==k&&!x.all).forEach(x=>h+=`<div class="seg" style="left:${(x.s-7)/span*100}%;width:${(x.e-x.s)/span*100}%;background:${C[x.c]}"></div>`);
@@ -86,16 +86,16 @@ function timeGrid(days,showSug){
  let h=`<div class="whead" style="grid-template-columns:repeat(${days.length},1fr)">`;
  days.forEach(d=>h+=`<div class="dh${same(d,TODAY)?' td':''}"><div class="dn">${DOW[d.getDay()]}</div><div class="dd"><span>${d.getDate()}</span></div></div>`);
  h+=`</div><div class="allday" style="grid-template-columns:repeat(${days.length},1fr)"><span class="lab">all-day</span>`;
- days.forEach(d=>{h+=`<div class="c">`+E.filter(x=>x.d==ymd(d)&&x.all).map(x=>`<div class="pill" style="background:${C[x.c]}">${x.t}</div>`).join('')+`</div>`});
+ days.forEach(d=>{h+=`<div class="c">`+E.filter(x=>x.d==ymd(d)&&x.all).map(x=>`<div class="pill" data-action="cal-allday" data-id="${x.id||''}" style="background:${C[x.c]}">${x.t}</div>`).join('')+`</div>`});
  h+=`</div><div class="tgrid" style="grid-template-columns:52px repeat(${days.length},1fr)"><div class="hours">`;
  for(let i=H0;i<H1;i++)h+=`<div class="hl">${i==H0?'':fmt(i)}</div>`;h+=`</div>`;
  days.forEach(d=>{const k=ymd(d);h+=`<div class="col${same(d,TODAY)?' today':''}" data-k="${k}">`;for(let i=H0;i<H1;i++)h+='<div class="line"></div>';
-  E.filter(x=>x.d==k&&!x.all).forEach(x=>h+=`<div class="ev real${(x.e-x.s)*PX-3<26?' short':''}${SEL===x?' sel':''}" data-i="${E.indexOf(x)}" data-t="${String(x.t||'').replace(/"/g,'&quot;')}" data-d="${x.d}" data-s="${x.s}" data-e="${x.e}" style="top:${(x.s-H0)*PX+1}px;height:${(x.e-x.s)*PX-3}px;background:${C[x.c]}"><div class="tt">${x.t}</div><div class="tm">${fmt(x.s)} - ${fmt(x.e)}</div>${x.ppl&&x.ppl.length?`<div class="tm">&#128101; ${x.ppl.length}</div>`:''}<span class="rz"></span></div>`);
-  if(showSug)S.filter(x=>x.d==k).forEach(x=>{const ht=(x.e-x.s)*PX-3;h+=`<div class="ev sug${ht<26?' short':''}" data-si="${S.indexOf(x)}" style="top:${(x.s-H0)*PX+1}px;height:${ht}px;border-color:${x.c};background:color-mix(in srgb,${x.c} 14%,transparent)"><div class="tt" style="color:${x.c}">${x.t}</div>${ht>22?`<div class="tm">${fmt(x.s)} - ${fmt(x.e)}</div>`:''}<span class="ok"><b style="background:var(--green);color:#06210f">&#10003;</b><b style="background:#2a3556;color:#cfd8f0">&#10005;</b></span></div>`});
+  E.filter(x=>x.d==k&&!x.all).forEach(x=>h+=`<div class="ev real${(x.e-x.s)*PX-3<26?' short':''}${SEL===x?' sel':''}" data-action="cal-event" data-id="${x.id||''}" data-i="${E.indexOf(x)}" data-t="${String(x.t||'').replace(/"/g,'&quot;')}" data-d="${x.d}" data-s="${x.s}" data-e="${x.e}" style="top:${(x.s-H0)*PX+1}px;height:${(x.e-x.s)*PX-3}px;background:${C[x.c]}"><div class="tt">${x.t}</div><div class="tm">${fmt(x.s)} - ${fmt(x.e)}</div>${x.ppl&&x.ppl.length?`<div class="tm">&#128101; ${x.ppl.length}</div>`:''}<span class="rz"></span></div>`);
+  if(showSug)S.filter(x=>x.d==k).forEach(x=>{const ht=(x.e-x.s)*PX-3;h+=`<div class="ev sug${ht<26?' short':''}" data-action="cal-sug" data-si="${S.indexOf(x)}" style="top:${(x.s-H0)*PX+1}px;height:${ht}px;border-color:${x.c};background:color-mix(in srgb,${x.c} 14%,transparent)"><div class="tt" style="color:${x.c}">${x.t}</div>${ht>22?`<div class="tm">${fmt(x.s)} - ${fmt(x.e)}</div>`:''}<span class="ok"><b data-action="cal-keep" style="background:var(--green);color:#06210f">&#10003;</b><b data-action="cal-drop" style="background:#2a3556;color:#cfd8f0">&#10005;</b></span></div>`});
   h+=`</div>`;});
  return h+`</div>`;
 }
-function aiBanner(n,f){return `<div class="ai"><span class="sp">&#10022;</span><div><b>4orm Intelligence planned next week around your ${n} meetings</b> - ${S.length} plays placed in the gaps, ${f}h of protected focus. Dashed = suggested. Hover a block to keep or drop it.</div><div class="acts"><button style="background:var(--blue);color:#fff">Accept all</button><button style="background:#1d2b55;color:#cfd8f0">Re-plan</button></div></div>`}
+function aiBanner(n,f){return `<div class="ai"><span class="sp">&#10022;</span><div><b>4orm Intelligence planned next week around your ${n} meetings</b> - ${S.length} plays placed in the gaps, ${f}h of protected focus. Dashed = suggested. Hover a block to keep or drop it.</div><div class="acts"><button data-action="cal-accept" style="background:var(--blue);color:#fff">Accept all</button><button data-action="cal-replan" style="background:#1d2b55;color:#cfd8f0">Re-plan</button></div></div>`}
 function wkPill(ws,we,tws){const n=Math.round((ws-tws)/6048e5);let p='';
  if(n==0)p='<em class="now">this week</em>';else if(n==1)p='<em>next week</em>';else if(n>1)p=`<em>${n} weeks out</em>`;else if(n==-1)p='<em class="past">last week</em>';else p=`<em class="past">${-n} weeks ago</em>`;
  for(let k=1;k<=3;k++){const t=new Date(TODAY.getFullYear(),TODAY.getMonth()+k,TODAY.getDate());if(t>=ws&&t<=we)p+=`<em class="mo">${k} month${k>1?'s':''} out</em>`;}
@@ -123,11 +123,11 @@ function render(){
    for(let i=0;i<7;i++){const d=add(s,i),k=ymd(d);const oth=q?(d<m0||d>end):d.getMonth()!=9;const first=d.getDate()==1;
     const alls=E.filter(x=>x.d==k&&x.all),tim=E.filter(x=>x.d==k&&!x.all).sort((a,b)=>a.s-b.s);
     const lbl=first?`<span>${MON[d.getMonth()].slice(0,3)} 1</span>`:(same(d,TODAY)?`<span>Oct 19</span>`:d.getDate());
-    h+=`<div class="qc${q?'':' mc'}${oth?' oth':''}${first?' first':''}${same(d,TODAY)?' td':''}"><div class="c-n">${lbl}</div>`;
+    h+=`<div class="qc${q?'':' mc'}${oth?' oth':''}${first?' first':''}${same(d,TODAY)?' td':''}" data-action="cal-cell" data-d="${k}"><div class="c-n">${lbl}</div>`;
     if(q){h+=alls.map(x=>`<div class="stripe" style="background:${C[x.c]}"></div>`).join('');h+=`<div class="dots">${tim.map(x=>`<b style="background:${C[x.c]}"></b>`).join('')}</div>`;
      const wd=d.getDay()>0&&d.getDay()<6;if(wd&&d>TODAY)h+=`<div class="play"><i style="background:var(--red)"></i><i style="background:var(--violet)"></i><i style="background:var(--blue2)"></i><i style="background:var(--green)"></i><i style="background:var(--pink)"></i></div>`;}
     else{const items=[...alls.map(x=>`<div class="mp ad" style="color:${C[x.c]}">${x.t}</div>`),...tim.map(x=>`<div class="mp"><em style="background:${C[x.c]}"></em>${x.t}<span class="tm">${fmt(x.s)}</span></div>`)];
-     h+=items.slice(0,4).join('')+(items.length>4?`<div class="more">${items.length-4} more...</div>`:'');}
+     h+=items.slice(0,4).join('')+(items.length>4?`<div class="more" data-action="cal-more">${items.length-4} more...</div>`:'');}
     h+=`</div>`;}
    h+=`</div>`;s=add(s,7);}
   body.innerHTML=h+(q?`<div style="padding:0 20px 20px;font-size:11px;color:var(--mut)">Stripes = all-day &middot; dots = meetings &middot; the thin rainbow bar on future weekdays = today's Playbook plays, already fitted in.</div>`:'')+'</div>';}
@@ -135,9 +135,10 @@ function render(){
   for(let mo=0;mo<12;mo++){const f=new Date(2026,mo,1);let g=DOW.map(x=>`<div class="h">${x[0]}</div>`).join('');for(let i=0;i<f.getDay();i++)g+='<div></div>';
    const dim=new Date(2026,mo+1,0).getDate();
    for(let dd=1;dd<=dim;dd++){const d=new Date(2026,mo,dd),k=ymd(d);const has=E.some(x=>x.d==k&&!x.all);const mil=E.some(x=>x.d==k&&x.c=='mile');
-    g+=`<div class="x${has?' e':''}${mil?' m':''}${same(d,TODAY)?' t':''}${d<new Date(2026,8,27)?' p':''}">${dd}</div>`;}
+    g+=`<div class="x${has?' e':''}${mil?' m':''}${same(d,TODAY)?' t':''}${d<new Date(2026,8,27)?' p':''}" data-action="cal-year-day" data-d="${k}">${dd}</div>`;}
    h+=`<div class="ym"><h4 class="${mo==9?'cur':''}">${MON[mo]}</h4><div class="g">${g}</div></div>`;}
   body.innerHTML=h+'</div>';}
+ if(typeof window.stampDeskControls==='function') window.stampDeskControls(root);
 }
 gid('views').onclick=e=>{const v=e.target.dataset.v;if(v){view=v;render()}};
 let SEL=null;mini();ribbon();render();
@@ -228,5 +229,19 @@ gid('nlIn').addEventListener('keydown',e=>{if(e.key!=='Enter')return;const v=e.t
   save();const x={d:ymd(base),s,e:e1,t:title||'New event',c:'meet',ppl:who,loc:[],links:[],docs:[]};E.push(x);SEL=x;e.target.value='';
   render();toast('Created "'+x.t+'" — '+dayName(x.d)+' '+fmt(s)+(who.length?' with '+who.join(', '):''));liveWrite({type:'create',event:x});});
 
-  window.__redesignCal = { E: E, S: S, render: render, ymd: ymd, fmt: fmt, TODAY: function(){return TODAY;}, sel: function(){return SEL;}, setSel: function(x){SEL=x;} };
+  function setView(v){ if(!v) return; view=v; render(); }
+  function nav(dir){
+    if(dir==='today') focus=TODAY;
+    else {
+      var n = dir==='prev' ? -1 : 1;
+      if(view==='day') focus=add(focus,n);
+      else if(view==='week') focus=add(focus,7*n);
+      else if(view==='month') focus=new Date(focus.getFullYear(), focus.getMonth()+n, 1);
+      else if(view==='quarter') focus=new Date(focus.getFullYear(), focus.getMonth()+3*n, 1);
+      else focus=new Date(focus.getFullYear()+n, focus.getMonth(), 1);
+    }
+    mini(); render();
+  }
+  function focusTo(k){ if(!k) return; focus=new Date(k+'T12:00'); mini(); render(); }
+  window.__redesignCal = { E: E, S: S, render: render, ymd: ymd, fmt: fmt, TODAY: function(){return TODAY;}, sel: function(){return SEL;}, setSel: function(x){SEL=x;}, setView: setView, nav: nav, focusTo: focusTo };
 };

@@ -3,8 +3,8 @@
 
 <aside class="rail">
   <div class="brand"><img src="/assets/mark-4orm-iq.png" alt="4orm"><b>IQ</b></div>
-  <div class="nl">&#10022; <input id="nlIn" placeholder='Type it: "Coffee with Bruce Tue 3pm"' style="flex:1;background:transparent;border:none;outline:none;color:#e6ecfb;font:inherit;font-size:12.5px;min-width:0"></div>
-  <div class="mtitle"><h2>October <span>2026</span></h2><div class="ar"><span>&#8249;</span><span>&#8250;</span></div></div>
+  <div class="nl">&#10022; <input id="nlIn" data-action="cal-nl" placeholder='Type it: "Coffee with Bruce Tue 3pm"' style="flex:1;background:transparent;border:none;outline:none;color:#e6ecfb;font:inherit;font-size:12.5px;min-width:0"></div>
+  <div class="mtitle"><h2>October <span>2026</span></h2><div class="ar"><span data-action="cal-nav" data-dir="prev">&#8249;</span><span data-action="cal-nav" data-dir="next">&#8250;</span></div></div>
   <div class="mini" id="mini"></div>
 
   <div class="sec">Today &middot; Mon Oct 19</div>
@@ -14,7 +14,7 @@
     <div class="k">NEXT UP &middot; MON 9:00</div>
     <div class="t">Executive Advisor's | War Room</div>
     <div class="c-s">Tomorrow is clear - a good day to batch next week's clips.</div>
-    <div class="row"><button class="b1">Prep notes</button><button class="b2">Open War Room</button></div>
+    <div class="row"><button class="b1" data-action="cal-prep">Prep notes</button><button class="b2" data-action="cal-war">Open War Room</button></div>
   </div>
 
   <div class="sec">Next week's shape</div>
@@ -28,19 +28,19 @@
 
   <div class="sec">Calendars</div>
   <div class="cals">
-    <label><span class="bx" style="background:var(--meet)">&#10003;</span>Meetings</label>
-    <label><span class="bx" style="background:var(--inv)">&#10003;</span>Investors &amp; raise</label>
-    <label><span class="bx" style="background:var(--pay)">&#10003;</span>Payments &amp; bills</label>
-    <label><span class="bx" style="background:var(--mile)">&#10003;</span>Milestones</label>
-    <label><span class="bx d" style="border-color:var(--blue2);color:var(--blue2)">&#10022;</span>Playbook plays (suggested)</label>
+    <label data-action="cal-toggle"><span class="bx" style="background:var(--meet)">&#10003;</span>Meetings</label>
+    <label data-action="cal-toggle"><span class="bx" style="background:var(--inv)">&#10003;</span>Investors &amp; raise</label>
+    <label data-action="cal-toggle"><span class="bx" style="background:var(--pay)">&#10003;</span>Payments &amp; bills</label>
+    <label data-action="cal-toggle"><span class="bx" style="background:var(--mile)">&#10003;</span>Milestones</label>
+    <label data-action="cal-toggle"><span class="bx d" style="border-color:var(--blue2);color:var(--blue2)">&#10022;</span>Playbook plays (suggested)</label>
   </div>
 </aside>
 
 <div class="c-main">
   <div class="c-top">
-    <div class="c-nav"><span>&#8249;</span><span>Today</span><span>&#8250;</span></div>
+    <div class="c-nav"><span data-action="cal-nav" data-dir="prev">&#8249;</span><span data-action="cal-nav" data-dir="today">Today</span><span data-action="cal-nav" data-dir="next">&#8250;</span></div>
     <div class="title" id="title"></div>
-    <div class="views" id="views"><span data-v="day">Day</span><span data-v="week" class="on">Week</span><span data-v="month">Month</span><span data-v="quarter">Quarter</span><span data-v="year">Year</span></div>
+    <div class="views" id="views"><span data-action="cal-view" data-v="day">Day</span><span data-action="cal-view" data-v="week" class="on">Week</span><span data-action="cal-view" data-v="month">Month</span><span data-action="cal-view" data-v="quarter">Quarter</span><span data-action="cal-view" data-v="year">Year</span></div>
   </div>
   <div class="body" id="body"></div>
 </div>
@@ -48,16 +48,16 @@
 
 <div class="dtip" id="dtip"></div>
 <div class="pop" id="pop">
-  <div class="ph2"><span class="sw2" id="pSw"></span><input class="ti" id="pTitle" placeholder="New event"></div>
-  <div class="row2"><span class="ic">&#128339;</span><div class="tms"><input type="date" id="pDate"><input id="pS" placeholder="10:00a">&ndash;<input id="pE" placeholder="11:00a"></div></div>
-  <div class="row2"><span class="ic">&#9673;</span><select id="pCal"><option value="meet">Meetings</option><option value="inv">Investors &amp; raise</option><option value="pay">Payments &amp; bills</option><option value="mile">Milestones</option></select></div>
-  <div class="row2" style="position:relative"><span class="ic">&#128101;</span><div class="chips" id="pPpl"><input class="addin" id="pPplIn" placeholder="Add people"></div><div class="sugg" id="pSug" style="display:none;left:40px;top:36px"></div></div>
-  <div class="row2"><span class="ic">&#128249;</span><div class="chips" id="pLoc"><input class="addin" id="pLocIn" placeholder="Location or video link"><span class="zm" id="pZoom">+ Zoom</span></div></div>
-  <div class="row2"><span class="ic">&#128279;</span><div class="chips" id="pLinks"><input class="addin" id="pLinkIn" placeholder="Paste a link, press Enter"></div></div>
-  <div class="row2"><span class="ic">&#128206;</span><div><div class="chips" id="pDocs" style="margin-bottom:5px"></div><div class="dropz" id="pDrop">Drop a file here, or <span class="zm" id="pPick">attach from a Space</span></div></div></div>
-  <div class="row2"><span class="ic">&#128276;</span><div class="tms"><select id="pAlert"><option>10 min before (escalating alarm)</option><option>30 min before</option><option>No alert</option></select></div></div>
-  <div class="row2" style="align-items:start"><span class="ic">&#9998;</span><textarea id="pNotes" placeholder="Notes, agenda, prep"></textarea></div>
-  <div class="pf"><button class="dl" id="pDel">Delete</button><button id="pDup">Duplicate</button><button class="sv" id="pSave">Save</button></div>
+  <div class="ph2"><span class="sw2" id="pSw"></span><input class="ti" id="pTitle" data-action="cal-title" placeholder="New event"></div>
+  <div class="row2"><span class="ic">&#128339;</span><div class="tms"><input type="date" id="pDate" data-action="cal-date"><input id="pS" data-action="cal-time" placeholder="10:00a">&ndash;<input id="pE" data-action="cal-time" placeholder="11:00a"></div></div>
+  <div class="row2"><span class="ic">&#9673;</span><select id="pCal" data-action="cal-select"><option value="meet">Meetings</option><option value="inv">Investors &amp; raise</option><option value="pay">Payments &amp; bills</option><option value="mile">Milestones</option></select></div>
+  <div class="row2" style="position:relative"><span class="ic">&#128101;</span><div class="chips" id="pPpl"><input class="addin" id="pPplIn" data-action="cal-people" placeholder="Add people"></div><div class="sugg" id="pSug" style="display:none;left:40px;top:36px"></div></div>
+  <div class="row2"><span class="ic">&#128249;</span><div class="chips" id="pLoc"><input class="addin" id="pLocIn" data-action="cal-people" placeholder="Location or video link"><span class="zm" id="pZoom" data-action="cal-zoom">+ Zoom</span></div></div>
+  <div class="row2"><span class="ic">&#128279;</span><div class="chips" id="pLinks"><input class="addin" id="pLinkIn" data-action="cal-people" placeholder="Paste a link, press Enter"></div></div>
+  <div class="row2"><span class="ic">&#128206;</span><div><div class="chips" id="pDocs" style="margin-bottom:5px"></div><div class="dropz" id="pDrop">Drop a file here, or <span class="zm" id="pPick" data-action="cal-pick">attach from a Space</span></div></div></div>
+  <div class="row2"><span class="ic">&#128276;</span><div class="tms"><select id="pAlert" data-action="cal-select"><option>10 min before (escalating alarm)</option><option>30 min before</option><option>No alert</option></select></div></div>
+  <div class="row2" style="align-items:start"><span class="ic">&#9998;</span><textarea id="pNotes" data-action="cal-notes" placeholder="Notes, agenda, prep"></textarea></div>
+  <div class="pf"><button class="dl" id="pDel" data-action="cal-del">Delete</button><button id="pDup" data-action="cal-dup">Duplicate</button><button class="sv" id="pSave" data-action="cal-save">Save</button></div>
 </div>
-<div class="undo" id="undo"><span id="undoT"></span><b id="undoB">Undo</b></div>
-<div class="hint2" id="hint2"><span class="x" onclick="this.parentNode.remove()">&times;</span><b>Try it</b><br>Drag an event to move it (day or time) &middot; drag its bottom edge to resize &middot; Option-drag to duplicate &middot; drag on empty time to create &middot; click an event to edit people, Zoom, links and files &middot; Delete key removes &middot; &#8984;Z undoes &middot; type in the box top-left to add.</div>
+<div class="undo" id="undo"><span id="undoT"></span><b id="undoB" data-action="cal-undo">Undo</b></div>
+<div class="hint2" id="hint2"><span class="x" data-action="cal-hint-close">&times;</span><b>Try it</b><br>Drag an event to move it (day or time) &middot; drag its bottom edge to resize &middot; Option-drag to duplicate &middot; drag on empty time to create &middot; click an event to edit people, Zoom, links and files &middot; Delete key removes &middot; &#8984;Z undoes &middot; type in the box top-left to add.</div>
