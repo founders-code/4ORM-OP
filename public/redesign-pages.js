@@ -12,7 +12,15 @@
     + '.ch .s{margin-left:auto;font-size:12px;color:var(--ink3);font-weight:600;white-space:nowrap}'
     + '.lnk{color:var(--blue);font-weight:700;font-size:12.5px;white-space:nowrap;cursor:pointer}'
     + '.foot{padding:10px 16px 14px;font-size:12.5px;color:var(--ink3);border-top:1px solid var(--line)}'
-    + '.port-body{display:block;min-width:0}';
+    + '.port-body{display:block;min-width:0}'
+    + '.desk-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:80;background:#142036;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;display:none;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(3,10,30,.28)}'
+    + '.desk-toast.show{display:flex}'
+    + '.desk-toast button{background:#fff;color:#142036;border:0;border-radius:8px;padding:4px 10px;font-weight:800;cursor:pointer}'
+    + '.col.drop-on{outline:2px dashed var(--blue);outline-offset:-2px}'
+    + '.task.done .tt{text-decoration:line-through;opacity:.55}'
+    + '.rc.done b{text-decoration:line-through;opacity:.55}'
+    + ':host(.desk-full){position:fixed;inset:12px;z-index:30;background:var(--soft);overflow:auto;border-radius:16px}'
+    + '[hidden]{display:none!important}';
   var CSS = {
     room: '/port-css/dashboard.css', war: '/port-css/war-room.css', notes: '/port-css/notes.css',
     contacts: '/port-css/pipeline.css', work: '/port-css/spaces.css', docs: '/port-css/documents.css',
@@ -59,6 +67,7 @@
     var wrap = document.createElement('div');
     wrap.className = 'port-body';
     root.appendChild(wrap);
+    if (typeof window.bindShadowActions === 'function') window.bindShadowActions(root);
     return root;
   };
 
@@ -72,6 +81,11 @@
     var style = root.querySelector('style');
     if (style && cssText[key] && style.textContent.indexOf(cssText[key]) < 0) style.textContent = TOKEN + cssText[key];
     return root.querySelector('.port-body') || root;
+  }
+  function finishPaint(wrap) {
+    var root = wrap && wrap.getRootNode ? wrap.getRootNode() : null;
+    if (root && typeof window.stampDeskControls === 'function') window.stampDeskControls(root);
+    if (root && typeof window.syncDeskFocus === 'function') window.syncDeskFocus(root);
   }
 
   function whenCss(fn) {
@@ -297,6 +311,7 @@
     if (meta.link && meta.link.name) links.push(meta.link.name);
     asList(n.links).forEach(function (l) { links.push(typeof l === 'string' ? l : (l && l.name) || ''); });
     return {
+      id: String(n.id || ''), source: 'sticky',
       color: colorClass(n.color), type: kind.type, typeCls: kind.typeCls,
       title: title, body: body, pin: !!(meta.pin || n.pin),
       checks: checks, links: links.filter(Boolean),
@@ -307,9 +322,12 @@
   }
   function noteFromBoard(n) {
     var kind = noteKind(n.kind || n.type);
+    var pinMap = {};
+    try { pinMap = JSON.parse(localStorage.getItem('cr_note_pin') || '{}'); } catch (e) { pinMap = {}; }
     return {
+      id: String(n.id || ''), source: 'board',
       color: colorClass(n.color), type: kind.type, typeCls: kind.typeCls,
-      title: n.title || '', body: n.body || '', pin: !!n.pin,
+      title: n.title || '', body: n.body || '', pin: !!(n.pin || pinMap[n.id]),
       checks: asList(n.checks || n.todos).map(function (c) {
         return { done: !!(c.done || c.checked), text: c.text || c.t || c.title || '' };
       }),
@@ -401,7 +419,7 @@
         { tone: 'a', title: 'Unsigned docs + short runway.', body: 'That pairing is what stalls a close.' }
       ],
       linkedin: linked.map(function (row) {
-        return { name: row.name, action: kindWord[row.kind] || '', snippet: row.snippet, age: ageLabel(row.at) };
+        return { name: row.name, action: kindWord[row.kind] || '', snippet: row.snippet, age: ageLabel(row.at), url: row.url || row.link || '' };
       }).filter(function (row) { return row.action && row.action !== 'posted an update'; }),
       inbox: mail.map(function (m, i) {
         return {
@@ -415,7 +433,7 @@
         };
       }),
       meetings: meetings.map(function (ev, i) {
-        return { when: soon(ev.start), title: ev.title, kind: (i === 0 || ev.join) ? 'join' : 'bell' };
+        return { when: soon(ev.start), title: ev.title, kind: (i === 0 || ev.join) ? 'join' : 'bell', url: ev.join || '' };
       }),
       moves: movers.map(function (move) {
         var zone = String(move.zone || move.area || 'Raise');
@@ -469,7 +487,7 @@
     function pack(key) {
       var all = colItems(key);
       return { count: all.length, more: Math.max(0, all.length - 5), tasks: all.slice(0, 5).map(function (it) {
-        return { title: verbTitle(it), tag: it.category || it.area || 'Ops' };
+        return { id: it.id, title: verbTitle(it), tag: it.category || it.area || 'Ops' };
       }) };
     }
     var heroMove = moves[0] || {};
@@ -497,25 +515,25 @@
       }()),
       coach: "Regulators can wait. Don't let them take a cash-first morning — drop them or give them 10 minutes, then back to the one thing.",
       streak: 'Focus streak · start today',
-      hero: { title: moveText(heroMove) || 'Pick today’s one move', why: moveWhy(heroMove) },
+      hero: { id: heroMove.id || '', title: moveText(heroMove) || 'Pick today’s one move', why: moveWhy(heroMove) },
       moves: moves.map(function (m, i) {
         var zone = String(m.zone || m.area || 'Raise');
         var zc = /cash|runway/i.test(zone) ? 'z-cash' : /partner/i.test(zone) ? 'z-part' : /reg/i.test(zone) ? 'z-reg' : 'z-raise';
-        return { title: moveText(m), zone: zc, zoneLabel: zone, one: i === 0, why: moveWhy(m), src: m.source || m.sourceLine || m.source_line || '' };
+        return { id: m.id || '', title: moveText(m), zone: zc, zoneLabel: zone, one: i === 0, why: moveWhy(m), src: m.source || m.sourceLine || m.source_line || '' };
       }),
       meetingActions: actions.slice(0, 5).map(function (row) {
         var you = String(row.kind || row.tag || '') === 'you_said' || /said|you/i.test(String(row.kind || row.tag || ''));
-        return { tag: you ? 't-you' : 't-fu', tagLabel: you ? 'You said' : 'Follow up', text: row.text || row.body || '', from: (row.meetingTitle || row.meeting_title || 'Meeting') + (row.meetingDate || row.meeting_date ? ' · ' + (row.meetingDate || row.meeting_date) : '') };
+        return { id: row.id || '', tag: you ? 't-you' : 't-fu', tagLabel: you ? 'You said' : 'Follow up', text: row.text || row.body || '', from: (row.meetingTitle || row.meeting_title || 'Meeting') + (row.meetingDate || row.meeting_date ? ' · ' + (row.meetingDate || row.meeting_date) : '') };
       }),
       meetingActionTotal: actions.length,
       nextUp: meetings.map(function (ev, i) {
-        return { when: soon(ev.start), title: ev.title, link: (i === 0 || ev.join) ? 'Join' : 'Prep' };
+        return { when: soon(ev.start), title: ev.title, link: (i === 0 || ev.join) ? 'Join' : 'Prep', url: ev.join || '', join: i === 0 || !!ev.join };
       }),
       reachChips: reachChips,
       reach: people.filter(function (p) { return !p.done; }).slice(0, 8).map(function (p) {
         var kind = String(p.kind || p.type || p.role || '').toLowerCase();
         var bits = [reachNames[kind] || p.kind || p.type || p.role || 'Corporate', p.company || p.org || p.organisation, p.nextAction || p.next_action || p.action].filter(Boolean);
-        return { name: p.name || p.fullName || p.who || p.title || 'Person', meta: bits.join(' · ') };
+        return { id: p.id || '', kind: kind, name: p.name || p.fullName || p.who || p.title || 'Person', meta: bits.join(' · ') };
       }),
       today: pack('today'),
       week: pack('week'),
@@ -534,6 +552,7 @@
       if (!id || seen[id]) return;
       seen[id] = true;
       var row = mapFn(n);
+      if (row && row.title && /^\[archived\]/i.test(row.title)) row.archived = true;
       if (row && !row.archived) rows.push(row);
     }
     stickies.forEach(function (n) { addNote(n, noteFromSticky); });
@@ -580,36 +599,38 @@
     var meetings = data.meetings || [];
     var moves = data.moves || [];
     var linkedHtml = linked.length ? linked.map(function (row) {
-      return '<div class="li2"><span class="in">in</span><div class="t"><div class="l1"><b>' + esc(row.name) + '</b> <span>' + esc(row.action) + '</span></div><div class="l2">' + esc(row.snippet) + '</div></div><span class="age">' + esc(row.age) + '</span><span class="lnk">Open &rsaquo;</span></div>';
+      return '<div class="li2"><span class="in">in</span><div class="t"><div class="l1"><b>' + esc(row.name) + '</b> <span>' + esc(row.action) + '</span></div><div class="l2">' + esc(row.snippet) + '</div></div><span class="age">' + esc(row.age) + '</span><span class="lnk" data-action="linkedin-open" data-name="' + esc(row.name) + '" data-url="' + esc(row.url || '') + '">Open &rsaquo;</span></div>';
     }).join('') : '<div class="li2"><div class="t"><div class="l1">No people waiting on LinkedIn</div><div class="l2">System notices stay hidden.</div></div></div>';
-    var mailHtml = inbox.length ? inbox.map(function (m) {
+    var mailHtml = inbox.length ? inbox.map(function (m, ix) {
       var av = m.from.split(' ').map(function (x) { return x[0]; }).join('').slice(0, 2);
-      return '<div class="mail"><span class="av" style="background:' + esc(m.color || '#2e6bf2') + '">' + esc(av) + '</span><div style="min-width:0"><div class="mn"><span>' + esc(m.from) + '</span>' + (m.flag ? '<em class="flag ' + m.flag + '" style="font-style:normal">' + FL[m.flag] + '</em>' : '') + '</div><div class="ms">' + esc(m.subject) + '</div><div class="mp">' + esc(m.preview) + '</div></div><div class="mr"><span class="age">' + esc(m.age) + '</span><button class="rb">Reply</button><button class="more" title="More: not a person, snooze, file">&middot;&middot;&middot;</button></div></div>';
+      return '<div class="mail"><span class="av" style="background:' + esc(m.color || '#2e6bf2') + '">' + esc(av) + '</span><div style="min-width:0"><div class="mn"><span>' + esc(m.from) + '</span>' + (m.flag ? '<em class="flag ' + m.flag + '" style="font-style:normal">' + FL[m.flag] + '</em>' : '') + '</div><div class="ms">' + esc(m.subject) + '</div><div class="mp">' + esc(m.preview) + '</div></div><div class="mr"><span class="age">' + esc(m.age) + '</span><button class="rb" data-action="mail-reply" data-idx="' + ix + '" data-email="' + esc(m.email || '') + '" data-thread="' + esc(m.threadId || '') + '" data-mid="' + esc(m.messageId || '') + '" data-subject="' + esc(m.subject || '') + '" data-from="' + esc(m.from || '') + '" data-preview="' + esc(m.preview || '') + '">Reply</button><button class="more" data-action="mail-more" data-email="' + esc(m.email || '') + '" title="More: not a person, snooze, file">&middot;&middot;&middot;</button></div></div>';
     }).join('') : '<div class="mail"><div class="mp">No person-to-person mail waiting.</div></div>';
     var meetHtml = meetings.length ? meetings.map(function (ev) {
-      var trail = ev.kind === 'join' ? '<span class="join">Join</span>' : '<span class="bell"' + (ev.kind === 'bell-on' ? ' title="Alarm on"' : '') + '>' + BELL + '</span>';
+      var trail = ev.kind === 'join'
+        ? '<span class="join" data-action="meet-join" data-url="' + esc(ev.url || '') + '">Join</span>'
+        : '<span class="bell" data-action="meet-bell" data-title="' + esc(ev.title || '') + '"' + (ev.kind === 'bell-on' ? ' title="Alarm on"' : '') + '>' + BELL + '</span>';
       return '<div class="meet"><span class="tm">' + esc(ev.when) + '</span><span class="nm">' + esc(ev.title) + '</span>' + trail + '</div>';
     }).join('') : '<div class="meet"><span class="nm">No meetings on the calendar.</span></div>';
     var mvHtml = moves.length ? moves.map(function (move, i) {
-      return '<div class="mv"><span class="k">' + (i + 1) + '</span><div class="t">' + esc(move.title) + '<small>' + esc(move.why) + '</small></div><span class="zone ' + move.zone + '">' + esc(move.zoneLabel) + '</span></div>';
-    }).join('') : '<div class="mv"><div class="t">No ranked move yet<small>The War Room one-thing fills this.</small></div></div>';
+      return '<div class="mv" data-action="goto-war"><span class="k">' + (i + 1) + '</span><div class="t">' + esc(move.title) + '<small>' + esc(move.why) + '</small></div><span class="zone ' + move.zone + '">' + esc(move.zoneLabel) + '</span></div>';
+    }).join('') : '<div class="mv" data-action="goto-war"><div class="t">No ranked move yet<small>The War Room one-thing fills this.</small></div></div>';
     var health = data.health || { score: '-', dash: '0 301.6', bars: [] };
     var mom = data.momentum || { bars: [], desk: '-', done: '-', overdue: '-', blocked: '-' };
     var content = data.content || {};
-    var peopleTab = fixtureOn() ? true : peopleInboxOn();
+    var peopleTab = peopleInboxOn();
     wrap.innerHTML =
       '<section class="cmd"><div class="cmdtop">'
       + '<div class="vit"><div class="k">Cash</div><div class="v"><span class="mask" data-real="' + esc(data.cash) + '">' + mask(data.cash) + '</span></div><div class="sub">in the bank</div></div>'
       + '<div class="vit"><div class="k">Burn</div><div class="v"><span class="mask" data-real="' + esc(data.burn) + '">' + mask(data.burn) + '</span></div><div class="sub">per month</div></div>'
       + '<div class="vit"><div class="k">Runway</div><div class="v red">' + esc(data.runway) + '</div><div class="sub">at this cash</div></div>'
-      + '<div class="vit"><div class="k">Raise &middot; friends &amp; family</div><div class="v"><span class="mask" data-real="' + esc(data.raise) + '">' + mask(data.raise) + '</span><button class="eye" id="eye" title="Show figures">' + EYE + '</button></div><div class="raisebar"><i></i></div></div>'
+      + '<div class="vit"><div class="k">Raise &middot; friends &amp; family</div><div class="v"><span class="mask" data-real="' + esc(data.raise) + '">' + mask(data.raise) + '</span><button class="eye" id="eye" data-action="show-money" title="Show figures">' + EYE + '</button></div><div class="raisebar"><i></i></div></div>'
       + '<div class="count"><div class="big">' + esc(data.daysToClose) + ' days</div><div class="k">to close &middot; ' + esc(data.closeWhen) + '</div></div></div>'
       + '<div class="lamps">' + (data.lamps || []).map(function (l) {
         return '<div class="lamp"><span class="led ' + l.led + '"></span><span class="nm">' + esc(l.name) + '</span><span class="st ' + l.st + '">' + esc(l.word) + '</span></div>';
       }).join('') + '</div></section>'
       + '<div class="g3"><section class="card"><div class="ch"><h3>What needs you now</h3><span class="s">across the desk</span></div>'
       + (data.alerts || []).map(function (n) {
-        return '<div class="row"><span class="sev ' + n.sev + '"></span><div class="rt">' + esc(n.text) + '<small>' + esc(n.area) + '</small></div><span class="lnk">Open</span></div>';
+        return '<div class="row"><span class="sev ' + n.sev + '"></span><div class="rt">' + esc(n.text) + '<small>' + esc(n.area) + '</small></div><span class="lnk" data-action="open-need" data-view="war">Open</span></div>';
       }).join('')
       + '</section><section class="card"><div class="ch"><h3>Raise tracker</h3><span class="s">7 &times; $25K cheques</span></div>'
       + '<div class="cheques">' + (data.cheques || []).map(function (c) {
@@ -620,8 +641,8 @@
       + (data.worries || []).map(function (w) {
         return '<div class="row"><span class="wic ' + w.tone + '">!</span><div class="rt"><b>' + esc(w.title) + '</b> ' + esc(w.body) + '</div></div>';
       }).join('') + '</section></div>'
-      + '<section class="card" style="margin-bottom:16px"><div class="ch"><h3>LinkedIn</h3><span class="s">' + linked.length + ' new &middot; people only, system notices hidden</span><span class="lnk" style="margin-left:14px">Open LinkedIn</span></div><div class="ligrid">' + linkedHtml + '</div></section>'
-      + '<div class="g2"><section class="card"><div class="ch"><h3>Inbox &mdash; needs you</h3><div class="tabs"><span' + (peopleTab ? ' class="on"' : '') + '>People only</span><span' + (peopleTab ? '' : ' class="on"') + '>All mail</span></div><span class="s">' + inbox.length + ' waiting</span></div><div id="mail">' + mailHtml + '</div><div class="foot">Bulk and notification mail is filed in Email &rarr; Quiet. <span class="lnk">Open Email</span></div></section>'
+      + '<section class="card" style="margin-bottom:16px"><div class="ch"><h3>LinkedIn</h3><span class="s">' + linked.length + ' new &middot; people only, system notices hidden</span><span class="lnk" style="margin-left:14px" data-action="linkedin-open" data-url="https://www.linkedin.com/feed/">Open LinkedIn</span></div><div class="ligrid">' + linkedHtml + '</div></section>'
+      + '<div class="g2"><section class="card"><div class="ch"><h3>Inbox &mdash; needs you</h3><div class="tabs"><span data-action="inbox-mode" data-mode="people"' + (peopleTab ? ' class="on"' : '') + '>People only</span><span data-action="inbox-mode" data-mode="all"' + (peopleTab ? '' : ' class="on"') + '>All mail</span></div><span class="s">' + inbox.length + ' waiting</span></div><div id="mail">' + mailHtml + '</div><div class="foot">Bulk and notification mail is filed in Email &rarr; Quiet. <span class="lnk" data-action="open-email">Open Email</span></div></section>'
       + '<div class="stack"><section class="card"><div class="ch"><h3>Next meetings</h3><span class="s">today</span></div>' + meetHtml + '</section>'
       + '<section class="card"><div class="ch"><h3>Today\'s 1&ndash;3</h3><span class="s">from the War Room</span></div>' + mvHtml + '</section></div></div>'
       + '<div class="g3"><section class="card"><div class="ch"><h3>Company health</h3><span class="s">desk snapshot</span></div><div class="health"><svg viewBox="0 0 120 120" width="120" height="120"><circle cx="60" cy="60" r="48" fill="none" stroke="#eef1f6" stroke-width="14"/><circle cx="60" cy="60" r="48" fill="none" stroke="#f29b26" stroke-width="14" stroke-dasharray="' + esc(health.dash) + '" stroke-linecap="round" transform="rotate(-90 60 60)"/><text x="60" y="62" text-anchor="middle" font-size="30" font-weight="850" fill="#101a33">' + esc(health.score) + '</text><text x="60" y="80" text-anchor="middle" font-size="11" fill="#7a86a0">of 100</text></svg><div>'
@@ -640,42 +661,24 @@
       + '<div class="kv"><span>Newsletter</span><b>' + esc(content.newsletter) + '</b></div>'
       + '<div class="kv"><span>Next clip</span><b>' + esc(content.nextClip) + '</b></div></div></section></div>'
       + '<div class="toast" id="toast"></div>';
-    var root = wrap.getRootNode();
-    var eye = root.getElementById && root.getElementById('eye');
-    if (eye) eye.onclick = function () {
-      try { localStorage.setItem('cr_show_money', moneyOn() ? '0' : '1'); } catch (e) {}
-      paintDashboardLive();
-    };
-    root.querySelectorAll('.rb').forEach(function (b, ix) {
-      b.onclick = function () {
-        var t = root.getElementById('toast');
-        if (!t) return;
-        t.textContent = 'Opens the reply drafted in your voice';
-        t.classList.add('show');
-        setTimeout(function () { t.classList.remove('show'); }, 1500);
-        if (!fixtureOn() && typeof openReply === 'function') openReply(inbox[ix]);
-      };
-    });
-    root.querySelectorAll('.lnk').forEach(function (el) {
-      if (el.textContent === 'Open Email') el.onclick = function () { if (typeof switchView === 'function') switchView('mail'); };
-    });
-    root.querySelectorAll('.tabs span').forEach(function (el, i) {
-      el.onclick = function () {
-        try { localStorage.setItem('cr_inbox_people', i === 0 ? '1' : '0'); } catch (e) {}
-        paintDashboardLive();
-      };
-    });
+    finishPaint(wrap);
     markReady('opsDash');
   }
 
-  function execCol(label, col, btns) {
+  function execCol(label, col, bucket) {
     var tasks = (col && col.tasks) || [];
     var body = tasks.length ? tasks.map(function (it) {
-      return '<div class="task"><span class="cb"></span><div><div class="tt">' + esc(it.title) + '</div><div class="tg">' + esc(it.tag) + '</div></div><div class="hv">' + btns + '</div></div>';
+      var id = esc(it.id || '');
+      var hv = bucket === 'today'
+        ? '<button data-action="task-move" data-id="' + id + '" data-bucket="week">Week</button><button data-action="task-move" data-id="' + id + '" data-bucket="later">Later</button><button data-action="task-drop" data-id="' + id + '">&times;</button>'
+        : bucket === 'week'
+          ? '<button data-action="task-move" data-id="' + id + '" data-bucket="today">Today</button><button data-action="task-move" data-id="' + id + '" data-bucket="later">Later</button><button data-action="task-drop" data-id="' + id + '">&times;</button>'
+          : '<button data-action="task-move" data-id="' + id + '" data-bucket="today">Today</button><button data-action="task-move" data-id="' + id + '" data-bucket="week">Week</button><button data-action="task-drop" data-id="' + id + '">&times;</button>';
+      return '<div class="task" draggable="true" data-action="task-drag" data-id="' + id + '"><span class="cb" data-action="task-done" data-id="' + id + '"></span><div><div class="tt">' + esc(it.title) + '</div><div class="tg">' + esc(it.tag) + '</div></div><div class="hv">' + hv + '</div></div>';
     }).join('') : '<div class="empty">Nothing set for this ' + (label === 'Today' ? 'column' : label === 'This week' ? 'week' : 'column') + '.<br>Drag a task here or press +.</div>';
     if (label === 'This week' && !tasks.length) body = '<div class="empty">Nothing set for this week.<br>Drag a task here or press +.</div>';
     var more = col && col.more ? '<div class="more2">+ ' + col.more + ' more</div>' : '';
-    return '<div class="col"><div class="colh"><b>' + label + '</b><span class="c">' + ((col && col.count) || 0) + '</span><button class="plus">+</button></div>' + body + more + '</div>';
+    return '<div class="col" data-action="col-drop" data-bucket="' + bucket + '"><div class="colh"><b>' + label + '</b><span class="c">' + ((col && col.count) || 0) + '</span><button class="plus" data-action="exec-add" data-bucket="' + bucket + '">+</button></div>' + body + more + '</div>';
   }
 
   function paintWarLive() {
@@ -692,60 +695,59 @@
       + '<div class="rv"><div class="k">4ormIQ launch</div><div class="v gold">' + esc(data.launch) + '</div></div>'
       + '<div class="rv mom2"><div class="k">Momentum &middot; this week</div><div class="mb"><i></i><i></i><i></i><i></i><i class="now"></i><span>' + esc(data.momentumHours) + '</span></div></div>'
       + '<span class="sp"></span>'
-      + '<div class="cwrap"><button class="coachbtn" id="coachbtn">&#128161; Coaching note</button>'
+      + '<div class="cwrap"><button class="coachbtn" id="coachbtn" data-action="coach-toggle">&#128161; Coaching note</button>'
       + '<div class="coachpop" id="coachpop"><b>Coaching note</b><p>' + esc(data.coach) + '</p></div></div>'
       + '<span class="streak">' + esc(data.streak) + '</span>'
-      + '<button class="vb">Show $</button></section>'
-      + '<div class="capture"><input placeholder="Capture a task or an idea to park it, so you don\'t lose focus"><button>Add</button></div>'
+      + '<button class="vb" data-action="show-money">Show $</button></section>'
+      + '<div class="capture"><input data-action="capture-input" placeholder="Capture a task or an idea to park it, so you don\'t lose focus"><button data-action="capture-add">Add</button></div>'
       + '<div class="wrow"><section class="hero"><div class="htop"><div>'
       + '<div class="hl">Today\'s one move</div><h2>' + esc(data.hero && data.hero.title) + '</h2>'
       + '<div class="why">' + esc(data.hero && data.hero.why) + '</div></div>'
       + '<div class="ring"><svg viewBox="0 0 112 112"><circle cx="56" cy="56" r="48" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="8"/><circle cx="56" cy="56" r="48" fill="none" stroke="#5b8cff" stroke-width="8" stroke-dasharray="301.6" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 56 56)"/></svg><div><div><b>25:00</b><span>focus</span></div></div></div></div>'
-      + '<div class="hbtns"><button class="hb1 go">&#9654; Start 25-min focus</button><button class="hb1">Commit as my one thing</button><button class="hb2">Plan</button><button class="hb2">Cancel this move</button></div>'
-      + '<div class="moves"><div class="mh"><h3>4orm Intelligence &middot; CEO ranked moves</h3><span class="s">rebuilt 6:30 am</span><button class="rr">&#8635; Re-run</button></div>'
+      + '<div class="hbtns"><button class="hb1 go" data-action="focus-toggle">&#9654; Start 25-min focus</button><button class="hb2" data-action="focus-stop" hidden>Stop</button><button class="hb1" data-action="hero-commit" data-id="' + esc((data.hero && data.hero.id) || '') + '" data-title="' + esc((data.hero && data.hero.title) || '') + '">Commit as my one thing</button><button class="hb2" data-action="hero-plan" data-id="' + esc((data.hero && data.hero.id) || '') + '" data-title="' + esc((data.hero && data.hero.title) || '') + '">Plan</button><button class="hb2" data-action="hero-cancel" data-id="' + esc((data.hero && data.hero.id) || '') + '">Cancel this move</button></div>'
+      + '<div class="moves"><div class="mh"><h3>4orm Intelligence &middot; CEO ranked moves</h3><span class="s">rebuilt 6:30 am</span><button class="rr" data-action="moves-rerun">&#8635; Re-run</button></div>'
       + moves.map(function (m, i) {
-        return '<div class="mv2' + (m.one ? ' one' : '') + '"><span class="rk">' + (i + 1) + '</span><div><div class="mt">' + esc(m.title) + ' <span class="zn ' + m.zone + '">' + esc(m.zoneLabel) + '</span>' + (m.one ? '<span class="yo">Your one move</span>' : '') + '</div><div class="ms2">' + esc(m.why) + '</div><div class="src">' + esc(m.src) + '</div></div><div class="ma"><button class="do">Do</button><button>Steps</button><button>Plan</button><button class="x"' + (m.one ? ' title="Dismiss - the next move takes its place"' : '') + '>&times;</button></div></div>';
+        var mid = esc(m.id || '');
+        return '<div class="mv2' + (m.one ? ' one' : '') + '"><span class="rk">' + (i + 1) + '</span><div><div class="mt">' + esc(m.title) + ' <span class="zn ' + m.zone + '">' + esc(m.zoneLabel) + '</span>' + (m.one ? '<span class="yo">Your one move</span>' : '') + '</div><div class="ms2">' + esc(m.why) + '</div><div class="src">' + esc(m.src) + '</div></div><div class="ma"><button class="do" data-action="move-do" data-id="' + mid + '">Do</button><button data-action="move-steps" data-id="' + mid + '">Steps</button><button data-action="move-plan" data-id="' + mid + '" data-title="' + esc(m.title) + '">Plan</button><button class="x" data-action="move-dismiss" data-id="' + mid + '"' + (m.one ? ' title="Dismiss - the next move takes its place"' : '') + '>&times;</button></div></div>';
       }).join('') + '</div></section>'
       + '<div class="rstack"><section class="card"><div class="ch"><h3>After your meetings &mdash; what you owe</h3><span class="s">from Zoom + Granola</span></div>'
       + (data.meetingActions || []).map(function (row) {
-        return '<div class="mo"><span class="tag ' + row.tag + '">' + esc(row.tagLabel) + '</span><div style="min-width:0"><div class="tt">' + esc(row.text) + '</div><div class="mf">' + esc(row.from) + '</div></div><div class="ad"><button>+ Today</button><button>+ Week</button></div></div>';
+        var aid = esc(row.id || '');
+        var ttl = esc(row.text || 'Meeting follow-up');
+        return '<div class="mo"><span class="tag ' + row.tag + '">' + esc(row.tagLabel) + '</span><div style="min-width:0"><div class="tt">' + esc(row.text) + '</div><div class="mf">' + esc(row.from) + '</div></div><div class="ad"><button data-action="meeting-task" data-id="' + aid + '" data-bucket="today" data-title="' + ttl + '">+ Today</button><button data-action="meeting-task" data-id="' + aid + '" data-bucket="week" data-title="' + ttl + '">+ Week</button></div></div>';
       }).join('')
-      + '<div class="foot"><span class="lnk">Review all ' + esc(data.meetingActionTotal) + ' meeting action items &rsaquo;</span></div></section>'
+      + '<div class="foot"><span class="lnk" data-action="review-meetings">Review all ' + esc(data.meetingActionTotal) + ' meeting action items &rsaquo;</span></div></section>'
       + '<section class="card"><div class="ch"><h3>Next up</h3><span class="s">alarms on</span></div>'
       + (data.nextUp || []).map(function (ev) {
-        return '<div class="nx"><span class="tm">' + esc(ev.when) + '</span><span class="nm">' + esc(ev.title) + '</span><span class="lnk">' + esc(ev.link) + '</span></div>';
+        var act = ev.join || ev.link === 'Join' ? 'meet-join' : 'meet-prep';
+        return '<div class="nx" data-action="' + act + '" data-url="' + esc(ev.url || '') + '" data-title="' + esc(ev.title || '') + '"><span class="tm">' + esc(ev.when) + '</span><span class="nm">' + esc(ev.title) + '</span><span class="lnk" data-action="' + act + '" data-url="' + esc(ev.url || '') + '" data-title="' + esc(ev.title || '') + '">' + esc(ev.link) + '</span></div>';
       }).join('')
-      + '<button class="slot">Find a 30-min slot</button></section></div></div>'
-      + '<section class="card" style="margin-bottom:16px"><div class="ch"><h3>Reach out</h3><span class="s">people to contact &middot; check off when done</span><span class="lnk" style="margin-left:14px">+ Add from Pipeline or Contacts</span></div>'
+      + '<button class="slot" data-action="find-slot">Find a 30-min slot</button></section></div></div>'
+      + '<section class="card" style="margin-bottom:16px"><div class="ch"><h3>Reach out</h3><span class="s">people to contact &middot; check off when done</span><span class="lnk" style="margin-left:14px" data-action="reach-add">+ Add from Pipeline or Contacts</span></div>'
       + '<div class="chips">' + (data.reachChips || []).map(function (c, i) {
-        return '<button class="chip' + (i === 0 ? ' on' : '') + '">' + esc(c) + '</button>';
+        var kind = ['all', 'vc', 'design', 'regulator', 'corporate', 'client'][i] || 'all';
+        return '<button class="chip' + (i === 0 ? ' on' : '') + '" data-action="reach-filter" data-kind="' + kind + '">' + esc(c) + '</button>';
       }).join('') + '</div>'
       + '<div class="ro">' + (data.reach || []).map(function (p) {
-        return '<div class="rc"><span class="cb"></span><div><b>' + esc(p.name) + '</b><span>' + esc(p.meta) + '</span></div></div>';
+        return '<div class="rc" data-kind="' + esc(p.kind || '') + '"><span class="cb" data-action="reach-done" data-id="' + esc(p.id || '') + '" data-kind="' + esc(p.kind || '') + '"></span><div><b>' + esc(p.name) + '</b><span>' + esc(p.meta) + '</span></div></div>';
       }).join('') + '</div></section>'
-      + '<section class="card exec"><div class="ch"><h3>Execution</h3><span class="s">drag between columns &middot; hover a task for Today / Week / Later</span><span class="lnk" style="margin-left:14px">&#8599; Full screen</span></div><div class="cols">'
-      + execCol('Today', data.today, '<button>Week</button><button>Later</button><button>&times;</button>')
-      + execCol('This week', data.week, '<button>Today</button><button>Later</button><button>&times;</button>')
-      + execCol('Later', data.later, '<button>Today</button><button>Week</button><button>&times;</button>')
+      + '<section class="card exec"><div class="ch"><h3>Execution</h3><span class="s">drag between columns &middot; hover a task for Today / Week / Later</span><span class="lnk" style="margin-left:14px" data-action="exec-full">&#8599; Full screen</span></div><div class="cols">'
+      + execCol('Today', data.today, 'today')
+      + execCol('This week', data.week, 'week')
+      + execCol('Later', data.later, 'later')
       + '</div></section><div class="toast" id="toast"></div>';
-    var root = wrap.getRootNode();
-    var btn = root.getElementById && root.getElementById('coachbtn');
-    var pop = root.getElementById && root.getElementById('coachpop');
-    if (btn && pop) {
-      btn.onclick = function (e) { e.stopPropagation(); pop.classList.toggle('open'); };
-      document.addEventListener('click', function () { pop.classList.remove('open'); });
-    }
-    var vb = root.querySelector('.vb');
-    if (vb) vb.onclick = function () {
-      try { localStorage.setItem('cr_show_money', moneyOn() ? '0' : '1'); } catch (e) {}
-      paintWarLive();
-    };
+    finishPaint(wrap);
     markReady('warDesk');
   }
 
   function noteCard(n) {
     var ty = 'ty' + (n.typeCls ? ' ' + n.typeCls : '');
-    var pin = n.pin ? '<span class="pin">&#128204;</span><span class="nx">&times;</span>' : '<span class="nx" style="margin-left:auto">&times;</span>';
+    var id = esc(n.id || '');
+    var src = esc(n.source || 'sticky');
+    var ttl = esc(n.title || '');
+    var pin = n.pin
+      ? '<span class="pin" data-action="note-pin" data-id="' + id + '" data-source="' + src + '" data-on="1">&#128204;</span><span class="nx x" data-action="note-archive" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '">&times;</span>'
+      : '<span class="nx x" style="margin-left:auto" data-action="note-archive" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '">&times;</span>';
     var title = n.title ? '<h4>' + esc(n.title) + '</h4>' : '';
     var body = n.body ? '<p>' + esc(n.body) + '</p>' : '';
     var checks = (n.checks || []).map(function (c) {
@@ -756,9 +758,9 @@
     });
     if (n.reminder) metaBits.push('<span class="mc rem">&#9200; ' + esc(n.reminder) + '</span>');
     var meta = metaBits.length ? '<div class="meta">' + metaBits.join('') + '</div>' : '';
-    return '<div class="note ' + n.color + '"><div class="nh"><span class="' + ty + '">' + esc(n.type) + '</span>' + pin + '</div>'
+    return '<div class="note ' + n.color + '" data-action="note-open" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '" data-body="' + esc(n.body || '') + '" data-type="' + esc(n.typeCls || '') + '" data-pin="' + (n.pin ? '1' : '0') + '"><div class="nh"><span class="' + ty + '">' + esc(n.type) + '</span>' + pin + '</div>'
       + title + body + checks + meta
-      + '<div class="na"><span class="conv">&#10022; ' + esc(n.convert) + '</span><span class="sp"></span><span class="ic">&#9998;</span><span class="ic">&#8943;</span></div></div>';
+      + '<div class="na"><span class="conv cvt" data-action="note-task" data-id="' + id + '" data-title="' + ttl + '">&#10022; ' + esc(n.convert) + '</span><span class="sp"></span><span class="ic" data-action="note-open" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '" data-body="' + esc(n.body || '') + '">&#9998;</span><span class="ic" data-action="note-pin" data-id="' + id + '" data-source="' + src + '" data-on="' + (n.pin ? '1' : '0') + '">&#8943;</span></div></div>';
   }
 
   function paintNotesLive() {
@@ -768,31 +770,22 @@
     var c = data.counts || {};
     wrap.innerHTML =
       '<div class="bar"><h1>Notes</h1><span class="sub">Capture fast, sort later &mdash; every note can become a task, content or a Space</span>'
-      + '<div class="r"><button class="btn">Tidy up</button><button class="btn">&#8599; Full screen</button><button class="btn pri">+ New note</button></div></div>'
-      + '<div class="tools"><input class="search" placeholder="Search notes, people, Spaces">'
-      + '<button class="chip on">All <i>' + esc(c.all) + '</i></button><button class="chip">&#9733; Pinned <i>' + esc(c.pinned) + '</i></button>'
-      + '<button class="chip">To-do <i>' + esc(c.todo) + '</i></button><button class="chip">Idea <i>' + esc(c.idea) + '</i></button>'
-      + '<button class="chip">Person <i>' + esc(c.person) + '</i></button><button class="chip">Decision <i>' + esc(c.decision) + '</i></button>'
-      + '<button class="chip">Archive</button>'
+      + '<div class="r"><button class="btn" data-action="notes-tidy">Tidy up</button><button class="btn" data-action="notes-full">&#8599; Full screen</button><button class="btn pri" data-action="note-new">+ New note</button></div></div>'
+      + '<div class="tools"><input class="search" data-action="notes-search" placeholder="Search notes, people, Spaces">'
+      + '<button class="chip on" data-action="notes-filter" data-filter="all">All <i>' + esc(c.all) + '</i></button><button class="chip" data-action="notes-filter" data-filter="pinned">&#9733; Pinned <i>' + esc(c.pinned) + '</i></button>'
+      + '<button class="chip" data-action="notes-filter" data-filter="todo">To-do <i>' + esc(c.todo) + '</i></button><button class="chip" data-action="notes-filter" data-filter="idea">Idea <i>' + esc(c.idea) + '</i></button>'
+      + '<button class="chip" data-action="notes-filter" data-filter="person">Person <i>' + esc(c.person) + '</i></button><button class="chip" data-action="notes-filter" data-filter="dec">Decision <i>' + esc(c.decision) + '</i></button>'
+      + '<button class="chip" data-action="notes-filter" data-filter="archive">Archive</button>'
       + '<div class="cols" title="Filter by colour"><span class="cdot y" style="background:#fff6c9"></span><span class="cdot" style="background:#ffe1ea"></span><span class="cdot" style="background:#ddf5e6"></span><span class="cdot" style="background:#e1ecff"></span><span class="cdot" style="background:#ffe6cf"></span><span class="cdot" style="background:#ece4ff"></span></div>'
-      + '<div class="seg"><span class="on">Board</span><span>Canvas</span></div></div>'
+      + '<div class="seg"><span class="on" data-action="notes-view" data-view="board">Board</span><span data-action="notes-view" data-view="canvas">Canvas</span></div></div>'
       + '<div class="sec">&#9733; Pinned</div><div class="board" style="margin-bottom:6px">'
-      + (data.pinned || []).map(noteCard).join('') + '<div class="newcard">+ Pin a note here</div></div>'
+      + (data.pinned || []).map(noteCard).join('') + '<div class="newcard" data-action="note-new">+ Pin a note here</div></div>'
       + '<div class="sec">All notes</div><div class="board">'
       + (data.notes || []).map(noteCard).join('') + '</div>'
+      + '<div class="ov" id="ov" hidden style="display:none;position:fixed;inset:0;z-index:40;background:rgba(10,16,40,.45);align-items:center;justify-content:center"><div class="sheet" style="background:#fff;border-radius:16px;padding:18px;width:min(640px,92vw);max-height:80vh;overflow:auto"><div class="sh" style="display:flex;justify-content:space-between;gap:12px"><div><div class="k" id="ok">Note</div><div class="t" id="ot" contenteditable="true" data-action="note-edit"></div></div><button class="x" id="ox" data-action="note-close">&times;</button></div>'
+      + '<div class="sb" id="ob" contenteditable="true" data-action="note-edit" style="min-height:160px;margin-top:12px"></div><div class="meta" id="om"></div></div></div>'
       + '<div class="toast" id="toast"></div>';
-    var root = wrap.getRootNode();
-    root.querySelectorAll('.ck').forEach(function (el) {
-      el.onclick = function (e) {
-        e.stopPropagation();
-        el.classList.toggle('done');
-        var i = el.querySelector('i');
-        if (i) i.innerHTML = el.classList.contains('done') ? '&#10003;' : '';
-      };
-    });
-    root.querySelectorAll('.note').forEach(function (el) {
-      el.onclick = function () { el.classList.toggle('open'); };
-    });
+    finishPaint(wrap);
     markReady('notesDesk');
   }
 
@@ -841,7 +834,7 @@
   window.__port = {
     fixtureOn: fixtureOn, wrapOf: wrapOf, whenCss: whenCss, markReady: markReady,
     esc: esc, asList: asList, liveLog: liveLog, initials: initials, ageLabel: ageLabel,
-    HOSTS: HOSTS, TOKEN: TOKEN
+    HOSTS: HOSTS, TOKEN: TOKEN, finishPaint: finishPaint
   };
   whenCss(function () {
     try {
