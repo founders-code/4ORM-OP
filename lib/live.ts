@@ -14,13 +14,13 @@ import {
 } from './ghl';
 import { inferContactCategory } from './guard.mjs';
 import {
-  calendarWatch,
   classifyGmailIds,
   gmailProfileHistoryId,
   inboxMail,
   linkedinMail,
   listGmailHistory,
   stopCalendarWatch,
+  watchCalendar,
   watchGmail,
 } from './google';
 import { fail, note } from './log';
@@ -291,7 +291,7 @@ export async function ensureWatches(sql: Sql, ownerId: string, origin: string) {
       await stopCalendarWatch(String(prior.channel_id), String(prior.resource_id)).catch((err) => fail('cal_unwatch', err));
     }
     const channelId = randomUUID();
-    const watched = await calendarWatch({
+    const watched = await watchCalendar({
       address: `${origin}/api/hooks/calendar`,
       token,
       channelId,
