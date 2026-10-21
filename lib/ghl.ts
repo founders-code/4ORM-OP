@@ -310,6 +310,88 @@ async function pipelineOpps(pipelineId: string) {
   return rows;
 }
 
+export async function getContact(id: string) {
+  const json = (await ghl(`/contacts/${encodeURIComponent(id)}`)) as { contact?: Record<string, unknown> } | null;
+  const row = json?.contact || json;
+  if (!row || typeof row !== 'object') return null;
+  const contact = row as Record<string, unknown>;
+  const idValue = String(contact.id || id || '');
+  if (!idValue) return null;
+  return {
+    id: idValue,
+    name: String(contact.contactName || `${contact.firstName || ''} ${contact.lastName || ''}`).trim() || 'Contact',
+    company: String(contact.companyName || ''),
+    role: String(contact.type || ''),
+    email: String(contact.email || ''),
+    phone: String(contact.phone || ''),
+  };
+}
+
+export async function getOpportunity(id: string) {
+  const json = (await ghl(`/opportunities/${encodeURIComponent(id)}`)) as { opportunity?: Record<string, unknown> } | Record<string, unknown> | null;
+  const row = (json && typeof json === 'object' && 'opportunity' in json ? json.opportunity : json) as Record<string, unknown> | undefined;
+  if (!row || !row.id) return null;
+  const contact = (row.contact || {}) as { name?: string; companyName?: string; email?: string; id?: string };
+  return {
+    id: String(row.id),
+    name: String(row.name || '').slice(0, 120),
+    pipelineId: String(row.pipelineId || ''),
+    pipelineStageId: String(row.pipelineStageId || ''),
+    contactId: String(row.contactId || contact.id || ''),
+    contact: String(contact.name || row.name || '').slice(0, 120),
+    company: String(contact.companyName || '').slice(0, 120),
+    email: String(contact.email || '').slice(0, 120),
+    value: Number(row.monetaryValue) || 0,
+    status: String(row.status || 'open').slice(0, 20),
+    updatedAt: String(row.updatedAt || row.lastStatusChangeAt || row.createdAt || '').slice(0, 40),
+  };
+}
+
+export function shapePipelineStages(pipelines: GhlPipeline[]) {
+  const counts = new Map<string, number>();
+  for (const pipe of pipelines) {
+    for (const stage of pipe.stages) counts.set(stage.name, (counts.get(stage.name) || 0) + stage.count);
+  }
+  return [...counts.entries()].map(([stage, count]) => ({
+    stage,
+    count,
+    detail: count === 1 ? '1 opportunity' : `${count} opportunities`,
+  }));
+}
+
+export function patchPipelines(pipelines: GhlPipeline[], opp: NonNullable<Awaited<ReturnType<typeof getOpportunity>>>, stageName = '') {
+  const next = pipelines.map((pipe) => ({
+    ...pipe,
+    stages: pipe.stages.map((stage) => ({ ...stage, opps: stage.opps.filter((row) => row.id !== opp.id) })),
+  }));
+  const pipe = next.find((row) => row.id === opp.pipelineId) || next[0];
+  if (!pipe) return pipelines;
+  const stage =
+    pipe.stages.find((row) => row.id === opp.pipelineStageId) ||
+    pipe.stages.find((row) => stageName && row.name.toLowerCase() === stageName.toLowerCase());
+  if (!stage) return pipelines;
+  stage.opps.unshift({
+    id: opp.id,
+    name: opp.name,
+    contactId: opp.contactId,
+    contact: opp.contact,
+    company: opp.company,
+    email: opp.email,
+    value: opp.value,
+    status: opp.status,
+    updatedAt: opp.updatedAt,
+  });
+  for (const row of next) {
+    for (const item of row.stages) {
+      item.count = item.opps.length;
+      item.value = item.opps.reduce((n, hit) => n + (Number(hit.value) || 0), 0);
+    }
+    row.total = row.stages.reduce((n, item) => n + item.count, 0);
+    row.value = row.stages.reduce((n, item) => n + item.value, 0);
+  }
+  return next;
+}
+
 export async function listPipelines() {
   if (!configured() || !locationId()) return { status: 'unavailable' as const, pipelines: [] as GhlPipeline[] };
   const pipes = (await ghl(`/opportunities/pipelines?locationId=${encodeURIComponent(locationId())}`)) as {

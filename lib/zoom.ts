@@ -319,6 +319,27 @@ export async function syncZoomApi(sql: Sql, ownerId: string, known: Set<string>)
   return result;
 }
 
+export async function ingestZoomRecording(sql: Sql, ownerId: string, meeting: Meeting) {
+  if (!zoomConfigured()) return { added: false as const };
+  const token = await zoomToken();
+  if (!token) return { added: false as const };
+  let full = meeting;
+  const uuid = String(meeting.uuid || '');
+  if (uuid && !(meeting.recording_files || []).length) {
+    const fetched = await zget<Meeting>(token, `/meetings/${uuidPath(uuid)}/recordings`);
+    if (fetched) full = fetched;
+  }
+  const me = await zget<{ display_name?: string; first_name?: string; last_name?: string }>(token, `/users/${zoomUser()}`);
+  const self = selfNames(me?.display_name || [me?.first_name, me?.last_name].filter(Boolean).join(' '));
+  const note = await meetingNote(token, full, self).catch(() => null);
+  if (!note) return { added: false as const };
+  const saved = await saveNote(sql, ownerId, note).catch((err) => {
+    fail('zoom_hook_save', err);
+    return 'kept' as const;
+  });
+  return { added: saved === 'added' || saved === 'filled', note };
+}
+
 export async function saveMailNotes(sql: Sql, ownerId: string, mails: ZoomMail[]) {
   let added = 0;
   for (const mail of mails) {

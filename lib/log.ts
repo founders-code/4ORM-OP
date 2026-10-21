@@ -14,6 +14,12 @@ function textOf(err: unknown) {
   return err == null ? '' : String(err);
 }
 
+/** One-line status for hooks and the safety sweep. No secrets. */
+export function note(code: string, extra?: string) {
+  const safe = extra ? redact(String(extra)).replace(/\s+/g, ' ').trim().slice(0, 400) : '';
+  console.log(safe ? `${code} ${safe}` : code);
+}
+
 /** The one log in the API. A code, the exception message, and the stack. No connection string. */
 export function fail(code: string, err?: unknown) {
   const message = textOf(err);

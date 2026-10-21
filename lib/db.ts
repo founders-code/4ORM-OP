@@ -8,7 +8,7 @@ type Sql = NeonQueryFunction<false, false>;
 let ready: Promise<Sql> | null = null;
 
 /** Bump when migrate() gains a new step so cold starts skip the full IF NOT EXISTS pass. */
-const SCHEMA_VERSION = '2026-10-18-news-sweep';
+const SCHEMA_VERSION = '2026-10-19-live-updates';
 
 export async function databaseUrl() {
   const envUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
@@ -331,6 +331,37 @@ async function migrate(sql: Sql) {
 /** New War Room tables. A failure here is logged and skipped so the rest of the desk still opens. */
 async function migrateWar(sql: Sql) {
   const steps: Array<[string, () => Promise<unknown>]> = [
+    ['db_inbox_cache', () => sql`CREATE TABLE IF NOT EXISTS inbox_cache (
+      owner_id text PRIMARY KEY,
+      messages jsonb NOT NULL DEFAULT '[]'::jsonb,
+      linkedin jsonb NOT NULL DEFAULT '[]'::jsonb,
+      fetched_at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_pipeline_cache', () => sql`CREATE TABLE IF NOT EXISTS pipeline_cache (
+      owner_id text PRIMARY KEY,
+      pipelines jsonb NOT NULL DEFAULT '[]'::jsonb,
+      stages jsonb NOT NULL DEFAULT '[]'::jsonb,
+      fetched_at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_change_log', () => sql`CREATE TABLE IF NOT EXISTS change_log (
+      id bigserial PRIMARY KEY,
+      owner_id text NOT NULL,
+      kind text NOT NULL,
+      payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_change_log_idx', () => sql`CREATE INDEX IF NOT EXISTS change_log_owner_id_idx ON change_log (owner_id, id DESC)`],
+    ['db_watch_channels', () => sql`CREATE TABLE IF NOT EXISTS watch_channels (
+      owner_id text NOT NULL,
+      source text NOT NULL,
+      channel_id text,
+      resource_id text,
+      token text,
+      expiration timestamptz,
+      history_id text,
+      extra jsonb NOT NULL DEFAULT '{}'::jsonb,
+      PRIMARY KEY (owner_id, source)
+    )`],
     ['db_waiting_on', () => sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS waiting_on text`],
     ['db_plan_of', () => sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS plan_of text`],
     ['db_news_categories', () => sql`ALTER TABLE owner_settings ADD COLUMN IF NOT EXISTS news_categories jsonb`],

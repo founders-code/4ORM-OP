@@ -19,3 +19,27 @@ export function ceoKey() {
 export function cronSecret() {
   return env('CRON_SECRET') || bakedCron || '';
 }
+
+function hookFallback() {
+  return env('HOOK_TOKEN') || env('CRON_SECRET') || bakedCron || '';
+}
+
+export function gmailHookToken() {
+  return env('GMAIL_HOOK_TOKEN') || hookFallback();
+}
+
+export function calendarHookToken() {
+  return env('CALENDAR_HOOK_TOKEN') || hookFallback();
+}
+
+export function ghlHookSecret() {
+  return env('GHL_WEBHOOK_SECRET') || hookFallback();
+}
+
+export function zoomHookSecret() {
+  return env('ZOOM_WEBHOOK_SECRET_TOKEN') || env('ZOOM_WEBHOOK_SECRET') || '';
+}
+
+export function gmailPubsubTopic() {
+  return env('GOOGLE_PUBSUB_TOPIC');
+}

@@ -3,7 +3,7 @@ import { claimBudget } from '@/lib/db';
 import { withCreds } from '@/lib/creds';
 import { createEvent, deleteCalendarEvent, moveEvent, patchCalendarEvent } from '@/lib/google';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, roomOwner } from '@/lib/session';
 import { calendarPayload, extendCalendar } from '@/lib/sync';
 import { loadCredsFor } from '@/lib/vault';
 
@@ -25,15 +25,16 @@ export async function GET(req: Request) {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!session.sql) return NextResponse.json({ events: [], calendarUntil: 0 });
+    const ownerId = (await roomOwner(session.sql)) || session.userId;
     const url = new URL(req.url);
     const parsedFrom = Date.parse(url.searchParams.get('from') || '');
     const parsedTo = Date.parse(url.searchParams.get('to') || '');
     const from = Number.isFinite(parsedFrom) ? parsedFrom : Date.now() - 24 * 60 * 60 * 1000;
     const to = Number.isFinite(parsedTo) ? parsedTo : Date.now() + 14 * 24 * 60 * 60 * 1000;
     const creds = await loadCredsFor(session.userId);
-    const result = await withCreds(creds, () => extendCalendar(session.sql!, session.userId, from, to));
+    const result = await withCreds(creds, () => extendCalendar(session.sql!, ownerId, from, to));
     if (!result.ok) {
-      const cached = (await calendarPayload(session.sql, session.userId)) as Array<{ id: string; start: number; dur: number; title: string }>;
+      const cached = (await calendarPayload(session.sql, ownerId)) as Array<{ id: string; start: number; dur: number; title: string }>;
       return NextResponse.json({
         events: shapeEvents(cached),
         calendarUntil: 0,

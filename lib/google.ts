@@ -1120,3 +1120,154 @@ export async function gmailModify(id: string, add: string[] = [], remove: string
   });
   return { ok: sent.ok, status: sent.status };
 }
+
+export async function gmailProfileHistoryId() {
+  const profile = (await gfetch('https://gmail.googleapis.com/gmail/v1/users/me/profile')) as { historyId?: string } | null;
+  return profile?.historyId ? String(profile.historyId) : '';
+}
+
+export async function watchGmail(topicName: string) {
+  if (!configured() || !/^projects\/[a-z0-9-]+\/topics\/[A-Za-z0-9._~%+-]+$/.test(topicName)) return null;
+  const result = await gcall('https://gmail.googleapis.com/gmail/v1/users/me/watch', {
+    method: 'POST',
+    body: JSON.stringify({ topicName, labelIds: ['INBOX'] }),
+  });
+  if (!result.ok || !result.json) return null;
+  const json = result.json as { historyId?: string; expiration?: string };
+  return { historyId: String(json.historyId || ''), expiration: Number(json.expiration) || 0 };
+}
+
+export async function watchCalendar(input: { address: string; token: string; channelId: string; calendarId?: string }) {
+  if (!configured() || !/^https:\/\//i.test(input.address) || !input.token || !input.channelId) return null;
+  const calendarId = encodeURIComponent(input.calendarId || process.env.GOOGLE_CALENDAR_ID || 'primary');
+  const result = await gcall(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/watch`, {
+    method: 'POST',
+    body: JSON.stringify({
+      id: input.channelId.slice(0, 64),
+      type: 'web_hook',
+      address: input.address,
+      token: input.token.slice(0, 256),
+    }),
+  });
+  if (!result.ok || !result.json) return null;
+  const json = result.json as { resourceId?: string; expiration?: string; id?: string };
+  return {
+    channelId: String(json.id || input.channelId),
+    resourceId: String(json.resourceId || ''),
+    expiration: Number(json.expiration) || 0,
+  };
+}
+
+export async function stopCalendarWatch(channelId: string, resourceId: string) {
+  if (!channelId || !resourceId) return;
+  await gcall('https://www.googleapis.com/calendar/v3/channels/stop', {
+    method: 'POST',
+    body: JSON.stringify({ id: channelId, resourceId }),
+  });
+}
+
+export async function listGmailHistory(startHistoryId: string) {
+  if (!startHistoryId) return { expired: true, ids: [] as string[], historyId: '' };
+  const ids = new Set<string>();
+  let page = '';
+  let historyId = startHistoryId;
+  for (let i = 0; i < 8; i += 1) {
+    const q = new URLSearchParams({ startHistoryId, historyTypes: 'messageAdded', maxResults: '100' });
+    if (page) q.set('pageToken', page);
+    const result = await gcall(`https://gmail.googleapis.com/gmail/v1/users/me/history?${q}`);
+    if (result.status === 404 || result.status === 400) return { expired: true, ids: [] as string[], historyId: '' };
+    if (!result.ok) return { expired: false, ids: [...ids], historyId };
+    const json = result.json as {
+      history?: Array<{ messagesAdded?: Array<{ message?: { id?: string } }> }>;
+      historyId?: string;
+      nextPageToken?: string;
+    } | null;
+    historyId = String(json?.historyId || historyId);
+    for (const row of json?.history || []) {
+      for (const added of row.messagesAdded || []) {
+        if (added.message?.id) ids.add(String(added.message.id));
+      }
+    }
+    page = json?.nextPageToken || '';
+    if (!page) break;
+  }
+  return { expired: false, ids: [...ids], historyId };
+}
+
+const META_HEADERS = ['From', 'To', 'Subject', 'Date', 'Message-ID', 'Delivered-To', 'Content-Type', 'List-Unsubscribe', 'List-Id', 'Precedence', 'Auto-Submitted', 'Return-Path', 'X-Auto-Response-Suppress']
+  .map((h) => `metadataHeaders=${h}`)
+  .join('&');
+
+async function gmailMetas(ids: string[]) {
+  const rows = await Promise.all(
+    ids.slice(0, 25).map((id) =>
+      (gfetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(id)}?format=metadata&${META_HEADERS}`) as Promise<GmailMeta | null>).catch(() => null),
+    ),
+  );
+  return rows.filter((row): row is GmailMeta => !!row && !!row.id);
+}
+
+export async function classifyGmailIds(ids: string[]) {
+  const messages: InboxRow[] = [];
+  const linkedin: LinkedinRow[] = [];
+  if (!ids.length) return { messages, linkedin };
+  const self = await mailboxSelf().catch(() => ({ addresses: new Set<string>(), names: new Set<string>(), domain: '' }));
+  const rows = await gmailMetas(ids);
+  const isSelf = (raw: string) => {
+    const address = addressOf(raw);
+    const name = displayOf(raw).toLowerCase();
+    return (!!address && self.addresses.has(address)) || (!!name && self.names.has(name));
+  };
+  for (const msg of rows) {
+    const pick = headerOf(msg);
+    const rawFrom = pick('from');
+    const address = addressOf(rawFrom);
+    const toBlob = `${pick('to')} ${pick('delivered-to')}`.toLowerCase();
+    const isLinkedin = address.endsWith('linkedin.com') || toBlob.includes(LINKEDIN_ALIAS);
+    if (isLinkedin) {
+      const subject = pick('subject').slice(0, 180);
+      const name = linkedinName(subject, rawFrom);
+      if (!name || /^linkedin$/i.test(name) || /^team\b/i.test(name) || /\bon linkedin\b/i.test(name)) continue;
+      const kind = linkedinKind(subject, address);
+      const snippet = decodeSnippet(String(msg.snippet || subject));
+      if (kind === 'update' || /posted an update/i.test(`${subject} ${snippet}`)) continue;
+      linkedin.push({
+        id: String(msg.id),
+        name,
+        kind,
+        snippet,
+        at: Number(msg.internalDate) || Date.parse(pick('date')) || Date.now(),
+        unread: (msg.labelIds || []).includes('UNREAD'),
+      });
+      continue;
+    }
+    if (isCalendarMail(rawFrom, pick('subject'), msg.payload)) continue;
+    let party = rawFrom;
+    let outbound = false;
+    if (isSelf(rawFrom)) {
+      const other = splitAddresses(pick('to')).find((raw) => !isSelf(raw));
+      if (!other) continue;
+      party = other;
+      outbound = true;
+    }
+    const email = addressOf(party);
+    const from = displayOf(party) || email || 'Sender';
+    const subject = pick('subject').slice(0, 180);
+    if (!from && !subject) continue;
+    messages.push({
+      id: String(msg.id),
+      threadId: String(msg.threadId || ''),
+      messageId: pick('message-id').slice(0, 300),
+      from: from.includes('@') ? from.split('@')[0] : from,
+      email,
+      subject: subject || '(no subject)',
+      snippet: decodeSnippet(String(msg.snippet || '')),
+      at: Number(msg.internalDate) || Date.parse(pick('date')) || Date.now(),
+      unread: (msg.labelIds || []).includes('UNREAD'),
+      outbound,
+      internal: !!self.domain && email.endsWith('@' + self.domain),
+      bulk: isBulkMail(email, pick),
+    });
+  }
+  return { messages, linkedin };
+}
