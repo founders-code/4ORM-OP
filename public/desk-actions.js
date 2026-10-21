@@ -10,7 +10,10 @@
     '.hb1', '.hb2', '.do', '.add button', '.capture button', '.newcard', '.seg span',
     '.conv', '.ic', '.mv', '.join', '.bell',
     '.pl', '.st', '.act', '.op', '.dr', '.addcard', '.gh', '.ms', '.fd', '.fl',
-    '.sr', '.build', '.ml', '.newcol', '.send', '.send2', '.car', '.pcard', '.chip'
+    '.sr', '.build', '.ml', '.newcol', '.send', '.send2', '.car', '.pcard', '.chip',
+    '.pad', '.add', '.calbtn', '.day', '.ev', '.views span', '.c-nav span', '.dest em',
+    '.b1', '.b2', '.cals label', '.ar span', '.ok b', '.beat', '.recbtn', '.gobtn',
+    '.ib', '.op', '.mc', '.pill'
   ].join(',');
   var FOCUS_MS = 25 * 60 * 1000;
   var RING_C = 2 * Math.PI * 48;
@@ -83,6 +86,10 @@
     if (which === 'spaces' && typeof window.paintRedesignSpaces === 'function') window.paintRedesignSpaces();
     if (which === 'docs' && typeof window.paintRedesignDocuments === 'function') window.paintRedesignDocuments();
     if (which === 'mail' && typeof window.paintRedesignEmail === 'function') window.paintRedesignEmail();
+    if (which === 'play' && typeof window.paintRedesignPlaybook === 'function') window.paintRedesignPlaybook();
+    if (which === 'cal' && typeof window.paintRedesignCalendar === 'function') window.paintRedesignCalendar();
+    if (which === 'zoom' && typeof window.paintRedesignZoom === 'function') window.paintRedesignZoom();
+    if (which === 'done' && typeof window.paintRedesignCompleted === 'function') window.paintRedesignCompleted();
     if (typeof window.paintShellNav === 'function') window.paintShellNav();
   }
   function go(view) {
@@ -1050,7 +1057,279 @@
     'mail-task': function (el, root) {
       var title = attr(el, 'data-subject') || 'Email follow-up';
       return addTask('TEST ' + title, 'today').then(function () { toast(root, 'Task created'); }).catch(function () { toast(root, 'Could not create that task'); });
-    }
+    },
+    'play-pad': function (el, root) {
+      var M = window.__playMount;
+      if (M && typeof M.openPop === 'function') { M.openPop(el); return; }
+      soon(root, 'Play pad');
+    },
+    'play-go': function (el, root) {
+      var room = attr(el, 'data-view') || 'war';
+      var map = { war: 'war', studio: 'playbook', li: 'people', pipe: 'contacts', spaces: 'work', msg: 'mail', news: 'news', iq: 'int', done: 'done', contacts: 'contacts', team: 'people', dash: 'room' };
+      var M = window.__playMount;
+      if (M && M.pop) M.pop.classList.remove('show');
+      go(map[room] || 'war');
+      toast(root, 'Opening that desk');
+    },
+    'play-pad-off': function () {},
+    'play-run': function (el, root) {
+      var M = window.__playMount;
+      if (!M || !M.rows) { go('war'); return; }
+      var idx = M.todayIdx || 0;
+      var due = M.rows.filter(function (r) { return r.d && (r.d[idx] === 'due' || r.d[idx] === 'next'); })[0];
+      var rm = due && due.room ? due.room : 'war';
+      go(rm === 'dash' ? 'room' : rm);
+      toast(root, due ? ('Running ' + due.n) : "Today's plays");
+    },
+    'play-done': function (el, root) {
+      var M = window.__playMount;
+      if (!M || !M.cur) return;
+      var cur = M.cur;
+      var on = cur.r.d[cur.i] === 'done';
+      var next = on ? 'open' : 'done';
+      cur.r.d[cur.i] = on ? 'due' : 'done';
+      if (cur.r.pads && cur.r.pads[cur.i]) cur.r.pads[cur.i].state = next === 'done' ? 'done' : 'due';
+      if (M.pop) M.pop.classList.remove('show');
+      if (typeof M.render === 'function') M.render();
+      toast(root, on ? (cur.r.n + ' turned back on') : ('Light off — ' + cur.r.n + ' done'), function () {
+        cur.r.d[cur.i] = on ? 'done' : 'due';
+        if (typeof M.render === 'function') M.render();
+      });
+      var id = cur.r.id;
+      var day = (cur.r.pads && cur.r.pads[cur.i] && cur.r.pads[cur.i].day) || attr(el, 'data-day');
+      if (!id || !day || !writeOk()) return;
+      api('/api/playbook', { method: 'POST', body: { rhythmId: id, day: day, status: next } }).then(ok).then(json).then(function (d) {
+        if (d && window.STATE) window.STATE.playbook = d;
+      }).catch(function () { toast(root, 'Could not save that play'); });
+    },
+    'play-later': function (el, root) {
+      var M = window.__playMount;
+      if (!M || !M.cur) return;
+      var cur = M.cur;
+      if (M.pop) M.pop.classList.remove('show');
+      toast(root, cur.r.n + ' snoozed 2 hours');
+      var id = cur.r.id;
+      var day = (cur.r.pads && cur.r.pads[cur.i] && cur.r.pads[cur.i].day) || '';
+      if (!id || !day || !writeOk()) return;
+      api('/api/playbook', { method: 'POST', body: { rhythmId: id, day: day, status: 'snoozed' } }).catch(function () {});
+    },
+    'play-add': function (el, root) {
+      var name = window.prompt('Rhythm name');
+      if (!name) return;
+      name = String(name).trim();
+      if (!name) return;
+      if (!writeOk()) { toast(root, 'Rhythm (fixture)'); return; }
+      api('/api/playbook', { method: 'POST', body: { name: name.indexOf('TEST') === 0 ? name : ('TEST ' + name) } }).then(ok).then(json).then(function (d) {
+        if (d && window.STATE) window.STATE.playbook = d;
+        refresh('play');
+        toast(root, 'Rhythm added');
+      }).catch(function () { toast(root, 'Could not add that rhythm'); });
+    },
+    'play-month': function (el, root) {
+      var ov = root.getElementById && root.getElementById('ov');
+      if (ov) ov.classList.add('open');
+    },
+    'play-month-close': function (el, root) {
+      var ov = root.getElementById && root.getElementById('ov');
+      if (ov) ov.classList.remove('open');
+    },
+    'play-voice-rec': function () {},
+    'play-voice-save': function () {},
+    'play-voice-discard': function () {},
+    'play-voice-dest': function (el, root) {
+      root.querySelectorAll('.dest em').forEach(function (x) { x.classList.remove('on'); });
+      el.classList.add('on');
+    },
+    'play-tx': function () {},
+    'cal-view': function (el) {
+      var cal = window.__redesignCal;
+      if (cal && typeof cal.setView === 'function') cal.setView(attr(el, 'data-v') || 'week');
+    },
+    'cal-nav': function (el) {
+      var cal = window.__redesignCal;
+      if (cal && typeof cal.nav === 'function') cal.nav(attr(el, 'data-dir') || 'today');
+    },
+    'cal-nl': function () {},
+    'cal-event': function () {},
+    'cal-sug': function () {},
+    'cal-save': function () {},
+    'cal-del': function () {},
+    'cal-dup': function () {},
+    'cal-undo': function () {},
+    'cal-zoom': function () {},
+    'cal-pick': function () {},
+    'cal-toggle': function (el) {
+      el.classList.toggle('off');
+    },
+    'cal-mini': function () {},
+    'cal-title': function () {},
+    'cal-notes': function () {},
+    'cal-date': function () {},
+    'cal-time': function () {},
+    'cal-select': function () {},
+    'cal-people': function () {},
+    'cal-accept': function () {
+      var cal = window.__redesignCal;
+      if (!cal || !cal.S || !cal.E) return;
+      cal.S.slice().forEach(function (x) { cal.E.push({ d: x.d, s: x.s, e: x.e, t: x.t, c: 'mile' }); });
+      cal.S.length = 0;
+      if (typeof cal.render === 'function') cal.render();
+    },
+    'cal-replan': function (el, root) { soon(root, 'Re-plan plays'); },
+    'cal-keep': function () {},
+    'cal-drop': function () {},
+    'cal-allday': function () {},
+    'cal-cell': function () {},
+    'cal-year-day': function () {},
+    'cal-more': function () {},
+    'cal-mini-day': function (el) {
+      var cal = window.__redesignCal;
+      var k = attr(el, 'data-d');
+      if (cal && typeof cal.focusTo === 'function' && k) cal.focusTo(k);
+    },
+    'cal-hint-close': function (el) {
+      var n = el.parentNode;
+      if (n) n.remove();
+    },
+    'cal-prep': function (el, root) { soon(root, 'Prep notes'); },
+    'cal-war': function () { go('war'); },
+    'play-beat': function (el, root) { soon(root, 'Longer beat'); },
+    'play-ms': function () {},
+    'zoom-open': function (el, root) {
+      var i = Number(attr(el, 'data-i'));
+      var Z = window.__zoomMount;
+      if (Z && typeof Z.open === 'function') { Z.open(i); return; }
+      soon(root, 'Open meeting');
+    },
+    'zoom-close': function (el, root) {
+      var Z = window.__zoomMount;
+      if (Z && typeof Z.show === 'function') Z.show(false);
+    },
+    'zoom-edit': function (el, root) {
+      var id = attr(el, 'data-id');
+      var cur = attr(el, 'data-title') || '';
+      var next = window.prompt('Meeting title', cur);
+      if (next == null || !id) return;
+      if (!writeOk()) { toast(root, 'Renamed (fixture)'); return; }
+      api('/api/zoom/' + encodeURIComponent(id), { method: 'PATCH', body: { title: String(next).trim() } }).then(ok).then(function () {
+        toast(root, 'Title saved'); refresh('zoom');
+      }).catch(function () { toast(root, 'Could not edit that note'); });
+    },
+    'zoom-archive': function (el, root) {
+      var id = attr(el, 'data-id');
+      var card = el.closest('.mc');
+      if (card) card.style.display = 'none';
+      toast(root, 'Meeting hidden', function () { if (card) card.style.display = ''; });
+      if (!id || !writeOk()) return;
+      api('/api/zoom/' + encodeURIComponent(id), { method: 'PATCH', body: { title: '[archived] ' + (attr(el, 'data-title') || 'Meeting') } }).catch(function () {});
+    },
+    'zoom-refresh': function (el, root) {
+      if (!writeOk()) { toast(root, 'Refresh (fixture)'); return; }
+      api('/api/zoom-notes', { method: 'GET' }).then(ok).then(json).then(function (d) {
+        if (d && d.notes && window.STATE) window.STATE.zoomNotes = d.notes;
+        refresh('zoom');
+        toast(root, 'Meetings refreshed');
+      }).catch(function () { toast(root, 'Could not refresh Zoom notes'); });
+    },
+    'zoom-add': function (el, root) {
+      var title = window.prompt('Meeting title', 'TEST meeting note');
+      if (title == null) return;
+      title = String(title).trim() || 'TEST meeting note';
+      if (title.indexOf('TEST') !== 0) title = 'TEST ' + title;
+      if (!writeOk()) { toast(root, 'Note (fixture)'); return; }
+      api('/api/zoom', { method: 'POST', body: { title: title, attendees: '', others: '', solo: true } }).then(ok).then(json).then(function (row) {
+        if (row && window.STATE) {
+          window.STATE.zoomNotes = window.STATE.zoomNotes || [];
+          window.STATE.zoomNotes.unshift(row);
+        }
+        refresh('zoom');
+        toast(root, 'Note added');
+      }).catch(function () { toast(root, 'Could not add that note'); });
+    },
+    'zoom-filter': function (el, root) {
+      var key = attr(el, 'data-filter') || 'all';
+      S().zoomFilter = key;
+      root.querySelectorAll('[data-action="zoom-filter"]').forEach(function (c) {
+        c.classList.toggle('on', attr(c, 'data-filter') === key);
+      });
+      root.querySelectorAll('.mc').forEach(function (n) {
+        var blob = (n.textContent || '').toLowerCase();
+        n.style.display = (key === 'all' || blob.indexOf(key) >= 0) ? '' : 'none';
+      });
+    },
+    'zoom-src': function (el, root) {
+      var src = attr(el, 'data-src') || 'all';
+      root.querySelectorAll('[data-action="zoom-src"]').forEach(function (c) {
+        c.classList.toggle('on', attr(c, 'data-src') === src);
+      });
+      root.querySelectorAll('.mc').forEach(function (n) {
+        var s = (n.querySelector('.src') && n.querySelector('.src').textContent || '').toLowerCase();
+        n.style.display = (src === 'all' || s.indexOf(src) >= 0) ? '' : 'none';
+      });
+    },
+    'zoom-sort': function (el, root) {
+      S().zoomSort = attr(el, 'data-sort') || 'newest';
+      root.querySelectorAll('[data-action="zoom-sort"]').forEach(function (c) {
+        c.classList.toggle('on', attr(c, 'data-sort') === S().zoomSort);
+      });
+      refresh('zoom');
+    },
+    'zoom-search': function () {},
+    'zoom-task': function (el, root) {
+      var title = attr(el, 'data-title') || 'Meeting follow-up';
+      var bucket = attr(el, 'data-bucket') || 'today';
+      return addTask('TEST ' + title, bucket).then(function () { toast(root, 'Added to War Room'); }).catch(function () { toast(root, 'Could not create that task'); });
+    },
+    'zoom-ask-input': function () {},
+    'zoom-ask': function (el, root) {
+      var box = root.querySelector('.ask input');
+      var q = box ? String(box.value || '').trim() : '';
+      if (!q) { toast(root, 'Ask about this meeting'); return; }
+      soon(root, 'Ask about this meeting');
+    },
+    'zoom-contact': function () { go('contacts'); },
+    'zoom-transcript': function (el, root) { soon(root, 'Open transcript'); },
+    'zoom-play': function (el, root) { soon(root, 'Play recording'); },
+    'zoom-follow': function (el, root) {
+      if (typeof window.openReply === 'function') {
+        window.openReply({ email: '', from: attr(el, 'data-name') || '', subject: 'Following up', snippet: '', body: '', threadId: '', messageId: '' });
+        toast(root, 'Follow-up draft — nothing sends until you confirm');
+        return;
+      }
+      soon(root, 'Draft follow-up email');
+    },
+    'done-day': function (el, root) {
+      var date = attr(el, 'data-date');
+      if (!date) return;
+      if (window.STATE) window.STATE.snapOpenDate = date;
+      root.querySelectorAll('.day').forEach(function (d) { d.classList.toggle('on', attr(d, 'data-date') === date); });
+      if (!writeOk()) return;
+      api('/api/snapshots?date=' + encodeURIComponent(date), { method: 'GET' }).then(ok).then(json).then(function (one) {
+        if (window.STATE) window.STATE.snapOpen = one;
+        refresh('done');
+      }).catch(function () { refresh('done'); });
+    },
+    'done-snap': function (el, root) {
+      var btn = document.getElementById('snapNow');
+      if (btn) { btn.click(); toast(root, 'Snapshot started'); return; }
+      if (!writeOk()) { toast(root, 'Snapshot (fixture)'); return; }
+      api('/api/snapshots', { method: 'POST', body: {} }).then(ok).then(json).then(function () {
+        toast(root, 'Snapshot saved'); refresh('done');
+      }).catch(function () { toast(root, 'Could not snapshot now'); });
+    },
+    'done-search': function (el, root) {
+      var q = window.prompt('Search days', '');
+      if (q == null) return;
+      q = String(q).toLowerCase();
+      root.querySelectorAll('.day').forEach(function (d) {
+        d.style.display = !q || (d.textContent || '').toLowerCase().indexOf(q) >= 0 ? '' : 'none';
+      });
+    },
+    'done-export': function (el, root) {
+      window.print();
+      toast(root, 'Print / save as PDF');
+    },
+    'done-investor': function (el, root) { soon(root, 'Add to investor update'); }
   };
 
   function saveNote(root, el) {
@@ -1079,7 +1358,7 @@
       if (ignore && ignore.getAttribute && ignore.getAttribute('data-action') === 'notes-search') return;
       if (ignore && ignore.getAttribute && ignore.getAttribute('data-action') === 'note-edit') return;
       if (ignore && ignore.getAttribute && (ignore.getAttribute('data-action') === 'link-title' || ignore.getAttribute('data-action') === 'link-url')) return;
-      if (ignore && ignore.getAttribute && /^(pipe|mail|docs|spaces)-search$|^mail-(body|to|subject)$|^intel-ask$/.test(ignore.getAttribute('data-action') || '')) return;
+      if (ignore && ignore.getAttribute && /^(pipe|mail|docs|spaces)-search$|^mail-(body|to|subject)$|^intel-ask$|^cal-(nl|title|notes|date|time|select|people)$|^play-tx$|^zoom-(search|ask-input)$/.test(ignore.getAttribute('data-action') || '')) return;
     }
     var rootEarly = t && t.getRootNode ? t.getRootNode() : document;
     var menu = rootEarly.getElementById && rootEarly.getElementById('menu');
@@ -1091,8 +1370,13 @@
     var root = el.getRootNode ? el.getRootNode() : document;
     if (name === 'link-open' && t.closest && t.closest('.tm')) return;
     if (name === 'note-open' && t.closest && t.closest('[data-action="note-pin"], [data-action="note-archive"], [data-action="note-task"]')) return;
+    if (name === 'zoom-open' && t.closest && t.closest('[data-action="zoom-edit"], [data-action="zoom-archive"]')) return;
     if (!fn) { soon(root, name); return; }
     if (name === 'link-open') return;
+    if (/^(cal-event|cal-sug|cal-keep|cal-drop|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|cal-save|cal-del|cal-dup|cal-undo|cal-zoom|cal-pick|cal-allday|cal-cell|cal-year-day|cal-more|cal-mini-day|play-voice-|play-tx|zoom-search|zoom-ask-input)/.test(name)) {
+      try { fn(el, root, e); } catch (err) { toast(root, 'Could not run that action'); }
+      return;
+    }
     e.preventDefault();
     try { fn(el, root, e); } catch (err) { toast(root, 'Could not run that action'); }
   }
@@ -1101,6 +1385,8 @@
     if (!el) return;
     var name = attr(el, 'data-action');
     var root = el.getRootNode ? el.getRootNode() : document;
+    if (e.key === 'Enter' && name === 'zoom-search') return;
+    if (e.key === 'Enter' && name === 'cal-nl') return;
     if (e.key === 'Enter' && (name === 'capture-input' || name === 'link-url' || name === 'link-title')) {
       e.preventDefault();
       if (name === 'capture-input') actions['capture-add'](el, root, e);
@@ -1124,9 +1410,9 @@
       }, 120);
     }
     if (name === 'note-edit') saveNote(root, el);
-    if (/^(pipe|mail|docs|spaces)-search$/.test(name || '')) {
+    if (/^(pipe|mail|docs|spaces|zoom)-search$/.test(name || '')) {
       var q = String(el.value || '').toLowerCase();
-      var sel = name === 'pipe-search' ? 'tbody#rows tr, .nd, .pcard' : name === 'mail-search' ? '.ml' : name === 'docs-search' ? '.fl, .ra' : '.sp';
+      var sel = name === 'pipe-search' ? 'tbody#rows tr, .nd, .pcard' : name === 'mail-search' ? '.ml' : name === 'docs-search' ? '.fl, .ra' : name === 'zoom-search' ? '.mc' : '.sp';
       root.querySelectorAll(sel).forEach(function (n) {
         n.style.display = !q || (n.textContent || '').toLowerCase().indexOf(q) >= 0 ? '' : 'none';
       });
@@ -1153,7 +1439,9 @@
     return { id: plain, kind: 'task' };
   }
   function onDragStart(e) {
-    var el = e.target && e.target.closest ? e.target.closest('[draggable="true"]') : null;
+    var t = e.target;
+    if (t && t.closest && t.closest('.ev, .calwrap .col, .ghost, .rz')) return;
+    var el = t && t.closest ? t.closest('[draggable="true"]') : null;
     if (!el || !e.dataTransfer) return;
     var action = attr(el, 'data-action');
     var kind = attr(el, 'data-kind') || (action === 'mail-card' ? 'mail' : action === 'contact-drag' ? 'contact' : action === 'doc-drag' ? 'doc' : 'task');
@@ -1275,6 +1563,7 @@
   window.stampDeskControls = stampDeskControls;
   window.syncDeskFocus = paintFocus;
   window.deskActions = actions;
+  window.__deskControlSel = CONTROL_SEL;
   window.deskInventory = function (root) {
     if (!root) return { withAction: 0, without: 0 };
     var nodes = root.querySelectorAll(CONTROL_SEL);

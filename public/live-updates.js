@@ -66,6 +66,7 @@
 
   function tick() {
     if (inflight || document.visibilityState !== 'visible') return;
+    if (typeof window.authFetch !== 'function' && !window.STATE) return;
     inflight = true;
     var url = '/api/changes' + (cursor ? '?since=' + encodeURIComponent(cursor) : '');
     auth(url, { credentials: 'same-origin', quiet: true }).then(function (r) {
