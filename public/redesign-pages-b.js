@@ -312,11 +312,11 @@
     var wallSrc = links.filter(function (l) { return !active || (l.cat || l.category || '') === active || active === 'Uncategorized'; });
     if (!wallSrc.length) wallSrc = links;
     var seen = {};
-    var wall = wallSrc.slice(0, 24).map(function (l) {
+    var wall = wallSrc.filter(function (l) { return String(l.note || '') !== '__archived__'; }).slice(0, 24).map(function (l) {
       var url = l.url || '';
       var host = hostOf(url);
       var n = (seen[host + '|' + url] = (seen[host + '|' + url] || 0) + 1);
-      return [l.title || l.name || host || 'Link', host || url, l.color || '#2e6bf2', l.note || '', n > 1 ? 2 : 1, absUrl(url)];
+      return [l.title || l.name || host || 'Link', host || url, l.color || '#2e6bf2', l.note || '', n > 1 ? 2 : 1, absUrl(url), l.id || ''];
     });
     var dups = {};
     wall.forEach(function (w) { var k = String(w[5] || w[1]).replace(/\/$/, ''); dups[k] = (dups[k] || 0) + 1; });
@@ -557,34 +557,31 @@
     var data = linksData();
     wrap.innerHTML =
       '<div class="bar"><h1>Links</h1><span class="sub">Every bookmark, sorted &mdash; each opens the site in a new tab</span>'
-      + '<div class="r"><input class="search" placeholder="Search links, notes or sites"></div></div>'
-      + '<div class="lay"><section class="card tree"><div class="lh">Categories <span class="lnk">+ New</span></div>'
+      + '<div class="r"><input class="search" data-action="coming-soon" data-label="Search links" placeholder="Search links, notes or sites"></div></div>'
+      + '<div class="lay"><section class="card tree"><div class="lh">Categories <span class="lnk" data-action="link-cat-new">+ New</span></div>'
       + (data.tree || []).map(function (t) {
         var car = t.car === 'open' ? '&#9662;' : t.car === 'closed' ? '&#9656;' : '';
         var cls = 'cr' + (t.on ? ' on' : '') + (t.indent === 2 ? ' sub2' : '') + (t.indent === 3 ? ' sub3' : '');
-        var hv = t.noHv ? '' : '<span class="hv">' + (t.noSub ? '' : '<span>+ sub</span>') + '<span>Rename</span><span class="x">&times;</span></span>';
-        return '<div class="' + cls + '"><span class="car">' + car + '</span>' + esc(t.name) + '<span class="n">' + t.n + '</span>' + hv + '</div>';
+        var hv = t.noHv ? '' : '<span class="hv">' + (t.noSub ? '' : '<span data-action="coming-soon" data-label="New subcategory">+ sub</span>') + '<span data-action="coming-soon" data-label="Rename category">Rename</span><span class="x" data-action="coming-soon" data-label="Hide category">&times;</span></span>';
+        return '<div class="' + cls + '" data-action="link-cat" data-name="' + esc(t.name) + '"><span class="car">' + car + '</span>' + esc(t.name) + '<span class="n">' + t.n + '</span>' + hv + '</div>';
       }).join('')
-      + '<div class="exp">Expand all</div></section>'
+      + '<div class="exp" data-action="link-expand">Expand all</div></section>'
       + '<section class="card"><div class="crumbs">Links &rsaquo; <b>' + esc(data.crumb || '') + '</b> &middot; ' + (data.crumbN || 0) + ' links</div>'
-      + '<div class="add"><input placeholder="Title (optional - we\'ll read it from the site)"><input placeholder="Paste a link - https://"><button>Add link</button></div>'
+      + '<div class="add"><input data-action="link-title" placeholder="Title (optional - we\'ll read it from the site)"><input data-action="link-url" placeholder="Paste a link - https://"><button data-action="link-add">Add link</button></div>'
       + '<div class="wall" id="wall">' + (data.wall || []).map(function (w) {
         var href = absUrl(w[5] || w[1]);
         var letter = esc(String(w[0] || '?')[0]);
         var hostName = hostOf(href);
+        var id = esc(w[6] || '');
         var ico = fixtureOn() ? '' : '<img class="ico" alt="" src="/api/favicon?d=' + encodeURIComponent(hostName) + '" onerror="this.parentNode.classList.remove(\'has-ico\');this.remove()">';
-        return '<a class="tile" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer">' + (w[4] == 2 ? '<span class="dup">Duplicate</span>' : '')
+        return '<a class="tile" data-action="link-open" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" data-id="' + id + '" data-url="' + esc(href) + '">' + (w[4] == 2 ? '<span class="dup">Duplicate</span>' : '')
           + '<div class="lg' + (ico ? ' has-ico' : '') + '" style="background:' + w[2] + '14">' + ico + '<i style="background:' + w[2] + '">' + letter + '</i></div>'
-          + '<div class="tm"><span title="Edit">&#9998;</span><span title="Move">&#8644;</span><span title="Delete">&times;</span></div>'
+          + '<div class="tm"><span title="Edit" data-action="link-edit" data-id="' + id + '" data-title="' + esc(w[0]) + '">&#9998;</span><span title="Move" data-action="link-move" data-id="' + id + '" data-title="' + esc(w[0]) + '" data-url="' + esc(href) + '">&#8644;</span><span title="Delete" data-action="link-archive" data-id="' + id + '" data-note="' + esc(w[3] || '') + '">&times;</span></div>'
           + '<div class="nb"><b>' + esc(w[0]) + '<em>&#8599;</em></b><div class="dm">' + esc(w[1]) + '</div><div class="nt' + (w[3] ? '' : ' empty') + '">' + (w[3] ? esc(w[3]) : 'Add a note') + '</div></div></a>';
       }).join('') + '</div>'
       + '<div class="hint">Site icons load from each website. Hover a tile to edit, move or delete it.</div></section></div>';
-    wrap.querySelectorAll('a.tile').forEach(function (a) {
-      a.addEventListener('click', function (e) {
-        if (e.target.closest && e.target.closest('.tm')) { e.preventDefault(); return; }
-        e.stopPropagation();
-      });
-    });
+    if (P().finishPaint) P().finishPaint(wrap);
+    else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
     markReady('linksDesk');
   }
 

@@ -267,11 +267,16 @@ function commitAct(id,action){
     : authFetch('/api/commitments',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({id:id,action:action})});
   req.then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(data){if(data&&data.commitments)STATE.commitments=data.commitments;renderWar();if(action==='deck') return loadBoard();}).catch(function(){STATE.commitments=prev;renderWar();deskFail('Could not update that commitment.');});
 }
-document.getElementById('planClose').onclick=closePlan;
-document.getElementById('planWin').addEventListener('click',function(e){if(e.target.id==='planWin') closePlan();});
-document.getElementById('planAdd').onclick=function(){readPlanFields();PLAN.steps.push({text:'',done:false});paintPlan();};
-document.getElementById('planNeedAdd').onclick=function(){readPlanFields();PLAN.needs.push('');paintPlan();};
-document.getElementById('planSteps').addEventListener('click',function(e){
+var planClose=document.getElementById('planClose');
+if(planClose) planClose.onclick=closePlan;
+var planWin=document.getElementById('planWin');
+if(planWin) planWin.addEventListener('click',function(e){if(e.target.id==='planWin') closePlan();});
+var planAdd=document.getElementById('planAdd');
+if(planAdd) planAdd.onclick=function(){readPlanFields();PLAN.steps.push({text:'',done:false});paintPlan();};
+var planNeedAdd=document.getElementById('planNeedAdd');
+if(planNeedAdd) planNeedAdd.onclick=function(){readPlanFields();PLAN.needs.push('');paintPlan();};
+var planSteps=document.getElementById('planSteps');
+if(planSteps) planSteps.addEventListener('click',function(e){
   var up=e.target.closest('[data-step-up]');
   var down=e.target.closest('[data-step-down]');
   if(!up&&!down) return;
@@ -282,12 +287,13 @@ document.getElementById('planSteps').addEventListener('click',function(e){
   var tmp=PLAN.steps[i]; PLAN.steps[i]=PLAN.steps[j]; PLAN.steps[j]=tmp;
   paintPlan();
 });
-document.getElementById('planSteps').addEventListener('change',function(e){
+if(planSteps) planSteps.addEventListener('change',function(e){
   var box=e.target.closest('[data-step-done]');
   if(!box||!PLAN) return;
   PLAN.steps[+box.getAttribute('data-step-done')].done=box.checked;
 });
-document.getElementById('planAsk').onclick=function(){
+var planAsk=document.getElementById('planAsk');
+if(planAsk) planAsk.onclick=function(){
   if(!PLAN) return;
   readPlanFields();
   authFetch('/api/ceo/plan',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({title:PLAN.title,area:PLAN.area,steps:PLAN.steps.map(function(step){return step.text;}),itemId:PLAN.itemId})}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(data){
@@ -297,7 +303,8 @@ document.getElementById('planAsk').onclick=function(){
     paintPlan();
   }).catch(function(){deskFail('Could not build that plan.');});
 };
-document.getElementById('planSave').onclick=function(){
+var planSave=document.getElementById('planSave');
+if(planSave) planSave.onclick=function(){
   if(!PLAN) return;
   readPlanFields();
   var steps=PLAN.steps.filter(function(step){return String(step.text||'').trim();});
@@ -309,7 +316,8 @@ document.getElementById('planSave').onclick=function(){
     deskNote((data.created||[]).length+' steps on the deck');
   }).catch(function(){deskFail('Could not save that plan.');});
 };
-document.getElementById('bigBoard').addEventListener('click',function(e){
+var bigBoard=document.getElementById('bigBoard');
+if(bigBoard) bigBoard.addEventListener('click',function(e){
   var lamp=e.target.closest('[data-lamp]');
   if(!lamp) return;
   STATE.ceoLamp=lamp.getAttribute('data-lamp');

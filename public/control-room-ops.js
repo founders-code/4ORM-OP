@@ -2791,5 +2791,9 @@
   window.saveItem = saveItem;
   window.renderWar = renderWar;
   window.renderOpsDash = renderOpsDash;
+  window.openReply = openReply;
+  window.hideSender = hideSender;
+  window.setShowMoney = setShowMoney;
+  window.showMoney = showMoney;
   if (document.getElementById('opsDash')) renderOpsDash();
 })();
