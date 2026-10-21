@@ -8,7 +8,9 @@
     '.plus', '.rr', '.slot', '.vb', '.coachbtn', '.exp', '.cr', '.tm span',
     '.tabs span', '.tab', '.x', '.pin', '.cvt', '.task', '.note', '.tile',
     '.hb1', '.hb2', '.do', '.add button', '.capture button', '.newcard', '.seg span',
-    '.conv', '.ic', '.mv', '.join', '.bell'
+    '.conv', '.ic', '.mv', '.join', '.bell',
+    '.pl', '.st', '.act', '.op', '.dr', '.addcard', '.gh', '.ms', '.fd', '.fl',
+    '.sr', '.build', '.ml', '.newcol', '.send', '.send2', '.car', '.pcard', '.chip'
   ].join(',');
   var FOCUS_MS = 25 * 60 * 1000;
   var RING_C = 2 * Math.PI * 48;
@@ -77,6 +79,10 @@
     if (which === 'notes' && typeof window.paintRedesignNotes === 'function') window.paintRedesignNotes();
     if (which === 'links' && typeof window.paintRedesignLinks === 'function') window.paintRedesignLinks();
     if (which === 'dash' && typeof window.paintRedesignDashboard === 'function') window.paintRedesignDashboard();
+    if (which === 'pipe' && typeof window.paintRedesignPipeline === 'function') window.paintRedesignPipeline();
+    if (which === 'spaces' && typeof window.paintRedesignSpaces === 'function') window.paintRedesignSpaces();
+    if (which === 'docs' && typeof window.paintRedesignDocuments === 'function') window.paintRedesignDocuments();
+    if (which === 'mail' && typeof window.paintRedesignEmail === 'function') window.paintRedesignEmail();
     if (typeof window.paintShellNav === 'function') window.paintShellNav();
   }
   function go(view) {
@@ -451,11 +457,16 @@
       window.open(url, '_blank', 'noopener');
     },
     'mail-reply': function (el, root) {
-      var idx = Number(attr(el, 'data-idx'));
-      var thread = attr(el, 'data-thread');
-      var email = attr(el, 'data-email');
-      var subject = attr(el, 'data-subject');
-      var row = { email: email, subject: subject, threadId: thread, from: attr(el, 'data-from'), snippet: attr(el, 'data-preview'), messageId: attr(el, 'data-mid') };
+      var r = (root.getElementById && root.getElementById('reader')) || el;
+      var row = {
+        email: attr(el, 'data-email') || attr(r, 'data-email'),
+        subject: attr(el, 'data-subject') || attr(r, 'data-subject'),
+        threadId: attr(el, 'data-thread') || attr(r, 'data-thread'),
+        from: attr(el, 'data-from') || attr(r, 'data-from') || '',
+        snippet: attr(el, 'data-preview') || '',
+        messageId: attr(el, 'data-mid') || '',
+        body: attr(el, 'data-body') || ''
+      };
       if (typeof window.openReply === 'function') { window.openReply(row); return; }
       go('mail');
       toast(root, 'Opening reply');
@@ -698,7 +709,348 @@
     'link-title': function () {},
     'link-url': function () {},
     'note-edit': function () {},
-    'notes-search': function () {}
+    'notes-search': function () {},
+    'pipe-search': function () {},
+    'mail-search': function () {},
+    'docs-search': function () {},
+    'spaces-search': function () {},
+    'mail-card': function (el, root) { actions['mail-open'](el, root); },
+    'contact-drag': function (el, root) { actions['pipe-open'](el, root); },
+    'doc-drag': function (el, root) { actions['doc-open'](el, root); },
+    'stage-drop': function () {},
+    'mail-col-drop': function () {},
+    'space-drop': function () {},
+
+    'pipe-view': function (el) {
+      S().pipeView = attr(el, 'data-view') || 'dash';
+      refresh('pipe');
+    },
+    'pipe-pill': function (el) {
+      S().ghlPipe = attr(el, 'data-pipe') || S().ghlPipe;
+      S().ghlStage = '';
+      refresh('pipe');
+    },
+    'pipe-more': function (el, root) {
+      S().pipeShowAll = !S().pipeShowAll;
+      refresh('pipe');
+      toast(root, S().pipeShowAll ? 'All pipelines' : 'Top pipelines');
+    },
+    'pipe-cat': function (el, root) {
+      var cats = [];
+      (S().contacts || []).forEach(function (c) {
+        var n = String(c.category || c.type || 'Other');
+        if (cats.indexOf(n) < 0) cats.push(n);
+      });
+      var next = window.prompt('Category filter (All, or ' + cats.slice(0, 8).join(', ') + ')', S().pipeType || 'All');
+      if (next == null) return;
+      S().pipeType = /^(all)?$/i.test(String(next).trim()) ? 'all' : String(next).trim();
+      refresh('pipe');
+      toast(root, 'Category: ' + (S().pipeType === 'all' ? 'All' : S().pipeType));
+    },
+    'pipe-funnel': function (el) {
+      S().ghlStage = attr(el, 'data-stage');
+      S().pipeView = S().pipeView || 'dash';
+      refresh('pipe');
+    },
+    'pipe-matrix': function (el) {
+      S().pipeMatrix = { cat: attr(el, 'data-cat'), cell: attr(el, 'data-cell') };
+      refresh('pipe');
+    },
+    'pipe-follow': function (el, root) {
+      var name = attr(el, 'data-name') || 'there';
+      var email = attr(el, 'data-email') || '';
+      var first = name.split(' ')[0] || 'there';
+      var draft = 'Hi ' + first + ',\n\nChecking in on where we left things. Still a good moment to talk 4orm — the record every recommendation was understood and right for the person.\n\nWould 15 minutes this week work?\n\nChad';
+      if (typeof window.openReply === 'function') {
+        window.openReply({ email: email, from: name, subject: 'Following up', snippet: '', body: draft, threadId: '', messageId: '' });
+        setTimeout(function () {
+          var box = document.getElementById('rpBody');
+          if (box) box.value = draft;
+        }, 50);
+        toast(root, 'Follow-up draft — nothing sends until you confirm');
+        return;
+      }
+      toast(root, 'Follow-up draft — nothing sends until you confirm');
+    },
+    'pipe-open': function (el, root) {
+      var id = attr(el, 'data-id');
+      if (id && typeof window.openContactCard === 'function') { window.openContactCard(id); return; }
+      soon(root, 'Open contact');
+    },
+    'pipe-show-all': function (el, root) {
+      S().pipeAllRows = true;
+      refresh('pipe');
+      toast(root, 'Showing all contacts');
+    },
+    'spaces-view': function (el) {
+      S().spaceView = attr(el, 'data-view') || 'groups';
+      refresh('spaces');
+    },
+    'spaces-filter': function (el, root) {
+      var next = window.prompt('Filter spaces (all, or a group name)', S().spaceFilter || 'all');
+      if (next == null) return;
+      S().spaceFilter = String(next).trim() || 'all';
+      refresh('spaces');
+      toast(root, 'Filter: ' + S().spaceFilter);
+    },
+    'spaces-new': function (el, root) {
+      if (typeof window.addBlankSpace === 'function') { window.addBlankSpace(); toast(root, 'New space'); return; }
+      if (!writeOk()) { toast(root, 'New space (fixture)'); return; }
+      api('/api/spaces', { method: 'POST', body: { name: 'TEST Untitled space', kind: 'data_room', spaceType: 'project' } }).then(ok).then(json).then(function (row) {
+        S().packages = S().packages || [];
+        if (row && row.id) S().packages.unshift(row);
+        refresh('spaces');
+        toast(root, 'Space created');
+      }).catch(function () { toast(root, 'Could not create a space'); });
+    },
+    'space-open': function (el, root) {
+      var id = attr(el, 'data-id') || attr(el, 'data-space');
+      if (id && typeof window.openSpace === 'function') { window.openSpace(id); return; }
+      soon(root, 'Open space');
+    },
+    'space-drive': function (el, root) {
+      var id = attr(el, 'data-id');
+      if (!id) { soon(root, 'Move to Drive'); return; }
+      if (!writeOk()) { toast(root, 'Move to Drive (fixture)'); return; }
+      api('/api/spaces/' + encodeURIComponent(id) + '/move-to-drive', { method: 'POST', body: {} }).then(ok).then(json).then(function (d) {
+        toast(root, d && d.ok === false ? (d.error || 'Drive did not take it') : 'Moved to Drive');
+        refresh('spaces');
+      }).catch(function () { toast(root, 'Drive could not take this Space'); });
+    },
+    'space-menu': function (el, root) {
+      var menu = root.getElementById && root.getElementById('menu');
+      if (!menu) { soon(root, 'Space menu'); return; }
+      var r = el.getBoundingClientRect();
+      menu.style.left = (r.right - 200) + 'px';
+      menu.style.top = (r.bottom + 6) + 'px';
+      menu.style.display = 'block';
+      menu.setAttribute('data-id', attr(el, 'data-id') || '');
+    },
+    'space-move-group': function (el, root) {
+      var menu = root.getElementById && root.getElementById('menu');
+      var id = (menu && attr(menu, 'data-id')) || attr(el, 'data-id');
+      var cat = attr(el, 'data-group');
+      if (menu) menu.style.display = 'none';
+      if (!id || !cat) return;
+      (S().packages || []).forEach(function (p) { if (String(p.id) === id) p.spaceCategory = cat; });
+      refresh('spaces');
+      if (!writeOk()) { toast(root, 'Moved to ' + cat + ' (fixture)'); return; }
+      api('/api/spaces/' + encodeURIComponent(id), { method: 'PATCH', body: { category: cat } }).then(ok).then(function () {
+        toast(root, 'Moved to ' + cat);
+      }).catch(function () { toast(root, 'Could not move that space'); });
+    },
+    'space-rename': function (el, root) {
+      var menu = root.getElementById && root.getElementById('menu');
+      var id = (menu && attr(menu, 'data-id')) || attr(el, 'data-id');
+      if (menu) menu.style.display = 'none';
+      if (!id) return;
+      var hit = (S().packages || []).filter(function (p) { return String(p.id) === id; })[0];
+      var next = window.prompt('Rename this space', (hit && hit.name) || '');
+      if (next == null || !String(next).trim()) return;
+      if (hit) hit.name = String(next).trim();
+      refresh('spaces');
+      if (!writeOk()) { toast(root, 'Renamed (fixture)'); return; }
+      api('/api/spaces/' + encodeURIComponent(id), { method: 'PATCH', body: { name: String(next).trim() } }).then(ok).then(function () {
+        toast(root, 'Renamed');
+      }).catch(function () { toast(root, 'Could not rename that space'); });
+    },
+    'space-archive': function (el, root) {
+      var menu = root.getElementById && root.getElementById('menu');
+      if (menu) menu.style.display = 'none';
+      soon(root, 'Hide space');
+    },
+    'space-collapse': function (el) {
+      var gh = el.closest('.gh') || el;
+      var grid = gh.nextElementSibling;
+      if (grid) grid.hidden = !grid.hidden;
+      el.classList.toggle('closed', grid && grid.hidden);
+    },
+    'space-show-all': function (el, root) {
+      S().spaceShowAll = true;
+      refresh('spaces');
+      toast(root, 'Showing all in this group');
+    },
+    'docs-view': function (el) {
+      S().docsView = attr(el, 'data-view') || 'grid';
+      refresh('docs');
+    },
+    'docs-folder': function (el) {
+      S().docFolder = attr(el, 'data-folder') || '';
+      refresh('docs');
+    },
+    'docs-type': function (el) {
+      S().docType = attr(el, 'data-type') || 'all';
+      refresh('docs');
+    },
+    'docs-new-folder': function (el, root) {
+      var name = window.prompt('Folder name');
+      if (!name) return;
+      S().docFolders = (S().docFolders || []).concat([String(name).trim()]);
+      refresh('docs');
+      toast(root, 'Folder added on this desk');
+    },
+    'docs-drive': function (el, root) {
+      go('drive');
+      toast(root, 'Opening Drive');
+    },
+    'docs-upload': function (el, root) {
+      var input = root.querySelector('#deskUpload') || document.createElement('input');
+      input.id = 'deskUpload';
+      input.type = 'file';
+      input.multiple = true;
+      input.style.display = 'none';
+      if (!root.contains(input) && root.appendChild) root.appendChild(input);
+      input.onchange = function () {
+        var files = input.files;
+        if (!files || !files.length) return;
+        toast(root, files.length + ' file' + (files.length === 1 ? '' : 's') + ' staged — drop onto a Space');
+      };
+      input.click();
+    },
+    'doc-open': function (el, root) {
+      var url = attr(el, 'data-url') || attr(el, 'data-web');
+      var drive = attr(el, 'data-drive');
+      if (drive) url = 'https://drive.google.com/file/d/' + encodeURIComponent(drive) + '/view';
+      if (/^https?:\/\//i.test(url)) { window.open(url, '_blank', 'noopener'); return; }
+      soon(root, 'Open document');
+    },
+    'docs-build-space': function (el, root) {
+      if (typeof window.addBlankSpace === 'function') { window.addBlankSpace(); toast(root, 'Building a space from the selection'); return; }
+      actions['spaces-new'](el, root);
+    },
+    'doc-pick': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      var id = attr(el, 'data-id');
+      if (!id) return;
+      S().docPick = S().docPick || {};
+      if (S().docPick[id]) delete S().docPick[id];
+      else S().docPick[id] = 1;
+      el.classList.toggle('on', !!S().docPick[id]);
+    },
+    'mail-compose': function (el, root) {
+      var cp = root.getElementById && root.getElementById('compose');
+      var sc = root.getElementById && root.getElementById('scrim');
+      if (cp) cp.classList.add('open');
+      if (sc) sc.classList.add('open');
+    },
+    'mail-compose-close': function (el, root) {
+      var cp = root.getElementById && root.getElementById('compose');
+      var sc = root.getElementById && root.getElementById('scrim');
+      if (cp) cp.classList.remove('open');
+      if (sc) sc.classList.remove('open');
+    },
+    'mail-open': function (el, root) {
+      var r = root.getElementById && root.getElementById('reader');
+      var sc = root.getElementById && root.getElementById('scrim');
+      if (r) {
+        r.classList.add('open');
+        r.setAttribute('data-id', attr(el, 'data-id') || '');
+        r.setAttribute('data-thread', attr(el, 'data-thread') || '');
+        r.setAttribute('data-email', attr(el, 'data-email') || '');
+        r.setAttribute('data-subject', attr(el, 'data-subject') || '');
+        var h2 = r.querySelector('h2');
+        if (h2) h2.textContent = attr(el, 'data-subject') || 'Thread';
+      }
+      if (sc) sc.classList.add('open');
+      var tid = attr(el, 'data-thread');
+      if (tid && writeOk()) api('/api/mail/thread?id=' + encodeURIComponent(tid), { method: 'GET' }).catch(function () {});
+    },
+    'mail-close': function (el, root) {
+      var r = root.getElementById && root.getElementById('reader');
+      var sc = root.getElementById && root.getElementById('scrim');
+      var cp = root.getElementById && root.getElementById('compose');
+      if (r) r.classList.remove('open');
+      if (cp) cp.classList.remove('open');
+      if (sc) sc.classList.remove('open');
+    },
+    'mail-body': function () {},
+    'mail-to': function () {},
+    'mail-subject': function () {},
+    'intel-ask': function () {},
+    'mail-snooze': function (el, root) {
+      var id = attr(el, 'data-id') || attr((root.getElementById && root.getElementById('reader')) || el, 'data-id');
+      if (!id || !writeOk()) { toast(root, 'Snoozed (fixture)'); return; }
+      api('/api/mail/act', { method: 'POST', body: { action: 'snooze', id: id, hours: 24 } }).then(ok).then(function () {
+        toast(root, 'Snoozed 24 hours', function () {
+          api('/api/mail/act', { method: 'POST', body: { action: 'move', id: id, column: 'needs_now' } }).then(function () { refresh('mail'); });
+        });
+        refresh('mail');
+      }).catch(function () { toast(root, 'Could not snooze that thread'); });
+    },
+    'mail-done': function (el, root) {
+      var id = attr(el, 'data-id') || attr((root.getElementById && root.getElementById('reader')) || el, 'data-id');
+      if (!id || !writeOk()) { toast(root, 'Marked done (fixture)'); return; }
+      api('/api/mail/act', { method: 'POST', body: { action: 'done', id: id } }).then(ok).then(function () {
+        toast(root, 'Marked done'); refresh('mail');
+      }).catch(function () { toast(root, 'Could not mark that done'); });
+    },
+    'mail-add-space': function (el, root) {
+      soon(root, 'Add to Space');
+    },
+    'mail-move-col': function (el, root) {
+      var id = attr(el, 'data-id') || attr((root.getElementById && root.getElementById('reader')) || el, 'data-id');
+      var next = window.prompt('Move to column key (needs_now, investors, vcs, prospects, design, team, quiet)', 'prospects');
+      if (next == null || !id) return;
+      if (!writeOk()) { toast(root, 'Moved (fixture)'); return; }
+      api('/api/mail/act', { method: 'POST', body: { action: 'move', id: id, column: String(next).trim() } }).then(ok).then(function () {
+        toast(root, 'Filed'); refresh('mail');
+      }).catch(function () { toast(root, 'Could not file that thread'); });
+    },
+    'mail-filters': function (el, root) { soon(root, 'Mail filters'); },
+    'mail-rule-new': function (el, root) {
+      var match = window.prompt('Rule: sender contains');
+      if (match == null || !String(match).trim()) return;
+      var target = window.prompt('File into column key (needs_now, investors, vcs, prospects, design, team, quiet)', 'prospects');
+      if (target == null) return;
+      if (!writeOk()) { toast(root, 'Rule (fixture)'); return; }
+      api('/api/mail/rules', { method: 'POST', body: { matchType: 'sender', matchValue: String(match).trim(), target: String(target).trim(), sticky: true } }).then(ok).then(function () {
+        toast(root, 'Rule saved'); refresh('mail');
+      }).catch(function () { toast(root, 'Could not save that rule'); });
+    },
+    'mail-auto': function (el, root) {
+      var on = true;
+      try { on = localStorage.getItem('cr_mail_auto') !== '0'; } catch (e) {}
+      try { localStorage.setItem('cr_mail_auto', on ? '0' : '1'); } catch (e) {}
+      var dot = root.querySelector('.rules > span');
+      if (dot) { dot.classList.toggle('on', !on); dot.style.background = !on ? '' : '#ccd6e4'; }
+      toast(root, !on ? 'Auto-filing on' : 'Auto-filing paused');
+    },
+    'mail-col-menu': function (el, root) {
+      var key = attr(el, 'data-col');
+      var next = window.prompt('Rename this column', attr(el, 'data-name') || '');
+      if (next == null || !String(next).trim()) return;
+      if (!writeOk()) { toast(root, 'Renamed (fixture)'); return; }
+      api('/api/mail/columns', { method: 'POST', body: { action: 'rename', key: key, name: String(next).trim() } }).then(ok).then(function () {
+        toast(root, 'Column renamed'); refresh('mail');
+      }).catch(function () { soon(root, 'Column menu'); });
+    },
+    'mail-col-new': function (el, root) {
+      var name = window.prompt('New column name');
+      if (!name) return;
+      if (!writeOk()) { toast(root, 'Column (fixture)'); return; }
+      api('/api/mail/columns', { method: 'POST', body: { action: 'create', name: String(name).trim() } }).then(ok).then(function () {
+        toast(root, 'Column added'); refresh('mail');
+      }).catch(function () { toast(root, 'Could not add that column'); });
+    },
+    'mail-send': function (el, root) {
+      var cp = root.getElementById && root.getElementById('compose');
+      var toEl = cp && cp.querySelector('.fr.sugg input, .fr .val input');
+      var subEl = cp && cp.querySelector('.fr.subj input');
+      var bodyEl = cp && cp.querySelector('.body');
+      var to = toEl ? String(toEl.value || '').trim() : '';
+      var subject = subEl ? String(subEl.value || '').trim() : '';
+      var text = bodyEl ? String(bodyEl.innerText || bodyEl.textContent || '') : '';
+      if (!window.confirm('Send this email from Gmail? Nothing goes out until you confirm.')) return;
+      if (!writeOk()) { toast(root, 'Send (fixture)'); return; }
+      api('/api/mail/act', { method: 'POST', body: { action: 'compose', to: to, subject: subject, text: text } }).then(ok).then(json).then(function (d) {
+        toast(root, d && d.ok ? 'Sent from Gmail' : (d && d.drafted ? 'Saved as a Gmail draft' : 'Gmail did not take it'));
+        if (d && (d.ok || d.drafted)) actions['mail-compose-close'](el, root);
+      }).catch(function () { toast(root, 'Gmail did not take that send'); });
+    },
+    'mail-task': function (el, root) {
+      var title = attr(el, 'data-subject') || 'Email follow-up';
+      return addTask('TEST ' + title, 'today').then(function () { toast(root, 'Task created'); }).catch(function () { toast(root, 'Could not create that task'); });
+    }
   };
 
   function saveNote(root, el) {
@@ -727,7 +1079,11 @@
       if (ignore && ignore.getAttribute && ignore.getAttribute('data-action') === 'notes-search') return;
       if (ignore && ignore.getAttribute && ignore.getAttribute('data-action') === 'note-edit') return;
       if (ignore && ignore.getAttribute && (ignore.getAttribute('data-action') === 'link-title' || ignore.getAttribute('data-action') === 'link-url')) return;
+      if (ignore && ignore.getAttribute && /^(pipe|mail|docs|spaces)-search$|^mail-(body|to|subject)$|^intel-ask$/.test(ignore.getAttribute('data-action') || '')) return;
     }
+    var rootEarly = t && t.getRootNode ? t.getRootNode() : document;
+    var menu = rootEarly.getElementById && rootEarly.getElementById('menu');
+    if (menu && menu.style.display === 'block' && !(t.closest && t.closest('#menu, [data-action="space-menu"]'))) menu.style.display = 'none';
     var el = t && t.closest ? t.closest('[data-action]') : closestAction(t);
     if (!el) return;
     var name = attr(el, 'data-action');
@@ -768,38 +1124,114 @@
       }, 120);
     }
     if (name === 'note-edit') saveNote(root, el);
+    if (/^(pipe|mail|docs|spaces)-search$/.test(name || '')) {
+      var q = String(el.value || '').toLowerCase();
+      var sel = name === 'pipe-search' ? 'tbody#rows tr, .nd, .pcard' : name === 'mail-search' ? '.ml' : name === 'docs-search' ? '.fl, .ra' : '.sp';
+      root.querySelectorAll(sel).forEach(function (n) {
+        n.style.display = !q || (n.textContent || '').toLowerCase().indexOf(q) >= 0 ? '' : 'none';
+      });
+    }
+  }
+  function mapContactStage(raw) {
+    var s = String(raw || '').toLowerCase();
+    if (/lost|dead|closed.?lost/.test(s)) return 'lost';
+    if (/commit|won|closed.?won|\bdone\b/.test(s)) return 'committed';
+    if (/meet/.test(s)) return 'meeting';
+    if (/repl/.test(s)) return 'replied';
+    if (/contact/.test(s)) return 'contacted';
+    if (/queue|reach|sent|email|nurture/.test(s)) return 'queued';
+    return 'new';
+  }
+  function parseDrag(e) {
+    var plain = '';
+    try { plain = e.dataTransfer ? e.dataTransfer.getData('text/plain') : ''; } catch (err) { plain = ''; }
+    if (plain.indexOf('4orm-doc:') === 0) return { id: plain.slice(9), kind: 'doc' };
+    try {
+      var o = JSON.parse(plain);
+      if (o && o.id) return o;
+    } catch (err) {}
+    return { id: plain, kind: 'task' };
   }
   function onDragStart(e) {
-    var el = e.target && e.target.closest ? e.target.closest('[data-action="task-drag"], .task') : null;
-    if (!el) return;
-    var id = attr(el, 'data-id');
-    if (!id || !e.dataTransfer) return;
-    e.dataTransfer.setData('text/plain', id);
+    var el = e.target && e.target.closest ? e.target.closest('[draggable="true"]') : null;
+    if (!el || !e.dataTransfer) return;
+    var action = attr(el, 'data-action');
+    var kind = attr(el, 'data-kind') || (action === 'mail-card' ? 'mail' : action === 'contact-drag' ? 'contact' : action === 'doc-drag' ? 'doc' : 'task');
+    var payload = JSON.stringify({
+      id: attr(el, 'data-id'),
+      kind: kind,
+      email: attr(el, 'data-email'),
+      name: attr(el, 'data-name') || '',
+      url: attr(el, 'data-url') || attr(el, 'data-web') || '',
+      drive: attr(el, 'data-drive') || '',
+      mime: attr(el, 'data-mime') || '',
+      subject: attr(el, 'data-subject') || ''
+    });
+    e.dataTransfer.setData('text/plain', payload);
     e.dataTransfer.effectAllowed = 'move';
     el.classList.add('dragging');
   }
+  function dropSel() { return '[data-action="col-drop"], [data-action="stage-drop"], [data-action="mail-col-drop"], [data-action="space-drop"]'; }
   function onDragOver(e) {
-    var col = e.target && e.target.closest ? e.target.closest('[data-action="col-drop"], .col') : null;
+    var col = e.target && e.target.closest ? e.target.closest(dropSel()) : null;
     if (!col) return;
     e.preventDefault();
     col.classList.add('drop-on');
   }
   function onDrop(e) {
-    var col = e.target && e.target.closest ? e.target.closest('[data-action="col-drop"], .col') : null;
+    var col = e.target && e.target.closest ? e.target.closest(dropSel()) : null;
     if (!col) return;
     e.preventDefault();
     col.classList.remove('drop-on');
-    var id = e.dataTransfer ? e.dataTransfer.getData('text/plain') : '';
-    var bucket = attr(col, 'data-bucket');
+    var payload = parseDrag(e);
+    var id = payload.id;
     var root = col.getRootNode ? col.getRootNode() : document;
-    if (!id || !bucket) return;
+    var act = attr(col, 'data-action');
+    if (!id) return;
+    if (act === 'stage-drop') {
+      var stageName = attr(col, 'data-stage');
+      var mapped = mapContactStage(stageName);
+      (S().contacts || []).forEach(function (c) {
+        if (String(c.id) === String(id)) { c.stage = mapped; c.ghlStage = stageName; }
+      });
+      refresh('pipe');
+      if (!writeOk()) { toast(root, 'Moved to ' + stageName + ' (fixture)'); return; }
+      api('/api/contacts', { method: 'PATCH', body: { id: id, stage: mapped } }).then(ok).then(function () {
+        toast(root, 'Stage saved to the pipeline', function () {
+          api('/api/contacts', { method: 'PATCH', body: { id: id, stage: 'new' } }).then(function () { refresh('pipe'); });
+        });
+      }).catch(function () { toast(root, 'Could not write that stage'); });
+      return;
+    }
+    if (act === 'mail-col-drop') {
+      var column = attr(col, 'data-column');
+      var sticky = window.confirm('File this email into ' + (attr(col, 'data-name') || column) + '?\n\nOK = file it and save a sticky rule for this sender.');
+      if (!writeOk()) { toast(root, 'Filed (fixture)'); refresh('mail'); return; }
+      api('/api/mail/act', { method: 'POST', body: { action: 'move', id: id, column: column, sticky: !!sticky, email: payload.email, matchType: 'sender' } }).then(ok).then(function () {
+        toast(root, sticky ? 'Filed + rule saved' : 'Filed');
+        refresh('mail');
+      }).catch(function () { toast(root, 'Could not file that email'); });
+      return;
+    }
+    if (act === 'space-drop') {
+      var spaceId = attr(col, 'data-id');
+      if (!spaceId) return;
+      if (!writeOk()) { toast(root, 'Dropped on Space (fixture)'); return; }
+      api('/api/spaces/' + encodeURIComponent(spaceId), { method: 'POST', body: { action: 'add-doc', name: payload.name || 'File', url: payload.url || '', mime: payload.mime || '', driveFileId: payload.drive || id } }).then(ok).then(function () {
+        toast(root, 'Added to Space');
+        refresh('docs'); refresh('spaces');
+      }).catch(function () { toast(root, 'Could not add that file to the Space'); });
+      return;
+    }
+    var bucket = attr(col, 'data-bucket');
+    if (!bucket) return;
     if (typeof window.moveItemColumn === 'function') window.moveItemColumn(id, bucket);
     else patchItem(id, { column: bucket });
     toast(root, 'Moved to ' + bucket);
     setTimeout(function () { refresh('war'); }, 80);
   }
   function onDragLeave(e) {
-    var col = e.target && e.target.closest ? e.target.closest('.col') : null;
+    var col = e.target && e.target.closest ? e.target.closest(dropSel()) : null;
     if (col) col.classList.remove('drop-on');
   }
 
@@ -849,6 +1281,7 @@
     var withAction = 0, without = 0;
     nodes.forEach(function (el) {
       if (el.getAttribute('data-action')) withAction += 1;
+      else if (el.querySelector && el.querySelector('[data-action]')) { /* wrapper */ }
       else without += 1;
     });
     return { withAction: withAction, without: without, total: nodes.length };

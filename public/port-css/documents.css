@@ -18,6 +18,9 @@
 .sepl{height:1px;background:var(--line);margin:6px 0}
 .ctr .ch{padding-bottom:4px}
 .files{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;padding:10px 16px 16px}
+.files.list{display:flex;flex-direction:column}
+.files.list .fl{display:grid;grid-template-columns:88px minmax(0,1fr);align-items:center}
+.sel.on{opacity:1;background:var(--blue);border-color:var(--blue)}
 .fl{border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;background:#fff;transition:transform .15s,box-shadow .15s;position:relative}
 .fl:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(16,32,64,.12)}
 .th{aspect-ratio:4/3;display:grid;place-items:center;position:relative;overflow:hidden}

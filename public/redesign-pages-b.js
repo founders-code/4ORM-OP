@@ -152,15 +152,16 @@
       return { id: p.id, name: p.name || 'Pipeline', n: n, stages: p.stages || [] };
     }).sort(function (a, b) { return b.n - a.n; });
     var sel = pipes.filter(function (p) { return p.id === S.ghlPipe; })[0] || pipes[0] || null;
-    var pills = pipes.slice(0, 5).map(function (p, i) {
+    var allPills = pipes.map(function (p, i) {
       return { name: p.name, n: p.n, on: sel ? p.id === sel.id : i === 0, id: p.id };
     });
+    var pills = S.pipeShowAll ? allPills : allPills.slice(0, 5);
     var stages = sel ? sel.stages : asList(S.pipeline).map(function (s) { return { name: s.stage || s.name || s.s, count: s.count || s.v }; });
     var funnel = stages.map(function (s) { return [s.name || s.s || 'Stage', Number(s.count != null ? s.count : s.v) || 0]; });
     if (!funnel.length) funnel = [['Storage', 0]];
     var contacts = asList(S.contacts);
     var needs = contacts.filter(function (c) { return daysAgo(c.lastTouch || c.last_touch) >= 14; }).slice(0, 5).map(function (c, i) {
-      return { name: c.name || 'Person', color: C6[i % 6], meta: (c.category || c.type || 'Contact') + ' · cold' + (c.lastTouch || c.last_touch ? '' : ', no touch on record') };
+      return { name: c.name || 'Person', color: C6[i % 6], meta: (c.category || c.type || 'Contact') + ' · cold' + (c.lastTouch || c.last_touch ? '' : ', no touch on record'), id: c.id || '', email: c.email || '' };
     });
     var cats = {};
     contacts.forEach(function (c) {
@@ -172,15 +173,25 @@
       cats[cat][ix] += 1;
     });
     var matrix = Object.keys(cats).slice(0, 6).map(function (cat) { return { cat: cat, cells: cats[cat] }; });
-    var rows = contacts.slice(0, 8).map(function (c) {
+    var rowsSrc = contacts.slice();
+    if (S.ghlStage) {
+      rowsSrc = rowsSrc.filter(function (c) { return String(c.ghlStage || c.stage || '') === String(S.ghlStage); });
+    }
+    if (S.pipeType && S.pipeType !== 'all') {
+      rowsSrc = rowsSrc.filter(function (c) { return normCat(c.category || c.type || '') === S.pipeType; });
+    }
+    if (S.pipeMatrix && S.pipeMatrix.cat) {
+      rowsSrc = rowsSrc.filter(function (c) { return normCat(c.category || c.type || '') === S.pipeMatrix.cat; });
+    }
+    var rows = (S.pipeAllRows ? rowsSrc : rowsSrc.slice(0, 8)).map(function (c) {
       var days = daysAgo(c.lastTouch || c.last_touch);
       var stage = c.ghlStage || c.stage || 'Storage';
       var warm = days <= 3 ? 'hot' : days <= 10 ? 'warm' : days >= 14 ? 'cold' : '';
-      return [c.name || 'Person', c.company || '', normCat(c.category || c.type || ''), stage, warm, (days >= 99 ? '—' : days + 'd'), c.nextAction || c.next_action || 'Follow up'];
+      return [c.name || 'Person', c.company || '', normCat(c.category || c.type || ''), stage, warm, (days >= 99 ? '—' : days + 'd'), c.nextAction || c.next_action || 'Follow up', c.id || '', c.email || ''];
     });
     liveLog('pipeline', { pipes: pipes.length, contacts: contacts.length, funnel: funnel.length, rows: rows.length });
     return {
-      pills: pills, more: Math.max(0, pipes.length - 5),
+      pills: pills, more: S.pipeShowAll ? 0 : Math.max(0, pipes.length - 5),
       kpis: [
         { n: String(sel ? sel.n : contacts.length || '—'), label: 'opportunities', note: sel ? ('in ' + sel.name) : 'from GoHighLevel', tone: 'nt' },
         { n: '—', label: 'sent this week', note: 'tracking starts next send', tone: 'nt' },
@@ -214,7 +225,7 @@
     });
     var out = order.filter(function (n) { return groups[n] && (groups[n].length || n === 'General'); }).map(function (name) {
       var list = groups[name] || [];
-      var cards = list.slice(0, 8).map(function (p) {
+      var cards = list.slice(0, S.spaceShowAll ? list.length : 8).map(function (p) {
         var intel = p.notes || p.description || p.subjectLabel || p.company || '';
         var rd = spaceReadiness(p);
         return [p.name || 'Space', intel || 'Add a one-line note', rd.n, nextActionOf(p), p.id, rd.docs, rd.links];
@@ -279,7 +290,7 @@
     });
     var spaces = asList(S.packages).slice(0, 5).map(function (p, i) {
       var n = (p.docs || []).length || p.docCount || 0;
-      return { ini: initials(p.name), color: C6[i % 6], name: p.name || 'Space', meta: n + ' doc' + (n === 1 ? '' : 's') };
+      return { ini: initials(p.name), color: C6[i % 6], name: p.name || 'Space', meta: n + ' doc' + (n === 1 ? '' : 's'), id: p.id || '' };
     });
     var recent = docs.slice(-4).reverse().map(function (d) {
       var k = docKind(d);
@@ -373,7 +384,11 @@
         unread: !!row.unread,
         column: col,
         needsNow: !!row.needsNow || (!row.bulk && !!row.unread),
-        bulk: !!row.bulk
+        bulk: !!row.bulk,
+        id: row.id || row.messageId || '',
+        threadId: row.threadId || '',
+        messageId: row.messageId || row.id || '',
+        email: row.email || ''
       };
     }
     var shaped = messages.map(tagged);
@@ -391,7 +406,7 @@
       var ruleHits = rules.filter(function (r) { return r.target === key; });
       var rule = meta.rule;
       if (ruleHits.length) rule = 'Rule: ' + ruleHits.slice(0, 2).map(function (r) { return r.matchType + ' ' + r.matchValue; }).join(' · ');
-      return { icon: meta.icon, name: (col && col.name) || meta.name, count: list.length, rule: rule, quiet: !!meta.quiet, messages: list.slice(0, 6) };
+      return { icon: meta.icon, name: (col && col.name) || meta.name, key: key, count: list.length, rule: rule, quiet: !!meta.quiet, messages: list.slice(0, 6) };
     });
     var need = shaped.filter(function (m) { return m.needsNow && !m.bulk; }).length;
     var inv = shaped.filter(function (m) { return m.column === 'investors'; }).length;
@@ -408,7 +423,10 @@
   function paintPipelineLive() {
     var wrap = wrapOf('pipeDesk');
     if (!wrap) return;
+    var S = window.STATE || {};
+    var view = S.pipeView || 'dash';
     var data = pipelineData();
+    var catLabel = (!S.pipeType || S.pipeType === 'all') ? 'All' : S.pipeType;
     var ST = data.funnel || [];
     var mx = Math.log((ST.reduce(function (m, s) { return Math.max(m, Number(s[1]) || 0); }, 0) || 0) + 1);
     var funnel = ST.map(function (s, i) {
@@ -416,138 +434,165 @@
       var h = n ? Math.max(10, Math.round(Math.log(n + 1) / Math.max(mx, 0.001) * 110)) : 6;
       var prev = i > 1 ? (Number(ST[i - 1][1]) || 0) : 0;
       var cv = i <= 1 ? '' : (prev ? Math.min(100, Math.round(n / prev * 100)) + '%' : '–');
-      return '<div class="st' + (n ? '' : ' zero') + (i === 0 ? ' on' : '') + '"><div class="n">' + n + '</div><div class="bx" style="height:' + h + 'px"></div><div class="lb">' + esc(s[0]) + '</div><div class="cv">' + cv + '</div></div>';
+      var on = S.ghlStage ? String(S.ghlStage) === String(s[0]) : i === 0;
+      return '<div class="st' + (n ? '' : ' zero') + (on ? ' on' : '') + '" data-action="pipe-funnel" data-stage="' + esc(s[0]) + '"><div class="n">' + n + '</div><div class="bx" style="height:' + h + 'px"></div><div class="lb">' + esc(s[0]) + '</div><div class="cv">' + cv + '</div></div>';
     }).join('');
     var rows = (data.rows || []).map(function (r, i) {
       var ini = String(r[0] || '').split(' ').map(function (x) { return x[0]; }).join('').slice(0, 2);
-      return '<tr><td><div class="who"><span class="av" style="background:' + C6[i % 6] + '">' + esc(ini) + '</span><div><b>' + esc(r[0]) + '</b><span>' + (r[1] ? esc(r[1]) : '&nbsp;') + '</span></div></div></td><td class="cat">' + esc(r[2]) + '</td><td><span class="stg ' + esc(r[4] || '') + '">' + esc(r[3]) + '</span></td><td class="tch">' + esc(r[5]) + (r[5] && r[5] !== '—' ? ' ago' : '') + '</td><td class="nxs">' + esc(r[6]) + '</td><td><div class="ra"><button class="act">Open</button></div></td></tr>';
+      var id = esc(r[7] || '');
+      return '<tr data-action="pipe-open" data-id="' + id + '"><td><div class="who"><span class="av" style="background:' + C6[i % 6] + '">' + esc(ini) + '</span><div><b>' + esc(r[0]) + '</b><span>' + (r[1] ? esc(r[1]) : '&nbsp;') + '</span></div></div></td><td class="cat">' + esc(r[2]) + '</td><td><span class="stg ' + esc(r[4] || '') + '">' + esc(r[3]) + '</span></td><td class="tch">' + esc(r[5]) + (r[5] && r[5] !== '—' ? ' ago' : '') + '</td><td class="nxs">' + esc(r[6]) + '</td><td><div class="ra"><button class="act" data-action="pipe-open" data-id="' + id + '">Open</button></div></td></tr>';
     }).join('');
-    wrap.innerHTML =
+    var bar =
       '<div class="bar"><h1>Pipeline</h1><span class="sub">Your cockpit &mdash; GoHighLevel runs the pipeline and the automations</span>'
-      + '<div class="r"><div class="seg"><span class="on">Dashboard</span><span>Board</span><span>Table</span></div><input class="search" placeholder="Search people or companies"></div></div>'
+      + '<div class="r"><div class="seg"><span' + (view === 'dash' ? ' class="on"' : '') + ' data-action="pipe-view" data-view="dash">Dashboard</span><span' + (view === 'board' ? ' class="on"' : '') + ' data-action="pipe-view" data-view="board">Board</span><span' + (view === 'table' ? ' class="on"' : '') + ' data-action="pipe-view" data-view="table">Table</span></div><input class="search" data-action="pipe-search" placeholder="Search people or companies"></div></div>'
       + '<div class="picker">' + (data.pills || []).map(function (p) {
-        return '<button class="pl' + (p.on ? ' on' : '') + '"' + (p.id ? ' data-pipe="' + esc(p.id) + '"' : '') + '>' + esc(p.name) + ' <b>' + esc(p.n) + '</b></button>';
+        return '<button class="pl' + (p.on ? ' on' : '') + '" data-action="pipe-pill"' + (p.id ? ' data-pipe="' + esc(p.id) + '"' : '') + '>' + esc(p.name) + ' <b>' + esc(p.n) + '</b></button>';
       }).join('')
-      + (data.more ? '<button class="pl more">+ ' + data.more + ' more &#9662;</button>' : '')
-      + '<span class="div"></span><button class="pl">Category: All &#9662;</button>'
-      + '<span class="ro">' + ((data.pills || []).length + (data.more || 0)) + ' pipelines from GoHighLevel &middot; read-only</span></div>'
-      + '<div class="kpis">' + (data.kpis || []).map(function (k) {
-        return '<div class="kpi"><b>' + esc(k.n) + '</b><span>' + esc(k.label) + '</span><small class="' + esc(k.tone) + '">' + esc(k.note) + '</small></div>';
-      }).join('') + '</div>'
-      + '<section class="card" style="margin-bottom:16px"><div class="ch"><h3>Funnel</h3><span class="s">' + esc(data.funnelLabel || '') + '</span></div>'
-      + '<div class="funnel" id="funnel"' + (ST.length !== 13 ? ' style="grid-template-columns:repeat(' + ST.length + ',minmax(0,1fr))"' : '') + '>' + funnel + '</div>'
-      + '<div class="cvn">Conversion shown under each stage = share of the previous stage that moved forward. Storage is the holding pen and is not counted.</div></section>'
-      + '<div class="g2"><section class="card"><div class="ch"><h3>Needs you today</h3><span class="s">cold &gt; 14 days &middot; follow-ups due</span></div>'
-      + ((data.needs || []).length ? (data.needs || []).map(function (n) {
-        return '<div class="nd"><span class="av" style="background:' + n.color + '">' + esc(initials(n.name)) + '</span><div style="min-width:0"><b>' + esc(n.name) + '</b><span>' + esc(n.meta) + '</span></div><button class="act">Follow up</button></div>';
-      }).join('') : '<div class="nd"><div style="min-width:0"><b>Nobody waiting</b><span>Cold follow-ups will land here.</span></div></div>')
-      + '</section><section class="card"><div class="ch"><h3>Category &times; stage</h3><span class="s">where people sit</span></div>'
-      + '<table class="mx"><tr><th></th><th>Cold</th><th>Reached</th><th>Contact</th><th>Meeting</th><th>Done</th></tr>'
-      + (data.matrix || []).map(function (r) {
-        return '<tr><td>' + esc(r.cat) + '</td>' + r.cells.map(function (n) { return '<td class="' + heat(n) + '">' + n + '</td>'; }).join('') + '</tr>';
-      }).join('') + '</table></section>'
-      + '<section class="card"><div class="ch"><h3>Recent activity</h3><span class="s">from GoHighLevel</span></div>'
-      + ((data.activity || []).length ? (data.activity || []).map(function (a) {
-        return '<div class="fe"><i' + (a.tone === 'g' ? ' style="background:var(--green)"' : '') + '></i><span>' + esc(a.text) + '</span><em>' + esc(a.when) + '</em></div>';
-      }).join('') : '<div class="fe"><span>No recent pipeline moves.</span></div>')
-      + '</section></div>'
-      + '<section class="card"><div class="ch"><h3>Storage</h3><span class="s">' + esc(data.storageHead || (data.tableFoot || '').replace(/^Showing /, '') || '0') + ' &middot; sorted by needs attention</span></div>'
+      + (data.more ? '<button class="pl more" data-action="pipe-more">+ ' + data.more + ' more &#9662;</button>' : '')
+      + '<span class="div"></span><button class="pl" data-action="pipe-cat">Category: ' + esc(catLabel) + ' &#9662;</button>'
+      + '<span class="ro">' + ((data.pills || []).length + (data.more || 0)) + ' pipelines from GoHighLevel &middot; read-only</span></div>';
+    var tableCard =
+      '<section class="card"><div class="ch"><h3>Storage</h3><span class="s">' + esc(data.storageHead || (data.tableFoot || '').replace(/^Showing /, '') || '0') + ' &middot; sorted by needs attention</span></div>'
       + '<table class="tbl"><tr><th>Person / company</th><th>Category</th><th>Stage</th><th>Last touch</th><th>Next step</th><th></th></tr><tbody id="rows">' + rows + '</tbody></table>'
-      + '<div class="foot">' + esc(data.tableFoot || '') + ' &middot; <span class="lnk">Show all</span></div></section>';
-    wrap.querySelectorAll('[data-pipe]').forEach(function (btn) {
-      btn.onclick = function () {
-        if (window.STATE) window.STATE.ghlPipe = btn.getAttribute('data-pipe');
-        paintPipelineLive();
-      };
-    });
+      + '<div class="foot">' + esc(data.tableFoot || '') + ' &middot; <span class="lnk" data-action="pipe-show-all">Show all</span></div></section>';
+    if (view === 'board') {
+      var used = {};
+      var boardCols = ST.map(function (s, si) {
+        var cards = (data.rows || []).filter(function (r, i) {
+          var hit = String(r[3] || '') === String(s[0]);
+          if (hit) used[i] = 1;
+          return hit;
+        });
+        if (si === 0) {
+          (data.rows || []).forEach(function (r, i) { if (!used[i]) cards.push(r); });
+        }
+        return '<div class="pipe-col" data-action="stage-drop" data-stage="' + esc(s[0]) + '"><div class="colh"><b>' + esc(s[0]) + '</b><span class="c">' + cards.length + '</span></div>'
+          + cards.map(function (r, i) {
+            return '<div class="pcard" draggable="true" data-action="contact-drag" data-kind="contact" data-id="' + esc(r[7] || '') + '" data-email="' + esc(r[8] || '') + '" data-name="' + esc(r[0] || '') + '"><b>' + esc(r[0]) + '</b><span>' + esc(r[1] || r[2] || '') + '</span></div>';
+          }).join('') + '</div>';
+      }).join('');
+      wrap.innerHTML = bar + '<div class="pipe-board">' + boardCols + '</div>';
+    } else if (view === 'table') {
+      wrap.innerHTML = bar + tableCard;
+    } else {
+      wrap.innerHTML = bar
+        + '<div class="kpis">' + (data.kpis || []).map(function (k) {
+          return '<div class="kpi"><b>' + esc(k.n) + '</b><span>' + esc(k.label) + '</span><small class="' + esc(k.tone) + '">' + esc(k.note) + '</small></div>';
+        }).join('') + '</div>'
+        + '<section class="card" style="margin-bottom:16px"><div class="ch"><h3>Funnel</h3><span class="s">' + esc(data.funnelLabel || '') + '</span></div>'
+        + '<div class="funnel" id="funnel"' + (ST.length !== 13 ? ' style="grid-template-columns:repeat(' + ST.length + ',minmax(0,1fr))"' : '') + '>' + funnel + '</div>'
+        + '<div class="cvn">Conversion shown under each stage = share of the previous stage that moved forward. Storage is the holding pen and is not counted.</div></section>'
+        + '<div class="g2"><section class="card"><div class="ch"><h3>Needs you today</h3><span class="s">cold &gt; 14 days &middot; follow-ups due</span></div>'
+        + ((data.needs || []).length ? (data.needs || []).map(function (n) {
+          return '<div class="nd"><span class="av" style="background:' + n.color + '">' + esc(initials(n.name)) + '</span><div style="min-width:0"><b>' + esc(n.name) + '</b><span>' + esc(n.meta) + '</span></div><button class="act" data-action="pipe-follow" data-id="' + esc(n.id || '') + '" data-name="' + esc(n.name) + '" data-email="' + esc(n.email || '') + '">Follow up</button></div>';
+        }).join('') : '<div class="nd"><div style="min-width:0"><b>Nobody waiting</b><span>Cold follow-ups will land here.</span></div></div>')
+        + '</section><section class="card"><div class="ch"><h3>Category &times; stage</h3><span class="s">where people sit</span></div>'
+        + '<table class="mx"><tr><th></th><th>Cold</th><th>Reached</th><th>Contact</th><th>Meeting</th><th>Done</th></tr>'
+        + (data.matrix || []).map(function (r) {
+          return '<tr><td>' + esc(r.cat) + '</td>' + r.cells.map(function (n, i) { return '<td class="' + heat(n) + '" data-action="pipe-matrix" data-cat="' + esc(r.cat) + '" data-cell="' + i + '">' + n + '</td>'; }).join('') + '</tr>';
+        }).join('') + '</table></section>'
+        + '<section class="card"><div class="ch"><h3>Recent activity</h3><span class="s">from GoHighLevel</span></div>'
+        + ((data.activity || []).length ? (data.activity || []).map(function (a) {
+          return '<div class="fe"><i' + (a.tone === 'g' ? ' style="background:var(--green)"' : '') + '></i><span>' + esc(a.text) + '</span><em>' + esc(a.when) + '</em></div>';
+        }).join('') : '<div class="fe"><span>No recent pipeline moves.</span></div>')
+        + '</section></div>'
+        + tableCard;
+    }
+    if (P().finishPaint) P().finishPaint(wrap);
+    else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
     markReady('pipeDesk');
   }
 
   function paintSpacesLive() {
     var wrap = wrapOf('spacesDesk');
     if (!wrap) return;
+    var S = window.STATE || {};
+    var view = S.spaceView || 'groups';
     var data = spacesData();
-    wrap.innerHTML =
+    var filterLabel = (!S.spaceFilter || S.spaceFilter === 'all') ? 'all' : S.spaceFilter;
+    var bar =
       '<div class="bar"><h1>Spaces</h1><span class="sub">Every send-bundle, ready to go &mdash; grouped by who it\'s for</span>'
-      + '<div class="r"><div class="seg"><span class="on">Groups</span><span>Board</span></div><input class="search" placeholder="Search spaces or people"><button class="btn">Filter: all</button><button class="btn pri">+ New space</button></div></div>'
+      + '<div class="r"><div class="seg"><span' + (view === 'groups' ? ' class="on"' : '') + ' data-action="spaces-view" data-view="groups">Groups</span><span' + (view === 'board' ? ' class="on"' : '') + ' data-action="spaces-view" data-view="board">Board</span></div><input class="search" data-action="spaces-search" placeholder="Search spaces or people"><button class="btn" data-action="spaces-filter">Filter: ' + esc(filterLabel) + '</button><button class="btn pri" data-action="spaces-new">+ New space</button></div></div>'
       + '<div class="stats">' + (data.stats || []).map(function (s) {
         return '<div class="sx ' + esc(s.cls || '') + '"><b>' + esc(s.n) + '</b><span>' + esc(s.label) + '</span></div>';
-      }).join('') + '</div>'
-      + '<div id="groups">' + (data.groups || []).map(function (g) {
-        var shown = (g[3] || []).length, rest = g[2] - shown;
-        return '<div class="gh"><span class="car">&#9662;</span><b>' + esc(g[0]) + '</b><span class="c">' + g[2] + '</span><span class="ln"></span>' + (rest > 0 ? '<span class="lnk">Show all ' + g[2] + '</span>' : '') + '</div><div class="grid">'
-          + (g[3] || []).map(function (s) {
-            var na = NA[s[3]] || NA.docs;
-            return '<div class="sp"><div class="top2"><span class="cat ' + g[1] + '">' + esc(g[0]) + '</span><span class="ms" title="More">&middot;&middot;&middot;</span></div><h4>' + esc(s[0]) + '</h4><p>' + esc(s[1]) + '</p><div class="rd">' + ring(s[2]) + '<span class="nxa ' + na[0] + '">' + na[1] + '</span><span class="cnt wrap">' + (Number(s[5]) || 0) + ' files &middot; ' + (Number(s[6]) || 0) + ' links</span></div><div class="ft"><button class="op"' + (s[4] ? ' data-space="' + esc(s[4]) + '"' : '') + '>Open</button><button class="dr">Move to Drive</button></div></div>';
-          }).join('')
-          + (g[0] === 'General' ? '<div class="addcard">+ New space</div>' : '') + '</div>';
-      }).join('') + '</div>'
-      + '<div class="menu" id="menu"><div class="lbl">Move to</div><div>General</div><div>Venture Capital</div><div>Business</div><div>Regulators</div><div>Rename</div><div class="del">Delete</div></div>';
-    var m = wrap.querySelector('#menu');
-    wrap.querySelectorAll('.ms').forEach(function (b) {
-      b.onclick = function (e) {
-        e.stopPropagation();
-        if (!m) return;
-        var r = b.getBoundingClientRect();
-        m.style.left = (r.right - 200) + 'px';
-        m.style.top = (r.bottom + 6) + 'px';
-        m.style.display = 'block';
-      };
-    });
-    wrap.querySelectorAll('[data-space]').forEach(function (btn) {
-      btn.onclick = function (e) {
-        e.stopPropagation();
-        if (typeof window.openSpace === 'function') window.openSpace(btn.getAttribute('data-space'));
-      };
-    });
-    document.addEventListener('click', function () { if (m) m.style.display = 'none'; });
+      }).join('') + '</div>';
+    var menu = '<div class="menu" id="menu"><div class="lbl">Move to</div><div data-action="space-move-group" data-group="General">General</div><div data-action="space-move-group" data-group="Venture Capital">Venture Capital</div><div data-action="space-move-group" data-group="Business">Business</div><div data-action="space-move-group" data-group="Regulators">Regulators</div><div data-action="space-rename">Rename</div><div class="del" data-action="space-archive">Delete</div></div>';
+    function cardHtml(g, s) {
+      var na = NA[s[3]] || NA.docs;
+      var id = esc(s[4] || '');
+      return '<div class="sp" data-action="space-open" data-id="' + id + '"><div class="top2"><span class="cat ' + g[1] + '">' + esc(g[0]) + '</span><span class="ms" title="More" data-action="space-menu" data-id="' + id + '">&middot;&middot;&middot;</span></div><h4>' + esc(s[0]) + '</h4><p>' + esc(s[1]) + '</p><div class="rd">' + ring(s[2]) + '<span class="nxa ' + na[0] + '">' + na[1] + '</span><span class="cnt wrap">' + (Number(s[5]) || 0) + ' files &middot; ' + (Number(s[6]) || 0) + ' links</span></div><div class="ft"><button class="op" data-action="space-open" data-id="' + id + '"' + (s[4] ? ' data-space="' + id + '"' : '') + '>Open</button><button class="dr" data-action="space-drive" data-id="' + id + '">Move to Drive</button></div></div>';
+    }
+    var groups = data.groups || [];
+    if (S.spaceFilter && S.spaceFilter !== 'all') {
+      groups = groups.filter(function (g) { return String(g[0]).toLowerCase() === String(S.spaceFilter).toLowerCase(); });
+    }
+    if (view === 'board') {
+      wrap.innerHTML = bar + '<div class="pipe-board spaces-board">' + groups.map(function (g) {
+        return '<div class="pipe-col"><div class="colh"><b>' + esc(g[0]) + '</b><span class="c">' + g[2] + '</span></div>'
+          + (g[3] || []).map(function (s) { return cardHtml(g, s); }).join('') + '</div>';
+      }).join('') + '</div>' + menu;
+    } else {
+      wrap.innerHTML = bar
+        + '<div id="groups">' + groups.map(function (g) {
+          var shown = (g[3] || []).length, rest = g[2] - shown;
+          return '<div class="gh" data-action="space-collapse"><span class="car" data-action="space-collapse">&#9662;</span><b>' + esc(g[0]) + '</b><span class="c">' + g[2] + '</span><span class="ln"></span>' + (rest > 0 ? '<span class="lnk" data-action="space-show-all">Show all ' + g[2] + '</span>' : '') + '</div><div class="grid">'
+            + (g[3] || []).map(function (s) { return cardHtml(g, s); }).join('')
+            + (g[0] === 'General' ? '<div class="addcard" data-action="spaces-new">+ New space</div>' : '') + '</div>';
+        }).join('') + '</div>'
+        + menu;
+    }
+    if (P().finishPaint) P().finishPaint(wrap);
+    else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
     markReady('spacesDesk');
   }
 
   function paintDocumentsLive() {
     var wrap = wrapOf('docsDesk');
     if (!wrap) return;
+    var S = window.STATE || {};
+    var view = S.docsView || 'grid';
+    var typeOn = S.docType || 'all';
     var data = documentsData();
     var L = { img: ['t-img', 'IMG'], ppt: ['t-ppt', 'PPT'], pdf: ['t-pdf', 'PDF'], doc: ['t-doc', 'DOC'], xls: ['t-xls', 'XLS'] };
+    var TYPE_CHIPS = [['all', 'All'], ['pdf', 'PDF'], ['ppt', 'Slides'], ['doc', 'Docs'], ['xls', 'Sheets'], ['img', 'Images'], ['space', 'In a Space'], ['drive', 'From Drive']];
     var files = (data.files || []).map(function (f) {
       var inner = (f[0] === 'ppt' || f[0] === 'img') ? '<div class="sl" style="background:linear-gradient(135deg,#1b2f66,#2e6bf2)">' + esc(String(f[1]).split('|')[0]) + '</div>' : '<div class="pg"><i class="h"></i><i></i><i></i><i style="width:80%"></i><i></i><i style="width:60%"></i></div>';
       var href = absUrl(f[5] || '');
       var drive = isDriveUrl(f[5] || '') || f[7];
-      var open = drive ? '' : ' data-web="' + esc(href) + '"';
-      return '<div class="fl"' + open + '><div class="th" style="background:' + f[4] + '">' + inner + '<span class="ty ' + L[f[0]][0] + '">' + L[f[0]][1] + '</span><span class="sync s-' + f[3] + '"></span></div><span class="sel"></span><div class="nm">' + esc(f[1]) + '</div><div class="mt">' + f[2] + '</div></div>';
+      var id = esc(f[6] || '');
+      return '<div class="fl" draggable="true" data-action="doc-drag" data-kind="doc" data-id="' + id + '" data-url="' + esc(href) + '" data-web="' + esc(href) + '" data-drive="' + esc(f[7] || '') + '" data-name="' + esc(f[1] || '') + '"><div class="th" style="background:' + f[4] + '">' + inner + '<span class="ty ' + L[f[0]][0] + '">' + L[f[0]][1] + '</span><span class="sync s-' + f[3] + '"></span></div><span class="sel" data-action="doc-pick" data-id="' + id + '"></span><div class="nm">' + esc(f[1]) + '</div><div class="mt">' + f[2] + '</div></div>';
     }).join('');
     wrap.innerHTML =
       '<div class="bar"><h1>Documents</h1><span class="sub">Your staging library &mdash; preview, select, and drop straight into a Space</span>'
-      + '<div class="r"><input class="search" placeholder="Search by name, type or what\'s inside"><div class="seg"><span class="on">Grid</span><span>List</span></div><button class="btn">Pull from Drive</button><button class="btn pri">Upload</button></div></div>'
-      + '<div class="lay"><section class="card"><div class="lh">Folders <span class="lnk">+ New</span></div>'
+      + '<div class="r"><input class="search" data-action="docs-search" placeholder="Search by name, type or what\'s inside"><div class="seg"><span' + (view === 'grid' ? ' class="on"' : '') + ' data-action="docs-view" data-view="grid">Grid</span><span' + (view === 'list' ? ' class="on"' : '') + ' data-action="docs-view" data-view="list">List</span></div><button class="btn" data-action="docs-drive">Pull from Drive</button><button class="btn pri" data-action="docs-upload">Upload</button></div></div>'
+      + '<div class="lay"><section class="card"><div class="lh">Folders <span class="lnk" data-action="docs-new-folder">+ New</span></div>'
       + (data.folders || []).map(function (f) {
-        return '<div class="fd' + (f[2] ? ' on' : '') + '"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg>' + esc(f[0]) + '<span class="n">' + f[1] + '</span></div>';
+        var on = S.docFolder ? String(S.docFolder) === String(f[0]) : !!f[2];
+        return '<div class="fd' + (on ? ' on' : '') + '" data-action="docs-folder" data-folder="' + esc(f[0]) + '"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg>' + esc(f[0]) + '<span class="n">' + f[1] + '</span></div>';
       }).join('')
-      + '<div class="sepl"></div><div class="lh">Sets <span class="lnk">+ New</span></div><div class="sets">'
+      + '<div class="sepl"></div><div class="lh">Sets <span class="lnk" data-action="docs-new-folder">+ New</span></div><div class="sets">'
       + (data.sets || []).map(function (s) {
-        return '<div class="fd"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg>' + esc(s[0]) + '<span class="n">' + s[1] + '</span></div>';
+        return '<div class="fd" data-action="coming-soon" data-label="Open set"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg>' + esc(s[0]) + '<span class="n">' + s[1] + '</span></div>';
       }).join('')
       + '</div><div class="sepl"></div><div class="lh">Type</div>'
-      + '<div class="types"><button class="chip on">All</button><button class="chip">PDF</button><button class="chip">Slides</button><button class="chip">Docs</button><button class="chip">Sheets</button><button class="chip">Images</button><button class="chip">In a Space</button><button class="chip">From Drive</button></div></section>'
+      + '<div class="types">' + TYPE_CHIPS.map(function (c) {
+        return '<button class="chip' + (typeOn === c[0] ? ' on' : '') + '" data-action="docs-type" data-type="' + c[0] + '">' + c[1] + '</button>';
+      }).join('') + '</div></section>'
       + '<section class="card ctr"><div class="ch"><h3>All documents</h3><span class="s">' + (data.files || []).length + ' files &middot; hover a file to select it, then drop it on a Space</span></div>'
-      + '<div class="files" id="files">' + (files || '<div class="drop">No files yet.</div>') + '</div>'
-      + '<div class="drop">Drop files here, <span class="lnk">upload</span> or <span class="lnk">pull from Drive</span> &mdash; <b>first-page previews</b> appear automatically.</div></section>'
+      + '<div class="files' + (view === 'list' ? ' list' : '') + '" id="files">' + (files || '<div class="drop">No files yet.</div>') + '</div>'
+      + '<div class="drop">Drop files here, <span class="lnk" data-action="docs-upload">upload</span> or <span class="lnk" data-action="docs-drive">pull from Drive</span> &mdash; <b>first-page previews</b> appear automatically.</div></section>'
       + '<div class="rs"><section class="card"><div class="ch"><h3>Drop into a Space</h3><span class="s">drag a file here</span></div>'
       + ((data.drops || []).length ? (data.drops || []).map(function (d) {
-        return '<div class="sr"><span class="av" style="background:' + d.color + '">' + esc(d.ini) + '</span><div style="min-width:0"><b>' + esc(d.name) + '</b><span>' + esc(d.meta) + '</span></div></div>';
+        return '<div class="sr" data-action="space-drop" data-id="' + esc(d.id || '') + '"><span class="av" style="background:' + d.color + '">' + esc(d.ini) + '</span><div style="min-width:0"><b>' + esc(d.name) + '</b><span>' + esc(d.meta) + '</span></div></div>';
       }).join('') : '<div class="sr"><div style="min-width:0"><b>No spaces yet</b><span>Create a Space to drop files into.</span></div></div>')
-      + '<button class="build">+ Build a new Space from the selection</button></section>'
+      + '<button class="build" data-action="docs-build-space">+ Build a new Space from the selection</button></section>'
       + '<section class="card"><div class="ch"><h3>Recently added</h3></div>'
       + (data.recent || []).map(function (r) {
         return '<div class="ra"><span class="ty ' + r[0] + '">' + r[1] + '</span><span>' + esc(r[2]) + '</span></div>';
       }).join('')
       + '<div class="legend"><span><i style="background:var(--green)"></i>synced to Drive</span><span><i style="background:var(--amber)"></i>only here</span></div></section></div></div>';
-    wrap.querySelectorAll('[data-web]').forEach(function (el) {
-      el.onclick = function (e) {
-        e.stopPropagation();
-        window.open(el.getAttribute('data-web'), '_blank', 'noopener,noreferrer');
-      };
-    });
+    if (P().finishPaint) P().finishPaint(wrap);
+    else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
     markReady('docsDesk');
   }
 
@@ -586,24 +631,24 @@
   }
 
   function ml(m) {
-    return '<div class="ml"><div class="mh">' + (m.unread ? '<span class="un"></span>' : '') + '<span class="av" style="background:' + m.color + '">' + esc(initials(m.name)) + '</span><b>' + esc(m.name) + '</b><em>' + esc(m.age) + '</em></div><div class="sj">' + esc(m.subject) + '</div><div class="pv">' + esc(m.preview) + '</div><div class="tg">' + (m.tags || []).map(function (x) { return '<span class="' + x[0] + '">' + esc(x[1]) + '</span>'; }).join('') + '</div></div>';
+    return '<div class="ml" draggable="true" data-action="mail-card" data-kind="mail" data-id="' + esc(m.id || m.messageId || '') + '" data-thread="' + esc(m.threadId || '') + '" data-email="' + esc(m.email || '') + '" data-subject="' + esc(m.subject || '') + '" data-from="' + esc(m.name || '') + '" data-preview="' + esc(m.preview || '') + '"><div class="mh">' + (m.unread ? '<span class="un"></span>' : '') + '<span class="av" style="background:' + m.color + '">' + esc(initials(m.name)) + '</span><b>' + esc(m.name) + '</b><em>' + esc(m.age) + '</em></div><div class="sj">' + esc(m.subject) + '</div><div class="pv">' + esc(m.preview) + '</div><div class="tg">' + (m.tags || []).map(function (x) { return '<span class="' + x[0] + '">' + esc(x[1]) + '</span>'; }).join('') + '</div></div>';
   }
 
   function composeHtml(open) {
     return '<aside class="compose' + (open ? ' open' : '') + '" id="compose">'
-      + '<div class="cw"><div class="ctop"><h2>New email</h2><span style="font-size:12px;color:var(--ink3);font-weight:600">Draft saved 10:31</span><button class="btn x" id="cclose">Close &times;</button></div>'
+      + '<div class="cw"><div class="ctop"><h2>New email</h2><span style="font-size:12px;color:var(--ink3);font-weight:600">Draft saved 10:31</span><button class="btn x" id="cclose" data-action="mail-compose-close">Close &times;</button></div>'
       + '<div class="fr"><label>From</label><div class="val from">Chad Johnston &lt;chad@4ormfinance.com&gt;<small>sends from your Gmail &middot; bulk goes through GoHighLevel</small></div><span></span></div>'
-      + '<div class="fr sugg"><label>To</label><div class="val"><span class="pchip"><span class="av" style="background:#e0364f">JC</span>Joe Canavan <em>&middot; VC</em></span><input value="neil"></div><span class="sm">Cc &nbsp; Bcc</span>'
+      + '<div class="fr sugg"><label>To</label><div class="val"><span class="pchip"><span class="av" style="background:#e0364f">JC</span>Joe Canavan <em>&middot; VC</em></span><input data-action="mail-to" value="neil"></div><span class="sm">Cc &nbsp; Bcc</span>'
       + '<div class="dd"><div class="o"><span class="av" style="background:#e0364f;width:28px;height:28px">NM</span><div><b>Neil Mitchell</b><span>neil@&hellip; &middot; VC Space &middot; last touch 12d ago</span></div><em>Cold</em></div><div class="o"><span class="av" style="background:#12a36a;width:28px;height:28px">NC</span><div><b>Neil (CLHIA)</b><span>Contacts &middot; Association</span></div><span></span></div></div></div>'
-      + '<div class="fr subj"><label>Subject</label><div class="val"><input value="Evidence standard for Canadian fintech &mdash; 15 minutes?"></div><span></span></div>'
+      + '<div class="fr subj"><label>Subject</label><div class="val"><input data-action="mail-subject" value="Evidence standard for Canadian fintech &mdash; 15 minutes?"></div><span></span></div>'
       + '<div class="tbar"><span>B</span><span><i>I</i></span><span>&#8226;</span><span>1.</span><span class="sep"></span><span>&#128279;</span><span>&#128206;</span><span class="sep"></span><span title="Insert first name">{ }</span></div>'
-      + '<div class="body" contenteditable="true">Hi Joe,<br><br>Most of your angel book is Canadian fintech &mdash; Wealthsimple, Borrowell, CapIntel, Homewise. All of them now have to prove a recommendation was suitable and understood, not just disclosed.<br><br>That record is what 4orm builds. We\'re closing a $250K friends-and-family round by Oct 30 and opening 4ormIQ to brokers on Oct 23.<br><br><span class="ghost">Would 15 minutes Thursday or Friday work? Here\'s my calendar: book.4ormfinance.com/chad</span><br><br>Chad</div>'
+      + '<div class="body" contenteditable="true" data-action="mail-body">Hi Joe,<br><br>Most of your angel book is Canadian fintech &mdash; Wealthsimple, Borrowell, CapIntel, Homewise. All of them now have to prove a recommendation was suitable and understood, not just disclosed.<br><br>That record is what 4orm builds. We\'re closing a $250K friends-and-family round by Oct 30 and opening 4ormIQ to brokers on Oct 23.<br><br><span class="ghost">Would 15 minutes Thursday or Friday work? Here\'s my calendar: book.4ormfinance.com/chad</span><br><br>Chad</div>'
       + '<div style="padding:0 18px 8px;font-size:12px;color:var(--ink3)">Grey text is a suggestion &mdash; press Tab to accept it.</div>'
       + '<div class="atts"><span class="att"><span class="ty" style="background:#e0364f">PDF</span>4orm VC and Design Partner Resources.pdf<span class="x2">&times;</span></span><span class="att"><span class="ty" style="background:#e2702b">PPT</span>Business Overview | 2026<span class="x2">&times;</span></span></div>'
-      + '<div class="cfoot"><button class="send">Send</button><button class="send2">Schedule &#9662;</button><span class="tog"><span class="sw"></span>Nudge in 3 days</span><span class="tog"><span class="sw"></span>Log to Pipeline</span></div></div>'
+      + '<div class="cfoot"><button class="send" data-action="mail-send">Send</button><button class="send2" data-action="coming-soon" data-label="Schedule send">Schedule &#9662;</button><span class="tog"><span class="sw"></span>Nudge in 3 days</span><span class="tog"><span class="sw"></span>Log to Pipeline</span></div></div>'
       + '<div class="side2"><div class="box ai2"><h4>&#10022; 4orm Intelligence</h4><p>Joe cares about the evidence standard. Lead with CapIntel and Homewise, keep the tech light, ask for one specific time.</p>'
       + '<div class="tones"><span class="on">Warm</span><span>Direct</span><span>Shorter</span><span>More formal</span></div>'
-      + '<div class="ask"><input placeholder="Tell me what to write&hellip;"><button>Write</button></div></div>'
+      + '<div class="ask"><input data-action="intel-ask" placeholder="Tell me what to write&hellip;"><button data-action="coming-soon" data-label="Write with Intelligence">Write</button></div></div>'
       + '<div class="box"><h4>Joe Canavan</h4><div class="kv2"><span>Space</span><b>Venture Capital &rsaquo; Joe</b></div><div class="kv2"><span>Stage</span><b>Investors &rsaquo; Contact made</b></div><div class="kv2"><span>Last touch</span><b>12 days ago</b></div><div class="kv2"><span>Opened last email</span><b>Yes, twice</b></div></div>'
       + '<div class="box"><h4>Attach from his Space</h4><div class="doc"><span class="ty" style="background:#e0364f">PDF</span>VC and Design Partner Resources<span class="ad">&#10003;</span></div><div class="doc"><span class="ty" style="background:#e2702b">PPT</span>Business Overview | 2026<span class="ad">&#10003;</span></div><div class="doc"><span class="ty" style="background:#12a36a">XLS</span>Raise tracker &mdash; F&amp;F<span class="ad">+</span></div></div>'
       + '<div class="box"><h4>Before you send</h4><div class="chk"><i>&#10003;</i>Name and company spelled right</div><div class="chk"><i>&#10003;</i>One clear ask with a time</div><div class="chk"><i>&#10003;</i>Attachments under 10 MB</div></div></div></aside>';
@@ -616,40 +661,32 @@
     var openCompose = /(?:^|[?&])compose=1(?:&|$)/.test(String(location.search || ''));
     wrap.innerHTML =
       '<div class="bar"><h1>Email</h1><div class="cnt"><span><b>' + esc(data.need) + '</b> need a reply</span><span><b>' + esc(data.investors) + '</b> investors waiting</span><span><b>' + esc(data.unread) + '</b> unread</span></div>'
-      + '<div class="r"><input class="search" placeholder="Search mail &mdash; try &quot;waiting on&quot; or &quot;needs reply&quot;"><button class="btn">Filters (' + esc(data.rules) + ')</button><button class="btn pri" id="composeBtn">Compose</button></div></div>'
-      + '<div class="rules"><span class="on"></span><b>Auto-filing on</b> &middot; ' + esc(data.rules) + ' rules keep new mail sorted &middot; drag any email onto a column to make a rule that sticks<span class="lnk">+ New rule</span></div>'
+      + '<div class="r"><input class="search" data-action="mail-search" placeholder="Search mail &mdash; try &quot;waiting on&quot; or &quot;needs reply&quot;"><button class="btn" data-action="mail-filters">Filters (' + esc(data.rules) + ')</button><button class="btn pri" id="composeBtn" data-action="mail-compose">Compose</button></div></div>'
+      + '<div class="rules"><span class="on" data-action="mail-auto"></span><b data-action="mail-auto">Auto-filing on</b> &middot; ' + esc(data.rules) + ' rules keep new mail sorted &middot; drag any email onto a column to make a rule that sticks<span class="lnk" data-action="mail-rule-new">+ New rule</span></div>'
       + '<div class="board" id="board">' + (data.columns || []).map(function (c) {
-        return '<div class="col' + (c.messages && c.messages.length ? '' : ' slim') + (c.quiet || c.name === 'Quiet' ? ' quiet' : '') + '"><div class="colh"><i>' + c.icon + '</i><b>' + esc(c.name) + '</b><span class="c">' + esc(c.count) + '</span><span class="m">&middot;&middot;&middot;</span></div><div class="rb">' + esc(c.rule) + '</div>'
+        var key = esc(c.key || ({ 'Needs now': 'needs_now', Investors: 'investors', VCs: 'vcs', Prospects: 'prospects', 'Design partners': 'design', Team: 'team', Quiet: 'quiet' })[c.name] || '');
+        return '<div class="col' + (c.messages && c.messages.length ? '' : ' slim') + (c.quiet || c.name === 'Quiet' ? ' quiet' : '') + '" data-action="mail-col-drop" data-column="' + key + '" data-name="' + esc(c.name) + '"><div class="colh"><i>' + c.icon + '</i><b>' + esc(c.name) + '</b><span class="c">' + esc(c.count) + '</span><span class="m" data-action="mail-col-menu" data-col="' + key + '" data-name="' + esc(c.name) + '">&middot;&middot;&middot;</span></div><div class="rb">' + esc(c.rule) + '</div>'
           + (c.messages && c.messages.length ? '<div class="list">' + c.messages.map(ml).join('') + '</div>' : '<div class="emptyc">Nothing here yet.<br>Drag an email in to teach the rule.</div>') + '</div>';
-      }).join('') + '<div class="newcol">+ New column</div></div>'
-      + '<div class="scrim" id="scrim"></div>'
+      }).join('') + '<div class="newcol" data-action="mail-col-new">+ New column</div></div>'
+      + '<div class="scrim" id="scrim" data-action="mail-close"></div>'
       + '<aside class="reader" id="reader"><span class="grab"></span>'
-      + '<div class="rh"><span class="av" style="background:#c98408;width:36px;height:36px">BF</span><div><h2>Deck &mdash; notes</h2></div><button class="btn x" id="close">Close &times;</button></div>'
+      + '<div class="rh"><span class="av" style="background:#c98408;width:36px;height:36px">BF</span><div><h2>Deck &mdash; notes</h2></div><button class="btn x" id="close" data-action="mail-close">Close &times;</button></div>'
       + '<div class="rmeta">Bruce Fair &lt;bruce@4ormfinance.com&gt; &middot; 3 days ago &middot; to you</div>'
       + '<div class="links"><span>&#128100; Bruce Fair &middot; Advisor</span><span>&#128193; Space: Friends &amp; family</span><span>Pipeline: Investors &rsaquo; Contact made</span></div>'
-      + '<div class="acts"><button class="p">Reply</button><button>Add to Space</button><button>Create task</button><button>Snooze</button><button>Move column</button><button>Mark done</button></div>'
+      + '<div class="acts"><button class="p" data-action="mail-reply" data-email="bruce@4ormfinance.com" data-from="Bruce Fair" data-subject="Deck — notes">Reply</button><button data-action="mail-add-space">Add to Space</button><button data-action="mail-task" data-subject="Deck notes">Create task</button><button data-action="mail-snooze">Snooze</button><button data-action="mail-move-col">Move column</button><button data-action="mail-done">Mark done</button></div>'
       + '<div class="ai"><b>&#10022; 4orm Intelligence</b><p>Bruce wants tighter messaging on "What is it that 4orm is providing?" before the deck goes out. He\'s asking for one plain sentence on slide 2 and the counselling angle cut.</p>'
       + '<div class="draft">Thanks Bruce &mdash; agreed. New slide 2 line: "4orm gives every financial recommendation a record the client understood and a regulator can check." I\'ll send the revised deck by Wednesday. Chad</div></div>'
       + '<div class="bd">Need to tighten messaging with respect to What is it that 4orm is providing? Counselling…\n\nI think the first page should say it in one sentence. Then show the proof.\n\nB</div></aside>'
       + composeHtml(openCompose);
-    var root = wrap.getRootNode();
-    var r = root.getElementById && root.getElementById('reader');
-    var sc = root.getElementById && root.getElementById('scrim');
-    var cp = root.getElementById && root.getElementById('compose');
-    function show(v) { if (r) r.classList.toggle('open', v); if (sc) sc.classList.toggle('open', v); }
-    function showC(v) { if (cp) cp.classList.toggle('open', v); if (sc) sc.classList.toggle('open', !!v || (r && r.classList.contains('open'))); }
-    var btn = root.getElementById && root.getElementById('composeBtn');
-    var cclose = root.getElementById && root.getElementById('cclose');
-    var close = root.getElementById && root.getElementById('close');
-    if (btn) btn.onclick = function () { showC(true); };
-    if (cclose) cclose.onclick = function () { showC(false); };
-    if (close) close.onclick = function () { show(false); };
-    wrap.querySelectorAll('.ml').forEach(function (m) { m.onclick = function () { show(true); }; });
-    if (sc) sc.onclick = function () { show(false); showC(false); };
     if (openCompose) {
+      var root = wrap.getRootNode();
+      var sc = root.getElementById && root.getElementById('scrim');
+      var cp = root.getElementById && root.getElementById('compose');
       if (cp) cp.classList.add('open');
       if (sc) sc.classList.add('open');
     }
+    if (P().finishPaint) P().finishPaint(wrap);
+    else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
     markReady('mailDesk');
   }
 
