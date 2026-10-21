@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
+import { readMailCache } from '@/lib/changes';
 import { withCreds } from '@/lib/creds';
-import { createReplyDraft, inboxMail, linkedinMail } from '@/lib/google';
+import { createReplyDraft } from '@/lib/google';
+import { cacheInbox } from '@/lib/live';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, roomOwner } from '@/lib/session';
 import { loadCredsFor } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
@@ -13,12 +15,14 @@ export async function GET() {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!session.sql) return NextResponse.json({ messages: [], linkedin: [], hidden: [] });
-    const creds = await loadCredsFor(session.userId);
-    const [mail, linked] = await Promise.all([
-      withCreds(creds, () => inboxMail()).catch((err) => { fail('mail_inbox', err); return null; }),
-      withCreds(creds, () => linkedinMail()).catch((err) => { fail('mail_linkedin', err); return null; }),
-    ]);
-    const messages = mail?.messages || [];
+    const ownerId = (await roomOwner(session.sql)) || session.userId;
+    let cached = await readMailCache(session.sql, ownerId);
+    if (!cached) {
+      const creds = await loadCredsFor(session.userId);
+      await withCreds(creds, () => cacheInbox(session.sql!, ownerId, true)).catch((err) => fail('mail_inbox', err));
+      cached = await readMailCache(session.sql, ownerId);
+    }
+    const messages = (cached?.messages || []) as Array<Record<string, unknown>>;
     let hidden: string[] = [];
     try {
       await session.sql`CREATE TABLE IF NOT EXISTS inbox_hidden (
@@ -47,7 +51,7 @@ export async function GET() {
         fail('mail_touch', err);
       }
     }
-    return NextResponse.json({ messages, linkedin: linked?.items || [], hidden });
+    return NextResponse.json({ messages, linkedin: cached?.linkedin || [], hidden });
   } catch (err) {
     fail('mail_inbox', err);
     return NextResponse.json({ messages: [], linkedin: [], hidden: [] });

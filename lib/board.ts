@@ -5,7 +5,7 @@ import { listZoomNotes, seedZoomNotes } from './zoom-notes';
 import { fail } from './log';
 import { seedFacebook } from './seed-facebook';
 import { seedOps } from './seed-ops';
-import { syncCalendar, syncDrive, syncGhl, calendarMeta, ingestMail } from './sync';
+import { syncDrive, calendarMeta } from './sync';
 
 type Sql = NeonQueryFunction<false, false>;
 
@@ -210,10 +210,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
   const reads: Record<string, 'ok' | 'failed'> = {};
   await read(reads, 'roadmap', () => seedRoadmap(sql, ownerId), undefined);
   await read(reads, 'zoomSeed', () => seedZoomNotes(sql, ownerId), undefined);
-  await read(reads, 'mail', () => ingestMail(sql, ownerId), undefined);
-  await read(reads, 'calendarSync', () => syncCalendar(sql, ownerId), undefined);
   await read(reads, 'driveSync', () => syncDrive(sql, ownerId), undefined);
-  await read(reads, 'ghl', () => syncGhl(sql, ownerId), undefined);
 
   const items = await read(reads, 'items', async () => {
     const rows = await sql`

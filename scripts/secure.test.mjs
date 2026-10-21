@@ -9,6 +9,7 @@ import { extractCommitments, fallbackPlan, zoneOf, NEWS_CATEGORIES } from '../li
 import { organizeText } from '../lib/organize.mjs';
 import { openSeal, seal } from '../lib/seal.mjs';
 import { readState, signState } from '../lib/oauth-state.mjs';
+import { calendarTokenOk, ghlOk, hookTokenOk, zoomCrc, zoomOk, zoomSignature } from '../lib/hook-auth.mjs';
 
 test('token gate rejects a missing or wrong secret', () => {
   assert.equal(tokenOk(null, 'correct'), false);
@@ -257,6 +258,7 @@ test('the control room page does not carry secrets', () => {
   assert.equal(page.includes('cr_docs_open'), true);
   assert.equal(page.includes('Thumbnails'), true);
   assert.equal(page.includes('control-room-war.js'), true);
+  assert.equal(page.includes('live-updates.js'), true);
   const warjs = readFileSync(new URL('../public/control-room-war.js', import.meta.url), 'utf8');
   assert.equal(/Atherton|example\.com/.test(warjs), false);
   assert.equal(warjs.includes('/api/ceo/plan'), true);
@@ -286,4 +288,37 @@ test('war room helpers extract commitments and fill a plan', () => {
   assert.equal(zoneOf({ principle: 'P4', facing: 'regulator', text: 'Note the file', area: 'outreach' }), 'regulator');
   assert.equal(NEWS_CATEGORIES.includes('Fundraising / VC'), true);
   assert.equal(NEWS_CATEGORIES.includes('AI'), true);
+});
+
+test('unsigned webhooks are rejected and signed ones pass', () => {
+  const secret = 'hook-secret';
+  const empty = { get: () => '' };
+  assert.equal(hookTokenOk({ url: 'https://4ormop.com/api/hooks/gmail', headers: empty }, secret), false);
+  assert.equal(hookTokenOk({ url: 'https://4ormop.com/api/hooks/gmail?token=wrong', headers: empty }, secret), false);
+  assert.equal(hookTokenOk({ url: 'https://4ormop.com/api/hooks/gmail?token=hook-secret', headers: empty }, secret), true);
+  assert.equal(hookTokenOk({ url: 'https://4ormop.com/api/hooks/gmail', headers: empty }, ''), false);
+  assert.equal(calendarTokenOk({ get: (name) => (name === 'x-goog-channel-token' ? secret : '') }, secret), true);
+  assert.equal(calendarTokenOk(empty, secret), false);
+  const ghlRaw = '{"type":"ContactUpdate"}';
+  assert.equal(ghlOk({ url: 'https://4ormop.com/api/hooks/ghl?token=hook-secret', headers: empty }, ghlRaw, secret), true);
+  assert.equal(ghlOk({ url: 'https://4ormop.com/api/hooks/ghl', headers: empty }, ghlRaw, secret), false);
+});
+
+test('zoom crc and signature match the documented HMAC', () => {
+  const secret = 'zoom-secret';
+  const raw = '{"event":"recording.completed"}';
+  const ts = '1710000000';
+  const presented = zoomSignature(raw, ts, secret);
+  assert.equal(zoomOk(raw, ts, presented, secret), true);
+  assert.equal(zoomOk(raw, ts, 'v0=deadbeef', secret), false);
+  assert.equal(zoomOk(raw, ts, presented, ''), false);
+  assert.equal(zoomCrc('plain', secret).length, 64);
+});
+
+test('the open page polls /api/changes only while visible', () => {
+  const live = readFileSync(new URL('../public/live-updates.js', import.meta.url), 'utf8');
+  assert.equal(live.includes('/api/changes'), true);
+  assert.equal(live.includes('15000'), true);
+  assert.equal(live.includes("document.visibilityState !== 'visible'"), true);
+  assert.equal(live.includes('visibilitychange'), true);
 });

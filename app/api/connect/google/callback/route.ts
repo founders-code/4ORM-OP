@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
+import { withCreds } from '@/lib/creds';
 import { env } from '@/lib/env.mjs';
-import { readState } from '@/lib/oauth-state.mjs';
+import { ensureWatches } from '@/lib/live';
 import { fail } from '@/lib/log';
+import { readState } from '@/lib/oauth-state.mjs';
 import { requestOrigin } from '@/lib/public-origin';
-import { openBoard } from '@/lib/session';
-import { saveGoogleRefresh } from '@/lib/vault';
+import { openBoard, roomOwner } from '@/lib/session';
+import { loadCredsFor, saveGoogleRefresh } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +46,15 @@ export async function GET(req: Request) {
     if (json.refresh_token) {
       const saved = await saveGoogleRefresh(session.userId, json.refresh_token);
       if (!saved) return NextResponse.redirect(back);
+    }
+    try {
+      if (session.sql) {
+        const ownerId = (await roomOwner(session.sql)) || session.userId;
+        const creds = await loadCredsFor(session.userId);
+        await withCreds(creds, () => ensureWatches(session.sql!, ownerId, origin));
+      }
+    } catch (err) {
+      fail('connect_watch', err);
     }
     return NextResponse.redirect(back);
   } catch {

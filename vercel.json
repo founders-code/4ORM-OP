@@ -20,6 +20,10 @@
     {
       "path": "/api/cron/snapshot",
       "schedule": "55 6,7 * * *"
+    },
+    {
+      "path": "/api/cron/live",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

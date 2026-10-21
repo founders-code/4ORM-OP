@@ -2,7 +2,8 @@ import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { allowArea, allowPriority, allowStatus, inferContactCategory, visibleCalendarWindow } from './guard.mjs';
 import { claimBudget } from './db';
 import { listEvents, listDriveTree, recentMail, googleConfigured, DRIVE_CALLS } from './google';
-import { listContacts, listPipeline, listReminders, ghlConfigured } from './ghl';
+import { writePipelineCache } from './changes';
+import { listContacts, listPipelines, listReminders, shapePipelineStages, ghlConfigured } from './ghl';
 import { fail } from './log';
 
 type Sql = NeonQueryFunction<false, false>;
@@ -192,13 +193,28 @@ export async function syncGhl(sql: Sql, ownerId: string, force = false) {
         `;
       }
     }
-    const pipe = await listPipeline();
+    const allPipes = await listPipelines();
+    const stages = allPipes.status === 'unavailable' ? [] : shapePipelineStages(allPipes.pipelines);
+    const touches: Array<{ sourceId: string; name: string; at: string }> = [];
+    if (allPipes.status !== 'unavailable') {
+      await writePipelineCache(sql, ownerId, allPipes.pipelines, stages);
+      for (const pipeRow of allPipes.pipelines) {
+        for (const stage of pipeRow.stages) {
+          for (const opp of stage.opps) {
+            if (opp.updatedAt && (opp.contactId || opp.contact)) touches.push({ sourceId: opp.contactId, name: opp.contact, at: opp.updatedAt });
+          }
+        }
+      }
+      touches.sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+    }
+    const pipe = { status: allPipes.status, stages, touches: touches.slice(0, 120) };
     if (pipe.status === 'connected' || pipe.status === 'reached_empty') {
-      await sql`DELETE FROM pipeline_stages WHERE owner_id = ${ownerId}`;
       for (const stage of pipe.stages) {
         await sql`
-          INSERT INTO pipeline_stages (owner_id, stage, count, detail)
-          VALUES (${ownerId}, ${stage.stage}, ${stage.count}, ${stage.detail})
+          INSERT INTO pipeline_stages (owner_id, stage, count, detail, updated_at)
+          VALUES (${ownerId}, ${stage.stage}, ${stage.count}, ${stage.detail}, now())
+          ON CONFLICT (owner_id, stage)
+          DO UPDATE SET count = EXCLUDED.count, detail = EXCLUDED.detail, updated_at = now()
         `;
       }
       for (const touch of pipe.touches || []) {
