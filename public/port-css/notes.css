@@ -47,3 +47,26 @@ button{font:inherit;cursor:pointer}
 .note.big h4{font-size:22px;outline:none;cursor:text}
 .note.big p{font-size:15px;line-height:1.55;-webkit-line-clamp:unset;display:block;overflow:visible;min-height:140px;outline:none;cursor:text;margin:0}
 .cdot.on{box-shadow:0 0 0 2px var(--blue)}
+/* ===== NOTE OPEN (03b) ===== */
+.nscrim{position:fixed;inset:0;background:rgba(5,10,28,.62);backdrop-filter:blur(6px);z-index:60}
+.nbig{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-.4deg);width:720px;max-width:92vw;max-height:82vh;z-index:61;background:#fff6c9;border-radius:6px 6px 22px 6px;box-shadow:0 40px 90px rgba(0,0,0,.55);display:flex;flex-direction:column;color:#3d3200}
+.nbig.y{background:#fff6c9;color:#3d3200}
+.nbig.p{background:#ffe1ea;color:#3d1020}
+.nbig.g{background:#ddf5e6;color:#12331e}
+.nbig.b{background:#e1ecff;color:#10203d}
+.nbig.o{background:#ffe6cf;color:#3d2200}
+.nbig.v{background:#ece4ff;color:#24103d}
+.nbig.w{background:#fff;color:var(--ink)}
+.nbig .nt{display:flex;align-items:center;gap:10px;padding:16px 20px 6px}
+.nbig .ty{font-size:11px;font-weight:850;background:rgba(61,50,0,.1);border-radius:7px;padding:3px 9px}
+.nbig .cols{display:flex;gap:6px;margin-left:6px}.nbig .cols i{width:16px;height:16px;border-radius:50%;border:2px solid rgba(0,0,0,.08);cursor:pointer}.nbig .cols i.on{outline:2px solid currentColor;outline-offset:1px}
+.nbig .ntools{margin-left:auto;display:flex;gap:6px}
+.nbig .ntools span{height:30px;min-width:30px;padding:0 9px;border-radius:9px;display:grid;place-items:center;font-size:12.5px;font-weight:800;background:rgba(61,50,0,.08);cursor:pointer}
+.nbig h2{margin:0;padding:6px 22px 2px;font-size:26px;font-weight:900;letter-spacing:-.02em;outline:none}
+.nbig .bdy{padding:8px 22px 14px;font-size:15.5px;line-height:1.7;outline:none;overflow:auto;flex:1}
+.nbig .bdy:focus,.nbig h2:focus{background:rgba(255,255,255,.25);border-radius:8px}
+.nbig .nf{display:flex;align-items:center;gap:10px;padding:12px 20px 16px;border-top:1px dashed rgba(61,50,0,.18)}
+.nbig .sv{font-size:12px;font-weight:800;color:#7a6400;display:flex;align-items:center;gap:6px}.nbig .sv i{width:8px;height:8px;border-radius:50%;background:#12a36a}
+.nbig .nf .r{margin-left:auto;display:flex;gap:8px}
+.nbig .nb{height:34px;border-radius:10px;border:none;background:rgba(61,50,0,.1);color:inherit;font-size:13px;font-weight:800;padding:0 13px;cursor:pointer}
+.nbig .nb.pri{background:#3d3200;color:#fff6c9}

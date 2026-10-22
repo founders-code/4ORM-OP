@@ -88,3 +88,15 @@ button{font:inherit;cursor:pointer}
 .rc b{font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rc span{font-size:11.5px;color:var(--ink3)}
 .foot{padding:10px 16px 14px;font-size:12.5px;color:var(--ink3);border-top:1px solid var(--line)}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;display:none}.toast.show{display:block}
+/* ===== STEPS OPEN (02b) ===== */
+.stp{margin:10px 0 2px 34px;background:#f6f9ff;border:1px solid #dbe6ff;border-radius:12px;padding:10px 12px;grid-column:1/-1}
+.stp h6{margin:0 0 6px;font-size:12px;font-weight:850;color:#2e6bf2;display:flex;align-items:center;gap:6px}
+.stp h6 em{margin-left:auto;font-style:normal;color:#7a86a0;font-weight:700}
+.stp .s{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid #e3ebfb;font-size:13px;color:#101a33}
+.stp .s:first-of-type{border-top:none}
+.stp .s i{width:18px;height:18px;border-radius:5px;border:2px solid #c3cde0;font-style:normal;display:grid;place-items:center;font-size:11px;color:#fff;font-weight:900;cursor:pointer}
+.stp .s.d i{background:#12a36a;border-color:#12a36a}.stp .s.d span{color:#7a86a0;text-decoration:line-through}
+.stp .s small{color:#7a86a0;font-size:11.5px;font-weight:650}
+.stp .s a{font-size:12px;font-weight:800;color:#2e6bf2;cursor:pointer}
+.stp .addst{margin-top:6px;font-size:12.5px;font-weight:750;color:#2e6bf2;cursor:pointer}
+.ma button.on-steps{background:#101a33;border-color:#101a33;color:#fff}

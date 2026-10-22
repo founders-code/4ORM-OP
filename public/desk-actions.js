@@ -13,7 +13,8 @@
     '.sr', '.build', '.ml', '.newcol', '.send', '.send2', '.car', '.pcard', '.chip', '.nxa', '.m',
     '.pad', '.add', '.calbtn', '.day', '.ev', '.views span', '.c-nav span', '.dest em',
     '.b1', '.b2', '.cals label', '.ar span', '.ok b', '.beat', '.recbtn', '.gobtn',
-    '.ib', '.op', '.mc', '.pill', '.nt', '.cdot', '.nx'
+    '.ib', '.op', '.mc', '.pill', '.nt', '.cdot', '.nx',
+    '.stp .s', '.stp .addst', '.stp a', '.nbig .ntools span', '.nbig .cols i', '.nbig .nb', '.car'
   ].join(',');
   var FOCUS_MS = 25 * 60 * 1000;
   var RING_C = 2 * Math.PI * 48;
@@ -349,8 +350,55 @@
     },
     'move-steps': function (el, root) {
       var id = attr(el, 'data-id');
-      if (id && typeof window.ceoDoSteps === 'function') { window.ceoDoSteps(id); return; }
-      soon(root, 'Move steps');
+      if (!id) return;
+      S().openSteps = S().openSteps === id ? '' : id;
+      refresh('war');
+    },
+    'step-toggle': function (el, root) {
+      var id = attr(el, 'data-id');
+      var i = Number(attr(el, 'data-i'));
+      if (!id) return;
+      var map = {};
+      try { map = JSON.parse(localStorage.getItem('cr_move_steps') || '{}') || {}; } catch (e) { map = {}; }
+      var steps = map[id];
+      if (!Array.isArray(steps)) {
+        var moves = ((window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.war && window.REDESIGN_FIXTURE.war.moves) || (S().ceo && S().ceo.moves) || []);
+        var hit = moves.filter(function (m) { return String(m.id) === String(id); })[0];
+        steps = (hit && hit.steps) ? hit.steps.slice() : [];
+      }
+      if (!steps[i]) return;
+      steps[i] = Object.assign({}, steps[i], { done: !steps[i].done, when: steps[i].done ? '' : 'done just now' });
+      map[id] = steps;
+      try { localStorage.setItem('cr_move_steps', JSON.stringify(map)); } catch (e) {}
+      refresh('war');
+      toast(root, steps[i].done ? 'Step done' : 'Step reopened');
+    },
+    'step-act': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      var act = attr(el, 'data-act') || (el.textContent || '').trim();
+      if (/open/i.test(act)) { go('war'); toast(root, 'Opened'); return; }
+      if (/call/i.test(act)) { toast(root, 'Call from this move'); return; }
+      if (/raise/i.test(act)) { go('war'); toast(root, 'Raise tracker'); return; }
+      toast(root, act || 'Step action');
+    },
+    'step-add': function (el, root) {
+      var id = attr(el, 'data-id');
+      var text = window.prompt('Add a step');
+      if (text == null) return;
+      text = String(text).trim();
+      if (!text) return;
+      var map = {};
+      try { map = JSON.parse(localStorage.getItem('cr_move_steps') || '{}') || {}; } catch (e) { map = {}; }
+      var steps = Array.isArray(map[id]) ? map[id] : [];
+      steps.push({ done: false, text: text });
+      map[id] = steps;
+      try { localStorage.setItem('cr_move_steps', JSON.stringify(map)); } catch (e) {}
+      S().openSteps = id;
+      refresh('war');
+      toast(root, 'Step added');
+      if (writeOk()) {
+        api('/api/ceo/plan', { method: 'POST', body: { title: 'Move steps', area: 'other', steps: steps.map(function (s) { return s.text; }), itemId: id } }).catch(function () {});
+      }
     },
     'move-plan': function (el, root) { actions['plan-open'](el, root); },
     'move-dismiss': function (el, root) {
@@ -553,9 +601,9 @@
         actions['note-open'](card, root);
       }
       if (!writeOk()) { openBlank('tmp'); toast(root, 'New note (fixture)'); return; }
-      return api('/api/notes', { method: 'POST', body: { title: 'Untitled', body: '', color: 'yellow' } }).then(ok).then(json).then(function (row) {
-        S().notes = S().notes || [];
-        if (row && row.id) S().notes.unshift(row);
+      return api('/api/notes/sticky', { method: 'POST', body: { body: '', color: 'yellow', meta: { title: '', kind: 'idea' } } }).then(ok).then(json).then(function (row) {
+        S().stickies = S().stickies || [];
+        if (row && row.id) S().stickies.unshift(row);
         refresh('notes');
         setTimeout(function () { openBlank(row && row.id); }, 40);
         toast(root, 'Note created');
@@ -639,46 +687,101 @@
         .catch(function () { toast(root, 'Could not convert that note'); });
     },
     'note-open': function (el, root) {
-      var ov = root.getElementById && root.getElementById('ov');
+      var scrim = root.getElementById && root.getElementById('nscrim');
       var card = root.getElementById && root.getElementById('ovNote');
       var ot = root.getElementById && root.getElementById('ot');
       var ob = root.getElementById && root.getElementById('ob');
       var okEl = root.getElementById && root.getElementById('ok');
       var pin = root.getElementById && root.getElementById('ovPin');
       var task = root.getElementById && root.getElementById('ovTask');
-      if (!ov) { soon(root, 'Open note'); return; }
+      if (!card) { soon(root, 'Open note'); return; }
       var color = attr(el, 'data-color') || 'y';
-      if (card) card.className = 'note big ' + color;
-      showOv(ov, true);
+      var id = attr(el, 'data-id');
+      var source = attr(el, 'data-source') || 'sticky';
+      card.className = 'nbig ' + color;
+      card.setAttribute('data-id', id);
+      card.setAttribute('data-source', source);
+      card.setAttribute('data-color', color);
+      card.removeAttribute('hidden');
+      if (scrim) { scrim.removeAttribute('hidden'); scrim.classList.add('open'); }
+      showOv(card, true);
       if (ot) {
         ot.textContent = attr(el, 'data-title') || '';
-        ot.setAttribute('data-id', attr(el, 'data-id'));
-        ot.setAttribute('data-source', attr(el, 'data-source') || 'sticky');
+        ot.setAttribute('data-id', id);
+        ot.setAttribute('data-source', source);
         ot.setAttribute('data-action', 'note-edit');
       }
       if (ob) {
         ob.innerText = attr(el, 'data-body') || '';
-        ob.setAttribute('data-id', attr(el, 'data-id'));
-        ob.setAttribute('data-source', attr(el, 'data-source') || 'sticky');
+        ob.setAttribute('data-id', id);
+        ob.setAttribute('data-source', source);
         ob.setAttribute('data-action', 'note-edit');
       }
       if (okEl) okEl.textContent = attr(el, 'data-type') || 'Note';
       if (pin) {
-        pin.setAttribute('data-id', attr(el, 'data-id'));
-        pin.setAttribute('data-source', attr(el, 'data-source') || 'sticky');
+        pin.setAttribute('data-id', id);
+        pin.setAttribute('data-source', source);
         pin.setAttribute('data-on', attr(el, 'data-pin') || '0');
       }
       if (task) {
-        task.setAttribute('data-id', attr(el, 'data-id'));
+        task.setAttribute('data-id', id);
         task.setAttribute('data-title', attr(el, 'data-title') || 'From note');
       }
+      root.querySelectorAll('.nbig .cols i').forEach(function (dot) {
+        dot.classList.toggle('on', attr(dot, 'data-color') === color);
+      });
+      var saved = root.getElementById && root.getElementById('ovSaved');
+      if (saved) saved.innerHTML = '<i></i>Saved';
       setTimeout(function () { if (ot) ot.focus(); }, 30);
     },
     'note-keep': function () {},
     'note-close': function (el, root, ev) {
       var t = (ev && ev.composedPath && ev.composedPath()[0]) || el;
-      if (attr(el, 'data-action') === 'note-close' && t && t.closest && t.closest('.note.big') && !t.closest('[data-action="note-close"]')) return;
-      showOv(root.getElementById && root.getElementById('ov'), false);
+      if (t && t.closest && t.closest('.nbig') && attr(el, 'id') === 'nscrim') return;
+      if (t && t.closest && t.closest('.nbig') && !t.closest('[data-action="note-close"]') && attr(el, 'data-action') === 'note-close' && attr(el, 'id') === 'nscrim') return;
+      var card = root.getElementById && root.getElementById('ovNote');
+      var scrim = root.getElementById && root.getElementById('nscrim');
+      showOv(card, false);
+      if (card) card.setAttribute('hidden', '');
+      if (scrim) { scrim.setAttribute('hidden', ''); scrim.classList.remove('open'); }
+    },
+    'note-color-set': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      var color = attr(el, 'data-color') || 'y';
+      var card = root.getElementById && root.getElementById('ovNote');
+      var id = card ? attr(card, 'data-id') : attr(el, 'data-id');
+      var source = card ? attr(card, 'data-source') : 'sticky';
+      if (card) {
+        card.className = 'nbig ' + color;
+        card.setAttribute('data-color', color);
+      }
+      root.querySelectorAll('.nbig .cols i').forEach(function (dot) {
+        dot.classList.toggle('on', attr(dot, 'data-color') === color);
+      });
+      var names = { y: 'yellow', p: 'pink', g: 'green', b: 'blue', o: 'orange', v: 'violet' };
+      if (!id || !writeOk()) { toast(root, 'Colour set'); return; }
+      if (source === 'sticky') {
+        api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { color: names[color] || 'yellow' } }).then(ok).then(function () {
+          toast(root, 'Colour saved');
+        }).catch(function () { toast(root, 'Could not save colour'); });
+      }
+    },
+    'note-space': function (el, root) {
+      var spaces = (S().packages || []).map(function (p) {
+        return '<button type="button" data-action="note-space-pick" data-space="' + esc(p.id || '') + '" data-id="' + esc(attr(el, 'data-id')) + '" data-title="' + esc(attr(el, 'data-title') || '') + '">' + esc(p.name || 'Space') + '</button>';
+      }).join('');
+      if (!spaces) { soon(root, 'Move to a Space'); return; }
+      openPop(root, el, spaces);
+    },
+    'note-space-pick': function (el, root) {
+      closePop(root);
+      var sid = attr(el, 'data-space');
+      var title = attr(el, 'data-title') || 'Note';
+      if (!sid) return;
+      if (!writeOk()) { toast(root, 'Moved to a Space (fixture)'); return; }
+      api('/api/spaces/' + encodeURIComponent(sid) + '/items', { method: 'POST', body: { kind: 'note', name: title } }).then(ok).then(function () {
+        toast(root, 'Moved to a Space');
+      }).catch(function () { toast(root, 'Could not move that note'); });
     },
     'note-menu': function (el, root, ev) {
       if (ev) ev.stopPropagation();
@@ -704,9 +807,96 @@
     'note-edit': function () { /* input/blur saves */ },
     'link-cat': function (el, root) {
       var name = attr(el, 'data-name');
-      S().cat = name;
-      S().linkCat = name;
+      var kind = attr(el, 'data-kind') || 'cat';
+      var parent = attr(el, 'data-parent') || '';
+      var sub = attr(el, 'data-sub') || '';
+      if (kind === 'sub') {
+        S().cat = parent || name;
+        S().sub = name;
+        S().leaf = '';
+      } else if (kind === 'leaf') {
+        S().cat = parent;
+        S().sub = sub;
+        S().leaf = name;
+      } else {
+        S().cat = name;
+        S().sub = '';
+        S().leaf = '';
+      }
+      S().linkCat = S().cat;
       refresh('links');
+    },
+    'link-toggle': function (el, root, ev) {
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      var key = attr(el, 'data-key') || attr(el, 'data-name');
+      if (!key) return;
+      var open = [];
+      if (typeof window.linkOpenSet === 'function') open = window.linkOpenSet();
+      else {
+        try { open = JSON.parse(localStorage.getItem('cr_link_open') || '[]'); } catch (e) { open = []; }
+      }
+      var at = open.indexOf(key);
+      if (at >= 0) open.splice(at, 1);
+      else open.push(key);
+      S().linkOpen = open;
+      try { localStorage.setItem('cr_link_open', JSON.stringify(open)); } catch (e) {}
+      refresh('links');
+    },
+    'link-sub': function (el, root, ev) {
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      var name = attr(el, 'data-name');
+      var sub = window.prompt('New subfolder name');
+      if (sub == null) return;
+      sub = String(sub).trim();
+      if (!name || !sub) return;
+      if (!writeOk()) { toast(root, 'Subfolder (fixture)'); return; }
+      api('/api/links', { method: 'POST', body: { kind: 'subcategory', name: name, sub: sub } }).then(ok).then(function () {
+        var cat = (S().categories || []).filter(function (c) { return c.name === name; })[0];
+        if (cat) {
+          cat.subs = cat.subs || [];
+          if (cat.subs.indexOf(sub) < 0) cat.subs.push(sub);
+        }
+        S().linkOpen = (S().linkOpen || []).concat([name]);
+        try { localStorage.setItem('cr_link_open', JSON.stringify(S().linkOpen)); } catch (e) {}
+        refresh('links');
+        toast(root, 'Subfolder added');
+      }).catch(function () { toast(root, 'Could not add that subfolder'); });
+    },
+    'link-rename': function (el, root, ev) {
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      var name = attr(el, 'data-name');
+      var sub = attr(el, 'data-sub') || '';
+      var next = window.prompt('Rename', sub || name);
+      if (next == null) return;
+      next = String(next).trim();
+      if (!next || next === (sub || name)) return;
+      if (!writeOk()) { toast(root, 'Renamed (fixture)'); return; }
+      api('/api/links', { method: 'POST', body: { kind: 'rename', name: name, sub: sub, next: next } }).then(ok).then(function () {
+        if (sub) {
+          (S().categories || []).forEach(function (c) {
+            if (c.name !== name) return;
+            c.subs = (c.subs || []).map(function (s) { return s === sub ? next : s; });
+          });
+        } else {
+          (S().categories || []).forEach(function (c) { if (c.name === name) c.name = next; });
+          (S().links || []).forEach(function (l) { if ((l.cat || l.category) === name) { l.cat = next; l.category = next; } });
+          if (S().cat === name) S().cat = next;
+        }
+        refresh('links');
+        toast(root, 'Renamed');
+      }).catch(function () { toast(root, 'Could not rename'); });
+    },
+    'link-hide-cat': function (el, root, ev) {
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      var name = attr(el, 'data-name');
+      if (!name || name === 'Uncategorized') return;
+      if (!writeOk()) { toast(root, 'Category hidden (fixture)'); return; }
+      api('/api/links', { method: 'POST', body: { kind: 'delete-category', name: name } }).then(ok).then(function () {
+        S().categories = (S().categories || []).filter(function (c) { return c.name !== name; });
+        if (S().cat === name) S().cat = '';
+        refresh('links');
+        toast(root, 'Category hidden', function () { refresh('links'); });
+      }).catch(function () { toast(root, 'Could not hide that category'); });
     },
     'link-cat-new': function (el, root) {
       var name = window.prompt('New category name');
@@ -793,7 +983,17 @@
       }).catch(function () { toast(root, 'Could not hide that link'); });
     },
     'link-expand': function (el, root) {
-      root.querySelectorAll('.cr').forEach(function (n) { n.classList.add('open'); });
+      var open = [];
+      (S().categories || []).forEach(function (c) {
+        open.push(c.name);
+        (c.subs || []).forEach(function (s) { open.push(c.name + '\u001f' + s); });
+      });
+      if (fixtureOn() && window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.links) {
+        (window.REDESIGN_FIXTURE.links.tree || []).forEach(function (t) { if (t.name) open.push(t.name); });
+      }
+      S().linkOpen = open;
+      try { localStorage.setItem('cr_link_open', JSON.stringify(open)); } catch (e) {}
+      refresh('links');
       toast(root, 'All categories expanded');
     },
     'link-search': function () { /* input handler */ },
@@ -925,6 +1125,18 @@
       });
       if (typeof window.paintShellNav === 'function') window.paintShellNav();
       toast(root, document.body.classList.contains('arranging') ? 'Drag the menu to reorder' : 'Menu order saved');
+    },
+    'top-today': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      var pop = document.getElementById('todayPop');
+      if (typeof window.renderTodayPop === 'function') window.renderTodayPop();
+      if (pop) pop.classList.toggle('open');
+    },
+    'top-cal': function () { go('calendar'); },
+    'top-signals': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      if (typeof window.openSignals === 'function') window.openSignals();
+      else go('int');
     },
     'nav-reset': function (el, root, ev) {
       if (ev) ev.stopPropagation();
@@ -1721,18 +1933,67 @@
   };
 
   function saveNote(root, el) {
-    var id = attr(el, 'data-id');
-    if (!id || !writeOk()) return;
-    var source = attr(el, 'data-source');
     var ot = root.getElementById && root.getElementById('ot');
+    var ob = root.getElementById && root.getElementById('ob');
+    var card = root.getElementById && root.getElementById('ovNote');
+    var id = attr(ot, 'data-id') || attr(ob, 'data-id') || attr(card, 'data-id') || attr(el, 'data-id');
+    if (!id) return;
+    var source = attr(ot, 'data-source') || attr(ob, 'data-source') || attr(card, 'data-source') || attr(el, 'data-source') || 'sticky';
     var title = ot ? String(ot.textContent || '').trim() : '';
-    var body = String(el.innerText || el.value || '');
+    var body = ob ? String(ob.innerText || '') : '';
+    var saved = root.getElementById && root.getElementById('ovSaved');
+    if (saved) saved.innerHTML = '<i></i>Saving…';
+    (S().stickies || []).forEach(function (n) {
+      if (String(n.id) !== String(id)) return;
+      n.body = body;
+      n.meta = Object.assign({}, n.meta && typeof n.meta === 'object' ? n.meta : {}, { title: title });
+    });
+    (S().notes || []).forEach(function (n) {
+      if (String(n.id) !== String(id)) return;
+      n.title = title;
+      n.body = body;
+    });
+    if (window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.notes) {
+      ['pinned', 'notes'].forEach(function (key) {
+        (window.REDESIGN_FIXTURE.notes[key] || []).forEach(function (n) {
+          if (String(n.id) !== String(id)) return;
+          n.title = title;
+          n.body = body;
+        });
+      });
+      if (window.REDESIGN_FIXTURE.notes.openNote && String(window.REDESIGN_FIXTURE.notes.openNote.id) === String(id)) {
+        window.REDESIGN_FIXTURE.notes.openNote.title = title;
+        window.REDESIGN_FIXTURE.notes.openNote.body = body;
+      }
+    }
+    root.querySelectorAll('[data-action="note-open"][data-id="' + id + '"]').forEach(function (cardEl) {
+      cardEl.setAttribute('data-title', title);
+      cardEl.setAttribute('data-body', body);
+      var h = cardEl.querySelector('h4');
+      var p = cardEl.querySelector('p');
+      if (h) h.textContent = title;
+      if (p) p.textContent = body;
+    });
+    if (!writeOk()) {
+      if (saved) saved.innerHTML = '<i></i>Saved · just now';
+      return;
+    }
     clearTimeout(noteSaveTimer);
     noteSaveTimer = setTimeout(function () {
-      var req = source === 'board'
-        ? api('/api/notes', { method: 'PATCH', body: { id: id, title: title || 'Note', body: body } })
-        : api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { body: (title ? title + '\n' : '') + body } });
-      req.then(ok).then(function () { toast(root, 'Saved'); }).catch(function () { toast(root, 'Could not save that note'); });
+      var req;
+      if (source === 'board') {
+        req = api('/api/notes', { method: 'PATCH', body: { id: id, title: title || 'Note', body: body } });
+      } else {
+        var row = (S().stickies || []).filter(function (n) { return String(n.id) === String(id); })[0] || {};
+        var meta = Object.assign({}, row.meta && typeof row.meta === 'object' ? row.meta : {}, { title: title });
+        req = api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { body: body, meta: meta } });
+      }
+      req.then(ok).then(function () {
+        if (saved) saved.innerHTML = '<i></i>Saved · just now';
+      }).catch(function () {
+        if (saved) saved.innerHTML = '<i></i>Couldn\'t save';
+        toast(root, 'Could not save that note');
+      });
     }, 400);
   }
 
@@ -1772,6 +2033,15 @@
     var el = actionElFromEvent(e) || (e.target && e.target.closest ? e.target.closest('[data-action]') : null);
     var root = rootOf(el || e.target, e);
     if (e.key === 'Escape') {
+      var nbig = root.getElementById && root.getElementById('ovNote');
+      var nscrim = root.getElementById && root.getElementById('nscrim');
+      if (nbig && !nbig.hidden) {
+        showOv(nbig, false);
+        nbig.setAttribute('hidden', '');
+        if (nscrim) { nscrim.setAttribute('hidden', ''); nscrim.classList.remove('open'); }
+        e.preventDefault();
+        return;
+      }
       var ov = root.getElementById && (root.getElementById('ov') || root.getElementById('planOv') || root.getElementById('reachOv') || root.getElementById('contactOv'));
       if (ov && ov.classList.contains('open')) {
         showOv(root.getElementById('ov'), false);
@@ -1989,6 +2259,10 @@
       root.addEventListener('click', onClick);
       root.addEventListener('keydown', onKey);
       root.addEventListener('input', onInput);
+      root.addEventListener('focusout', function (e) {
+        var t = e.target;
+        if (t && t.getAttribute && t.getAttribute('data-action') === 'note-edit') saveNote(root, t);
+      }, true);
       root.addEventListener('dragstart', onDragStart);
       root.addEventListener('dragover', onDragOver);
       root.addEventListener('drop', onDrop);

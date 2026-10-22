@@ -104,9 +104,16 @@
         why: '$100 cash, ~1 day of runway, $170K to close. Kevin named an amount as the next private-network conversation — lock the wire date on this call.'
       },
       moves: [
-        { title: 'Call Kevin about his $25K chunk today', zone: 'z-cash', zoneLabel: 'Cash', one: true, why: 'The only near-term cheque that covers a ~1-day runway.', src: 'Source: cash tracker + company profile next-network list' },
-        { title: 'Send Brooks the delay-cost tally Bruce asked for', zone: 'z-raise', zoneLabel: 'Raise', why: '$500K subscription is papered separately; Brooks went dark and Chad owes him a number.', src: 'Source: commitments · Bruce Fair follow-up on Brooks' },
-        { title: 'Move the 2 design-partner Send-Email cards to today', zone: 'z-part', zoneLabel: 'Partners', why: '2 mortgage brokerages are in Send-Email; none reached a meeting yet.', src: 'Source: Design Partner pipeline stage counts' }
+        { id: 'm1', title: 'Call Kevin about his $25K chunk today', zone: 'z-cash', zoneLabel: 'Cash', one: true, why: 'The only near-term cheque that covers a ~1-day runway.', src: 'Source: cash tracker + company profile next-network list',
+          steps: [
+            { done: true, text: "Check Kevin's last email about the $25K", when: 'done 9:02' },
+            { done: false, text: 'Open the cash tracker so the number is in front of you', act: 'Open' },
+            { done: false, text: 'Call Kevin: confirm amount and wire date', act: 'Call' },
+            { done: false, text: 'Log the date in Raise tracker and tell Bruce', act: 'Raise tracker' }
+          ]
+        },
+        { id: 'm2', title: 'Send Brooks the delay-cost tally Bruce asked for', zone: 'z-raise', zoneLabel: 'Raise', why: '$500K subscription is papered separately; Brooks went dark and Chad owes him a number.', src: 'Source: commitments · Bruce Fair follow-up on Brooks' },
+        { id: 'm3', title: 'Move the 2 design-partner Send-Email cards to today', zone: 'z-part', zoneLabel: 'Partners', why: '2 mortgage brokerages are in Send-Email; none reached a meeting yet.', src: 'Source: Design Partner pipeline stage counts' }
       ],
       meetingActions: [
         { tag: 't-fu', tagLabel: 'Follow up', text: 'Bruce Fair on Brooks (went dark): send him a tally of what ~3–4 months of delay cost the company.', from: 'Deck rework + investor-outreach planning · Sep 28' },
@@ -150,9 +157,15 @@
     },
     notes: {
       counts: { all: 11, pinned: 2, todo: 2, idea: 3, person: 2, decision: 2 },
+      openNote: {
+        id: 'n-challenge', source: 'sticky', color: 'y', type: 'Note', pin: false,
+        title: 'The Challenge',
+        edited: 'Edited Oct 22, 10:24 am',
+        body: 'Canadian compliance and anti-money laundering requirements are increasing obligations, penalties, and costs for financial businesses to help protect consumers. While the industry invests in technology to collect and reconstruct better evidence of suitability, a fundamental question still remains: How can a business even prove suitability when it hasn\'t established what suitable means for the person?\n\nThe solution: 4orm Finance is building integrated, counselling-centred AI tools that help consumers explore their financial goals, circumstances, potential outcomes, and short- and long-term risks, allowing them to make better-informed decisions while giving businesses a deeper understanding of what suitability means for each client.'
+      },
       pinned: [
         {
-          color: 'y', type: 'Thesis', typeCls: '', title: 'The challenge',
+          id: 'n-challenge', color: 'y', type: 'Thesis', typeCls: '', title: 'The challenge',
           body: 'Financial businesses face rising penalties and costs, and they need to construct better evidence of suitability — that every recommendation was understood and right for the person.',
           checks: [], links: [], reminder: '', convert: 'Send to content runway', pin: true
         },
