@@ -43,7 +43,7 @@
     + '.pick-row:first-child{border-top:0}';
   var CSS = {
     room: '/port-css/dashboard.css', war: '/port-css/war-room.css', notes: '/port-css/notes.css',
-    contacts: '/port-css/pipeline.css', work: '/port-css/spaces.css', docs: '/port-css/documents.css',
+    contacts: '/port-css/pipeline.css', work: '/port-css/spaces.css?v=2', docs: '/port-css/documents.css',
     links: '/port-css/links.css', mail: '/port-css/email.css',
     playbook: '/port-css/playbook.css', calendar: '/port-css/calendar.css', zoom: '/port-css/zoom.css',
     completed: '/port-css/completed.css'

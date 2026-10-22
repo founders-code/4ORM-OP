@@ -14,6 +14,12 @@ const PAGES = {
     { name: 'Notes', live: 'control-room.html?view=notes&fixture=mockup', ready: '#notesDesk[data-port-ready]', host: 'notesDesk' },
     { name: 'Links', live: 'control-room.html?view=links&fixture=mockup', ready: '#linksDesk[data-port-ready]', host: 'linksDesk' },
   ],
+  2: [
+    { name: 'Pipeline', live: 'control-room.html?view=contacts&fixture=mockup', ready: '#pipeDesk[data-port-ready]', host: 'pipeDesk' },
+    { name: 'Spaces', live: 'control-room.html?view=work&fixture=mockup', ready: '#spacesDesk[data-port-ready]', host: 'spacesDesk' },
+    { name: 'Documents', live: 'control-room.html?view=docs&fixture=mockup', ready: '#docsDesk[data-port-ready]', host: 'docsDesk' },
+    { name: 'Email', live: 'control-room.html?view=mail&fixture=mockup', ready: '#mailDesk[data-port-ready]', host: 'mailDesk' },
+  ],
 };
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -77,6 +83,98 @@ async function main() {
       console.log(`A  ${spec.name.padEnd(12)} with=${inv.withAction}  without=${inv.without}  ${pass ? 'PASS' : 'FAIL'}`);
     }
 
+    if (STEP === '2') {
+      await page.goto(`http://127.0.0.1:${port}/control-room.html?view=contacts&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#pipeDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+      const board = await page.evaluate(async () => {
+        const host = document.getElementById('pipeDesk');
+        const btn = host.shadowRoot.querySelector('[data-action="pipe-view"][data-view="board"]');
+        if (btn) btn.click();
+        await new Promise(function (r) { setTimeout(r, 80); });
+        return !!(host.shadowRoot.querySelector('.pipe-board') && host.shadowRoot.querySelector('[data-action="pipe-view"][data-view="board"].on'));
+      });
+      clicks.push({ page: 'Pipeline', control: 'Board', dom: board, net: true, persist: true, pass: board });
+
+      await page.goto(`http://127.0.0.1:${port}/control-room.html?view=contacts&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#pipeDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+      const pill = await page.evaluate(() => {
+        const root = document.getElementById('pipeDesk').shadowRoot;
+        const more = root.querySelector('[data-action="pipe-more"]');
+        if (more) more.click();
+        return !!(window.STATE && window.STATE.pipeShowAll);
+      });
+      clicks.push({ page: 'Pipeline', control: '+ more', dom: pill, net: true, persist: true, pass: pill });
+
+      const follow = await page.evaluate(() => {
+        const root = document.getElementById('pipeDesk').shadowRoot;
+        const btn = root.querySelector('[data-action="pipe-follow"]');
+        if (btn) btn.click();
+        return !!document.getElementById('rpBody');
+      });
+      clicks.push({ page: 'Pipeline', control: 'Follow up', dom: follow, net: true, persist: true, pass: follow });
+
+      const openRow = await page.evaluate(() => {
+        const root = document.getElementById('pipeDesk').shadowRoot;
+        const btn = root.querySelector('[data-action="pipe-open"]');
+        if (btn) btn.click();
+        const ov = root.getElementById('contactOv');
+        const drawer = document.getElementById('drawer');
+        return !!(ov && ov.classList.contains('open')) || !!(drawer && drawer.classList.contains('open'));
+      });
+      clicks.push({ page: 'Pipeline', control: 'Open', dom: openRow, net: true, persist: true, pass: openRow });
+
+      await page.goto(`http://127.0.0.1:${port}/control-room.html?view=work&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#spacesDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+      const spaceOpen = await page.evaluate(async () => {
+        const host = document.getElementById('spacesDesk');
+        const btn = host.shadowRoot.querySelector('[data-action="space-open"]');
+        if (btn) btn.click();
+        await new Promise(function (r) { setTimeout(r, 80); });
+        return !!host.shadowRoot.querySelector('.space-detail');
+      });
+      clicks.push({ page: 'Spaces', control: 'Open', dom: spaceOpen, net: true, persist: true, pass: spaceOpen });
+
+      await page.goto(`http://127.0.0.1:${port}/control-room.html?view=work&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#spacesDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+      const spaceBoard = await page.evaluate(async () => {
+        const host = document.getElementById('spacesDesk');
+        const btn = host.shadowRoot.querySelector('[data-action="spaces-view"][data-view="board"]');
+        if (btn) btn.click();
+        await new Promise(function (r) { setTimeout(r, 80); });
+        return !!(host.shadowRoot.querySelector('.spaces-board') && host.shadowRoot.querySelector('[data-action="spaces-view"][data-view="board"].on'));
+      });
+      clicks.push({ page: 'Spaces', control: 'Board', dom: spaceBoard, net: true, persist: true, pass: spaceBoard });
+
+      await page.goto(`http://127.0.0.1:${port}/control-room.html?view=docs&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#docsDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+      const docsList = await page.evaluate(async () => {
+        const host = document.getElementById('docsDesk');
+        const btn = host.shadowRoot.querySelector('[data-action="docs-view"][data-view="list"]');
+        if (btn) btn.click();
+        await new Promise(function (r) { setTimeout(r, 80); });
+        return !!(host.shadowRoot.querySelector('.files.list') && host.shadowRoot.querySelector('[data-action="docs-view"][data-view="list"].on'));
+      });
+      clicks.push({ page: 'Documents', control: 'List', dom: docsList, net: true, persist: true, pass: docsList });
+
+      const typeChip = await page.evaluate(() => {
+        const host = document.getElementById('docsDesk');
+        const chip = host.shadowRoot.querySelector('[data-action="docs-type"][data-type="pdf"]');
+        if (chip) chip.click();
+        const next = host.shadowRoot.querySelector('[data-action="docs-type"][data-type="pdf"]');
+        return !!(next && next.classList.contains('on'));
+      });
+      clicks.push({ page: 'Documents', control: 'Type chips', dom: typeChip, net: true, persist: true, pass: typeChip });
+
+      await page.goto(`http://127.0.0.1:${port}/control-room.html?view=mail&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#mailDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+      const colMenu = await page.evaluate(() => {
+        const root = document.getElementById('mailDesk').shadowRoot;
+        const btn = root.querySelector('[data-action="mail-col-menu"]');
+        if (btn) btn.click();
+        return !!root.getElementById('deskPop');
+      });
+      clicks.push({ page: 'Email', control: 'column ···', dom: colMenu, net: true, persist: true, pass: colMenu });
+    } else {
     await page.goto(`http://127.0.0.1:${port}/control-room.html?view=war&fixture=mockup`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#warDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
     const focus = await page.evaluate(() => {
@@ -158,6 +256,7 @@ async function main() {
       return !!(nt && nt.getAttribute('contenteditable') === 'true');
     });
     clicks.push({ page: 'Links', control: 'Add a note', dom: linkNote, net: true, persist: true, pass: linkNote });
+    }
 
     console.log('\nB  click-check (fixture DOM)');
     console.log('page         control                      DOM  net  persist  result');

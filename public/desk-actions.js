@@ -10,7 +10,7 @@
     '.hb1', '.hb2', '.do', '.add button', '.capture button', '.newcard', '.seg span',
     '.conv', '.ic', '.mv', '.join', '.bell',
     '.pl', '.st', '.act', '.op', '.dr', '.addcard', '.gh', '.ms', '.fd', '.fl',
-    '.sr', '.build', '.ml', '.newcol', '.send', '.send2', '.car', '.pcard', '.chip',
+    '.sr', '.build', '.ml', '.newcol', '.send', '.send2', '.car', '.pcard', '.chip', '.nxa', '.m',
     '.pad', '.add', '.calbtn', '.day', '.ev', '.views span', '.c-nav span', '.dest em',
     '.b1', '.b2', '.cals label', '.ar span', '.ok b', '.beat', '.recbtn', '.gobtn',
     '.ib', '.op', '.mc', '.pill', '.nt', '.cdot', '.nx'
@@ -944,7 +944,10 @@
     'docs-search': function () {},
     'spaces-search': function () {},
     'mail-card': function (el, root) { actions['mail-open'](el, root); },
-    'contact-drag': function (el, root) { actions['pipe-open'](el, root); },
+    'contact-drag': function (el, root) {
+      if (onDragStart.moved) return;
+      actions['pipe-open'](el, root);
+    },
     'doc-drag': function (el, root) { actions['doc-open'](el, root); },
     'stage-drop': function () {},
     'mail-col-drop': function () {},
@@ -1003,8 +1006,34 @@
     },
     'pipe-open': function (el, root) {
       var id = attr(el, 'data-id');
-      if (id && typeof window.openContactCard === 'function') { window.openContactCard(id); return; }
-      soon(root, 'Open contact');
+      var name = attr(el, 'data-name') || '';
+      var email = attr(el, 'data-email') || '';
+      var card = el.closest && (el.closest('.pcard') || el.closest('tr') || el.closest('.nd'));
+      if (!name && card) {
+        var b = card.querySelector('b');
+        if (b) name = String(b.textContent || '').trim();
+      }
+      if (id && typeof window.openContactCard === 'function' && !fixtureOn()) {
+        window.openContactCard(id);
+        var drawer = document.getElementById('drawer');
+        if (drawer && drawer.classList.contains('open')) return;
+      }
+      var ov = root.getElementById && root.getElementById('contactOv');
+      if (!ov) { soon(root, 'Open contact'); return; }
+      var hd = ov.querySelector('#contactHd');
+      var body = ov.querySelector('#contactBody');
+      var follow = ov.querySelector('#contactFollow');
+      if (hd) hd.textContent = name || 'Contact';
+      if (body) body.innerHTML = (email ? '<p>' + esc(email) + '</p>' : '') + '<p>Open this person, then follow up in Chad\'s voice. Nothing sends until you confirm.</p>';
+      if (follow) {
+        follow.setAttribute('data-name', name);
+        follow.setAttribute('data-email', email);
+        follow.setAttribute('data-id', id);
+      }
+      showOv(ov, true);
+    },
+    'pipe-close': function (el, root) {
+      showOv(root.getElementById && root.getElementById('contactOv'), false);
     },
     'pipe-show-all': function (el, root) {
       S().pipeAllRows = true;
@@ -1023,19 +1052,98 @@
       toast(root, 'Filter: ' + S().spaceFilter);
     },
     'spaces-new': function (el, root) {
-      if (typeof window.addBlankSpace === 'function') { window.addBlankSpace(); toast(root, 'New space'); return; }
+      var name = 'Untitled space';
+      var temp = { id: 'tmp-' + Date.now(), name: name, kind: 'data_room', status: 'draft', docs: [], recipients: [] };
+      S().packages = (S().packages || []).concat([temp]);
+      S().pkg = temp;
+      refresh('spaces');
       if (!writeOk()) { toast(root, 'New space (fixture)'); return; }
-      api('/api/spaces', { method: 'POST', body: { name: 'TEST Untitled space', kind: 'data_room', spaceType: 'project' } }).then(ok).then(json).then(function (row) {
-        S().packages = S().packages || [];
-        if (row && row.id) S().packages.unshift(row);
+      api('/api/spaces', { method: 'POST', body: { name: name, kind: 'data_room', spaceType: 'project' } }).then(ok).then(json).then(function (row) {
+        if (row && row.id) {
+          temp.id = row.id;
+          S().pkg = Object.assign({}, temp, row);
+        }
         refresh('spaces');
         toast(root, 'Space created');
-      }).catch(function () { toast(root, 'Could not create a space'); });
+      }).catch(function () { toast(root, 'Space is on the desk — not saved yet'); });
     },
     'space-open': function (el, root) {
-      var id = attr(el, 'data-id') || attr(el, 'data-space');
-      if (id && typeof window.openSpace === 'function') { window.openSpace(id); return; }
-      soon(root, 'Open space');
+      var card = el.closest && el.closest('.sp');
+      var id = attr(el, 'data-id') || attr(el, 'data-space') || (card && attr(card, 'data-id')) || '';
+      var name = (card && card.querySelector('h4') && card.querySelector('h4').textContent) || 'Space';
+      var intel = (card && card.querySelector('p') && card.querySelector('p').textContent) || '';
+      if (!id && !name) { soon(root, 'Open space'); return; }
+      var hit = (S().packages || []).filter(function (p) { return id && String(p.id) === String(id); })[0];
+      S().pkg = hit || { id: id || ('fx-' + Date.now()), name: name, notes: intel, docs: [], recipients: [] };
+      refresh('spaces');
+      if (!writeOk() || !/^[0-9a-f-]{36}$/i.test(String(S().pkg.id))) return;
+      api('/api/spaces/' + encodeURIComponent(S().pkg.id), { method: 'GET' }).then(ok).then(json).then(function (d) {
+        var pack = (d && d.package) || d;
+        if (pack && pack.id) S().pkg = pack;
+        refresh('spaces');
+      }).catch(function () { toast(root, 'Opened locally — server copy unavailable'); });
+    },
+    'space-back': function () {
+      S().pkg = null;
+      refresh('spaces');
+    },
+    'space-people': function (el, root) {
+      if (!S().pkg) actions['space-open'](el, root);
+      var id = attr(el, 'data-id') || (S().pkg && S().pkg.id);
+      var name = window.prompt('Person to add (name or email)');
+      if (name == null || !String(name).trim()) return;
+      var person = { name: String(name).trim(), email: /@/.test(name) ? String(name).trim() : '' };
+      if (S().pkg) {
+        S().pkg.recipients = (S().pkg.recipients || []).concat([person]);
+        S().pkg.people = S().pkg.recipients;
+        refresh('spaces');
+      }
+      if (!writeOk() || !/^[0-9a-f-]{36}$/i.test(String(id || ''))) { toast(root, 'Person added'); return; }
+      api('/api/spaces/' + encodeURIComponent(id), { method: 'POST', body: { action: 'add-recipient', name: person.name, email: person.email } }).then(ok).then(json).then(function (d) {
+        S().pkg = d.package || d || S().pkg;
+        refresh('spaces');
+        toast(root, 'Person added');
+      }).catch(function () { toast(root, 'Could not add that person'); });
+    },
+    'space-docs': function (el, root) {
+      if (!S().pkg) actions['space-open'](el, root);
+      var id = attr(el, 'data-id') || (S().pkg && S().pkg.id);
+      var input = document.createElement('input');
+      input.type = 'file';
+      input.multiple = true;
+      input.onchange = function () {
+        if (!input.files || !input.files.length) return;
+        toast(root, input.files.length + ' file' + (input.files.length === 1 ? '' : 's') + ' staged');
+        if (!id || !writeOk() || !/^[0-9a-f-]{36}$/i.test(String(id))) return;
+        Array.prototype.forEach.call(input.files, function (f) {
+          api('/api/spaces/' + encodeURIComponent(id), { method: 'POST', body: { action: 'add-doc', name: f.name, mime: f.type || '', url: '' } }).then(ok).then(json).then(function (d) {
+            S().pkg = d.package || d || S().pkg;
+            refresh('spaces');
+          }).catch(function () {});
+        });
+      };
+      input.click();
+    },
+    'space-link': function (el, root) {
+      var id = attr(el, 'data-id') || (S().pkg && S().pkg.id);
+      var url = window.prompt('Link URL');
+      if (!url || !id) return;
+      if (!writeOk()) { toast(root, 'Link added (fixture)'); return; }
+      api('/api/spaces/' + encodeURIComponent(id), { method: 'POST', body: { action: 'add-link', url: url, name: url } }).then(ok).then(json).then(function (d) {
+        S().pkg = d.package || d || S().pkg;
+        refresh('spaces');
+        toast(root, 'Link added');
+      }).catch(function () { toast(root, 'Could not add that link'); });
+    },
+    'space-notes': function () {},
+    'space-send': function (el, root) {
+      var id = attr(el, 'data-id') || (S().pkg && S().pkg.id);
+      if (!id) return;
+      if (!window.confirm('Send this Space via GoHighLevel? Nothing goes out until you confirm.')) return;
+      if (!writeOk()) { toast(root, 'Send (fixture)'); return; }
+      api('/api/spaces/' + encodeURIComponent(id), { method: 'POST', body: { action: 'send-ghl' } }).then(ok).then(json).then(function (d) {
+        toast(root, d && d.sent ? 'Sent via GHL' : ((d && d.note) || 'GHL did not send that'));
+      }).catch(function () { toast(root, 'Could not send that Space'); });
     },
     'space-drive': function (el, root) {
       var id = attr(el, 'data-id');
@@ -1085,8 +1193,17 @@
     },
     'space-archive': function (el, root) {
       var menu = root.getElementById && root.getElementById('menu');
+      var id = (menu && attr(menu, 'data-id')) || attr(el, 'data-id');
       if (menu) menu.style.display = 'none';
-      soon(root, 'Hide space');
+      if (!id) return;
+      var prior = (S().packages || []).slice();
+      S().packages = (S().packages || []).filter(function (p) { return String(p.id) !== String(id); });
+      if (S().pkg && String(S().pkg.id) === String(id)) S().pkg = null;
+      refresh('spaces');
+      toast(root, 'Space hidden', function () {
+        S().packages = prior;
+        refresh('spaces');
+      });
     },
     'space-collapse': function (el) {
       var gh = el.closest('.gh') || el;
@@ -1114,9 +1231,14 @@
     'docs-new-folder': function (el, root) {
       var name = window.prompt('Folder name');
       if (!name) return;
-      S().docFolders = (S().docFolders || []).concat([String(name).trim()]);
+      name = String(name).trim();
+      S().docFolders = (S().docFolders || []).concat([name]);
       refresh('docs');
-      toast(root, 'Folder added on this desk');
+      if (!writeOk()) { toast(root, 'Folder added'); return; }
+      api('/api/documents', { method: 'POST', body: { action: 'add-folder', name: name } }).then(ok).then(function () {
+        toast(root, 'Folder added');
+        refresh('docs');
+      }).catch(function () { toast(root, 'Folder is on the desk — not saved yet'); });
     },
     'docs-drive': function (el, root) {
       go('drive');
@@ -1139,6 +1261,11 @@
     'doc-open': function (el, root) {
       var url = attr(el, 'data-url') || attr(el, 'data-web');
       var drive = attr(el, 'data-drive');
+      var name = attr(el, 'data-name') || 'Document';
+      if (typeof window.openDocView === 'function') {
+        window.openDocView(name, url, drive);
+        if (document.getElementById('docView') && !document.getElementById('docView').hidden) return;
+      }
       if (drive) url = 'https://drive.google.com/file/d/' + encodeURIComponent(drive) + '/view';
       if (/^https?:\/\//i.test(url)) { window.open(url, '_blank', 'noopener'); return; }
       soon(root, 'Open document');
@@ -1244,7 +1371,15 @@
       if (dot) { dot.classList.toggle('on', !on); dot.style.background = !on ? '' : '#ccd6e4'; }
       toast(root, !on ? 'Auto-filing on' : 'Auto-filing paused');
     },
-    'mail-col-menu': function (el, root) {
+    'mail-col-menu': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      var key = attr(el, 'data-col');
+      var name = attr(el, 'data-name') || '';
+      openPop(root, el, '<button type="button" data-action="mail-col-rename" data-col="' + esc(key) + '" data-name="' + esc(name) + '">Rename</button>'
+        + '<button type="button" data-action="mail-col-new">+ New column</button>');
+    },
+    'mail-col-rename': function (el, root) {
+      closePop(root);
       var key = attr(el, 'data-col');
       var next = window.prompt('Rename this column', attr(el, 'data-name') || '');
       if (next == null || !String(next).trim()) return;
@@ -1278,7 +1413,7 @@
     },
     'mail-task': function (el, root) {
       var title = attr(el, 'data-subject') || 'Email follow-up';
-      return addTask('TEST ' + title, 'today').then(function () { toast(root, 'Task created'); }).catch(function () { toast(root, 'Could not create that task'); });
+      return addTask(title, 'today').then(function () { toast(root, 'Task created'); }).catch(function () { toast(root, 'Could not create that task'); });
     },
     'play-pad': function (el, root) {
       var M = window.__playMount;
@@ -1578,7 +1713,7 @@
     if (t && t.closest) {
       var ignore = t.closest('input, textarea, select, [contenteditable="true"]');
       var ignAct = ignore && ignore.getAttribute ? (ignore.getAttribute('data-action') || '') : '';
-      if (ignore && /^(capture-input|notes-search|note-edit|link-title|link-url|link-search|link-note|plan-draft|reach-pick-search|pipe-search|mail-search|docs-search|spaces-search|mail-body|mail-to|mail-subject|intel-ask|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|play-tx|zoom-search|zoom-ask-input)$/.test(ignAct)) return;
+      if (ignore && /^(capture-input|notes-search|note-edit|link-title|link-url|link-search|link-note|plan-draft|reach-pick-search|pipe-search|mail-search|docs-search|spaces-search|space-notes|mail-body|mail-to|mail-subject|intel-ask|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|play-tx|zoom-search|zoom-ask-input)$/.test(ignAct)) return;
     }
     var rootEarly = rootOf(el || t, e);
     var menu = rootEarly.getElementById && rootEarly.getElementById('menu');
@@ -1606,11 +1741,12 @@
     var el = actionElFromEvent(e) || (e.target && e.target.closest ? e.target.closest('[data-action]') : null);
     var root = rootOf(el || e.target, e);
     if (e.key === 'Escape') {
-      var ov = root.getElementById && (root.getElementById('ov') || root.getElementById('planOv') || root.getElementById('reachOv'));
+      var ov = root.getElementById && (root.getElementById('ov') || root.getElementById('planOv') || root.getElementById('reachOv') || root.getElementById('contactOv'));
       if (ov && ov.classList.contains('open')) {
         showOv(root.getElementById('ov'), false);
         showOv(root.getElementById('planOv'), false);
         showOv(root.getElementById('reachOv'), false);
+        showOv(root.getElementById('contactOv'), false);
         e.preventDefault();
         return;
       }
@@ -1643,6 +1779,17 @@
       }, 120);
     }
     if (name === 'note-edit') saveNote(root, el);
+    if (name === 'space-notes') {
+      var sid = attr(el, 'data-id') || (S().pkg && S().pkg.id);
+      if (S().pkg) S().pkg.notes = String(el.value || '');
+      if (!sid || !writeOk() || !/^[0-9a-f-]{36}$/i.test(String(sid))) return;
+      clearTimeout(noteSaveTimer);
+      noteSaveTimer = setTimeout(function () {
+        api('/api/spaces/' + encodeURIComponent(sid), { method: 'PATCH', body: { notes: String(el.value || '') } }).then(ok).then(function () {
+          toast(root, 'Saved');
+        }).catch(function () { toast(root, 'Could not save those notes'); });
+      }, 400);
+    }
     if (name === 'link-search' || name === 'reach-pick-search') {
       var q = String(el.value || '').toLowerCase();
       var rows = name === 'link-search' ? root.querySelectorAll('.tile') : root.querySelectorAll('.pick-row');
@@ -1698,6 +1845,8 @@
     e.dataTransfer.setData('text/plain', payload);
     e.dataTransfer.effectAllowed = 'move';
     el.classList.add('dragging');
+    onDragStart.moved = true;
+    setTimeout(function () { onDragStart.moved = false; }, 400);
   }
   function dropSel() { return '[data-action="col-drop"], [data-action="stage-drop"], [data-action="mail-col-drop"], [data-action="space-drop"]'; }
   function onDragOver(e) {
@@ -1727,7 +1876,9 @@
       refresh('pipe');
       if (!writeOk()) { toast(root, 'Moved to ' + stageName + ' (fixture)'); return; }
       api('/api/contacts', { method: 'PATCH', body: { id: id, stage: mapped } }).then(ok).then(function () {
-        toast(root, 'Stage saved to the pipeline', function () {
+        return api('/api/pipeline', { method: 'POST', body: { id: id, stage: stageName, name: payload.name, email: payload.email } }).catch(function () { return { ok: false }; });
+      }).then(function () {
+        toast(root, 'Stage saved to GoHighLevel', function () {
           api('/api/contacts', { method: 'PATCH', body: { id: id, stage: 'new' } }).then(function () { refresh('pipe'); });
         });
       }).catch(function () { toast(root, 'Could not write that stage'); });
