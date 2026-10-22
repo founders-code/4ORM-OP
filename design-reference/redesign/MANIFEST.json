@@ -124,5 +124,54 @@
   "route": "/integrations",
   "bytes": 36154,
   "sha256": "720ba2d1b196eb7f"
+ },
+ {
+  "file": "redesign/02b-war-room-steps.html",
+  "page": "War Room - Steps open",
+  "route": "/war-room (Steps clicked)",
+  "bytes": 52386,
+  "sha256": "c6c6cd5f016d3cf5"
+ },
+ {
+  "file": "redesign/03b-notes-open.html",
+  "page": "Notes - note opened",
+  "route": "/notes (note clicked)",
+  "bytes": 45250,
+  "sha256": "3e76dcd049d359b0"
+ },
+ {
+  "file": "redesign/05b-space-open.html",
+  "page": "Space opened",
+  "route": "/spaces/:id",
+  "bytes": 53025,
+  "sha256": "868da347cd219986"
+ },
+ {
+  "file": "redesign/06b-document-viewer.html",
+  "page": "Documents - in-site viewer",
+  "route": "/documents (file clicked)",
+  "bytes": 45647,
+  "sha256": "e2427b492f2511ee"
+ },
+ {
+  "file": "redesign/08c-email-people.html",
+  "page": "Email - People view",
+  "route": "/email?view=people",
+  "bytes": 48142,
+  "sha256": "b12c7a634346eaf4"
+ },
+ {
+  "file": "redesign/10b-calendar-rail-closed.html",
+  "page": "Calendar - side panel closed",
+  "route": "/calendar (rail toggle)",
+  "bytes": 91569,
+  "sha256": "c4c2cbe5746f717e"
+ },
+ {
+  "file": "redesign/13b-news-saved.html",
+  "page": "News - Saved collections",
+  "route": "/news?view=saved",
+  "bytes": 49388,
+  "sha256": "c3e60877bb3faa8b"
  }
 ]
