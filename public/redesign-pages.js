@@ -27,9 +27,9 @@
     + '.desk-pop button:hover{background:var(--soft)}'
     + '.ov{position:fixed;inset:0;z-index:45;background:rgba(10,16,40,.45);display:none;align-items:center;justify-content:center;padding:24px}'
     + '.ov.open{display:flex}'
-    + '.note.big{width:min(720px,92vw);max-height:84vh;overflow:auto;padding:22px 24px 18px}'
-    + '.note.big h4{font-size:22px;outline:none}'
-    + '.note.big p,.note.big .nb{font-size:15px;line-height:1.55;-webkit-line-clamp:unset;display:block;overflow:visible;min-height:140px;outline:none;margin:0}'
+    + '.nscrim{position:fixed;inset:0;background:rgba(5,10,28,.62);backdrop-filter:blur(6px);z-index:60}'
+    + '.nbig{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-.4deg);width:720px;max-width:92vw;max-height:82vh;z-index:61;background:#fff6c9;border-radius:6px 6px 22px 6px;box-shadow:0 40px 90px rgba(0,0,0,.55);display:flex;flex-direction:column;color:#3d3200}'
+    + '.nbig.y{background:#fff6c9;color:#3d3200}.nbig.p{background:#ffe1ea;color:#3d1020}.nbig.g{background:#ddf5e6;color:#12331e}.nbig.b{background:#e1ecff;color:#10203d}.nbig.o{background:#ffe6cf;color:#3d2200}.nbig.v{background:#ece4ff;color:#24103d}.nbig.w{background:#fff;color:var(--ink)}'
     + '.plan-ov,.pick-ov{position:fixed;inset:0;z-index:46;background:rgba(10,16,40,.45);display:none;align-items:center;justify-content:center;padding:24px}'
     + '.plan-ov.open,.pick-ov.open{display:flex}'
     + '.plan-box,.pick-box{width:min(640px,92vw);max-height:84vh;overflow:auto;background:#fff;border-radius:16px;padding:18px 20px;box-shadow:0 18px 40px rgba(3,10,30,.35)}'
@@ -42,7 +42,7 @@
     + '.pick-row{display:flex;gap:10px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);font-size:13.5px}'
     + '.pick-row:first-child{border-top:0}';
   var CSS = {
-    room: '/port-css/dashboard.css', war: '/port-css/war-room.css', notes: '/port-css/notes.css',
+    room: '/port-css/dashboard.css', war: '/port-css/war-room.css?v=2', notes: '/port-css/notes.css?v=2',
     contacts: '/port-css/pipeline.css', work: '/port-css/spaces.css?v=2', docs: '/port-css/documents.css',
     links: '/port-css/links.css', mail: '/port-css/email.css',
     playbook: '/port-css/playbook.css', calendar: '/port-css/calendar.css', zoom: '/port-css/zoom.css',
@@ -61,6 +61,12 @@
 
   function fixtureOn() {
     try { return /(?:^|[?&])fixture=mockup(?:&|$)/.test(String(location.search || '')); } catch (e) { return false; }
+  }
+  function qFlag(name) {
+    try { return new URLSearchParams(String(location.search || '')).get(name) === '1'; } catch (e) { return false; }
+  }
+  function stepsMap() {
+    try { return JSON.parse(localStorage.getItem('cr_move_steps') || '{}') || {}; } catch (e) { return {}; }
   }
 
   function findHost(hostId) {
@@ -728,8 +734,21 @@
       + '<div class="hbtns"><button class="hb1 go" data-action="focus-toggle">&#9654; Start 25-min focus</button><button class="hb2" data-action="focus-stop" hidden>Stop</button><button class="hb1" data-action="hero-commit" data-id="' + esc((data.hero && data.hero.id) || '') + '" data-title="' + esc((data.hero && data.hero.title) || '') + '">Commit as my one thing</button><button class="hb2" data-action="hero-plan" data-id="' + esc((data.hero && data.hero.id) || '') + '" data-title="' + esc((data.hero && data.hero.title) || '') + '">Plan</button><button class="hb2" data-action="hero-cancel" data-id="' + esc((data.hero && data.hero.id) || '') + '">Cancel this move</button></div>'
       + '<div class="moves"><div class="mh"><h3>4orm Intelligence &middot; CEO ranked moves</h3><span class="s">rebuilt 6:30 am</span><button class="rr" data-action="moves-rerun">&#8635; Re-run</button></div>'
       + moves.map(function (m, i) {
-        var mid = esc(m.id || '');
-        return '<div class="mv2' + (m.one ? ' one' : '') + '"><span class="rk">' + (i + 1) + '</span><div><div class="mt">' + esc(m.title) + ' <span class="zn ' + m.zone + '">' + esc(m.zoneLabel) + '</span>' + (m.one ? '<span class="yo">Your one move</span>' : '') + '</div><div class="ms2">' + esc(m.why) + '</div><div class="src">' + esc(m.src) + '</div></div><div class="ma"><button class="do" data-action="move-do" data-id="' + mid + '">Do</button><button data-action="move-steps" data-id="' + mid + '">Steps</button><button data-action="move-plan" data-id="' + mid + '" data-title="' + esc(m.title) + '">Plan</button><button class="x" data-action="move-dismiss" data-id="' + mid + '"' + (m.one ? ' title="Dismiss - the next move takes its place"' : '') + '>&times;</button></div></div>';
+        var mid = String(m.id || ('m' + i));
+        var stored = stepsMap()[mid] || m.steps || [];
+        var wantOpen = (window.STATE && window.STATE.openSteps === mid) || (qFlag('steps') && i === 0);
+        var steps = Array.isArray(stored) ? stored : [];
+        var doneN = steps.filter(function (s) { return s && s.done; }).length;
+        var stp = '';
+        if (wantOpen) {
+          stp = '<div class="stp" style="grid-column:1/-1"><h6>&#10022; Steps for this move <em>' + doneN + ' of ' + steps.length + ' done</em></h6>'
+            + steps.map(function (s, si) {
+              return '<div class="s' + (s.done ? ' d' : '') + '" data-action="step-toggle" data-id="' + esc(mid) + '" data-i="' + si + '"><i>' + (s.done ? '&#10003;' : '') + '</i><span>' + esc(s.text || '') + '</span>'
+                + (s.when ? '<small>' + esc(s.when) + '</small>' : (s.act ? '<a data-action="step-act" data-id="' + esc(mid) + '" data-i="' + si + '" data-act="' + esc(s.act) + '">' + esc(s.act) + '</a>' : '')) + '</div>';
+            }).join('')
+            + '<div class="addst" data-action="step-add" data-id="' + esc(mid) + '">+ Add a step</div></div>';
+        }
+        return '<div class="mv2' + (m.one ? ' one' : '') + '"><span class="rk">' + (i + 1) + '</span><div><div class="mt">' + esc(m.title) + ' <span class="zn ' + m.zone + '">' + esc(m.zoneLabel) + '</span>' + (m.one ? '<span class="yo">Your one move</span>' : '') + '</div><div class="ms2">' + esc(m.why) + '</div><div class="src">' + esc(m.src) + '</div></div><div class="ma"><button class="do" data-action="move-do" data-id="' + esc(mid) + '">Do</button><button data-action="move-steps" data-id="' + esc(mid) + '"' + (wantOpen ? ' class="on-steps" style="background:#101a33;color:#fff"' : '') + '>Steps</button><button data-action="move-plan" data-id="' + esc(mid) + '" data-title="' + esc(m.title) + '">Plan</button><button class="x" data-action="move-dismiss" data-id="' + esc(mid) + '"' + (m.one ? ' title="Dismiss - the next move takes its place"' : '') + '>&times;</button></div>' + stp + '</div>';
       }).join('') + '</div></section>'
       + '<div class="rstack"><section class="card"><div class="ch"><h3>After your meetings &mdash; what you owe</h3><span class="s">from Zoom + Granola</span></div>'
       + (data.meetingActions || []).map(function (row) {
@@ -805,12 +824,34 @@
       + (data.pinned || []).map(noteCard).join('') + '<div class="newcard" data-action="note-new">+ Pin a note here</div></div>'
       + '<div class="sec">All notes</div><div class="board">'
       + (data.notes || []).map(noteCard).join('') + '</div>'
-      + '<div class="ov" id="ov" hidden data-action="note-close"><div class="note big y" id="ovNote" data-action="note-keep"><div class="nh"><span class="ty" id="ok">Note</span><span class="pin" id="ovPin" data-action="note-pin">&#128204;</span><span class="nx x" data-action="note-close">&times;</span></div>'
-      + '<h4 id="ot" contenteditable="true" data-action="note-edit"></h4><p id="ob" contenteditable="true" data-action="note-edit"></p><div class="meta" id="om"></div>'
-      + '<div class="na"><span class="conv" data-action="note-task" id="ovTask">&#10022; Convert to task</span></div></div></div>'
+      + noteOverlayHtml(data)
       + '<div class="toast" id="toast"></div>';
     finishPaint(wrap);
     markReady('notesDesk');
+  }
+
+  function noteOverlayHtml(data) {
+    var open = qFlag('open');
+    var src = (data && data.openNote) || ((data && data.pinned && data.pinned[0]) || (data && data.notes && data.notes[0]) || {});
+    var color = src.color || 'y';
+    var hid = open ? '' : ' hidden';
+    var title = src.title || '';
+    var body = src.body || '';
+    var edited = src.edited || '';
+    var pinOn = src.pin ? '1' : '0';
+    var dots = [
+      ['y', '#fff6c9'], ['p', '#ffd9df'], ['g', '#dff3e6'], ['b', '#dfe9ff'], ['v', '#efe6ff']
+    ].map(function (d) {
+      return '<i class="' + (d[0] === color ? 'on' : '') + '" style="background:' + d[1] + '" data-action="note-color-set" data-color="' + d[0] + '"></i>';
+    }).join('');
+    return '<div class="nscrim" id="nscrim"' + hid + ' data-action="note-close"></div>'
+      + '<div class="nbig ' + color + '" id="ovNote"' + hid + ' data-action="note-keep" data-id="' + esc(src.id || '') + '" data-source="' + esc(src.source || 'sticky') + '" data-color="' + esc(color) + '" data-pin="' + pinOn + '">'
+      + '<div class="nt"><span class="ty" id="ok">' + esc(src.type || 'Note') + '</span><span class="cols">' + dots + '</span>'
+      + '<div class="ntools"><span title="Pin" id="ovPin" data-action="note-pin" data-id="' + esc(src.id || '') + '" data-source="' + esc(src.source || 'sticky') + '" data-on="' + pinOn + '">&#9733; Pin</span><span title="More" data-action="note-menu" data-id="' + esc(src.id || '') + '" data-source="' + esc(src.source || 'sticky') + '" data-title="' + esc(title) + '" data-on="' + pinOn + '">&middot;&middot;&middot;</span><span title="Close (Esc)" data-action="note-close">&times;</span></div></div>'
+      + '<h2 id="ot" contenteditable="true" data-action="note-edit" data-id="' + esc(src.id || '') + '" data-source="' + esc(src.source || 'sticky') + '">' + esc(title) + '</h2>'
+      + '<div class="bdy" id="ob" contenteditable="true" data-action="note-edit" data-id="' + esc(src.id || '') + '" data-source="' + esc(src.source || 'sticky') + '">' + esc(body).replace(/\n/g, '<br>') + '</div>'
+      + '<div class="nf"><span class="sv" id="ovSaved"><i></i>Saved &middot; just now</span>' + (edited ? '<span style="font-size:12px;color:#7a6400">' + esc(edited) + '</span>' : '')
+      + '<div class="r"><button class="nb" data-action="note-space" data-id="' + esc(src.id || '') + '" data-title="' + esc(title) + '">Move to a Space</button><button class="nb pri" id="ovTask" data-action="note-task" data-id="' + esc(src.id || '') + '" data-title="' + esc(title) + '">&#10022; Convert to task</button></div></div></div>';
   }
 
   function gated(fn) {

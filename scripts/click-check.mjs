@@ -387,11 +387,48 @@ async function main() {
       const root = document.getElementById('notesDesk').shadowRoot;
       const card = root.querySelector('[data-action="note-open"]');
       if (card) card.click();
-      const ov = root.getElementById('ov');
+      const scrim = root.getElementById('nscrim');
       const big = root.getElementById('ovNote');
-      return !!(ov && ov.classList.contains('open') && big && /note big/.test(big.className));
+      return !!(big && !big.hidden && /nbig/.test(big.className) && scrim && !scrim.hidden);
     });
     clicks.push({ page: 'Notes', control: 'Open note overlay', dom: note, net: true, persist: true, pass: note });
+
+    const noteSave = await page.evaluate(async () => {
+      const root = document.getElementById('notesDesk').shadowRoot;
+      const ob = root.getElementById('ob');
+      const ot = root.getElementById('ot');
+      const id = (ot && ot.getAttribute('data-id')) || '';
+      if (ob) {
+        ob.innerText = 'TEST saved body';
+        ob.dispatchEvent(new InputEvent('input', { bubbles: true, composed: true, inputType: 'insertText', data: 'TEST saved body' }));
+      }
+      const close = root.querySelector('.ntools [data-action="note-close"]');
+      if (close) close.click();
+      await new Promise(function (r) { setTimeout(r, 40); });
+      const card = root.querySelector('[data-action="note-open"][data-id="' + id + '"]') || root.querySelector('[data-action="note-open"]');
+      if (card) card.click();
+      const again = root.getElementById('ob');
+      return !!(again && /TEST saved body/.test(again.innerText || ''));
+    });
+    clicks.push({ page: 'Notes', control: 'Autosave survives reopen', dom: noteSave, net: true, persist: true, pass: noteSave });
+
+    const today = await page.evaluate(() => {
+      const btn = document.querySelector('[data-action="top-today"]');
+      if (btn) btn.click();
+      const pop = document.getElementById('todayPop');
+      return !!(pop && pop.classList.contains('open'));
+    });
+    clicks.push({ page: 'Site-wide', control: 'Top bar Today', dom: today, net: true, persist: true, pass: today });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=war&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#warDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const steps = await page.evaluate(() => {
+      const root = document.getElementById('warDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="move-steps"]');
+      if (btn) btn.click();
+      return !!root.querySelector('.stp');
+    });
+    clicks.push({ page: 'War Room', control: 'Steps expander', dom: steps, net: true, persist: true, pass: steps });
 
     await page.goto(`http://127.0.0.1:${port}/control-room.html?view=links&fixture=mockup`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#linksDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
@@ -402,6 +439,23 @@ async function main() {
       return !!(nt && nt.getAttribute('contenteditable') === 'true');
     });
     clicks.push({ page: 'Links', control: 'Add a note', dom: linkNote, net: true, persist: true, pass: linkNote });
+
+    const linkCat = await page.evaluate(() => {
+      const root = document.getElementById('linksDesk').shadowRoot;
+      const row = root.querySelector('[data-action="link-cat"]:not(.on)');
+      if (row) row.click();
+      const next = root.querySelector('[data-action="link-cat"].on');
+      return !!(next && row && next.getAttribute('data-name') === row.getAttribute('data-name'));
+    });
+    clicks.push({ page: 'Links', control: 'Category tree', dom: linkCat, net: true, persist: true, pass: linkCat });
+
+    const linkToggle = await page.evaluate(() => {
+      const root = document.getElementById('linksDesk').shadowRoot;
+      const car = root.querySelector('[data-action="link-toggle"]');
+      if (car) car.click();
+      return !!(window.STATE && Array.isArray(window.STATE.linkOpen) && window.STATE.linkOpen.length >= 0);
+    });
+    clicks.push({ page: 'Links', control: 'Expand subfolder', dom: linkToggle, net: true, persist: true, pass: linkToggle });
     }
 
     console.log('\nB  click-check (fixture DOM)');

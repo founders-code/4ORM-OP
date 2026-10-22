@@ -1957,10 +1957,10 @@ body.rz-drag,body.rz-drag *{cursor:col-resize!important;user-select:none!importa
   <div class="logo"><img src="/assets/logo-finance-dark.png" alt="4orm Finance"/></div>
   <div class="crumb" id="pageCrumb">Dashboard</div>
   <div class="r">
-    <button class="tb" id="todayBtn" type="button">Today</button>
+    <button class="tb" id="todayBtn" type="button" data-action="top-today">Today</button>
     <div class="pop" id="todayPop"></div>
-    <button class="tb" id="openCal" type="button">Calendar</button>
-    <button class="tb" id="signalsBtn" type="button"><span class="dot"></span>Signals</button>
+    <button class="tb" id="openCal" type="button" data-action="top-cal">Calendar</button>
+    <button class="tb" id="signalsBtn" type="button" data-action="top-signals"><span class="dot"></span>Signals</button>
     <span class="clock" id="clock"></span>
     <span class="heard" id="heard" hidden></span>
     <button class="mic" id="mic" title="Click to talk" aria-label="Talk to it" hidden>&#9679;</button>
@@ -2436,9 +2436,7 @@ document.getElementById('modal').addEventListener('click',function(e){if(e.targe
 document.getElementById('tabs').addEventListener('click',function(e){var t=e.target.closest('.tab');if(t)switchView(t.getAttribute('data-v'));});
 var snapNowBtn=document.getElementById('snapNow');if(snapNowBtn)snapNowBtn.addEventListener('click',snapshotNow);
 var finForm=document.getElementById('finForm');if(finForm)finForm.addEventListener('submit',submitFinance);
-document.getElementById('openCal').addEventListener('click',function(){switchView('calendar');});
 document.getElementById('mic').addEventListener('click',startVoice);
-document.getElementById('todayBtn').addEventListener('click',function(e){e.stopPropagation();renderTodayPop();document.getElementById('todayPop').classList.toggle('open');});
 document.addEventListener('click',function(){document.getElementById('todayPop').classList.remove('open');});
 document.getElementById('todayPop').addEventListener('click',function(e){e.stopPropagation();});
 document.getElementById('now').addEventListener('click',function(e){if(e.target.closest('button,a,input,textarea'))return;openRoadmap();});
@@ -2513,7 +2511,6 @@ document.addEventListener('keydown',function(e){if(e.key!=='Escape')return;if(!d
 function applyBoard(data){STATE.resolvedWaiting=data.resolvedWaiting||[];STATE.items=data.items||[];STATE.contacts=data.contacts||[];STATE.categories=data.categories||[];STATE.links=data.links||[];(STATE.linkDrops||[]).forEach(function(d){applyLinkDrop(d[0],d[1],d[2]);});STATE.events=data.events||[];STATE.folders=data.folders||[];STATE.drives=data.drives||[];STATE.signals=data.signals||[];STATE.brief=data.brief||STATE.brief;STATE.pipeline=data.pipeline||[];STATE.integrations=data.integrations||[];STATE.plugins=data.plugins||[];STATE.noteCats=data.noteCats||[];STATE.notes=data.notes||[];STATE.zoomNotes=data.zoomNotes||[];STATE.plans=data.plans||[];STATE.commitments=data.commitments||[];STATE.news=data.news||[];STATE.newsCategories=data.newsCategories||STATE.newsCategories||[];STATE.runwayWeeks=data.runwayWeeks==null?null:data.runwayWeeks;STATE.calUntil=data.calendarUntil||0;STATE.sourcesReached=!!data.sourcesReached;STATE.needsDatabase=!!data.needsDatabase;if(!STATE.cat&&STATE.categories[0])STATE.cat=STATE.categories[0].name;if(!STATE.docSel&&STATE.folders[0])STATE.docSel=STATE.folders[0].id;if(!STATE.noteCat){var inbox=STATE.noteCats.filter(function(c){return c.name==='Inbox'&&!c.parentId;})[0];if(inbox)STATE.noteCat=inbox.id;}if(typeof window.bootAlarms==='function')window.bootAlarms();renderRoom();renderTodayPop();var tab=document.querySelector('.tab.on');var v=tab&&tab.getAttribute('data-v');if(v==='docs')renderDocs();if(v==='drive')renderDrive();if(v==='contacts')renderContacts(document.getElementById('cSearch').value||'');if(v==='notes')renderNotes();if(v==='znotes')renderZNotes();if(v==='people')renderPeople(document.getElementById('pSearch').value||'');if(v==='int'){renderInt();renderPlugins();}if(v==='cal')calInit();var cc=document.getElementById('cCount');if(cc)cc.textContent=STATE.contacts.length;var ic=document.getElementById('iCount');if(ic)ic.textContent=(STATE.plugins||[]).filter(function(p){return p.connected||p.on;}).length;if(typeof window.paintShellNav==='function')window.paintShellNav();loadCeo();}
 function loadWarExtra(path,apply){return authFetch(path,{credentials:'same-origin'}).then(function(r){return r.ok?r.json():{};}).then(apply).catch(function(){});}
 function loadBoard(){return authFetch('/api/board',{credentials:'same-origin'}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(data){applyBoard(data);return Promise.all([loadWarExtra('/api/commitments',function(d){STATE.commitments=(d&&d.commitments)||[];}),loadWarExtra('/api/news',function(d){STATE.news=(d&&d.items)||[];if(d&&d.categories)STATE.newsCategories=d.categories;}),loadWarExtra('/api/plans',function(d){STATE.plans=(d&&d.plans)||[];})]).then(function(){renderRoom();return loadCeo();});}).catch(function(){STATE.sourcesReached=false;STATE.brief={headline:'Sources unavailable.',summary:'The desk could not be read.',top3:[]};STATE.signals=[{nm:'Desk',state:'off',word:'Unavailable',sub:'The board could not be read'}];renderRoom();});}
-document.getElementById('signalsBtn').addEventListener('click',function(e){e.stopPropagation();openSignals();});
 document.getElementById('runway').addEventListener('change',function(){var raw=this.value.trim();var weeks=raw===''?null:Number(raw);if(weeks!=null&&(!Number.isInteger(weeks)||weeks<0||weeks>520))return;var prev=STATE.runwayWeeks;STATE.runwayWeeks=weeks;authFetch('/api/settings',{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({runwayWeeks:weeks})}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(row){STATE.runwayWeeks=row.runwayWeeks;paintRunway();}).catch(function(){STATE.runwayWeeks=prev;paintRunway();});});
 document.getElementById('openNotes').addEventListener('click',function(){switchView('notes');});
 document.getElementById('capKeep').addEventListener('click',preserveDump);
@@ -2581,9 +2578,9 @@ document.addEventListener('click',function(e){var t=e.target.closest&&e.target.c
 </script>
 <script src="/shadow-port.js"></script>
 <script src="/redesign-fixture.js"></script>
-<script src="/desk-actions.js?v=8"></script>
-<script src="/redesign-pages.js?v=2"></script>
-<script src="/redesign-pages-b.js?v=2"></script>
+<script src="/desk-actions.js?v=9"></script>
+<script src="/redesign-pages.js?v=3"></script>
+<script src="/redesign-pages-b.js?v=3"></script>
 <script src="/control-room-war.js"></script>
 <script src="/control-room-ops.js?v=2"></script>
 <script src="/shell-nav.js"></script>

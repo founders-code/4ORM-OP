@@ -94,7 +94,20 @@
   function pipelineData() { return fixtureOn() ? (F().pipeline || {}) : livePipelineState(); }
   function spacesData() { return fixtureOn() ? (F().spaces || {}) : liveSpacesState(); }
   function documentsData() { return fixtureOn() ? (F().documents || {}) : liveDocumentsState(); }
-  function linksData() { return fixtureOn() ? (F().links || {}) : liveLinksState(); }
+  function linksData() {
+    if (!fixtureOn()) return liveLinksState();
+    var data = F().links || {};
+    var S = window.STATE || {};
+    var openKeys = S.linkOpen;
+    var cat = S.cat || S.linkCat || '';
+    var tree = (data.tree || []).map(function (t) {
+      var next = Object.assign({}, t);
+      if (cat) next.on = t.name === cat;
+      if (Array.isArray(openKeys) && t.car) next.car = openKeys.indexOf(t.name) >= 0 ? 'open' : 'closed';
+      return next;
+    });
+    return Object.assign({}, data, { tree: tree, crumb: cat || data.crumb });
+  }
   function emailData() { return fixtureOn() ? (F().email || {}) : liveEmailState(); }
 
   function normCat(raw) {
@@ -314,14 +327,68 @@
       seenAll[key + '|' + uk] = 1;
       counts[key] = (counts[key] || 0) + 1;
     });
-    var tree = cats.map(function (c, i) {
+    var openKeys = [];
+    if (typeof window.linkOpenSet === 'function') openKeys = window.linkOpenSet();
+    else {
+      try { openKeys = JSON.parse(localStorage.getItem('cr_link_open') || '[]'); } catch (e) { openKeys = []; }
+    }
+    if (Array.isArray(S.linkOpen) && S.linkOpen.length) openKeys = S.linkOpen;
+    var activeCat = S.cat || S.linkCat || '';
+    var activeSub = S.sub || '';
+    var activeLeaf = S.leaf || '';
+    if (!activeCat && cats[0]) activeCat = cats[0].name || cats[0].title || '';
+    var tree = [];
+    cats.forEach(function (c) {
       var name = c.name || c.title || 'Category';
-      return { name: name, n: counts[name] || 0, on: i === 0, car: i === 0 ? 'closed' : 'closed' };
+      var key = name;
+      var expanded = openKeys.indexOf(key) >= 0;
+      var subs = Array.isArray(c.subs) ? c.subs : [];
+      var nest = c.nest && typeof c.nest === 'object' ? c.nest : {};
+      tree.push({
+        name: name, n: counts[name] || 0,
+        on: !activeSub && !activeLeaf && name === activeCat,
+        car: subs.length ? (expanded ? 'open' : 'closed') : '',
+        kind: 'cat', key: key, noSub: !subs.length, noHv: name === 'Uncategorized'
+      });
+      if (expanded) {
+        subs.forEach(function (sub) {
+          var skey = name + '\u001f' + sub;
+          var sOpen = openKeys.indexOf(skey) >= 0;
+          var kids = Array.isArray(nest[sub]) ? nest[sub] : [];
+          var sn = 0;
+          links.forEach(function (l) {
+            if ((l.cat || l.category) === name && (l.sub || '') === sub) sn += 1;
+          });
+          tree.push({
+            name: sub, n: sn, on: !activeLeaf && name === activeCat && sub === activeSub,
+            car: kids.length ? (sOpen ? 'open' : 'closed') : '',
+            kind: 'sub', parent: name, key: skey, indent: 2, noSub: true
+          });
+          if (sOpen) {
+            kids.forEach(function (leaf) {
+              var ln = 0;
+              links.forEach(function (l) {
+                if ((l.cat || l.category) === name && (l.sub || '') === sub && (l.leaf || '') === leaf) ln += 1;
+              });
+              tree.push({
+                name: leaf, n: ln, on: name === activeCat && sub === activeSub && leaf === activeLeaf,
+                car: '', kind: 'leaf', parent: name, sub: sub, key: skey + '\u001f' + leaf, indent: 3, noSub: true, noHv: true
+              });
+            });
+          }
+        });
+      }
     });
-    if (!tree.length) tree = [{ name: 'Uncategorized', n: links.length, on: true, car: '', noHv: true }];
-    var active = (tree.filter(function (t) { return t.on; })[0] || tree[0] || { name: '' }).name;
-    var wallSrc = links.filter(function (l) { return !active || (l.cat || l.category || '') === active || active === 'Uncategorized'; });
-    if (!wallSrc.length) wallSrc = links;
+    if (!tree.length) tree = [{ name: 'Uncategorized', n: links.length, on: true, car: '', noHv: true, kind: 'cat' }];
+    var active = activeLeaf || activeSub || activeCat || (tree[0] && tree[0].name) || '';
+    var wallSrc = links.filter(function (l) {
+      var cat = l.cat || l.category || '';
+      if (activeLeaf) return cat === activeCat && (l.sub || '') === activeSub && (l.leaf || '') === activeLeaf;
+      if (activeSub) return cat === activeCat && (l.sub || '') === activeSub;
+      if (activeCat && activeCat !== 'Uncategorized') return cat === activeCat;
+      return true;
+    });
+    if (!wallSrc.length && !activeCat) wallSrc = links;
     var seen = {};
     var wall = wallSrc.filter(function (l) { return String(l.note || '') !== '__archived__'; }).slice(0, 24).map(function (l) {
       var url = l.url || '';
@@ -631,8 +698,16 @@
       + (data.tree || []).map(function (t) {
         var car = t.car === 'open' ? '&#9662;' : t.car === 'closed' ? '&#9656;' : '';
         var cls = 'cr' + (t.on ? ' on' : '') + (t.indent === 2 ? ' sub2' : '') + (t.indent === 3 ? ' sub3' : '');
-        var hv = t.noHv ? '' : '<span class="hv">' + (t.noSub ? '' : '<span data-action="coming-soon" data-label="New subcategory">+ sub</span>') + '<span data-action="coming-soon" data-label="Rename category">Rename</span><span class="x" data-action="coming-soon" data-label="Hide category">&times;</span></span>';
-        return '<div class="' + cls + '" data-action="link-cat" data-name="' + esc(t.name) + '"><span class="car">' + car + '</span>' + esc(t.name) + '<span class="n">' + t.n + '</span>' + hv + '</div>';
+        var kind = t.kind || 'cat';
+        var hv = t.noHv ? '' : '<span class="hv">'
+          + (t.noSub ? '' : '<span data-action="link-sub" data-name="' + esc(t.parent || t.name) + '">+ sub</span>')
+          + '<span data-action="link-rename" data-name="' + esc(t.parent || t.name) + '" data-sub="' + esc(kind === 'sub' ? t.name : '') + '">Rename</span>'
+          + (kind === 'cat' ? '<span class="x" data-action="link-hide-cat" data-name="' + esc(t.name) + '">&times;</span>' : '')
+          + '</span>';
+        var carBtn = car
+          ? '<span class="car" data-action="link-toggle" data-key="' + esc(t.key || t.name) + '" data-name="' + esc(t.name) + '">' + car + '</span>'
+          : '<span class="car"></span>';
+        return '<div class="' + cls + '" data-action="link-cat" data-kind="' + esc(kind) + '" data-name="' + esc(t.name) + '" data-parent="' + esc(t.parent || '') + '" data-sub="' + esc(t.sub || '') + '">' + carBtn + esc(t.name) + '<span class="n">' + t.n + '</span>' + hv + '</div>';
       }).join('')
       + '<div class="exp" data-action="link-expand">Expand all</div></section>'
       + '<section class="card"><div class="crumbs">Links &rsaquo; <b>' + esc(data.crumb || '') + '</b> &middot; ' + (data.crumbN || 0) + ' links</div>'
