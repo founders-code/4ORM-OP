@@ -109,7 +109,7 @@ export async function calendarPayload(sql: Sql, ownerId: string) {
 
 export async function extendCalendar(sql: Sql, ownerId: string, fromMs: number, toMs: number) {
   const span = toMs - fromMs;
-  if (!Number.isFinite(fromMs) || !Number.isFinite(toMs) || span < 60 * 1000 || span > 21 * DAY_MS || toMs > Date.now() + 180 * DAY_MS) {
+  if (!Number.isFinite(fromMs) || !Number.isFinite(toMs) || span < 60 * 1000 || span > 56 * DAY_MS || toMs > Date.now() + 180 * DAY_MS) {
     return { ok: false as const };
   }
   const meta = await calendarMeta(sql, ownerId);

@@ -186,6 +186,7 @@
 
   function mountPlaybook(root, wrap, data) {
     var srcRows = data.rows && data.rows.length ? data.rows : (data.live ? [] : PB_ROWS);
+    if (data.error) srcRows = [];
     var rows = srcRows.map(function (r) { return r.s ? r : Object.assign({}, r, { d: (r.d || []).slice(), lab: (r.lab || []).slice() }); });
     var dates = data.dates || [19, 20, 21, 22, 23, 24, 25];
     var todayIdx = data.todayIdx == null ? 0 : data.todayIdx;
@@ -420,9 +421,19 @@
     var wrap = wrapOf('playDesk');
     if (!wrap) { markReady('playDesk'); return; }
     var data = playbookData();
+    if (!fixtureOn() && ((window.STATE || {}).playbookError || data.error)) {
+      wrap.innerHTML = '<div class="bar"><h1>Playbook</h1></div><div class="card" style="padding:28px 24px"><p>Couldn\'t load, retry</p><p><span class="lnk" data-action="play-retry">Retry</span></p></div>';
+      if (P().finishPaint) P().finishPaint(wrap);
+      markReady('playDesk');
+      return;
+    }
     loadSnip('/pbwrap-snippet.html', function (html) {
       try {
         wrap.innerHTML = html || '<div class="pbwrap"></div>';
+        if (!fixtureOn()) {
+          var hist = wrap.querySelector('#vHist');
+          if (hist) hist.innerHTML = '';
+        }
         var root = wrap.getRootNode();
         mountPlaybook(root, wrap, data);
         liveLog('playbook', { rows: (data.rows || []).length, todayIdx: data.todayIdx });
@@ -459,6 +470,10 @@
       return auth('/api/calendar', { method: 'PATCH', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: ev.id, start: start, dur: dur, title: title, attendees: attendees, location: loc, description: ev.notes || '' }) })
         .then(function (r) { return r.json(); }).then(function (d) { console.info('[live-map] /api/calendar PATCH', d); return d; }).catch(function () {});
     }
+    if (payload.type === 'decline' && ev.id) {
+      return auth('/api/calendar', { method: 'PATCH', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: ev.id, action: 'decline' }) })
+        .then(function (r) { return r.json(); }).then(function (d) { console.info('[live-map] /api/calendar PATCH decline', d); return d; }).catch(function () {});
+    }
     if (payload.type === 'delete' && ev.id) {
       return auth('/api/calendar', { method: 'DELETE', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: ev.id }) })
         .then(function (r) { return r.json(); }).then(function (d) { console.info('[live-map] /api/calendar DELETE', d); return d; }).catch(function () {});
@@ -484,7 +499,7 @@
     return asList(events).map(function (e) {
       var start = Number(e.start);
       var d = new Date(start);
-      var parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(d);
+      var parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(d);
       function g(t) { for (var i = 0; i < parts.length; i++) if (parts[i].type === t) return parts[i].value; return ''; }
       var ymd = g('year') + '-' + g('month') + '-' + g('day');
       var s = Number(g('hour')) + Number(g('minute')) / 60;
@@ -521,8 +536,9 @@
         markReady('calDesk');
       }
       if (!live) { go(null); return; }
-      var from = new Date(2026, 8, 1).toISOString();
-      var to = new Date(2027, 0, 31).toISOString();
+      var now = Date.now();
+      var from = new Date(now - 7 * 86400000).toISOString();
+      var to = new Date(now + 42 * 86400000).toISOString();
       auth('/api/calendar?from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to), { credentials: 'include' })
         .then(function (r) { return r.json(); })
         .then(function (d) {
@@ -535,8 +551,13 @@
   }
 
   function zoomData() {
-    if (fixtureOn()) return { meetings: (F().zoom && F().zoom.meetings) || ZOOM_M, meta: '43 meetings · synced 2 min ago' };
-    return liveZoomState();
+    var data = fixtureOn()
+      ? { meetings: ((F().zoom && F().zoom.meetings) || ZOOM_M).slice(), meta: '43 meetings · synced 2 min ago' }
+      : liveZoomState();
+    if ((window.STATE || {}).zoomSort === 'oldest') {
+      data.meetings = (data.meetings || []).slice().reverse();
+    }
+    return data;
   }
   function weekOf(iso) {
     var d = new Date(String(iso).slice(0, 10) + 'T12:00:00');
@@ -642,6 +663,14 @@
     loadSnip('/zwrap-snippet.html', function (html) {
       wrap.innerHTML = html || '<div class="zwrap"></div>';
       var root = wrap.getRootNode();
+      var sortKey = (window.STATE || {}).zoomSort || 'newest';
+      var filterKey = (window.STATE || {}).zoomFilter || 'all';
+      root.querySelectorAll('[data-action="zoom-sort"]').forEach(function (c) {
+        c.classList.toggle('on', (c.getAttribute('data-sort') || '') === sortKey);
+      });
+      root.querySelectorAll('[data-action="zoom-filter"]').forEach(function (c) {
+        c.classList.toggle('on', (c.getAttribute('data-filter') || '') === filterKey);
+      });
       var meta = wrap.querySelector('.ztop .meta');
       if (meta) meta.textContent = data.meta || (meetings.length + ' meetings');
       var box = root.getElementById('boxes');
@@ -817,14 +846,24 @@
   hook();
   setInterval(hook, 500);
 
+  window.__portLoadC = loadLive;
   function loadLive(desk) {
     if (fixtureOn()) return;
     if (desk === 'playbook') {
-      auth('/api/playbook', { credentials: 'include', quiet: true }).then(function (r) { return r.json(); }).then(function (d) {
-        if (window.STATE) window.STATE.playbook = d;
+      auth('/api/playbook', { credentials: 'include', quiet: true }).then(function (r) {
+        if (!r || !r.ok) throw new Error('playbook');
+        return r.json();
+      }).then(function (d) {
+        if (window.STATE) {
+          window.STATE.playbook = d;
+          window.STATE.playbookError = false;
+        }
         console.info('[live-map] /api/playbook', d && typeof d === 'object' ? Object.keys(d) : typeof d);
         paintPlaybookLive();
-      }).catch(function () {});
+      }).catch(function () {
+        if (window.STATE) window.STATE.playbookError = true;
+        paintPlaybookLive();
+      });
     }
     if (desk === 'znotes' || desk === 'zoom') {
       Promise.all([

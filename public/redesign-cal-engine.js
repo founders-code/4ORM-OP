@@ -72,11 +72,13 @@ const fmt=h=>{const hh=Math.floor(h),mm=Math.round((h-hh)*60);const ap=hh>=12?'p
 const weekStart=d=>add(d,-d.getDay());
 function isoWeek(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-n);const y=new Date(Date.UTC(t.getUTCFullYear(),0,1));return Math.ceil(((t-y)/864e5+1)/7)}
 // ---------- RAIL ----------
-function mini(){const m=gid('mini');let h='';DOW.forEach((x,i)=>h+=`<div class="h${i==6?' sat':''}">${x}</div>`);
- const first=new Date(2026,9,1),start=add(first,-first.getDay());const ws=weekStart(focus);
+function mini(){const m=gid('mini');if(!m)return;let h='';DOW.forEach((x,i)=>h+=`<div class="h${i==6?' sat':''}">${x}</div>`);
+ const first=new Date(focus.getFullYear(),focus.getMonth(),1),start=add(first,-first.getDay());const ws=weekStart(focus);
  for(let i=0;i<42;i++){const d=add(start,i),k=ymd(d);const evs=E.filter(x=>x.d==k);const cols=[...new Set(evs.map(x=>C[x.c]))].slice(0,3);
-  const wk=d>=ws&&d<add(ws,7);h+=`<div class="d${d.getMonth()!=9?' o':''}${wk?' wk':''}${same(d,TODAY)?' td':''}" data-action="cal-mini-day" data-d="${k}"><span>${d.getDate()}</span>${cols.length?'<i>'+cols.map(c=>`<b style="background:${c}"></b>`).join('')+'</i>':''}</div>`;}
- m.innerHTML=h;}
+  const wk=d>=ws&&d<add(ws,7);h+=`<div class="d${d.getMonth()!=focus.getMonth()?' o':''}${wk?' wk':''}${same(d,TODAY)?' td':''}" data-action="cal-mini-day" data-d="${k}"><span>${d.getDate()}</span>${cols.length?'<i>'+cols.map(c=>`<b style="background:${c}"></b>`).join('')+'</i>':''}</div>`;}
+ m.innerHTML=h;
+ const mh=root.querySelector&&root.querySelector('.mtitle h2');
+ if(mh) mh.innerHTML=MON[focus.getMonth()]+' <span>'+focus.getFullYear()+'</span>';}
 function ribbon(){const r=gid('ribbon');const k=ymd(TODAY);const span=13;let h='';
  E.filter(x=>x.d==k&&!x.all).forEach(x=>h+=`<div class="seg" style="left:${(x.s-7)/span*100}%;width:${(x.e-x.s)/span*100}%;background:${C[x.c]}"></div>`);
  h+=`<div class="now" style="left:99%"></div>`;r.innerHTML=h;}
@@ -149,11 +151,27 @@ const toast=t=>{const u=gid('undo');gid('undoT').textContent=t;u.classList.add('
 const save=()=>hist.push(JSON.stringify(E));
 gid('undoB').onclick=()=>{if(!hist.length)return;const prev=JSON.parse(hist.pop());const now=E.slice();E.length=0;prev.forEach(x=>E.push(x));SEL=null;render();gid('undo').classList.remove('show');liveUndo({prev:prev,now:now});};
 const dayName=k=>{const d=new Date(k+'T12:00');return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+' '+MON[d.getMonth()].slice(0,3)+' '+d.getDate()};
-const colAt=(x,y)=>{const src=root.elementsFromPoint?root.elementsFromPoint(x,y):window.document.elementsFromPoint(x,y);return (src||[]).find(e=>e.classList&&e.classList.contains('col')&&e.dataset&&e.dataset.k);};
+const colAt=(x,y)=>{
+  function fromList(list){return (list||[]).find(e=>e.classList&&e.classList.contains('col')&&e.dataset&&e.dataset.k);}
+  var hit=fromList(root.elementsFromPoint?root.elementsFromPoint(x,y):[]);
+  if(hit) return hit;
+  var light=window.document.elementsFromPoint(x,y)||[];
+  hit=fromList(light);
+  if(hit) return hit;
+  for(var i=0;i<light.length;i++){
+    var sr=light[i]&&light[i].shadowRoot;
+    if(sr&&sr.elementsFromPoint){hit=fromList(sr.elementsFromPoint(x,y));if(hit) return hit;}
+  }
+  return null;
+};
 const hourAt=(col,y)=>{const r=col.getBoundingClientRect();const sc=r.height/col.offsetHeight||1;return H0+((y-r.top)/sc)/PX};
 const tip=gid('dtip');const showTip=(x,y,t)=>{tip.style.display='block';tip.style.left=(x+14)+'px';tip.style.top=(y+10)+'px';tip.textContent=t};
 let drag=null;
 function paintGhost(){const a=Math.min(drag.h0,drag.h1),b=Math.max(drag.h0,drag.h1,a+0.25);drag.g.style.top=((a-H0)*PX+1)+'px';drag.g.style.height=((b-a)*PX-3)+'px';drag.g.textContent='New event  '+fmt(a)+' - '+fmt(b)}
+if(!root.__calMiniBound){root.__calMiniBound=true;root.addEventListener('click',e=>{
+  const d=e.target.closest&&e.target.closest('[data-action="cal-mini-day"]');
+  if(d&&d.dataset.d) focusTo(d.dataset.d);
+});}
 root.addEventListener('mousedown',e=>{
   if(e.button!==0||e.target.closest('.pop')||e.target.closest('.undo'))return;
   const ev=e.target.closest('.ev.real');const col=e.target.closest('.col[data-k]');
@@ -182,9 +200,17 @@ window.addEventListener('mouseup',e=>{if(!drag)return;tip.style.display='none';c
   SEL=d.x;render();
 });
 // suggested plays: keep / drop
-document.addEventListener('click',e=>{const b=e.target.closest('.ev.sug .ok b');if(!b)return;const x=S[+b.closest('.ev.sug').dataset.si];save();
-  const keep=b===b.parentNode.firstElementChild;S.splice(S.indexOf(x),1);
-  if(keep){var kept={d:x.d,s:x.s,e:x.e,t:x.t,c:'mile'};E.push(kept);toast('Kept "'+x.t+'" — added to your calendar');liveWrite({type:'create',event:kept});}else toast('Dropped "'+x.t+'"');render()});
+function keepSug(i,keep){
+  const x=S[i];if(!x)return;save();S.splice(S.indexOf(x),1);
+  if(keep){var kept={d:x.d,s:x.s,e:x.e,t:x.t,c:'mile'};E.push(kept);toast('Kept "'+x.t+'" — added to your calendar');liveWrite({type:'create',event:kept});}else toast('Dropped "'+x.t+'"');render();
+}
+document.addEventListener('click',e=>{
+  const path=e.composedPath?e.composedPath():[e.target];
+  const hit=path.find(n=>n.matches&&n.matches('.ev.sug .ok b'));
+  if(!hit)return;
+  const sug=hit.closest('.ev.sug');if(!sug)return;
+  keepSug(+sug.dataset.si, hit===hit.parentNode.firstElementChild);
+});
 // popover editor
 const pop=gid('pop');let cur=null;
 const t2h=t=>{const m=String(t).trim().toLowerCase().match(/^(\d{1,2})(?::(\d{2}))?\s*(a|p|am|pm)?$/);if(!m)return null;let h=+m[1];const mm=+(m[2]||0);if(m[3]&&m[3][0]=='p'&&h<12)h+=12;if(m[3]&&m[3][0]=='a'&&h==12)h=0;return h+mm/60};
@@ -199,7 +225,12 @@ function openPop(x,cx,cy){cur=x;['ppl','loc','links','docs'].forEach(k=>x[k]=x[k
   paint();pop.classList.add('open');const w=pop.offsetWidth,h=pop.offsetHeight;let L=cx+16,T=cy-40;if(L+w>innerWidth-10)L=cx-w-16;if(T+h>innerHeight-10)T=innerHeight-h-10;if(T<10)T=10;pop.style.left=L+'px';pop.style.top=T+'px';
   gid('pDel').style.display=x.isNew?'none':'';gid('pDup').style.display=x.isNew?'none':'';setTimeout(()=>gid('pTitle').focus(),30)}
 const closePop=()=>{pop.classList.remove('open');cur=null;gid('pSug').style.display='none'};
-document.addEventListener('mousedown',e=>{if(pop.classList.contains('open')&&!e.target.closest('.pop')&&!e.target.closest('.ev'))closePop()});
+document.addEventListener('mousedown',e=>{
+  if(!pop.classList.contains('open'))return;
+  const path=e.composedPath?e.composedPath():[e.target];
+  if(path.some(n=>n===pop||(n.classList&&n.classList.contains('ev'))))return;
+  closePop();
+});
 pop.addEventListener('click',e=>{const i=e.target.closest('.pc i');if(i){cur[KEYS[i.dataset.k]].splice(+i.dataset.n,1);paint()}});
 const enter=(id,key)=>gid(id).addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.value.trim()){cur[key].push(e.target.value.trim());e.target.value='';paint();gid(id).focus()}});
 enter('pLocIn','loc');enter('pLinkIn','links');enter('pPplIn','ppl');
@@ -212,11 +243,20 @@ const dz=gid('pDrop');['dragenter','dragover'].forEach(t=>dz.addEventListener(t,
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');[...e.dataTransfer.files].forEach(f=>cur.docs.push(f.name));paint()});
 gid('pSave').onclick=()=>{const x=cur;save();x.t=gid('pTitle').value.trim()||'New event';x.d=gid('pDate').value||x.d;const s1=t2h(gid('pS').value),e1=t2h(gid('pE').value);if(s1!=null){const dur=x.e-x.s;x.s=s1;x.e=s1+dur}if(e1!=null&&e1>x.s)x.e=e1;x.c=gid('pCal').value;x.notes=gid('pNotes').value;
   const isNew=x.isNew;delete x.isNew;if(isNew)E.push(x);SEL=x;closePop();render();toast((isNew?'Created "':'Saved "')+x.t+'"'+(x.ppl.length?' — invites sent to '+x.ppl.join(', '):''));liveWrite({type:isNew?'create':'patch',event:x});};
-gid('pDel').onclick=()=>{save();const t=cur.t;const gone=cur;E.splice(E.indexOf(cur),1);SEL=null;closePop();render();toast('Deleted "'+t+'"');liveWrite({type:'delete',event:gone});};
+function askRemoveOrDecline(ev){
+  if(ev && ev.id){
+    if(window.confirm('Decline "'+(ev.t||'this event')+'" so the organizer knows?')) return 'decline';
+    if(window.confirm('Remove event "'+(ev.t||'')+'" from your calendar?')) return 'delete';
+    return '';
+  }
+  if(!window.confirm('Remove event "'+(ev.t||'')+'" from your calendar?')) return '';
+  return 'delete';
+}
+gid('pDel').onclick=()=>{const kind=askRemoveOrDecline(cur);if(!kind)return;save();const t=cur.t;const gone=cur;E.splice(E.indexOf(cur),1);SEL=null;closePop();render();toast(kind==='decline'?'Declined "'+t+'"':'Removed "'+t+'"');liveWrite({type:kind,event:gone});};
 gid('pDup').onclick=()=>{save();const c=Object.assign({},cur,{ppl:[...cur.ppl],loc:[...cur.loc],links:[...cur.links],docs:[...cur.docs],d:ymd(add(new Date(cur.d+'T12:00'),1))});E.push(c);closePop();render();toast('Duplicated to '+dayName(c.d))};
 gid('pCal').onchange=e=>{cur.c=e.target.value;paint()};
 window.addEventListener('keydown',e=>{if(e.target&&e.target.matches&&e.target.matches('input,textarea,select'))return;
-  if((e.key==='Delete'||e.key==='Backspace')&&SEL&&E.includes(SEL)){save();const t=SEL.t;const gone=SEL;E.splice(E.indexOf(SEL),1);SEL=null;render();toast('Deleted "'+t+'"');liveWrite({type:'delete',event:gone});}
+  if((e.key==='Delete'||e.key==='Backspace')&&SEL&&E.includes(SEL)){const kind=askRemoveOrDecline(SEL);if(!kind)return;save();const t=SEL.t;const gone=SEL;E.splice(E.indexOf(SEL),1);SEL=null;render();toast(kind==='decline'?'Declined "'+t+'"':'Removed "'+t+'"');liveWrite({type:kind,event:gone});}
   if((e.metaKey||e.ctrlKey)&&e.key==='z'){e.preventDefault();gid('undoB').click()}
   if(e.key==='Escape')closePop()});
 // natural-language quick add
@@ -243,5 +283,10 @@ gid('nlIn').addEventListener('keydown',e=>{if(e.key!=='Enter')return;const v=e.t
     mini(); render();
   }
   function focusTo(k){ if(!k) return; focus=new Date(k+'T12:00'); mini(); render(); }
-  window.__redesignCal = { E: E, S: S, render: render, ymd: ymd, fmt: fmt, TODAY: function(){return TODAY;}, sel: function(){return SEL;}, setSel: function(x){SEL=x;}, setView: setView, nav: nav, focusTo: focusTo };
+  function navMonth(dir){
+    var n = dir==='prev' ? -1 : 1;
+    focus=new Date(focus.getFullYear(), focus.getMonth()+n, 1);
+    mini(); render();
+  }
+  window.__redesignCal = { E: E, S: S, render: render, ymd: ymd, fmt: fmt, TODAY: function(){return TODAY;}, sel: function(){return SEL;}, setSel: function(x){SEL=x;}, setView: setView, nav: nav, navMonth: navMonth, focusTo: focusTo, keepSug: keepSug, focusYmd: function(){return ymd(focus);} };
 };

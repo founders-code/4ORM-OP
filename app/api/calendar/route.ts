@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { claimBudget } from '@/lib/db';
 import { withCreds } from '@/lib/creds';
-import { createEvent, deleteCalendarEvent, moveEvent, patchCalendarEvent } from '@/lib/google';
+import { createEvent, declineCalendarEvent, deleteCalendarEvent, moveEvent, patchCalendarEvent } from '@/lib/google';
 import { fail } from '@/lib/log';
 import { openBoard, roomOwner } from '@/lib/session';
 import { calendarPayload, extendCalendar } from '@/lib/sync';
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
       }
       return NextResponse.json({ id: created, start, dur, title, attendees });
     }
-    if (!/^[\w-]+$/.test(id)) {
+    if (!/^[\w.=@-]+$/.test(id)) {
       return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     }
     const events = (await calendarPayload(session.sql, session.userId)) as Array<{ id: string; dur: number; start: number; title: string }>;
@@ -104,7 +104,7 @@ export async function PATCH(req: Request) {
     if (!session.sql) return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });
     const body = await req.json().catch(() => null) as Record<string, unknown> | null;
     const id = String(body?.id || '');
-    if (!/^[\w-]+$/.test(id)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    if (!/^[\w.=@-]+$/.test(id)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     if (!(await claimBudget(session.sql, session.userId, 'google_calendar', 1))) {
       return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });
     }
@@ -121,14 +121,16 @@ export async function PATCH(req: Request) {
     if (Number.isFinite(start)) {
       const begin = new Date(start);
       const end = new Date(start + dur * 60 * 1000);
-      fields.start = { dateTime: begin.toISOString(), timeZone: 'America/Los_Angeles' };
-      fields.end = { dateTime: end.toISOString(), timeZone: 'America/Los_Angeles' };
+      fields.start = { dateTime: begin.toISOString(), timeZone: 'America/Vancouver' };
+      fields.end = { dateTime: end.toISOString(), timeZone: 'America/Vancouver' };
     }
     if (title) fields.summary = title;
     if (location) fields.location = location;
     if (description) fields.description = description;
     if (attendees.length) fields.attendees = attendees.map((email) => ({ email }));
-    const patched = await withCreds(creds, () => patchCalendarEvent(id, fields));
+    const patched = String(body?.action || '') === 'decline'
+      ? await withCreds(creds, () => declineCalendarEvent(id, 'chad@4ormfinance.com'))
+      : await withCreds(creds, () => patchCalendarEvent(id, fields));
     if (!patched) return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });
     return NextResponse.json({
       id,
@@ -152,7 +154,7 @@ export async function DELETE(req: Request) {
     const url = new URL(req.url);
     const body = await req.json().catch(() => null) as Record<string, unknown> | null;
     const id = String(body?.id || url.searchParams.get('id') || '');
-    if (!/^[\w-]+$/.test(id)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    if (!/^[\w.=@-]+$/.test(id)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     if (!(await claimBudget(session.sql, session.userId, 'google_calendar', 1))) {
       return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });
     }
