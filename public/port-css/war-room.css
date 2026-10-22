@@ -13,6 +13,17 @@ button{font:inherit;cursor:pointer}
 .coachbtn{height:30px;border-radius:999px;border:1px solid rgba(157,185,255,.35);background:rgba(46,107,242,.18);color:#dbe6ff;font-size:12.5px;font-weight:700;padding:0 12px;white-space:nowrap}
 .coachpop{display:none;position:absolute;right:0;top:38px;width:320px;background:#fff;color:var(--ink);border-radius:14px;box-shadow:0 18px 40px rgba(3,10,30,.35);padding:14px 16px;z-index:20}
 .coachpop.open{display:block}.coachpop b{font-size:13.5px}.coachpop p{margin:6px 0 0;font-size:13px;line-height:1.55;color:var(--ink2)}
+.plan-ov,.pick-ov{position:fixed;inset:0;z-index:46;background:rgba(10,16,40,.45);display:none;align-items:center;justify-content:center;padding:24px}
+.plan-ov.open,.pick-ov.open{display:flex}
+.plan-box,.pick-box{width:min(640px,92vw);max-height:84vh;overflow:auto;background:#fff;color:var(--ink);border-radius:16px;padding:18px 20px;box-shadow:0 18px 40px rgba(3,10,30,.35)}
+.plan-box h3,.pick-box h3{margin:0 0 12px;font-size:18px}
+.plan-box textarea,.pick-box input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;font-size:14px;margin:0 0 10px}
+.plan-acts,.pick-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.plan-acts button,.pick-acts button{height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;padding:0 12px;font-weight:700;color:var(--ink)}
+.plan-acts .pri,.pick-acts .pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.pick-list{max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+.pick-row{display:flex;gap:10px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);font-size:13.5px}
+.pick-row:first-child{border-top:0}
 .capture{display:flex;gap:8px;background:#fff;border-radius:14px;padding:8px;box-shadow:0 10px 30px rgba(3,10,30,.22);margin-bottom:16px}
 .capture input{flex:1;border:none;outline:none;font:inherit;font-size:14px;padding:0 10px;color:var(--ink)}
 .capture button{height:34px;border-radius:9px;border:none;background:var(--blue);color:#fff;font-weight:750;padding:0 16px}

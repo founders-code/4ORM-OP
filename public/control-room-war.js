@@ -197,6 +197,7 @@ function openPeek(title,body,planId,planTitle,area){
 var _renderRoom=renderRoom;
 renderRoom=function(){_renderRoom();renderWar();};
 document.getElementById('v-war').addEventListener('click',function(e){
+  if(typeof window.paintRedesignWar==='function'&&document.getElementById('warDesk')&&document.getElementById('warDesk').shadowRoot) return;
   var closeItem=e.target.closest('[data-close-item]');
   if(closeItem){resolveItem(closeItem.getAttribute('data-close-item'));return;}
   var closeKey=e.target.closest('[data-close-key]');

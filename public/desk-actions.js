@@ -13,7 +13,7 @@
     '.sr', '.build', '.ml', '.newcol', '.send', '.send2', '.car', '.pcard', '.chip',
     '.pad', '.add', '.calbtn', '.day', '.ev', '.views span', '.c-nav span', '.dest em',
     '.b1', '.b2', '.cals label', '.ar span', '.ok b', '.beat', '.recbtn', '.gobtn',
-    '.ib', '.op', '.mc', '.pill'
+    '.ib', '.op', '.mc', '.pill', '.nt', '.cdot', '.nx'
   ].join(',');
   var FOCUS_MS = 25 * 60 * 1000;
   var RING_C = 2 * Math.PI * 48;
@@ -104,12 +104,60 @@
   }
   function attr(el, name) { return el && el.getAttribute ? (el.getAttribute(name) || '') : ''; }
   function closestAction(el) {
-    while (el && el !== el.getRootNode && el.nodeType === 1) {
+    while (el && el.nodeType === 1) {
       if (el.getAttribute && el.getAttribute('data-action')) return el;
-      el = el.parentElement || (el.getRootNode && el.getRootNode().host) || null;
-      if (el && el.nodeType !== 1) break;
+      el = el.parentElement;
     }
     return null;
+  }
+  function actionElFromEvent(e) {
+    var path = e && e.composedPath ? e.composedPath() : [];
+    var i, n;
+    for (i = 0; i < path.length; i++) {
+      n = path[i];
+      if (!n || n.nodeType !== 1) continue;
+      if (n.getAttribute && n.getAttribute('data-action')) return n;
+      if (n === document || n === window) break;
+    }
+    return closestAction(e && e.target);
+  }
+  function rootOf(el, e) {
+    if (el && el.getRootNode) {
+      var r = el.getRootNode();
+      if (r && r.nodeType === 11) return r;
+    }
+    if (e && e.composedPath) {
+      var path = e.composedPath();
+      for (var i = 0; i < path.length; i++) {
+        if (path[i] && path[i].nodeType === 11) return path[i];
+      }
+    }
+    return document;
+  }
+  function showOv(el, on) {
+    if (!el) return;
+    el.hidden = !on;
+    el.classList.toggle('open', !!on);
+    el.style.display = on ? 'flex' : 'none';
+  }
+  function closePop(root) {
+    var pop = root && root.getElementById ? root.getElementById('deskPop') : null;
+    if (pop) pop.remove();
+  }
+  function openPop(root, el, html) {
+    closePop(root);
+    if (!root) return;
+    var box = document.createElement('div');
+    box.id = 'deskPop';
+    box.className = 'desk-pop';
+    box.innerHTML = html;
+    var host = (root.host) || document.body;
+    var wrap = root.querySelector ? (root.querySelector('.port-body') || root) : root;
+    wrap.appendChild(box);
+    var r = el.getBoundingClientRect ? el.getBoundingClientRect() : { bottom: 80, left: 80, right: 80 };
+    var hr = host.getBoundingClientRect ? host.getBoundingClientRect() : { top: 0, left: 0 };
+    box.style.top = Math.max(8, r.bottom - hr.top + 6) + 'px';
+    box.style.left = Math.max(8, r.left - hr.left) + 'px';
   }
   function writeOk() { return !fixtureOn(); }
 
@@ -151,7 +199,7 @@
   }
   function logFocusBlock(root) {
     if (!writeOk()) return Promise.resolve();
-    var title = 'TEST Focus block 25 min';
+    var title = 'Focus block 25 min';
     return api('/api/items', { method: 'POST', body: { title: title, area: 'other', priority: 'normal', due: new Date().toISOString() } })
       .then(ok).then(json).then(function (row) {
         if (row && row.id) {
@@ -213,13 +261,15 @@
     if (!title) return Promise.reject(new Error('empty'));
     var body = Object.assign({ title: title, area: 'other', priority: 'normal', column: bucket || 'today' }, extra || {});
     if (!writeOk()) {
-      var tmp = { id: 'tmp-' + Date.now(), title: title, status: 'new', due: Date.now() };
+      var tmp = { id: 'tmp-' + Date.now(), title: title, status: 'new', due: Date.now(), column: bucket || 'today' };
       S().items = S().items || []; S().items.unshift(tmp);
+      var fx = window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.war;
+      var col = fx && fx[bucket || 'today'];
+      if (col && col.tasks) {
+        col.tasks.unshift({ id: tmp.id, title: title, tag: 'Ops' });
+        col.count = (col.count || 0) + 1;
+      }
       return Promise.resolve(tmp);
-    }
-    if (typeof window.addItem === 'function' && bucket === 'today' && !extra) {
-      window.addItem(title);
-      return Promise.resolve({ title: title });
     }
     return api('/api/items', { method: 'POST', body: body }).then(ok).then(json).then(function (row) {
       S().items = S().items || [];
@@ -257,8 +307,7 @@
       var input = root.querySelector('[data-action="capture-input"]') || root.querySelector('.capture input');
       var title = input ? String(input.value || '').trim() : '';
       if (!title) { toast(root, 'Type something to capture'); return; }
-      var marked = title.indexOf('TEST') === 0 ? title : ('TEST ' + title);
-      return addTask(marked, 'today').then(function () {
+      return addTask(title, 'today').then(function () {
         if (input) input.value = '';
         refresh('war');
         toast(root, 'Added to Today');
@@ -282,11 +331,7 @@
       toast(root, 'Committed as your one thing');
       refresh('war');
     },
-    'hero-plan': function (el) {
-      var id = attr(el, 'data-id') || 'ceo:one';
-      var title = attr(el, 'data-title') || 'Today\'s one move';
-      if (typeof window.openPlan === 'function') window.openPlan(id, title, 'other');
-    },
+    'hero-plan': function (el, root) { actions['plan-open'](el, root); },
     'hero-cancel': function (el, root) {
       var id = attr(el, 'data-id');
       if (id && typeof window.ceoSnooze === 'function') {
@@ -306,11 +351,7 @@
       if (id && typeof window.ceoDoSteps === 'function') { window.ceoDoSteps(id); return; }
       soon(root, 'Move steps');
     },
-    'move-plan': function (el) {
-      var id = attr(el, 'data-id') || '';
-      var title = attr(el, 'data-title') || 'Move';
-      if (typeof window.openPlan === 'function') window.openPlan(id ? ('ceo:' + id) : 'ceo:move', title, 'other');
-    },
+    'move-plan': function (el, root) { actions['plan-open'](el, root); },
     'move-dismiss': function (el, root) {
       var id = attr(el, 'data-id');
       if (id && typeof window.ceoSnooze === 'function') {
@@ -331,8 +372,7 @@
       var id = attr(el, 'data-id');
       var bucket = attr(el, 'data-bucket') || 'today';
       var title = attr(el, 'data-title') || 'Meeting follow-up';
-      var marked = title.indexOf('TEST') === 0 ? title : ('TEST ' + title);
-      return addTask(marked, bucket).then(function () {
+      return addTask(title, bucket).then(function () {
         if (id && writeOk()) {
           return api('/api/meeting-actions', { method: 'POST', body: { id: id, status: 'tasked' } }).then(ok).then(json).then(function (d) {
             if (d && d.actions) S().meetingActions = d.actions;
@@ -394,30 +434,14 @@
         });
       }).catch(function () { toast(root, 'Could not update that person'); });
     },
-    'reach-add': function (el, root) {
-      var name = window.prompt('Name to reach out to');
-      if (name == null) return;
-      name = String(name).trim();
-      if (!name) return;
-      var person = { name: name.indexOf('TEST') === 0 ? name : ('TEST ' + name), kind: 'corporate', nextAction: 'Reach out' };
-      if (!writeOk()) { toast(root, 'Added (fixture)'); return; }
-      api('/api/reach-out', { method: 'POST', body: person }).then(ok).then(json).then(function (row) {
-        S().reachOut = S().reachOut || [];
-        if (row) S().reachOut.unshift(row);
-        refresh('war');
-        toast(root, 'Added to Reach out', function () {
-          if (row && row.id) api('/api/reach-out/' + row.id, { method: 'PATCH', body: { done: true } }).then(function () { refresh('war'); });
-        });
-      }).catch(function () { toast(root, 'Could not add that person'); });
-    },
+    'reach-add': function (el, root) { actions['reach-pick-open'](el, root); },
     'exec-add': function (el, root) {
       var bucket = attr(el, 'data-bucket') || 'today';
       var title = window.prompt('Task title');
       if (title == null) return;
       title = String(title).trim();
       if (!title) return;
-      var marked = title.indexOf('TEST') === 0 ? title : ('TEST ' + title);
-      return addTask(marked, bucket).then(function () { refresh('war'); toast(root, 'Card added'); })
+      return addTask(title, bucket).then(function () { refresh('war'); toast(root, 'Card added'); })
         .catch(function () { toast(root, 'Could not add that card'); });
     },
     'exec-full': function (el, root) {
@@ -440,10 +464,10 @@
       var id = attr(el, 'data-id');
       var bucket = attr(el, 'data-bucket');
       if (!id || !bucket) return;
-      if (typeof window.moveItemColumn === 'function') window.moveItemColumn(id, bucket);
-      else return patchItem(id, { column: bucket }).then(function () { refresh('war'); });
-      toast(root, 'Moved to ' + bucket);
-      setTimeout(function () { refresh('war'); }, 80);
+      return patchItem(id, { column: bucket }).then(function () {
+        refresh('war');
+        toast(root, 'Moved to ' + bucket);
+      }).catch(function () { toast(root, 'Could not move that task'); });
     },
     'task-drop': function (el, root) {
       var id = attr(el, 'data-id');
@@ -478,8 +502,18 @@
       go('mail');
       toast(root, 'Opening reply');
     },
-    'mail-more': function (el, root) {
+    'mail-more': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
       var email = attr(el, 'data-email');
+      var mid = attr(el, 'data-mid') || attr(el, 'data-id');
+      var html = '<button type="button" data-action="mail-not-person" data-email="' + esc(email) + '">Not a person</button>'
+        + '<button type="button" data-action="mail-snooze" data-id="' + esc(mid) + '">Snooze 24h</button>'
+        + '<button type="button" data-action="mail-file" data-email="' + esc(email) + '" data-id="' + esc(mid) + '">File</button>';
+      openPop(root, el, html);
+    },
+    'mail-not-person': function (el, root) {
+      var email = attr(el, 'data-email');
+      closePop(root);
       if (email && typeof window.hideSender === 'function') {
         window.hideSender(email);
         toast(root, 'Hidden that sender', function () {
@@ -491,7 +525,12 @@
         });
         return;
       }
-      soon(root, 'Mail menu');
+      soon(root, 'Hide sender');
+    },
+    'mail-file': function (el, root) {
+      closePop(root);
+      go('mail');
+      toast(root, 'Open Email to file this thread');
     },
     'inbox-mode': function (el) {
       var mode = attr(el, 'data-mode') || 'people';
@@ -501,17 +540,24 @@
     'goto-war': function () { go('war'); },
     'open-email': function () { go('mail'); },
     'note-new': function (el, root) {
-      var title = 'TEST note ' + new Date().toISOString().slice(11, 19);
-      if (!writeOk()) { toast(root, 'New note (fixture)'); return; }
-      return api('/api/notes', { method: 'POST', body: { title: title, body: '', color: 'yellow' } }).then(ok).then(json).then(function (row) {
+      function openBlank(id) {
+        var card = document.createElement('div');
+        card.setAttribute('data-action', 'note-open');
+        card.setAttribute('data-id', id || 'tmp');
+        card.setAttribute('data-source', 'sticky');
+        card.setAttribute('data-title', '');
+        card.setAttribute('data-body', '');
+        card.setAttribute('data-type', 'idea');
+        card.setAttribute('data-color', 'y');
+        actions['note-open'](card, root);
+      }
+      if (!writeOk()) { openBlank('tmp'); toast(root, 'New note (fixture)'); return; }
+      return api('/api/notes', { method: 'POST', body: { title: 'Untitled', body: '', color: 'yellow' } }).then(ok).then(json).then(function (row) {
         S().notes = S().notes || [];
         if (row && row.id) S().notes.unshift(row);
         refresh('notes');
+        setTimeout(function () { openBlank(row && row.id); }, 40);
         toast(root, 'Note created');
-        setTimeout(function () {
-          var card = root.querySelector('[data-action="note-open"][data-id="' + (row && row.id) + '"]');
-          if (card) actions['note-open'](card, root);
-        }, 40);
       }).catch(function () { toast(root, 'Could not create a note'); });
     },
     'notes-search': function () { /* input handler */ },
@@ -536,8 +582,9 @@
       root.querySelectorAll('[data-action="notes-view"]').forEach(function (t) {
         t.classList.toggle('on', attr(t, 'data-view') === view);
       });
-      var board = root.querySelector('.board') || root.querySelector('#board');
-      if (board) board.classList.toggle('canvas', view === 'canvas');
+      root.querySelectorAll('.board').forEach(function (board) {
+        board.classList.toggle('canvas', view === 'canvas');
+      });
       toast(root, view === 'canvas' ? 'Canvas' : 'Board');
     },
     'notes-tidy': function (el, root) { soon(root, 'Tidy up notes'); },
@@ -587,29 +634,71 @@
     'note-task': function (el, root, ev) {
       if (ev) ev.stopPropagation();
       var title = attr(el, 'data-title') || 'From note';
-      var marked = title.indexOf('TEST') === 0 ? title : ('TEST ' + title);
-      return addTask(marked, 'today').then(function () { toast(root, 'Converted to a task'); refresh('war'); })
+      return addTask(title, 'today').then(function () { toast(root, 'Converted to a task'); refresh('war'); })
         .catch(function () { toast(root, 'Could not convert that note'); });
     },
     'note-open': function (el, root) {
       var ov = root.getElementById && root.getElementById('ov');
+      var card = root.getElementById && root.getElementById('ovNote');
       var ot = root.getElementById && root.getElementById('ot');
       var ob = root.getElementById && root.getElementById('ob');
       var okEl = root.getElementById && root.getElementById('ok');
+      var pin = root.getElementById && root.getElementById('ovPin');
+      var task = root.getElementById && root.getElementById('ovTask');
       if (!ov) { soon(root, 'Open note'); return; }
-      ov.hidden = false; ov.classList.add('open'); ov.style.display = 'flex';
-      if (ot) { ot.textContent = attr(el, 'data-title') || ''; ot.setAttribute('data-id', attr(el, 'data-id')); ot.setAttribute('data-source', attr(el, 'data-source') || ''); }
+      var color = attr(el, 'data-color') || 'y';
+      if (card) card.className = 'note big ' + color;
+      showOv(ov, true);
+      if (ot) {
+        ot.textContent = attr(el, 'data-title') || '';
+        ot.setAttribute('data-id', attr(el, 'data-id'));
+        ot.setAttribute('data-source', attr(el, 'data-source') || 'sticky');
+        ot.setAttribute('data-action', 'note-edit');
+      }
       if (ob) {
         ob.innerText = attr(el, 'data-body') || '';
         ob.setAttribute('data-id', attr(el, 'data-id'));
-        ob.setAttribute('data-source', attr(el, 'data-source') || '');
+        ob.setAttribute('data-source', attr(el, 'data-source') || 'sticky');
         ob.setAttribute('data-action', 'note-edit');
       }
       if (okEl) okEl.textContent = attr(el, 'data-type') || 'Note';
+      if (pin) {
+        pin.setAttribute('data-id', attr(el, 'data-id'));
+        pin.setAttribute('data-source', attr(el, 'data-source') || 'sticky');
+        pin.setAttribute('data-on', attr(el, 'data-pin') || '0');
+      }
+      if (task) {
+        task.setAttribute('data-id', attr(el, 'data-id'));
+        task.setAttribute('data-title', attr(el, 'data-title') || 'From note');
+      }
+      setTimeout(function () { if (ot) ot.focus(); }, 30);
     },
-    'note-close': function (el, root) {
-      var ov = root.getElementById && root.getElementById('ov');
-      if (ov) { ov.classList.remove('open'); ov.hidden = true; ov.style.display = 'none'; }
+    'note-keep': function () {},
+    'note-close': function (el, root, ev) {
+      var t = (ev && ev.composedPath && ev.composedPath()[0]) || el;
+      if (attr(el, 'data-action') === 'note-close' && t && t.closest && t.closest('.note.big') && !t.closest('[data-action="note-close"]')) return;
+      showOv(root.getElementById && root.getElementById('ov'), false);
+    },
+    'note-menu': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      var id = attr(el, 'data-id');
+      var src = attr(el, 'data-source') || 'sticky';
+      var title = attr(el, 'data-title') || '';
+      var on = attr(el, 'data-on') || '0';
+      openPop(root, el, '<button type="button" data-action="note-pin" data-id="' + esc(id) + '" data-source="' + esc(src) + '" data-on="' + on + '">' + (on === '1' ? 'Unpin' : 'Pin') + '</button>'
+        + '<button type="button" data-action="note-task" data-id="' + esc(id) + '" data-title="' + esc(title) + '">Convert to task</button>'
+        + '<button type="button" data-action="note-archive" data-id="' + esc(id) + '" data-source="' + esc(src) + '" data-title="' + esc(title) + '">Archive</button>');
+    },
+    'notes-color': function (el, root) {
+      var color = attr(el, 'data-color') || '';
+      S().noteColor = color;
+      root.querySelectorAll('[data-action="notes-color"]').forEach(function (c) {
+        c.classList.toggle('on', attr(c, 'data-color') === color);
+      });
+      root.querySelectorAll('.note').forEach(function (n) {
+        if (n.classList.contains('big')) return;
+        n.style.display = !color || n.classList.contains(color) ? '' : 'none';
+      });
     },
     'note-edit': function () { /* input/blur saves */ },
     'link-cat': function (el, root) {
@@ -706,9 +795,142 @@
       root.querySelectorAll('.cr').forEach(function (n) { n.classList.add('open'); });
       toast(root, 'All categories expanded');
     },
-    'nav-arrange': function () {
-      var btn = document.getElementById('navArrange');
-      if (btn) btn.click();
+    'link-search': function () { /* input handler */ },
+    'link-note': function (el, root, ev) {
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      if (el.getAttribute('contenteditable') === 'true') return;
+      var prev = el.textContent;
+      if (el.classList.contains('empty')) el.textContent = '';
+      el.setAttribute('contenteditable', 'true');
+      el.focus();
+      function save() {
+        el.removeAttribute('contenteditable');
+        var note = String(el.innerText || '').trim();
+        var id = attr(el, 'data-id');
+        el.classList.toggle('empty', !note);
+        if (!note) el.textContent = 'Add a note';
+        if (!id || !writeOk()) { toast(root, note ? 'Note saved (fixture)' : 'Note cleared'); return; }
+        var row = (S().links || []).filter(function (l) { return String(l.id) === String(id); })[0];
+        if (row) row.note = note;
+        api('/api/links/' + encodeURIComponent(id), { method: 'PATCH', body: { note: note } }).then(ok).then(function () {
+          toast(root, 'Note saved');
+        }).catch(function () {
+          el.textContent = prev;
+          toast(root, 'Could not save that note');
+        });
+      }
+      el.addEventListener('blur', save, { once: true });
+      el.addEventListener('keydown', function onKeyNote(e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); el.blur(); }
+        if (e.key === 'Escape') { el.textContent = prev; el.blur(); }
+      }, { once: true });
+    },
+    'plan-open': function (el, root) {
+      var ov = root.getElementById && root.getElementById('planOv');
+      var hd = root.getElementById && root.getElementById('planHd');
+      var body = root.getElementById && root.getElementById('planBody');
+      if (!ov) {
+        if (typeof window.openPlan === 'function') {
+          window.openPlan(attr(el, 'data-id') || 'ceo:one', attr(el, 'data-title') || 'Plan', 'other');
+          return;
+        }
+        soon(root, 'Plan');
+        return;
+      }
+      var id = attr(el, 'data-id') || 'ceo:one';
+      var title = attr(el, 'data-title') || 'Plan';
+      ov.setAttribute('data-id', id);
+      ov.setAttribute('data-title', title);
+      if (hd) hd.textContent = title;
+      if (body) body.value = '';
+      showOv(ov, true);
+      if (body) body.focus();
+    },
+    'plan-close': function (el, root, ev) {
+      var t = (ev && ev.composedPath && ev.composedPath()[0]) || el;
+      if (t && t.closest && t.closest('.plan-box') && attr(el, 'id') === 'planOv') return;
+      showOv(root.getElementById && root.getElementById('planOv'), false);
+    },
+    'plan-draft': function () {},
+    'plan-ask': function (el, root) {
+      var ov = root.getElementById && root.getElementById('planOv');
+      var body = root.getElementById && root.getElementById('planBody');
+      var title = ov ? attr(ov, 'data-title') : 'Plan';
+      var id = ov ? attr(ov, 'data-id') : '';
+      var steps = body ? String(body.value || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean) : [];
+      if (!writeOk()) { toast(root, 'Plan (fixture)'); return; }
+      api('/api/ceo/plan', { method: 'POST', body: { title: title, area: 'other', steps: steps, itemId: id } }).then(ok).then(json).then(function (data) {
+        if (body) body.value = ((data.steps || []).map(function (s) { return s.text || s; }).join('\n')) || body.value;
+        toast(root, 'Plan drafted');
+      }).catch(function () { toast(root, 'Could not build that plan'); });
+    },
+    'plan-save': function (el, root) {
+      var ov = root.getElementById && root.getElementById('planOv');
+      var body = root.getElementById && root.getElementById('planBody');
+      var title = ov ? attr(ov, 'data-title') : 'Plan';
+      var id = ov ? attr(ov, 'data-id') : '';
+      var steps = body ? String(body.value || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean).map(function (text) { return { text: text, done: false }; }) : [];
+      if (!writeOk()) { showOv(ov, false); toast(root, 'Plan saved (fixture)'); return; }
+      api('/api/plans', { method: 'POST', body: { itemId: id, title: title, area: 'other', steps: steps, needs: [], draft: body ? body.value : '', push: true } }).then(ok).then(json).then(function (data) {
+        (data.created || []).forEach(function (row) { S().items = S().items || []; S().items.push(row); });
+        showOv(ov, false);
+        refresh('war');
+        toast(root, (data.created || []).length ? (data.created.length + ' steps on the deck') : 'Plan saved');
+      }).catch(function () { toast(root, 'Could not save that plan'); });
+    },
+    'reach-pick-open': function (el, root) {
+      var ov = root.getElementById && root.getElementById('reachOv');
+      var list = root.getElementById && root.getElementById('reachList');
+      if (!ov || !list) { soon(root, 'Add from Pipeline or Contacts'); return; }
+      var people = (S().contacts || []).concat(S().pipeline || []).slice(0, 80);
+      list.innerHTML = people.length ? people.map(function (p) {
+        var id = esc(p.id || p.email || p.name || '');
+        return '<label class="pick-row"><input type="checkbox" data-action="reach-pick-toggle" data-id="' + id + '" data-name="' + esc(p.name || '') + '" data-kind="' + esc(p.kind || p.category || 'corporate') + '"><span>' + esc(p.name || p.email || 'Contact') + '</span></label>';
+      }).join('') : '<div class="pick-row">No people on the desk yet.</div>';
+      showOv(ov, true);
+    },
+    'reach-pick-close': function (el, root, ev) {
+      var t = (ev && ev.composedPath && ev.composedPath()[0]) || el;
+      if (t && t.closest && t.closest('.pick-box') && attr(el, 'id') === 'reachOv') return;
+      showOv(root.getElementById && root.getElementById('reachOv'), false);
+    },
+    'reach-pick-search': function () {},
+    'reach-pick-toggle': function () {},
+    'reach-pick-add': function (el, root) {
+      var ov = root.getElementById && root.getElementById('reachOv');
+      var boxes = ov ? ov.querySelectorAll('input[type="checkbox"]:checked') : [];
+      if (!boxes.length) { toast(root, 'Pick someone first'); return; }
+      var jobs = [];
+      boxes.forEach(function (box) {
+        var person = { name: attr(box, 'data-name') || 'Contact', kind: attr(box, 'data-kind') || 'corporate', nextAction: 'Reach out', contactId: attr(box, 'data-id') };
+        if (!writeOk()) return;
+        jobs.push(api('/api/reach-out', { method: 'POST', body: person }).then(ok).then(json).then(function (row) {
+          S().reachOut = S().reachOut || [];
+          if (row) S().reachOut.unshift(row);
+        }));
+      });
+      Promise.all(jobs).then(function () {
+        showOv(ov, false);
+        refresh('war');
+        toast(root, 'Added to Reach out');
+      }).catch(function () { toast(root, 'Could not add those people'); });
+    },
+    'nav-arrange': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      document.body.classList.toggle('arranging');
+      var side = document.getElementById('side');
+      if (side) side.querySelectorAll('.nav').forEach(function (n) {
+        n.setAttribute('draggable', document.body.classList.contains('arranging') ? 'true' : 'false');
+      });
+      if (typeof window.paintShellNav === 'function') window.paintShellNav();
+      toast(root, document.body.classList.contains('arranging') ? 'Drag the menu to reorder' : 'Menu order saved');
+    },
+    'nav-reset': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      document.body.classList.remove('arranging');
+      try { localStorage.removeItem('cr_nav_order'); } catch (err) {}
+      if (typeof window.paintShellNav === 'function') window.paintShellNav();
+      toast(root, 'Menu reset to default');
     },
     'task-drag': function () {},
     'col-drop': function () {},
@@ -1349,31 +1571,31 @@
   }
 
   function onClick(e) {
-    var t = e.target;
+    if (onClick._t === e.timeStamp && onClick._x === e.clientX && onClick._y === e.clientY) return;
+    onClick._t = e.timeStamp; onClick._x = e.clientX; onClick._y = e.clientY;
+    var el = actionElFromEvent(e);
+    var t = (e.composedPath && e.composedPath()[0]) || e.target;
     if (t && t.closest) {
       var ignore = t.closest('input, textarea, select, [contenteditable="true"]');
-      if (ignore && ignore.getAttribute && ignore.getAttribute('data-action') === 'capture-input') {
-        return;
-      }
-      if (ignore && ignore.getAttribute && ignore.getAttribute('data-action') === 'notes-search') return;
-      if (ignore && ignore.getAttribute && ignore.getAttribute('data-action') === 'note-edit') return;
-      if (ignore && ignore.getAttribute && (ignore.getAttribute('data-action') === 'link-title' || ignore.getAttribute('data-action') === 'link-url')) return;
-      if (ignore && ignore.getAttribute && /^(pipe|mail|docs|spaces)-search$|^mail-(body|to|subject)$|^intel-ask$|^cal-(nl|title|notes|date|time|select|people)$|^play-tx$|^zoom-(search|ask-input)$/.test(ignore.getAttribute('data-action') || '')) return;
+      var ignAct = ignore && ignore.getAttribute ? (ignore.getAttribute('data-action') || '') : '';
+      if (ignore && /^(capture-input|notes-search|note-edit|link-title|link-url|link-search|link-note|plan-draft|reach-pick-search|pipe-search|mail-search|docs-search|spaces-search|mail-body|mail-to|mail-subject|intel-ask|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|play-tx|zoom-search|zoom-ask-input)$/.test(ignAct)) return;
     }
-    var rootEarly = t && t.getRootNode ? t.getRootNode() : document;
+    var rootEarly = rootOf(el || t, e);
     var menu = rootEarly.getElementById && rootEarly.getElementById('menu');
     if (menu && menu.style.display === 'block' && !(t.closest && t.closest('#menu, [data-action="space-menu"]'))) menu.style.display = 'none';
-    var el = t && t.closest ? t.closest('[data-action]') : closestAction(t);
-    if (!el) return;
+    if (!el) {
+      closePop(rootEarly);
+      return;
+    }
     var name = attr(el, 'data-action');
     var fn = actions[name];
-    var root = el.getRootNode ? el.getRootNode() : document;
-    if (name === 'link-open' && t.closest && t.closest('.tm')) return;
-    if (name === 'note-open' && t.closest && t.closest('[data-action="note-pin"], [data-action="note-archive"], [data-action="note-task"]')) return;
+    var root = rootOf(el, e);
+    if (name === 'link-open' && t.closest && t.closest('.tm, [data-action="link-note"]')) return;
+    if (name === 'note-open' && t.closest && t.closest('[data-action="note-pin"], [data-action="note-archive"], [data-action="note-task"], [data-action="note-menu"]')) return;
     if (name === 'zoom-open' && t.closest && t.closest('[data-action="zoom-edit"], [data-action="zoom-archive"]')) return;
     if (!fn) { soon(root, name); return; }
     if (name === 'link-open') return;
-    if (/^(cal-event|cal-sug|cal-keep|cal-drop|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|cal-save|cal-del|cal-dup|cal-undo|cal-zoom|cal-pick|cal-allday|cal-cell|cal-year-day|cal-more|cal-mini-day|play-voice-|play-tx|zoom-search|zoom-ask-input)/.test(name)) {
+    if (/^(cal-event|cal-sug|cal-keep|cal-drop|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|cal-save|cal-del|cal-dup|cal-undo|cal-zoom|cal-pick|cal-allday|cal-cell|cal-year-day|cal-more|cal-mini-day|play-voice-|play-tx|zoom-search|zoom-ask-input)$/.test(name)) {
       try { fn(el, root, e); } catch (err) { toast(root, 'Could not run that action'); }
       return;
     }
@@ -1381,10 +1603,21 @@
     try { fn(el, root, e); } catch (err) { toast(root, 'Could not run that action'); }
   }
   function onKey(e) {
-    var el = e.target && e.target.closest ? e.target.closest('[data-action]') : null;
+    var el = actionElFromEvent(e) || (e.target && e.target.closest ? e.target.closest('[data-action]') : null);
+    var root = rootOf(el || e.target, e);
+    if (e.key === 'Escape') {
+      var ov = root.getElementById && (root.getElementById('ov') || root.getElementById('planOv') || root.getElementById('reachOv'));
+      if (ov && ov.classList.contains('open')) {
+        showOv(root.getElementById('ov'), false);
+        showOv(root.getElementById('planOv'), false);
+        showOv(root.getElementById('reachOv'), false);
+        e.preventDefault();
+        return;
+      }
+      closePop(root);
+    }
     if (!el) return;
     var name = attr(el, 'data-action');
-    var root = el.getRootNode ? el.getRootNode() : document;
     if (e.key === 'Enter' && name === 'zoom-search') return;
     if (e.key === 'Enter' && name === 'cal-nl') return;
     if (e.key === 'Enter' && (name === 'capture-input' || name === 'link-url' || name === 'link-title')) {
@@ -1410,6 +1643,13 @@
       }, 120);
     }
     if (name === 'note-edit') saveNote(root, el);
+    if (name === 'link-search' || name === 'reach-pick-search') {
+      var q = String(el.value || '').toLowerCase();
+      var rows = name === 'link-search' ? root.querySelectorAll('.tile') : root.querySelectorAll('.pick-row');
+      rows.forEach(function (n) {
+        n.style.display = !q || (n.textContent || '').toLowerCase().indexOf(q) >= 0 ? '' : 'none';
+      });
+    }
     if (/^(pipe|mail|docs|spaces|zoom)-search$/.test(name || '')) {
       var q = String(el.value || '').toLowerCase();
       var sel = name === 'pipe-search' ? 'tbody#rows tr, .nd, .pcard' : name === 'mail-search' ? '.ml' : name === 'docs-search' ? '.fl, .ra' : name === 'zoom-search' ? '.mc' : '.sp';
@@ -1439,7 +1679,7 @@
     return { id: plain, kind: 'task' };
   }
   function onDragStart(e) {
-    var t = e.target;
+    var t = (e.composedPath && e.composedPath()[0]) || e.target;
     if (t && t.closest && t.closest('.ev, .calwrap .col, .ghost, .rz')) return;
     var el = t && t.closest ? t.closest('[draggable="true"]') : null;
     if (!el || !e.dataTransfer) return;
@@ -1461,13 +1701,15 @@
   }
   function dropSel() { return '[data-action="col-drop"], [data-action="stage-drop"], [data-action="mail-col-drop"], [data-action="space-drop"]'; }
   function onDragOver(e) {
-    var col = e.target && e.target.closest ? e.target.closest(dropSel()) : null;
+    var t = (e.composedPath && e.composedPath()[0]) || e.target;
+    var col = t && t.closest ? t.closest(dropSel()) : null;
     if (!col) return;
     e.preventDefault();
     col.classList.add('drop-on');
   }
   function onDrop(e) {
-    var col = e.target && e.target.closest ? e.target.closest(dropSel()) : null;
+    var t = (e.composedPath && e.composedPath()[0]) || e.target;
+    var col = t && t.closest ? t.closest(dropSel()) : null;
     if (!col) return;
     e.preventDefault();
     col.classList.remove('drop-on');
@@ -1513,13 +1755,14 @@
     }
     var bucket = attr(col, 'data-bucket');
     if (!bucket) return;
-    if (typeof window.moveItemColumn === 'function') window.moveItemColumn(id, bucket);
-    else patchItem(id, { column: bucket });
-    toast(root, 'Moved to ' + bucket);
-    setTimeout(function () { refresh('war'); }, 80);
+    patchItem(id, { column: bucket }).then(function () {
+      refresh('war');
+      toast(root, 'Moved to ' + bucket);
+    }).catch(function () { toast(root, 'Could not move that task'); });
   }
   function onDragLeave(e) {
-    var col = e.target && e.target.closest ? e.target.closest(dropSel()) : null;
+    var t = (e.composedPath && e.composedPath()[0]) || e.target;
+    var col = t && t.closest ? t.closest(dropSel()) : null;
     if (col) col.classList.remove('drop-on');
   }
 
@@ -1546,17 +1789,30 @@
   }
 
   function bindShadowActions(root) {
-    if (!root || root.__deskBound) return root;
-    root.__deskBound = true;
-    root.addEventListener('click', onClick);
-    root.addEventListener('keydown', onKey);
-    root.addEventListener('input', onInput);
-    root.addEventListener('dragstart', onDragStart);
-    root.addEventListener('dragover', onDragOver);
-    root.addEventListener('drop', onDrop);
-    root.addEventListener('dragleave', onDragLeave);
+    if (!root) return root;
+    if (!root.__deskBound) {
+      root.__deskBound = true;
+      root.addEventListener('click', onClick);
+      root.addEventListener('keydown', onKey);
+      root.addEventListener('input', onInput);
+      root.addEventListener('dragstart', onDragStart);
+      root.addEventListener('dragover', onDragOver);
+      root.addEventListener('drop', onDrop);
+      root.addEventListener('dragleave', onDragLeave);
+    }
     stampDeskControls(root);
     return root;
+  }
+
+  if (!window.__deskDocBound) {
+    window.__deskDocBound = true;
+    document.addEventListener('click', onClick, true);
+    document.addEventListener('keydown', onKey, true);
+    document.addEventListener('input', onInput, true);
+    document.addEventListener('dragstart', onDragStart, true);
+    document.addEventListener('dragover', onDragOver, true);
+    document.addEventListener('drop', onDrop, true);
+    document.addEventListener('dragleave', onDragLeave, true);
   }
 
   window.bindShadowActions = bindShadowActions;

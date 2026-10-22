@@ -123,7 +123,7 @@
       html += '<div class="nav' + (it[0] === active ? ' on' : '') + '" data-v="' + it[3] + '" data-name="' + it[0] + '"><span class="grip" aria-hidden="true"></span><svg viewBox="0 0 24 24"><path d="' + it[1] + '"/></svg><span class="nl">' + it[0] + '</span></div>';
     });
     var arranging = document.body.classList.contains('arranging');
-    html += '<div class="arr-row"><button type="button" class="arr" id="navArrange">' + (arranging ? 'Done' : 'Arrange') + '</button><button type="button" class="arr-reset" id="navReset">Reset to default</button></div>';
+    html += '<div class="arr-row"><button type="button" class="arr" id="navArrange" data-action="nav-arrange">' + (arranging ? 'Done' : 'Arrange') + '</button><button type="button" class="arr-reset" id="navReset" data-action="nav-reset">Reset to default</button></div>';
     side.innerHTML = html;
     var crumb = document.getElementById('pageCrumb');
     if (crumb) crumb.textContent = active;

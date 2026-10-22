@@ -20,7 +20,27 @@
     + '.task.done .tt{text-decoration:line-through;opacity:.55}'
     + '.rc.done b{text-decoration:line-through;opacity:.55}'
     + ':host(.desk-full){position:fixed;inset:12px;z-index:30;background:var(--soft);overflow:auto;border-radius:16px}'
-    + '[hidden]{display:none!important}';
+    + '[hidden]{display:none!important}'
+    + '[data-action]{cursor:pointer}'
+    + '.desk-pop{position:absolute;z-index:50;min-width:160px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 28px rgba(3,10,30,.22);padding:6px;}'
+    + '.desk-pop button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:650;color:var(--ink)}'
+    + '.desk-pop button:hover{background:var(--soft)}'
+    + '.ov{position:fixed;inset:0;z-index:45;background:rgba(10,16,40,.45);display:none;align-items:center;justify-content:center;padding:24px}'
+    + '.ov.open{display:flex}'
+    + '.note.big{width:min(720px,92vw);max-height:84vh;overflow:auto;padding:22px 24px 18px}'
+    + '.note.big h4{font-size:22px;outline:none}'
+    + '.note.big p,.note.big .nb{font-size:15px;line-height:1.55;-webkit-line-clamp:unset;display:block;overflow:visible;min-height:140px;outline:none;margin:0}'
+    + '.plan-ov,.pick-ov{position:fixed;inset:0;z-index:46;background:rgba(10,16,40,.45);display:none;align-items:center;justify-content:center;padding:24px}'
+    + '.plan-ov.open,.pick-ov.open{display:flex}'
+    + '.plan-box,.pick-box{width:min(640px,92vw);max-height:84vh;overflow:auto;background:#fff;border-radius:16px;padding:18px 20px;box-shadow:0 18px 40px rgba(3,10,30,.35)}'
+    + '.plan-box h3,.pick-box h3{margin:0 0 12px;font-size:18px}'
+    + '.plan-box textarea,.pick-box input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;font-size:14px;margin:0 0 10px}'
+    + '.plan-acts,.pick-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}'
+    + '.plan-acts button,.pick-acts button{height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;padding:0 12px;font-weight:700}'
+    + '.plan-acts .pri,.pick-acts .pri{background:var(--blue);border-color:var(--blue);color:#fff}'
+    + '.pick-list{max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:12px}'
+    + '.pick-row{display:flex;gap:10px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);font-size:13.5px}'
+    + '.pick-row:first-child{border-top:0}';
   var CSS = {
     room: '/port-css/dashboard.css', war: '/port-css/war-room.css', notes: '/port-css/notes.css',
     contacts: '/port-css/pipeline.css', work: '/port-css/spaces.css', docs: '/port-css/documents.css',
@@ -84,7 +104,8 @@
   }
   function finishPaint(wrap) {
     var root = wrap && wrap.getRootNode ? wrap.getRootNode() : null;
-    if (root && typeof window.stampDeskControls === 'function') window.stampDeskControls(root);
+    if (root && typeof window.bindShadowActions === 'function') window.bindShadowActions(root);
+    else if (root && typeof window.stampDeskControls === 'function') window.stampDeskControls(root);
     if (root && typeof window.syncDeskFocus === 'function') window.syncDeskFocus(root);
   }
 
@@ -735,7 +756,9 @@
       + execCol('Today', data.today, 'today')
       + execCol('This week', data.week, 'week')
       + execCol('Later', data.later, 'later')
-      + '</div></section><div class="toast" id="toast"></div>';
+      + '</div></section><div class="plan-ov" id="planOv" hidden data-action="plan-close"><div class="plan-box" data-action="note-keep"><h3 id="planHd">Plan</h3><textarea id="planBody" data-action="plan-draft" rows="8" placeholder="Steps, one per line"></textarea><div class="plan-acts"><button class="pri" data-action="plan-ask">Ask 4orm Intelligence</button><button class="pri" data-action="plan-save">Save plan</button><button data-action="plan-close">Cancel</button></div></div></div>'
+      + '<div class="pick-ov" id="reachOv" hidden data-action="reach-pick-close"><div class="pick-box" data-action="note-keep"><h3>Add from Pipeline or Contacts</h3><input data-action="reach-pick-search" placeholder="Search people"><div class="pick-list" id="reachList"></div><div class="pick-acts"><button class="pri" data-action="reach-pick-add">Add selected</button><button data-action="reach-pick-close">Cancel</button></div></div></div>'
+      + '<div class="toast" id="toast"></div>';
     finishPaint(wrap);
     markReady('warDesk');
   }
@@ -758,9 +781,9 @@
     });
     if (n.reminder) metaBits.push('<span class="mc rem">&#9200; ' + esc(n.reminder) + '</span>');
     var meta = metaBits.length ? '<div class="meta">' + metaBits.join('') + '</div>' : '';
-    return '<div class="note ' + n.color + '" data-action="note-open" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '" data-body="' + esc(n.body || '') + '" data-type="' + esc(n.typeCls || '') + '" data-pin="' + (n.pin ? '1' : '0') + '"><div class="nh"><span class="' + ty + '">' + esc(n.type) + '</span>' + pin + '</div>'
+    return '<div class="note ' + n.color + '" data-action="note-open" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '" data-body="' + esc(n.body || '') + '" data-type="' + esc(n.typeCls || '') + '" data-color="' + esc(n.color || 'y') + '" data-pin="' + (n.pin ? '1' : '0') + '"><div class="nh"><span class="' + ty + '">' + esc(n.type) + '</span>' + pin + '</div>'
       + title + body + checks + meta
-      + '<div class="na"><span class="conv cvt" data-action="note-task" data-id="' + id + '" data-title="' + ttl + '">&#10022; ' + esc(n.convert) + '</span><span class="sp"></span><span class="ic" data-action="note-open" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '" data-body="' + esc(n.body || '') + '">&#9998;</span><span class="ic" data-action="note-pin" data-id="' + id + '" data-source="' + src + '" data-on="' + (n.pin ? '1' : '0') + '">&#8943;</span></div></div>';
+      + '<div class="na"><span class="conv cvt" data-action="note-task" data-id="' + id + '" data-title="' + ttl + '">&#10022; ' + esc(n.convert) + '</span><span class="sp"></span><span class="ic" data-action="note-open" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '" data-body="' + esc(n.body || '') + '" data-type="' + esc(n.typeCls || '') + '" data-color="' + esc(n.color || 'y') + '">&#9998;</span><span class="ic" data-action="note-menu" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '" data-on="' + (n.pin ? '1' : '0') + '">&#8943;</span></div></div>';
   }
 
   function paintNotesLive() {
@@ -776,14 +799,15 @@
       + '<button class="chip" data-action="notes-filter" data-filter="todo">To-do <i>' + esc(c.todo) + '</i></button><button class="chip" data-action="notes-filter" data-filter="idea">Idea <i>' + esc(c.idea) + '</i></button>'
       + '<button class="chip" data-action="notes-filter" data-filter="person">Person <i>' + esc(c.person) + '</i></button><button class="chip" data-action="notes-filter" data-filter="dec">Decision <i>' + esc(c.decision) + '</i></button>'
       + '<button class="chip" data-action="notes-filter" data-filter="archive">Archive</button>'
-      + '<div class="cols" title="Filter by colour"><span class="cdot y" style="background:#fff6c9"></span><span class="cdot" style="background:#ffe1ea"></span><span class="cdot" style="background:#ddf5e6"></span><span class="cdot" style="background:#e1ecff"></span><span class="cdot" style="background:#ffe6cf"></span><span class="cdot" style="background:#ece4ff"></span></div>'
+      + '<div class="cols" title="Filter by colour"><span class="cdot y" data-action="notes-color" data-color="y" style="background:#fff6c9"></span><span class="cdot" data-action="notes-color" data-color="p" style="background:#ffe1ea"></span><span class="cdot" data-action="notes-color" data-color="g" style="background:#ddf5e6"></span><span class="cdot" data-action="notes-color" data-color="b" style="background:#e1ecff"></span><span class="cdot" data-action="notes-color" data-color="o" style="background:#ffe6cf"></span><span class="cdot" data-action="notes-color" data-color="v" style="background:#ece4ff"></span></div>'
       + '<div class="seg"><span class="on" data-action="notes-view" data-view="board">Board</span><span data-action="notes-view" data-view="canvas">Canvas</span></div></div>'
       + '<div class="sec">&#9733; Pinned</div><div class="board" style="margin-bottom:6px">'
       + (data.pinned || []).map(noteCard).join('') + '<div class="newcard" data-action="note-new">+ Pin a note here</div></div>'
       + '<div class="sec">All notes</div><div class="board">'
       + (data.notes || []).map(noteCard).join('') + '</div>'
-      + '<div class="ov" id="ov" hidden style="display:none;position:fixed;inset:0;z-index:40;background:rgba(10,16,40,.45);align-items:center;justify-content:center"><div class="sheet" style="background:#fff;border-radius:16px;padding:18px;width:min(640px,92vw);max-height:80vh;overflow:auto"><div class="sh" style="display:flex;justify-content:space-between;gap:12px"><div><div class="k" id="ok">Note</div><div class="t" id="ot" contenteditable="true" data-action="note-edit"></div></div><button class="x" id="ox" data-action="note-close">&times;</button></div>'
-      + '<div class="sb" id="ob" contenteditable="true" data-action="note-edit" style="min-height:160px;margin-top:12px"></div><div class="meta" id="om"></div></div></div>'
+      + '<div class="ov" id="ov" hidden data-action="note-close"><div class="note big y" id="ovNote" data-action="note-keep"><div class="nh"><span class="ty" id="ok">Note</span><span class="pin" id="ovPin" data-action="note-pin">&#128204;</span><span class="nx x" data-action="note-close">&times;</span></div>'
+      + '<h4 id="ot" contenteditable="true" data-action="note-edit"></h4><p id="ob" contenteditable="true" data-action="note-edit"></p><div class="meta" id="om"></div>'
+      + '<div class="na"><span class="conv" data-action="note-task" id="ovTask">&#10022; Convert to task</span></div></div></div>'
       + '<div class="toast" id="toast"></div>';
     finishPaint(wrap);
     markReady('notesDesk');
