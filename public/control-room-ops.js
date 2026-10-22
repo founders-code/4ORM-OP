@@ -1126,7 +1126,38 @@
 
   function newsHost(url) { try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return ''; } }
   function newsSource(item) { return String(item.source || '') || newsHost(item.url || '') || 'News'; }
-  function newsWhy(item) { return String(item.whyItMatters || item.why_it_matters || '').replace(/^why it matters to 4orm:\s*/i, '') || String(item.summary || '').replace(/^why it matters to 4orm:\s*/i, ''); }
+  function newsKeep(item) {
+    var title = String((item && item.title) || '');
+    var url = String((item && item.url) || '');
+    var sum = String((item && item.summary) || '');
+    var blob = (title + ' ' + sum + ' ' + url).toLowerCase();
+    if (/^episode\s+\d+/i.test(title) || /\bpodcast\b/i.test(title) || /\bhow to hit a home run\b/i.test(title)) return false;
+    if (/\b(webinar|stay in the loop|becoming a |forms\b|trust account declaration|pension services portal)\b/i.test(title)) return false;
+    if (/\bphilippines\b|\bphilippine\b|fsb global|global principles/.test(blob)) return false;
+    if (/bloomberg/.test(blob) && /\bcrypto\b/.test(blob)) return false;
+    if (/\b(wells fargo|merrill|nasdaq sell|huntington bank|euronet|epc eu|uae)\b/.test(blob) && !/\bcanada|canadian|ontario|bcfsa|fintrac|osfi\b/.test(blob)) return false;
+    if (/(finextra\.com|medium\.com|complyadvantage\.com)/.test(url) && !/\bcanada|canadian\b/.test(blob)) return false;
+    return true;
+  }
+  function newsWhy(item) {
+    var stored = String(item.whyItMatters || item.why_it_matters || '').replace(/^why it matters to 4orm:\s*/i, '').trim();
+    var title = String(item.title || '').replace(/\s+/g, ' ').trim();
+    var hook = (title.split(/[.!?:]/)[0] || title).replace(/\.$/, '').slice(0, 140);
+    var cat = newsCat(item);
+    var blob = (title + ' ' + (item.summary || '')).toLowerCase();
+    var act = 'Log the rule and put a line in the investor update tying it to the 4orm session record.';
+    if (cat === 'Housing market') act = 'Put this in the broker brief and the investor newsletter as a Canada-market proof point.';
+    else if (cat === 'Payments/FINTRAC') act = 'Put this in the "why now" slide and the investor newsletter.';
+    else if (cat === 'Fraud') act = 'Send it to Century 21 / Remax desks as a fraud-flag opener.';
+    else if (cat === 'AI & governance') act = 'Cite it when a VC asks how 4orm keeps a human in the loop.';
+    else if (cat === 'Competitors') act = 'Watch how they document advice, and name the gap 4orm closes.';
+    else if (cat === 'Mortgage/brokerage') act = 'Name it on the next Century 21 / Remax design-partner call.';
+    if (/\b(fine|penalt|credit union)\b/.test(blob)) act = 'Put this in the "why now" slide and the investor newsletter.';
+    else if (/\b(fraud|equifax|forged)\b/.test(blob)) act = 'Send it to Century 21 / Remax desks as a fraud-flag opener.';
+    var out = hook ? (hook + '. ' + act) : act;
+    if (stored && stored.toLowerCase().indexOf(hook.toLowerCase().slice(0, 24)) === 0) return stored;
+    return out;
+  }
   function newsSummary(item) { var s = String(item.summary || ''); return /^why it matters to 4orm:/i.test(s) ? '' : s; }
 
   function newsWhen(item) {
@@ -1141,19 +1172,14 @@
 
   function newsCover(item, hero) {
     var cat = newsCat(item);
-    var impact = newsImpact(item);
-    var cls = impact === 'Threat' ? 'threat' : impact === 'Regulatory' ? 'reg' : 'opp';
     var img = String(item.image || item.image_url || '');
     var ok = /^\/api\/news\/(?:image|thumb)\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(img);
     var failed = !!item._noimg;
-    var kick = hero
-      ? '<span class="kick">Top release ' + (newsWhen(item) === 'today' ? 'today' : 'this ' + (STATE.newsSpan === 'week' ? 'week' : 'month')) + ' · ' + esc(cat) + '</span>'
-      : '<span class="cat">' + esc(cat) + '</span>';
-    var title = hero ? '<div class="h">' + esc(item.title || '') + '</div>' : '';
+    var kick = '<span class="cat">' + esc(cat) + '</span>';
     if (!ok && failed) {
-      return '<div class="img noimg"><div class="tile"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + (NEWS_ICON[cat] || NEWS_ICON.Compliance) + '</svg></span><span class="sn">' + esc(newsSource(item)) + '</span></div><span class="shade"></span>' + kick + '<span class="' + (hero ? 'impact' : 'tag') + ' ' + cls + '">' + impact + '</span>' + title + '</div>';
+      return '<div class="img noimg"><div class="tile"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + (NEWS_ICON[cat] || NEWS_ICON.Compliance) + '</svg></span><span class="sn">' + esc(newsSource(item)) + '</span></div><span class="shade"></span>' + kick + '</div>';
     }
-    return '<div class="img shimmer' + (ok ? '' : '') + '">' + (ok ? '<img class="ph" src="' + esc(img) + '" alt="" loading="' + (hero ? 'eager' : 'lazy') + '" decoding="async"/>' : '') + '<span class="shade"></span>' + kick + '<span class="' + (hero ? 'impact' : 'tag') + ' ' + cls + '">' + impact + '</span>' + title + '</div>';
+    return '<div class="img' + (ok ? '' : ' shimmer') + '">' + (ok ? '<img class="ph" src="' + esc(img) + '" alt="" loading="' + (hero ? 'eager' : 'lazy') + '" decoding="async"/>' : '') + '<span class="shade"></span>' + kick + '</div>';
   }
 
   function newsOpen(item) {
@@ -1203,9 +1229,11 @@
 
   function renderNews(items) {
     var el = (window.portEl && window.portEl('v-news', 'newsDesk')) || document.getElementById('newsDesk');
-    if (!el) return;
+    if (!el || renderNews._on) return;
+    renderNews._on = true;
+    try {
     var loading = !STATE.newsLoaded && !(items && items.length);
-    var all = (items || []).slice().sort(function (a, b) { return (b.isTop ? 1 : 0) - (a.isTop ? 1 : 0) || newsTs(b) - newsTs(a); });
+    var all = (items || []).filter(newsKeep).slice().sort(function (a, b) { return (b.isTop ? 1 : 0) - (a.isTop ? 1 : 0) || newsTs(b) - newsTs(a); });
     var on = STATE.newsCat && (STATE.newsCat === 'All' || NEWS_CHIPS.indexOf(STATE.newsCat) >= 0) ? STATE.newsCat : 'All';
     var q = String(STATE.newsQ || '').trim().toLowerCase();
     var span = STATE.newsSpan === 'today' ? 'today' : STATE.newsSpan === 'week' ? 'week' : 'month';
@@ -1233,7 +1261,7 @@
     function story(item) {
       var sum = newsSummary(item);
       var why = newsWhy(item);
-      return '<div class="card story" data-nw-i="' + idx(item) + '" role="button" tabindex="0">' + newsCover(item, false) + '<div class="b"><h3 class="hdline">' + esc(item.title || '') + '</h3>' + (sum ? '<div class="tk">' + esc(sum) + '</div>' : '') + (why ? '<div class="why"><b>Why it matters:</b> ' + esc(why) + '</div>' : '') + '<div class="foot"><span class="src">' + esc(newsSource(item)) + (newsWhen(item) ? ' · ' + newsWhen(item) : '') + '</span><button type="button" class="save" data-nw-save="' + idx(item) + '">Save ›</button></div></div></div>';
+      return '<div class="card story" data-action="news-open" data-nw-i="' + idx(item) + '" role="button" tabindex="0">' + newsCover(item, false) + '<div class="b"><h3 class="hdline">' + esc(item.title || '') + '</h3>' + (sum ? '<div class="tk">' + esc(sum) + '</div>' : '') + (why ? '<div class="why"><b>Why it matters:</b> ' + esc(why) + '</div>' : '') + '<div class="foot"><span class="src">' + esc(newsSource(item)) + (newsWhen(item) ? ' · ' + newsWhen(item) : '') + '</span><button type="button" class="save" data-action="news-save" data-nw-save="' + idx(item) + '">Save ›</button></div></div></div>';
     }
     var hero = '';
     if (top) {
@@ -1241,36 +1269,37 @@
       var host = newsHost(top.url || '');
       var srcLine = [esc(newsSource(top)), top.publishedAt ? new Date(newsTs(top)).toLocaleDateString('en-CA') : '', NEWS_PRIMARY.test(host) ? 'credibility: primary source' : 'credibility: reported'].filter(Boolean).join(' &middot; ');
       var sum = newsSummary(top);
-      hero = '<div class="card hero"><div data-nw-i="' + i + '" class="hero-open" role="button" tabindex="0">' + newsCover(top, true) + '</div><div class="b">' + (sum ? '<div class="sum">' + esc(sum) + '</div>' : '') + '<div class="take"><b>Why it matters to 4orm:</b> ' + esc(newsWhy(top) || 'Read the source and decide where it lands - deck, regulator note or a VC follow-up.') + '</div><div class="src">' + srcLine + '</div><div class="actions"><button type="button" class="act pri" data-nw-act="post" data-nw-at="' + i + '"><span class="mk">&#10022;</span> Draft a LinkedIn post</button><button type="button" class="act" data-nw-act="letter" data-nw-at="' + i + '"><span class="mk">&#10022;</span> Add to investor newsletter</button><button type="button" class="act" data-nw-act="vc" data-nw-at="' + i + '">Cite to a VC</button><button type="button" class="act" data-nw-save="' + i + '">Save to a Space</button><button type="button" class="act" data-nw-act="open" data-nw-at="' + i + '">Open source</button></div></div></div>';
+      var spanLab = newsWhen(top) === 'today' ? 'today' : ('this ' + (STATE.newsSpan === 'week' ? 'week' : 'month'));
+      hero = '<div class="card hero"><div data-action="news-open" data-nw-i="' + i + '" class="hero-open" role="button" tabindex="0">' + newsCover(top, true) + '</div><div class="b"><div class="ntop">Top release ' + spanLab + '</div><h2>' + esc(top.title || '') + '</h2>' + (sum ? '<div class="sum">' + esc(sum) + '</div>' : '') + '<div class="take"><b>Why it matters to 4orm:</b> ' + esc(newsWhy(top)) + '</div><div class="src">' + srcLine + '</div><div class="acts"><button type="button" class="a pri" data-action="news-act" data-nw-act="post" data-nw-at="' + i + '">&#10022; Draft a LinkedIn post</button><button type="button" class="a" data-action="news-act" data-nw-act="letter" data-nw-at="' + i + '">Add to investor newsletter</button><button type="button" class="a" data-action="news-act" data-nw-act="vc" data-nw-at="' + i + '">Cite to a VC</button><button type="button" class="a" data-action="news-save" data-nw-save="' + i + '">Save to a Space</button><button type="button" class="a" data-action="news-act" data-nw-act="open" data-nw-at="' + i + '">Open source &#8599;</button></div></div></div>';
     }
     var briefRows = (top ? [top] : []).concat(rest).slice(0, 4);
-    var brief = briefRows.map(function (item, n) { return '<button type="button" class="r" data-nw-i="' + idx(item) + '"><span class="n">' + (n + 1) + '</span><span>' + esc(String(item.title || '').slice(0, 110)) + '</span></button>'; }).join('') || '<div class="r">The 8am sweep fills the briefing.</div>';
+    var brief = briefRows.map(function (item, n) { return '<button type="button" class="r" data-action="news-open" data-nw-i="' + idx(item) + '"><span class="n">' + (n + 1) + '</span><span>' + esc(String(item.title || '').slice(0, 110)) + '</span></button>'; }).join('') || '<div class="r">The 8am sweep fills the briefing.</div>';
     var comps = NEWS_RIVALS.map(function (name) {
       var re = new RegExp('\\b' + name + '\\b', 'i');
       var hit = all.filter(function (item) { return re.test((item.title || '') + ' ' + (item.summary || '')); })[0];
       var age = hit ? Math.max(0, Math.floor((Date.now() - newsTs(hit)) / 86400000)) : null;
       var color = age == null ? '#c6cfdd' : age <= 2 ? '#f23a4d' : age <= 7 ? '#f0a020' : '#c6cfdd';
       var line = hit ? String(hit.title || '').slice(0, 54) : 'quiet';
-      return { age: age == null ? 999 : age, html: '<' + (hit ? 'button type="button" data-nw-url="' + esc(hit.url || '') + '" data-nw-title="' + esc(hit.title || '') + '"' : 'div') + ' class="comprow"><span class="d" style="background:' + color + '"></span><span class="cl">' + (hit && line.toLowerCase().indexOf(name.toLowerCase()) === 0 ? esc(line) : '<b>' + esc(name) + '</b> - ' + esc(line)) + '</span><span class="mt">' + (age == null ? '-' : age === 0 ? 'today' : age + 'd') + '</span></' + (hit ? 'button' : 'div') + '>' };
+      return { age: age == null ? 999 : age, html: '<' + (hit ? 'button type="button" data-action="news-url" data-nw-url="' + esc(hit.url || '') + '" data-nw-title="' + esc(hit.title || '') + '"' : 'div') + ' class="comprow"><span class="d" style="background:' + color + '"></span><span class="cl">' + (hit && line.toLowerCase().indexOf(name.toLowerCase()) === 0 ? esc(line) : '<b>' + esc(name) + '</b> - ' + esc(line)) + '</span><span class="mt">' + (age == null ? '-' : age === 0 ? 'today' : age + 'd') + '</span></' + (hit ? 'button' : 'div') + '>' };
     }).sort(function (x, y) { return x.age - y.age; }).map(function (c) { return c.html; }).join('');
     var trend = NEWS_TOPICS.map(function (topic) {
       var n = all.filter(function (item) { return ((item.title || '') + ' ' + (item.summary || '')).toLowerCase().indexOf(topic.toLowerCase()) >= 0; }).length;
       return { topic: topic, n: n };
     }).sort(function (x, y) { return y.n - x.n; }).map(function (row) {
-      return '<button type="button" class="tp' + (q === row.topic.toLowerCase() ? ' on' : '') + '" data-nw-topic="' + esc(row.topic) + '">' + esc(row.topic) + (row.n >= 2 ? ' <b>&#9650;</b>' : '') + '</button>';
+      return '<button type="button" class="tp' + (q === row.topic.toLowerCase() ? ' on' : '') + '" data-action="news-topic" data-nw-topic="' + esc(row.topic) + '">' + esc(row.topic) + (row.n >= 2 ? ' <b>&#9650;</b>' : '') + '</button>';
     }).join('');
     var rank = { Threat: 0, Regulatory: 1, Opportunity: 2 };
     var label = { Threat: ['threat', 'Act now'], Regulatory: ['reg', 'This week'], Opportunity: ['opp', 'Use it'] };
     var pri = rows.slice(0, 16).sort(function (a, b) { return rank[newsImpact(a)] - rank[newsImpact(b)] || newsTs(b) - newsTs(a); }).slice(0, 4).map(function (item) {
       var l = label[newsImpact(item)];
-      return '<button type="button" class="pr" data-nw-i="' + idx(item) + '"><span class="pl ' + l[0] + '">' + l[1] + '</span><span class="pt"><b>' + esc(String(item.title || '').slice(0, 80)) + '</b><span>' + esc(newsWhy(item)) + '</span></span></button>';
+      return '<button type="button" class="pr" data-action="news-open" data-nw-i="' + idx(item) + '"><span class="pl ' + l[0] + '">' + l[1] + '</span><span class="pt"><b>' + esc(String(item.title || '').slice(0, 80)) + '</b><span>' + esc(newsWhy(item)) + '</span></span></button>';
     }).join('') || '<div class="pr-empty">Priorities appear after the sweep.</div>';
     var chips = ['All'].concat(NEWS_CHIPS).map(function (c) {
-      return '<button type="button" class="chip' + (c === on ? ' on' : '') + '" data-nw-cat="' + esc(c) + '">' + esc(c) + '</button>';
+      return '<button type="button" class="chip' + (c === on ? ' on' : '') + '" data-action="news-cat" data-nw-cat="' + esc(c) + '">' + esc(c) + '</button>';
     }).join('');
     var swept = STATE.newsSweptAt ? new Date(STATE.newsSweptAt).toLocaleTimeString('en-CA', { hour: 'numeric', minute: '2-digit' }) : '';
     var body = loading ? '<div class="card nw-empty">Loading the sweep...</div>' : (rows.length ? hero + '<div class="grid">' + rest.map(story).join('') + '</div>' : '<div class="card nw-empty">No stories yet - press Refresh to run the sweep.</div>');
-    el.innerHTML = '<div class="nwx"><div class="top"><span class="t">News</span><div class="seg" id="newsSpan"><button type="button" data-span="today"' + (span === 'today' ? ' class="on"' : '') + '>Today</button><button type="button" data-span="week"' + (span === 'week' ? ' class="on"' : '') + '>Last week</button><button type="button" data-span="month"' + (span === 'month' ? ' class="on"' : '') + '>Last month</button></div><button class="btn" id="newsRefresh" type="button"' + (STATE.newsBusy ? ' disabled' : '') + '>' + (STATE.newsBusy ? 'Sweeping...' : 'Refresh') + '</button><div class="right"><input class="search" id="newsSearch" type="text" placeholder="Search news..." value="' + esc(STATE.newsQ || '') + '"/><span class="sweeps">8AM + 11AM SWEEPS' + (swept ? ' &middot; last ' + esc(swept) : '') + '</span></div></div><div class="chips">' + chips + '</div><div class="wrap"><div class="main">' + (miss ? '<div class="nw-miss">' + miss + '</div>' : '') + body + '</div><div class="rail"><div class="card"><div class="ch"><span class="mk">4</span><span class="t">Your briefing</span><span class="s">' + briefRows.length + ' things ' + (span === 'today' ? 'today' : 'this ' + span) + '</span></div><div class="brief">' + brief + '</div></div><div class="card"><div class="ch"><span class="t">Competitor watch</span><span class="s">' + NEWS_RIVALS.length + ' tracked</span></div><div class="comp">' + comps + '</div></div><div class="card"><div class="ch"><span class="t">Trending for 4orm</span></div><div class="trend">' + trend + '</div></div><div class="card"><div class="ch"><span class="t">What this means - priority</span></div><div class="prio">' + pri + '</div></div></div></div></div>';
+    el.innerHTML = '<div class="nwx"><div class="top"><span class="t">News</span><div class="seg" id="newsSpan"><button type="button" data-action="news-span" data-span="today"' + (span === 'today' ? ' class="on"' : '') + '>Today</button><button type="button" data-action="news-span" data-span="week"' + (span === 'week' ? ' class="on"' : '') + '>Last week</button><button type="button" data-action="news-span" data-span="month"' + (span === 'month' ? ' class="on"' : '') + '>Last month</button></div><button class="btn" id="newsRefresh" type="button" data-action="news-refresh"' + (STATE.newsBusy ? ' disabled' : '') + '>' + (STATE.newsBusy ? 'Sweeping...' : 'Refresh') + '</button><div class="right"><input class="search" id="newsSearch" type="text" data-action="news-search" placeholder="Search news..." value="' + esc(STATE.newsQ || '') + '"/><span class="sweeps">8AM + 11AM SWEEPS' + (swept ? ' &middot; last ' + esc(swept) : '') + '</span></div></div><div class="chips">' + chips + '</div><div class="wrap"><div class="main">' + (miss ? '<div class="nw-miss">' + miss + '</div>' : '') + body + '</div><div class="rail"><div class="card"><div class="ch"><span class="mk">4</span><span class="t">Your briefing</span><span class="s">' + briefRows.length + ' things ' + (span === 'today' ? 'today' : 'this ' + span) + '</span></div><div class="brief">' + brief + '</div></div><div class="card"><div class="ch"><span class="t">Competitor watch</span><span class="s">' + NEWS_RIVALS.length + ' tracked</span></div><div class="comp">' + comps + '</div></div><div class="card"><div class="ch"><span class="t">Trending for 4orm</span></div><div class="trend">' + trend + '</div></div><div class="card"><div class="ch"><span class="t">What this means - priority</span></div><div class="prio">' + pri + '</div></div></div></div></div>';
     el.querySelectorAll('img.ph').forEach(function (img) {
       var box = img.closest('.img');
       var ready = function () { if (box) box.classList.add('ready'); };
@@ -1286,53 +1315,61 @@
       if (img.complete && img.naturalWidth) ready();
       else if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) drop();
     });
-    var search = el.querySelector('#newsSearch');
-    if (search) search.oninput = function () {
-      var pos = search.selectionStart;
-      STATE.newsQ = search.value;
+    } finally {
+      renderNews._on = false;
+    }
+  }
+
+  function newsItemFromEl(el) {
+    var view = STATE.newsView || [];
+    var i = el && (el.getAttribute('data-nw-i') || el.getAttribute('data-nw-save') || el.getAttribute('data-nw-at'));
+    if (i == null || i === '') return null;
+    return view[Number(i)] || null;
+  }
+
+  function newsHandle(name, el) {
+    if (name === 'news-span') {
+      STATE.newsSpan = el.getAttribute('data-span');
       renderNews(STATE.news || []);
-      var again = ((window.portEl && window.portEl('v-news', 'newsDesk')) || document.getElementById('newsDesk') || el).querySelector('#newsSearch');
-      if (again) { again.focus(); try { again.setSelectionRange(pos, pos); } catch (e) {} }
-    };
-    el.querySelectorAll('[data-span]').forEach(function (btn) {
-      btn.onclick = function () { STATE.newsSpan = btn.getAttribute('data-span'); renderNews(STATE.news || []); };
-    });
-    el.querySelectorAll('[data-nw-cat]').forEach(function (btn) {
-      btn.onclick = function () { STATE.newsCat = btn.getAttribute('data-nw-cat'); renderNews(STATE.news || []); };
-    });
-    el.querySelectorAll('[data-nw-topic]').forEach(function (btn) {
-      btn.onclick = function () {
-        var topic = btn.getAttribute('data-nw-topic');
-        STATE.newsCat = 'All';
-        STATE.newsQ = String(STATE.newsQ || '').toLowerCase() === topic.toLowerCase() ? '' : topic;
-        renderNews(STATE.news || []);
-      };
-    });
-    var view = function (n) { return (STATE.newsView || [])[Number(n)]; };
-    el.querySelectorAll('[data-nw-i]').forEach(function (node) {
-      var go = function (e) { if (e.target.closest('[data-nw-save]')) return; newsOpen(view(node.getAttribute('data-nw-i'))); };
-      node.addEventListener('click', go);
-      node.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(e); });
-    });
-    el.querySelectorAll('[data-nw-url]').forEach(function (node) {
-      node.onclick = function () { newsOpen({ title: node.getAttribute('data-nw-title'), url: node.getAttribute('data-nw-url') }); };
-    });
-    el.querySelectorAll('[data-nw-save]').forEach(function (btn) {
-      btn.onclick = function (e) { e.stopPropagation(); newsToSpace(view(btn.getAttribute('data-nw-save'))); };
-    });
-    el.querySelectorAll('[data-nw-act]').forEach(function (btn) {
-      btn.onclick = function () {
-        var item = view(btn.getAttribute('data-nw-at'));
-        if (!item) return;
-        var act = btn.getAttribute('data-nw-act');
-        if (act === 'open') { newsOpen(item); return; }
-        var title = item.title || 'Story';
-        saveItem((act === 'post' ? 'LinkedIn post: ' : act === 'letter' ? 'Investor newsletter: ' : 'Cite to a VC: ') + title + (item.url ? ' - ' + item.url : ''), 'week');
-        if (typeof deskNote === 'function') deskNote(act === 'post' ? 'LinkedIn post draft added to This week.' : act === 'letter' ? 'Added to the investor newsletter list.' : 'Added to This week to cite to a VC.');
-      };
-    });
-    var refresh = el.querySelector('#newsRefresh');
-    if (refresh) refresh.onclick = function () { runNewsSweep(false); };
+      return;
+    }
+    if (name === 'news-cat') {
+      STATE.newsCat = el.getAttribute('data-nw-cat');
+      renderNews(STATE.news || []);
+      return;
+    }
+    if (name === 'news-topic') {
+      var topic = el.getAttribute('data-nw-topic') || '';
+      STATE.newsCat = 'All';
+      STATE.newsQ = String(STATE.newsQ || '').toLowerCase() === topic.toLowerCase() ? '' : topic;
+      renderNews(STATE.news || []);
+      return;
+    }
+    if (name === 'news-refresh') {
+      runNewsSweep(false);
+      return;
+    }
+    if (name === 'news-open') {
+      newsOpen(newsItemFromEl(el));
+      return;
+    }
+    if (name === 'news-url') {
+      newsOpen({ title: el.getAttribute('data-nw-title'), url: el.getAttribute('data-nw-url') });
+      return;
+    }
+    if (name === 'news-save') {
+      newsToSpace(newsItemFromEl(el));
+      return;
+    }
+    if (name === 'news-act') {
+      var item = newsItemFromEl(el);
+      if (!item) return;
+      var act = el.getAttribute('data-nw-act');
+      if (act === 'open') { newsOpen(item); return; }
+      var title = item.title || 'Story';
+      saveItem((act === 'post' ? 'LinkedIn post: ' : act === 'letter' ? 'Investor newsletter: ' : 'Cite to a VC: ') + title + (item.url ? ' - ' + item.url : ''), 'week');
+      if (typeof deskNote === 'function') deskNote(act === 'post' ? 'LinkedIn post draft added to This week.' : act === 'letter' ? 'Added to the investor newsletter list.' : 'Added to This week to cite to a VC.');
+    }
   }
 
   function newsNeedThumbs(items) {
@@ -1379,8 +1416,16 @@
     });
   }
 
+  function bindNewsDesk() {
+    var el = (window.portEl && window.portEl('v-news', 'newsDesk')) || document.getElementById('newsDesk');
+    var root = el && el.getRootNode && el.getRootNode();
+    if (root && root.nodeType === 11 && typeof window.bindShadowActions === 'function') window.bindShadowActions(root);
+    else if (el && typeof window.stampDeskControls === 'function') window.stampDeskControls(el);
+  }
+
   function loadNews() {
     renderNews(STATE.news || []);
+    bindNewsDesk();
     authFetch('/api/news?span=month', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
       STATE.newsLoaded = true;
       if (data && data.items && data.items.length) STATE.news = data.items;
@@ -2791,6 +2836,9 @@
   window.saveItem = saveItem;
   window.renderWar = renderWar;
   window.renderOpsDash = renderOpsDash;
+  window.renderNews = renderNews;
+  window.runNewsSweep = runNewsSweep;
+  window.__newsHandle = newsHandle;
   window.openReply = openReply;
   window.hideSender = hideSender;
   window.setShowMoney = setShowMoney;

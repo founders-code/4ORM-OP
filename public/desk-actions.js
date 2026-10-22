@@ -90,6 +90,7 @@
     if (which === 'cal' && typeof window.paintRedesignCalendar === 'function') window.paintRedesignCalendar();
     if (which === 'zoom' && typeof window.paintRedesignZoom === 'function') window.paintRedesignZoom();
     if (which === 'done' && typeof window.paintRedesignCompleted === 'function') window.paintRedesignCompleted();
+    if (which === 'news' && typeof window.renderNews === 'function') window.renderNews((window.STATE && window.STATE.news) || []);
     if (typeof window.paintShellNav === 'function') window.paintShellNav();
   }
   function go(view) {
@@ -1707,7 +1708,16 @@
       window.print();
       toast(root, 'Print / save as PDF');
     },
-    'done-investor': function (el, root) { soon(root, 'Add to investor update'); }
+    'done-investor': function (el, root) { soon(root, 'Add to investor update'); },
+    'news-span': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-span', el, root); },
+    'news-refresh': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-refresh', el, root); },
+    'news-search': function () {},
+    'news-cat': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-cat', el, root); },
+    'news-open': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-open', el, root); },
+    'news-save': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-save', el, root); },
+    'news-act': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-act', el, root); },
+    'news-topic': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-topic', el, root); },
+    'news-url': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-url', el, root); }
   };
 
   function saveNote(root, el) {
@@ -1734,7 +1744,7 @@
     if (t && t.closest) {
       var ignore = t.closest('input, textarea, select, [contenteditable="true"]');
       var ignAct = ignore && ignore.getAttribute ? (ignore.getAttribute('data-action') || '') : '';
-      if (ignore && /^(capture-input|notes-search|note-edit|link-title|link-url|link-search|link-note|plan-draft|reach-pick-search|pipe-search|mail-search|docs-search|spaces-search|space-notes|mail-body|mail-to|mail-subject|intel-ask|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|play-tx|zoom-search|zoom-ask-input)$/.test(ignAct)) return;
+      if (ignore && /^(capture-input|notes-search|note-edit|link-title|link-url|link-search|link-note|plan-draft|reach-pick-search|pipe-search|mail-search|docs-search|spaces-search|space-notes|mail-body|mail-to|mail-subject|intel-ask|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|play-tx|zoom-search|zoom-ask-input|news-search)$/.test(ignAct)) return;
     }
     var rootEarly = rootOf(el || t, e);
     var menu = rootEarly.getElementById && rootEarly.getElementById('menu');
@@ -1751,7 +1761,7 @@
     if (name === 'zoom-open' && t.closest && t.closest('[data-action="zoom-edit"], [data-action="zoom-archive"]')) return;
     if (!fn) { soon(root, name); return; }
     if (name === 'link-open') return;
-    if (/^(cal-event|cal-sug|cal-keep|cal-drop|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|cal-save|cal-del|cal-dup|cal-undo|cal-zoom|cal-pick|cal-allday|cal-cell|cal-year-day|cal-more|play-voice-|play-tx|zoom-search|zoom-ask-input)$/.test(name)) {
+    if (/^(cal-event|cal-sug|cal-keep|cal-drop|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|cal-save|cal-del|cal-dup|cal-undo|cal-zoom|cal-pick|cal-allday|cal-cell|cal-year-day|cal-more|play-voice-|play-tx|zoom-search|zoom-ask-input|news-search)$/.test(name)) {
       try { fn(el, root, e); } catch (err) { toast(root, 'Could not run that action'); }
       return;
     }
@@ -1810,6 +1820,18 @@
           toast(root, 'Saved');
         }).catch(function () { toast(root, 'Could not save those notes'); });
       }, 400);
+    }
+    if (name === 'news-search') {
+      if (e && e.isTrusted === false) return;
+      var nextQ = String(el.value || '');
+      if (window.STATE) {
+        if (window.STATE.newsQ === nextQ) return;
+        window.STATE.newsQ = nextQ;
+      }
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(function () {
+        if (typeof window.renderNews === 'function') window.renderNews((window.STATE && window.STATE.news) || []);
+      }, 120);
     }
     if (name === 'link-search' || name === 'reach-pick-search') {
       var q = String(el.value || '').toLowerCase();
