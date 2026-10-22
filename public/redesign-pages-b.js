@@ -498,6 +498,7 @@
         + '</section></div>'
         + tableCard;
     }
+    wrap.innerHTML += '<div class="pick-ov" id="contactOv" hidden data-action="pipe-close"><div class="pick-box" data-action="note-keep"><h3 id="contactHd">Contact</h3><div id="contactBody"></div><div class="pick-acts"><button class="pri" id="contactFollow" data-action="pipe-follow">Follow up</button><button data-action="pipe-close">Close</button></div></div></div>';
     if (P().finishPaint) P().finishPaint(wrap);
     else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
     markReady('pipeDesk');
@@ -519,8 +520,31 @@
     var menu = '<div class="menu" id="menu"><div class="lbl">Move to</div><div data-action="space-move-group" data-group="General">General</div><div data-action="space-move-group" data-group="Venture Capital">Venture Capital</div><div data-action="space-move-group" data-group="Business">Business</div><div data-action="space-move-group" data-group="Regulators">Regulators</div><div data-action="space-rename">Rename</div><div class="del" data-action="space-archive">Delete</div></div>';
     function cardHtml(g, s) {
       var na = NA[s[3]] || NA.docs;
-      var id = esc(s[4] || '');
-      return '<div class="sp" data-action="space-open" data-id="' + id + '"><div class="top2"><span class="cat ' + g[1] + '">' + esc(g[0]) + '</span><span class="ms" title="More" data-action="space-menu" data-id="' + id + '">&middot;&middot;&middot;</span></div><h4>' + esc(s[0]) + '</h4><p>' + esc(s[1]) + '</p><div class="rd">' + ring(s[2]) + '<span class="nxa ' + na[0] + '">' + na[1] + '</span><span class="cnt wrap">' + (Number(s[5]) || 0) + ' files &middot; ' + (Number(s[6]) || 0) + ' links</span></div><div class="ft"><button class="op" data-action="space-open" data-id="' + id + '"' + (s[4] ? ' data-space="' + id + '"' : '') + '>Open</button><button class="dr" data-action="space-drive" data-id="' + id + '">Move to Drive</button></div></div>';
+      var id = esc(s[4] || ('fx-' + String(s[0] || 'space').replace(/\s+/g, '-')));
+      var naAct = s[3] === 'ppl' ? 'space-people' : s[3] === 'send' ? 'space-send' : 'space-docs';
+      return '<div class="sp" data-action="space-open" data-id="' + id + '"><div class="top2"><span class="cat ' + g[1] + '">' + esc(g[0]) + '</span><span class="ms" title="More" data-action="space-menu" data-id="' + id + '">&middot;&middot;&middot;</span></div><h4>' + esc(s[0]) + '</h4><p>' + esc(s[1]) + '</p><div class="rd">' + ring(s[2]) + '<span class="nxa ' + na[0] + '" data-action="' + naAct + '" data-id="' + id + '">' + na[1] + '</span><span class="cnt wrap">' + (Number(s[5]) || 0) + ' files &middot; ' + (Number(s[6]) || 0) + ' links</span></div><div class="ft"><button class="op" data-action="space-open" data-id="' + id + '"' + (s[4] ? ' data-space="' + id + '"' : '') + '>Open</button><button class="dr" data-action="space-drive" data-id="' + id + '">Move to Drive</button></div></div>';
+    }
+    if (S.pkg && S.pkg.id) {
+      var p = S.pkg;
+      var people = p.recipients || p.people || [];
+      var docs = (p.docs || p.items || []).filter(function (d) { return d.kind !== 'link' && d.kind !== 'note'; });
+      var links = (p.docs || p.items || []).filter(function (d) { return d.kind === 'link'; });
+      var notes = (p.docs || p.items || []).filter(function (d) { return d.kind === 'note'; });
+      if (p.notes && !notes.length) notes = [{ body: p.notes, name: 'Notes' }];
+      wrap.innerHTML = bar.replace('data-action="spaces-new">+ New space', 'data-action="space-back">Back to Spaces')
+        + '<section class="card space-detail" data-id="' + esc(p.id) + '"><div class="ch"><span class="lnk" data-action="space-back">&#8592; All spaces</span><h3>' + esc(p.name || 'Space') + '</h3></div>'
+        + '<div class="sd-grid">'
+        + '<div><h4>People</h4>' + (people.length ? people.map(function (r) { return '<div class="pick-row">' + esc(r.name || r.email || 'Person') + '</div>'; }).join('') : '<div class="kick">No people yet.</div>')
+        + '<button class="btn" data-action="space-people" data-id="' + esc(p.id) + '">Add people</button></div>'
+        + '<div><h4>Files</h4>' + (docs.length ? docs.map(function (d) { return '<div class="pick-row">' + esc(d.name || 'File') + '</div>'; }).join('') : '<div class="kick">No files yet.</div>')
+        + '<button class="btn" data-action="space-docs" data-id="' + esc(p.id) + '">Add docs</button></div>'
+        + '<div><h4>Links</h4>' + (links.length ? links.map(function (d) { return '<div class="pick-row">' + esc(d.url || d.name || 'Link') + '</div>'; }).join('') : '<div class="kick">No links yet.</div>')
+        + '<button class="btn" data-action="space-link" data-id="' + esc(p.id) + '">Add a link</button></div>'
+        + '<div><h4>Notes</h4><textarea data-action="space-notes" data-id="' + esc(p.id) + '" rows="6">' + esc(p.notes || p.description || '') + '</textarea></div>'
+        + '</div><div class="plan-acts" style="padding:0 16px 16px"><button class="pri" data-action="space-send" data-id="' + esc(p.id) + '">Send</button><button data-action="space-drive" data-id="' + esc(p.id) + '">Move to Drive</button></div></section>' + menu;
+      if (P().finishPaint) P().finishPaint(wrap);
+      markReady('spacesDesk');
+      return;
     }
     var groups = data.groups || [];
     if (S.spaceFilter && S.spaceFilter !== 'all') {

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readPipelineCache } from '@/lib/changes';
 import { withCreds } from '@/lib/creds';
-import { type GhlPipeline } from '@/lib/ghl';
+import { ensureGhlContact, type GhlPipeline, pushOpportunity } from '@/lib/ghl';
 import { cachePipelines } from '@/lib/live';
 import { fail } from '@/lib/log';
 import { openBoard, roomOwner } from '@/lib/session';
@@ -31,5 +31,48 @@ export async function GET() {
   } catch (err) {
     fail('pipeline', err);
     return NextResponse.json({ stages: [], pipelines: [], error: 'GHL sync failed' });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const session = await openBoard();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+    const id = String(body.id || '').trim();
+    const stage = String(body.stage || body.pipelineStage || '').trim();
+    let name = String(body.name || '').trim().slice(0, 120);
+    let email = String(body.email || '').trim().slice(0, 180);
+    if (!stage) return NextResponse.json({ ok: false, note: 'Pick a stage' }, { status: 400 });
+    const creds = await loadCredsFor(session.userId);
+    let sourceId = String(body.ghlId || body.contactId || '');
+    if (session.sql && id) {
+      const rows = await session.sql`
+        SELECT name, email, source, source_id FROM contacts
+        WHERE id = ${id} AND owner_id = ${session.userId}
+        LIMIT 1
+      `;
+      const row = rows[0] as { name?: string; email?: string; source?: string; source_id?: string } | undefined;
+      if (row?.source === 'ghl' && row.source_id) sourceId = String(row.source_id);
+      if (!name && row?.name) name = String(row.name);
+      if (!email && row?.email) email = String(row.email);
+    }
+    const ghlId = await withCreds(creds, async () => {
+      const contactId = sourceId || await ensureGhlContact({
+        name: name || 'Contact',
+        email,
+      });
+      if (!contactId) return '';
+      return pushOpportunity({
+        name: name || 'Contact',
+        contactId,
+        stage,
+        opportunityId: String(body.opportunityId || ''),
+      });
+    });
+    return NextResponse.json({ ok: !!ghlId, opportunityId: ghlId || '' });
+  } catch (err) {
+    fail('pipeline_write', err);
+    return NextResponse.json({ ok: false, note: 'GoHighLevel did not take that stage' });
   }
 }

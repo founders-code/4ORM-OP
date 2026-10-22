@@ -208,7 +208,9 @@ export async function pushOpportunity(input: { name: string; contactId: string; 
   const want = String(input.stage || '').toLowerCase();
   for (const pipe of pipes?.pipelines || []) {
     for (const stage of pipe.stages || []) {
-      if (localStageName(String(stage.name || '')) === want && pipe.id && stage.id) {
+      const stageName = String(stage.name || '');
+      const local = localStageName(stageName);
+      if (pipe.id && stage.id && (stageName.toLowerCase() === want || (local && local === want))) {
         pipelineId = String(pipe.id);
         stageId = String(stage.id);
       }
