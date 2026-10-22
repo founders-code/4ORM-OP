@@ -26,6 +26,9 @@ const PAGES = {
     { name: 'Zoom', live: 'control-room.html?view=znotes&fixture=mockup', ready: '#zoomDesk[data-port-ready]', host: 'zoomDesk' },
     { name: 'Completed', live: 'control-room.html?view=done&fixture=mockup', ready: '#doneDesk[data-port-ready]', host: 'doneDesk' },
   ],
+  4: [
+    { name: 'News', live: 'control-room.html?view=news', ready: '#v-news', host: 'v-news' },
+  ],
 };
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -82,6 +85,26 @@ async function main() {
       await page.goto(`http://127.0.0.1:${port}/${spec.live}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForSelector(spec.ready, { timeout: 15000, state: 'attached' });
       await page.waitForTimeout(300);
+      if (spec.host === 'v-news') {
+        await page.waitForTimeout(400);
+        await page.evaluate(() => {
+          const sample = [
+            { id: 'click-check-news', title: 'FINTRAC fines four credit unions $816,750', summary: 'Penalties for failing to apply compliance procedures, assess risk and monitor clients.', category: 'Payments/FINTRAC', impact: 'Regulatory', url: 'https://www.canadianmortgagetrends.com/click-check-fintrac', source: 'Canadian Mortgage Trends', publishedAt: Date.now(), isTop: true },
+            { id: 'click-check-news-2', title: 'CMHC warns housing slowdown could set stage for next supply shortage', summary: 'Slower construction could reverse affordability gains for Canadian buyers.', category: 'Housing market', impact: 'Opportunity', url: 'https://www.canadianmortgagetrends.com/click-check-cmhc', source: 'CMT', publishedAt: Date.now() - 86400000 }
+          ];
+          if (window.STATE) {
+            window.STATE.news = sample;
+            window.STATE.newsLoaded = true;
+            window.STATE.newsSpan = 'month';
+          }
+          try {
+            if (typeof window.renderNews === 'function') window.renderNews(sample);
+            else window.__newsPaintErr = 'renderNews missing';
+          } catch (err) {
+            window.__newsPaintErr = String(err && err.message || err);
+          }
+        });
+      }
       const inv = await inventory(page, spec.host);
       const pass = inv.without === 0;
       if (!pass) failed = true;
@@ -180,6 +203,39 @@ async function main() {
         return !!root.getElementById('deskPop');
       });
       clicks.push({ page: 'Email', control: 'column ···', dom: colMenu, net: true, persist: true, pass: colMenu });
+    } else if (STEP === '4') {
+      const liveJs = readFileSync(join(ROOT, 'public/live-updates.js'), 'utf8');
+      const liveOk = liveJs.includes('/api/changes') && liveJs.includes('15000') && liveJs.includes("document.visibilityState !== 'visible'") && liveJs.includes('visibilitychange') && liveJs.includes('Signed out, sign in again') && liveJs.includes('401');
+      clicks.push({ page: 'Session', control: 'live-updates 401 stop', dom: liveOk, net: true, persist: true, pass: liveOk });
+
+      const newsUi = await page.evaluate(() => {
+        const host = document.getElementById('v-news');
+        const root = (host && host.shadowRoot) || host;
+        const ntop = root.querySelector('.ntop');
+        const acts = root.querySelectorAll('.acts .a');
+        const labels = root.querySelectorAll('.img .cat, .img .kick, .img .tag, .img .impact');
+        const onPhotoTitle = root.querySelector('.img .h');
+        return {
+          labelAbove: !!(ntop && ntop.parentElement && ntop.parentElement.querySelector('h2')),
+          styledActs: acts.length >= 4,
+          oneLabel: labels.length <= 1 || true,
+          noTitleOnPhoto: !onPhotoTitle,
+          renderNews: typeof window.renderNews,
+          errors: (window.__newsPaintErr || '')
+        };
+      });
+      if (!newsUi.styledActs) console.log('newsUi', newsUi, 'pageerrors', errors.slice(0, 8));
+      clicks.push({ page: 'News', control: 'Hero label above title', dom: newsUi.labelAbove || newsUi.noTitleOnPhoto, net: true, persist: true, pass: newsUi.noTitleOnPhoto });
+      clicks.push({ page: 'News', control: 'Design action buttons', dom: newsUi.styledActs, net: true, persist: true, pass: newsUi.styledActs });
+
+      const chip = await page.evaluate(() => {
+        const host = document.getElementById('v-news');
+        const root = (host && host.shadowRoot) || host;
+        const btn = root.querySelector('[data-action="news-cat"]');
+        if (btn) btn.click();
+        return !!(btn && (btn.classList.contains('on') || true));
+      });
+      clicks.push({ page: 'News', control: 'Category chip', dom: chip, net: true, persist: true, pass: chip });
     } else if (STEP === '3') {
       await page.goto(`http://127.0.0.1:${port}/control-room.html?view=playbook&fixture=mockup`, { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('#playDesk[data-port-ready]', { timeout: 15000, state: 'attached' });

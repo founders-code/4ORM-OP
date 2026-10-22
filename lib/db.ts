@@ -8,7 +8,7 @@ type Sql = NeonQueryFunction<false, false>;
 let ready: Promise<Sql> | null = null;
 
 /** Bump when migrate() gains a new step so cold starts skip the full IF NOT EXISTS pass. */
-const SCHEMA_VERSION = '2026-10-19-live-updates';
+const SCHEMA_VERSION = '2026-10-22-news-hidden';
 
 export async function databaseUrl() {
   const envUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
@@ -578,6 +578,8 @@ async function migrateWar(sql: Sql) {
     ['db_news_why', () => sql`ALTER TABLE news_items ADD COLUMN IF NOT EXISTS why_it_matters text`],
     ['db_news_source', () => sql`ALTER TABLE news_items ADD COLUMN IF NOT EXISTS source text`],
     ['db_news_impact', () => sql`ALTER TABLE news_items ADD COLUMN IF NOT EXISTS impact text`],
+    ['db_news_hidden', () => sql`ALTER TABLE news_items ADD COLUMN IF NOT EXISTS hidden boolean NOT NULL DEFAULT false`],
+    ['db_news_hidden_reason', () => sql`ALTER TABLE news_items ADD COLUMN IF NOT EXISTS hidden_reason text`],
     ['db_news_images', () => sql`CREATE TABLE IF NOT EXISTS news_images (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       owner_id text NOT NULL,

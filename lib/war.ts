@@ -3,7 +3,7 @@ import { env } from './env.mjs';
 import { fail } from './log';
 import { allowArea, allowPriority, parseDue } from './guard.mjs';
 import { NEWS_CATEGORIES, asNeeds, asSteps, extractCommitments, fallbackPlan, todayKey } from './war-core.mjs';
-import { SEED_URLS, isArticleUrl } from './news-sources.mjs';
+import { SEED_URLS, isArticleUrl, isJunkNews } from './news-sources.mjs';
 
 type Sql = NeonQueryFunction<false, false>;
 
@@ -160,15 +160,19 @@ function newsRow(row: Record<string, unknown>, day: string) {
 function isShownNews(row: Record<string, unknown>) {
   const url = String(row.url || '');
   if (!url || SEED_URLS.has(url)) return false;
-  return isArticleUrl(url);
+  if (row.hidden === true) return false;
+  if (!isArticleUrl(url)) return false;
+  if (isJunkNews(String(row.title || ''), url, String(row.summary || ''))) return false;
+  return true;
 }
 
 export async function listNews(sql: Sql, ownerId: string, day = todayKey(), span = 30) {
   const days = span <= 1 ? 1 : span <= 7 ? 7 : 45;
   const rows = await sql`
-    SELECT id, category, title, summary, why_it_matters, source, impact, url, published_at, is_top, swept_on, image_url
+    SELECT id, category, title, summary, why_it_matters, source, impact, url, published_at, is_top, swept_on, image_url, hidden
     FROM news_items
     WHERE owner_id = ${ownerId}
+      AND COALESCE(hidden, false) = false
       AND published_at >= now() - (${days}::int * interval '1 day')
     ORDER BY is_top DESC, published_at DESC NULLS LAST
     LIMIT 200
@@ -176,9 +180,10 @@ export async function listNews(sql: Sql, ownerId: string, day = todayKey(), span
   const real = (rows as Array<Record<string, unknown>>).filter(isShownNews);
   if (real.length) return real.map((row) => newsRow(row, day));
   const latest = await sql`
-    SELECT id, category, title, summary, why_it_matters, source, impact, url, published_at, is_top, swept_on, image_url
+    SELECT id, category, title, summary, why_it_matters, source, impact, url, published_at, is_top, swept_on, image_url, hidden
     FROM news_items
     WHERE owner_id = ${ownerId}
+      AND COALESCE(hidden, false) = false
     ORDER BY is_top DESC, published_at DESC NULLS LAST
     LIMIT 200
   `;

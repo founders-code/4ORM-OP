@@ -67,6 +67,12 @@ export async function ensureNewsTables(sql: Sql) {
   } catch (err) {
     fail('news_images_table', err);
   }
+  try {
+    await sql`ALTER TABLE news_items ADD COLUMN IF NOT EXISTS hidden boolean NOT NULL DEFAULT false`;
+    await sql`ALTER TABLE news_items ADD COLUMN IF NOT EXISTS hidden_reason text`;
+  } catch (err) {
+    fail('news_hidden_col', err);
+  }
 }
 
 /** Stores the image bytes once per source url and returns the same-origin path. */
