@@ -143,8 +143,8 @@ async function postEvent(calendarId: string, startMs: number, durMin: number, ti
     method: 'POST',
     body: JSON.stringify({
       summary: String(title || 'Focus').slice(0, 180),
-      start: { dateTime: start.toISOString(), timeZone: 'America/Los_Angeles' },
-      end: { dateTime: end.toISOString(), timeZone: 'America/Los_Angeles' },
+      start: { dateTime: start.toISOString(), timeZone: 'America/Vancouver' },
+      end: { dateTime: end.toISOString(), timeZone: 'America/Vancouver' },
     }),
   })) as { id?: string } | null;
   return json?.id ? String(json.id) : null;
@@ -176,8 +176,8 @@ export async function createInviteEvent(input: {
     summary: String(input.title || 'Call with Chad Johnston').slice(0, 180),
     description: String(input.description || '').slice(0, 4000),
     location: String(input.location || '').slice(0, 500),
-    start: { dateTime: start.toISOString(), timeZone: 'America/Los_Angeles' },
-    end: { dateTime: end.toISOString(), timeZone: 'America/Los_Angeles' },
+    start: { dateTime: start.toISOString(), timeZone: 'America/Vancouver' },
+    end: { dateTime: end.toISOString(), timeZone: 'America/Vancouver' },
     attendees: [{ email }],
     reminders: {
       useDefault: false,
@@ -270,23 +270,57 @@ export async function exportDriveFile(fileId: string) {
 
 export async function moveEvent(id: string, startMs: number, durMin: number) {
   if (!configured()) return false;
-  if (!/^[\w-]+$/.test(id)) return false;
+  if (!/^[\w.=@-]+$/.test(id)) return false;
   const cal = encodeURIComponent(process.env.GOOGLE_CALENDAR_ID || 'chad@4ormfinance.com');
   const start = new Date(startMs);
   const end = new Date(startMs + durMin * 60 * 1000);
   const json = await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${cal}/events/${encodeURIComponent(id)}?sendUpdates=all`, {
     method: 'PATCH',
     body: JSON.stringify({
-      start: { dateTime: start.toISOString(), timeZone: 'America/Los_Angeles' },
-      end: { dateTime: end.toISOString(), timeZone: 'America/Los_Angeles' },
+      start: { dateTime: start.toISOString(), timeZone: 'America/Vancouver' },
+      end: { dateTime: end.toISOString(), timeZone: 'America/Vancouver' },
     }),
   });
   return !!json;
 }
 
+export async function getCalendarEvent(id: string) {
+  if (!configured()) return null;
+  if (!/^[\w.=@-]+$/.test(id)) return null;
+  const named = process.env.GOOGLE_CALENDAR_ID || 'primary';
+  const json = await gfetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(named)}/events/${encodeURIComponent(id)}`,
+    { timeoutMs: 12000 },
+  ) as Record<string, unknown> | null;
+  if (json || named === 'primary') return json;
+  return (await gfetch(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(id)}`,
+    { timeoutMs: 12000 },
+  )) as Record<string, unknown> | null;
+}
+
+export async function declineCalendarEvent(id: string, email = 'chad@4ormfinance.com') {
+  const ev = await getCalendarEvent(id);
+  if (!ev) return null;
+  const self = String(email || '').trim().toLowerCase();
+  type Att = { email?: string; responseStatus?: string; self?: boolean };
+  const prior = Array.isArray(ev.attendees) ? (ev.attendees as Att[]) : [];
+  let found = false;
+  const attendees = prior.map((a) => {
+    const addr = String(a.email || '').toLowerCase();
+    if (addr === self || a.self) {
+      found = true;
+      return { ...a, email: a.email || email, responseStatus: 'declined' };
+    }
+    return a;
+  });
+  if (!found) attendees.push({ email, responseStatus: 'declined' });
+  return patchCalendarEvent(id, { attendees });
+}
+
 export async function patchCalendarEvent(id: string, fields: Record<string, unknown>) {
   if (!configured()) return null;
-  if (!/^[\w-]+$/.test(id)) return null;
+  if (!/^[\w.=@-]+$/.test(id)) return null;
   const named = process.env.GOOGLE_CALENDAR_ID || 'primary';
   const json = await gfetch(
     `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(named)}/events/${encodeURIComponent(id)}?sendUpdates=all`,
@@ -301,7 +335,7 @@ export async function patchCalendarEvent(id: string, fields: Record<string, unkn
 
 export async function deleteCalendarEvent(id: string) {
   if (!configured()) return false;
-  if (!/^[\w-]+$/.test(id)) return false;
+  if (!/^[\w.=@-]+$/.test(id)) return false;
   const named = process.env.GOOGLE_CALENDAR_ID || 'primary';
   const first = await gcall(
     `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(named)}/events/${encodeURIComponent(id)}?sendUpdates=all`,

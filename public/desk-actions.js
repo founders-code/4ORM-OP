@@ -1476,7 +1476,7 @@
       name = String(name).trim();
       if (!name) return;
       if (!writeOk()) { toast(root, 'Rhythm (fixture)'); return; }
-      api('/api/playbook', { method: 'POST', body: { name: name.indexOf('TEST') === 0 ? name : ('TEST ' + name) } }).then(ok).then(json).then(function (d) {
+      api('/api/playbook', { method: 'POST', body: { name: name } }).then(ok).then(json).then(function (d) {
         if (d && window.STATE) window.STATE.playbook = d;
         refresh('play');
         toast(root, 'Rhythm added');
@@ -1533,8 +1533,16 @@
       if (typeof cal.render === 'function') cal.render();
     },
     'cal-replan': function (el, root) { soon(root, 'Re-plan plays'); },
-    'cal-keep': function () {},
-    'cal-drop': function () {},
+    'cal-keep': function (el) {
+      var cal = window.__redesignCal;
+      var sug = el.closest && el.closest('.ev.sug');
+      if (cal && typeof cal.keepSug === 'function' && sug) cal.keepSug(Number(sug.dataset.si), true);
+    },
+    'cal-drop': function (el) {
+      var cal = window.__redesignCal;
+      var sug = el.closest && el.closest('.ev.sug');
+      if (cal && typeof cal.keepSug === 'function' && sug) cal.keepSug(Number(sug.dataset.si), false);
+    },
     'cal-allday': function () {},
     'cal-cell': function () {},
     'cal-year-day': function () {},
@@ -1550,7 +1558,21 @@
     },
     'cal-prep': function (el, root) { soon(root, 'Prep notes'); },
     'cal-war': function () { go('war'); },
-    'play-beat': function (el, root) { soon(root, 'Longer beat'); },
+    'play-beat': function (el, root) {
+      var ov = root.getElementById && root.getElementById('ov');
+      if (ov) { ov.classList.add('open'); return; }
+      soon(root, 'Longer beat');
+    },
+    'play-retry': function () {
+      if (window.STATE) window.STATE.playbookError = false;
+      if (typeof window.paintRedesignPlaybook === 'function') window.paintRedesignPlaybook();
+      if (window.__portLoadC) window.__portLoadC('playbook');
+      else refresh('play');
+    },
+    'cal-mini-nav': function (el) {
+      var cal = window.__redesignCal;
+      if (cal && typeof cal.navMonth === 'function') cal.navMonth(attr(el, 'data-dir') || 'next');
+    },
     'play-ms': function () {},
     'zoom-open': function (el, root) {
       var i = Number(attr(el, 'data-i'));
@@ -1589,10 +1611,9 @@
       }).catch(function () { toast(root, 'Could not refresh Zoom notes'); });
     },
     'zoom-add': function (el, root) {
-      var title = window.prompt('Meeting title', 'TEST meeting note');
+      var title = window.prompt('Meeting title', 'Meeting note');
       if (title == null) return;
-      title = String(title).trim() || 'TEST meeting note';
-      if (title.indexOf('TEST') !== 0) title = 'TEST ' + title;
+      title = String(title).trim() || 'Meeting note';
       if (!writeOk()) { toast(root, 'Note (fixture)'); return; }
       api('/api/zoom', { method: 'POST', body: { title: title, attendees: '', others: '', solo: true } }).then(ok).then(json).then(function (row) {
         if (row && window.STATE) {
@@ -1635,7 +1656,7 @@
     'zoom-task': function (el, root) {
       var title = attr(el, 'data-title') || 'Meeting follow-up';
       var bucket = attr(el, 'data-bucket') || 'today';
-      return addTask('TEST ' + title, bucket).then(function () { toast(root, 'Added to War Room'); }).catch(function () { toast(root, 'Could not create that task'); });
+      return addTask(title, bucket).then(function () { toast(root, 'Added to War Room'); }).catch(function () { toast(root, 'Could not create that task'); });
     },
     'zoom-ask-input': function () {},
     'zoom-ask': function (el, root) {
@@ -1730,7 +1751,7 @@
     if (name === 'zoom-open' && t.closest && t.closest('[data-action="zoom-edit"], [data-action="zoom-archive"]')) return;
     if (!fn) { soon(root, name); return; }
     if (name === 'link-open') return;
-    if (/^(cal-event|cal-sug|cal-keep|cal-drop|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|cal-save|cal-del|cal-dup|cal-undo|cal-zoom|cal-pick|cal-allday|cal-cell|cal-year-day|cal-more|cal-mini-day|play-voice-|play-tx|zoom-search|zoom-ask-input)$/.test(name)) {
+    if (/^(cal-event|cal-sug|cal-keep|cal-drop|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|cal-save|cal-del|cal-dup|cal-undo|cal-zoom|cal-pick|cal-allday|cal-cell|cal-year-day|cal-more|play-voice-|play-tx|zoom-search|zoom-ask-input)$/.test(name)) {
       try { fn(el, root, e); } catch (err) { toast(root, 'Could not run that action'); }
       return;
     }

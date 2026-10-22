@@ -20,6 +20,12 @@ const PAGES = {
     { name: 'Documents', live: 'control-room.html?view=docs&fixture=mockup', ready: '#docsDesk[data-port-ready]', host: 'docsDesk' },
     { name: 'Email', live: 'control-room.html?view=mail&fixture=mockup', ready: '#mailDesk[data-port-ready]', host: 'mailDesk' },
   ],
+  3: [
+    { name: 'Playbook', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', host: 'playDesk' },
+    { name: 'Calendar', live: 'control-room.html?view=calendar&fixture=mockup', ready: '#calDesk[data-port-ready]', host: 'calDesk' },
+    { name: 'Zoom', live: 'control-room.html?view=znotes&fixture=mockup', ready: '#zoomDesk[data-port-ready]', host: 'zoomDesk' },
+    { name: 'Completed', live: 'control-room.html?view=done&fixture=mockup', ready: '#doneDesk[data-port-ready]', host: 'doneDesk' },
+  ],
 };
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -174,6 +180,90 @@ async function main() {
         return !!root.getElementById('deskPop');
       });
       clicks.push({ page: 'Email', control: 'column ···', dom: colMenu, net: true, persist: true, pass: colMenu });
+    } else if (STEP === '3') {
+      await page.goto(`http://127.0.0.1:${port}/control-room.html?view=playbook&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#playDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+      const beat = await page.evaluate(() => {
+        const root = document.getElementById('playDesk').shadowRoot;
+        const btn = root.querySelector('[data-action="play-beat"]');
+        if (btn) btn.click();
+        const ov = root.getElementById('ov');
+        return !!(ov && ov.classList.contains('open'));
+      });
+      clicks.push({ page: 'Playbook', control: 'Longer beats', dom: beat, net: true, persist: true, pass: beat });
+
+      const row = await page.evaluate(() => {
+        const root = document.getElementById('playDesk').shadowRoot;
+        const link = root.querySelector('[data-action="play-go"][data-view="studio"], [data-action="play-go"]:not([data-view="war"])');
+        if (link) link.click();
+        const play = document.getElementById('v-playbook');
+        const war = document.getElementById('v-war');
+        return !!(play && !play.hidden) || !!(war && !war.hidden) || !!(window.STATE && window.STATE.view);
+      });
+      clicks.push({ page: 'Playbook', control: 'Row link', dom: row, net: true, persist: true, pass: row });
+
+      await page.goto(`http://127.0.0.1:${port}/control-room.html?view=calendar&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#calDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+      const miniNav = await page.evaluate(() => {
+        const root = document.getElementById('calDesk').shadowRoot;
+        const before = (root.querySelector('.mtitle h2') || {}).textContent || '';
+        const btn = root.querySelector('[data-action="cal-mini-nav"][data-dir="next"]');
+        if (btn) btn.click();
+        const after = (root.querySelector('.mtitle h2') || {}).textContent || '';
+        return before !== after && /November/i.test(after);
+      });
+      clicks.push({ page: 'Calendar', control: 'Mini-month ›', dom: miniNav, net: true, persist: true, pass: miniNav });
+
+      const miniDay = await page.evaluate(() => {
+        const root = document.getElementById('calDesk').shadowRoot;
+        const day = root.querySelector('[data-action="cal-mini-day"][data-d="2026-11-15"]') || root.querySelector('[data-action="cal-mini-day"]:not(.o)');
+        const k = day && day.getAttribute('data-d');
+        if (day) day.click();
+        const cal = window.__redesignCal;
+        const focused = cal && typeof cal.focusYmd === 'function' ? cal.focusYmd() : '';
+        const next = k ? root.querySelector('[data-action="cal-mini-day"][data-d="' + k + '"]') : null;
+        return focused === k || !!(next && next.classList.contains('wk'));
+      });
+      clicks.push({ page: 'Calendar', control: 'Mini-month date', dom: miniDay, net: true, persist: true, pass: miniDay });
+
+      await page.goto(`http://127.0.0.1:${port}/control-room.html?view=znotes&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#zoomDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+      const zoomOpen = await page.evaluate(() => {
+        const root = document.getElementById('zoomDesk').shadowRoot;
+        const btn = root.querySelector('[data-action="zoom-open"]');
+        if (btn) btn.click();
+        const drawer = root.getElementById('drawer');
+        return !!(drawer && drawer.classList.contains('open'));
+      });
+      clicks.push({ page: 'Zoom', control: 'Open →', dom: zoomOpen, net: true, persist: true, pass: zoomOpen });
+
+      const zoomSort = await page.evaluate(() => {
+        const root = document.getElementById('zoomDesk').shadowRoot;
+        const btn = root.querySelector('[data-action="zoom-sort"][data-sort="oldest"]');
+        if (btn) btn.click();
+        const next = root.querySelector('[data-action="zoom-sort"][data-sort="oldest"]');
+        return !!(next && next.classList.contains('on'));
+      });
+      clicks.push({ page: 'Zoom', control: 'Oldest', dom: zoomSort, net: true, persist: true, pass: zoomSort });
+
+      await page.goto(`http://127.0.0.1:${port}/control-room.html?view=done&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#doneDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+      const doneDay = await page.evaluate(() => {
+        const root = document.getElementById('doneDesk').shadowRoot;
+        const day = root.querySelector('.day:not(.on)[data-action="done-day"]');
+        if (day) day.click();
+        return !!(day && day.classList.contains('on'));
+      });
+      clicks.push({ page: 'Completed', control: 'Day click', dom: doneDay, net: true, persist: true, pass: doneDay });
+
+      const snap = await page.evaluate(() => {
+        const root = document.getElementById('doneDesk').shadowRoot;
+        const btn = root.querySelector('[data-action="done-snap"]');
+        if (btn) btn.click();
+        const toast = root.getElementById('deskToast');
+        return !!(btn && toast && /snapshot/i.test(toast.textContent || ''));
+      });
+      clicks.push({ page: 'Completed', control: 'Snapshot now', dom: snap, net: true, persist: true, pass: snap });
     } else {
     await page.goto(`http://127.0.0.1:${port}/control-room.html?view=war&fixture=mockup`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#warDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
