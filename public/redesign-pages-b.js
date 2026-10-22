@@ -602,7 +602,7 @@
     var data = linksData();
     wrap.innerHTML =
       '<div class="bar"><h1>Links</h1><span class="sub">Every bookmark, sorted &mdash; each opens the site in a new tab</span>'
-      + '<div class="r"><input class="search" data-action="coming-soon" data-label="Search links" placeholder="Search links, notes or sites"></div></div>'
+      + '<div class="r"><input class="search" data-action="link-search" placeholder="Search links, notes or sites"></div></div>'
       + '<div class="lay"><section class="card tree"><div class="lh">Categories <span class="lnk" data-action="link-cat-new">+ New</span></div>'
       + (data.tree || []).map(function (t) {
         var car = t.car === 'open' ? '&#9662;' : t.car === 'closed' ? '&#9656;' : '';
@@ -622,7 +622,7 @@
         return '<a class="tile" data-action="link-open" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" data-id="' + id + '" data-url="' + esc(href) + '">' + (w[4] == 2 ? '<span class="dup">Duplicate</span>' : '')
           + '<div class="lg' + (ico ? ' has-ico' : '') + '" style="background:' + w[2] + '14">' + ico + '<i style="background:' + w[2] + '">' + letter + '</i></div>'
           + '<div class="tm"><span title="Edit" data-action="link-edit" data-id="' + id + '" data-title="' + esc(w[0]) + '">&#9998;</span><span title="Move" data-action="link-move" data-id="' + id + '" data-title="' + esc(w[0]) + '" data-url="' + esc(href) + '">&#8644;</span><span title="Delete" data-action="link-archive" data-id="' + id + '" data-note="' + esc(w[3] || '') + '">&times;</span></div>'
-          + '<div class="nb"><b>' + esc(w[0]) + '<em>&#8599;</em></b><div class="dm">' + esc(w[1]) + '</div><div class="nt' + (w[3] ? '' : ' empty') + '">' + (w[3] ? esc(w[3]) : 'Add a note') + '</div></div></a>';
+          + '<div class="nb"><b>' + esc(w[0]) + '<em>&#8599;</em></b><div class="dm">' + esc(w[1]) + '</div><div class="nt' + (w[3] ? '' : ' empty') + '" data-action="link-note" data-id="' + id + '">' + (w[3] ? esc(w[3]) : 'Add a note') + '</div></div></a>';
       }).join('') + '</div>'
       + '<div class="hint">Site icons load from each website. Hover a tile to edit, move or delete it.</div></section></div>';
     if (P().finishPaint) P().finishPaint(wrap);
