@@ -456,6 +456,84 @@ async function main() {
       return !!(window.STATE && Array.isArray(window.STATE.linkOpen) && window.STATE.linkOpen.length >= 0);
     });
     clicks.push({ page: 'Links', control: 'Expand subfolder', dom: linkToggle, net: true, persist: true, pass: linkToggle });
+
+    const cal = await page.evaluate(() => {
+      const btn = document.querySelector('[data-action="top-cal"]');
+      if (btn) btn.click();
+      const calView = document.getElementById('v-calendar');
+      return !!(calView && !calView.hidden);
+    });
+    clicks.push({ page: 'Site-wide', control: 'Top bar Calendar', dom: cal, net: true, persist: true, pass: cal });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=room&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#opsDash[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const li = await page.evaluate(() => {
+      const root = document.getElementById('opsDash').shadowRoot;
+      const btn = root.querySelector('[data-action="linkedin-open"]');
+      return !!(btn && (btn.getAttribute('data-url') || btn.getAttribute('data-name')));
+    });
+    clicks.push({ page: 'Dashboard', control: 'LinkedIn Open', dom: li, net: true, persist: true, pass: li });
+
+    const reply = await page.evaluate(async () => {
+      const root = document.getElementById('opsDash').shadowRoot;
+      const btn = root.querySelector('[data-action="mail-reply"]');
+      if (btn) btn.click();
+      await new Promise(function (r) { setTimeout(r, 250); });
+      const mail = document.getElementById('v-mail');
+      const compose = document.getElementById('mailDesk') && document.getElementById('mailDesk').shadowRoot && document.getElementById('mailDesk').shadowRoot.getElementById('compose');
+      return !!(mail && !mail.hidden && compose && compose.classList.contains('open'));
+    });
+    clicks.push({ page: 'Dashboard', control: 'Reply', dom: reply, net: true, persist: true, pass: reply });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=room&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#opsDash[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const openMail = await page.evaluate(() => {
+      const root = document.getElementById('opsDash').shadowRoot;
+      const btn = root.querySelector('[data-action="open-email"]');
+      if (btn) btn.click();
+      const mail = document.getElementById('v-mail');
+      return !!(mail && !mail.hidden);
+    });
+    clicks.push({ page: 'Dashboard', control: 'Open Email', dom: openMail, net: true, persist: true, pass: openMail });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=war&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#warDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const meetingToday = await page.evaluate(() => {
+      const root = document.getElementById('warDesk').shadowRoot;
+      const before = (root.textContent || '');
+      const btn = root.querySelector('[data-action="meeting-task"][data-bucket="today"]');
+      if (btn) btn.click();
+      return !!btn;
+    });
+    clicks.push({ page: 'War Room', control: '+ Today', dom: meetingToday, net: true, persist: true, pass: meetingToday });
+
+    const findSlot = await page.evaluate(() => {
+      const root = document.getElementById('warDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="find-slot"]');
+      if (btn) btn.click();
+      const calView = document.getElementById('v-calendar');
+      return !!(calView && !calView.hidden);
+    });
+    clicks.push({ page: 'War Room', control: 'Find a 30-min slot', dom: findSlot, net: true, persist: true, pass: findSlot });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=notes&fixture=mockup&open=1`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#notesDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const noteEsc = await page.evaluate(() => {
+      const root = document.getElementById('notesDesk').shadowRoot;
+      const big = root.getElementById('ovNote');
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      root.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }));
+      return !!(big && big.hidden);
+    });
+    clicks.push({ page: 'Notes', control: 'Esc close', dom: noteEsc, net: true, persist: true, pass: noteEsc });
+
+    const noteView = await page.evaluate(() => {
+      const root = document.getElementById('notesDesk').shadowRoot;
+      const canvas = root.querySelector('[data-action="notes-view"][data-view="canvas"]');
+      if (canvas) canvas.click();
+      return !!(canvas && canvas.classList.contains('on'));
+    });
+    clicks.push({ page: 'Notes', control: 'Board / Canvas', dom: noteView, net: true, persist: true, pass: noteView });
     }
 
     console.log('\nB  click-check (fixture DOM)');

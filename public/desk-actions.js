@@ -547,8 +547,15 @@
         messageId: attr(el, 'data-mid') || '',
         body: attr(el, 'data-body') || ''
       };
-      if (typeof window.openReply === 'function') { window.openReply(row); return; }
+      S().composeDraft = row;
+      S().composeOpen = true;
       go('mail');
+      refresh('mail');
+      setTimeout(function () {
+        var host = document.getElementById('mailDesk');
+        var mailRoot = host && host.shadowRoot;
+        if (mailRoot) actions['mail-compose'](el, mailRoot);
+      }, 40);
       toast(root, 'Opening reply');
     },
     'mail-more': function (el, root, ev) {
@@ -1507,6 +1514,7 @@
       var sc = root.getElementById && root.getElementById('scrim');
       if (cp) cp.classList.remove('open');
       if (sc) sc.classList.remove('open');
+      S().composeOpen = false;
     },
     'mail-open': function (el, root) {
       var r = root.getElementById && root.getElementById('reader');
