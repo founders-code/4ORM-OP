@@ -734,14 +734,24 @@
   }
 
   function composeHtml(open) {
+    var draft = (window.STATE && window.STATE.composeDraft) || null;
+    var toName = (draft && (draft.from || draft.name)) || 'Joe Canavan';
+    var toEmail = (draft && draft.email) || '';
+    var toIni = initials(toName);
+    var subj = (draft && draft.subject) ? (/^re:/i.test(draft.subject) ? draft.subject : 'Re: ' + draft.subject) : 'Evidence standard for Canadian fintech — 15 minutes?';
+    var first = String(toName).split(/\s+/)[0] || 'there';
+    var body = (draft && (draft.body || draft.snippet || draft.preview))
+      ? ('Hi ' + esc(first) + ',<br><br>' + esc(String(draft.body || draft.snippet || '').slice(0, 400)) + '<br><br>Chad')
+      : 'Hi Joe,<br><br>Most of your angel book is Canadian fintech &mdash; Wealthsimple, Borrowell, CapIntel, Homewise. All of them now have to prove a recommendation was suitable and understood, not just disclosed.<br><br>That record is what 4orm builds. We\'re closing a $250K friends-and-family round by Oct 30 and opening 4ormIQ to brokers on Oct 23.<br><br><span class="ghost">Would 15 minutes Thursday or Friday work? Here\'s my calendar: book.4ormfinance.com/chad</span><br><br>Chad';
+    var savedAt = draft ? new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', hour: 'numeric', minute: '2-digit' }).format(new Date()) : '10:31';
     return '<aside class="compose' + (open ? ' open' : '') + '" id="compose">'
-      + '<div class="cw"><div class="ctop"><h2>New email</h2><span style="font-size:12px;color:var(--ink3);font-weight:600">Draft saved 10:31</span><button class="btn x" id="cclose" data-action="mail-compose-close">Close &times;</button></div>'
+      + '<div class="cw"><div class="ctop"><h2>' + (draft ? 'Reply' : 'New email') + '</h2><span style="font-size:12px;color:var(--ink3);font-weight:600">Draft saved ' + esc(savedAt) + '</span><button class="btn x" id="cclose" data-action="mail-compose-close">Close &times;</button></div>'
       + '<div class="fr"><label>From</label><div class="val from">Chad Johnston &lt;chad@4ormfinance.com&gt;<small>sends from your Gmail &middot; bulk goes through GoHighLevel</small></div><span></span></div>'
-      + '<div class="fr sugg"><label>To</label><div class="val"><span class="pchip"><span class="av" style="background:#e0364f">JC</span>Joe Canavan <em>&middot; VC</em></span><input data-action="mail-to" value="neil"></div><span class="sm">Cc &nbsp; Bcc</span>'
+      + '<div class="fr sugg"><label>To</label><div class="val"><span class="pchip"><span class="av" style="background:#e0364f">' + esc(toIni) + '</span>' + esc(toName) + (toEmail ? ' <em>&middot; ' + esc(toEmail) + '</em>' : ' <em>&middot; VC</em>') + '</span><input data-action="mail-to" value="' + esc(toEmail || 'neil') + '"></div><span class="sm">Cc &nbsp; Bcc</span>'
       + '<div class="dd"><div class="o"><span class="av" style="background:#e0364f;width:28px;height:28px">NM</span><div><b>Neil Mitchell</b><span>neil@&hellip; &middot; VC Space &middot; last touch 12d ago</span></div><em>Cold</em></div><div class="o"><span class="av" style="background:#12a36a;width:28px;height:28px">NC</span><div><b>Neil (CLHIA)</b><span>Contacts &middot; Association</span></div><span></span></div></div></div>'
-      + '<div class="fr subj"><label>Subject</label><div class="val"><input data-action="mail-subject" value="Evidence standard for Canadian fintech &mdash; 15 minutes?"></div><span></span></div>'
+      + '<div class="fr subj"><label>Subject</label><div class="val"><input data-action="mail-subject" value="' + esc(subj) + '"></div><span></span></div>'
       + '<div class="tbar"><span>B</span><span><i>I</i></span><span>&#8226;</span><span>1.</span><span class="sep"></span><span>&#128279;</span><span>&#128206;</span><span class="sep"></span><span title="Insert first name">{ }</span></div>'
-      + '<div class="body" contenteditable="true" data-action="mail-body">Hi Joe,<br><br>Most of your angel book is Canadian fintech &mdash; Wealthsimple, Borrowell, CapIntel, Homewise. All of them now have to prove a recommendation was suitable and understood, not just disclosed.<br><br>That record is what 4orm builds. We\'re closing a $250K friends-and-family round by Oct 30 and opening 4ormIQ to brokers on Oct 23.<br><br><span class="ghost">Would 15 minutes Thursday or Friday work? Here\'s my calendar: book.4ormfinance.com/chad</span><br><br>Chad</div>'
+      + '<div class="body" contenteditable="true" data-action="mail-body">' + body + '</div>'
       + '<div style="padding:0 18px 8px;font-size:12px;color:var(--ink3)">Grey text is a suggestion &mdash; press Tab to accept it.</div>'
       + '<div class="atts"><span class="att"><span class="ty" style="background:#e0364f">PDF</span>4orm VC and Design Partner Resources.pdf<span class="x2">&times;</span></span><span class="att"><span class="ty" style="background:#e2702b">PPT</span>Business Overview | 2026<span class="x2">&times;</span></span></div>'
       + '<div class="cfoot"><button class="send" data-action="mail-send">Send</button><button class="send2" data-action="coming-soon" data-label="Schedule send">Schedule &#9662;</button><span class="tog"><span class="sw"></span>Nudge in 3 days</span><span class="tog"><span class="sw"></span>Log to Pipeline</span></div></div>'
@@ -757,7 +767,7 @@
     var wrap = wrapOf('mailDesk');
     if (!wrap) return;
     var data = emailData();
-    var openCompose = /(?:^|[?&])compose=1(?:&|$)/.test(String(location.search || ''));
+    var openCompose = /(?:^|[?&])compose=1(?:&|$)/.test(String(location.search || '')) || !!(window.STATE && window.STATE.composeOpen);
     wrap.innerHTML =
       '<div class="bar"><h1>Email</h1><div class="cnt"><span><b>' + esc(data.need) + '</b> need a reply</span><span><b>' + esc(data.investors) + '</b> investors waiting</span><span><b>' + esc(data.unread) + '</b> unread</span></div>'
       + '<div class="r"><input class="search" data-action="mail-search" placeholder="Search mail &mdash; try &quot;waiting on&quot; or &quot;needs reply&quot;"><button class="btn" data-action="mail-filters">Filters (' + esc(data.rules) + ')</button><button class="btn pri" id="composeBtn" data-action="mail-compose">Compose</button></div></div>'

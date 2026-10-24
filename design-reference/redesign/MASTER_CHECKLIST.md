@@ -43,8 +43,8 @@ Legend: **[D]** = has a design file to copy exactly.
 - [ ] Execution: drag Today ⇄ Week ⇄ Later (persists), checkbox completes, +, Full screen.
 
 ## 4. Notes (03, [D] 03b-notes-open)
-- [ ] Clicking a note opens it LARGE in the same sticky style, exactly as 03b. NOT a white text box.
-- [ ] BUG: typing shows "Saved", but the text is gone on reopen. Edits must be saved to /api/notes (or /api/notes/sticky) and reload correctly.
+- [x] Clicking a note opens it LARGE in the same sticky style, exactly as 03b. NOT a white text box.
+- [x] BUG: typing shows "Saved", but the text is gone on reopen. Edits must be saved to /api/notes (or /api/notes/sticky) and reload correctly.
 - [ ] Colour dots, Pin, ··· , × close (Esc), Move to a Space, Convert to task.
 - [ ] Filter chips, search, Board / Canvas, Tidy up, + Pin a note here.
 
