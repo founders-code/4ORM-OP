@@ -155,7 +155,7 @@ const G=[
 ];
 const CAT={team:['Team','#eaf1fe','#2e6bf2'],adv:['Advisor','#efeaff','#6b4fd8'],inv:['Investor','#fff0e6','#c2560c'],dp:['Design partner','#e4f6ee','#12a36a'],reg:['Regulator','#fde9ec','#e0364f'],legal:['Legal','#e3f3f4','#1f6f78'],ven:['Vendor','#f5f7fb','#4a5672'],new:['New','#fff4e0','#c98408']};
 const P=[
- {id:'bf',n:'Bruce Fair',o:'Friends & family round',e:'bruce@4ormfinance.com',g:'inv',c:'#2e6bf2',last:['in','Revised - This version may be better. Let me know your thoughts.'],t:'47h',st:['rep','You owe a reply'],sent:14,recv:19,meet:'Thu 4:00 pm',
+ {id:'bf',n:'Bruce Fair',o:'4orm Finance',e:'bruce@4ormfinance.com',g:'team',c:'#2e6bf2',last:['in','Revised - This version may be better. Let me know your thoughts.'],t:'47h',st:['rep','You owe a reply'],sent:14,recv:19,meet:'Thu 4:00 pm',
   next:'Bruce sent a revised 2-pager. Reply with your edits before Thursday’s call.',
   tl:[['Today',[]],['Tue Oct 20',[['in','4orm Finance - 2 pager','Revised - This version may be better. Let me know your thoughts. B','47h','2-pager v3.pdf'],['out','Re: 4orm Finance - 2 pager','Thanks Bruce. Looking now; I’ll mark up the numbers section tonight.','2d']]],['Mon Oct 19',[['in','Deck - Notes','Need to tighten messaging with respect to what it is that 4orm Finance is providing. Counselling-style AI to…','3d'],['meet','Zoom: Deck rework + investor outreach','You owe 1: send Kevin the reworked first page.','3d']]],['Fri Oct 16',[['out','RE: Welcome to 4orm Finance | Major Financial Decisions','Bruce, here’s the version with the number sequence fixed at the top of each slide.','6d','Business Overview.pptx']]]]},
  {id:'kw',n:'Kevin Wong',o:'4orm Finance',e:'kevin@4ormfinance.com',g:'team',c:'#0f8a8a',last:['out','Here’s the GTM outline for Wednesday.'],t:'1d',st:['wait','Waiting on Kevin'],sent:31,recv:22,meet:'Wed 10:00 am',next:'Kevin hasn’t answered the GTM outline. It’s on Wednesday’s 1on1 agenda.',
@@ -183,11 +183,11 @@ const P=[
 ];
 let cur='all',sel='bf';
 const ini=n=>n.split(' ').map(x=>x[0]).join('').slice(0,2);
-function grps(){const h=document.getElementById('grps');h.innerHTML='<div class="gh">Groups</div>'+G.map(([k,l,c])=>{const n=k==='all'?P.length:P.filter(p=>p.g===k).length;return `<div class="g${k===cur?' on':''}${k==='new'?' new':''}" data-g="${k}"><i style="background:${c}"></i>${l}<em>${n}</em></div>`}).join('')+'<div class="addg">+ New group</div>';h.querySelectorAll('.g').forEach(e=>e.onclick=()=>{cur=e.dataset.g;render()})}
+function grps(){const h=document.getElementById('grps');h.innerHTML='<div class="gh">Groups</div>'+G.map(([k,l,c])=>{const n=k==='all'?P.length:P.filter(p=>p.g===k).length;return `<div class="g${k===cur?' on':''}${k==='new'?' new':''}" data-g="${k}"><i style="background:${c}"></i>${l}<em>${n}</em></div>`}).join('')+'<div class="addg">+ New group</div>';h.querySelectorAll('.g').forEach(e=>e.onclick=()=>{cur=e.dataset.g;const f=P.find(p=>cur==='all'||p.g===cur);if(f)sel=f.id;render()})}
 function list(){const q=document.getElementById('q').value.toLowerCase();const rows=P.filter(p=>(cur==='all'||p.g===cur)&&(!q||(p.n+p.o+p.e).toLowerCase().includes(q)));document.getElementById('gTitle').textContent=G.find(g=>g[0]===cur)[1];document.getElementById('gCount').textContent=rows.length+' people';
  document.getElementById('pl').innerHTML=rows.map(p=>{const k=CAT[p.g];const d=p.last[0]==='out'?'<span class="dir out">You:</span> ':p.last[0]==='in'?'<span class="dir in">'+p.n.split(' ')[0]+':</span> ':'<span class="dir in">&#128197;</span> ';return `<div class="p${p.id===sel?' on':''}" data-id="${p.id}"><span class="av" style="background:${p.c}">${ini(p.n)}</span><div style="min-width:0"><div class="n"><b>${p.n}</b><span>${p.o}</span></div><div class="last">${d}${p.last[1]}</div></div><div class="rt"><small>${p.t}</small><span class="st ${p.st[0]}">${p.st[1]}</span></div></div>`}).join('')||'<div style="padding:20px;color:var(--ink3);font-size:13px">No one here yet.</div>';
- document.querySelectorAll('.p').forEach(e=>e.onclick=()=>{sel=e.dataset.id;render()})}
-function person(){const p=P.find(x=>x.id===sel);const k=CAT[p.g];
+ }
+function person(){const p=P.find(x=>x.id===sel&&(cur==='all'||x.g===cur));if(!p){document.getElementById('person').innerHTML='<div style="padding:40px;text-align:center;color:var(--ink3);font-size:13px">Pick a person on the left.</div>';return}const k=CAT[p.g];
  const tl=p.tl.filter(d=>d[1].length).map(([day,ms])=>`<div class="day">${day}</div>`+ms.map(([dir,sj,pv,t,att])=>`<div class="m ${dir}"><span class="ic">${dir==='out'?'&uarr;':dir==='in'?'&darr;':'&#9673;'}</span><div style="min-width:0"><div class="w">${dir==='out'?'You sent':dir==='in'?p.n.split(' ')[0]+' sent':'Meeting'}</div><div class="sj">${sj}</div><div class="pv">${pv}</div>${att?`<span class="att"><i>FILE</i>${att}</span>`:''}</div><span class="t">${t}</span></div>`).join('')).join('');
  document.getElementById('person').innerHTML=`<div class="ph"><span class="av" style="background:${p.c}">${ini(p.n)}</span><div style="min-width:0"><h2>${p.n}</h2><div class="sub">${p.o} &middot; ${p.e} <span class="cat sel" style="background:${k[1]};color:${k[2]}">${k[0]}</span></div></div><div class="acts"><button class="btn sm">Pipeline</button><button class="btn sm">Space</button><button class="btn sm pri">Email ${p.n.split(' ')[0]}</button></div></div>
  <div class="kp"><div><b>${p.sent}</b><span>you sent</span></div><div><b>${p.recv}</b><span>they sent</span></div><div><b>${p.t}</b><span>last contact</span></div><div><b>${p.meet||'&mdash;'}</b><span>next meeting</span></div></div>
@@ -196,6 +196,7 @@ function person(){const p=P.find(x=>x.id===sel);const k=CAT[p.g];
  <div class="tl">${tl}</div>`}
 function render(){grps();list();person()}
 document.getElementById('q').oninput=list;
+document.getElementById('pl').addEventListener('click',e=>{const r=e.target.closest('.p');if(!r)return;sel=r.dataset.id;render()});
 render();
 </script>
 </body></html>

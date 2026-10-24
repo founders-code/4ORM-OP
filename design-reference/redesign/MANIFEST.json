@@ -157,8 +157,8 @@
   "file": "redesign/08c-email-people.html",
   "page": "Email - People view",
   "route": "/email?view=people",
-  "bytes": 48142,
-  "sha256": "b12c7a634346eaf4"
+  "bytes": 48432,
+  "sha256": "e6faf57aedff9c96"
  },
  {
   "file": "redesign/10b-calendar-rail-closed.html",
