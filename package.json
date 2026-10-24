@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/ensure-secrets.mjs && next build",
+    "build": "node scripts/check-design-manifest.mjs && node scripts/ensure-secrets.mjs && next build",
     "start": "next start",
-    "check": "node scripts/twin-check.mjs && node scripts/ensure-secrets.mjs && node --test scripts/secure.test.mjs && node scripts/scan.mjs",
+    "check": "node scripts/check-design-manifest.mjs && node scripts/twin-check.mjs && node scripts/ensure-secrets.mjs && node --test scripts/secure.test.mjs && node scripts/scan.mjs",
+    "check-design-manifest": "node scripts/check-design-manifest.mjs",
     "visual-check": "node scripts/visual-check.mjs",
     "calendar-interact": "node scripts/calendar-interact.mjs"
   },
