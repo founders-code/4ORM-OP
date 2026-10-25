@@ -30,7 +30,7 @@ Legend: **[D]** = has a design file to copy exactly.
 - [x] War Room = landing page [D 02-war-room]: thin text ribbon (runway, raise to go + days, next meeting + Join, lights left, Signals count, Coaching note, Show $), capture bar, Today's one move + focus, ranked moves, Execution Today on the right, This week / Later / Done today below. No After-your-meetings, Next up or Reach out panels: owed items arrive as Execution cards tagged "from Zoom"; Reach out is a count linking to Pipeline.
 - [x] Signals panel [D 02c-war-room-signals]: opens from the top-bar Signals button and the ribbon count. Sections Needs you / New since / Watch; each row links to its home page; the brain's latest line at the top; Brain log link. Counts update every 15 s.
 - [ ] Pipeline [D 04-pipeline]: Needs you today = ONE list (follow-ups due + going cold + reach-outs) with chips and a checkbox; Board is the default view (drag writes the stage to GHL); empty stages collapsed behind "+ N empty stages"; List and Funnel are secondary tabs; KPI strip and category × stage grid removed.
-- [ ] Spaces [D 05c-space-panel]: opening a card slides the workbench in from the right over the Spaces list (not a full page). Close / Esc / scrim closes; Prev / Next moves between spaces.
+- [x] Spaces [D 05c-space-panel]: opening a card slides the workbench in from the right over the Spaces list (not a full page). Close / Esc / scrim closes; Prev / Next moves between spaces.
 - [ ] Menu counts on Email (need a reply), Zoom (owed), Contacts (going cold), Integrations (attention), Pipeline (needs you today).
 
 ## 1. Site-wide
@@ -68,7 +68,7 @@ Legend: **[D]** = has a design file to copy exactly.
 - [ ] Follow up opens a composer (draft in Chad's voice; sends via GHL only after Chad confirms); Open opens the contact.
 
 ## 6. Spaces (05, [D] 05b-space-open)
-- [ ] Opening a Space (card click or Open, new AND existing) shows the 05b workbench exactly: hero, readiness ring, The angle (4orm Intelligence), What <name> gets (email preview + file tiles + link), People, Next steps, Notes sticky, History.
+- [x] Opening a Space (card click or Open, new AND existing) shows the 05b workbench exactly: hero, readiness ring, The angle (4orm Intelligence), What <name> gets (email preview + file tiles + link), People, Next steps, Notes sticky, History.
 - [ ] Readiness = real: person, notes, docs attached, link added, intro written.
 - [ ] Suggested docs come from Documents; drag in from Documents / Drive; Add people from Contacts / Pipeline.
 - [ ] Send bundle → GHL only, with a test copy to chad@4ormfinance.com first. Move to Drive works. Prev / Next space.
