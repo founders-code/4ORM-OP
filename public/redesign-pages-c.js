@@ -411,8 +411,8 @@
       render(); count();
       var dest = (root.querySelector('.dest em.on') || {}).textContent || "Today’s log";
       auth('/api/voice/logs', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ transcript: tx.textContent, items: it, destination: dest, duration_s: Math.floor((Date.now() - t0) / 1000) }) }).catch(function () {});
-      var now = new Date(), h = now.getHours(), m = String(now.getMinutes()).padStart(2, '0');
-      root.getElementById('vHist').insertAdjacentHTML('afterbegin', '<div class="vrow"><span class="pl">&#9654;</span><span class="tm">' + ((h % 12) || 12) + ':' + m + ' ' + (h < 12 ? 'am' : 'pm') + '</span><span>&ldquo;' + esc(tx.textContent.slice(0, 90)) + '&hellip;&rdquo;</span><span class="c">' + plays + ' plays &middot; ' + tasks + ' task &middot; ' + notes + ' note</span></div>');
+      var now = new Date(), h = String(now.getHours()).padStart(2, '0'), m = String(now.getMinutes()).padStart(2, '0');
+      root.getElementById('vHist').insertAdjacentHTML('afterbegin', '<div class="vrow"><span class="pl">&#9654;</span><span class="tm">' + h + ':' + m + '</span><span>&ldquo;' + esc(tx.textContent.slice(0, 90)) + '&hellip;&rdquo;</span><span class="c">' + plays + ' plays &middot; ' + tasks + ' task &middot; ' + notes + ' note</span></div>');
       toast("Saved to today’s log - " + plays + ' plays updated'); ds.onclick();
     };
   }
@@ -462,12 +462,18 @@
     var title = String(ev.t || 'New event');
     var attendees = emailsOf(ev.ppl);
     var loc = asList(ev.loc).join(', ');
+    var notes = String(ev.notes || '');
+    var links = asList(ev.links);
+    var docs = asList(ev.docs);
+    var desc = [notes, links.length ? 'Links:\n' + links.join('\n') : '', docs.length ? 'Files:\n' + docs.join('\n') : ''].filter(Boolean).join('\n\n');
+    if (loc && /zoom/i.test(loc) && desc.indexOf('Join Zoom') < 0) desc = (desc ? desc + '\n\n' : '') + 'Join Zoom: https://us06web.zoom.us/j/7783632424';
+    var extra = { title: title, start: start, dur: dur, attendees: attendees, location: loc, description: desc, reminders: ev.alert || '' };
     if (payload.type === 'create') {
-      return auth('/api/calendar', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: title, start: start, dur: dur, attendees: attendees }) })
+      return auth('/api/calendar', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify(extra) })
         .then(function (r) { return r.json(); }).then(function (d) { if (d && d.id) ev.id = d.id; console.info('[live-map] /api/calendar POST', d); return d; }).catch(function () {});
     }
     if (payload.type === 'patch' && ev.id) {
-      return auth('/api/calendar', { method: 'PATCH', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: ev.id, start: start, dur: dur, title: title, attendees: attendees, location: loc, description: ev.notes || '' }) })
+      return auth('/api/calendar', { method: 'PATCH', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify(Object.assign({ id: ev.id }, extra)) })
         .then(function (r) { return r.json(); }).then(function (d) { console.info('[live-map] /api/calendar PATCH', d); return d; }).catch(function () {});
     }
     if (payload.type === 'decline' && ev.id) {
@@ -525,8 +531,16 @@
               today: live ? new Date() : new Date(2026, 9, 19),
               events: live ? events : null,
               write: calWrite,
-              undo: calUndo
+              undo: calUndo,
+              railClosed: (function () { try { return new URLSearchParams(location.search || '').get('rail') === '0'; } catch (e) { return false; } })()
             });
+            var wantEvent = (function () { try { return new URLSearchParams(location.search || '').get('event') === '1'; } catch (e) { return false; } })();
+            if (wantEvent && window.__redesignCal && typeof window.__redesignCal.openPop === 'function') {
+              var bruce = { d: '2026-10-24', s: 13, e: 14, t: 'Bruce and Chad 1on1', c: 'meet', ppl: ['Bruce Fair'], loc: ['Zoom · us06web.zoom.us/j/7783632424'], links: [], docs: ['2-pager v3.pdf'], notes: 'Walk through the revised 2-pager. Decide the wire date.' };
+              window.__redesignCal.openPop(bruce, 620, 220);
+              var pop = root.getElementById('pop');
+              if (pop) { pop.style.left = '560px'; pop.style.top = '120px'; }
+            }
           }
           liveLog('calendar', { events: (events || []).length, live: live });
           if (P().finishPaint) P().finishPaint(wrap);
@@ -683,7 +697,7 @@
         h += '<div class="mc" data-action="zoom-open" data-i="' + i + '" data-id="' + esc(x.id || '') + '"><div class="d">' + esc(x.m) + ' ' + x.d + ', 2026<span class="src">' + esc(x.src) + '</span></div><div class="t">' + esc(x.t) + '</div>'
           + '<div class="pp2">' + (people.map(function (n) { return '<span class="av" style="background:' + zcol(n) + '">' + esc(ini(n)) + '</span>'; }).join('') || '<span class="av" style="background:#8a96ad;margin:0">CJ</span>') + '<span class="n">' + esc(who) + '</span></div>'
           + '<div class="sn' + (x.solo ? ' self' : '') + '">' + (x.solo ? '<b style="color:#46556E">Note to self:</b> ' : (leadName ? '<b>' + esc(leadName) + ':</b> ' : '')) + esc(stripLead(x.s, x.p)) + '</div>'
-          + '<div class="ft">' + (x.solo ? '<span class="tag solo">Solo</span>' : x.owe ? '<span class="tag owe">You owe ' + x.owe + '</span>' : '<span class="tag solo">Nothing owed</span>') + '<span class="op" data-action="zoom-open" data-i="' + i + '" data-id="' + esc(x.id || '') + '">Open &rarr;</span><span class="ib" title="Edit" data-action="zoom-edit" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">&#9998;</span><span class="ib" title="Delete" data-action="zoom-archive" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">&#128465;</span></div></div>';
+          + '<div class="ft">' + (x.solo ? '<span class="tag solo">Solo</span>' : x.owe ? '<span class="tag owe">You owe ' + x.owe + '</span>' : '<span class="tag solo">Nothing owed</span>') + '<span class="op" data-action="zoom-open" data-i="' + i + '" data-id="' + esc(x.id || '') + '">Open &rarr;</span><span class="ib" title="Edit" data-action="zoom-edit" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">Edit</span><span class="ib" title="Delete" data-action="zoom-archive" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">Delete</span></div></div>';
       });
       if (box) box.innerHTML = h + (w ? '</div>' : '');
       var dr = root.getElementById('drawer'), sc = root.getElementById('scrim');
@@ -701,7 +715,7 @@
         var x = meetings[i], r = (fixtureOn() && ZREADER[i]) ? ZREADER[i] : genR(x);
         function av(n) { return '<span class="av" style="background:' + zcol(n) + '">' + esc(ini(n)) + '</span>'; }
         var people = asList(x.p);
-        return '<div class="rh" style="margin-top:-6px"><h2>' + esc(x.t) + '</h2><div class="ic"><span class="ib" title="Edit" data-action="zoom-edit" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">&#9998;</span><span class="ib" title="Delete" data-action="zoom-archive" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">&#128465;</span></div></div>'
+        return '<div class="rh" style="margin-top:-6px"><h2>' + esc(x.t) + '</h2><div class="ic"><span class="ib" title="Edit" data-action="zoom-edit" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">Edit</span><span class="ib" title="Delete" data-action="zoom-archive" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">Delete</span></div></div>'
           + '<div class="when">' + esc(r.when) + ' &middot; ' + esc(x.src) + ' notes' + (x.src === 'Zoom' ? ' + recording + transcript' : '') + '</div>'
           + '<div class="ppl">' + people.map(function (n) { return '<span class="pp">' + av(n) + esc(n) + (r.roles[n] ? ' <em>&middot; ' + esc(r.roles[n]) + '</em>' : '') + '</span>'; }).join('') + '<span class="pp"><span class="av" style="background:#8a96ad">CJ</span>You</span></div>'
           + '<div class="acts"><button class="btn sm pri" data-action="zoom-transcript">Open transcript</button>' + (x.src === 'Zoom' ? '<button class="btn sm" data-action="zoom-play">Play recording</button>' : '') + '<button class="btn sm" data-action="zoom-follow" data-name="' + esc(people[0] || '') + '">Draft follow-up email</button><button class="btn sm" data-action="coming-soon" data-label="Add to a Space">Add to a Space</button>' + (people[0] ? '<button class="btn sm" data-action="zoom-contact" data-name="' + esc(people[0]) + '">Open ' + esc(people[0].split(' ')[0]) + ' in Contacts</button>' : '') + '</div>'

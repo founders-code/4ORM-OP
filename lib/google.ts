@@ -136,26 +136,32 @@ export async function listEvents(timeMin: string, timeMax: string, pageToken = '
   };
 }
 
-async function postEvent(calendarId: string, startMs: number, durMin: number, title: string) {
+async function postEvent(calendarId: string, startMs: number, durMin: number, title: string, extra?: { location?: string; description?: string; attendees?: string[] }) {
   const start = new Date(startMs);
   const end = new Date(startMs + durMin * 60 * 1000);
+  const body: Record<string, unknown> = {
+    summary: String(title || 'Focus').slice(0, 180),
+    start: { dateTime: start.toISOString(), timeZone: 'America/Vancouver' },
+    end: { dateTime: end.toISOString(), timeZone: 'America/Vancouver' },
+  };
+  if (extra?.location) body.location = String(extra.location).slice(0, 500);
+  if (extra?.description) body.description = String(extra.description).slice(0, 4000);
+  if (extra?.attendees && extra.attendees.length) {
+    body.attendees = extra.attendees.map((email) => ({ email }));
+  }
   const json = (await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?sendUpdates=all`, {
     method: 'POST',
-    body: JSON.stringify({
-      summary: String(title || 'Focus').slice(0, 180),
-      start: { dateTime: start.toISOString(), timeZone: 'America/Vancouver' },
-      end: { dateTime: end.toISOString(), timeZone: 'America/Vancouver' },
-    }),
+    body: JSON.stringify(body),
   })) as { id?: string } | null;
   return json?.id ? String(json.id) : null;
 }
 
-export async function createEvent(startMs: number, durMin: number, title: string) {
+export async function createEvent(startMs: number, durMin: number, title: string, extra?: { location?: string; description?: string; attendees?: string[] }) {
   if (!configured()) return null;
   const named = process.env.GOOGLE_CALENDAR_ID || 'primary';
-  const id = await postEvent(named, startMs, durMin, title);
+  const id = await postEvent(named, startMs, durMin, title, extra);
   if (id || named === 'primary') return id;
-  return postEvent('primary', startMs, durMin, title);
+  return postEvent('primary', startMs, durMin, title, extra);
 }
 
 export async function createInviteEvent(input: {

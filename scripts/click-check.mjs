@@ -394,6 +394,42 @@ async function main() {
         return !!(btn && toast && /snapshot/i.test(toast.textContent || ''));
       });
       clicks.push({ page: 'Completed', control: 'Snapshot now', dom: snap, net: true, persist: true, pass: snap });
+
+      await page.goto(`http://127.0.0.1:${port}/control-room.html?view=calendar&fixture=mockup&event=1`, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#calDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+      const editor = await page.evaluate(() => {
+        const root = document.getElementById('calDesk').shadowRoot;
+        const pop = root.getElementById('pop');
+        const when = root.querySelector('.when');
+        const labels = Array.from(root.querySelectorAll('.pop label')).map((n) => n.textContent || '');
+        const zoom = root.getElementById('pZoom');
+        const pS = root.getElementById('pS');
+        return {
+          open: !!(pop && pop.classList.contains('open')),
+          when: !!when,
+          rows: ['Calendar', 'People', 'Where', 'Links', 'Files', 'Alert', 'Notes'].every((k) => labels.some((t) => t.indexOf(k) >= 0)),
+          zoom: !!(zoom && /4orm Zoom/i.test(zoom.textContent || '')),
+          t24: !!(pS && pS.classList.contains('t24') && /13:00/.test(pS.getAttribute('placeholder') || '')),
+        };
+      });
+      clicks.push({ page: 'Calendar', control: '10c editor 24h + 4orm Zoom', dom: editor.open && editor.when && editor.rows && editor.zoom && editor.t24, net: true, persist: true, pass: editor.open && editor.when && editor.rows && editor.zoom && editor.t24 });
+
+      await page.goto(`http://127.0.0.1:${port}/control-room.html?view=calendar&fixture=mockup&rail=0`, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#calDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+      const rail = await page.evaluate(() => {
+        const root = document.getElementById('calDesk').shadowRoot;
+        const wrap = root.querySelector('.calwrap');
+        const bar = root.querySelector('.railbar');
+        return !!(wrap && wrap.classList.contains('rail-closed') && bar);
+      });
+      clicks.push({ page: 'Calendar', control: '10b rail closed', dom: rail, net: true, persist: true, pass: rail });
+
+      const keepText = await page.evaluate(() => {
+        const root = document.getElementById('calDesk').shadowRoot;
+        const ok = root.querySelector('.ev.sug .ok');
+        return !!(ok && /Keep/.test(ok.textContent || '') && /Later/.test(ok.textContent || '') && /Drop/.test(ok.textContent || ''));
+      });
+      clicks.push({ page: 'Calendar', control: 'Keep / Later / Drop', dom: keepText, net: true, persist: true, pass: keepText });
     } else {
     await page.goto(`http://127.0.0.1:${port}/control-room.html?view=war&fixture=mockup`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#warDesk[data-port-ready]', { timeout: 15000, state: 'attached' });

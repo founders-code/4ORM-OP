@@ -3,11 +3,11 @@
 
 <aside class="rail">
   <div class="brand"><img src="/assets/mark-4orm-iq.png" alt="4orm"><b>IQ</b></div>
-  <div class="nl">&#10022; <input id="nlIn" data-action="cal-nl" placeholder='Type it: "Coffee with Bruce Tue 3pm"' style="flex:1;background:transparent;border:none;outline:none;color:#e6ecfb;font:inherit;font-size:12.5px;min-width:0"></div>
+  <div class="nl"><input id="nlIn" data-action="cal-nl" placeholder='Type it: "Coffee with Bruce Tue 3pm"' style="flex:1;background:transparent;border:none;outline:none;color:#e6ecfb;font:inherit;font-size:12.5px;min-width:0"></div>
   <div class="mtitle"><h2>October <span>2026</span></h2><div class="ar"><span data-action="cal-mini-nav" data-dir="prev">&#8249;</span><span data-action="cal-mini-nav" data-dir="next">&#8250;</span></div></div>
   <div class="mini" id="mini"></div>
 
-  <div class="sec">Today &middot; Mon Oct 19</div>
+  <div class="sec" id="calTodayLab">Today &middot; Mon Oct 19</div>
   <div class="ribbon" id="ribbon"></div>
   <div class="rticks"><span>7a</span><span>10a</span><span>1p</span><span>4p</span><span>7p</span><span>8p</span></div>
   <div class="nextcard">
@@ -32,8 +32,9 @@
     <label data-action="cal-toggle"><span class="bx" style="background:var(--inv)">&#10003;</span>Investors &amp; raise</label>
     <label data-action="cal-toggle"><span class="bx" style="background:var(--pay)">&#10003;</span>Payments &amp; bills</label>
     <label data-action="cal-toggle"><span class="bx" style="background:var(--mile)">&#10003;</span>Milestones</label>
-    <label data-action="cal-toggle"><span class="bx d" style="border-color:var(--blue2);color:var(--blue2)">&#10022;</span>Playbook plays (suggested)</label>
+    <label data-action="cal-toggle"><span class="bx d" style="border-color:var(--blue2);color:var(--blue2)"></span>Playbook plays (suggested)</label>
   </div>
+  <div class="railbar" id="railbar"><span class="tg" data-action="cal-rail" data-dir="open" title="Open side panel ([)">&raquo;</span><span data-action="cal-nl-focus" title="Quick add">+</span><span title="Mini calendar"></span><span title="Calendars">Menu</span></div>
 </aside>
 
 <div class="c-main">
@@ -48,15 +49,15 @@
 
 <div class="dtip" id="dtip"></div>
 <div class="pop" id="pop">
-  <div class="ph2"><span class="sw2" id="pSw"></span><input class="ti" id="pTitle" data-action="cal-title" placeholder="New event"></div>
-  <div class="row2"><span class="ic">&#128339;</span><div class="tms"><input type="date" id="pDate" data-action="cal-date"><input id="pS" data-action="cal-time" placeholder="10:00a">&ndash;<input id="pE" data-action="cal-time" placeholder="11:00a"></div></div>
-  <div class="row2"><span class="ic">&#9673;</span><select id="pCal" data-action="cal-select"><option value="meet">Meetings</option><option value="inv">Investors &amp; raise</option><option value="pay">Payments &amp; bills</option><option value="mile">Milestones</option></select></div>
-  <div class="row2" style="position:relative"><span class="ic">&#128101;</span><div class="chips" id="pPpl"><input class="addin" id="pPplIn" data-action="cal-people" placeholder="Add people"></div><div class="sugg" id="pSug" style="display:none;left:40px;top:36px"></div></div>
-  <div class="row2"><span class="ic">&#128249;</span><div class="chips" id="pLoc"><input class="addin" id="pLocIn" data-action="cal-people" placeholder="Location or video link"><span class="zm" id="pZoom" data-action="cal-zoom">+ Zoom</span></div></div>
-  <div class="row2"><span class="ic">&#128279;</span><div class="chips" id="pLinks"><input class="addin" id="pLinkIn" data-action="cal-people" placeholder="Paste a link, press Enter"></div></div>
-  <div class="row2"><span class="ic">&#128206;</span><div><div class="chips" id="pDocs" style="margin-bottom:5px"></div><div class="dropz" id="pDrop">Drop a file here, or <span class="zm" id="pPick" data-action="cal-pick">attach from a Space</span></div></div></div>
-  <div class="row2"><span class="ic">&#128276;</span><div class="tms"><select id="pAlert" data-action="cal-select"><option>10 min before (escalating alarm)</option><option>30 min before</option><option>No alert</option></select></div></div>
-  <div class="row2" style="align-items:start"><span class="ic">&#9998;</span><textarea id="pNotes" data-action="cal-notes" placeholder="Notes, agenda, prep"></textarea></div>
+  <div class="ph2"><span class="sw2" id="pSw"></span><input class="ti" id="pTitle" data-action="cal-title" placeholder="New event"><span class="px" id="pX" data-action="cal-pop-close" title="Close (Esc)">&times;</span></div>
+  <div class="when"><input type="date" id="pDate" data-action="cal-date"><input id="pS" class="t24" data-action="cal-time" placeholder="13:00" maxlength="5" inputmode="numeric"><span class="dash">to</span><input id="pE" class="t24" data-action="cal-time" placeholder="14:00" maxlength="5" inputmode="numeric"><span class="dur" id="pDur"></span></div>
+  <div class="row2"><label>Calendar</label><select id="pCal" data-action="cal-select"><option value="meet">Meetings</option><option value="inv">Investors &amp; raise</option><option value="pay">Payments &amp; bills</option><option value="mile">Milestones</option></select></div>
+  <div class="row2" style="position:relative"><label>People</label><div class="chips" id="pPpl"><input class="addin" id="pPplIn" data-action="cal-people" placeholder="Type a name"></div><div class="sugg" id="pSug" style="display:none;left:86px;top:36px"></div></div>
+  <div class="row2"><label>Where</label><div class="chips" id="pLoc"><input class="addin" id="pLocIn" data-action="cal-people" placeholder="Location or video link"><span class="zm" id="pZoom" data-action="cal-zoom" title="Adds 4orm's Zoom room: us06web.zoom.us/j/7783632424">+ 4orm Zoom</span></div></div>
+  <div class="row2"><label>Links</label><div class="chips" id="pLinks"><input class="addin" id="pLinkIn" data-action="cal-people" placeholder="Paste a link, press Enter"></div></div>
+  <div class="row2"><label>Files</label><div><div class="chips" id="pDocs" style="margin-bottom:5px"></div><div class="dropz" id="pDrop">Drop a file here, or <span class="zm" id="pPick" data-action="cal-pick">attach from a Space</span></div></div></div>
+  <div class="row2"><label>Alert</label><select id="pAlert" data-action="cal-select"><option>10 min before (escalating alarm)</option><option>30 min before</option><option>No alert</option></select></div>
+  <div class="row2" style="align-items:start"><label style="padding-top:6px">Notes</label><textarea id="pNotes" data-action="cal-notes" placeholder="Agenda, prep, what you want out of it"></textarea></div>
   <div class="pf"><button class="dl" id="pDel" data-action="cal-del">Delete</button><button id="pDup" data-action="cal-dup">Duplicate</button><button class="sv" id="pSave" data-action="cal-save">Save</button></div>
 </div>
 <div class="undo" id="undo"><span id="undoT"></span><b id="undoB" data-action="cal-undo">Undo</b></div>

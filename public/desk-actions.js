@@ -1335,7 +1335,17 @@
       refresh('spaces');
     },
     'space-email': function () { S().composeOpen = true; go('mail'); },
-    'space-book': function () { go('calendar'); },
+    'space-book': function () {
+      go('calendar');
+      setTimeout(function () {
+        var cal = window.__redesignCal;
+        if (!cal || typeof cal.openPop !== 'function') return;
+        var now = new Date();
+        var d = cal.ymd(now);
+        var s = now.getHours() + (now.getMinutes() >= 30 ? 0.5 : 0);
+        cal.openPop({ d: d, s: s, e: s + 20 / 60, t: '20 min', c: 'meet', isNew: true, ppl: [], loc: [], links: [], docs: [] }, 620, 220);
+      }, 500);
+    },
     'space-send-test': function (el, root) { toast(root, 'Test copy queued to chad@4ormfinance.com'); },
     'space-rewrite': function (el, root) { toast(root, '4orm Intelligence will rewrite the angle'); },
     'space-prev': function (el, root) { toast(root, 'Previous space'); },
@@ -2068,10 +2078,33 @@
       var sug = el.closest && el.closest('.ev.sug');
       if (cal && typeof cal.keepSug === 'function' && sug) cal.keepSug(Number(sug.dataset.si), true);
     },
+    'cal-later': function (el) {
+      var cal = window.__redesignCal;
+      var sug = el.closest && el.closest('.ev.sug');
+      if (cal && typeof cal.keepSug === 'function' && sug) cal.keepSug(Number(sug.dataset.si), false, true);
+    },
     'cal-drop': function (el) {
       var cal = window.__redesignCal;
       var sug = el.closest && el.closest('.ev.sug');
       if (cal && typeof cal.keepSug === 'function' && sug) cal.keepSug(Number(sug.dataset.si), false);
+    },
+    'cal-rail': function (el) {
+      var cal = window.__redesignCal;
+      if (!cal || typeof cal.setRail !== 'function') return;
+      var dir = attr(el, 'data-dir');
+      if (dir === 'open') cal.setRail(false);
+      else if (dir === 'close') cal.setRail(true);
+      else cal.setRail(!cal.railClosed());
+    },
+    'cal-pop-close': function () {
+      var cal = window.__redesignCal;
+      if (cal && typeof cal.closePop === 'function') cal.closePop();
+    },
+    'cal-nl-focus': function (el, root) {
+      var cal = window.__redesignCal;
+      if (cal && typeof cal.setRail === 'function') cal.setRail(false);
+      var inp = root.getElementById && root.getElementById('nlIn');
+      if (inp) inp.focus();
     },
     'cal-allday': function () {},
     'cal-cell': function () {},
@@ -2339,7 +2372,7 @@
     if (name === 'zoom-open' && t.closest && t.closest('[data-action="zoom-edit"], [data-action="zoom-archive"]')) return;
     if (!fn) { soon(root, name); return; }
     if (name === 'link-open') return;
-    if (/^(cal-event|cal-sug|cal-keep|cal-drop|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|cal-save|cal-del|cal-dup|cal-undo|cal-zoom|cal-pick|cal-allday|cal-cell|cal-year-day|cal-more|play-voice-|play-tx|zoom-search|zoom-ask-input|news-search)$/.test(name)) {
+    if (/^(cal-event|cal-sug|cal-keep|cal-later|cal-drop|cal-rail|cal-pop-close|cal-nl-focus|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|cal-save|cal-del|cal-dup|cal-undo|cal-zoom|cal-pick|cal-allday|cal-cell|cal-year-day|cal-more|play-voice-|play-tx|zoom-search|zoom-ask-input|news-search)$/.test(name)) {
       try { fn(el, root, e); } catch (err) { toast(root, 'Could not run that action'); }
       return;
     }

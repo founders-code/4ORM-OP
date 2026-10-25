@@ -68,7 +68,13 @@ if(opts.live&&opts.events){const startPlan=opts.today||new Date();for(let d=new 
 let view='week',focus=opts.focus||opts.today||new Date(2026,9,19);
 if(opts.today){ /* TODAY may be reassigned below */ }
 const H0=7,H1=20,PX=46;
-const fmt=h=>{const hh=Math.floor(h),mm=Math.round((h-hh)*60);const ap=hh>=12?'p':'a';const h12=hh%12||12;return h12+(mm?':'+String(mm).padStart(2,'0'):'')+ap};
+const FOURM_ZOOM_URL='https://us06web.zoom.us/j/7783632424';
+const ZOOM_CHIP='Zoom · us06web.zoom.us/j/7783632424';
+const fmt=h=>{const hh=Math.floor(h),mm=Math.round((h-hh)*60);return String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0')};
+const t2h=t=>{let v=String(t).trim().toLowerCase().replace(/\./g,':');if(/^\d{3,4}$/.test(v))v=v.slice(0,-2)+':'+v.slice(-2);const m=v.match(/^(\d{1,2})(?::(\d{2}))?\s*(a|p|am|pm)?$/);if(!m)return null;let h=+m[1];const mm=+(m[2]||0);if(h>23||mm>59)return null;if(m[3]&&m[3][0]=='p'&&h<12)h+=12;if(m[3]&&m[3][0]=='a'&&h==12)h=0;return h+mm/60};
+function hasZoom(loc){return asList(loc).some(function(l){return /7783632424|us06web\.zoom\.us/i.test(String(l));});}
+function ensureZoom(x){x.loc=x.loc||[];if(!hasZoom(x.loc))x.loc.push(ZOOM_CHIP);return x;}
+function asList(v){return Array.isArray(v)?v:(v==null?[]:[v]);}
 const weekStart=d=>add(d,-d.getDay());
 function isoWeek(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-n);const y=new Date(Date.UTC(t.getUTCFullYear(),0,1));return Math.ceil(((t-y)/864e5+1)/7)}
 // ---------- RAIL ----------
@@ -78,7 +84,14 @@ function mini(){const m=gid('mini');if(!m)return;let h='';DOW.forEach((x,i)=>h+=
   const wk=d>=ws&&d<add(ws,7);h+=`<div class="d${d.getMonth()!=focus.getMonth()?' o':''}${wk?' wk':''}${same(d,TODAY)?' td':''}" data-action="cal-mini-day" data-d="${k}"><span>${d.getDate()}</span>${cols.length?'<i>'+cols.map(c=>`<b style="background:${c}"></b>`).join('')+'</i>':''}</div>`;}
  m.innerHTML=h;
  const mh=root.querySelector&&root.querySelector('.mtitle h2');
- if(mh) mh.innerHTML=MON[focus.getMonth()]+' <span>'+focus.getFullYear()+'</span>';}
+ if(mh) mh.innerHTML=MON[focus.getMonth()]+' <span>'+focus.getFullYear()+'</span>';
+ const lab=gid('calTodayLab');
+ if(lab){
+   const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Vancouver',weekday:'short',month:'short',day:'numeric'}).formatToParts(TODAY);
+   function part(t){for(var i=0;i<parts.length;i++)if(parts[i].type===t)return parts[i].value;return '';}
+   lab.textContent='Today · '+part('weekday')+' '+part('month')+' '+part('day');
+ }
+}
 function ribbon(){const r=gid('ribbon');const k=ymd(TODAY);const span=13;let h='';
  E.filter(x=>x.d==k&&!x.all).forEach(x=>h+=`<div class="seg" style="left:${(x.s-7)/span*100}%;width:${(x.e-x.s)/span*100}%;background:${C[x.c]}"></div>`);
  h+=`<div class="now" style="left:99%"></div>`;r.innerHTML=h;}
@@ -92,12 +105,12 @@ function timeGrid(days,showSug){
  h+=`</div><div class="tgrid" style="grid-template-columns:52px repeat(${days.length},1fr)"><div class="hours">`;
  for(let i=H0;i<H1;i++)h+=`<div class="hl">${i==H0?'':fmt(i)}</div>`;h+=`</div>`;
  days.forEach(d=>{const k=ymd(d);h+=`<div class="col${same(d,TODAY)?' today':''}" data-k="${k}">`;for(let i=H0;i<H1;i++)h+='<div class="line"></div>';
-  E.filter(x=>x.d==k&&!x.all).forEach(x=>h+=`<div class="ev real${(x.e-x.s)*PX-3<26?' short':''}${SEL===x?' sel':''}" data-action="cal-event" data-id="${x.id||''}" data-i="${E.indexOf(x)}" data-t="${String(x.t||'').replace(/"/g,'&quot;')}" data-d="${x.d}" data-s="${x.s}" data-e="${x.e}" style="top:${(x.s-H0)*PX+1}px;height:${(x.e-x.s)*PX-3}px;background:${C[x.c]}"><div class="tt">${x.t}</div><div class="tm">${fmt(x.s)} - ${fmt(x.e)}</div>${x.ppl&&x.ppl.length?`<div class="tm">&#128101; ${x.ppl.length}</div>`:''}<span class="rz"></span></div>`);
-  if(showSug)S.filter(x=>x.d==k).forEach(x=>{const ht=(x.e-x.s)*PX-3;h+=`<div class="ev sug${ht<26?' short':''}" data-action="cal-sug" data-si="${S.indexOf(x)}" style="top:${(x.s-H0)*PX+1}px;height:${ht}px;border-color:${x.c};background:color-mix(in srgb,${x.c} 14%,transparent)"><div class="tt" style="color:${x.c}">${x.t}</div>${ht>22?`<div class="tm">${fmt(x.s)} - ${fmt(x.e)}</div>`:''}<span class="ok"><b data-action="cal-keep" style="background:var(--green);color:#06210f">&#10003;</b><b data-action="cal-drop" style="background:#2a3556;color:#cfd8f0">&#10005;</b></span></div>`});
+  E.filter(x=>x.d==k&&!x.all).forEach(x=>h+=`<div class="ev real${(x.e-x.s)*PX-3<26?' short':''}${SEL===x?' sel':''}" data-action="cal-event" data-id="${x.id||''}" data-i="${E.indexOf(x)}" data-t="${String(x.t||'').replace(/"/g,'&quot;')}" data-d="${x.d}" data-s="${x.s}" data-e="${x.e}" style="top:${(x.s-H0)*PX+1}px;height:${(x.e-x.s)*PX-3}px;background:${C[x.c]}"><div class="tt">${x.t}</div><div class="tm">${fmt(x.s)} - ${fmt(x.e)}</div>${x.ppl&&x.ppl.length?`<div class="tm">${x.ppl.length}</div>`:''}<span class="rz"></span></div>`);
+  if(showSug)S.filter(x=>x.d==k).forEach(x=>{const ht=(x.e-x.s)*PX-3;h+=`<div class="ev sug${ht<26?' short':''}" data-action="cal-sug" data-si="${S.indexOf(x)}" style="top:${(x.s-H0)*PX+1}px;height:${ht}px;border-color:${x.c};background:color-mix(in srgb,${x.c} 14%,transparent)"><div class="tt" style="color:${x.c}">${x.t}</div>${ht>22?`<div class="tm">${fmt(x.s)} - ${fmt(x.e)}</div>`:''}<span class="ok"><b class="k" data-action="cal-keep">Keep</b><b class="l" data-action="cal-later">Later</b><b class="x" data-action="cal-drop">Drop</b></span><span class="rz"></span></div>`});
   h+=`</div>`;});
  return h+`</div>`;
 }
-function aiBanner(n,f){return `<div class="ai"><span class="sp">&#10022;</span><div><b>4orm Intelligence planned next week around your ${n} meetings</b> - ${S.length} plays placed in the gaps, ${f}h of protected focus. Dashed = suggested. Hover a block to keep or drop it.</div><div class="acts"><button data-action="cal-accept" style="background:var(--blue);color:#fff">Accept all</button><button data-action="cal-replan" style="background:#1d2b55;color:#cfd8f0">Re-plan</button></div></div>`}
+function aiBanner(n,f){return `<div class="ai"><span class="sp"></span><div><b>4orm Intelligence planned next week around your ${n} meetings</b> - ${S.length} plays placed in the gaps, ${f}h of protected focus. Dashed = suggested. Hover a play for Keep / Later / Drop, drag it to another time, or click it to edit before keeping. Enter keeps, Delete drops.</div><div class="acts"><button data-action="cal-accept" style="background:var(--blue);color:#fff">Accept all</button><button data-action="cal-replan" style="background:#1d2b55;color:#cfd8f0">Re-plan</button></div></div>`}
 function wkPill(ws,we,tws){const n=Math.round((ws-tws)/6048e5);let p='';
  if(n==0)p='<em class="now">this week</em>';else if(n==1)p='<em>next week</em>';else if(n>1)p=`<em>${n} weeks out</em>`;else if(n==-1)p='<em class="past">last week</em>';else p=`<em class="past">${-n} weeks ago</em>`;
  for(let k=1;k<=3;k++){const t=new Date(TODAY.getFullYear(),TODAY.getMonth()+k,TODAY.getDate());if(t>=ws&&t<=we)p+=`<em class="mo">${k} month${k>1?'s':''} out</em>`;}
@@ -199,30 +212,45 @@ window.addEventListener('mouseup',e=>{if(!drag)return;tip.style.display='none';c
   else{d.x.e=d.ne;toast('"'+d.x.t+'" now ends '+fmt(d.ne));liveWrite({type:'patch',event:d.x});}
   SEL=d.x;render();
 });
-// suggested plays: keep / drop
-function keepSug(i,keep){
-  const x=S[i];if(!x)return;save();S.splice(S.indexOf(x),1);
-  if(keep){var kept={d:x.d,s:x.s,e:x.e,t:x.t,c:'mile'};E.push(kept);toast('Kept "'+x.t+'" — added to your calendar');liveWrite({type:'create',event:kept});}else toast('Dropped "'+x.t+'"');render();
+// suggested plays: keep / later / drop
+function nextFree(d,s,len){const busy=E.filter(v=>v.d===d).concat(S.filter(v=>v.d===d)).map(v=>[v.s,v.e]).sort((a,b)=>a[0]-b[0]);let t=s+0.5;for(let i=0;i<48;i++){const clash=busy.some(([a,b])=>t<b&&t+len>a);if(!clash&&t+len<=H1)return t;t+=0.25}return null}
+function keepPlay(x,extra){ensureZoom(x);var kept=Object.assign({d:x.d,s:x.s,e:x.e,t:x.t,c:'mile',ppl:x.ppl||[],loc:x.loc||[],links:x.links||[],docs:x.docs||[],notes:x.notes||''},extra||{});E.push(kept);toast('Kept "'+x.t+'" — added to your calendar');liveWrite({type:'create',event:kept});return kept;}
+function keepSug(i,keep,later){
+  const x=S[i];if(!x)return;save();
+  if(later){const len=x.e-x.s;const t=nextFree(x.d,x.s,len);if(t!=null){x.s=t;x.e=t+len;toast('Later — "'+x.t+'" moved');}render();return;}
+  S.splice(S.indexOf(x),1);
+  if(keep){keepPlay(x);}else toast('Dropped "'+x.t+'"');render();
 }
 document.addEventListener('click',e=>{
   const path=e.composedPath?e.composedPath():[e.target];
   const hit=path.find(n=>n.matches&&n.matches('.ev.sug .ok b'));
   if(!hit)return;
   const sug=hit.closest('.ev.sug');if(!sug)return;
-  keepSug(+sug.dataset.si, hit===hit.parentNode.firstElementChild);
+  keepSug(+sug.dataset.si, hit.classList.contains('k'), hit.classList.contains('l'));
 });
 // popover editor
 const pop=gid('pop');let cur=null;
-const t2h=t=>{const m=String(t).trim().toLowerCase().match(/^(\d{1,2})(?::(\d{2}))?\s*(a|p|am|pm)?$/);if(!m)return null;let h=+m[1];const mm=+(m[2]||0);if(m[3]&&m[3][0]=='p'&&h<12)h+=12;if(m[3]&&m[3][0]=='a'&&h==12)h=0;return h+mm/60};
 const CONTACTS=[['Bruce Fair','Advisor'],['Kevin Wong','Investor'],['Don Hickling','Investor'],['Dean Hesse','Investor'],['Joe Canavan','VC'],['Zed','Speer'],['Keegan Poulton','Speer'],['Mike Stephens','Advisor']];
 const DOCS=['Business Overview | 2026.pptx','4orm VC and Design Partner Resources.pdf','Raise tracker - F&F.xlsx','RPAA note - independent review.pdf'];
 const KEYS={pPpl:'ppl',pLoc:'loc',pLinks:'links',pDocs:'docs'};
+function syncDur(){
+  const S=gid('pS'),E=gid('pE'),D=gid('pDur'),sv=gid('pSave');
+  if(!S||!E)return true;
+  const a=t2h(S.value),b=t2h(E.value);
+  S.classList.toggle('bad',S.value!==''&&a===null);
+  E.classList.toggle('bad',E.value!==''&&b===null);
+  const ok=a!==null&&b!==null&&b>a;
+  if(D)D.textContent=ok?(Math.round((b-a)*60)>=60?(((b-a)%1)?((b-a).toFixed(1)+' h'):((b-a)+' h')):Math.round((b-a)*60)+' min'):'';
+  if(sv)sv.disabled=!ok;
+  return ok;
+}
 function paint(){const x=cur;gid('pSw').style.background=C[x.c];
   [['pPpl','','pPplIn'],['pLoc','lk','pLocIn'],['pLinks','lk','pLinkIn'],['pDocs','doc',null]].forEach(([id,cls,inp])=>{const el=gid(id);const keepIn=inp?gid(inp):null;const z=id=='pLoc'?gid('pZoom'):null;
     el.innerHTML=x[KEYS[id]].map((a,i)=>`<span class="pc ${cls}">${a}<i data-k="${id}" data-n="${i}">&times;</i></span>`).join('');if(keepIn)el.appendChild(keepIn);if(z)el.appendChild(z)})}
 function openPop(x,cx,cy){cur=x;['ppl','loc','links','docs'].forEach(k=>x[k]=x[k]||[]);
+  ensureZoom(x);
   gid('pTitle').value=x.t||'';gid('pDate').value=x.d;gid('pS').value=fmt(x.s);gid('pE').value=fmt(x.e);gid('pCal').value=C[x.c]?x.c:'meet';gid('pNotes').value=x.notes||'';
-  paint();pop.classList.add('open');const w=pop.offsetWidth,h=pop.offsetHeight;let L=cx+16,T=cy-40;if(L+w>innerWidth-10)L=cx-w-16;if(T+h>innerHeight-10)T=innerHeight-h-10;if(T<10)T=10;pop.style.left=L+'px';pop.style.top=T+'px';
+  paint();syncDur();pop.classList.add('open');const w=pop.offsetWidth,h=pop.offsetHeight;let L=cx+16,T=cy-40;if(L+w>innerWidth-10)L=cx-w-16;if(T+h>innerHeight-10)T=innerHeight-h-10;if(T<10)T=10;pop.style.left=L+'px';pop.style.top=T+'px';
   gid('pDel').style.display=x.isNew?'none':'';gid('pDup').style.display=x.isNew?'none':'';setTimeout(()=>gid('pTitle').focus(),30)}
 const closePop=()=>{pop.classList.remove('open');cur=null;gid('pSug').style.display='none'};
 document.addEventListener('mousedown',e=>{
@@ -237,12 +265,19 @@ enter('pLocIn','loc');enter('pLinkIn','links');enter('pPplIn','ppl');
 const pin=gid('pPplIn'),sug=gid('pSug');
 pin.addEventListener('input',()=>{const q=pin.value.toLowerCase();const m=CONTACTS.filter(c=>q&&c[0].toLowerCase().includes(q));sug.innerHTML=m.map(c=>`<div data-n="${c[0]}">${c[0]} <span>&middot; ${c[1]}</span></div>`).join('');sug.style.display=m.length?'block':'none'});
 sug.addEventListener('mousedown',e=>{const d=e.target.closest('div[data-n]');if(!d)return;e.preventDefault();cur.ppl.push(d.dataset.n);pin.value='';sug.style.display='none';paint()});
-gid('pZoom').onclick=()=>{cur.loc=cur.loc.filter(l=>!l.startsWith('Zoom'));cur.loc.push('Zoom · link created on save');paint()};
+gid('pZoom').onclick=()=>{cur.loc=cur.loc.filter(l=>!/zoom|7783632424/i.test(String(l)));cur.loc.push(ZOOM_CHIP);paint()};
 gid('pPick').onclick=()=>{const next=DOCS.find(d=>!cur.docs.includes(d));if(next){cur.docs.push(next);paint()}};
 const dz=gid('pDrop');['dragenter','dragover'].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.add('over')}));dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');[...e.dataTransfer.files].forEach(f=>cur.docs.push(f.name));paint()});
-gid('pSave').onclick=()=>{const x=cur;save();x.t=gid('pTitle').value.trim()||'New event';x.d=gid('pDate').value||x.d;const s1=t2h(gid('pS').value),e1=t2h(gid('pE').value);if(s1!=null){const dur=x.e-x.s;x.s=s1;x.e=s1+dur}if(e1!=null&&e1>x.s)x.e=e1;x.c=gid('pCal').value;x.notes=gid('pNotes').value;
-  const isNew=x.isNew;delete x.isNew;if(isNew)E.push(x);SEL=x;closePop();render();toast((isNew?'Created "':'Saved "')+x.t+'"'+(x.ppl.length?' — invites sent to '+x.ppl.join(', '):''));liveWrite({type:isNew?'create':'patch',event:x});};
+gid('pSave').onclick=()=>{if(!syncDur())return;const x=cur;save();x.t=gid('pTitle').value.trim()||'New event';x.d=gid('pDate').value||x.d;const s1=t2h(gid('pS').value),e1=t2h(gid('pE').value);if(s1!=null){const dur=x.e-x.s;x.s=s1;x.e=s1+dur}if(e1!=null&&e1>x.s)x.e=e1;x.c=gid('pCal').value;x.notes=gid('pNotes').value;x.alert=(gid('pAlert')&&gid('pAlert').value)||'';
+  ensureZoom(x);const isNew=x.isNew;delete x.isNew;if(isNew)E.push(x);SEL=x;closePop();render();toast((isNew?'Created "':'Saved "')+x.t+'"'+(x.ppl.length?' — invites sent to '+x.ppl.join(', '):''));liveWrite({type:isNew?'create':'patch',event:x});};
+(function(){const S=gid('pS'),Etm=gid('pE'),X=gid('pX');if(!S||!Etm)return;
+  const norm=el=>{const v=t2h(el.value);el.classList.toggle('bad',el.value!==''&&v===null);if(v!==null)el.value=fmt(v);return v};
+  S.addEventListener('blur',()=>{const a=norm(S);if(a!==null&&(t2h(Etm.value)===null||t2h(Etm.value)<=a)){Etm.value=fmt(Math.min(a+1,23.98));}syncDur();});
+  Etm.addEventListener('blur',()=>{norm(Etm);syncDur();});
+  [S,Etm].forEach(el=>{el.addEventListener('input',syncDur);el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();el.blur();(el===S?Etm:gid('pSave')).focus();}});});
+  if(X)X.onclick=()=>closePop();
+})();
 function askRemoveOrDecline(ev){
   if(ev && ev.id){
     if(window.confirm('Decline "'+(ev.t||'this event')+'" so the organizer knows?')) return 'decline';
@@ -263,10 +298,10 @@ window.addEventListener('keydown',e=>{if(e.target&&e.target.matches&&e.target.ma
 gid('nlIn').addEventListener('keydown',e=>{if(e.key!=='Enter')return;const v=e.target.value.trim();if(!v)return;
   const days=['sun','mon','tue','wed','thu','fri','sat'];let base=new Date(TODAY);const low=v.toLowerCase();
   const dm=low.match(/\b(sun|mon|tue|wed|thu|fri|sat)[a-z]*\b/);if(/\btomorrow\b/.test(low))base=add(base,1);else if(dm){let diff=(days.indexOf(dm[1])-base.getDay()+7)%7;if(diff===0)diff=7;base=add(base,diff)}
-  const tm=low.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm|a|p)\b/);const s=tm?t2h(tm[0].replace(/\s/g,'')):10;const dur=/\b(\d+)\s*min/.exec(low);const e1=s+(dur?+dur[1]/60:1);
-  const title=v.replace(/\b(tomorrow|(sun|mon|tue|wed|thu|fri|sat)[a-z]*)\b/ig,'').replace(/\b\d{1,2}(:\d{2})?\s*(am|pm|a|p)\b/ig,'').replace(/\bfor \d+\s*min[a-z]*\b/ig,'').replace(/\s+/g,' ').trim();
+  const tm=low.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm|a|p)?\b/)||low.match(/\b(\d{3,4})\b/);const s=tm?t2h(tm[0].replace(/\s/g,'')):10;const dur=/\b(\d+)\s*min/.exec(low);const e1=s+(dur?+dur[1]/60:1);
+  const title=v.replace(/\b(tomorrow|(sun|mon|tue|wed|thu|fri|sat)[a-z]*)\b/ig,'').replace(/\b\d{1,2}(:\d{2})?\s*(am|pm|a|p)\b/ig,'').replace(/\b\d{3,4}\b/g,'').replace(/\bfor \d+\s*min[a-z]*\b/ig,'').replace(/\s+/g,' ').trim();
   const who=CONTACTS.filter(c=>low.includes(c[0].split(' ')[0].toLowerCase())).map(c=>c[0]);
-  save();const x={d:ymd(base),s,e:e1,t:title||'New event',c:'meet',ppl:who,loc:[],links:[],docs:[]};E.push(x);SEL=x;e.target.value='';
+  save();const x=ensureZoom({d:ymd(base),s,e:e1,t:title||'New event',c:'meet',ppl:who,loc:[],links:[],docs:[]});E.push(x);SEL=x;e.target.value='';
   render();toast('Created "'+x.t+'" — '+dayName(x.d)+' '+fmt(s)+(who.length?' with '+who.join(', '):''));liveWrite({type:'create',event:x});});
 
   function setView(v){ if(!v) return; view=v; render(); }
@@ -288,5 +323,17 @@ gid('nlIn').addEventListener('keydown',e=>{if(e.key!=='Enter')return;const v=e.t
     focus=new Date(focus.getFullYear(), focus.getMonth()+n, 1);
     mini(); render();
   }
-  window.__redesignCal = { E: E, S: S, render: render, ymd: ymd, fmt: fmt, TODAY: function(){return TODAY;}, sel: function(){return SEL;}, setSel: function(x){SEL=x;}, setView: setView, nav: nav, navMonth: navMonth, focusTo: focusTo, keepSug: keepSug, focusYmd: function(){return ymd(focus);} };
+  function setRail(closed){
+    var wrap=root.querySelector&&root.querySelector('.calwrap');
+    if(!wrap)return;
+    wrap.classList.toggle('rail-closed',!!closed);
+    try{localStorage.setItem('cr_cal_rail',closed?'closed':'open');}catch(e){}
+  }
+  function railClosed(){var wrap=root.querySelector&&root.querySelector('.calwrap');return !!(wrap&&wrap.classList.contains('rail-closed'));}
+  window.addEventListener('keydown',function(e){
+    if(e.key==='['&&!(e.target&&e.target.matches&&e.target.matches('input,textarea,select'))){e.preventDefault();setRail(!railClosed());}
+  });
+  if(opts.railClosed)setRail(true);
+  else if(!fixture){try{if(localStorage.getItem('cr_cal_rail')==='closed')setRail(true);}catch(e){}}
+  window.__redesignCal = { E: E, S: S, render: render, ymd: ymd, fmt: fmt, TODAY: function(){return TODAY;}, sel: function(){return SEL;}, setSel: function(x){SEL=x;}, setView: setView, nav: nav, navMonth: navMonth, focusTo: focusTo, keepSug: keepSug, openPop: openPop, closePop: closePop, setRail: setRail, railClosed: railClosed, ensureZoom: ensureZoom, ZOOM_CHIP: ZOOM_CHIP, FOURM_ZOOM_URL: FOURM_ZOOM_URL, focusYmd: function(){return ymd(focus);} };
 };

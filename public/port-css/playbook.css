@@ -6,7 +6,7 @@
 *{box-sizing:border-box}
 .pbwrap{color:var(--txt)}
 .head{display:flex;align-items:center;gap:16px;margin-bottom:20px}
-.calbtn{width:42px;height:42px;border-radius:12px;background:var(--panel);border:1px solid var(--edge);display:grid;place-items:center;cursor:pointer}
+.calbtn{width:auto;height:42px;border-radius:12px;background:var(--panel);border:1px solid var(--edge);display:grid;place-items:center;cursor:pointer;font-size:12.5px;font-weight:800;color:#c9d3ea;padding:0 10px}
 .calbtn:hover{border-color:var(--blue)}
 .iqbrand{display:flex;align-items:center;gap:6px;padding-right:14px;border-right:1px solid #2a2e37}.iqbrand img{height:20px;display:block}.iqbrand b{font-size:14px;font-weight:850;background:linear-gradient(90deg,#4d7cff,#7fe3ff);-webkit-background-clip:text;background-clip:text;color:transparent}
 .head h1{font-size:28px;font-weight:850;margin:0}

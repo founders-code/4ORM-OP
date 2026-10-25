@@ -69,12 +69,11 @@ export async function POST(req: Request) {
     }
     const creds = await loadCredsFor(session.userId);
     if (!id && title) {
-      const created = await withCreds(creds, () => createEvent(start, dur, title));
+      const location = String(body?.location || '').slice(0, 500);
+      const description = String(body?.description || '').slice(0, 4000);
+      const created = await withCreds(creds, () => createEvent(start, dur, title, { location, description, attendees }));
       if (!created) return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 400 });
-      if (attendees.length) {
-        await withCreds(creds, () => patchCalendarEvent(created, { attendees: attendees.map((email) => ({ email })) }));
-      }
-      return NextResponse.json({ id: created, start, dur, title, attendees });
+      return NextResponse.json({ id: created, start, dur, title, attendees, location });
     }
     if (!/^[\w.=@-]+$/.test(id)) {
       return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
