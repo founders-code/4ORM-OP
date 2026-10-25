@@ -73,8 +73,8 @@
   "file": "redesign/10-calendar.html",
   "page": "Calendar",
   "route": "/calendar",
-  "bytes": 90628,
-  "sha256": "c960215f6a131634"
+  "bytes": 95902,
+  "sha256": "bbb6dd8a948a7126"
  },
  {
   "file": "redesign/11-zoom.html",
@@ -156,7 +156,7 @@
  {
   "file": "redesign/08c-email-people.html",
   "page": "Email - People view",
-  "route": "/email?view=people",
+  "route": "/email?view=people&person=:id (person panel)",
   "bytes": 48432,
   "sha256": "e6faf57aedff9c96"
  },
@@ -164,8 +164,8 @@
   "file": "redesign/10b-calendar-rail-closed.html",
   "page": "Calendar - side panel closed",
   "route": "/calendar (rail toggle)",
-  "bytes": 91569,
-  "sha256": "c4c2cbe5746f717e"
+  "bytes": 96843,
+  "sha256": "d29a9b1d316804e3"
  },
  {
   "file": "redesign/13b-news-saved.html",
@@ -173,5 +173,26 @@
   "route": "/news?view=saved",
   "bytes": 49388,
   "sha256": "c3e60877bb3faa8b"
+ },
+ {
+  "file": "redesign/08d-email-inbox.html",
+  "page": "Email - Inbox feed + your columns",
+  "route": "/email (default view)",
+  "bytes": 45734,
+  "sha256": "23bdf298b1969c6e"
+ },
+ {
+  "file": "redesign/08e-email-people-grid.html",
+  "page": "Email - People grid (boxes, tags, closed-box drawer)",
+  "route": "/email?view=people",
+  "bytes": 64194,
+  "sha256": "bbd7cf785cad9cac"
+ },
+ {
+  "file": "redesign/10c-calendar-event-editor.html",
+  "page": "Calendar - event editor open (no icons, 24h times)",
+  "route": "/calendar (event clicked)",
+  "bytes": 96288,
+  "sha256": "32e4538ab1a56d3f"
  }
 ]

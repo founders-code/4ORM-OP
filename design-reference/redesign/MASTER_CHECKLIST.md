@@ -1,4 +1,4 @@
-# 4ormop - MASTER CHECKLIST (Oct 22, 2026)
+# 4ormop - MASTER CHECKLIST (Oct 24, 2026)
 
 Every open item from Chad's live testing and Claude's click audit. Nothing here is done until:
 - it works on production, signed in,
@@ -18,6 +18,12 @@ Legend: **[D]** = has a design file to copy exactly.
 - Never show design sample data or sample dates on live. A load failure shows "Couldn't load - Retry".
 - "Today" is always the real date in America/Vancouver.
 - Console errors = 0 on every page.
+
+## 0b. Standing UI rules (added Oct 24)
+- [ ] NO ICONS anywhere: no SVG icons, icon fonts, glyphs or emoji in UI (logos excluded). Left menu = text labels. CI check fails on any icon in UI markup.
+- [ ] All times typed and shown as 24-hour (13:00). No time pickers.
+- [ ] Every editor field saves to its backing record (Google Calendar / Gmail / Neon) and reads back on reopen.
+- [ ] Mockups are the spec for behaviour too: every control in a design file has a live data-action that does the same thing.
 
 ## 1. Site-wide
 - [ ] 1.1 Wire every control on pages 01-17 (Claude's click audit found ~250 dead controls).
@@ -43,8 +49,8 @@ Legend: **[D]** = has a design file to copy exactly.
 - [ ] Execution: drag Today ⇄ Week ⇄ Later (persists), checkbox completes, +, Full screen.
 
 ## 4. Notes (03, [D] 03b-notes-open)
-- [x] Clicking a note opens it LARGE in the same sticky style, exactly as 03b. NOT a white text box.
-- [x] BUG: typing shows "Saved", but the text is gone on reopen. Edits must be saved to /api/notes (or /api/notes/sticky) and reload correctly.
+- [ ] Clicking a note opens it LARGE in the same sticky style, exactly as 03b. NOT a white text box.
+- [ ] BUG: typing shows "Saved", but the text is gone on reopen. Edits must be saved to /api/notes (or /api/notes/sticky) and reload correctly.
 - [ ] Colour dots, Pin, ··· , × close (Esc), Move to a Space, Convert to task.
 - [ ] Filter chips, search, Board / Canvas, Tidy up, + Pin a note here.
 
@@ -71,7 +77,21 @@ Legend: **[D]** = has a design file to copy exactly.
 - [ ] Notes on links: "Add a note" on every tile is editable in place, saves to /api/links, shows on the tile, searchable.
 - [ ] Add link, ✎ edit, ⇄ move, × soft delete, Expand all; tiles open in a new tab; favicons; counts match tiles.
 
-## 9. Email (08, 08b, [D] 08c-email-people)
+## 9. Email (08b compose, [D] 08d-email-inbox, [D] 08e-email-people-grid, [D] 08c-email-people person panel) - REPLACES the old 7-column board
+- [ ] Inbox | People toggle. Default = Inbox (08d).
+- [ ] Inbox: ONE feed of all mail (Everything / People / Unread). Chad's own columns on the right, ship with ZERO. + New column; rename in place; drag to reorder (persists).
+- [ ] Flag on any email → popover: pick a column or "New column for this"; "Always put mail from <address> here" (on by default) saves a sender rule; future mail auto-files. Column header lists its senders with × to remove a rule. Drag an email onto a column = flag.
+- [ ] People grid (08e): boxes per person/company (addresses merged), from them / from you / files / last, latest 3, file chips, status, Open ›. Drag ⋮⋮ to reorder (persists). "Not in a box yet" strip; drag a sender onto a box. + New box. "Build boxes from my Contacts" one-time button. Ship with zero boxes otherwise.
+- [ ] Box ··· menu: Open, Rename, Add an email address, Add a tag, Open in Pipeline, Open the Space, Close box, Remove box (mail stays in Inbox).
+- [ ] Close (×) → Closed boxes drawer from the right (search, Reopen, Reopen all, "new" mark, × / Esc / button closes; edge tab with count). Persists.
+- [ ] Tags on boxes (+ tag). Top bar: Inbox | People | Tags | Stats; Tags and Stats open collapsible panels. Search matches names, companies, files and #tags. Tags persist and write back to GHL/Contacts.
+- [ ] Sort menu: my order / last contact / owes a reply first / most mail / A to Z.
+- [ ] Open › → person panel (08c): counts, Everything / From them / From you / Files, click a message to expand, Email / Book 20 min / Reply.
+- [ ] Fixed facts: Bruce Fair, Kevin Wong, Zed Sandeela = Team (@4ormfinance.com defaults to Team); Don Hickling, Dean Hesse = Advisors; James Atherton, Antonia Pettenon = Legal & finance; Simen Ruud = Vendors & tools. Clicking a person always opens THAT person.
+- [ ] Filters button works; + New rule; real display names; each email in one place.
+- [ ] Email runs from 4ormop: Gmail push + 15-second server sweep, one filing function for every message (idempotent on messageId); Compose / Reply / Reply all / Forward / drafts / signature / cc-bcc / attachments via Gmail send; archive, read/unread, star, snooze, label, Quiet, Trash (never permanent); full-text search; thread view with in-site attachments; keyboard r/a/e/Esc/j/k; Integrations → Gmail shows "last sweep Ns ago"; red lamp after 3 failed sweeps.
+
+## 9-old. (superseded) Email (08, 08b, [D] 08c-email-people)
 - [ ] BUG: the Filters button doesn't work. Opens the filter menu (people only, needs reply, unread, attachment, group, date); persists.
 - [ ] + New rule, column ··· menu.
 - [ ] People view exactly as 08c, behind a Board | People toggle.
@@ -89,7 +109,13 @@ Legend: **[D]** = has a design file to copy exactly.
 - [ ] Pads click = done (persists, streak, "N lights left"); + Add a rhythm; every row link navigates; Longer beats open; full titles (no "Marketin…").
 - [ ] Voice log: record → transcribe → Save to today / Discard.
 
-## 11. Calendar (10, [D] 10b-calendar-rail-closed)
+## 11. Calendar (10, [D] 10b-calendar-rail-closed, [D] 10c-calendar-event-editor)
+- [ ] Event editor exactly as 10c: no icons; rows Calendar / People / Where / Links / Files / Alert / Notes; date + start + end on one line, typed 24-hour (1330 → 13:30, end defaults +1h, length shown, invalid = red, Save disabled).
+- [ ] + 4orm Zoom (FOURM_ZOOM_URL = https://us06web.zoom.us/j/7783632424) on every new or edited entry, incl. natural-language add, Space "Book 20 min", War Room "Find a 30-min slot". Chip with ×; never added twice.
+- [ ] BUG: Save drops Zoom / files / notes / times. Save writes EVERY field to the Google event (summary, start/end America/Vancouver, attendees sendUpdates=all, location + "Join Zoom" line, description = notes + links, attachments[] Drive fileId (upload dropped files to the 4orm Drive folder first), reminders, extendedProperties). Reopen reads all back.
+- [ ] Day view scrolls 00:00-24:00 (opens at 07:00 or first event). Pinch-zoom (ctrl+wheel) and ⌘+/⌘− change hour height 24-160px, remembered. Same in Week.
+- [ ] Suggested plays: hover Keep / Later / Drop (text); drag/resize; click → editor → Save keeps with all fields, Delete drops; Enter keeps, Delete drops; "Play · name" label; kept plays link to the Playbook pad; dropped plays not re-suggested that day.
+- [ ] Old items still apply:
 - [ ] Side panel collapses to a 52px icon strip exactly as 10b; the grid widens. Toggle button + "[" shortcut; remembers the choice.
 - [ ] Rail "TODAY · MON OCT 19" must be the real day.
 - [ ] Drag / resize / edit / create work in EVERY week shown (next week doesn't save today) and write to Google (events.patch, sendUpdates=all).
@@ -124,6 +150,11 @@ Legend: **[D]** = has a design file to copy exactly.
 
 ## 16. Still to design (Claude)
 - [ ] Studio page. Public booking page photo (Chad to supply).
+
+## 17. Cursor behaviour
+- [ ] Work through every step without stopping for confirmation; stop only on a failed check or anything that would delete/overwrite real data.
+- [ ] design-reference/ is read-only; CI fails if a design changes without a MANIFEST update.
+- [ ] Final gate: button-sweep (inventory every control in every design → match live data-action → click → 0 FAIL) in CI on every push.
 
 ## Proof per step
 - A. Per shadow root: controls WITH data-action vs WITHOUT (WITHOUT = 0).

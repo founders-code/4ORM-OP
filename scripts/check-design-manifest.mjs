@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REDESIGN = join(ROOT, 'design-reference', 'redesign');
+const ASSETS = join(ROOT, 'design-reference', 'assets');
 const MANIFEST = join(REDESIGN, 'MANIFEST.json');
+const LOGOS = ['logo-finance-dark.png', 'logo-finance.png', 'mark-4orm-iq.png'];
 
 function sha16(buf) {
   return createHash('sha256').update(buf).digest('hex').slice(0, 16);
@@ -37,11 +39,20 @@ for (const item of entries) {
   }
 }
 
+for (const name of LOGOS) {
+  try {
+    readFileSync(join(ASSETS, name));
+  } catch {
+    failures.push('assets/' + name + ' is missing');
+  }
+}
+
 if (failures.length) {
-  console.error('design-reference/redesign MANIFEST check FAILED');
+  console.error('design-reference MANIFEST check FAILED');
   failures.forEach((line) => console.error('  ' + line));
   process.exit(1);
 }
 
-console.log('design-reference/redesign MANIFEST check PASS');
+console.log('design-reference MANIFEST check PASS');
 console.log('  ' + htmlOnDisk.length + ' html files match bytes + sha256');
+console.log('  ' + LOGOS.length + ' logos present');
