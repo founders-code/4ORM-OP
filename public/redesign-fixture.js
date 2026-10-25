@@ -305,7 +305,44 @@
         ['Venture Capital', 'c-vc', 10, [['Joe Canavan', '~80% of his angel book is fintech: Wealthsimple, Borrowell, CapIntel, Homewise.', 4, 'send'], ['Neil Mitchell', 'Advises early-stage insurtech founders; backed YouSet and QuickFacts.', 4, 'docs'], ['Norm Cappell', 'North Exit Ventures invests pre-seed in insurance, lending and wealth.', 4, 'docs'], ['Daniel Moore', 'Writes $5K-$300K cheques into financial services.', 4, 'send'], ['Paul Hill', 'Backed Verafin, QuickFacts, DisclosureNet, Una - compliance and regtech.', 4, 'docs'], ['Philip Daniel', 'C-suite fintech and payments leader; sits on boards; lists angel investing.', 4, 'docs'], ['Glenn Yuen', 'Founded POPcodes (payments); VA Angels member; Invest-Tech at Innovate BC.', 4, 'docs'], ['Hanif Joshaghani', 'Built Symend, a Calgary fintech selling to banks; MIT fintech; angels in fintech.', 4, 'docs']]],
         ['Business', 'c-bus', 25, [['Tom Robertson', 'Continental Currency Exchange', 4, 'ppl'], ['Elizabeth Wood', 'CMI Canadian Mortgages Inc. (CMI Financial Group)', 4, 'ppl'], ['L\u00e9opold Beaudoin', 'Credit Bail Globale (Globale Leasing)', 4, 'ppl'], ['Rasha Katabi', 'Brim Financial Inc.', 4, 'ppl']]],
         ['Regulators', 'c-reg', 15, [['FINTRAC', 'Federal AML regulator - reach-out only', 4, 'docs'], ['Bank of Canada - RPAA', 'Retail payment supervision', 4, 'docs'], ['CSA', 'Canadian Securities Administrators', 4, 'docs'], ['BCFSA', 'BC mortgage broker regulator', 4, 'docs']]]
-      ]
+      ],
+      open: {
+        id: 'neil',
+        name: 'Neil Mitchell',
+        group: 'Venture Capital',
+        ini: 'NM',
+        who: 'Marsh Canada MD \u00b7 advises early-stage insurtech founders \u00b7 backed YouSet and QuickFacts',
+        tags: [['vc', 'Venture Capital'], ['', 'Angel \u00b7 insurtech'], ['', 'Pipeline: Storage'], ['', 'Never contacted']],
+        ready: '2/5',
+        readyDash: '100.5 251.3',
+        steps: [['d', 'Person'], ['d', 'Notes'], ['', 'Docs attached'], ['', 'Link added'], ['', 'Intro written']],
+        angle: 'Neil has backed <b>QuickFacts</b>, and he spends his days on <b>insurance distribution and conduct risk</b> at Marsh. 4orm records the suitability evidence every advice conversation needs, which is the same problem QuickFacts solves, one step later. Lead with conduct risk, not AI.',
+        hooks: ['+ FINTRAC fines, Oct 12', '+ OSFI on AI governance', '+ Insurer distribution angle', '+ Ask for 20 minutes'],
+        to: 'Neil Mitchell',
+        subject: 'Suitability evidence for insurance advice - 20 minutes?',
+        intro: 'Neil - you backed QuickFacts, so you know how much of distribution risk lives in what was said in the room and never written down. We built 4orm to record that evidence automatically. Two pages attached. Worth 20 minutes next week?',
+        files: [
+          { sug: true, bg: '#fde9ec', kind: 'PDF', color: 'var(--red)', name: '4orm VC and Design Partner Resources.pdf', sub: 'suggested for VCs', inner: 'pg' },
+          { sug: true, bg: '#fff0e6', kind: 'PPT', color: '#e36b1c', name: 'Business Overview | 4orm | 2026.pptx', sub: 'suggested for VCs', inner: 'sl', sl: 'Business Overview' },
+          { sug: true, bg: 'var(--blue50)', kind: 'DOC', color: 'var(--blue)', name: 'Top incumbents', sub: 'from Documents \u203a Legal', inner: 'pg' }
+        ],
+        link: { host: '4ormiq.com', label: 'Try the free Suitability Readiness Check' },
+        people: [{ ini: 'NM', name: 'Neil Mitchell', meta: 'Marsh Canada \u00b7 no email on file', role: 'Lead' }],
+        facts: [['\u2014', 'last contact'], ['0', 'emails'], ['Storage', 'pipeline stage']],
+        todos: [
+          { d: true, t: 'Space created', em: 'Oct 18' },
+          { d: true, t: 'Notes captured', em: 'Oct 18' },
+          { d: false, t: 'Attach the 2-pager and the deck', em: '2 suggested' },
+          { d: false, t: 'Add the Readiness Check link', em: '' },
+          { d: false, t: 'Approve the intro, then send a test to yourself', em: '' }
+        ],
+        notes: 'Advises early-stage insurtech founders; backed YouSet and QuickFacts. Marsh Canada MD - deep in insurance distribution and conduct risk. Connect-on: QuickFacts is adjacent to our suitability-evidence angle in insurance.',
+        saved: 'Saved \u00b7 Oct 18',
+        history: [
+          { ic: 'n', t: 'Notes added from the VC research list', when: 'Oct 18' },
+          { ic: 'p', t: 'Added to Venture Capital \u00b7 Storage', when: 'Oct 18' }
+        ]
+      }
     },
     documents: {
       folders: [
@@ -389,7 +426,34 @@
       cols: [
         { id: 'c1', n: 'Raise', c: '#c2560c', from: ['bruce@4ormfinance.com', 'menchcapital@telus.net'], ids: [1, 7] },
         { id: 'c2', n: 'Regulators & associations', c: '#e0364f', from: ['affiliates@clhia.ca'], ids: [2] }
-      ]
+      ],
+      people: {
+        looseMore: 10,
+        loose: [
+          { n: 'Ivan Pierce', c: '#c98408', pv: 'Settlement finality: 4orm\u2019s work\u2026' },
+          { n: 'Ralph Gardner', c: '#12a36a', pv: 'Re: Introduction - Thursday works' },
+          { n: 'Antonia Pettenon', c: '#2b8a9a', pv: 'Re: Invoice payment' },
+          { n: 'Ashish Dhir', c: '#2a7f62', pv: 'Re: Settlement finality for PSPs' }
+        ],
+        boxes: [
+          { id: 'bf', n: 'Bruce Fair', o: '4orm Finance \u00b7 co-founder', c: '#2e6bf2', tags: ['team', 'raise'], in: 19, out: 14, files: [['P', '2-pager v3.pdf'], ['p', 'Business Overview.pptx'], ['D', 'Deck notes.docx']], more: 4, st: ['rep', 'You owe a reply'], last: '47m',
+            m: [['in', 'Revised - This version may be better', 'Let me know your thoughts. B', 1], ['out', 'Re: 4orm Finance - 2 pager', 'Thanks Bruce. Looking now; I\u2019ll mark up the numbers\u2026', 0], ['in', 'Deck - Notes', 'Need to tighten messaging with respect to\u2026', 0]] },
+          { id: 'ms', n: 'Michael Stevens', o: 'Advisor \u00b7 NMDA', c: '#6b4fd8', tags: ['advisor', 'legal'], in: 6, out: 5, files: [['D', 'NMDA-markup.docx'], ['P', 'Term sheet draft.pdf']], more: 0, st: ['rep', 'You owe a reply'], last: '11h',
+            m: [['in', 'NMDA with James - next steps', 'Chad, James sent over the markup. Two points\u2026', 1], ['out', 'Intro: James Atherton', 'Michael, meet James, our counsel at JHA\u2026', 0], ['in', 'Re: Advisory agreement', 'Signed and attached.', 0]] },
+          { id: 'bv', n: 'Bow Valley Credit Union', o: 'Design partner prospect', c: '#c2560c', tags: ['prospect', 'credit union'], in: 3, out: 4, files: [['P', 'BVCU-requirements.pdf'], ['p', '4orm for credit unions.pptx']], more: 0, st: ['rep', 'You owe a reply'], last: '1d',
+            m: [['in', 'Follow-up from Thursday\u2019s call', 'Thanks for walking us through the suitability record\u2026', 1], ['out', 'Thursday 10:00 - Zoom link', 'Looking forward to it. Link below.', 0], ['out', 'Introduction | 4orm Finance', 'Kevin suggested I reach out\u2026', 0]] },
+          { id: 'kw', n: 'Kevin Wong', o: '4orm Finance \u00b7 co-founder', c: '#0f8a8a', tags: ['team', 'gtm'], in: 22, out: 31, files: [['P', 'GTM outline.pdf'], ['D', 'Broker script v2.docx']], more: 9, st: ['ok', 'Up to date'], last: '1d',
+            m: [['in', 'Re: GTM outline', 'Looked at it. Two edits on the broker section\u2026', 0], ['out', 'GTM outline', 'Here\u2019s the GTM outline for Wednesday.', 0], ['in', 'Re: $25K chunk', 'Talked to my guy. Let\u2019s lock the wire date\u2026', 0]] },
+          { id: 'dh', n: 'Don Hickling', o: 'Executive advisor', c: '#6b4fd8', tags: ['advisor'], in: 5, out: 6, files: [['P', 'Advisor memo.pdf']], more: 0, st: ['ok', 'Up to date'], last: '1d', closed: true,
+            m: [['in', 'Friday 1on1 - agenda', 'Three things: the raise, Kevin\u2019s path\u2026', 0], ['out', 'Re: Road to 4orm Finance', 'Don, here\u2019s the memo we discussed.', 0]] },
+          { id: 'cl', n: 'CLHIA', o: 'Association', c: '#0f6e8a', tags: ['association', 'insurance'], in: 2, out: 2, files: [], more: 0, st: ['rep', 'You owe a reply'], last: '9h',
+            m: [['in', 'RE: Are we a bad fit for the Affiliates Program?', 'Can you provide a list of Canadian life and health insurers\u2026', 1], ['out', 'Are we a bad fit for the Affiliates Program?', 'Hello, we\u2019re a Canadian suitability-evidence platform\u2026', 0]] },
+          { id: 'ja', n: 'James Atherton', o: 'JHA Law', c: '#1f6f78', tags: ['legal'], in: 3, out: 3, files: [['D', 'NMDA v2.docx'], ['P', 'Engagement letter.pdf']], more: 0, st: ['wait', 'Waiting on James'], last: '2d',
+            m: [['out', 'NMDA - Michael\u2019s two points', 'James, Michael pushed back on 4(b) and 7\u2026', 0], ['in', 'James - Bruce - Chad', 'Confirmed for Thursday 3:00.', 0]] },
+          { id: 'mc', n: 'Mench Capital', o: 'Investor \u00b7 Mike', c: '#c98408', tags: ['investor', 'raise'], in: 2, out: 3, files: [['P', '2-pager.pdf']], more: 0, st: ['wait', 'Waiting on Mike'], last: '1d', closed: true,
+            m: [['in', 'Re: Overview for Investors', 'Had a look over the weekend. A couple of questions\u2026', 0], ['out', '4orm Finance - Overview for Investors', 'Mike, hopefully you had a great holiday out East\u2026', 0]] }
+        ]
+      }
     },
     playbook: { weekLabel: 'WEEK 43 · OCT 19 - 25', dates: [19, 20, 21, 22, 23, 24, 25], todayIdx: 0, pct: '0%' },
     zoom: { meta: '43 meetings · synced 2 min ago' },

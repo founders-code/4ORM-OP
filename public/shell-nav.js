@@ -90,7 +90,7 @@
       NAV.forEach(function (n) {
         if (n.length === 1) { html += '<div class="grp">' + n[0] + '</div>'; return; }
         var badge = bag[n[0]] || '';
-        html += '<div class="nav' + (n[0] === active ? ' on' : '') + '" data-v="' + n[3] + '" data-name="' + n[0] + '"><svg viewBox="0 0 24 24"><path d="' + n[1] + '"/></svg>' + n[0] + (badge ? '<span class="n">' + badge + '</span>' : '') + '</div>';
+        html += '<div class="nav' + (n[0] === active ? ' on' : '') + '" data-action="nav-go" data-v="' + n[3] + '" data-name="' + n[0] + '">' + n[0] + (badge ? '<span class="n">' + badge + '</span>' : '') + '</div>';
       });
       side.innerHTML = html;
       var crumbF = document.getElementById('pageCrumb');

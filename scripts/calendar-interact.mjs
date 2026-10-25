@@ -1,11 +1,7 @@
 import { chromium } from 'playwright';
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { requireStorageState } from './auth-state.mjs';
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const BASE = process.env.PLAYWRIGHT_BASE_URL || 'https://www.4ormop.com';
-const AUTH = process.env.PLAYWRIGHT_STORAGE || resolve(ROOT, 'playwright/.auth/user.json');
 const TITLE = 'TEST cal-interact ' + Date.now();
 const ATTENDEE = 'chad@4ormfinance.com';
 const rows = [];
@@ -42,17 +38,17 @@ async function findEvent(page, title) {
 }
 
 async function main() {
+  const storageState = requireStorageState();
   const browser = await chromium.launch({ headless: true });
-  const ctxOpts = { viewport: { width: 1440, height: 900 } };
-  if (existsSync(AUTH)) ctxOpts.storageState = JSON.parse(readFileSync(AUTH, 'utf8'));
+  const ctxOpts = { viewport: { width: 1440, height: 900 }, storageState };
   const context = await browser.newContext(ctxOpts);
   const page = await context.newPage();
   try {
     await page.goto(BASE.replace(/\/$/, '') + '/calendar', { waitUntil: 'domcontentloaded', timeout: 45000 });
     const signedIn = await page.locator('.clock, #calDesk, .side .nav').first().waitFor({ timeout: 12000 }).then(() => true).catch(() => false);
     if (!signedIn || page.url().includes('sign-in') || page.url().endsWith('/')) {
-      log('signed-in session', false, 'no Clerk session — set PLAYWRIGHT_STORAGE or playwright/.auth/user.json');
-      return;
+      console.error('STOP: .auth/4ormop.json did not open a signed-in production session. Regenerate it.');
+      process.exit(1);
     }
     log('signed-in session', true, page.url());
 

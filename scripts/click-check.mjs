@@ -1,11 +1,12 @@
 import { createServer } from 'node:http';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { extname, join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { AUTH_PATH, requireStorageState } from './auth-state.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const AUTH = process.env.PLAYWRIGHT_STORAGE || resolve(ROOT, 'playwright/.auth/user.json');
+const AUTH = AUTH_PATH;
 const STEP = process.env.CLICK_STEP || '1';
 const PAGES = {
   1: [
@@ -72,6 +73,7 @@ function inventory(page, hostId) {
 }
 
 async function main() {
+  requireStorageState();
   const { port, server } = await serve();
   const browser = await chromium.launch({ headless: true });
   const errors = [];
@@ -160,7 +162,7 @@ async function main() {
         const btn = host.shadowRoot.querySelector('[data-action="space-open"]');
         if (btn) btn.click();
         await new Promise(function (r) { setTimeout(r, 80); });
-        return !!host.shadowRoot.querySelector('.space-detail');
+        return !!(host.shadowRoot.querySelector('.space-detail') && host.shadowRoot.querySelector('.hero'));
       });
       clicks.push({ page: 'Spaces', control: 'Open', dom: spaceOpen, net: true, persist: true, pass: spaceOpen });
 
@@ -194,6 +196,16 @@ async function main() {
         return !!(next && next.classList.contains('on'));
       });
       clicks.push({ page: 'Documents', control: 'Type chips', dom: typeChip, net: true, persist: true, pass: typeChip });
+
+      await page.goto(`http://127.0.0.1:${port}/control-room.html?view=docs&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#docsDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+      const docOpen = await page.evaluate(() => {
+        const host = document.getElementById('docsDesk');
+        const btn = host.shadowRoot.querySelector('[data-action="doc-open"]');
+        if (btn) btn.click();
+        return !!host.shadowRoot.querySelector('.vwin');
+      });
+      clicks.push({ page: 'Documents', control: '06b viewer', dom: docOpen, net: true, persist: true, pass: docOpen });
 
       await page.goto(`http://127.0.0.1:${port}/control-room.html?view=mail&fixture=mockup`, { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('#mailDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
@@ -233,9 +245,27 @@ async function main() {
         const root = document.getElementById('mailDesk').shadowRoot;
         const btn = root.querySelector('[data-action="mail-view"][data-view="people"]');
         if (btn) btn.click();
-        return !!(window.STATE && window.STATE.mailView === 'people');
+        return !!(window.STATE && window.STATE.mailView === 'people' && root.querySelector('.grid .bx') && root.querySelector('.loose') && root.querySelector('.newbx'));
       });
       clicks.push({ page: 'Email', control: 'People toggle', dom: people, net: true, persist: true, pass: people });
+
+      const peopleOpen = await page.evaluate(() => {
+        const root = document.getElementById('mailDesk').shadowRoot;
+        const btn = root.querySelector('[data-action="mail-box-open"]');
+        if (btn) btn.click();
+        const pp = root.getElementById('pp');
+        return !!(pp && pp.classList.contains('on') && /Bruce Fair/.test(pp.textContent || ''));
+      });
+      clicks.push({ page: 'Email', control: '08e Open panel', dom: peopleOpen, net: true, persist: true, pass: peopleOpen });
+
+      const peopleClose = await page.evaluate(() => {
+        const root = document.getElementById('mailDesk').shadowRoot;
+        const x = root.querySelector('[data-action="mail-pp-close"]');
+        if (x) x.click();
+        const pp = root.getElementById('pp');
+        return !!(pp && !pp.classList.contains('on'));
+      });
+      clicks.push({ page: 'Email', control: '08c panel close', dom: peopleClose, net: true, persist: true, pass: peopleClose });
 
       await page.goto(`http://127.0.0.1:${port}/control-room.html?view=mail&fixture=mockup`, { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('#mailDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
@@ -844,8 +874,9 @@ async function main() {
     console.log('\nC  page errors', errors.length, errors.slice(0, 8).join(' | ') || '0');
     if (errors.length) failed = true;
 
-    if (existsSync(AUTH)) {
-      const ctx = await browser.newContext({ storageState: JSON.parse(readFileSync(AUTH, 'utf8')), viewport: { width: 1440, height: 900 } });
+    const storageState = requireStorageState();
+    {
+      const ctx = await browser.newContext({ storageState, viewport: { width: 1440, height: 900 } });
       const live = await ctx.newPage();
       const nets = [];
       live.on('response', (res) => {
@@ -853,22 +884,38 @@ async function main() {
       });
       await live.goto('https://www.4ormop.com/war-room', { waitUntil: 'domcontentloaded', timeout: 45000 });
       const signed = await live.evaluate(() => !document.querySelector('a[href*="sign-in"]') && !!document.getElementById('warDesk'));
-      console.log('\nB  production signed-in', signed ? 'yes' : 'NO — skipped writes');
-      if (signed) {
+      console.log('\nB  production signed-in', signed ? 'yes' : 'NO');
+      if (!signed) {
+        await ctx.close();
+        console.error('STOP: .auth/4ormop.json did not open a signed-in production session. Regenerate it.');
+        process.exit(1);
+      } else {
         await live.waitForSelector('#warDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
         const created = await live.evaluate(async () => {
           const root = document.getElementById('warDesk').shadowRoot;
           const input = root.querySelector('[data-action="capture-input"]');
           const add = root.querySelector('[data-action="capture-add"]');
           const title = 'TEST click-check ' + Date.now();
-          if (input) input.value = title;
+          if (input) {
+            input.focus();
+            input.value = title;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+          }
           if (add) add.click();
           return title;
         });
-        await live.waitForTimeout(800);
+        try {
+          await live.waitForResponse((res) => /\/api\/items/.test(res.url()) && res.request().method() === 'POST' && res.status() >= 200 && res.status() < 300, { timeout: 8000 });
+        } catch (e) {}
+        await live.waitForTimeout(400);
         const wrote = nets.some((n) => /\/api\/items/.test(n.url) && n.status >= 200 && n.status < 300);
         await live.reload({ waitUntil: 'domcontentloaded' });
         await live.waitForSelector('#warDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+        await live.waitForFunction((title) => {
+          const host = document.getElementById('warDesk');
+          const root = host && host.shadowRoot;
+          return !!(root && (root.textContent || '').indexOf(title) >= 0);
+        }, created, { timeout: 12000 }).catch(() => {});
         const persisted = await live.evaluate((title) => {
           const root = document.getElementById('warDesk').shadowRoot;
           return (root.textContent || '').indexOf(title) >= 0;
@@ -885,8 +932,6 @@ async function main() {
         if (!(wrote && persisted)) failed = true;
       }
       await ctx.close();
-    } else {
-      console.log('\nB  production skipped (no playwright/.auth/user.json)');
     }
   } finally {
     await browser.close();

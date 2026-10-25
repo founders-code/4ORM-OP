@@ -1,11 +1,7 @@
 import { chromium } from 'playwright';
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { requireStorageState } from './auth-state.mjs';
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const BASE = (process.env.PLAYWRIGHT_BASE_URL || 'https://www.4ormop.com').replace(/\/$/, '');
-const AUTH = process.env.PLAYWRIGHT_STORAGE || resolve(ROOT, 'playwright/.auth/user.json');
 
 const PAGES = [
   { page: '01-dashboard', path: '/control-room', ready: '#opsDash[data-port-ready]' },
@@ -30,9 +26,9 @@ function isPageError(text) {
 }
 
 async function main() {
+  const storageState = requireStorageState();
   const browser = await chromium.launch({ headless: true });
-  const ctxOpts = { viewport: { width: 1200, height: 900 } };
-  if (existsSync(AUTH)) ctxOpts.storageState = JSON.parse(readFileSync(AUTH, 'utf8'));
+  const ctxOpts = { viewport: { width: 1200, height: 900 }, storageState };
   const context = await browser.newContext(ctxOpts);
   const rows = [];
   try {
@@ -43,13 +39,8 @@ async function main() {
     const hasShell = await gate.locator('.clock, .side .nav').first().waitFor({ timeout: 12000 }).then(() => true).catch(() => false);
     await gate.close();
     if (!signedIn || !hasShell) {
-      console.log('page\tlive\titems\tconsole errors\tlive-map');
-      PAGES.forEach((p) => {
-        console.log(`${p.page}\tSKIP\tno Clerk session\t—\t—`);
-      });
-      console.log('\nSKIP live-qa: no signed-in Clerk session. Set PLAYWRIGHT_STORAGE or playwright/.auth/user.json');
-      process.exitCode = 0;
-      return;
+      console.error('STOP: .auth/4ormop.json did not open a signed-in production session. Regenerate it.');
+      process.exit(1);
     }
     for (const spec of PAGES) {
       const page = await context.newPage();

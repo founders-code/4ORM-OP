@@ -6,8 +6,8 @@ button{font:inherit;cursor:pointer}
 .vit .k{font-size:12px;color:#93a6cf;font-weight:600}.vit .v{font-size:24px;font-weight:850;margin-top:2px;display:flex;align-items:center;gap:7px}
 .vit .v.red{color:#ff8da3}.vit .sub{font-size:11.5px;color:#8ea0c8;margin-top:2px}
 .mask{letter-spacing:.08em}
-.eye{width:26px;height:26px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);display:inline-grid;place-items:center}
-.eye svg{width:14px;height:14px;stroke:#b9c8ea;fill:none;stroke-width:1.8}
+.eye{border:none;background:none;padding:0;display:inline-grid;place-items:center}
+.eyeT,.bellT{font-size:11px;font-weight:800;color:var(--ink2);background:var(--soft);border-radius:6px;padding:2px 7px;cursor:pointer;white-space:nowrap}
 .raisebar{height:6px;background:#22345f;border-radius:6px;overflow:hidden;margin-top:8px;width:190px}.raisebar i{display:block;height:100%;width:43%;background:linear-gradient(90deg,#3f7bff,#7fd0ff)}
 .count{margin-left:auto;text-align:right}.count .big{font-size:30px;font-weight:850;color:#ff8da3;line-height:1}.count .k{font-size:12px;color:#93a6cf;font-weight:600;margin-top:4px}
 .lamps{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-top:14px;min-width:0}
@@ -43,7 +43,7 @@ button{font:inherit;cursor:pointer}
 .meet{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 16px;border-top:1px solid var(--line);font-size:13px}
 .meet .tm{font-size:12px;font-weight:800;color:var(--blue);background:var(--blue50);border-radius:7px;padding:3px 8px;white-space:nowrap}
 .meet .nm{font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bell{width:28px;height:28px;border-radius:7px;border:1px solid var(--line);background:#fff;display:grid;place-items:center}.bell svg{width:14px;height:14px;stroke:var(--ink3);fill:none;stroke-width:1.8}
+.bell{display:inline-grid;place-items:center}
 .join{font-size:12.5px;font-weight:750;color:var(--blue)}
 .runway{padding:6px 16px 16px}.runway .big{display:flex;align-items:baseline;gap:8px}.runway .big b{font-size:28px;font-weight:850;color:var(--amber)}.runway .big span{font-size:13px;color:var(--ink2)}
 .bar{height:8px;background:var(--soft);border-radius:6px;overflow:hidden;margin:10px 0}.bar i{display:block;height:100%;border-radius:6px}

@@ -42,9 +42,9 @@
     + '.pick-row{display:flex;gap:10px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);font-size:13.5px}'
     + '.pick-row:first-child{border-top:0}';
   var CSS = {
-    room: '/port-css/dashboard.css', war: '/port-css/war-room.css?v=2', notes: '/port-css/notes.css?v=2',
-    contacts: '/port-css/pipeline.css', work: '/port-css/spaces.css?v=2', docs: '/port-css/documents.css',
-    links: '/port-css/links.css', mail: '/port-css/email.css?v=2',
+    room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=2', notes: '/port-css/notes.css?v=2',
+    contacts: '/port-css/pipeline.css', work: '/port-css/spaces.css?v=2', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css',
+    links: '/port-css/links.css', mail: '/port-css/email.css?v=2', mailPeople: '/port-css/email-people.css?v=1',
     playbook: '/port-css/playbook.css', calendar: '/port-css/calendar.css', zoom: '/port-css/zoom.css',
     completed: '/port-css/completed.css'
   };
@@ -55,8 +55,8 @@
   };
   var cssText = {};
   var cssWait = [];
-  var BELL = '<svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>';
-  var EYE = '<svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var BELL = '<span class="bellT">Alarm</span>';
+  var EYE = '<span class="eyeT">Show $</span>';
   var FL = { vc: 'Investor', dp: 'Design partner', rg: 'Regulator' };
 
   function fixtureOn() {
@@ -107,6 +107,11 @@
     var style = root.querySelector('style');
     if (style && cssText[key] && style.textContent.indexOf(cssText[key]) < 0) style.textContent = TOKEN + cssText[key];
     return root.querySelector('.port-body') || root;
+  }
+  function applyPageCss(wrap, key) {
+    var root = wrap && wrap.getRootNode ? wrap.getRootNode() : null;
+    var style = root && root.querySelector ? root.querySelector('style') : null;
+    if (style && cssText[key] != null) style.textContent = TOKEN + cssText[key];
   }
   function finishPaint(wrap) {
     var root = wrap && wrap.getRootNode ? wrap.getRootNode() : null;
@@ -722,7 +727,7 @@
       + '<div class="rv"><div class="k">4ormIQ launch</div><div class="v gold">' + esc(data.launch) + '</div></div>'
       + '<div class="rv mom2"><div class="k">Momentum &middot; this week</div><div class="mb"><i></i><i></i><i></i><i></i><i class="now"></i><span>' + esc(data.momentumHours) + '</span></div></div>'
       + '<span class="sp"></span>'
-      + '<div class="cwrap"><button class="coachbtn" id="coachbtn" data-action="coach-toggle">&#128161; Coaching note</button>'
+      + '<div class="cwrap"><button class="coachbtn" id="coachbtn" data-action="coach-toggle">Coaching note</button>'
       + '<div class="coachpop" id="coachpop"><b>Coaching note</b><p>' + esc(data.coach) + '</p></div></div>'
       + '<span class="streak">' + esc(data.streak) + '</span>'
       + '<button class="vb" data-action="show-money">Show $</button></section>'
@@ -741,7 +746,7 @@
         var doneN = steps.filter(function (s) { return s && s.done; }).length;
         var stp = '';
         if (wantOpen) {
-          stp = '<div class="stp" style="grid-column:1/-1"><h6>&#10022; Steps for this move <em>' + doneN + ' of ' + steps.length + ' done</em></h6>'
+          stp = '<div class="stp" style="grid-column:1/-1"><h6>Steps for this move <em>' + doneN + ' of ' + steps.length + ' done</em></h6>'
             + steps.map(function (s, si) {
               return '<div class="s' + (s.done ? ' d' : '') + '" data-action="step-toggle" data-id="' + esc(mid) + '" data-i="' + si + '"><i>' + (s.done ? '&#10003;' : '') + '</i><span>' + esc(s.text || '') + '</span>'
                 + (s.when ? '<small>' + esc(s.when) + '</small>' : (s.act ? '<a data-action="step-act" data-id="' + esc(mid) + '" data-i="' + si + '" data-act="' + esc(s.act) + '">' + esc(s.act) + '</a>' : '')) + '</div>';
@@ -788,7 +793,7 @@
     var src = esc(n.source || 'sticky');
     var ttl = esc(n.title || '');
     var pin = n.pin
-      ? '<span class="pin" data-action="note-pin" data-id="' + id + '" data-source="' + src + '" data-on="1">&#128204;</span><span class="nx x" data-action="note-archive" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '">&times;</span>'
+      ? '<span class="pin" data-action="note-pin" data-id="' + id + '" data-source="' + src + '" data-on="1"></span><span class="nx x" data-action="note-archive" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '">&times;</span>'
       : '<span class="nx x" style="margin-left:auto" data-action="note-archive" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '">&times;</span>';
     var title = n.title ? '<h4>' + esc(n.title) + '</h4>' : '';
     var body = n.body ? '<p>' + esc(n.body) + '</p>' : '';
@@ -796,13 +801,14 @@
       return '<div class="ck' + (c.done ? ' done' : '') + '"><i>' + (c.done ? '&#10003;' : '') + '</i>' + esc(c.text) + '</div>';
     }).join('');
     var metaBits = (n.links || []).map(function (l) {
-      return '<span class="mc link">&#128279; ' + esc(l) + '</span>';
+      var lab = /^Link\s/i.test(String(l || '')) ? String(l) : ('Link ' + l);
+      return '<span class="mc link">' + esc(lab) + '</span>';
     });
     if (n.reminder) metaBits.push('<span class="mc rem">&#9200; ' + esc(n.reminder) + '</span>');
     var meta = metaBits.length ? '<div class="meta">' + metaBits.join('') + '</div>' : '';
     return '<div class="note ' + n.color + '" data-action="note-open" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '" data-body="' + esc(n.body || '') + '" data-type="' + esc(n.typeCls || '') + '" data-color="' + esc(n.color || 'y') + '" data-pin="' + (n.pin ? '1' : '0') + '"><div class="nh"><span class="' + ty + '">' + esc(n.type) + '</span>' + pin + '</div>'
       + title + body + checks + meta
-      + '<div class="na"><span class="conv cvt" data-action="note-task" data-id="' + id + '" data-title="' + ttl + '">&#10022; ' + esc(n.convert) + '</span><span class="sp"></span><span class="ic" data-action="note-open" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '" data-body="' + esc(n.body || '') + '" data-type="' + esc(n.typeCls || '') + '" data-color="' + esc(n.color || 'y') + '">&#9998;</span><span class="ic" data-action="note-menu" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '" data-on="' + (n.pin ? '1' : '0') + '">&#8943;</span></div></div>';
+      + '<div class="na"><span class="conv cvt" data-action="note-task" data-id="' + id + '" data-title="' + ttl + '">' + esc(n.convert) + '</span><span class="sp"></span><span class="ic" data-action="note-open" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '" data-body="' + esc(n.body || '') + '" data-type="' + esc(n.typeCls || '') + '" data-color="' + esc(n.color || 'y') + '">Edit</span><span class="ic" data-action="note-menu" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '" data-on="' + (n.pin ? '1' : '0') + '">&#8943;</span></div></div>';
   }
 
   function paintNotesLive() {
@@ -814,13 +820,13 @@
       '<div class="bar"><h1>Notes</h1><span class="sub">Capture fast, sort later &mdash; every note can become a task, content or a Space</span>'
       + '<div class="r"><button class="btn" data-action="notes-tidy">Tidy up</button><button class="btn" data-action="notes-full">&#8599; Full screen</button><button class="btn pri" data-action="note-new">+ New note</button></div></div>'
       + '<div class="tools"><input class="search" data-action="notes-search" placeholder="Search notes, people, Spaces">'
-      + '<button class="chip on" data-action="notes-filter" data-filter="all">All <i>' + esc(c.all) + '</i></button><button class="chip" data-action="notes-filter" data-filter="pinned">&#9733; Pinned <i>' + esc(c.pinned) + '</i></button>'
+      + '<button class="chip on" data-action="notes-filter" data-filter="all">All <i>' + esc(c.all) + '</i></button><button class="chip" data-action="notes-filter" data-filter="pinned">Pinned <i>' + esc(c.pinned) + '</i></button>'
       + '<button class="chip" data-action="notes-filter" data-filter="todo">To-do <i>' + esc(c.todo) + '</i></button><button class="chip" data-action="notes-filter" data-filter="idea">Idea <i>' + esc(c.idea) + '</i></button>'
       + '<button class="chip" data-action="notes-filter" data-filter="person">Person <i>' + esc(c.person) + '</i></button><button class="chip" data-action="notes-filter" data-filter="dec">Decision <i>' + esc(c.decision) + '</i></button>'
       + '<button class="chip" data-action="notes-filter" data-filter="archive">Archive</button>'
       + '<div class="cols" title="Filter by colour"><span class="cdot y" data-action="notes-color" data-color="y" style="background:#fff6c9"></span><span class="cdot" data-action="notes-color" data-color="p" style="background:#ffe1ea"></span><span class="cdot" data-action="notes-color" data-color="g" style="background:#ddf5e6"></span><span class="cdot" data-action="notes-color" data-color="b" style="background:#e1ecff"></span><span class="cdot" data-action="notes-color" data-color="o" style="background:#ffe6cf"></span><span class="cdot" data-action="notes-color" data-color="v" style="background:#ece4ff"></span></div>'
       + '<div class="seg"><span class="on" data-action="notes-view" data-view="board">Board</span><span data-action="notes-view" data-view="canvas">Canvas</span></div></div>'
-      + '<div class="sec">&#9733; Pinned</div><div class="board" style="margin-bottom:6px">'
+      + '<div class="sec">Pinned</div><div class="board" style="margin-bottom:6px">'
       + (data.pinned || []).map(noteCard).join('') + '<div class="newcard" data-action="note-new">+ Pin a note here</div></div>'
       + '<div class="sec">All notes</div><div class="board">'
       + (data.notes || []).map(noteCard).join('') + '</div>'
@@ -847,11 +853,11 @@
     return '<div class="nscrim" id="nscrim"' + hid + ' data-action="note-close"></div>'
       + '<div class="nbig ' + color + '" id="ovNote"' + hid + ' data-action="note-keep" data-id="' + esc(src.id || '') + '" data-source="' + esc(src.source || 'sticky') + '" data-color="' + esc(color) + '" data-pin="' + pinOn + '">'
       + '<div class="nt"><span class="ty" id="ok">' + esc(src.type || 'Note') + '</span><span class="cols">' + dots + '</span>'
-      + '<div class="ntools"><span title="Pin" id="ovPin" data-action="note-pin" data-id="' + esc(src.id || '') + '" data-source="' + esc(src.source || 'sticky') + '" data-on="' + pinOn + '">&#9733; Pin</span><span title="More" data-action="note-menu" data-id="' + esc(src.id || '') + '" data-source="' + esc(src.source || 'sticky') + '" data-title="' + esc(title) + '" data-on="' + pinOn + '">&middot;&middot;&middot;</span><span title="Close (Esc)" data-action="note-close">&times;</span></div></div>'
+      + '<div class="ntools"><span title="Pin" id="ovPin" data-action="note-pin" data-id="' + esc(src.id || '') + '" data-source="' + esc(src.source || 'sticky') + '" data-on="' + pinOn + '">Pin</span><span title="More" data-action="note-menu" data-id="' + esc(src.id || '') + '" data-source="' + esc(src.source || 'sticky') + '" data-title="' + esc(title) + '" data-on="' + pinOn + '">&middot;&middot;&middot;</span><span title="Close (Esc)" data-action="note-close">&times;</span></div></div>'
       + '<h2 id="ot" contenteditable="true" data-action="note-edit" data-id="' + esc(src.id || '') + '" data-source="' + esc(src.source || 'sticky') + '">' + esc(title) + '</h2>'
       + '<div class="bdy" id="ob" contenteditable="true" data-action="note-edit" data-id="' + esc(src.id || '') + '" data-source="' + esc(src.source || 'sticky') + '">' + esc(body).replace(/\n/g, '<br>') + '</div>'
       + '<div class="nf"><span class="sv" id="ovSaved"><i></i>Saved &middot; just now</span>' + (edited ? '<span style="font-size:12px;color:#7a6400">' + esc(edited) + '</span>' : '')
-      + '<div class="r"><button class="nb" data-action="note-space" data-id="' + esc(src.id || '') + '" data-title="' + esc(title) + '">Move to a Space</button><button class="nb pri" id="ovTask" data-action="note-task" data-id="' + esc(src.id || '') + '" data-title="' + esc(title) + '">&#10022; Convert to task</button></div></div></div>';
+      + '<div class="r"><button class="nb" data-action="note-space" data-id="' + esc(src.id || '') + '" data-title="' + esc(title) + '">Move to a Space</button><button class="nb pri" id="ovTask" data-action="note-task" data-id="' + esc(src.id || '') + '" data-title="' + esc(title) + '">Convert to task</button></div></div></div>';
   }
 
   function gated(fn) {
@@ -899,7 +905,7 @@
   window.__port = {
     fixtureOn: fixtureOn, wrapOf: wrapOf, whenCss: whenCss, markReady: markReady,
     esc: esc, asList: asList, liveLog: liveLog, initials: initials, ageLabel: ageLabel,
-    HOSTS: HOSTS, TOKEN: TOKEN, finishPaint: finishPaint
+    HOSTS: HOSTS, TOKEN: TOKEN, finishPaint: finishPaint, applyPageCss: applyPageCss, cssText: cssText
   };
   whenCss(function () {
     try {

@@ -589,10 +589,141 @@
     markReady('pipeDesk');
   }
 
+  function spaceOpenWanted() {
+    var S = window.STATE || {};
+    try {
+      var q = new URLSearchParams(String(location.search || ''));
+      if (q.get('space') === '1' || q.get('open') === '1') return true;
+    } catch (e) {}
+    return !!(S.pkg && S.pkg.id);
+  }
+  function spaceOpenData() {
+    var S = window.STATE || {};
+    if (fixtureOn()) {
+      var open = (F().spaces && F().spaces.open) || {};
+      if (S.pkg && S.pkg.id && String(S.pkg.id) !== String(open.id) && S.pkg.name && S.pkg.name !== open.name) {
+        return liveSpaceOpenFromPkg(S.pkg);
+      }
+      return open;
+    }
+    return liveSpaceOpenFromPkg(S.pkg || {});
+  }
+  function liveSpaceOpenFromPkg(p) {
+    p = p || {};
+    var people = asList(p.recipients || p.people);
+    var docs = asList(p.docs || p.items).filter(function (d) { return d && d.kind !== 'link' && d.kind !== 'note'; });
+    var links = asList(p.docs || p.items).filter(function (d) { return d && d.kind === 'link'; });
+    var readyN = 0;
+    if (people.length) readyN += 1;
+    if (String(p.notes || p.description || '').trim()) readyN += 1;
+    if (docs.length) readyN += 1;
+    if (links.length) readyN += 1;
+    if (/ready|sent|send/i.test(String(p.stage || p.status || ''))) readyN += 1;
+    return {
+      id: p.id || 'space',
+      name: p.name || 'Space',
+      group: p.group || p.category || 'General',
+      ini: initials(p.name || 'Space'),
+      who: p.notes || p.description || p.intel || '',
+      tags: [[p.group ? 'vc' : '', p.group || p.category || 'Space']],
+      ready: readyN + '/5',
+      readyDash: String(Math.round((readyN / 5) * 251.3) + ' 251.3'),
+      steps: [
+        [people.length ? 'd' : '', 'Person'],
+        [String(p.notes || '').trim() ? 'd' : '', 'Notes'],
+        [docs.length ? 'd' : '', 'Docs attached'],
+        [links.length ? 'd' : '', 'Link added'],
+        [/ready|sent|send/i.test(String(p.stage || '')) ? 'd' : '', 'Intro written']
+      ],
+      angle: esc(p.notes || p.description || 'Add the angle for this send.'),
+      hooks: [],
+      to: people[0] ? (people[0].name || people[0].email || '') : (p.name || ''),
+      subject: p.subject || '',
+      intro: p.intro || '',
+      files: docs.map(function (d) {
+        return { sug: false, bg: '#e1ecff', kind: String(d.type || d.kind || 'DOC').toUpperCase().slice(0, 3), color: 'var(--blue)', name: d.name || 'File', sub: '', inner: 'pg' };
+      }),
+      link: links[0] ? { host: hostOf(links[0].url || links[0].name || ''), label: links[0].name || links[0].url || '' } : null,
+      people: people.map(function (r) { return { ini: initials(r.name || r.email || 'P'), name: r.name || r.email || 'Person', meta: r.email || r.company || '', role: r.role || 'Lead' }; }),
+      facts: [[p.lastContact || '\u2014', 'last contact'], [String(p.emails || 0), 'emails'], [p.stage || p.status || '\u2014', 'pipeline stage']],
+      todos: [],
+      notes: p.notes || p.description || '',
+      saved: 'Saved',
+      history: []
+    };
+  }
+  function paintSpaceOpen(wrap) {
+    var S = window.STATE || {};
+    if (!S.pkg || !S.pkg.id) {
+      var open = (F().spaces && F().spaces.open) || {};
+      S.pkg = { id: open.id || 'neil', name: open.name || 'Neil Mitchell', notes: open.notes || '', docs: [], recipients: [] };
+    }
+    var d = spaceOpenData();
+    var files = asList(d.files).map(function (f) {
+      var inner = f.inner === 'sl'
+        ? '<div class="sl">' + esc(f.sl || f.name) + '</div>'
+        : '<div class="pg"><i></i><i></i><i></i><i></i></div>';
+      return '<div class="ft' + (f.sug ? ' sug' : '') + '" data-action="space-docs" data-id="' + esc(d.id) + '"><div class="th" style="background:' + esc(f.bg) + '">' + inner + '</div><span class="ty" style="background:' + esc(f.color) + '">' + esc(f.kind) + '</span>' + (f.sug ? '<span class="add">+ Add</span>' : '') + '<div class="nm">' + esc(f.name) + (f.sub ? '<small>' + esc(f.sub) + '</small>' : '') + '</div></div>';
+    }).join('');
+    var people = asList(d.people).map(function (p) {
+      return '<div class="pp"><span class="av" style="background:linear-gradient(140deg,#ffb86b,#e0364f)">' + esc(p.ini) + '</span><div><b>' + esc(p.name) + '</b><span>' + esc(p.meta) + '</span></div><span class="role">' + esc(p.role || 'Lead') + '</span></div>';
+    }).join('');
+    var todos = asList(d.todos).map(function (t) {
+      return '<div class="td' + (t.d ? ' d' : '') + '" data-action="space-todo-toggle"><i>' + (t.d ? '&#10003;' : '') + '</i><span>' + esc(t.t) + '</span>' + (t.em ? '<em>' + esc(t.em) + '</em>' : '') + '</div>';
+    }).join('');
+    var hist = asList(d.history).map(function (h) {
+      return '<div class="ev"><span class="ic ' + esc(h.ic) + '">' + (h.ic === 'n' ? 'Edit' : '&#9650;') + '</span><span>' + esc(h.t) + '</span><small>' + esc(h.when) + '</small></div>';
+    }).join('');
+    var facts = asList(d.facts).map(function (f) {
+      return '<div><b>' + esc(f[0]) + '</b><span>' + esc(f[1]) + '</span></div>';
+    }).join('');
+    var doneN = asList(d.todos).filter(function (t) { return t.d; }).length;
+    wrap.innerHTML =
+      '<div class="crumbs space-detail" data-id="' + esc(d.id) + '"><a data-action="space-back">&larr; All spaces</a><span>/</span><span>' + esc(d.group) + '</span><span>/</span><span style="color:#fff">' + esc(d.name) + '</span>'
+      + '<div class="r"><button class="ghost" data-action="space-prev">&lsaquo; Prev</button><button class="ghost" data-action="space-next">Next &rsaquo;</button><button class="ghost" data-action="space-menu" data-id="' + esc(d.id) + '">&middot;&middot;&middot;</button></div></div>'
+      + '<section class="hero"><div class="bav">' + esc(d.ini) + '</div>'
+      + '<div style="position:relative;z-index:1;min-width:0"><div class="tags">' + asList(d.tags).map(function (t) {
+        return '<span' + (t[0] === 'vc' ? ' class="vc"' : '') + '>' + esc(t[1]) + '</span>';
+      }).join('') + '</div>'
+      + '<h1>' + esc(d.name) + '</h1><div class="who">' + esc(d.who) + '</div>'
+      + '<div class="acts"><button class="hb pri" data-action="space-send" data-id="' + esc(d.id) + '"><i></i> Send bundle</button><button class="hb" data-action="space-email" data-id="' + esc(d.id) + '">Email ' + esc(String(d.name || '').split(' ')[0]) + '</button><button class="hb" data-action="space-book" data-id="' + esc(d.id) + '"> Book 20 min</button><button class="hb" data-action="space-drive" data-id="' + esc(d.id) + '">Move to Drive</button></div></div>'
+      + '<div class="ready"><div class="rring"><svg viewBox="0 0 96 96" width="96" height="96"><circle cx="48" cy="48" r="40" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9"/><circle id="rg" cx="48" cy="48" r="40" fill="none" stroke="#2fe08b" stroke-width="9" stroke-linecap="round" stroke-dasharray="' + esc(d.readyDash || '100.5 251.3') + '" transform="rotate(-90 48 48)"/></svg><b id="rn">' + esc(d.ready) + '</b></div>'
+      + '<div class="lbl">ready to send</div><div class="steps" id="steps">' + asList(d.steps).map(function (s) {
+        return '<span class="' + esc(s[0]) + '"><i>' + (s[0] === 'd' ? '&#10003;' : '') + '</i>' + esc(s[1]) + '</span>';
+      }).join('') + '</div></div></section>'
+      + '<div class="cols"><div>'
+      + '<section class="card"><div class="ch"><h3>The angle</h3><span class="ai">4orm Intelligence</span><span class="lnk" data-action="space-rewrite">Rewrite</span></div>'
+      + '<div class="angle" contenteditable="true" data-action="space-angle">' + (d.angle || '') + '</div>'
+      + '<div class="hooks">' + asList(d.hooks).map(function (h) { return '<span data-action="space-hook">' + esc(h) + '</span>'; }).join('') + '</div></section>'
+      + '<section class="card"><div class="ch"><h3>What ' + esc(String(d.name || '').split(' ')[0]) + ' gets</h3><span class="s">preview of the bundle</span><span class="lnk" data-action="mail-compose">Open full composer</span></div>'
+      + '<div class="mail"><div class="row"><label>To</label><b>' + esc(d.to) + '</b></div><div class="row"><label>Subject</label><b contenteditable="true" data-action="space-subject">' + esc(d.subject) + '</b></div>'
+      + '<div class="bodyt" contenteditable="true" id="intro" data-action="space-intro">' + esc(d.intro) + '</div></div>'
+      + '<div class="files" id="files">' + files + '</div>'
+      + (d.link ? '<div class="lk"><span class="fv" style="background:#0b1430">4</span><div><b>' + esc(d.link.host) + '</b><span>' + esc(d.link.label) + '</span></div><em class="lkadd" style="color:var(--blue);cursor:pointer" data-action="space-link" data-id="' + esc(d.id) + '">+ Add link</em></div>' : '')
+      + '<div class="drop">Drag files here from <b>Documents</b> or <b>Drive</b>, or paste a link</div>'
+      + '<div class="sendbar"><span class="via">Sends through <b>GoHighLevel</b> &middot; test copy to chad@4ormfinance.com first</span><div class="r"><button class="btn" data-action="space-send-test" data-id="' + esc(d.id) + '">Send me a test</button><button class="btn pri" data-action="space-send" data-id="' + esc(d.id) + '">Send to ' + esc(String(d.name || '').split(' ')[0]) + '</button></div></div></section></div>'
+      + '<div><section class="card"><div class="ch"><h3>People</h3><span class="s">who this is for</span></div>' + people
+      + '<div class="pp addp" data-action="space-people" data-id="' + esc(d.id) + '"><i>+</i>Add people from Contacts or Pipeline</div>'
+      + '<div class="facts">' + facts + '</div></section>'
+      + '<section class="card"><div class="ch"><h3>Next steps</h3><span class="s" id="tdc">' + doneN + ' of ' + asList(d.todos).length + ' done</span></div><div class="todo" id="todo">' + todos + '</div></section>'
+      + '<section class="card"><div class="ch"><h3>Notes</h3><span class="s">saves as you type</span></div>'
+      + '<div class="sticky" contenteditable="true" id="note" data-action="space-notes" data-id="' + esc(d.id) + '">' + esc(d.notes) + '<span class="saved" contenteditable="false">' + esc(d.saved || 'Saved') + '</span></div></section>'
+      + '<section class="card"><div class="ch"><h3>History</h3><span class="s">emails, meetings, files</span></div>'
+      + '<div class="firsttouch">No contact yet. This bundle will be the first touch.</div>'
+      + '<div class="tl">' + hist + '</div></section></div></div>';
+    if (P().finishPaint) P().finishPaint(wrap);
+    markReady('spacesDesk');
+  }
   function paintSpacesLive() {
     var wrap = wrapOf('spacesDesk');
     if (!wrap) return;
     var S = window.STATE || {};
+    if (spaceOpenWanted()) {
+      if (P().applyPageCss) P().applyPageCss(wrap, 'spaceOpen');
+      paintSpaceOpen(wrap);
+      return;
+    }
+    if (P().applyPageCss) P().applyPageCss(wrap, 'work');
     var view = S.spaceView || 'groups';
     var data = spacesData();
     var filterLabel = (!S.spaceFilter || S.spaceFilter === 'all') ? 'all' : S.spaceFilter;
@@ -608,28 +739,6 @@
       var id = esc(s[4] || ('fx-' + String(s[0] || 'space').replace(/\s+/g, '-')));
       var naAct = s[3] === 'ppl' ? 'space-people' : s[3] === 'send' ? 'space-send' : 'space-docs';
       return '<div class="sp" data-action="space-open" data-id="' + id + '"><div class="top2"><span class="cat ' + g[1] + '">' + esc(g[0]) + '</span><span class="ms" title="More" data-action="space-menu" data-id="' + id + '">&middot;&middot;&middot;</span></div><h4>' + esc(s[0]) + '</h4><p>' + esc(s[1]) + '</p><div class="rd">' + ring(s[2]) + '<span class="nxa ' + na[0] + '" data-action="' + naAct + '" data-id="' + id + '">' + na[1] + '</span><span class="cnt wrap">' + (Number(s[5]) || 0) + ' files &middot; ' + (Number(s[6]) || 0) + ' links</span></div><div class="ft"><button class="op" data-action="space-open" data-id="' + id + '"' + (s[4] ? ' data-space="' + id + '"' : '') + '>Open</button><button class="dr" data-action="space-drive" data-id="' + id + '">Move to Drive</button></div></div>';
-    }
-    if (S.pkg && S.pkg.id) {
-      var p = S.pkg;
-      var people = p.recipients || p.people || [];
-      var docs = (p.docs || p.items || []).filter(function (d) { return d.kind !== 'link' && d.kind !== 'note'; });
-      var links = (p.docs || p.items || []).filter(function (d) { return d.kind === 'link'; });
-      var notes = (p.docs || p.items || []).filter(function (d) { return d.kind === 'note'; });
-      if (p.notes && !notes.length) notes = [{ body: p.notes, name: 'Notes' }];
-      wrap.innerHTML = bar.replace('data-action="spaces-new">+ New space', 'data-action="space-back">Back to Spaces')
-        + '<section class="card space-detail" data-id="' + esc(p.id) + '"><div class="ch"><span class="lnk" data-action="space-back">&#8592; All spaces</span><h3>' + esc(p.name || 'Space') + '</h3></div>'
-        + '<div class="sd-grid">'
-        + '<div><h4>People</h4>' + (people.length ? people.map(function (r) { return '<div class="pick-row">' + esc(r.name || r.email || 'Person') + '</div>'; }).join('') : '<div class="kick">No people yet.</div>')
-        + '<button class="btn" data-action="space-people" data-id="' + esc(p.id) + '">Add people</button></div>'
-        + '<div><h4>Files</h4>' + (docs.length ? docs.map(function (d) { return '<div class="pick-row">' + esc(d.name || 'File') + '</div>'; }).join('') : '<div class="kick">No files yet.</div>')
-        + '<button class="btn" data-action="space-docs" data-id="' + esc(p.id) + '">Add docs</button></div>'
-        + '<div><h4>Links</h4>' + (links.length ? links.map(function (d) { return '<div class="pick-row">' + esc(d.url || d.name || 'Link') + '</div>'; }).join('') : '<div class="kick">No links yet.</div>')
-        + '<button class="btn" data-action="space-link" data-id="' + esc(p.id) + '">Add a link</button></div>'
-        + '<div><h4>Notes</h4><textarea data-action="space-notes" data-id="' + esc(p.id) + '" rows="6">' + esc(p.notes || p.description || '') + '</textarea></div>'
-        + '</div><div class="plan-acts" style="padding:0 16px 16px"><button class="pri" data-action="space-send" data-id="' + esc(p.id) + '">Send</button><button data-action="space-drive" data-id="' + esc(p.id) + '">Move to Drive</button></div></section>' + menu;
-      if (P().finishPaint) P().finishPaint(wrap);
-      markReady('spacesDesk');
-      return;
     }
     var groups = data.groups || [];
     if (S.spaceFilter && S.spaceFilter !== 'all') {
@@ -669,7 +778,7 @@
       var href = absUrl(f[5] || '');
       var drive = isDriveUrl(f[5] || '') || f[7];
       var id = esc(f[6] || '');
-      return '<div class="fl" draggable="true" data-action="doc-drag" data-kind="doc" data-id="' + id + '" data-url="' + esc(href) + '" data-web="' + esc(href) + '" data-drive="' + esc(f[7] || '') + '" data-name="' + esc(f[1] || '') + '"><div class="th" style="background:' + f[4] + '">' + inner + '<span class="ty ' + L[f[0]][0] + '">' + L[f[0]][1] + '</span><span class="sync s-' + f[3] + '"></span></div><span class="sel" data-action="doc-pick" data-id="' + id + '"></span><div class="nm">' + esc(f[1]) + '</div><div class="mt">' + f[2] + '</div></div>';
+      return '<div class="fl" draggable="true" data-action="doc-open" data-kind="doc" data-id="' + id + '" data-url="' + esc(href) + '" data-web="' + esc(href) + '" data-drive="' + esc(f[7] || '') + '" data-name="' + esc(f[1] || '') + '" data-type="' + esc(f[0] || '') + '"><div class="th" style="background:' + f[4] + '">' + inner + '<span class="ty ' + L[f[0]][0] + '">' + L[f[0]][1] + '</span><span class="sync s-' + f[3] + '"></span></div><span class="sel" data-action="doc-pick" data-id="' + id + '"></span><div class="nm">' + esc(f[1]) + '</div><div class="mt">' + f[2] + '</div></div>';
     }).join('');
     wrap.innerHTML =
       '<div class="bar"><h1>Documents</h1><span class="sub">Your staging library &mdash; preview, select, and drop straight into a Space</span>'
@@ -677,11 +786,11 @@
       + '<div class="lay"><section class="card"><div class="lh">Folders <span class="lnk" data-action="docs-new-folder">+ New</span></div>'
       + (data.folders || []).map(function (f) {
         var on = S.docFolder ? String(S.docFolder) === String(f[0]) : !!f[2];
-        return '<div class="fd' + (on ? ' on' : '') + '" data-action="docs-folder" data-folder="' + esc(f[0]) + '"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg>' + esc(f[0]) + '<span class="n">' + f[1] + '</span></div>';
+        return '<div class="fd' + (on ? ' on' : '') + '" data-action="docs-folder" data-folder="' + esc(f[0]) + '">' + esc(f[0]) + '<span class="n">' + f[1] + '</span></div>';
       }).join('')
       + '<div class="sepl"></div><div class="lh">Sets <span class="lnk" data-action="docs-new-folder">+ New</span></div><div class="sets">'
       + (data.sets || []).map(function (s) {
-        return '<div class="fd" data-action="coming-soon" data-label="Open set"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg>' + esc(s[0]) + '<span class="n">' + s[1] + '</span></div>';
+        return '<div class="fd" data-action="coming-soon" data-label="Open set">' + esc(s[0]) + '<span class="n">' + s[1] + '</span></div>';
       }).join('')
       + '</div><div class="sepl"></div><div class="lh">Type</div>'
       + '<div class="types">' + TYPE_CHIPS.map(function (c) {
@@ -700,6 +809,48 @@
         return '<div class="ra"><span class="ty ' + r[0] + '">' + r[1] + '</span><span>' + esc(r[2]) + '</span></div>';
       }).join('')
       + '<div class="legend"><span><i style="background:var(--green)"></i>synced to Drive</span><span><i style="background:var(--amber)"></i>only here</span></div></section></div></div>';
+    var wantDoc = !!(S.docOpen);
+    try {
+      var qd = new URLSearchParams(String(location.search || ''));
+      if (qd.get('doc') === '1') wantDoc = true;
+    } catch (e) {}
+    if (wantDoc) {
+      var dv = fixtureOn() ? {
+        type: 'PPT', name: 'Business Overview | 4orm | 2026.pptx', sub: 'Welcome to 4orm \u00b7 14 slides',
+        folder: 'Welcome to 4orm', kind: 'PowerPoint', modified: 'Oct 16', owner: 'Chad', drive: 'Synced',
+        spaces: ['Neil Mitchell', 'Bruce Fair'], note: 'Note: v3 - numbers sequence fixed at the top of each slide.',
+        kicker: '4ORM FINANCE \u00b7 2026', title: 'Business Overview', body: 'Suitability evidence for every financial advice conversation.',
+        page: 1, pages: 14, thumbs: 6
+      } : {
+        type: String((S.docOpen && (S.docOpen.type || S.docOpen.kind)) || 'DOC').toUpperCase(),
+        name: (S.docOpen && S.docOpen.name) || 'Document',
+        sub: (S.docOpen && S.docOpen.sub) || '',
+        folder: (S.docOpen && S.docOpen.folder) || '',
+        kind: (S.docOpen && S.docOpen.kind) || 'File',
+        modified: (S.docOpen && S.docOpen.modified) || '',
+        owner: (S.docOpen && S.docOpen.owner) || '',
+        drive: (S.docOpen && S.docOpen.drive) ? 'Synced' : 'Only here',
+        spaces: asList(S.docOpen && S.docOpen.spaces),
+        note: (S.docOpen && S.docOpen.note) || '',
+        kicker: '', title: (S.docOpen && S.docOpen.name) || 'Document', body: '',
+        page: 1, pages: 1, thumbs: 1
+      };
+      var thumbs = '';
+      var i;
+      for (i = 1; i <= (Number(dv.thumbs) || 1); i++) thumbs += '<div class="' + (i === 1 ? 'on' : '') + '" data-action="doc-thumb" data-n="' + i + '"><span>' + i + '</span></div>';
+      wrap.innerHTML +=
+        '<div class="vscrim" data-action="doc-close"></div>'
+        + '<div class="vwin" id="docView">'
+        + '<div class="vtop"><span class="vty">' + esc(dv.type) + '</span><b>' + esc(dv.name) + '</b><small>' + esc(dv.sub) + '</small>'
+        + '<div class="r"><button class="vb" data-action="doc-prev">&lsaquo; Prev file</button><button class="vb" data-action="doc-next">Next file &rsaquo;</button><button class="vb" data-action="doc-download">Download</button><button class="vb" data-action="doc-drive-open">Open in Drive &#8599;</button><button class="vb pri" data-action="docs-build-space">+ Add to a Space</button><button class="vb" data-action="doc-close" title="Close (Esc)">&times;</button></div></div>'
+        + '<div class="vbody"><div class="vthumbs">' + thumbs + '</div>'
+        + '<div class="vstage"><div class="slide"><small>' + esc(dv.kicker) + '</small><h1>' + esc(dv.title) + '</h1><p>' + esc(dv.body) + '</p></div>'
+        + '<div class="vnav"><span data-action="doc-slide-prev">&lsaquo;</span>' + esc(dv.page) + ' / ' + esc(dv.pages) + '<span data-action="doc-slide-next">&rsaquo;</span><span data-action="doc-zoom-out">&#8722;</span><span data-action="doc-zoom-in">+</span><span data-action="doc-fit">Fit</span></div></div>'
+        + '<div class="vinfo"><h4>Details</h4>'
+        + '<div class="kv"><span>Folder</span><b>' + esc(dv.folder) + '</b></div><div class="kv"><span>Type</span><b>' + esc(dv.kind) + '</b></div><div class="kv"><span>Modified</span><b>' + esc(dv.modified) + '</b></div><div class="kv"><span>Owner</span><b>' + esc(dv.owner) + '</b></div><div class="kv"><span>Drive</span><b style="color:#2fe08b">' + esc(dv.drive) + '</b></div>'
+        + '<div class="sp"><h4>In spaces</h4>' + asList(dv.spaces).map(function (n) { return '<span class="chip2">' + esc(n) + '</span>'; }).join('') + '<button class="vb add" data-action="docs-build-space">+ Add to another Space</button></div>'
+        + '<div class="note">' + esc(dv.note) + '</div></div></div></div>';
+    }
     if (P().finishPaint) P().finishPaint(wrap);
     else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
     markReady('docsDesk');
@@ -738,7 +889,7 @@
         var ico = fixtureOn() ? '' : '<img class="ico" alt="" src="/api/favicon?d=' + encodeURIComponent(hostName) + '" onerror="this.parentNode.classList.remove(\'has-ico\');this.remove()">';
         return '<a class="tile" data-action="link-open" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" data-id="' + id + '" data-url="' + esc(href) + '">' + (w[4] == 2 ? '<span class="dup">Duplicate</span>' : '')
           + '<div class="lg' + (ico ? ' has-ico' : '') + '" style="background:' + w[2] + '14">' + ico + '<i style="background:' + w[2] + '">' + letter + '</i></div>'
-          + '<div class="tm"><span title="Edit" data-action="link-edit" data-id="' + id + '" data-title="' + esc(w[0]) + '">&#9998;</span><span title="Move" data-action="link-move" data-id="' + id + '" data-title="' + esc(w[0]) + '" data-url="' + esc(href) + '">&#8644;</span><span title="Delete" data-action="link-archive" data-id="' + id + '" data-note="' + esc(w[3] || '') + '">&times;</span></div>'
+          + '<div class="tm"><span title="Edit" data-action="link-edit" data-id="' + id + '" data-title="' + esc(w[0]) + '">Edit</span><span title="Move" data-action="link-move" data-id="' + id + '" data-title="' + esc(w[0]) + '" data-url="' + esc(href) + '">Move</span><span title="Delete" data-action="link-archive" data-id="' + id + '" data-note="' + esc(w[3] || '') + '">&times;</span></div>'
           + '<div class="nb"><b>' + esc(w[0]) + '<em>&#8599;</em></b><div class="dm">' + esc(w[1]) + '</div><div class="nt' + (w[3] ? '' : ' empty') + '" data-action="link-note" data-id="' + id + '">' + (w[3] ? esc(w[3]) : 'Add a note') + '</div></div></a>';
       }).join('') + '</div>'
       + '<div class="hint">Site icons load from each website. Hover a tile to edit, move or delete it.</div></section></div>';
@@ -768,12 +919,12 @@
       + '<div class="fr sugg"><label>To</label><div class="val"><span class="pchip"><span class="av" style="background:#e0364f">' + esc(toIni) + '</span>' + esc(toName) + (toEmail ? ' <em>&middot; ' + esc(toEmail) + '</em>' : ' <em>&middot; VC</em>') + '</span><input data-action="mail-to" value="' + esc(toEmail || 'neil') + '"></div><span class="sm">Cc &nbsp; Bcc</span>'
       + '<div class="dd"><div class="o"><span class="av" style="background:#e0364f;width:28px;height:28px">NM</span><div><b>Neil Mitchell</b><span>neil@&hellip; &middot; VC Space &middot; last touch 12d ago</span></div><em>Cold</em></div><div class="o"><span class="av" style="background:#12a36a;width:28px;height:28px">NC</span><div><b>Neil (CLHIA)</b><span>Contacts &middot; Association</span></div><span></span></div></div></div>'
       + '<div class="fr subj"><label>Subject</label><div class="val"><input data-action="mail-subject" value="' + esc(subj) + '"></div><span></span></div>'
-      + '<div class="tbar"><span>B</span><span><i>I</i></span><span>&#8226;</span><span>1.</span><span class="sep"></span><span>&#128279;</span><span>&#128206;</span><span class="sep"></span><span title="Insert first name">{ }</span></div>'
+      + '<div class="tbar"><span>B</span><span><i>I</i></span><span>&#8226;</span><span>1.</span><span class="sep"></span><span>Link</span><span></span><span class="sep"></span><span title="Insert first name">{ }</span></div>'
       + '<div class="body" contenteditable="true" data-action="mail-body">' + body + '</div>'
       + '<div style="padding:0 18px 8px;font-size:12px;color:var(--ink3)">Grey text is a suggestion &mdash; press Tab to accept it.</div>'
       + '<div class="atts"><span class="att"><span class="ty" style="background:#e0364f">PDF</span>4orm VC and Design Partner Resources.pdf<span class="x2">&times;</span></span><span class="att"><span class="ty" style="background:#e2702b">PPT</span>Business Overview | 2026<span class="x2">&times;</span></span></div>'
       + '<div class="cfoot"><button class="send" data-action="mail-send">Send</button><button class="send2" data-action="coming-soon" data-label="Schedule send">Schedule &#9662;</button><span class="tog"><span class="sw"></span>Nudge in 3 days</span><span class="tog"><span class="sw"></span>Log to Pipeline</span></div></div>'
-      + '<div class="side2"><div class="box ai2"><h4>&#10022; 4orm Intelligence</h4><p>Joe cares about the evidence standard. Lead with CapIntel and Homewise, keep the tech light, ask for one specific time.</p>'
+      + '<div class="side2"><div class="box ai2"><h4>4orm Intelligence</h4><p>Joe cares about the evidence standard. Lead with CapIntel and Homewise, keep the tech light, ask for one specific time.</p>'
       + '<div class="tones"><span class="on">Warm</span><span>Direct</span><span>Shorter</span><span>More formal</span></div>'
       + '<div class="ask"><input data-action="intel-ask" placeholder="Tell me what to write&hellip;"><button data-action="coming-soon" data-label="Write with Intelligence">Write</button></div></div>'
       + '<div class="box"><h4>Joe Canavan</h4><div class="kv2"><span>Space</span><b>Venture Capital &rsaquo; Joe</b></div><div class="kv2"><span>Stage</span><b>Investors &rsaquo; Contact made</b></div><div class="kv2"><span>Last touch</span><b>12 days ago</b></div><div class="kv2"><span>Opened last email</span><b>Yes, twice</b></div></div>'
@@ -791,17 +942,201 @@
     } catch (e) {}
     return 'inbox';
   }
+  function peopleIni(n) {
+    return String(n || '?').split(' ').map(function (x) { return x[0] || ''; }).join('').slice(0, 2) || '?';
+  }
+  function peopleFileKind(t) {
+    return t === 'p' ? 'PPT' : t === 'D' ? 'DOC' : 'PDF';
+  }
+  function peopleFileCls(t) {
+    return t === 'D' ? 'd' : t === 'p' ? 'p' : '';
+  }
+  function liveEmailPeopleState() {
+    var S = window.STATE || {};
+    var stored = asList(S.emailBoxes);
+    if (!stored.length) {
+      try { stored = JSON.parse(localStorage.getItem('cr_email_boxes') || '[]'); } catch (e) { stored = []; }
+    }
+    if (stored.length) return { boxes: stored, loose: asList(S.emailLoose), looseMore: Number(S.emailLooseMore || 0) };
+    var messages = asList((S.mailBoard || {}).messages).length ? asList((S.mailBoard || {}).messages) : asList(S.mail);
+    var by = {};
+    messages.forEach(function (row) {
+      var name = senderName(row);
+      var email = String(row.email || '').toLowerCase();
+      var key = email || String(name || '').toLowerCase();
+      if (!key) return;
+      if (!by[key]) {
+        by[key] = {
+          id: key.replace(/[^a-z0-9]/g, '').slice(0, 16) || ('b' + Date.now()),
+          n: name, o: email || '', c: row.color || mailColor(Object.keys(by).length),
+          tags: [], in: 0, out: 0, files: [], more: 0, st: ['ok', 'Up to date'],
+          last: row.t || ageLabel(row.at || row.date) || '-', m: [], closed: false, addrs: email ? [email] : []
+        };
+      }
+      var dir = /out|sent|from you/i.test(String(row.dir || row.direction || '')) ? 'out' : 'in';
+      if (dir === 'out') by[key].out += 1; else by[key].in += 1;
+      by[key].m.push([dir, row.subject || row.sj || '(no subject)', row.snippet || row.preview || row.pv || '', row.unread || row.un ? 1 : 0]);
+      if (row.unread || row.un) by[key].st = ['rep', 'You owe a reply'];
+    });
+    return { boxes: Object.keys(by).map(function (k) { return by[k]; }), loose: [], looseMore: 0 };
+  }
+  function peopleData() {
+    if (fixtureOn()) {
+      var em = (F().email && F().email.people) || {};
+      return { boxes: asList(em.boxes), loose: asList(em.loose), looseMore: Number(em.looseMore || 0) };
+    }
+    return liveEmailPeopleState();
+  }
+  function sortPeopleBoxes(boxes, sort) {
+    var list = boxes.slice();
+    var ord = { rep: 0, wait: 1, cold: 2, ok: 3 };
+    function t(v) {
+      v = String(v || '-');
+      if (v === '-') return 1e9;
+      var n = parseFloat(v);
+      return n * (v.indexOf('m') >= 0 && v.indexOf('min') < 0 && !/mo/.test(v) ? 1 : /h/.test(v) ? 60 : 1440);
+    }
+    if (sort === 'last contact') list.sort(function (a, b) { return t(a.last) - t(b.last); });
+    else if (sort === 'owes a reply') list.sort(function (a, b) { return (ord[(a.st || [])[0]] || 9) - (ord[(b.st || [])[0]] || 9); });
+    else if (sort === 'most mail') list.sort(function (a, b) { return (b.in + b.out) - (a.in + a.out); });
+    else if (sort === 'A-Z') list.sort(function (a, b) { return String(a.n || '').localeCompare(String(b.n || '')); });
+    return list;
+  }
+  function paintEmailPeople(wrap) {
+    var S = window.STATE || {};
+    var data = peopleData();
+    var sort = S.mailPeopleSort || 'my order';
+    var tag = S.mailPeopleTag || '';
+    var q = String(S.mailPeopleQ || '');
+    var panel = S.mailPeoplePanel || '';
+    var drawer = !!S.mailPeopleDrawer;
+    var menuBox = S.mailPeopleMenu || '';
+    var sortOpen = !!S.mailSortOpen;
+    var boxMenuOpen = !!S.mailBoxMenuOpen;
+    var personId = S.mailPerson || '';
+    try {
+      var qp = new URLSearchParams(String(location.search || ''));
+      if (!personId && qp.get('person')) personId = qp.get('person');
+    } catch (e) {}
+    var ppTab = S.mailPpTab || 'all';
+    var boxes = sortPeopleBoxes(asList(data.boxes), sort);
+    var qn = q.toLowerCase().replace(/^#/, '');
+    function matchBox(b) {
+      var hay = (b.n + ' ' + b.o + ' ' + asList(b.tags).join(' ') + ' ' + asList(b.files).map(function (f) { return f[1] || f; }).join(' ')).toLowerCase();
+      return (!tag || asList(b.tags).indexOf(tag) >= 0) && (!qn || hay.indexOf(qn) >= 0);
+    }
+    var open = boxes.filter(function (b) { return !b.closed; });
+    var closed = boxes.filter(function (b) { return b.closed; });
+    var owe = boxes.filter(function (b) { return (b.st || [])[0] === 'rep'; }).length;
+    var wait = boxes.filter(function (b) { return (b.st || [])[0] === 'wait'; }).length;
+    var inWeek = boxes.reduce(function (a, b) { return a + (Number(b.in) || 0); }, 0);
+    var tagCounts = {};
+    boxes.forEach(function (b) { asList(b.tags).forEach(function (t) { tagCounts[t] = (tagCounts[t] || 0) + 1; }); });
+    var tagKeys = Object.keys(tagCounts).sort();
+    var dq = String(S.mailClosedQ || '').toLowerCase();
+    var closedShown = closed.filter(function (b) {
+      return !dq || (b.n + ' ' + b.o + ' ' + asList(b.tags).join(' ')).toLowerCase().indexOf(dq) >= 0;
+    });
+    var looseHtml = asList(data.loose).map(function (p) {
+      return '<div class="lm" draggable="true" data-action="mail-loose-drag" data-from="' + esc(p.n) + '"><span class="av" style="background:' + esc(p.c) + '">' + esc(peopleIni(p.n)) + '</span><div><b>' + esc(p.n) + '</b><span>' + esc(p.pv) + '</span></div></div>';
+    }).join('');
+    var gridHtml = open.map(function (b) {
+      var hide = matchBox(b) ? '' : ' hide';
+      var first = String(b.n || '').split(' ')[0];
+      var msgs = asList(b.m).map(function (row) {
+        var d = row[0], sj = row[1], pv = row[2], un = row[3];
+        return '<div class="mi" data-action="mail-box-open" data-id="' + esc(b.id) + '"><i class="' + (un ? '' : 'r') + '"></i><div style="min-width:0"><div class="sj">' + esc(sj) + '</div><div class="pv"><span class="dir ' + esc(d) + '">' + (d === 'out' ? 'You:' : esc(first) + ':') + '</span> ' + esc(pv) + '</div></div><em>' + (d === 'out' ? '&uarr;' : '&darr;') + '</em></div>';
+      }).join('');
+      var files = asList(b.files).map(function (f) {
+        return '<span data-action="mail-box-file" data-id="' + esc(b.id) + '" data-file="' + esc(f[1] || f) + '"><i class="' + peopleFileCls(f[0]) + '">' + peopleFileKind(f[0]) + '</i>' + esc(f[1] || f) + '</span>';
+      }).join('');
+      if (b.more) files += '<span class="more" data-action="mail-box-open" data-id="' + esc(b.id) + '">+ ' + esc(b.more) + ' more</span>';
+      if (!asList(b.files).length) files += '<span class="more">no files yet</span>';
+      var tags = asList(b.tags).map(function (t) {
+        return '<span data-action="mail-people-tag" data-tag="' + esc(t) + '">#' + esc(t) + '</span>';
+      }).join('');
+      return '<div class="bx' + hide + '" draggable="true" data-action="mail-box-drag" data-id="' + esc(b.id) + '">'
+        + '<div class="bh"><span class="grab" title="Drag to move">&#8942;&#8942;</span><span class="av" style="background:' + esc(b.c) + '">' + esc(peopleIni(b.n)) + '</span><div style="min-width:0"><b>' + esc(b.n) + '</b><span>' + esc(b.o) + '</span></div><span class="acts"><span class="m" data-action="mail-box-menu" data-id="' + esc(b.id) + '">&middot;&middot;&middot;</span><span class="x" data-action="mail-box-close" data-id="' + esc(b.id) + '" title="Close this box (it moves to the Closed list)">&times;</span></span></div>'
+        + '<div class="tags">' + tags + '<span class="add" data-action="mail-box-tag-add" data-id="' + esc(b.id) + '">+ tag</span></div>'
+        + '<div class="kp"><div><b>' + esc(b.in) + '</b><span>from them</span></div><div><b>' + esc(b.out) + '</b><span>from you</span></div><div><b>' + esc((asList(b.files).length + (Number(b.more) || 0))) + '</b><span>files</span></div><div class="' + ((b.st || [])[0] === 'rep' ? 'warn' : '') + '"><b>' + esc(b.last) + '</b><span>last</span></div></div>'
+        + '<div class="last">Latest</div>' + msgs
+        + '<div class="files">' + files + '</div>'
+        + '<div class="bf"><span class="st ' + esc((b.st || [])[0] || 'ok') + '">' + esc((b.st || [])[1] || '') + '</span><span class="open" data-action="mail-box-open" data-id="' + esc(b.id) + '">Open &rsaquo;</span></div></div>';
+    }).join('');
+    var tagBar = '<span class="lb">Tags</span>' + tagKeys.map(function (t) {
+      return '<span class="t' + (tag === t ? ' on' : '') + '" data-action="mail-people-tag" data-tag="' + esc(t) + '">#' + esc(t) + '<em>' + tagCounts[t] + '</em></span>';
+    }).join('') + (tag || q ? '<span class="clr" data-action="mail-people-clear">Clear</span>' : '');
+    var person = boxes.filter(function (b) { return String(b.id) === String(personId); })[0];
+    var ppHtml = '';
+    if (person) {
+      var first = String(person.n || '').split(' ')[0];
+      var body;
+      if (ppTab === 'files') {
+        body = asList(person.files).map(function (f) {
+          return '<div class="ppm in" data-action="mail-box-file" data-id="' + esc(person.id) + '" data-file="' + esc(f[1] || f) + '"><span class="ic"></span><div><div class="sj">' + esc(f[1] || f) + '</div><div class="pv">Opens in the in-site viewer</div></div><span class="t">' + peopleFileKind(f[0]) + '</span></div>';
+        }).join('') || '<div class="dempty">No files yet.</div>';
+      } else {
+        body = asList(person.m).filter(function (row) { return ppTab === 'all' || row[0] === ppTab; }).map(function (row) {
+          var d = row[0];
+          return '<div class="ppm ' + esc(d) + '" data-action="mail-pp-expand"><span class="ic">' + (d === 'out' ? '&uarr;' : '&darr;') + '</span><div style="min-width:0"><div class="w">' + (d === 'out' ? 'You sent' : esc(first) + ' sent') + '</div><div class="sj">' + esc(row[1]) + '</div><div class="pv">' + esc(row[2]) + '</div><div class="full">' + esc(row[2]) + ' (Full thread loads here from Gmail, with attachments and Reply.)</div></div><span class="t">' + esc(person.last) + '</span></div>';
+        }).join('') || '<div class="dempty">Nothing here.</div>';
+      }
+      ppHtml = '<div class="pph"><span class="av" style="background:' + esc(person.c) + '">' + esc(peopleIni(person.n)) + '</span><div style="min-width:0"><h2>' + esc(person.n) + '</h2><div class="sub">' + esc(person.o) + ' &middot; ' + asList(person.tags).map(function (t) { return '#' + esc(t); }).join(' ') + '</div></div><div class="acts"><button class="btn" data-action="mail-pp-go" data-go="pipeline" data-id="' + esc(person.id) + '">Pipeline</button><button class="btn" data-action="mail-pp-go" data-go="space" data-id="' + esc(person.id) + '">Space</button><span class="x" data-action="mail-pp-close">&times;</span></div></div>'
+        + '<div class="ppk"><div><b>' + esc(person.in) + '</b><span>from them</span></div><div><b>' + esc(person.out) + '</b><span>from you</span></div><div><b>' + esc(person.last) + '</b><span>last contact</span></div><div><b>' + esc(asList(person.files).length + (Number(person.more) || 0)) + '</b><span>files</span></div></div>'
+        + '<div class="pptabs"><span class="' + (ppTab === 'all' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="all">Everything</span><span class="' + (ppTab === 'in' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="in">From them</span><span class="' + (ppTab === 'out' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="out">From you</span><span class="' + (ppTab === 'files' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="files">Files</span></div>'
+        + '<div class="pptl" id="pptl">' + body + '</div>'
+        + '<div class="ppf"><button class="btn" data-action="mail-pp-go" data-go="compose" data-id="' + esc(person.id) + '">Email ' + esc(first) + '</button><button class="btn" data-action="mail-pp-go" data-go="book" data-id="' + esc(person.id) + '">Book 20 min</button><button class="btn pri" data-action="mail-pp-go" data-go="reply" data-id="' + esc(person.id) + '">Reply to latest</button></div>';
+    }
+    wrap.innerHTML =
+      '<div class="bar"><h1>Email</h1>'
+      + '<div class="seg"><span data-action="mail-view" data-view="inbox">Inbox</span><span class="on" data-action="mail-view" data-view="people">People</span>'
+      + '<span class="' + (panel === 'tags' ? 'on' : '') + '" data-action="mail-people-panel" data-panel="tags">Tags <em id="tagOn">' + (tag ? '#' + esc(tag) : '') + '</em></span>'
+      + '<span class="' + (panel === 'stats' ? 'on' : '') + '" data-action="mail-people-panel" data-panel="stats">Stats</span></div>'
+      + '<div class="r"><input class="search" data-action="mail-people-search" placeholder="Search names, companies, files or #tags" value="' + esc(q) + '">'
+      + '<button class="btn" data-action="mail-closed-toggle">Closed boxes <b id="closedN" class="pill">' + closed.length + '</b></button>'
+      + '<button class="btn" data-action="mail-sort-menu" id="sortBtn">Sort: <span id="sortLbl">' + esc(sort) + '</span> &#9662;</button>'
+      + '<button class="btn pri" data-action="mail-box-new">+ New box</button></div></div>'
+      + '<div class="panel' + (panel === 'tags' ? ' on' : '') + '" id="tagsPanel"><div class="ph"><b>Tags</b><span class="s">click a tag to filter the grid &middot; click again to clear</span><span class="x" data-action="mail-people-panel" data-panel="tags">&times;</span></div><div class="tagbar" id="tagbar">' + tagBar + '</div></div>'
+      + '<div class="panel' + (panel === 'stats' ? ' on' : '') + '" id="statsPanel"><div class="ph"><b>Stats</b><span class="s">this week</span><span class="x" data-action="mail-people-panel" data-panel="stats">&times;</span></div><div class="stats" id="stats">'
+      + '<div><b>' + open.length + '</b><span>open boxes</span></div><div><b>' + closed.length + '</b><span>closed</span></div><div class="red"><b>' + owe + '</b><span>owe a reply</span></div><div class="amb"><b>' + wait + '</b><span>waiting on them</span></div><div><b>' + inWeek + '</b><span>emails in this week</span></div><div><b>' + (asList(data.loose).length + (Number(data.looseMore) || 0)) + '</b><span>not in a box</span></div></div></div>'
+      + '<div class="loose"><h5>Not in a box yet<small>drag onto a box, or make one</small></h5><div class="row">' + looseHtml + '</div>'
+      + (data.looseMore ? '<span class="hint">+ ' + esc(data.looseMore) + ' more</span>' : '') + '</div>'
+      + '<div class="grid" id="grid">' + gridHtml + '<div class="newbx" id="newbx" data-action="mail-box-new">+ New box<small>A person, a company, or a deal. Mail from them lands here from now on.</small></div></div>'
+      + '<aside class="drawer' + (drawer ? ' on' : '') + '" id="drawer"><div class="dh"><h3>Closed boxes</h3><span class="s" id="dcount">' + closed.length + ' closed</span><span class="x" data-action="mail-closed-toggle" title="Close list">&times;</span></div>'
+      + '<input class="dsearch" data-action="mail-closed-search" placeholder="Find a closed box" value="' + esc(S.mailClosedQ || '') + '">'
+      + '<div class="dl" id="dl">' + (closedShown.map(function (b) {
+        var unread = asList(b.m).some(function (row) { return row[3]; });
+        return '<div class="di" data-action="mail-box-reopen" data-id="' + esc(b.id) + '"><span class="av" style="background:' + esc(b.c) + '">' + esc(peopleIni(b.n)) + '</span><div style="min-width:0"><b>' + esc(b.n) + (unread ? '<span class="n">new</span>' : '') + '</b><small>' + esc(b.o) + ' &middot; last ' + esc(b.last) + '</small><div class="tg">' + asList(b.tags).map(function (t) { return '<span>#' + esc(t) + '</span>'; }).join('') + '</div></div><em>Reopen</em></div>';
+      }).join('') || '<div class="dempty">Nothing closed.<br>Close a box with its &times; and it waits here.</div>') + '</div>'
+      + '<div class="dfoot">Closed boxes keep collecting mail.<a data-action="mail-box-reopen-all">Reopen all</a></div></aside>'
+      + '<div class="tab' + (closed.length && !drawer ? '' : ' off') + '" id="dtab" data-action="mail-closed-open">Closed boxes<b>' + closed.length + '</b></div>'
+      + '<div class="menu' + (sortOpen ? ' on' : '') + '" id="sortMenu">'
+      + [['my order', 'My order (drag to arrange)'], ['last contact', 'Last contact'], ['owes a reply', 'Owes a reply first'], ['most mail', 'Most mail'], ['A-Z', 'A to Z']].map(function (row) {
+        return '<div data-action="mail-sort" data-s="' + esc(row[0]) + '"' + (sort === row[0] ? ' class="on"' : '') + '>' + esc(row[1]) + '</div>';
+      }).join('') + '</div>'
+      + '<div class="menu' + (boxMenuOpen ? ' on' : '') + '" id="boxMenu">'
+      + '<div data-action="mail-box-act" data-a="open">Open</div><div data-action="mail-box-act" data-a="rename">Rename</div><div data-action="mail-box-act" data-a="addr">Add an email address</div><div data-action="mail-box-act" data-a="tag">Add a tag</div><div data-action="mail-box-act" data-a="pipeline">Open in Pipeline</div><div data-action="mail-box-act" data-a="space">Open the Space</div><hr><div data-action="mail-box-act" data-a="close">Close box</div><div data-action="mail-box-act" data-a="remove" class="red">Remove box (mail stays in Inbox)</div></div>'
+      + '<div class="scrim' + (person ? ' on' : '') + '" id="scrim" data-action="mail-pp-close"></div>'
+      + '<aside class="pp' + (person ? ' on' : '') + '" id="pp">' + ppHtml + '</aside>';
+    if (P().finishPaint) P().finishPaint(wrap);
+    markReady('mailDesk');
+  }
   function paintEmailLive() {
     var wrap = wrapOf('mailDesk');
     if (!wrap) return;
     var data = emailData();
     var S = window.STATE || {};
     var view = mailViewName();
+    if (view === 'people') {
+      if (P().applyPageCss) P().applyPageCss(wrap, 'mailPeople');
+      paintEmailPeople(wrap);
+      return;
+    }
+    if (P().applyPageCss) P().applyPageCss(wrap, 'mail');
     var tab = S.mailFeedTab || data.feedTab || 'everything';
     var openCompose = /(?:^|[?&])compose=1(?:&|$)/.test(String(location.search || '')) || !!(S.composeOpen);
     var msgs = asList(data.messages);
     var cols = asList(S.emailColumns && S.emailColumns.length ? S.emailColumns : data.cols);
-    var glyph = fixtureOn();
     function inCol(id) { return cols.filter(function (c) { return (c.ids || []).indexOf(id) >= 0 || (c.ids || []).indexOf(String(id)) >= 0; }); }
     var feedHtml = '';
     var last = '';
@@ -814,18 +1149,18 @@
       if (m.tag || (m.att && m.att.length) || filed.length) {
         fl = '<div class="fl">'
           + (m.tag ? '<span>' + esc(m.tag) + '</span>' : '')
-          + asList(m.att).map(function (a) { return '<span class="att">' + (glyph ? '&#128206; ' : '') + esc(a) + '</span>'; }).join('')
-          + filed.map(function (c) { return '<span style="background:' + esc(c.c) + '1a;color:' + esc(c.c) + '">' + (glyph ? '&#9873; ' : '') + esc(c.n) + '</span>'; }).join('')
+          + asList(m.att).map(function (a) { return '<span class="att">File: ' + esc(a) + '</span>'; }).join('')
+          + filed.map(function (c) { return '<span style="background:' + esc(c.c) + '1a;color:' + esc(c.c) + '">Flag ' + esc(c.n) + '</span>'; }).join('')
           + '</div>';
       }
-      feedHtml += '<div class="em" data-action="mail-open" data-id="' + esc(m.id) + '" data-email="' + esc(m.e) + '" data-from="' + esc(m.f) + '" data-subject="' + esc(m.sj) + '" data-preview="' + esc(m.pv) + '"><span class="un' + (m.un ? '' : ' r') + '"></span><span class="av" style="background:' + esc(m.c) + '">' + esc(iniOf(m.f)) + '</span><div style="min-width:0"><div class="l1"><b>' + esc(m.f) + '</b><span>' + esc(m.e) + '</span></div><div class="sj">' + esc(m.sj) + '</div><div class="pv">' + esc(m.pv) + '</div>' + fl + '</div><div class="rt"><span class="t">' + esc(m.t) + '</span><span class="flag' + (filed.length ? ' on' : '') + '" data-action="mail-flag" data-id="' + esc(m.id) + '" data-email="' + esc(m.e) + '" data-from="' + esc(m.f) + '" data-subject="' + esc(m.sj) + '">' + (glyph ? '&#9873;' : 'Flag') + '</span></div></div>';
+      feedHtml += '<div class="em" data-action="mail-open" data-id="' + esc(m.id) + '" data-email="' + esc(m.e) + '" data-from="' + esc(m.f) + '" data-subject="' + esc(m.sj) + '" data-preview="' + esc(m.pv) + '"><span class="un' + (m.un ? '' : ' r') + '"></span><span class="av" style="background:' + esc(m.c) + '">' + esc(iniOf(m.f)) + '</span><div style="min-width:0"><div class="l1"><b>' + esc(m.f) + '</b><span>' + esc(m.e) + '</span></div><div class="sj">' + esc(m.sj) + '</div><div class="pv">' + esc(m.pv) + '</div>' + fl + '</div><div class="rt"><span class="t">' + esc(m.t) + '</span><span class="flag' + (filed.length ? ' on' : '') + '" data-action="mail-flag" data-id="' + esc(m.id) + '" data-email="' + esc(m.e) + '" data-from="' + esc(m.f) + '" data-subject="' + esc(m.sj) + '">Flag</span></div></div>';
     });
     var colsHtml = cols.map(function (c) {
       var cards = asList(c.ids).map(function (id) {
         var m = msgs.filter(function (x) { return String(x.id) === String(id); })[0];
         if (!m) return '';
         return '<div class="ce" data-action="mail-open" data-id="' + esc(m.id) + '" data-email="' + esc(m.e) + '" data-from="' + esc(m.f) + '" data-subject="' + esc(m.sj) + '"><div class="h"><span class="av" style="background:' + esc(m.c) + '">' + esc(iniOf(m.f)) + '</span><b>' + esc(m.f) + '</b><em>' + esc(m.t) + '</em></div><div class="sj">' + esc(m.sj) + '</div>'
-          + asList(m.att).map(function (a) { return '<span class="at">' + (glyph ? '&#128206; ' : '') + esc(a) + '</span>'; }).join('') + '</div>';
+          + asList(m.att).map(function (a) { return '<span class="at">File: ' + esc(a) + '</span>'; }).join('') + '</div>';
       }).join('');
       var fromChips = asList(c.from).length
         ? asList(c.from).map(function (f) { return '<span class="ch">' + esc(f) + '<em data-action="mail-rule-remove" data-col="' + esc(c.id) + '" data-email="' + esc(f) + '" title="Stop filing this sender here">&times;</em></span>'; }).join('')
@@ -914,11 +1249,12 @@
         if (key === 'spaces') window.STATE.packages = (d && (d.packages || d.spaces)) || window.STATE.packages;
         if (key === 'docs') { window.STATE.staged = (d && d.docs) || []; window.STATE.docFolders = (d && (d.folders || d.categories)) || window.STATE.docFolders; }
         if (key === 'mail') window.STATE.mailBoard = d;
+        if (key === 'boxes' && d && Array.isArray(d.boxes) && d.boxes.length) window.STATE.emailBoxes = d.boxes;
         if (desk === 'contacts' && key === 'pipe') paintPipelineLive();
         if (desk === 'work' && key === 'spaces') paintSpacesLive();
         if (desk === 'docs' && key === 'docs') paintDocumentsLive();
         if (desk === 'docs' && key === 'spaces') paintDocumentsLive();
-        if (desk === 'mail' && key === 'mail') paintEmailLive();
+        if (desk === 'mail' && (key === 'mail' || key === 'boxes')) paintEmailLive();
         if (desk === 'links') paintLinksLive();
         console.info('[live-map] ' + url, d && typeof d === 'object' ? Object.keys(d) : typeof d);
       }).catch(function () {});
@@ -929,7 +1265,10 @@
       go('/api/documents', 'docs');
       go('/api/spaces', 'spaces');
     }
-    if (desk === 'mail') go('/api/mail/board', 'mail');
+    if (desk === 'mail') {
+      go('/api/mail/board', 'mail');
+      go('/api/mail/boxes', 'boxes');
+    }
     if (desk === 'links') liveLog('links', { links: asList((window.STATE || {}).links).length });
   }
   window.__portLoadB = loadLiveFeeds;

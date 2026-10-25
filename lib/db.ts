@@ -661,6 +661,31 @@ async function migrateWar(sql: Sql) {
       created_at timestamptz NOT NULL DEFAULT now(),
       UNIQUE (owner_id, key)
     )`],
+    ['db_email_boxes', () => sql`CREATE TABLE IF NOT EXISTS email_boxes (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      key text NOT NULL,
+      name text NOT NULL,
+      org text NOT NULL DEFAULT '',
+      color text NOT NULL DEFAULT '#2e6bf2',
+      closed boolean NOT NULL DEFAULT false,
+      position int NOT NULL DEFAULT 0,
+      extra jsonb NOT NULL DEFAULT '{}'::jsonb,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      UNIQUE (owner_id, key)
+    )`],
+    ['db_email_box_addresses', () => sql`CREATE TABLE IF NOT EXISTS email_box_addresses (
+      owner_id text NOT NULL,
+      box_key text NOT NULL,
+      email text NOT NULL,
+      PRIMARY KEY (owner_id, box_key, email)
+    )`],
+    ['db_email_box_tags', () => sql`CREATE TABLE IF NOT EXISTS email_box_tags (
+      owner_id text NOT NULL,
+      box_key text NOT NULL,
+      tag text NOT NULL,
+      PRIMARY KEY (owner_id, box_key, tag)
+    )`],
     ['db_email_rules', () => sql`CREATE TABLE IF NOT EXISTS email_rules (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       owner_id text NOT NULL,
