@@ -9,6 +9,7 @@ import { PNG } from 'pngjs';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'visual-diff');
 const PASS = 0.5;
+const ONLY = (process.env.VISUAL_ONLY || '').split(',').map((s) => s.trim()).filter(Boolean);
 const PAGES = [
   { page: '01-dashboard', design: 'redesign/01-dashboard.html', live: 'control-room.html?view=room&fixture=mockup', ready: '#opsDash[data-port-ready]' },
   { page: '02-war-room', design: 'redesign/02-war-room.html', live: 'control-room.html?view=war&fixture=mockup', ready: '#warDesk[data-port-ready]' },
@@ -148,7 +149,7 @@ async function main() {
   const overflow1280 = [];
   let failed = 0;
   try {
-    for (const spec of PAGES) {
+    for (const spec of PAGES.filter((p) => !ONLY.length || ONLY.includes(p.page))) {
       const page = await context.newPage();
       const designUrl = `http://127.0.0.1:${port}/design/${spec.page}`;
       const liveUrl = `http://127.0.0.1:${port}/${spec.live}`;

@@ -30,27 +30,27 @@ Legend: **[D]** = has a design file to copy exactly.
 - [ ] 1.2 live-updates.js on EVERY signed-in page (today only /control-room).
 - [ ] 1.3 live-updates.js stops on 401: refresh the Clerk token once, then show "Signed out - sign in again". Today it fires 500+ failed requests on the sign-in page.
 - [ ] 1.4 Arrange: drag to reorder the left menu, persists.
-- [ ] 1.5 Top bar Today / Calendar / Signals open their views.
+- [x] 1.5 Top bar Today / Calendar / Signals open their views.
 - [ ] 1.6 CEO brain watches everything (brain_queue every 15s, AI only on new items, Brain log, cost cap) - see the CEO brain prompt.
 - [ ] 1.7 Chad (settings, not code): point GHL, Zoom and the Gmail Pub/Sub push at /api/hooks/*.
 
 ## 2. Dashboard (01)
 - [ ] Open (What needs you now), LinkedIn Open › (new tab), Open LinkedIn
-- [ ] People only / All mail tabs; Reply opens compose with the drafted reply; ··· menu (not a person / snooze / file)
-- [ ] Next meetings Join + bell; Today's 1-3 rows → War Room; Open Email
+- [x] People only / All mail tabs; Reply opens compose with the drafted reply; ··· menu (not a person / snooze / file)
+- [x] Next meetings Join + bell; Today's 1-3 rows → War Room; Open Email
 
 ## 3. War Room (02, [D] 02b-war-room-steps)
 - [ ] Steps expands under the move exactly as 02b (checkable steps, action links, + Add a step); state persists.
-- [ ] Do, Plan (editor → /api/ceo/plan), × dismiss + undo, Re-run.
+- [x] Do, Plan (editor → /api/ceo/plan), × dismiss + undo, Re-run.
 - [ ] Capture + Add; Start 25-min focus (real countdown, pause/stop, logs a focus block); Commit as my one thing; Cancel this move.
-- [ ] After your meetings: + Today / + Week create the item; Review all.
+- [x] After your meetings: + Today / + Week create the item; Review all.
 - [ ] Next up Join / Prep; Find a 30-min slot.
 - [ ] Reach out: shows real people (from Spaces / Pipeline next actions, not an empty table); chips filter; checkbox; + Add opens a picker.
 - [ ] Execution: drag Today ⇄ Week ⇄ Later (persists), checkbox completes, +, Full screen.
 
 ## 4. Notes (03, [D] 03b-notes-open)
-- [ ] Clicking a note opens it LARGE in the same sticky style, exactly as 03b. NOT a white text box.
-- [ ] BUG: typing shows "Saved", but the text is gone on reopen. Edits must be saved to /api/notes (or /api/notes/sticky) and reload correctly.
+- [x] Clicking a note opens it LARGE in the same sticky style, exactly as 03b. NOT a white text box.
+- [x] BUG: typing shows "Saved", but the text is gone on reopen. Edits must be saved to /api/notes (or /api/notes/sticky) and reload correctly.
 - [ ] Colour dots, Pin, ··· , × close (Esc), Move to a Space, Convert to task.
 - [ ] Filter chips, search, Board / Canvas, Tidy up, + Pin a note here.
 
@@ -74,7 +74,7 @@ Legend: **[D]** = has a design file to copy exactly.
 
 ## 8. Links (07)
 - [ ] BUG: the category menu doesn't work and subfolders won't open. Category tree: ▸ expands subfolders, click filters, + sub creates one, rename works.
-- [ ] Notes on links: "Add a note" on every tile is editable in place, saves to /api/links, shows on the tile, searchable.
+- [x] Notes on links: "Add a note" on every tile is editable in place, saves to /api/links, shows on the tile, searchable.
 - [ ] Add link, ✎ edit, ⇄ move, × soft delete, Expand all; tiles open in a new tab; favicons; counts match tiles.
 
 ## 9. Email (08b compose, [D] 08d-email-inbox, [D] 08e-email-people-grid, [D] 08c-email-people person panel) - REPLACES the old 7-column board

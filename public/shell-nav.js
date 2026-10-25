@@ -113,14 +113,14 @@
         seen[name] = 1;
         var badge = bag[name];
         if (badge === '' || badge == null) badge = it[2] || '';
-        html += '<div class="nav' + (it[0] === active ? ' on' : '') + '" data-v="' + it[3] + '" data-name="' + it[0] + '" draggable="false"><span class="grip" aria-hidden="true"></span><svg viewBox="0 0 24 24"><path d="' + it[1] + '"/></svg><span class="nl">' + it[0] + '</span>' + (badge ? '<span class="n" id="' + (name === 'Pipeline' ? 'cCount' : name === 'Integrations' ? 'iCount' : '') + '">' + badge + '</span>' : '') + '</div>';
+        html += '<div class="nav' + (it[0] === active ? ' on' : '') + '" data-action="nav-go" data-v="' + it[3] + '" data-name="' + it[0] + '" draggable="false"><span class="grip" aria-hidden="true"></span><span class="nl">' + it[0] + '</span>' + (badge ? '<span class="n" id="' + (name === 'Pipeline' ? 'cCount' : name === 'Integrations' ? 'iCount' : '') + '">' + badge + '</span>' : '') + '</div>';
       });
     });
     names.forEach(function (name) {
       if (seen[name]) return;
       var it = itemByName(name);
       if (!it) return;
-      html += '<div class="nav' + (it[0] === active ? ' on' : '') + '" data-v="' + it[3] + '" data-name="' + it[0] + '"><span class="grip" aria-hidden="true"></span><svg viewBox="0 0 24 24"><path d="' + it[1] + '"/></svg><span class="nl">' + it[0] + '</span></div>';
+      html += '<div class="nav' + (it[0] === active ? ' on' : '') + '" data-action="nav-go" data-v="' + it[3] + '" data-name="' + it[0] + '"><span class="grip" aria-hidden="true"></span><span class="nl">' + it[0] + '</span></div>';
     });
     var arranging = document.body.classList.contains('arranging');
     html += '<div class="arr-row"><button type="button" class="arr" id="navArrange" data-action="nav-arrange">' + (arranging ? 'Done' : 'Arrange') + '</button><button type="button" class="arr-reset" id="navReset" data-action="nav-reset">Reset to default</button></div>';
@@ -172,24 +172,19 @@
       });
     });
     var arr = document.getElementById('navArrange');
-    if (arr) arr.onclick = function (e) {
-      e.stopPropagation();
-      document.body.classList.toggle('arranging');
-      side.querySelectorAll('.nav').forEach(function (n) { n.setAttribute('draggable', document.body.classList.contains('arranging') ? 'true' : 'false'); });
-      paint();
-    };
+    if (arr) arr.onclick = null;
     var reset = document.getElementById('navReset');
-    if (reset) reset.onclick = function (e) { e.stopPropagation(); document.body.classList.remove('arranging'); saveOrder(DEFAULT.slice()); };
+    if (reset) reset.onclick = null;
   }
   function clock() {
     var el = document.getElementById('clock');
     if (!el) return;
     var parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'America/Los_Angeles', weekday: 'short', month: 'short', day: 'numeric',
-      hour: 'numeric', minute: '2-digit'
+      timeZone: 'America/Vancouver', weekday: 'short', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
     }).formatToParts(new Date());
     function g(t) { for (var i = 0; i < parts.length; i++) if (parts[i].type === t) return parts[i].value; return ''; }
-    el.textContent = g('weekday') + ', ' + g('month') + ' ' + g('day') + ' · ' + g('hour') + ':' + g('minute') + ' ' + g('dayPeriod') + ' Pacific';
+    el.textContent = g('weekday') + ', ' + g('month') + ' ' + g('day') + ' · ' + g('hour') + ':' + g('minute') + ' Pacific';
   }
   window.paintShellNav = paint;
   window.shellPageName = activeName;

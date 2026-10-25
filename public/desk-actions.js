@@ -44,8 +44,8 @@
   function json(r) { return r.json ? r.json() : r; }
 
   function toast(root, msg, undoFn) {
-    var host = (root && root.getElementById) ? root.getElementById('deskToast') : null;
-    if (!host && root) {
+    var host = (root && root.getElementById && root !== document) ? root.getElementById('deskToast') : null;
+    if (!host && root && root.nodeType === 11 && root.appendChild) {
       host = document.createElement('div');
       host.id = 'deskToast';
       host.className = 'desk-toast';
@@ -1140,6 +1140,10 @@
       if (pop) pop.classList.toggle('open');
     },
     'top-cal': function () { go('calendar'); },
+    'nav-go': function (el) {
+      var view = attr(el, 'data-v');
+      if (view) go(view);
+    },
     'top-signals': function (el, root, ev) {
       if (ev) ev.stopPropagation();
       if (typeof window.openSignals === 'function') window.openSignals();

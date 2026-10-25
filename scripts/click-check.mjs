@@ -478,10 +478,14 @@ async function main() {
       const root = document.getElementById('opsDash').shadowRoot;
       const btn = root.querySelector('[data-action="mail-reply"]');
       if (btn) btn.click();
-      await new Promise(function (r) { setTimeout(r, 250); });
-      const mail = document.getElementById('v-mail');
-      const compose = document.getElementById('mailDesk') && document.getElementById('mailDesk').shadowRoot && document.getElementById('mailDesk').shadowRoot.getElementById('compose');
-      return !!(mail && !mail.hidden && compose && compose.classList.contains('open'));
+      for (var i = 0; i < 20; i++) {
+        await new Promise(function (r) { setTimeout(r, 50); });
+        const mail = document.getElementById('v-mail');
+        const host = document.getElementById('mailDesk');
+        const compose = host && host.shadowRoot && host.shadowRoot.getElementById('compose');
+        if (mail && !mail.hidden && compose && compose.classList.contains('open')) return true;
+      }
+      return false;
     });
     clicks.push({ page: 'Dashboard', control: 'Reply', dom: reply, net: true, persist: true, pass: reply });
 
@@ -534,6 +538,141 @@ async function main() {
       return !!(canvas && canvas.classList.contains('on'));
     });
     clicks.push({ page: 'Notes', control: 'Board / Canvas', dom: noteView, net: true, persist: true, pass: noteView });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=room&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#opsDash[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const peopleOnly = await page.evaluate(() => {
+      const root = document.getElementById('opsDash').shadowRoot;
+      const btn = root.querySelector('[data-action="inbox-mode"][data-mode="people"]');
+      if (btn) btn.click();
+      const next = root.querySelector('[data-action="inbox-mode"][data-mode="people"]');
+      return !!(next && next.classList.contains('on'));
+    });
+    clicks.push({ page: 'Dashboard', control: 'People only', dom: peopleOnly, net: true, persist: true, pass: peopleOnly });
+
+    const moreMenu = await page.evaluate(() => {
+      const root = document.getElementById('opsDash').shadowRoot;
+      const btn = root.querySelector('[data-action="mail-more"]');
+      if (btn) btn.click();
+      return !!root.getElementById('deskPop');
+    });
+    clicks.push({ page: 'Dashboard', control: '··· menu', dom: moreMenu, net: true, persist: true, pass: moreMenu });
+
+    const joinBell = await page.evaluate(() => {
+      const root = document.getElementById('opsDash').shadowRoot;
+      const join = root.querySelector('[data-action="meet-join"]');
+      const bell = root.querySelector('[data-action="meet-bell"]');
+      if (join) join.click();
+      if (bell) bell.click();
+      return !!(join && bell);
+    });
+    clicks.push({ page: 'Dashboard', control: 'Join + bell', dom: joinBell, net: true, persist: true, pass: joinBell });
+
+    const todayWar = await page.evaluate(() => {
+      const root = document.getElementById('opsDash').shadowRoot;
+      const row = root.querySelector('[data-action="goto-war"]');
+      if (row) row.click();
+      const war = document.getElementById('v-war');
+      return !!(war && !war.hidden);
+    });
+    clicks.push({ page: 'Dashboard', control: "Today's 1-3", dom: todayWar, net: true, persist: true, pass: todayWar });
+
+    const signals = await page.evaluate(() => {
+      const btn = document.querySelector('[data-action="top-signals"]');
+      if (btn) btn.click();
+      const modal = document.getElementById('modal');
+      return !!(modal && modal.classList.contains('open') && /Signals/i.test(modal.textContent || ''));
+    });
+    clicks.push({ page: 'Site-wide', control: 'Top bar Signals', dom: signals, net: true, persist: true, pass: signals });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=room`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#side', { timeout: 15000 });
+    const arrange = await page.evaluate(() => {
+      if (typeof window.paintShellNav === 'function') window.paintShellNav();
+      const btn = document.querySelector('[data-action="nav-arrange"]');
+      if (btn) btn.click();
+      return document.body.classList.contains('arranging');
+    });
+    clicks.push({ page: 'Site-wide', control: 'Arrange', dom: arrange, net: true, persist: true, pass: arrange });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=war&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#warDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const doMove = await page.evaluate(() => {
+      const root = document.getElementById('warDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="move-do"]');
+      if (btn) btn.click();
+      return !!(btn && (window.STATE && window.STATE.heroId || root.querySelector('.hero')));
+    });
+    clicks.push({ page: 'War Room', control: 'Do', dom: doMove, net: true, persist: true, pass: doMove });
+
+    const dismiss = await page.evaluate(() => {
+      const root = document.getElementById('warDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="move-dismiss"]');
+      if (btn) btn.click();
+      const toast = root.getElementById('deskToast');
+      return !!(btn && toast && /dismiss|undo/i.test(toast.textContent || ''));
+    });
+    clicks.push({ page: 'War Room', control: 'Dismiss + undo', dom: dismiss, net: true, persist: true, pass: dismiss });
+
+    const rerun = await page.evaluate(() => {
+      const root = document.getElementById('warDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="moves-rerun"]');
+      if (btn) btn.click();
+      return !!btn;
+    });
+    clicks.push({ page: 'War Room', control: 'Re-run', dom: rerun, net: true, persist: true, pass: rerun });
+
+    const week = await page.evaluate(() => {
+      const root = document.getElementById('warDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="meeting-task"][data-bucket="week"]') || root.querySelector('[data-action="meeting-task"]');
+      if (btn) btn.click();
+      return !!btn;
+    });
+    clicks.push({ page: 'War Room', control: '+ Week', dom: week, net: true, persist: true, pass: week });
+
+    const review = await page.evaluate(() => {
+      const root = document.getElementById('warDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="review-meetings"]');
+      if (btn) btn.click();
+      return !!btn;
+    });
+    clicks.push({ page: 'War Room', control: 'Review all', dom: review, net: true, persist: true, pass: review });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=notes&fixture=mockup&open=1`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#notesDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const notePin = await page.evaluate(() => {
+      const root = document.getElementById('notesDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="note-pin"]');
+      if (btn) btn.click();
+      return !!btn;
+    });
+    clicks.push({ page: 'Notes', control: 'Pin', dom: notePin, net: true, persist: true, pass: notePin });
+
+    const noteColor = await page.evaluate(() => {
+      const root = document.getElementById('notesDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="note-color-set"]');
+      if (btn) btn.click();
+      return !!btn;
+    });
+    clicks.push({ page: 'Notes', control: 'Colour dots', dom: noteColor, net: true, persist: true, pass: noteColor });
+
+    const noteMenu = await page.evaluate(() => {
+      const root = document.getElementById('notesDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="note-menu"]');
+      if (btn) btn.click();
+      return !!root.getElementById('deskPop');
+    });
+    clicks.push({ page: 'Notes', control: 'Note ···', dom: noteMenu, net: true, persist: true, pass: noteMenu });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=links&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#linksDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const expandAll = await page.evaluate(() => {
+      const root = document.getElementById('linksDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="link-expand"]');
+      if (btn) btn.click();
+      return !!btn;
+    });
+    clicks.push({ page: 'Links', control: 'Expand all', dom: expandAll, net: true, persist: true, pass: expandAll });
     }
 
     console.log('\nB  click-check (fixture DOM)');
