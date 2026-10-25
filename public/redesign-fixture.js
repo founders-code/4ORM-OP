@@ -374,31 +374,21 @@
       ]
     },
     email: {
-      need: 5, investors: 2, unread: 56, rules: 4,
-      columns: [
-        { icon: '&#9888;&#65039;', name: 'Needs now', count: 5, rule: 'Real people owed a reply, investors first', messages: [
-          { name: 'Bruce Fair', color: '#c98408', age: '3d', subject: 'Deck \u2014 notes', preview: 'Need to tighten messaging with respect to "What is it that 4orm is providing?" Counselling\u2026', tags: [['t-rep', 'Reply'], ['t-vc', 'Investor']], unread: true },
-          { name: 'Cindy J. S. \u00b7 CLHIA', color: '#0f9fb5', age: '5h', subject: 'RE: Are we a bad fit for the Affiliates Program?', preview: 'Thank you for your email. Can you provide a list of Canadian life and health insurers you currently do business with?', tags: [['t-rep', 'Reply'], ['t-reg', 'Association']], unread: true },
-          { name: 'Mike Stephens', color: '#12a36a', age: '6d', subject: 'RE: 4orm Finance business overview', preview: 'That works. Please can you send an invite? Thanks Chad. All the best, Mike', tags: [['t-rep', 'Reply'], ['t-dp', 'Advisor']] },
-          { name: 'Antonia Pettenon', color: '#6b4fd8', age: '5d', subject: 'RE: Invoice payment', preview: 'Okay, thank you! Antonia Pettenon, Executive Assistant to Veronica Armstrong, Law Corporation', tags: [['t-rep', 'Reply'], ['t-biz', 'Legal']] }
-        ] },
-        { icon: '&#128176;', name: 'Investors', count: 2, rule: 'Rule: from bruce@, don@ \u00b7 subject has "cheque"', messages: [
-          { name: 'Bruce Fair', color: '#c98408', age: '21h', subject: '4orm Finance \u2013 2-pager overview', preview: 'This version may be better. Let me know your thoughts. B', tags: [['t-vc', 'Investor'], ['t-w', 'Waiting 1d']], unread: true },
-          { name: 'Bruce Fair', color: '#c98408', age: '6d', subject: 'RE: Welcome to 4orm Finance | Major Financial Decisions', preview: 'Chad, please check the number sequence at the top of each slide. Thanks, B', tags: [['t-vc', 'Investor']] }
-        ] },
-        { icon: '&#128200;', name: 'VCs', count: 0, rule: 'Rule: sender in the VC pipeline', messages: [] },
-        { icon: '&#127919;', name: 'Prospects', count: 2, rule: 'Rule: domain matches Pipeline \u203a Business', messages: [
-          { name: 'Ivan Pierce', color: '#2e6bf2', age: '3h', subject: 'Settlement finality', preview: 'Hi Chad, 4orm\u2019s settlement finality work for Canadian capital markets stood out to me. I\u2019m Ivan at Tactera Digital\u2026', tags: [['t-biz', 'New'], ['t-dp', 'Prospect']], unread: true },
-          { name: 'Brad Barrett', color: '#e0364f', age: '2d', subject: 'Hey Chad \u2014 credit card idea', preview: 'Hello, excited to share something we\u2019ve been building for brokers\u2026', tags: [['t-biz', 'New']] }
-        ] },
-        { icon: '&#129309;', name: 'Design partners', count: 0, rule: 'Rule: domain is a brokerage in Spaces', messages: [] },
-        { icon: '&#128101;', name: 'Team', count: 1, rule: 'Rule: @4ormfinance.com, Speer', messages: [
-          { name: 'Zed', color: '#7a86a0', age: '1d', subject: 'Spear design spec \u2014 v3', preview: 'File-based orchestration notes attached; each stage output feeds the next.', tags: [['t-biz', 'Team']] }
-        ] },
-        { icon: '&#128263;', name: 'Quiet', count: 48, rule: 'Bulk + notifications, auto-filed', quiet: true, messages: [
-          { name: 'Upwork', color: '#7a86a0', age: '1h', subject: 'Stay visible to clients', preview: 'Your profile could be shown to more clients this week\u2026', tags: [['t-biz', 'Bulk']] },
-          { name: 'Shortform', color: '#7a86a0', age: '4h', subject: 'Take this quiz', preview: 'What kind of reader are you? Find out in 2 minutes\u2026', tags: [['t-biz', 'Bulk']] }
-        ] }
+      unread: 58, need: 5, colN: 2, feedTab: 'everything',
+      messages: [
+        { id: 1, day: 'Today', f: 'Bruce Fair', e: 'bruce@4ormfinance.com', c: '#2e6bf2', sj: 'Revised - This version may be better', pv: 'Let me know your thoughts. B', t: '47m', un: 1, att: ['2-pager v3.pdf'], tag: 'Needs reply' },
+        { id: 2, day: 'Today', f: 'CLHIA Affiliates Program', e: 'affiliates@clhia.ca', c: '#0f6e8a', sj: 'RE: Are we a bad fit for the Affiliates Program?', pv: 'Hi Chad, thank you for your email. Can you provide a list of Canadian life and health insurers that you\u2026', t: '9h', un: 1, att: [], tag: 'Needs reply' },
+        { id: 3, day: 'Today', f: 'Simen Ruud', e: 'simen@foundersuite.com', c: '#4a5672', sj: 'Chad\u2019s Foundersuite account', pv: 'Hi Chad, Simen here from Foundersuite\u2026', t: '10h', un: 0, att: [], tag: '' },
+        { id: 4, day: 'Today', f: 'Michael Stevens', e: 'michael@example.ca', c: '#6b4fd8', sj: 'NMDA with James - next steps', pv: 'Chad, James sent over the markup. Two points I\u2019d push back on\u2026', t: '11h', un: 1, att: ['NMDA-markup.docx'], tag: '' },
+        { id: 5, day: 'Yesterday', f: 'Kevin Wong', e: 'kevin@4ormfinance.com', c: '#0f8a8a', sj: 'Re: GTM outline', pv: 'Looked at it. Two edits on the broker section, then it\u2019s good.', t: '1d', un: 0, att: [], tag: '' },
+        { id: 6, day: 'Yesterday', f: 'Bow Valley Credit Union', e: 'partnerships@bowvalleycu.com', c: '#c2560c', sj: 'Follow-up from Thursday\u2019s call', pv: 'Thanks for walking us through the suitability record. Our compliance lead would like to see\u2026', t: '1d', un: 1, att: ['BVCU-requirements.pdf'], tag: 'Needs reply' },
+        { id: 7, day: 'Yesterday', f: 'Mike (Mench Capital)', e: 'menchcapital@telus.net', c: '#c98408', sj: 'Re: 4orm Finance - Overview for Investors', pv: 'Had a look over the weekend. A couple of questions on the capture rate\u2026', t: '1d', un: 0, att: [], tag: '' },
+        { id: 8, day: 'Yesterday', f: 'TekSavvy', e: 'billing@teksavvy.com', c: '#7a86a0', sj: 'TekSavvy invoice for account 4421', pv: 'Your invoice is ready.', t: '1d', un: 0, att: ['invoice.pdf'], tag: 'Bulk' },
+        { id: 9, day: 'Yesterday', f: 'Don Hickling', e: 'donhickling.dh@gmail.com', c: '#6b4fd8', sj: 'Friday 1on1 - agenda', pv: 'Three things: the raise, Kevin\u2019s path, and the regulator note.', t: '1d', un: 0, att: [], tag: '' }
+      ],
+      cols: [
+        { id: 'c1', n: 'Raise', c: '#c2560c', from: ['bruce@4ormfinance.com', 'menchcapital@telus.net'], ids: [1, 7] },
+        { id: 'c2', n: 'Regulators & associations', c: '#e0364f', from: ['affiliates@clhia.ca'], ids: [2] }
       ]
     },
     playbook: { weekLabel: 'WEEK 43 · OCT 19 - 25', dates: [19, 20, 21, 22, 23, 24, 25], todayIdx: 0, pct: '0%' },

@@ -1616,11 +1616,94 @@
     'mail-col-new': function (el, root) {
       var name = window.prompt('New column name');
       if (!name) return;
-      if (!writeOk()) { toast(root, 'Column (fixture)'); return; }
-      api('/api/mail/columns', { method: 'POST', body: { action: 'create', name: String(name).trim() } }).then(ok).then(function () {
+      name = String(name).trim();
+      var cols = Array.isArray(S().emailColumns) ? S().emailColumns.slice() : [];
+      if (!cols.length && window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.email && window.REDESIGN_FIXTURE.email.cols) {
+        cols = window.REDESIGN_FIXTURE.email.cols.slice();
+      }
+      cols.push({ id: 'c' + Date.now(), n: name, c: ['#12a36a', '#6b4fd8', '#2e6bf2', '#c98408'][cols.length % 4], from: [], ids: [] });
+      S().emailColumns = cols;
+      refresh('mail');
+      if (!writeOk()) { toast(root, 'Column "' + name + '" created - flag mail to fill it'); return; }
+      api('/api/mail/columns', { method: 'POST', body: { action: 'create', name: name } }).then(ok).then(function () {
         toast(root, 'Column added'); refresh('mail');
-      }).catch(function () { toast(root, 'Could not add that column'); });
+      }).catch(function () { toast(root, 'Column is on the desk — not saved yet'); });
     },
+    'mail-view': function (el) {
+      S().mailView = attr(el, 'data-view') || 'inbox';
+      refresh('mail');
+    },
+    'mail-feed-tab': function (el) {
+      S().mailFeedTab = attr(el, 'data-tab') || 'everything';
+      refresh('mail');
+    },
+    'mail-flag': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      var id = attr(el, 'data-id');
+      var email = attr(el, 'data-email');
+      var subject = attr(el, 'data-subject');
+      var pop = root.getElementById && root.getElementById('pop');
+      if (!pop) return;
+      var who = root.getElementById('popwho');
+      var from = root.getElementById('popfrom');
+      var opts = root.getElementById('popopts');
+      var always = root.getElementById('always');
+      if (who) who.textContent = subject || '';
+      if (from) from.textContent = email || '';
+      if (always) always.checked = true;
+      var cols = Array.isArray(S().emailColumns) ? S().emailColumns : ((window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.email && window.REDESIGN_FIXTURE.email.cols) || []);
+      if (opts) {
+        opts.innerHTML = cols.map(function (c) {
+          return '<div class="opt" data-action="mail-flag-into" data-col="' + esc(c.id) + '" data-id="' + esc(id) + '" data-email="' + esc(email) + '"><i style="background:' + esc(c.c) + '"></i>' + esc(c.n) + '<em>' + ((c.ids || []).indexOf(Number(id)) >= 0 || (c.ids || []).indexOf(id) >= 0 ? 'already here' : (c.ids || []).length + ' emails') + '</em></div>';
+        }).join('') + '<div class="opt new" data-action="mail-flag-into" data-col="new" data-id="' + esc(id) + '" data-email="' + esc(email) + '" data-from="' + esc(attr(el, 'data-from')) + '"><i></i>+ New column for this</div>';
+      }
+      pop.classList.add('on');
+      S().mailFlagId = id;
+      S().mailFlagEmail = email;
+    },
+    'mail-flag-into': function (el, root) {
+      var colId = attr(el, 'data-col');
+      var id = attr(el, 'data-id') || S().mailFlagId;
+      var email = attr(el, 'data-email') || S().mailFlagEmail;
+      var always = root.getElementById && root.getElementById('always');
+      var sticky = !always || always.checked;
+      var cols = Array.isArray(S().emailColumns) ? S().emailColumns.slice() : ((window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.email && window.REDESIGN_FIXTURE.email.cols) || []).slice();
+      var c = cols.filter(function (x) { return x.id === colId; })[0];
+      if (colId === 'new') {
+        var n = window.prompt('Name the new column', attr(el, 'data-from') || 'New column');
+        if (!n) return;
+        c = { id: 'c' + Date.now(), n: String(n).trim(), c: '#12a36a', from: [], ids: [] };
+        cols.push(c);
+      }
+      if (!c) return;
+      var nid = isNaN(Number(id)) ? id : Number(id);
+      if ((c.ids || []).indexOf(nid) < 0 && (c.ids || []).indexOf(id) < 0) c.ids = [nid].concat(c.ids || []);
+      if (sticky && email && (c.from || []).indexOf(email) < 0) c.from = (c.from || []).concat([email]);
+      S().emailColumns = cols;
+      var pop = root.getElementById && root.getElementById('pop');
+      if (pop) pop.classList.remove('on');
+      refresh('mail');
+      toast(root, 'Filed in ' + c.n + (sticky && email ? ' · future mail from ' + email + ' goes there too' : ''), function () {
+        c.ids = (c.ids || []).filter(function (x) { return x !== nid && x !== id; });
+        refresh('mail');
+      });
+      if (writeOk()) {
+        api('/api/mail/act', { method: 'POST', body: { action: 'move', id: id, column: c.id, sticky: sticky, email: email, matchType: 'sender' } }).catch(function () {});
+      }
+    },
+    'mail-rule-remove': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      var colId = attr(el, 'data-col');
+      var email = attr(el, 'data-email');
+      var cols = Array.isArray(S().emailColumns) ? S().emailColumns : ((window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.email && window.REDESIGN_FIXTURE.email.cols) || []);
+      cols.forEach(function (c) {
+        if (c.id === colId) c.from = (c.from || []).filter(function (f) { return f !== email; });
+      });
+      S().emailColumns = cols;
+      refresh('mail');
+      toast(root, 'Stopped filing ' + email);
+    },
+    'mail-col-drag': function () {},
     'mail-send': function (el, root) {
       var cp = root.getElementById && root.getElementById('compose');
       var toEl = cp && cp.querySelector('.fr.sugg input, .fr .val input');
@@ -2124,7 +2207,7 @@
     }
     if (/^(pipe|mail|docs|spaces|zoom)-search$/.test(name || '')) {
       var q = String(el.value || '').toLowerCase();
-      var sel = name === 'pipe-search' ? 'tbody#rows tr, .nd, .pcard' : name === 'mail-search' ? '.ml' : name === 'docs-search' ? '.fl, .ra' : name === 'zoom-search' ? '.mc' : '.sp';
+      var sel = name === 'pipe-search' ? 'tbody#rows tr, .nd, .pcard' : name === 'mail-search' ? '.em, .ml' : name === 'docs-search' ? '.fl, .ra' : name === 'zoom-search' ? '.mc' : '.sp';
       root.querySelectorAll(sel).forEach(function (n) {
         n.style.display = !q || (n.textContent || '').toLowerCase().indexOf(q) >= 0 ? '' : 'none';
       });

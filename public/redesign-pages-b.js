@@ -478,12 +478,30 @@
     var need = shaped.filter(function (m) { return m.needsNow && !m.bulk; }).length;
     var inv = shaped.filter(function (m) { return m.column === 'investors'; }).length;
     liveLog('email', { messages: messages.length, columns: cols.length, need: need, investors: inv });
+    var userCols = asList(S.emailColumns);
     return {
       need: counts.needs != null ? counts.needs : need,
       investors: inv,
       unread: counts.unread != null ? counts.unread : shaped.filter(function (m) { return m.unread; }).length,
-      rules: rules.length || 4,
-      columns: cols
+      colN: userCols.length,
+      rules: rules.length,
+      columns: cols,
+      messages: shaped.map(function (m, i) {
+        return {
+          id: m.id || i + 1,
+          day: m.age === 'Today' ? 'Today' : 'Earlier',
+          f: m.name,
+          e: m.email,
+          c: m.color,
+          sj: m.subject,
+          pv: m.preview,
+          t: m.age,
+          un: m.unread ? 1 : 0,
+          att: asList(m.attachments || m.att),
+          tag: (m.tags && m.tags[0] && m.tags[0][1]) || ''
+        };
+      }),
+      cols: userCols
     };
   }
 
@@ -763,29 +781,78 @@
       + '<div class="box"><h4>Before you send</h4><div class="chk"><i>&#10003;</i>Name and company spelled right</div><div class="chk"><i>&#10003;</i>One clear ask with a time</div><div class="chk"><i>&#10003;</i>Attachments under 10 MB</div></div></div></aside>';
   }
 
+  function iniOf(n) {
+    return String(n || '').replace(/\(.*\)/, '').trim().split(' ').map(function (x) { return x[0] || ''; }).join('').slice(0, 2).toUpperCase() || '?';
+  }
+  function mailViewName() {
+    try {
+      var q = new URLSearchParams(String(location.search || ''));
+      if (q.get('people') === '1' || q.get('view') === 'people' || (window.STATE && window.STATE.mailView === 'people')) return 'people';
+    } catch (e) {}
+    return 'inbox';
+  }
   function paintEmailLive() {
     var wrap = wrapOf('mailDesk');
     if (!wrap) return;
     var data = emailData();
-    var openCompose = /(?:^|[?&])compose=1(?:&|$)/.test(String(location.search || '')) || !!(window.STATE && window.STATE.composeOpen);
+    var S = window.STATE || {};
+    var view = mailViewName();
+    var tab = S.mailFeedTab || data.feedTab || 'everything';
+    var openCompose = /(?:^|[?&])compose=1(?:&|$)/.test(String(location.search || '')) || !!(S.composeOpen);
+    var msgs = asList(data.messages);
+    var cols = asList(S.emailColumns && S.emailColumns.length ? S.emailColumns : data.cols);
+    var glyph = fixtureOn();
+    function inCol(id) { return cols.filter(function (c) { return (c.ids || []).indexOf(id) >= 0 || (c.ids || []).indexOf(String(id)) >= 0; }); }
+    var feedHtml = '';
+    var last = '';
+    msgs.forEach(function (m) {
+      if (tab === 'unread' && !m.un) return;
+      if (tab === 'people' && /bulk/i.test(m.tag || '')) return;
+      if (m.day && m.day !== last) { feedHtml += '<div class="day">' + esc(m.day) + '</div>'; last = m.day; }
+      var filed = inCol(m.id);
+      var fl = '';
+      if (m.tag || (m.att && m.att.length) || filed.length) {
+        fl = '<div class="fl">'
+          + (m.tag ? '<span>' + esc(m.tag) + '</span>' : '')
+          + asList(m.att).map(function (a) { return '<span class="att">' + (glyph ? '&#128206; ' : '') + esc(a) + '</span>'; }).join('')
+          + filed.map(function (c) { return '<span style="background:' + esc(c.c) + '1a;color:' + esc(c.c) + '">' + (glyph ? '&#9873; ' : '') + esc(c.n) + '</span>'; }).join('')
+          + '</div>';
+      }
+      feedHtml += '<div class="em" data-action="mail-open" data-id="' + esc(m.id) + '" data-email="' + esc(m.e) + '" data-from="' + esc(m.f) + '" data-subject="' + esc(m.sj) + '" data-preview="' + esc(m.pv) + '"><span class="un' + (m.un ? '' : ' r') + '"></span><span class="av" style="background:' + esc(m.c) + '">' + esc(iniOf(m.f)) + '</span><div style="min-width:0"><div class="l1"><b>' + esc(m.f) + '</b><span>' + esc(m.e) + '</span></div><div class="sj">' + esc(m.sj) + '</div><div class="pv">' + esc(m.pv) + '</div>' + fl + '</div><div class="rt"><span class="t">' + esc(m.t) + '</span><span class="flag' + (filed.length ? ' on' : '') + '" data-action="mail-flag" data-id="' + esc(m.id) + '" data-email="' + esc(m.e) + '" data-from="' + esc(m.f) + '" data-subject="' + esc(m.sj) + '">' + (glyph ? '&#9873;' : 'Flag') + '</span></div></div>';
+    });
+    var colsHtml = cols.map(function (c) {
+      var cards = asList(c.ids).map(function (id) {
+        var m = msgs.filter(function (x) { return String(x.id) === String(id); })[0];
+        if (!m) return '';
+        return '<div class="ce" data-action="mail-open" data-id="' + esc(m.id) + '" data-email="' + esc(m.e) + '" data-from="' + esc(m.f) + '" data-subject="' + esc(m.sj) + '"><div class="h"><span class="av" style="background:' + esc(m.c) + '">' + esc(iniOf(m.f)) + '</span><b>' + esc(m.f) + '</b><em>' + esc(m.t) + '</em></div><div class="sj">' + esc(m.sj) + '</div>'
+          + asList(m.att).map(function (a) { return '<span class="at">' + (glyph ? '&#128206; ' : '') + esc(a) + '</span>'; }).join('') + '</div>';
+      }).join('');
+      var fromChips = asList(c.from).length
+        ? asList(c.from).map(function (f) { return '<span class="ch">' + esc(f) + '<em data-action="mail-rule-remove" data-col="' + esc(c.id) + '" data-email="' + esc(f) + '" title="Stop filing this sender here">&times;</em></span>'; }).join('')
+        : '<span style="color:var(--ink3)">no one yet - flag an email and tick "Always"</span>';
+      return '<div class="col" draggable="true" data-action="mail-col-drag" data-col="' + esc(c.id) + '" data-id="' + esc(c.id) + '"><div class="colh" data-action="mail-col-drag" data-col="' + esc(c.id) + '"><i style="background:' + esc(c.c) + '"></i><b contenteditable="true" spellcheck="false" data-action="mail-col-rename" data-id="' + esc(c.id) + '">' + esc(c.n) + '</b><span class="c">' + asList(c.ids).length + '</span><span class="m" data-action="mail-col-menu" data-col="' + esc(c.id) + '" data-name="' + esc(c.n) + '">&middot;&middot;&middot;</span></div>'
+        + '<div class="rule"><b>Auto-files</b> new mail from ' + fromChips + '</div>'
+        + '<div class="clist">' + (cards || '<div class="cempty">Nothing here yet.<br>Flag an email in the feed, or drag one in.</div>') + '</div></div>';
+    }).join('');
     wrap.innerHTML =
-      '<div class="bar"><h1>Email</h1><div class="cnt"><span><b>' + esc(data.need) + '</b> need a reply</span><span><b>' + esc(data.investors) + '</b> investors waiting</span><span><b>' + esc(data.unread) + '</b> unread</span></div>'
-      + '<div class="r"><input class="search" data-action="mail-search" placeholder="Search mail &mdash; try &quot;waiting on&quot; or &quot;needs reply&quot;"><button class="btn" data-action="mail-filters">Filters (' + esc(data.rules) + ')</button><button class="btn pri" id="composeBtn" data-action="mail-compose">Compose</button></div></div>'
-      + '<div class="rules"><span class="on" data-action="mail-auto"></span><b data-action="mail-auto">Auto-filing on</b> &middot; ' + esc(data.rules) + ' rules keep new mail sorted &middot; drag any email onto a column to make a rule that sticks<span class="lnk" data-action="mail-rule-new">+ New rule</span></div>'
-      + '<div class="board" id="board">' + (data.columns || []).map(function (c) {
-        var key = esc(c.key || ({ 'Needs now': 'needs_now', Investors: 'investors', VCs: 'vcs', Prospects: 'prospects', 'Design partners': 'design', Team: 'team', Quiet: 'quiet' })[c.name] || '');
-        return '<div class="col' + (c.messages && c.messages.length ? '' : ' slim') + (c.quiet || c.name === 'Quiet' ? ' quiet' : '') + '" data-action="mail-col-drop" data-column="' + key + '" data-name="' + esc(c.name) + '"><div class="colh"><i>' + c.icon + '</i><b>' + esc(c.name) + '</b><span class="c">' + esc(c.count) + '</span><span class="m" data-action="mail-col-menu" data-col="' + key + '" data-name="' + esc(c.name) + '">&middot;&middot;&middot;</span></div><div class="rb">' + esc(c.rule) + '</div>'
-          + (c.messages && c.messages.length ? '<div class="list">' + c.messages.map(ml).join('') + '</div>' : '<div class="emptyc">Nothing here yet.<br>Drag an email in to teach the rule.</div>') + '</div>';
-      }).join('') + '<div class="newcol" data-action="mail-col-new">+ New column</div></div>'
+      '<div class="bar"><h1>Email</h1>'
+      + '<div class="seg"><span class="' + (view === 'inbox' ? 'on' : '') + '" data-action="mail-view" data-view="inbox">Inbox</span><span class="' + (view === 'people' ? 'on' : '') + '" data-action="mail-view" data-view="people">People</span></div>'
+      + '<div class="cnt"><span><b>' + esc(data.unread != null ? data.unread : msgs.filter(function (m) { return m.un; }).length) + '</b> unread</span><span><b>' + esc(data.need != null ? data.need : msgs.filter(function (m) { return /reply/i.test(m.tag || ''); }).length) + '</b> need a reply</span><span><b>' + esc(data.colN != null ? data.colN : cols.length) + '</b> columns</span></div>'
+      + '<div class="r"><input class="search" data-action="mail-search" placeholder="Search all mail"><button class="btn" data-action="mail-filters">Filters</button><button class="btn pri" id="composeBtn" data-action="mail-compose">Compose</button></div></div>'
+      + '<div class="lay"><section class="feed"><div class="fh"><h3>All mail</h3><span class="s">one feed, newest first</span><div class="tabs">'
+      + '<span class="' + (tab === 'everything' ? 'on' : '') + '" data-action="mail-feed-tab" data-tab="everything">Everything</span>'
+      + '<span class="' + (tab === 'people' ? 'on' : '') + '" data-action="mail-feed-tab" data-tab="people">People</span>'
+      + '<span class="' + (tab === 'unread' ? 'on' : '') + '" data-action="mail-feed-tab" data-tab="unread">Unread</span>'
+      + '</div></div><div id="feed">' + feedHtml + '</div><div class="foot">Showing today and yesterday &middot; scroll for more</div></section>'
+      + '<section><div class="colsh"><h3>Your columns</h3><span class="s">you make these &middot; flag any email to file it &middot; drag a column to reorder</span><span class="lnk" data-action="mail-col-new">+ New column</span></div>'
+      + '<div class="cols" id="cols" data-action="mail-col-drop">' + colsHtml + '<div class="newcol" id="newcol" data-action="mail-col-new">+ New column<small>Name it anything: a deal, a person, a topic</small></div></div></section></div>'
+      + '<div class="pop" id="pop"><h6>Add to a column</h6><p id="popwho"></p><div id="popopts"></div><label class="always"><input type="checkbox" id="always" checked><span>Always put mail from <b id="popfrom"></b> here</span></label></div>'
       + '<div class="scrim" id="scrim" data-action="mail-close"></div>'
       + '<aside class="reader" id="reader"><span class="grab"></span>'
-      + '<div class="rh"><span class="av" style="background:#c98408;width:36px;height:36px">BF</span><div><h2>Deck &mdash; notes</h2></div><button class="btn x" id="close" data-action="mail-close">Close &times;</button></div>'
-      + '<div class="rmeta">Bruce Fair &lt;bruce@4ormfinance.com&gt; &middot; 3 days ago &middot; to you</div>'
-      + '<div class="links"><span>&#128100; Bruce Fair &middot; Advisor</span><span>&#128193; Space: Friends &amp; family</span><span>Pipeline: Investors &rsaquo; Contact made</span></div>'
-      + '<div class="acts"><button class="p" data-action="mail-reply" data-email="bruce@4ormfinance.com" data-from="Bruce Fair" data-subject="Deck — notes">Reply</button><button data-action="mail-add-space">Add to Space</button><button data-action="mail-task" data-subject="Deck notes">Create task</button><button data-action="mail-snooze">Snooze</button><button data-action="mail-move-col">Move column</button><button data-action="mail-done">Mark done</button></div>'
-      + '<div class="ai"><b>&#10022; 4orm Intelligence</b><p>Bruce wants tighter messaging on "What is it that 4orm is providing?" before the deck goes out. He\'s asking for one plain sentence on slide 2 and the counselling angle cut.</p>'
-      + '<div class="draft">Thanks Bruce &mdash; agreed. New slide 2 line: "4orm gives every financial recommendation a record the client understood and a regulator can check." I\'ll send the revised deck by Wednesday. Chad</div></div>'
-      + '<div class="bd">Need to tighten messaging with respect to What is it that 4orm is providing? Counselling…\n\nI think the first page should say it in one sentence. Then show the proof.\n\nB</div></aside>'
+      + '<div class="rh"><span class="av" style="background:#2e6bf2;width:36px;height:36px">BF</span><div><h2>Revised - This version may be better</h2></div><button class="btn x" id="close" data-action="mail-close">Close &times;</button></div>'
+      + '<div class="rmeta">Bruce Fair &lt;bruce@4ormfinance.com&gt;</div>'
+      + '<div class="acts"><button class="p" data-action="mail-reply" data-email="bruce@4ormfinance.com" data-from="Bruce Fair" data-subject="Revised - This version may be better">Reply</button><button data-action="mail-add-space">Add to Space</button><button data-action="mail-snooze">Snooze</button></div>'
+      + '<div class="bd">Let me know your thoughts. B</div></aside>'
       + composeHtml(openCompose);
     if (openCompose) {
       var root = wrap.getRootNode();

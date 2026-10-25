@@ -2577,10 +2577,10 @@ document.addEventListener('click',function(e){var t=e.target.closest&&e.target.c
 (function(){function keep(){var c=window.__clerk;if(c&&c.session&&typeof c.session.getToken==='function')c.session.getToken({skipCache:true}).catch(function(){});}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')keep();});window.addEventListener('focus',keep);setInterval(function(){if(document.visibilityState==='visible')keep();},45000);})();
 </script>
 <script src="/shadow-port.js"></script>
-<script src="/redesign-fixture.js"></script>
-<script src="/desk-actions.js?v=11"></script>
+<script src="/redesign-fixture.js?v=2"></script>
+<script src="/desk-actions.js?v=12"></script>
 <script src="/redesign-pages.js?v=3"></script>
-<script src="/redesign-pages-b.js?v=4"></script>
+<script src="/redesign-pages-b.js?v=5"></script>
 <script src="/control-room-war.js"></script>
 <script src="/control-room-ops.js?v=2"></script>
 <script src="/shell-nav.js?v=2"></script>

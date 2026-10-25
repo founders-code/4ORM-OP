@@ -78,7 +78,7 @@ Legend: **[D]** = has a design file to copy exactly.
 - [ ] Add link, ✎ edit, ⇄ move, × soft delete, Expand all; tiles open in a new tab; favicons; counts match tiles.
 
 ## 9. Email (08b compose, [D] 08d-email-inbox, [D] 08e-email-people-grid, [D] 08c-email-people person panel) - REPLACES the old 7-column board
-- [ ] Inbox | People toggle. Default = Inbox (08d).
+- [x] Inbox | People toggle. Default = Inbox (08d).
 - [ ] Inbox: ONE feed of all mail (Everything / People / Unread). Chad's own columns on the right, ship with ZERO. + New column; rename in place; drag to reorder (persists).
 - [ ] Flag on any email → popover: pick a column or "New column for this"; "Always put mail from <address> here" (on by default) saves a sender rule; future mail auto-files. Column header lists its senders with × to remove a rule. Drag an email onto a column = flag.
 - [ ] People grid (08e): boxes per person/company (addresses merged), from them / from you / files / last, latest 3, file chips, status, Open ›. Drag ⋮⋮ to reorder (persists). "Not in a box yet" strip; drag a sender onto a box. + New box. "Build boxes from my Contacts" one-time button. Ship with zero boxes otherwise.

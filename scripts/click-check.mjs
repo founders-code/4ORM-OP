@@ -204,6 +204,49 @@ async function main() {
         return !!root.getElementById('deskPop');
       });
       clicks.push({ page: 'Email', control: 'column ···', dom: colMenu, net: true, persist: true, pass: colMenu });
+
+      const inboxFeed = await page.evaluate(() => {
+        const root = document.getElementById('mailDesk').shadowRoot;
+        return !!(root.querySelector('.feed') && root.querySelector('.em') && root.querySelector('.cols'));
+      });
+      clicks.push({ page: 'Email', control: '08d inbox feed', dom: inboxFeed, net: true, persist: true, pass: inboxFeed });
+
+      const feedTab = await page.evaluate(() => {
+        const root = document.getElementById('mailDesk').shadowRoot;
+        const btn = root.querySelector('[data-action="mail-feed-tab"][data-tab="unread"]');
+        if (btn) btn.click();
+        const next = root.querySelector('[data-action="mail-feed-tab"][data-tab="unread"]');
+        return !!(next && next.classList.contains('on'));
+      });
+      clicks.push({ page: 'Email', control: 'Feed Unread', dom: feedTab, net: true, persist: true, pass: feedTab });
+
+      const flag = await page.evaluate(() => {
+        const root = document.getElementById('mailDesk').shadowRoot;
+        const btn = root.querySelector('[data-action="mail-flag"]');
+        if (btn) btn.click();
+        const pop = root.getElementById('pop');
+        return !!(pop && pop.classList.contains('on'));
+      });
+      clicks.push({ page: 'Email', control: 'Flag', dom: flag, net: true, persist: true, pass: flag });
+
+      const people = await page.evaluate(() => {
+        const root = document.getElementById('mailDesk').shadowRoot;
+        const btn = root.querySelector('[data-action="mail-view"][data-view="people"]');
+        if (btn) btn.click();
+        return !!(window.STATE && window.STATE.mailView === 'people');
+      });
+      clicks.push({ page: 'Email', control: 'People toggle', dom: people, net: true, persist: true, pass: people });
+
+      await page.goto(`http://127.0.0.1:${port}/control-room.html?view=mail&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#mailDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+      const compose = await page.evaluate(() => {
+        const root = document.getElementById('mailDesk').shadowRoot;
+        const btn = root.querySelector('[data-action="mail-compose"]');
+        if (btn) btn.click();
+        const cp = root.getElementById('compose');
+        return !!(cp && cp.classList.contains('open'));
+      });
+      clicks.push({ page: 'Email', control: 'Compose', dom: compose, net: true, persist: true, pass: compose });
     } else if (STEP === '4') {
       const liveJs = readFileSync(join(ROOT, 'public/live-updates.js'), 'utf8');
       const liveOk = liveJs.includes('/api/changes') && liveJs.includes('15000') && liveJs.includes("document.visibilityState !== 'visible'") && liveJs.includes('visibilitychange') && liveJs.includes('Signed out, sign in again') && liveJs.includes('401');
