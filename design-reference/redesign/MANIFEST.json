@@ -3,196 +3,196 @@
   "file": "redesign/01-dashboard.html",
   "page": "Dashboard",
   "route": "/control-room",
-  "bytes": 51255,
-  "sha256": "6518f67329934bf0"
+  "bytes": 51135,
+  "sha256": "2f56281614e1733e"
  },
  {
   "file": "redesign/02-war-room.html",
   "page": "War Room",
   "route": "/war-room",
-  "bytes": 50562,
-  "sha256": "f18b36cc2fca3906"
+  "bytes": 50690,
+  "sha256": "c4a38582365eafa9"
  },
  {
   "file": "redesign/03-notes.html",
   "page": "Notes",
   "route": "/notes",
-  "bytes": 41805,
-  "sha256": "0a8ae863e5d4b859"
+  "bytes": 41749,
+  "sha256": "f599fafd142572d3"
  },
  {
   "file": "redesign/04-pipeline.html",
   "page": "Pipeline",
   "route": "/pipeline",
-  "bytes": 41965,
-  "sha256": "d52170e9a2cf6436"
+  "bytes": 42103,
+  "sha256": "256b10108a70f550"
  },
  {
   "file": "redesign/05-spaces.html",
   "page": "Spaces",
   "route": "/spaces",
-  "bytes": 38056,
-  "sha256": "91da0d0e4e5efc54"
+  "bytes": 38194,
+  "sha256": "fe5923257f9440ee"
  },
  {
   "file": "redesign/06-documents.html",
   "page": "Documents",
   "route": "/documents",
-  "bytes": 40668,
-  "sha256": "b211dc1b7178bd22"
+  "bytes": 39912,
+  "sha256": "981b22141bd16318"
  },
  {
   "file": "redesign/07-links.html",
   "page": "Links",
   "route": "/links",
-  "bytes": 38028,
-  "sha256": "c83307c2ecb73065"
+  "bytes": 38160,
+  "sha256": "3a70fa5347c7defb"
  },
  {
   "file": "redesign/08-email.html",
   "page": "Email",
   "route": "/email",
-  "bytes": 50201,
-  "sha256": "e7e8df5b9388044c"
+  "bytes": 50227,
+  "sha256": "74b64c82b89cf2c5"
  },
  {
   "file": "redesign/08b-email-compose.html",
   "page": "Email compose panel",
   "route": "/email (Compose open)",
-  "bytes": 50268,
-  "sha256": "088843ced1425517"
+  "bytes": 50294,
+  "sha256": "2f02a45662afbc04"
  },
  {
   "file": "redesign/09-playbook.html",
   "page": "Playbook",
   "route": "/playbook",
-  "bytes": 75181,
-  "sha256": "057f7e8e4558b943"
+  "bytes": 75017,
+  "sha256": "96226ecbac0b5d1f"
  },
  {
   "file": "redesign/10-calendar.html",
   "page": "Calendar",
   "route": "/calendar",
-  "bytes": 95902,
-  "sha256": "bbb6dd8a948a7126"
+  "bytes": 96002,
+  "sha256": "c97f11606429cb85"
  },
  {
   "file": "redesign/11-zoom.html",
   "page": "Zoom",
   "route": "/zoom",
-  "bytes": 50454,
-  "sha256": "154c9f7cfa119371"
+  "bytes": 50571,
+  "sha256": "f66765b74a4350c6"
  },
  {
   "file": "redesign/12-completed.html",
   "page": "Completed",
   "route": "/completed",
-  "bytes": 38716,
-  "sha256": "f1d69f4c8b58afc2"
+  "bytes": 38845,
+  "sha256": "310017f4a869fed5"
  },
  {
   "file": "redesign/13-news.html",
   "page": "News",
   "route": "/news",
-  "bytes": 46011,
-  "sha256": "bf1509c6d62e2ad8"
+  "bytes": 46121,
+  "sha256": "e2c53263618de4bb"
  },
  {
   "file": "redesign/14-drive.html",
   "page": "Drive",
   "route": "/drive",
-  "bytes": 38943,
-  "sha256": "ce597390eeb451e5"
+  "bytes": 38083,
+  "sha256": "e7487c9894dc163a"
  },
  {
   "file": "redesign/15-contacts.html",
   "page": "Contacts",
   "route": "/contacts",
-  "bytes": 39296,
-  "sha256": "1a2549675fcec84d"
+  "bytes": 39409,
+  "sha256": "789081c8f5e02d9e"
  },
  {
   "file": "redesign/16-financials.html",
   "page": "Financials",
   "route": "/financials",
-  "bytes": 36805,
-  "sha256": "562a86a18601eb2d"
+  "bytes": 36920,
+  "sha256": "1b3521ff97760ed9"
  },
  {
   "file": "redesign/17-integrations.html",
   "page": "Integrations",
   "route": "/integrations",
-  "bytes": 36154,
-  "sha256": "720ba2d1b196eb7f"
+  "bytes": 36292,
+  "sha256": "ed9e9547e7ecda08"
  },
  {
   "file": "redesign/02b-war-room-steps.html",
   "page": "War Room - Steps open",
   "route": "/war-room (Steps clicked)",
-  "bytes": 52386,
-  "sha256": "c6c6cd5f016d3cf5"
+  "bytes": 52505,
+  "sha256": "f6f8feb9f2976815"
  },
  {
   "file": "redesign/03b-notes-open.html",
   "page": "Notes - note opened",
   "route": "/notes (note clicked)",
-  "bytes": 45250,
-  "sha256": "3e76dcd049d359b0"
+  "bytes": 45177,
+  "sha256": "6e70008a7b305269"
  },
  {
   "file": "redesign/05b-space-open.html",
   "page": "Space opened",
   "route": "/spaces/:id",
-  "bytes": 53025,
-  "sha256": "868da347cd219986"
+  "bytes": 53116,
+  "sha256": "c34616e1cc5d294c"
  },
  {
   "file": "redesign/06b-document-viewer.html",
   "page": "Documents - in-site viewer",
   "route": "/documents (file clicked)",
-  "bytes": 45647,
-  "sha256": "e2427b492f2511ee"
+  "bytes": 44887,
+  "sha256": "a1e4494dd0a339f5"
  },
  {
   "file": "redesign/08c-email-people.html",
   "page": "Email - People view",
   "route": "/email?view=people&person=:id (person panel)",
-  "bytes": 48432,
-  "sha256": "e6faf57aedff9c96"
+  "bytes": 48561,
+  "sha256": "30462c79610f4102"
  },
  {
   "file": "redesign/10b-calendar-rail-closed.html",
   "page": "Calendar - side panel closed",
   "route": "/calendar (rail toggle)",
-  "bytes": 96843,
-  "sha256": "d29a9b1d316804e3"
+  "bytes": 96931,
+  "sha256": "85601c042c1c5209"
  },
  {
   "file": "redesign/13b-news-saved.html",
   "page": "News - Saved collections",
   "route": "/news?view=saved",
-  "bytes": 49388,
-  "sha256": "c3e60877bb3faa8b"
+  "bytes": 49451,
+  "sha256": "b5d438108d14f793"
  },
  {
   "file": "redesign/08d-email-inbox.html",
   "page": "Email - Inbox feed + your columns",
   "route": "/email (default view)",
-  "bytes": 45734,
-  "sha256": "23bdf298b1969c6e"
+  "bytes": 45858,
+  "sha256": "6e9e346f9f7072e3"
  },
  {
   "file": "redesign/08e-email-people-grid.html",
   "page": "Email - People grid (boxes, tags, closed-box drawer)",
   "route": "/email?view=people",
-  "bytes": 64194,
-  "sha256": "bbd7cf785cad9cac"
+  "bytes": 64323,
+  "sha256": "e91fa5600c580c40"
  },
  {
   "file": "redesign/10c-calendar-event-editor.html",
   "page": "Calendar - event editor open (no icons, 24h times)",
   "route": "/calendar (event clicked)",
-  "bytes": 96288,
-  "sha256": "32e4538ab1a56d3f"
+  "bytes": 96388,
+  "sha256": "e9c431d9541d2c5d"
  }
 ]
