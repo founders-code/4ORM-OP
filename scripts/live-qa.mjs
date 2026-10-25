@@ -4,7 +4,6 @@ import { requireStorageState } from './auth-state.mjs';
 const BASE = (process.env.PLAYWRIGHT_BASE_URL || 'https://www.4ormop.com').replace(/\/$/, '');
 
 const PAGES = [
-  { page: '01-dashboard', path: '/control-room', ready: '#opsDash[data-port-ready]' },
   { page: '02-war-room', path: '/war-room', ready: '#warDesk[data-port-ready]' },
   { page: '03-notes', path: '/notes', ready: '#notesDesk[data-port-ready]' },
   { page: '04-pipeline', path: '/pipeline', ready: '#pipeDesk[data-port-ready]' },

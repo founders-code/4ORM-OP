@@ -91,14 +91,13 @@
       }
     },
     war: {
-      cash: '$3,180',
       runway: '~1 day',
-      raise: '$80K of $250K',
+      toGo: '$170K',
       daysToClose: 11,
-      launch: 'Oct 23',
-      momentumHours: '13h open today',
-      coach: "Regulators can wait. Don't let them take a cash-first morning — drop them or give them 10 minutes, then back to the one thing.",
-      streak: 'Focus streak · start today',
+      nextMeet: { title: 'Dean and Chad', when: '11:00', url: 'https://us06web.zoom.us/j/7783632424' },
+      lights: 11,
+      sigCount: 6,
+      coach: "Regulators can wait. Don't let them take a cash-first morning — drop them or give them 20 minutes after 3pm.",
       hero: {
         title: 'Call Kevin about his $25K chunk today',
         why: '$100 cash, ~1 day of runway, $170K to close. Kevin named an amount as the next private-network conversation — lock the wire date on this call.'
@@ -115,43 +114,60 @@
         { id: 'm2', title: 'Send Brooks the delay-cost tally Bruce asked for', zone: 'z-raise', zoneLabel: 'Raise', why: '$500K subscription is papered separately; Brooks went dark and Chad owes him a number.', src: 'Source: commitments · Bruce Fair follow-up on Brooks' },
         { id: 'm3', title: 'Move the 2 design-partner Send-Email cards to today', zone: 'z-part', zoneLabel: 'Partners', why: '2 mortgage brokerages are in Send-Email; none reached a meeting yet.', src: 'Source: Design Partner pipeline stage counts' }
       ],
-      meetingActions: [
-        { tag: 't-fu', tagLabel: 'Follow up', text: 'Bruce Fair on Brooks (went dark): send him a tally of what ~3–4 months of delay cost the company.', from: 'Deck rework + investor-outreach planning · Sep 28' },
-        { tag: 't-fu', tagLabel: 'Follow up', text: 'The contact only "took a peek" at materials — secure a concrete next step even when a call falls apart.', from: 'Kinley Financial check-in · Sep 18' },
-        { tag: 't-you', tagLabel: 'You said', text: "Follow up on all volunteered commercial structures (API, finder's fee, rev-share) with a defined use case.", from: 'Transactor settlement + compliance stack · Aug 4' },
-        { tag: 't-fu', tagLabel: 'Follow up', text: 'Michael Stephens + James Atherton: NMDA with Michael, chase securities lawyer Veronica Armstrong, note incorporation.', from: 'Advisor debrief after the AI call · Aug 4' },
-        { tag: 't-fu', tagLabel: 'Follow up', text: 'Michael flagged weak meeting discipline in regulator meetings — capture decisions, assign owners, follow up.', from: 'DAO / regulator strategy · Jul 28' }
-      ],
       meetingActionTotal: 8,
-      nextUp: [
-        { when: 'in 38m', title: 'Dean and Chad weekly call', link: 'Join' },
-        { when: 'in 3h 38m', title: 'Don and Chad 1:1', link: 'Prep' }
-      ],
-      reachChips: ['All 4', 'VC 2', 'Design partner 1', 'Regulator 1', 'Corporate 0', 'Client 0'],
-      reach: [
-        { name: 'Kevin Wong', meta: 'VC · private network · call' },
-        { name: 'Joe Canavan', meta: 'VC · angel · email' },
-        { name: 'Enrich Mortgage Group', meta: 'Design partner · discovery' },
-        { name: 'BCFSA', meta: 'Regulator · reach-out only' }
-      ],
+      reachToday: 4,
       today: {
-        count: 7, more: 2,
+        count: 7, more: 0,
         tasks: [
           { title: 'Widen the round past one cheque by Friday', tag: 'Investors' },
+          { title: 'Send Bruce the tally of what Brooks\' delay is costing', tag: 'from Zoom · Bruce Fair' },
           { title: 'Request to join the CLHIA Affiliates Program', tag: 'Outreach' },
+          { title: 'NMDA: answer Michael\'s two points, send to James', tag: 'from Zoom · Michael Stevens' },
           { title: 'Reach out to Bank of Canada about RPAA supervision', tag: 'Regulator' },
           { title: 'Reach out to CSA', tag: 'Regulator' },
           { title: 'Reach out to ASC and BCSC', tag: 'Regulator' }
         ]
       },
-      week: { count: 0, more: 0, tasks: [] },
-      later: {
-        count: 41, more: 37,
+      week: {
+        count: 2, more: 0,
         tasks: [
           { title: 'Send the Business Overview page to the CLHIA contact', tag: 'Outreach' },
-          { title: 'Fix the failed Granola workspace payment', tag: 'Ops' },
-          { title: 'Reply to "Delivering your funding round" — decide if worth it', tag: 'Investors' },
           { title: 'Review the Grande Prairie Mortgage Group outreach', tag: 'Outreach' }
+        ]
+      },
+      later: {
+        count: 39, more: 37,
+        tasks: [
+          { title: 'Fix the failed Granola workspace payment', tag: 'Ops' },
+          { title: 'Reply to "Delivering your funding round" — decide if worth it', tag: 'Investors' }
+        ]
+      },
+      done: {
+        count: 3, more: 0,
+        tasks: [
+          { title: "Check Kevin's last email about the $25K", tag: '9:02' },
+          { title: 'Inbox zero', tag: 'Playbook · 8:40' },
+          { title: "Post today's clip", tag: 'Playbook · 8:15' }
+        ]
+      },
+      signals: {
+        brain: '4orm Intelligence, 10:21: Kevin replied "wiring the $25K Thursday". Move 1 updated, raise tracker now shows 1 pending.',
+        needYou: 6,
+        since: '8:00',
+        needs: [
+          { color: '#e0364f', title: 'Inbox', count: '5 need a reply', detail: 'Bruce, CLHIA, Mike Gardner, Ashish, Bow Valley CU', dest: 'mail', go: 'Email' },
+          { color: '#e0364f', title: 'Owed from meetings', count: '8 open', detail: '3 added to Today, 5 to review', dest: 'review', go: 'Review' },
+          { color: '#c98408', title: 'Reach out', count: '4 today', detail: 'Kevin Wong, Joe Canavan, Enrich, BCFSA', dest: 'pipe', go: 'Pipeline' },
+          { color: '#c98408', title: 'Going cold', count: '3 people', detail: 'Dean Hesse 16d, BCFSA 21d, Mench Capital 9d', dest: 'people', go: 'People' }
+        ],
+        news: [
+          { color: '#2e6bf2', title: 'LinkedIn', count: '7 new messages', detail: 'people only, system notices hidden', dest: 'people', go: 'People' },
+          { color: '#2e6bf2', title: 'Pipeline', count: '2 moved', detail: 'Bow Valley CU → Meeting booked · Enrich → Contact made', dest: 'pipe', go: 'Pipeline' },
+          { color: '#12a36a', title: 'Zoom', count: 'notes ready', detail: 'Don and Chad 1on1 · 2 actions', dest: 'zoom', go: 'Zoom' }
+        ],
+        watch: [
+          { color: '#e0364f', title: 'Raise', count: '$0 booked this week', detail: '$170K to go, 11 days', dest: 'finance', go: 'Financials' },
+          { color: '#c98408', title: 'Integrations', count: '1 needs attention', detail: 'OpenAI key not set', dest: 'int', go: 'Fix' }
         ]
       }
     },

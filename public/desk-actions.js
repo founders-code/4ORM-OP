@@ -525,11 +525,24 @@
     'task-done': function (el, root) {
       var id = attr(el, 'data-id');
       var task = el.closest('.task');
-      if (task) task.classList.toggle('done');
+      if (task) {
+        task.classList.toggle('d');
+        task.classList.toggle('done');
+        var cb = task.querySelector('.cb');
+        if (cb) cb.classList.toggle('on');
+      }
       if (!id) { toast(root, 'Checked off'); return; }
-      return patchItem(id, { status: 'done' }).then(function () {
+      var tag = task && task.querySelector('.tg');
+      var fromZoom = tag && /from Zoom/i.test(tag.textContent || '');
+      var req = fromZoom
+        ? api('/api/meeting-actions', { method: 'POST', body: { id: id, status: 'handled' } }).then(ok).then(json).then(function (d) {
+          if (d && d.actions) S().meetingActions = d.actions;
+          return patchItem(id, { status: 'done' }).catch(function () {});
+        })
+        : patchItem(id, { status: 'done' });
+      return req.then(function () {
         refresh('war');
-        toast(root, 'Completed', function () { patchItem(id, { status: 'new' }).then(function () { refresh('war'); }); });
+        toast(root, 'Done today', function () { patchItem(id, { status: 'new' }).then(function () { refresh('war'); }); });
       }).catch(function () { toast(root, 'Could not complete that task'); });
     },
     'task-move': function (el, root) {
@@ -1169,9 +1182,66 @@
     },
     'top-signals': function (el, root, ev) {
       if (ev) ev.stopPropagation();
-      if (typeof window.openSignals === 'function') window.openSignals();
-      else go('int');
+      S().signalsOpen = !S().signalsOpen;
+      if ((S().desk || 'war') === 'war' && typeof window.paintRedesignWar === 'function') {
+        window.paintRedesignWar();
+        return;
+      }
+      var host = document.getElementById('sigHost');
+      if (!host) return;
+      if (!S().signalsOpen) {
+        host.classList.remove('on');
+        host.setAttribute('hidden', '');
+        return;
+      }
+      var data = (window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.war) || {};
+      var html = window.__port && window.__port.signalsHtml
+        ? window.__port.signalsHtml(data, true)
+        : '<div class="sh"><b>Signals</b><span class="x" data-action="signals-close">&times;</span></div>';
+      host.innerHTML = html.replace(/^<div class="sigpanel[^"]*"[^>]*>/, '').replace(/<\/div>$/, '');
+      if (!host.querySelector('.sh')) host.innerHTML = html;
+      host.classList.add('on');
+      host.removeAttribute('hidden');
+      if (typeof window.bindShadowActions === 'function') window.bindShadowActions(document);
     },
+    'signals-open': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      S().signalsOpen = true;
+      refresh('war');
+      if (typeof window.openSignalsPanel === 'function') window.openSignalsPanel();
+    },
+    'signals-close': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      S().signalsOpen = false;
+      refresh('war');
+      if (typeof window.closeSignalsPanel === 'function') window.closeSignalsPanel();
+    },
+    'signals-go': function (el) {
+      var dest = attr(el, 'data-dest') || '';
+      S().signalsOpen = false;
+      if (dest === 'mail' || dest === 'email') go('mail');
+      else if (dest === 'review' || dest === 'owed') {
+        go('war');
+        S().reviewMeetings = true;
+        refresh('war');
+      } else if (dest === 'pipe' || dest === 'pipeline' || dest === 'reach') go('contacts');
+      else if (dest === 'people' || dest === 'contacts') go('people');
+      else if (dest === 'zoom') go('znotes');
+      else if (dest === 'finance' || dest === 'financials') go('finance');
+      else if (dest === 'int' || dest === 'fix') go('int');
+      else if (dest === 'brain') soon(el, 'Brain log');
+    },
+    'meet-join': function (el) {
+      var url = attr(el, 'data-url');
+      if (url) window.open(url, '_blank', 'noopener');
+      else soon(el, 'Join meeting');
+    },
+    'owed-review': function () {
+      S().reviewMeetings = true;
+      refresh('war');
+      toast(document.body, 'Review meeting commitments');
+    },
+    'reach-pipe': function () { go('contacts'); },
     'nav-reset': function (el, root, ev) {
       if (ev) ev.stopPropagation();
       document.body.classList.remove('arranging');
@@ -2336,7 +2406,9 @@
       } else {
         var row = (S().stickies || []).filter(function (n) { return String(n.id) === String(id); })[0] || {};
         var meta = Object.assign({}, row.meta && typeof row.meta === 'object' ? row.meta : {}, { title: title });
-        req = api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { body: body, meta: meta } });
+        req = api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { body: body, meta: meta } }).catch(function () {
+          return api('/api/notes/sticky', { method: 'PATCH', body: { id: id, body: body, meta: meta } });
+        });
       }
       req.then(ok).then(function () {
         if (saved) saved.innerHTML = '<i></i>Saved · just now';
@@ -2348,6 +2420,23 @@
   }
 
   function onClick(e) {
+    if (S().signalsOpen) {
+      var path = (e.composedPath && e.composedPath()) || [];
+      var keep = false;
+      for (var i = 0; i < path.length; i++) {
+        var n = path[i];
+        if (!n || !n.getAttribute) continue;
+        if (n.id === 'sigpanel' || n.id === 'sigHost' || (n.classList && n.classList.contains('sigpanel'))) { keep = true; break; }
+        var act = n.getAttribute('data-action') || '';
+        if (act === 'top-signals' || act === 'signals-open' || act === 'signals-go' || act === 'signals-close') { keep = true; break; }
+      }
+      if (!keep) {
+        S().signalsOpen = false;
+        refresh('war');
+        var host = document.getElementById('sigHost');
+        if (host) { host.classList.remove('on'); host.setAttribute('hidden', ''); }
+      }
+    }
     if (onClick._t === e.timeStamp && onClick._x === e.clientX && onClick._y === e.clientY) return;
     onClick._t = e.timeStamp; onClick._x = e.clientX; onClick._y = e.clientY;
     var el = actionElFromEvent(e);
@@ -2398,6 +2487,13 @@
         showOv(root.getElementById('planOv'), false);
         showOv(root.getElementById('reachOv'), false);
         showOv(root.getElementById('contactOv'), false);
+        e.preventDefault();
+        return;
+      }
+      if (S().signalsOpen) {
+        S().signalsOpen = false;
+        refresh('war');
+        if (typeof window.closeSignalsPanel === 'function') window.closeSignalsPanel();
         e.preventDefault();
         return;
       }

@@ -46,7 +46,7 @@
     var n = document.createElement('div');
     n.id = 'deskSignedOut';
     n.setAttribute('role', 'status');
-    n.textContent = 'Signed out, sign in again';
+    n.textContent = 'Signed out - sign in again';
     n.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:90;background:#142036;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 10px 30px rgba(3,10,30,.28)';
     document.body.appendChild(n);
   }
@@ -70,7 +70,7 @@
   }
 
   function paintRoom() {
-    if (typeof renderOpsDash === 'function' && (!desk() || desk() === 'room')) renderOpsDash();
+    if (typeof window.paintRedesignWar === 'function' && (!desk() || desk() === 'war' || desk() === 'room')) window.paintRedesignWar();
   }
 
   function apply(d) {

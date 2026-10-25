@@ -1,7 +1,6 @@
 (function () {
   var NAV = [
     ['Workspace'],
-    ['Dashboard', 'M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z', '', 'room', '/control-room'],
     ['War Room', 'M12 2l3 6 6 .9-4.5 4.3 1 6.3L12 16.6 6.5 19.5l1-6.3L3 8.9 9 8z', '', 'war', '/war-room'],
     ['Pipeline', 'M3 5h18l-7 8v6l-4 2v-8z', '', 'contacts', '/pipeline'],
     ['Spaces', 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', '', 'work', '/spaces'],
@@ -21,7 +20,7 @@
     ['Integrations', 'M9 7V3M15 7V3M6 7h12v5a6 6 0 0 1-12 0zM12 18v3', '', 'int', '/control-room?view=int']
   ];
   var PAGE = {
-    room: 'Dashboard', war: 'War Room', contacts: 'Pipeline', work: 'Spaces', docs: 'Documents',
+    room: 'War Room', war: 'War Room', contacts: 'Pipeline', work: 'Spaces', docs: 'Documents',
     links: 'Links', mail: 'Email', playbook: 'Playbook', calendar: 'Calendar', znotes: 'Zoom',
     notes: 'Notes', done: 'Completed', news: 'News', drive: 'Drive', people: 'Contacts',
     finance: 'Financials', int: 'Integrations'
@@ -66,19 +65,32 @@
     if (fixtureOn() && window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.navBadges) {
       return window.REDESIGN_FIXTURE.navBadges;
     }
-    var pipe = (typeof STATE !== 'undefined' && STATE.contacts) ? STATE.contacts.length : 0;
-    var plugs = 0;
-    if (typeof STATE !== 'undefined' && Array.isArray(STATE.plugins)) {
-      plugs = STATE.plugins.filter(function (p) { return p.connected || p.on; }).length;
-    }
-    if (!plugs && typeof STATE !== 'undefined' && Array.isArray(STATE.integrations)) {
-      plugs = STATE.integrations.filter(function (g) { return /on|ok|connected|live/i.test(String(g.state || g.word || '')); }).length;
-    }
-    return { Pipeline: pipe ? String(pipe) : '', Integrations: plugs ? String(plugs) : '' };
+    var S = typeof STATE !== 'undefined' ? STATE : {};
+    var today = (S.items || []).filter(function (it) {
+      if (it.status === 'done' || it.status === 'dropped') return false;
+      var due = it.due || it.nextDate || '';
+      return !due || String(due).slice(0, 10) <= new Date().toISOString().slice(0, 10);
+    }).length;
+    var mailNeed = (S.mail || []).filter(function (m) { return m && (m.unread || m.needsReply || m.needReply); }).length;
+    var owed = (S.meetingActions || []).filter(function (a) { return a && a.status !== 'done' && a.status !== 'handled' && a.status !== 'tasked'; }).length;
+    var cold = (S.contacts || []).filter(function (c) {
+      var last = c.lastTouch || c.last_touch || c.lastContact || '';
+      if (!last) return true;
+      var days = (Date.now() - new Date(last).getTime()) / 86400000;
+      return days >= 14;
+    }).length;
+    var attn = (S.integrations || []).filter(function (g) { return /warn|error|off|attention|missing/i.test(String(g.state || g.word || '')); }).length;
+    return {
+      Pipeline: today ? String(today) : '',
+      Email: mailNeed ? String(mailNeed) : '',
+      Zoom: owed ? String(owed) : '',
+      Contacts: cold ? String(cold) : '',
+      Integrations: attn ? String(attn) : ''
+    };
   }
   function activeName() {
     var v = (typeof STATE !== 'undefined' && STATE.desk) || 'room';
-    return PAGE[v] || 'Dashboard';
+    return PAGE[v] || 'War Room';
   }
   function paint() {
     var side = document.getElementById('side');

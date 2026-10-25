@@ -27,6 +27,11 @@ const nextConfig = {
   // Serve the public landing at "/" so the look is preserved exactly.
   // The gated rooms live at /advisor.html, /employee.html, /engineering.html.
   // /control-room rewrites to the Control Room prototype.
+  async redirects() {
+    return [
+      { source: '/control-room', destination: '/war-room', permanent: false },
+    ];
+  },
   async rewrites() {
     return [
       { source: '/', destination: '/index.html' },

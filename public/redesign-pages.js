@@ -42,7 +42,7 @@
     + '.pick-row{display:flex;gap:10px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);font-size:13.5px}'
     + '.pick-row:first-child{border-top:0}';
   var CSS = {
-    room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=2', notes: '/port-css/notes.css?v=2',
+    room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=3', notes: '/port-css/notes.css?v=2',
     contacts: '/port-css/pipeline.css', work: '/port-css/spaces.css?v=2', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css',
     links: '/port-css/links.css', mail: '/port-css/email.css?v=2', mailPeople: '/port-css/email-people.css?v=1',
     playbook: '/port-css/playbook.css?v=2', calendar: '/port-css/calendar.css?v=3', zoom: '/port-css/zoom.css',
@@ -505,10 +505,21 @@
     var fin = S.finance || {};
     var raise = fin.raise || {};
     var moves = ceoMoves().slice(0, 3);
-    var actions = asList(S.meetingActions).filter(function (row) { return row.status !== 'done' && row.status !== 'tasked'; });
-    var meetings = upcomingEvents().slice(0, 2);
+    var actions = asList(S.meetingActions).filter(function (row) { return row.status !== 'done' && row.status !== 'tasked' && row.status !== 'handled'; });
+    var meetings = upcomingEvents().slice(0, 1);
+    var nextEv = meetings[0] || {};
     function colItems(key) {
       return asList(S.items).filter(function (it) {
+        if (key === 'done') {
+          if (it.status !== 'done') return false;
+          var when = it.doneAt || it.completedAt || it.updatedAt || it.due || '';
+          if (!when) return true;
+          try {
+            var d = new Date(when);
+            var now = new Date();
+            return d.toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' }) === now.toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' });
+          } catch (e) { return true; }
+        }
         if (it.status === 'done' || it.status === 'dropped') return false;
         var b = itemBucket(it);
         if (key === 'today') return b === 'today' || b === 'overdue';
@@ -516,60 +527,83 @@
         return b === 'later';
       });
     }
-    function pack(key) {
+    function pack(key, cap) {
       var all = colItems(key);
-      return { count: all.length, more: Math.max(0, all.length - 5), tasks: all.slice(0, 5).map(function (it) {
-        return { id: it.id, title: verbTitle(it), tag: it.category || it.area || 'Ops' };
+      var limit = cap || 8;
+      return { count: all.length, more: Math.max(0, all.length - limit), tasks: all.slice(0, limit).map(function (it) {
+        return { id: it.id, title: verbTitle(it), tag: it.tag || it.category || it.area || 'Ops' };
       }) };
     }
+    var zoomTasks = actions.filter(function (row) { return !row.handled; }).map(function (row) {
+      var who = row.person || row.from || row.who || (row.meetingTitle || row.meeting_title || '').split(/[·|]/)[0] || 'meeting';
+      return { id: row.id || '', title: row.text || row.body || 'Meeting follow-up', tag: 'from Zoom · ' + String(who).trim(), fromMeeting: true };
+    });
+    var todayPack = pack('today', 12);
+    var seen = {};
+    todayPack.tasks.forEach(function (t) { seen[t.id] = true; });
+    zoomTasks.forEach(function (t) {
+      if (t.id && seen[t.id]) return;
+      todayPack.tasks.push(t);
+      todayPack.count += 1;
+    });
     var heroMove = moves[0] || {};
     var people = reachPeople();
-    var kinds = [['all', 'All'], ['vc', 'VC'], ['design', 'Design partner'], ['regulator', 'Regulator'], ['corporate', 'Corporate'], ['client', 'Client']];
-    var reachChips = kinds.map(function (pair) {
-      var n = people.filter(function (p) { return pair[0] === 'all' || p.kind === pair[0]; }).length;
-      return pair[1] + ' ' + n;
-    });
-    var reachNames = { vc: 'VC', design: 'Design partner', regulator: 'Regulator', corporate: 'Corporate', client: 'Client' };
-    liveLog('war', { moveOut: moves.length, actOut: actions.length, meetOut: meetings.length, reachOut: people.length, today: colItems('today').length, week: colItems('week').length, later: colItems('later').length });
+    var pb = S.playbook || {};
+    var lights = pb.lightsLeft != null ? pb.lightsLeft : (pb.left != null ? pb.left : 0);
+    var mailNeed = asList(S.mail).filter(function (m) { return m && (m.unread || m.needsReply || m.needReply); }).length;
+    var cold = asList(S.contacts).filter(function (c) {
+      var last = c.lastTouch || c.last_touch || c.lastContact || '';
+      if (!last) return false;
+      return (Date.now() - new Date(last).getTime()) / 86400000 >= 14;
+    }).length;
+    var attn = asList(S.integrations).filter(function (g) { return /warn|error|off|attention|missing/i.test(String(g.state || g.word || '')); }).length;
+    var sigCount = [mailNeed, actions.length, people.filter(function (p) { return !p.done; }).length, cold, attn].filter(Boolean).length;
+    liveLog('war', { moveOut: moves.length, actOut: actions.length, today: todayPack.count, week: colItems('week').length, later: colItems('later').length });
     return {
       cash: fin.cashLabel || '$3,180',
       runway: fin.runwayLabel || '~1 day',
-      raise: (raise.inLabel && raise.targetLabel) ? (raise.inLabel + ' of ' + raise.targetLabel) : '$80K of $250K',
+      toGo: raise.toGoLabel || '$170K',
       daysToClose: days,
-      launch: 'Oct 23',
-      momentumHours: (function () {
-        var busy = 0;
-        asList(S.events).forEach(function (ev) {
-          if (Math.abs(eventStart(ev) - Date.now()) > 16 * 3600000) return;
-          busy += Number(ev.dur) || 30;
-        });
-        return Math.max(0, Math.round((15 * 60 - busy) / 60)) + 'h open today';
-      }()),
-      coach: "Regulators can wait. Don't let them take a cash-first morning — drop them or give them 10 minutes, then back to the one thing.",
-      streak: 'Focus streak · start today',
+      nextMeet: { title: nextEv.title || '—', when: nextEv.start ? soon(nextEv.start) : '', url: nextEv.join || nextEv.url || '' },
+      lights: lights,
+      sigCount: sigCount || 0,
+      coach: (S.ceo && S.ceo.coach) || "Regulators can wait. Don't let them take a cash-first morning — drop them or give them 20 minutes after 3pm.",
       hero: { id: heroMove.id || '', title: moveText(heroMove) || 'Pick today’s one move', why: moveWhy(heroMove) },
       moves: moves.map(function (m, i) {
         var zone = String(m.zone || m.area || 'Raise');
         var zc = /cash|runway/i.test(zone) ? 'z-cash' : /partner/i.test(zone) ? 'z-part' : /reg/i.test(zone) ? 'z-reg' : 'z-raise';
         return { id: m.id || '', title: moveText(m), zone: zc, zoneLabel: zone, one: i === 0, why: moveWhy(m), src: m.source || m.sourceLine || m.source_line || '' };
       }),
-      meetingActions: actions.slice(0, 5).map(function (row) {
-        var you = String(row.kind || row.tag || '') === 'you_said' || /said|you/i.test(String(row.kind || row.tag || ''));
-        return { id: row.id || '', tag: you ? 't-you' : 't-fu', tagLabel: you ? 'You said' : 'Follow up', text: row.text || row.body || '', from: (row.meetingTitle || row.meeting_title || 'Meeting') + (row.meetingDate || row.meeting_date ? ' · ' + (row.meetingDate || row.meeting_date) : '') };
-      }),
       meetingActionTotal: actions.length,
-      nextUp: meetings.map(function (ev, i) {
-        return { when: soon(ev.start), title: ev.title, link: (i === 0 || ev.join) ? 'Join' : 'Prep', url: ev.join || '', join: i === 0 || !!ev.join };
-      }),
-      reachChips: reachChips,
-      reach: people.filter(function (p) { return !p.done; }).slice(0, 8).map(function (p) {
-        var kind = String(p.kind || p.type || p.role || '').toLowerCase();
-        var bits = [reachNames[kind] || p.kind || p.type || p.role || 'Corporate', p.company || p.org || p.organisation, p.nextAction || p.next_action || p.action].filter(Boolean);
-        return { id: p.id || '', kind: kind, name: p.name || p.fullName || p.who || p.title || 'Person', meta: bits.join(' · ') };
-      }),
-      today: pack('today'),
-      week: pack('week'),
-      later: pack('later')
+      reachToday: people.filter(function (p) { return !p.done; }).length,
+      today: todayPack,
+      week: pack('week', 8),
+      later: pack('later', 2),
+      done: pack('done', 8),
+      signals: liveSignalsState(S, {
+        mailNeed: mailNeed, owed: actions.length, reach: people.filter(function (p) { return !p.done; }).length,
+        cold: cold, attn: attn, toGo: raise.toGoLabel || '$170K', days: days
+      })
+    };
+  }
+
+  function liveSignalsState(S, n) {
+    var brain = (S.ceo && (S.ceo.brainLine || S.ceo.lastLine)) || '';
+    return {
+      brain: brain ? ('4orm Intelligence: ' + brain) : '4orm Intelligence is watching the desk.',
+      needYou: n.sigCount || ((n.mailNeed ? 1 : 0) + (n.owed ? 1 : 0) + (n.reach ? 1 : 0) + (n.cold ? 1 : 0)),
+      since: '8:00',
+      needs: [
+        { color: '#e0364f', title: 'Inbox', count: (n.mailNeed || 0) + ' need a reply', detail: 'People waiting on you', dest: 'mail', go: 'Email' },
+        { color: '#e0364f', title: 'Owed from meetings', count: (n.owed || 0) + ' open', detail: 'From Zoom + Granola', dest: 'review', go: 'Review' },
+        { color: '#c98408', title: 'Reach out', count: (n.reach || 0) + ' today', detail: 'Needs you today', dest: 'pipe', go: 'Pipeline' },
+        { color: '#c98408', title: 'Going cold', count: (n.cold || 0) + ' people', detail: '14 days or more', dest: 'people', go: 'People' }
+      ],
+      news: [],
+      watch: [
+        { color: '#e0364f', title: 'Raise', count: (n.toGo || '$170K') + ' to go', detail: (n.days || 0) + ' days', dest: 'finance', go: 'Financials' },
+        { color: '#c98408', title: 'Integrations', count: (n.attn || 0) + ' need attention', detail: 'Open Integrations', dest: 'int', go: 'Fix' }
+      ]
     };
   }
 
@@ -697,20 +731,41 @@
     markReady('opsDash');
   }
 
-  function execCol(label, col, bucket) {
+  function warTask(it, dests, done) {
+    var id = esc(it.id || '');
+    var hv = done ? '' : '<div class="hv">' + dests.map(function (d) {
+      return '<button data-action="task-move" data-id="' + id + '" data-bucket="' + d[0] + '">' + d[1] + '</button>';
+    }).join('') + '</div>';
+    return '<div class="task' + (done ? ' d' : '') + '" draggable="true" data-action="task-drag" data-id="' + id + '"><span class="cb' + (done ? ' on' : '') + '" data-action="task-done" data-id="' + id + '"></span><div><div class="tt">' + esc(it.title) + '</div><div class="tg">' + esc(it.tag || '') + '</div></div>' + hv + '</div>';
+  }
+  function execCol(label, col, bucket, dests, done) {
     var tasks = (col && col.tasks) || [];
-    var body = tasks.length ? tasks.map(function (it) {
-      var id = esc(it.id || '');
-      var hv = bucket === 'today'
-        ? '<button data-action="task-move" data-id="' + id + '" data-bucket="week">Week</button><button data-action="task-move" data-id="' + id + '" data-bucket="later">Later</button><button data-action="task-drop" data-id="' + id + '">&times;</button>'
-        : bucket === 'week'
-          ? '<button data-action="task-move" data-id="' + id + '" data-bucket="today">Today</button><button data-action="task-move" data-id="' + id + '" data-bucket="later">Later</button><button data-action="task-drop" data-id="' + id + '">&times;</button>'
-          : '<button data-action="task-move" data-id="' + id + '" data-bucket="today">Today</button><button data-action="task-move" data-id="' + id + '" data-bucket="week">Week</button><button data-action="task-drop" data-id="' + id + '">&times;</button>';
-      return '<div class="task" draggable="true" data-action="task-drag" data-id="' + id + '"><span class="cb" data-action="task-done" data-id="' + id + '"></span><div><div class="tt">' + esc(it.title) + '</div><div class="tg">' + esc(it.tag) + '</div></div><div class="hv">' + hv + '</div></div>';
-    }).join('') : '<div class="empty">Nothing set for this ' + (label === 'Today' ? 'column' : label === 'This week' ? 'week' : 'column') + '.<br>Drag a task here or press +.</div>';
-    if (label === 'This week' && !tasks.length) body = '<div class="empty">Nothing set for this week.<br>Drag a task here or press +.</div>';
+    var body = tasks.length
+      ? tasks.map(function (it) { return warTask(it, dests, done); }).join('')
+      : '<div class="empty">Nothing set for this ' + (label === 'This week' ? 'week' : 'column') + '.<br>Drag a task here or press +.</div>';
     var more = col && col.more ? '<div class="more2">+ ' + col.more + ' more</div>' : '';
-    return '<div class="col" data-action="col-drop" data-bucket="' + bucket + '"><div class="colh"><b>' + label + '</b><span class="c">' + ((col && col.count) || 0) + '</span><button class="plus" data-action="exec-add" data-bucket="' + bucket + '">+</button></div>' + body + more + '</div>';
+    var plus = done ? '' : '<button class="plus" data-action="exec-add" data-bucket="' + bucket + '">+</button>';
+    return '<div class="col' + (done ? ' done' : '') + '" data-action="col-drop" data-bucket="' + bucket + '"><div class="colh"><b>' + label + '</b><span class="c">' + ((col && col.count) || 0) + '</span>' + plus + '</div>' + body + more + '</div>';
+  }
+  function signalsHtml(data, open) {
+    var sig = data.signals || {};
+    var rows = function (list) {
+      return (list || []).map(function (r) {
+        return '<div class="si" data-action="signals-go" data-dest="' + esc(r.dest || '') + '"><i style="background:' + esc(r.color || '#2e6bf2') + '"></i><div><b>' + esc(r.title) + '</b> <span>' + esc(r.count) + '</span><small>' + esc(r.detail || '') + '</small></div><em>' + esc(r.go || '') + ' &rsaquo;</em></div>';
+      }).join('');
+    };
+    return '<div class="sigpanel' + (open ? ' on' : '') + '" id="sigpanel">'
+      + '<div class="sh"><b>Signals</b><span class="s">' + esc(sig.needYou != null ? sig.needYou : (data.sigCount || 0)) + ' need you &middot; updates every 15 s</span><span class="x" data-action="signals-close">&times;</span></div>'
+      + '<div class="brain">' + (function () {
+        var line = sig.brain || '4orm Intelligence is watching the desk.';
+        var cut = line.indexOf(':');
+        if (cut > 0) return '<b>' + esc(line.slice(0, cut + 1)) + '</b>' + esc(line.slice(cut + 1));
+        return esc(line);
+      }()) + '</div>'
+      + '<div class="sec">Needs you</div>' + rows(sig.needs)
+      + (sig.news && sig.news.length ? '<div class="sec">New since ' + esc(sig.since || '8:00') + '</div>' + rows(sig.news) : '')
+      + '<div class="sec">Watch</div>' + rows(sig.watch)
+      + '<div class="sf">Everything above lives on its own page. This is the summary.<a data-action="signals-go" data-dest="brain">Brain log</a></div></div>';
   }
 
   function paintWarLive() {
@@ -718,18 +773,22 @@
     if (!wrap) return;
     var data = warData();
     var moves = data.moves || [];
+    var next = data.nextMeet || {};
+    var sigOpen = qFlag('signals') || !!(window.STATE && window.STATE.signalsOpen);
+    var today = data.today || { tasks: [], count: 0 };
+    var todayBody = (today.tasks || []).length
+      ? today.tasks.map(function (it) { return warTask(it, [['week', 'Week'], ['later', 'Later']]); }).join('')
+      : '<div class="empty">Nothing on Today.<br>Capture above or press + Add.</div>';
     wrap.innerHTML =
-      '<section class="ribbon">'
-      + '<div class="rv"><div class="k">Cash</div><div class="v">' + mask(data.cash) + '</div></div>'
-      + '<div class="rv"><div class="k">Runway</div><div class="v red">' + esc(data.runway) + '</div></div>'
-      + '<div class="rv"><div class="k">Raise &middot; F&amp;F</div><div class="v">' + mask(data.raise) + '</div></div>'
-      + '<div class="rv"><div class="k">To close Oct 30</div><div class="v">' + esc(data.daysToClose) + ' days</div></div>'
-      + '<div class="rv"><div class="k">4ormIQ launch</div><div class="v gold">' + esc(data.launch) + '</div></div>'
-      + '<div class="rv mom2"><div class="k">Momentum &middot; this week</div><div class="mb"><i></i><i></i><i></i><i></i><i class="now"></i><span>' + esc(data.momentumHours) + '</span></div></div>'
+      '<section class="ribbon thin">'
+      + '<span class="ri"><b class="red">' + esc(data.runway || '~1 day') + '</b> runway</span><span class="rsep"></span>'
+      + '<span class="ri"><b>' + esc(data.toGo || '$170K') + '</b> to go &middot; <b>' + esc(data.daysToClose != null ? data.daysToClose : 11) + ' days</b></span><span class="rsep"></span>'
+      + '<span class="ri">Next: <b>' + esc(next.title || '—') + '</b> ' + esc(next.when || '') + (next.url ? ' <span class="lnk" data-action="meet-join" data-url="' + esc(next.url) + '">Join</span>' : '') + '</span><span class="rsep"></span>'
+      + '<span class="ri"><b>' + esc(data.lights != null ? data.lights : 11) + '</b> lights left today</span>'
       + '<span class="sp"></span>'
+      + '<span class="ri sig" id="sigBtn" data-action="signals-open">Signals <b class="n">' + esc(data.sigCount != null ? data.sigCount : 6) + '</b></span>'
       + '<div class="cwrap"><button class="coachbtn" id="coachbtn" data-action="coach-toggle">Coaching note</button>'
-      + '<div class="coachpop" id="coachpop"><b>Coaching note</b><p>' + esc(data.coach) + '</p></div></div>'
-      + '<span class="streak">' + esc(data.streak) + '</span>'
+      + '<div class="coachpop" id="coachpop"><b>Coaching note</b><p>' + esc(data.coach || '') + '</p></div></div>'
       + '<button class="vb" data-action="show-money">Show $</button></section>'
       + '<div class="capture"><input data-action="capture-input" placeholder="Capture a task or an idea to park it, so you don\'t lose focus"><button data-action="capture-add">Add</button></div>'
       + '<div class="wrow"><section class="hero"><div class="htop"><div>'
@@ -755,36 +814,35 @@
         }
         return '<div class="mv2' + (m.one ? ' one' : '') + '"><span class="rk">' + (i + 1) + '</span><div><div class="mt">' + esc(m.title) + ' <span class="zn ' + m.zone + '">' + esc(m.zoneLabel) + '</span>' + (m.one ? '<span class="yo">Your one move</span>' : '') + '</div><div class="ms2">' + esc(m.why) + '</div><div class="src">' + esc(m.src) + '</div></div><div class="ma"><button class="do" data-action="move-do" data-id="' + esc(mid) + '">Do</button><button data-action="move-steps" data-id="' + esc(mid) + '"' + (wantOpen ? ' class="on-steps" style="background:#101a33;color:#fff"' : '') + '>Steps</button><button data-action="move-plan" data-id="' + esc(mid) + '" data-title="' + esc(m.title) + '">Plan</button><button class="x" data-action="move-dismiss" data-id="' + esc(mid) + '"' + (m.one ? ' title="Dismiss - the next move takes its place"' : '') + '>&times;</button></div>' + stp + '</div>';
       }).join('') + '</div></section>'
-      + '<div class="rstack"><section class="card"><div class="ch"><h3>After your meetings &mdash; what you owe</h3><span class="s">from Zoom + Granola</span></div>'
-      + (data.meetingActions || []).map(function (row) {
-        var aid = esc(row.id || '');
-        var ttl = esc(row.text || 'Meeting follow-up');
-        return '<div class="mo"><span class="tag ' + row.tag + '">' + esc(row.tagLabel) + '</span><div style="min-width:0"><div class="tt">' + esc(row.text) + '</div><div class="mf">' + esc(row.from) + '</div></div><div class="ad"><button data-action="meeting-task" data-id="' + aid + '" data-bucket="today" data-title="' + ttl + '">+ Today</button><button data-action="meeting-task" data-id="' + aid + '" data-bucket="week" data-title="' + ttl + '">+ Week</button></div></div>';
-      }).join('')
-      + '<div class="foot"><span class="lnk" data-action="review-meetings">Review all ' + esc(data.meetingActionTotal) + ' meeting action items &rsaquo;</span></div></section>'
-      + '<section class="card"><div class="ch"><h3>Next up</h3><span class="s">alarms on</span></div>'
-      + (data.nextUp || []).map(function (ev) {
-        var act = ev.join || ev.link === 'Join' ? 'meet-join' : 'meet-prep';
-        return '<div class="nx" data-action="' + act + '" data-url="' + esc(ev.url || '') + '" data-title="' + esc(ev.title || '') + '"><span class="tm">' + esc(ev.when) + '</span><span class="nm">' + esc(ev.title) + '</span><span class="lnk" data-action="' + act + '" data-url="' + esc(ev.url || '') + '" data-title="' + esc(ev.title || '') + '">' + esc(ev.link) + '</span></div>';
-      }).join('')
-      + '<button class="slot" data-action="find-slot">Find a 30-min slot</button></section></div></div>'
-      + '<section class="card" style="margin-bottom:16px"><div class="ch"><h3>Reach out</h3><span class="s">people to contact &middot; check off when done</span><span class="lnk" style="margin-left:14px" data-action="reach-add">+ Add from Pipeline or Contacts</span></div>'
-      + '<div class="chips">' + (data.reachChips || []).map(function (c, i) {
-        var kind = ['all', 'vc', 'design', 'regulator', 'corporate', 'client'][i] || 'all';
-        return '<button class="chip' + (i === 0 ? ' on' : '') + '" data-action="reach-filter" data-kind="' + kind + '">' + esc(c) + '</button>';
-      }).join('') + '</div>'
-      + '<div class="ro">' + (data.reach || []).map(function (p) {
-        return '<div class="rc" data-kind="' + esc(p.kind || '') + '"><span class="cb" data-action="reach-done" data-id="' + esc(p.id || '') + '" data-kind="' + esc(p.kind || '') + '"></span><div><b>' + esc(p.name) + '</b><span>' + esc(p.meta) + '</span></div></div>';
-      }).join('') + '</div></section>'
-      + '<section class="card exec"><div class="ch"><h3>Execution</h3><span class="s">drag between columns &middot; hover a task for Today / Week / Later</span><span class="lnk" style="margin-left:14px" data-action="exec-full">&#8599; Full screen</span></div><div class="cols">'
-      + execCol('Today', data.today, 'today')
-      + execCol('This week', data.week, 'week')
-      + execCol('Later', data.later, 'later')
-      + '</div></section><div class="plan-ov" id="planOv" hidden data-action="plan-close"><div class="plan-box" data-action="note-keep"><h3 id="planHd">Plan</h3><textarea id="planBody" data-action="plan-draft" rows="8" placeholder="Steps, one per line"></textarea><div class="plan-acts"><button class="pri" data-action="plan-ask">Ask 4orm Intelligence</button><button class="pri" data-action="plan-save">Save plan</button><button data-action="plan-close">Cancel</button></div></div></div>'
-      + '<div class="pick-ov" id="reachOv" hidden data-action="reach-pick-close"><div class="pick-box" data-action="note-keep"><h3>Add from Pipeline or Contacts</h3><input data-action="reach-pick-search" placeholder="Search people"><div class="pick-list" id="reachList"></div><div class="pick-acts"><button class="pri" data-action="reach-pick-add">Add selected</button><button data-action="reach-pick-close">Cancel</button></div></div></div>'
+      + '<div class="rstack"><section class="card exec today">'
+      + '<div class="ch"><h3>Today</h3><span class="s">' + esc(today.count || (today.tasks || []).length) + ' on the desk &middot; drag to reorder</span><span class="lnk" style="margin-left:auto" data-action="exec-add" data-bucket="today">+ Add</span></div>'
+      + '<div class="tl" data-action="col-drop" data-bucket="today">' + todayBody + '</div>'
+      + '<div class="foot"><span class="lnk" data-action="owed-review">' + esc(data.meetingActionTotal != null ? data.meetingActionTotal : 8) + ' owed from meetings &middot; review</span><span class="lnk" style="margin-left:auto" data-action="reach-pipe">Reach out &middot; ' + esc(data.reachToday != null ? data.reachToday : 4) + ' today &rsaquo;</span></div>'
+      + '</section></div></div>'
+      + '<section class="card exec"><div class="ch"><h3>Execution</h3><span class="s">drag between columns &middot; Today is above</span><span class="lnk" style="margin-left:auto" data-action="exec-full">Full screen</span></div><div class="cols">'
+      + execCol('This week', data.week, 'week', [['today', 'Today'], ['later', 'Later']])
+      + execCol('Later', data.later, 'later', [['today', 'Today'], ['week', 'Week']])
+      + execCol('Done today', data.done, 'done', [], true)
+      + '</div></section>'
+      + signalsHtml(data, sigOpen)
+      + '<div class="plan-ov" id="planOv" hidden data-action="plan-close"><div class="plan-box" data-action="note-keep"><h3 id="planHd">Plan</h3><textarea id="planBody" data-action="plan-draft" rows="8" placeholder="Steps, one per line"></textarea><div class="plan-acts"><button class="pri" data-action="plan-ask">Ask 4orm Intelligence</button><button class="pri" data-action="plan-save">Save plan</button><button data-action="plan-close">Cancel</button></div></div></div>'
       + '<div class="toast" id="toast"></div>';
     finishPaint(wrap);
     markReady('warDesk');
+    window.toggleSignalsPanel = function () {
+      if (window.STATE) window.STATE.signalsOpen = !window.STATE.signalsOpen;
+      paintWarLive();
+    };
+    window.openSignalsPanel = function () {
+      if (window.STATE) window.STATE.signalsOpen = true;
+      var p = wrap.querySelector('#sigpanel');
+      if (p) p.classList.add('on');
+    };
+    window.closeSignalsPanel = function () {
+      if (window.STATE) window.STATE.signalsOpen = false;
+      var p = wrap.querySelector('#sigpanel');
+      if (p) p.classList.remove('on');
+    };
   }
 
   function noteCard(n) {
@@ -905,16 +963,29 @@
   window.__port = {
     fixtureOn: fixtureOn, wrapOf: wrapOf, whenCss: whenCss, markReady: markReady,
     esc: esc, asList: asList, liveLog: liveLog, initials: initials, ageLabel: ageLabel,
-    HOSTS: HOSTS, TOKEN: TOKEN, finishPaint: finishPaint, applyPageCss: applyPageCss, cssText: cssText
+    HOSTS: HOSTS, TOKEN: TOKEN, finishPaint: finishPaint, applyPageCss: applyPageCss, cssText: cssText,
+    signalsHtml: signalsHtml
   };
   whenCss(function () {
     try {
       var path = String(location.pathname || '');
-      var notesView = /\/notes\/?$/.test(path) || /(?:^|[?&])view=notes(?:&|$)/.test(String(location.search || ''));
-      if (!notesView) return;
-      var vn = document.getElementById('v-notes');
-      if (vn) vn.hidden = false;
-      paintNotesLive();
+      var q = String(location.search || '');
+      var notesView = /\/notes\/?$/.test(path) || /(?:^|[?&])view=notes(?:&|$)/.test(q);
+      if (notesView) {
+        var vn = document.getElementById('v-notes');
+        if (vn) vn.hidden = false;
+        paintNotesLive();
+        return;
+      }
+      var warView = /\/war-room\/?$/.test(path) || /(?:^|[?&])view=war(?:&|$)/.test(q) || /\/control-room/.test(path) || path === '/' || path === '/control-room.html';
+      var other = /(?:^|[?&])view=/.test(q) && !/(?:^|[?&])view=war(?:&|$)/.test(q) && !/(?:^|[?&])view=room(?:&|$)/.test(q);
+      if (warView && !other) {
+        var vw = document.getElementById('v-war');
+        var vr = document.getElementById('v-room');
+        if (vw) vw.hidden = false;
+        if (vr) vr.hidden = true;
+        paintWarLive();
+      }
     } catch (e) {}
   });
 })();

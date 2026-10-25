@@ -57,6 +57,11 @@ const isPublicPage = createRouteMatcher([
 
 const gated = clerkMiddleware(async (auth, req) => {
   if (isPublicPage(req)) return NextResponse.next();
+  if (req.nextUrl.pathname === '/') {
+    const { userId } = await auth();
+    if (userId) return NextResponse.redirect(new URL('/war-room', req.url));
+    return NextResponse.next();
+  }
   if (isRoom(req) || isDocuments(req) || isDataRoom(req) || isControlRoom(req) || isDesign(req)) {
     const { userId, redirectToSignIn, sessionClaims } = await auth();
 
@@ -91,6 +96,7 @@ export default function middleware(req: NextRequest, ev: NextFetchEvent) {
 
 export const config = {
   matcher: [
+    '/',
     '/advisor.html',
     '/employee.html',
     '/engineering.html',
