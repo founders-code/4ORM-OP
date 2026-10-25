@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { kindsSince, latestCursor } from '@/lib/changes';
 import { changePayload } from '@/lib/live';
 import { fail } from '@/lib/log';
-import { openBoard, roomOwner } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!session.sql) return NextResponse.json({ cursor: '0', kinds: [], bytes: 0 });
-    const ownerId = (await roomOwner(session.sql)) || session.userId;
+    const ownerId = await sessionOwner(session);
     const since = new URL(req.url).searchParams.get('since') || '0';
     const kinds = await kindsSince(session.sql, ownerId, since);
     const cursor = await latestCursor(session.sql, ownerId);

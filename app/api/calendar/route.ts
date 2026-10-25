@@ -3,7 +3,7 @@ import { claimBudget } from '@/lib/db';
 import { withCreds } from '@/lib/creds';
 import { createEvent, declineCalendarEvent, deleteCalendarEvent, moveEvent, patchCalendarEvent } from '@/lib/google';
 import { fail } from '@/lib/log';
-import { openBoard, roomOwner } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { calendarPayload, extendCalendar } from '@/lib/sync';
 import { loadCredsFor } from '@/lib/vault';
 
@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!session.sql) return NextResponse.json({ events: [], calendarUntil: 0 });
-    const ownerId = (await roomOwner(session.sql)) || session.userId;
+    const ownerId = await sessionOwner(session);
     const url = new URL(req.url);
     const parsedFrom = Date.parse(url.searchParams.get('from') || '');
     const parsedTo = Date.parse(url.searchParams.get('to') || '');

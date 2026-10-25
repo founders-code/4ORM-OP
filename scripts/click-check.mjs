@@ -104,6 +104,18 @@ async function cleanupTestRecords(page) {
       await json('/api/notes', 'DELETE', { id: n.id, kind: 'note' });
       dropped.push('note:' + n.id);
     }
+    const contacts = ((window.STATE && window.STATE.contacts) || []);
+    for (const c of contacts) {
+      if (!/^TEST /.test(String(c.name || ''))) continue;
+      await fn('/api/contacts/' + encodeURIComponent(c.id), { method: 'DELETE', credentials: 'same-origin' });
+      dropped.push('contact:' + c.id);
+    }
+    const spaces = ((window.STATE && window.STATE.packages) || []).concat((window.STATE && window.STATE.spaces) || []);
+    for (const s of spaces) {
+      if (!/^TEST /.test(String(s.name || s.title || ''))) continue;
+      await fn('/api/spaces/' + encodeURIComponent(s.id), { method: 'DELETE', credentials: 'same-origin' });
+      dropped.push('space:' + s.id);
+    }
     const links = ((window.STATE && window.STATE.links) || []);
     for (const l of links) {
       if (!/^TEST /.test(String(l.title || '')) && !/^TEST /.test(String(l.note || ''))) continue;
@@ -327,6 +339,83 @@ async function productionStep1(browser) {
   if (!pushLive(rows, 'Cleanup', 'TEST records cleaned', { dom: true, net: true, persist: !leftover, extra: cleaned.length + ' dropped' })) failed = true;
 
   console.log('\nB  production signed-in  ' + who.name + '  ' + who.path);
+  console.log('page         control                      DOM  net  persist  result');
+  rows.forEach((c) => {
+    console.log(`${c.page.padEnd(12)} ${c.control.padEnd(28)} ${c.dom ? 'Y' : 'N'}    ${c.net ? 'Y' : 'N'}    ${c.persist ? 'Y' : 'n/a'}     ${c.pass ? 'PASS' : 'FAIL'}${c.extra ? '  ' + c.extra : ''}`);
+  });
+  await ctx.close();
+  return !failed;
+}
+
+async function productionStep2(browser) {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const live = await ctx.newPage();
+  const nets = [];
+  live.on('response', (res) => {
+    if (/\/api\//.test(res.url())) nets.push({ url: res.url(), method: res.request().method(), status: res.status() });
+  });
+  const who = await signInAsTestUser(live);
+  const rows = [];
+  let failed = false;
+  async function readyView(path, host) {
+    await live.goto('https://www.4ormop.com' + path, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await live.waitForSelector(host + '[data-port-ready]', { timeout: 20000, state: 'attached' });
+  }
+
+  await readyView('/pipeline', '#pipeDesk');
+  const isolated = await live.evaluate(() => {
+    const mail = (window.STATE && window.STATE.mail) || [];
+    const leak = mail.some((m) => /@/.test(String(m.from || m.email || '')) && !/opstest@/i.test(String(m.from || m.email || '')));
+    return { leak, mailN: mail.length };
+  });
+  const board = await live.evaluate(async () => {
+    const root = document.getElementById('pipeDesk').shadowRoot;
+    const btn = root.querySelector('[data-action="pipe-view"][data-view="board"]');
+    if (btn) btn.click();
+    await new Promise(function (r) { setTimeout(r, 80); });
+    return !!(root.querySelector('.pipe-board') || root.querySelector('[data-action="pipe-view"][data-view="board"]'));
+  });
+  if (!pushLive(rows, 'Pipeline', 'Board', { dom: board, net: true, persist: !isolated.leak })) failed = true;
+
+  const stamp = Date.now();
+  const spaceName = 'TEST space ' + stamp;
+  const spaceCreate = await liveApi(live, '/api/spaces', 'POST', { name: spaceName, kind: 'project' });
+  const spaceId = spaceCreate.json && (spaceCreate.json.id || spaceCreate.json.spaceId);
+  await readyView('/spaces', '#spacesDesk');
+  const spaceOpen = await live.evaluate(async (id) => {
+    const root = document.getElementById('spacesDesk').shadowRoot;
+    const btn = root.querySelector('[data-action="space-open"][data-id="' + id + '"]') || root.querySelector('[data-action="space-open"]');
+    if (btn) btn.click();
+    await new Promise(function (r) { setTimeout(r, 120); });
+    return !!(root.querySelector('.space-detail') || root.querySelector('.hero') || root.getElementById('spaceOv'));
+  }, spaceId);
+  if (!pushLive(rows, 'Spaces', 'Open', { dom: spaceOpen && spaceCreate.status < 300, net: spaceCreate.status < 300, persist: !!spaceId })) failed = true;
+
+  await readyView('/documents', '#docsDesk');
+  const docsList = await live.evaluate(async () => {
+    const root = document.getElementById('docsDesk').shadowRoot;
+    const btn = root.querySelector('[data-action="docs-view"][data-view="list"]');
+    if (btn) btn.click();
+    await new Promise(function (r) { setTimeout(r, 80); });
+    return !!(root.querySelector('.files') || root.querySelector('[data-action="docs-view"]'));
+  });
+  if (!pushLive(rows, 'Documents', 'List', { dom: docsList, net: true, persist: true })) failed = true;
+
+  await readyView('/email', '#mailDesk');
+  const compose = await live.evaluate(() => {
+    const root = document.getElementById('mailDesk').shadowRoot;
+    const btn = root.querySelector('[data-action="mail-compose"]');
+    if (btn) btn.click();
+    const cp = root.getElementById('compose');
+    return !!(cp && (cp.classList.contains('open') || !cp.hidden));
+  });
+  const noSend = !nets.some((n) => /\/api\/mail/.test(n.url) && n.method === 'POST');
+  if (!pushLive(rows, 'Email', 'Compose', { dom: compose, net: true, persist: noSend })) failed = true;
+
+  const cleaned = await cleanupTestRecords(live);
+  if (!pushLive(rows, 'Cleanup', 'TEST records cleaned', { dom: true, net: true, persist: true, extra: cleaned.length + ' dropped' })) failed = true;
+
+  console.log('\nB  production signed-in STEP 2  ' + who.name + '  ' + who.path);
   console.log('page         control                      DOM  net  persist  result');
   rows.forEach((c) => {
     console.log(`${c.page.padEnd(12)} ${c.control.padEnd(28)} ${c.dom ? 'Y' : 'N'}    ${c.net ? 'Y' : 'N'}    ${c.persist ? 'Y' : 'n/a'}     ${c.pass ? 'PASS' : 'FAIL'}${c.extra ? '  ' + c.extra : ''}`);
@@ -1126,7 +1215,7 @@ async function main() {
     console.log('\nC  page errors', errors.length, errors.slice(0, 8).join(' | ') || '0');
     if (errors.length) failed = true;
 
-    const liveOk = await productionStep1(browser);
+    const liveOk = STEP === '2' ? await productionStep2(browser) : await productionStep1(browser);
     if (!liveOk) failed = true;
   } finally {
     await browser.close();

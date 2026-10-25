@@ -24,3 +24,15 @@ export async function roomOwner(sql: NonNullable<Awaited<ReturnType<typeof getSq
   if (fixed) return fixed;
   return ownerForEmail(sql, ROOM_EMAIL);
 }
+
+/** Signed-in page owner. Test users stay on their own id and never read Chad's room. */
+export async function sessionOwner(session: { userId: string; sql: Awaited<ReturnType<typeof getSql>> }) {
+  try {
+    const user = await currentUser();
+    if (user?.publicMetadata?.test === true) return session.userId;
+  } catch {
+    /* fall through to the room owner */
+  }
+  if (!session.sql) return session.userId;
+  return (await roomOwner(session.sql)) || session.userId;
+}

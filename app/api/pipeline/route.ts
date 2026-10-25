@@ -4,7 +4,7 @@ import { withCreds } from '@/lib/creds';
 import { ensureGhlContact, type GhlPipeline, pushOpportunity } from '@/lib/ghl';
 import { cachePipelines } from '@/lib/live';
 import { fail } from '@/lib/log';
-import { openBoard, roomOwner } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { loadCredsFor } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +15,7 @@ export async function GET() {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!session.sql) return NextResponse.json({ stages: [], pipelines: [], error: '' });
-    const ownerId = (await roomOwner(session.sql)) || session.userId;
+    const ownerId = await sessionOwner(session);
     let cached = await readPipelineCache(session.sql, ownerId);
     if (!cached) {
       const creds = await loadCredsFor(session.userId);
