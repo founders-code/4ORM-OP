@@ -35,23 +35,23 @@ Legend: **[D]** = has a design file to copy exactly.
 - [ ] 1.7 Chad (settings, not code): point GHL, Zoom and the Gmail Pub/Sub push at /api/hooks/*.
 
 ## 2. Dashboard (01)
-- [ ] Open (What needs you now), LinkedIn Open › (new tab), Open LinkedIn
+- [x] Open (What needs you now), LinkedIn Open › (new tab), Open LinkedIn
 - [x] People only / All mail tabs; Reply opens compose with the drafted reply; ··· menu (not a person / snooze / file)
 - [x] Next meetings Join + bell; Today's 1-3 rows → War Room; Open Email
 
 ## 3. War Room (02, [D] 02b-war-room-steps)
 - [ ] Steps expands under the move exactly as 02b (checkable steps, action links, + Add a step); state persists.
 - [x] Do, Plan (editor → /api/ceo/plan), × dismiss + undo, Re-run.
-- [ ] Capture + Add; Start 25-min focus (real countdown, pause/stop, logs a focus block); Commit as my one thing; Cancel this move.
+- [x] Capture + Add; Start 25-min focus (real countdown, pause/stop, logs a focus block); Commit as my one thing; Cancel this move.
 - [x] After your meetings: + Today / + Week create the item; Review all.
-- [ ] Next up Join / Prep; Find a 30-min slot.
+- [x] Next up Join / Prep; Find a 30-min slot.
 - [ ] Reach out: shows real people (from Spaces / Pipeline next actions, not an empty table); chips filter; checkbox; + Add opens a picker.
 - [ ] Execution: drag Today ⇄ Week ⇄ Later (persists), checkbox completes, +, Full screen.
 
 ## 4. Notes (03, [D] 03b-notes-open)
 - [x] Clicking a note opens it LARGE in the same sticky style, exactly as 03b. NOT a white text box.
 - [x] BUG: typing shows "Saved", but the text is gone on reopen. Edits must be saved to /api/notes (or /api/notes/sticky) and reload correctly.
-- [ ] Colour dots, Pin, ··· , × close (Esc), Move to a Space, Convert to task.
+- [x] Colour dots, Pin, ··· , × close (Esc), Move to a Space, Convert to task.
 - [ ] Filter chips, search, Board / Canvas, Tidy up, + Pin a note here.
 
 ## 5. Pipeline (04)

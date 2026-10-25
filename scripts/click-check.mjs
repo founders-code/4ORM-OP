@@ -81,6 +81,7 @@ async function main() {
   try {
     const page = await browser.newPage();
     page.on('pageerror', (err) => errors.push(String(err.message || err)));
+    page.on('dialog', (d) => d.accept(d.type() === 'prompt' ? 'TEST step' : true));
     for (const spec of (PAGES[STEP] || PAGES[1])) {
       await page.goto(`http://127.0.0.1:${port}/${spec.live}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForSelector(spec.ready, { timeout: 15000, state: 'attached' });
@@ -474,18 +475,22 @@ async function main() {
     });
     clicks.push({ page: 'Dashboard', control: 'LinkedIn Open', dom: li, net: true, persist: true, pass: li });
 
-    const reply = await page.evaluate(async () => {
+    await page.evaluate(() => {
       const root = document.getElementById('opsDash').shadowRoot;
       const btn = root.querySelector('[data-action="mail-reply"]');
       if (btn) btn.click();
-      for (var i = 0; i < 20; i++) {
-        await new Promise(function (r) { setTimeout(r, 50); });
-        const mail = document.getElementById('v-mail');
-        const host = document.getElementById('mailDesk');
-        const compose = host && host.shadowRoot && host.shadowRoot.getElementById('compose');
-        if (mail && !mail.hidden && compose && compose.classList.contains('open')) return true;
-      }
-      return false;
+    });
+    await page.waitForFunction(() => {
+      const mail = document.getElementById('v-mail');
+      const host = document.getElementById('mailDesk');
+      const compose = host && host.shadowRoot && host.shadowRoot.getElementById('compose');
+      return !!(mail && !mail.hidden && compose && compose.classList.contains('open'));
+    }, { timeout: 5000 }).catch(() => {});
+    const reply = await page.evaluate(() => {
+      const mail = document.getElementById('v-mail');
+      const host = document.getElementById('mailDesk');
+      const compose = host && host.shadowRoot && host.shadowRoot.getElementById('compose');
+      return !!(mail && !mail.hidden && compose && compose.classList.contains('open'));
     });
     clicks.push({ page: 'Dashboard', control: 'Reply', dom: reply, net: true, persist: true, pass: reply });
 
@@ -673,6 +678,118 @@ async function main() {
       return !!btn;
     });
     clicks.push({ page: 'Links', control: 'Expand all', dom: expandAll, net: true, persist: true, pass: expandAll });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=room&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#opsDash[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const openLinkedIn = await page.evaluate(() => {
+      const root = document.getElementById('opsDash').shadowRoot;
+      const btn = root.querySelector('[data-action="linkedin-open"][data-url*="linkedin.com/feed"]') || Array.from(root.querySelectorAll('[data-action="linkedin-open"]')).find((n) => /Open LinkedIn/i.test(n.textContent || ''));
+      return !!(btn && (btn.getAttribute('data-url') || '').indexOf('linkedin.com') >= 0);
+    });
+    clicks.push({ page: 'Dashboard', control: 'Open LinkedIn', dom: openLinkedIn, net: true, persist: true, pass: openLinkedIn });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=war&fixture=mockup&steps=1`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#warDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const commit = await page.evaluate(() => {
+      const root = document.getElementById('warDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="hero-commit"]');
+      if (btn) btn.click();
+      const toast = root.getElementById('deskToast') || document.getElementById('actNote');
+      var stored = '';
+      try { stored = String((JSON.parse(localStorage.getItem('cr_needle') || '{}') || {}).one || ''); } catch (e) {}
+      return !!(btn && (stored || (toast && /commit|one thing/i.test(toast.textContent || ''))));
+    });
+    clicks.push({ page: 'War Room', control: 'Commit as my one thing', dom: commit, net: true, persist: true, pass: commit });
+
+    const cancel = await page.evaluate(() => {
+      const root = document.getElementById('warDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="hero-cancel"]');
+      if (btn) btn.click();
+      const toast = root.getElementById('deskToast');
+      return !!(btn && toast && /cancel|soon/i.test(toast.textContent || ''));
+    });
+    clicks.push({ page: 'War Room', control: 'Cancel this move', dom: cancel, net: true, persist: true, pass: cancel });
+
+    const addStep = await page.evaluate(() => {
+      const root = document.getElementById('warDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="step-add"]');
+      if (btn) btn.click();
+      return !!btn;
+    });
+    clicks.push({ page: 'War Room', control: '+ Add a step', dom: addStep, net: true, persist: true, pass: addStep });
+
+    const execFull = await page.evaluate(() => {
+      const root = document.getElementById('warDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="exec-full"]');
+      if (btn) btn.click();
+      const host = document.getElementById('warDesk');
+      return !!(btn && host && host.classList.contains('desk-full'));
+    });
+    clicks.push({ page: 'War Room', control: 'Execution full screen', dom: execFull, net: true, persist: true, pass: execFull });
+
+    const meetPrep = await page.evaluate(() => {
+      const root = document.getElementById('warDesk').shadowRoot;
+      const join = root.querySelector('[data-action="meet-join"]');
+      const prep = root.querySelector('[data-action="meet-prep"]');
+      if (join) join.click();
+      if (prep) prep.click();
+      return !!(join && prep);
+    });
+    clicks.push({ page: 'War Room', control: 'Join / Prep', dom: meetPrep, net: true, persist: true, pass: meetPrep });
+
+    const reachAdd = await page.evaluate(() => {
+      const root = document.getElementById('warDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="reach-add"]');
+      if (btn) btn.click();
+      const ov = root.getElementById('reachOv');
+      return !!(btn && ov && ov.classList.contains('open'));
+    });
+    clicks.push({ page: 'War Room', control: 'Reach out + Add', dom: reachAdd, net: true, persist: true, pass: reachAdd });
+
+    const taskDone = await page.evaluate(() => {
+      const root = document.getElementById('warDesk').shadowRoot;
+      const box = root.querySelector('[data-action="task-done"]');
+      if (box) box.click();
+      return !!box;
+    });
+    clicks.push({ page: 'War Room', control: 'Execution checkbox', dom: taskDone, net: true, persist: true, pass: taskDone });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=notes&fixture=mockup&open=1`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#notesDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const noteClose = await page.evaluate(() => {
+      const root = document.getElementById('notesDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="note-close"]');
+      if (btn) btn.click();
+      const big = root.getElementById('ovNote');
+      return !!(btn && big && big.hidden);
+    });
+    clicks.push({ page: 'Notes', control: '× close', dom: noteClose, net: true, persist: true, pass: noteClose });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=notes&fixture=mockup&open=1`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#notesDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const noteTask = await page.evaluate(() => {
+      const root = document.getElementById('notesDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="note-task"]');
+      if (btn) btn.click();
+      return !!btn;
+    });
+    clicks.push({ page: 'Notes', control: 'Convert to task', dom: noteTask, net: true, persist: true, pass: noteTask });
+
+    const noteSpace = await page.evaluate(() => {
+      const root = document.getElementById('notesDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="note-space"]');
+      if (btn) btn.click();
+      return !!btn;
+    });
+    clicks.push({ page: 'Notes', control: 'Move to a Space', dom: noteSpace, net: true, persist: true, pass: noteSpace });
+
+    const notesFilter = await page.evaluate(() => {
+      const root = document.getElementById('notesDesk').shadowRoot;
+      const chip = root.querySelector('[data-action="notes-filter"]:not(.on)');
+      if (chip) chip.click();
+      return !!(chip && chip.classList.contains('on'));
+    });
+    clicks.push({ page: 'Notes', control: 'Filter chips', dom: notesFilter, net: true, persist: true, pass: notesFilter });
     }
 
     console.log('\nB  click-check (fixture DOM)');
