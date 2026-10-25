@@ -141,9 +141,24 @@
   });
 
   function markReady(hostId) {
+    if (!fixtureOn() && !window.__boardApplied) {
+      window.__pendingReady = window.__pendingReady || [];
+      if (window.__pendingReady.indexOf(hostId) < 0) window.__pendingReady.push(hostId);
+      return;
+    }
     var host = findHost(hostId);
     if (host) host.setAttribute('data-port-ready', '1');
   }
+  window.flushPortReady = function () {
+    var pending = window.__pendingReady || [];
+    window.__pendingReady = [];
+    pending.forEach(function (id) { markReady(id); });
+  };
+  setTimeout(function () {
+    if (window.__boardApplied) return;
+    window.__boardApplied = true;
+    window.flushPortReady();
+  }, 12000);
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];

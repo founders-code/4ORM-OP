@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { requireStorageState } from './auth-state.mjs';
+import { signInAsTestUser } from './auth-state.mjs';
 
 const BASE = (process.env.PLAYWRIGHT_BASE_URL || 'https://www.4ormop.com').replace(/\/$/, '');
 
@@ -25,22 +25,13 @@ function isPageError(text) {
 }
 
 async function main() {
-  const storageState = requireStorageState();
   const browser = await chromium.launch({ headless: true });
-  const ctxOpts = { viewport: { width: 1200, height: 900 }, storageState };
-  const context = await browser.newContext(ctxOpts);
+  const context = await browser.newContext({ viewport: { width: 1200, height: 900 } });
   const rows = [];
   try {
     const gate = await context.newPage();
-    await gate.goto(BASE + '/control-room', { waitUntil: 'domcontentloaded', timeout: 45000 });
-    const url = gate.url();
-    const signedIn = /control-room|war-room|playbook/.test(url) && !/sign-in|accounts\.|clerk/.test(url);
-    const hasShell = await gate.locator('.clock, .side .nav').first().waitFor({ timeout: 12000 }).then(() => true).catch(() => false);
+    await signInAsTestUser(gate, BASE);
     await gate.close();
-    if (!signedIn || !hasShell) {
-      console.error('STOP: .auth/4ormop.json did not open a signed-in production session. Regenerate it.');
-      process.exit(1);
-    }
     for (const spec of PAGES) {
       const page = await context.newPage();
       const errors = [];

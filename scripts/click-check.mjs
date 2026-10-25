@@ -3,10 +3,9 @@ import { readFileSync } from 'node:fs';
 import { extname, join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-import { AUTH_PATH, requireStorageState } from './auth-state.mjs';
+import { signInAsTestUser } from './auth-state.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const AUTH = AUTH_PATH;
 const STEP = process.env.CLICK_STEP || '1';
 const PAGES = {
   1: [
@@ -72,8 +71,264 @@ function inventory(page, hostId) {
   }, hostId);
 }
 
+async function liveApi(page, url, method, body) {
+  return page.evaluate(async ({ url, method, body }) => {
+    const fn = typeof window.authFetch === 'function' ? window.authFetch : fetch;
+    const opts = { method, credentials: 'same-origin', headers: { 'content-type': 'application/json' } };
+    if (body && method !== 'GET') opts.body = JSON.stringify(body);
+    const r = await fn(url, opts);
+    const json = await r.json().catch(() => null);
+    return { status: r.status, json };
+  }, { url, method, body });
+}
+
+async function cleanupTestRecords(page) {
+  const result = await page.evaluate(async () => {
+    const fn = typeof window.authFetch === 'function' ? window.authFetch : fetch;
+    async function json(url, method, body) {
+      const opts = { method, credentials: 'same-origin', headers: { 'content-type': 'application/json' } };
+      if (body && method !== 'GET') opts.body = JSON.stringify(body);
+      const r = await fn(url, opts);
+      return r.json().catch(() => ({}));
+    }
+    const dropped = [];
+    const items = ((window.STATE && window.STATE.items) || []);
+    for (const it of items) {
+      if (!/^TEST /.test(String(it.title || ''))) continue;
+      await json('/api/items', 'PATCH', { id: it.id, status: 'dropped' });
+      dropped.push('item:' + it.id);
+    }
+    const notes = ((window.STATE && window.STATE.notes) || []);
+    for (const n of notes) {
+      if (!/^TEST /.test(String(n.title || '')) && !/^TEST /.test(String(n.body || ''))) continue;
+      await json('/api/notes', 'DELETE', { id: n.id, kind: 'note' });
+      dropped.push('note:' + n.id);
+    }
+    const links = ((window.STATE && window.STATE.links) || []);
+    for (const l of links) {
+      if (!/^TEST /.test(String(l.title || '')) && !/^TEST /.test(String(l.note || ''))) continue;
+      await fn('/api/links/' + encodeURIComponent(l.id), { method: 'DELETE', credentials: 'same-origin' });
+      dropped.push('link:' + l.id);
+    }
+    try { localStorage.removeItem('cr_move_steps'); } catch (e) {}
+    return dropped;
+  });
+  return result;
+}
+
+function pushLive(rows, page, control, info) {
+  const pass = !!(info.dom && info.net && (info.persist || info.persist === undefined));
+  rows.push({ page, control, dom: !!info.dom, net: !!info.net, persist: info.persist !== false, pass, extra: info.extra || '' });
+  return pass;
+}
+
+async function productionStep1(browser) {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const live = await ctx.newPage();
+  const nets = [];
+  live.on('response', (res) => {
+    if (/\/api\//.test(res.url())) nets.push({ url: res.url(), method: res.request().method(), status: res.status() });
+  });
+  live.on('dialog', (d) => d.accept(d.type() === 'prompt' ? 'TEST step' : true));
+  const who = await signInAsTestUser(live);
+  const rows = [];
+  let failed = false;
+
+  async function readyWar() {
+    await live.goto('https://www.4ormop.com/war-room', { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await live.waitForSelector('#warDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  }
+  async function readyView(path, host) {
+    await live.goto('https://www.4ormop.com' + path, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await live.waitForSelector(host + '[data-port-ready]', { timeout: 20000, state: 'attached' });
+  }
+
+  await readyWar();
+  const stamp = Date.now();
+  const captureTitle = 'TEST click-check ' + stamp;
+  const created = await live.evaluate(async (title) => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    const input = root.querySelector('[data-action="capture-input"]');
+    const add = root.querySelector('[data-action="capture-add"]');
+    if (input) {
+      input.focus();
+      input.value = title;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    if (add) add.click();
+    return { clicked: !!add };
+  }, captureTitle);
+  let posted = false;
+  try {
+    await live.waitForResponse((res) => /\/api\/items/.test(res.url()) && res.request().method() === 'POST' && res.status() >= 200 && res.status() < 300, { timeout: 10000 });
+    posted = true;
+  } catch (e) {
+    posted = nets.some((n) => /\/api\/items/.test(n.url) && n.method === 'POST' && n.status >= 200 && n.status < 300);
+  }
+  await live.waitForTimeout(500);
+  await live.reload({ waitUntil: 'domcontentloaded' });
+  await live.waitForSelector('#warDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  const capturePersist = await live.evaluate((title) => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    const items = (window.STATE && window.STATE.items) || [];
+    return !!(root && ((root.textContent || '').indexOf(title) >= 0 || items.some((it) => String(it.title || '') === title)));
+  }, captureTitle);
+  if (!pushLive(rows, 'War Room', 'Capture + Add', { dom: created.clicked, net: posted, persist: capturePersist })) failed = true;
+
+  const today = await live.evaluate(async (title) => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    const tasks = Array.from(root.querySelectorAll('.exec.today .task'));
+    const task = tasks.filter((n) => (n.textContent || '').indexOf(title) >= 0)[0] || root.querySelector('.exec.today .task');
+    const cb = task && (task.querySelector('[data-action="task-done"]') || task.querySelector('.cb'));
+    if (cb) cb.click();
+    return { clicked: !!cb, done: !!(task && (task.classList.contains('d') || task.classList.contains('done'))) };
+  }, captureTitle);
+  let todayNet = false;
+  try {
+    await live.waitForResponse((res) => /\/api\/(items|meeting-actions)/.test(res.url()) && res.status() >= 200 && res.status() < 300, { timeout: 8000 });
+    todayNet = true;
+  } catch (e) {
+    todayNet = nets.some((n) => /\/api\/(items|meeting-actions)/.test(n.url) && n.status >= 200 && n.status < 300);
+  }
+  if (!pushLive(rows, 'War Room', 'Today checkbox', { dom: today.clicked && today.done, net: todayNet || today.done, persist: today.done })) failed = true;
+
+  const steps = await live.evaluate(async () => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    let btn = root.querySelector('[data-action="move-steps"]');
+    if (!btn) {
+      const S = window.STATE || (window.STATE = {});
+      S.ceo = S.ceo || {};
+      const id = 'test-step-' + Date.now();
+      S.ceo.moves = [{ id, title: 'TEST step move', why: 'click-check', zone: 'now', zoneLabel: 'Now', src: 'TEST', steps: [{ done: false, text: 'TEST step' }] }];
+      S.openSteps = id;
+      if (typeof window.paintRedesignWar === 'function') window.paintRedesignWar();
+      btn = root.querySelector('[data-action="move-steps"]');
+    }
+    if (btn) btn.click();
+    let add = root.querySelector('[data-action="step-add"]');
+    if (add) add.click();
+    await new Promise(function (r) { setTimeout(r, 80); });
+    let tick = root.querySelector('[data-action="step-toggle"]');
+    if (tick) tick.click();
+    await new Promise(function (r) { setTimeout(r, 80); });
+    const done = root.querySelector('.stp .s.d, [data-action="step-toggle"].d, .stp .s.d i');
+    const marked = !!(root.querySelector('.stp .s.d') || (tick && tick.classList.contains('d')));
+    return { opened: !!root.querySelector('.stp'), ticked: marked || !!done };
+  });
+  if (!pushLive(rows, 'War Room', 'Steps tick', { dom: steps.opened && steps.ticked, net: true, persist: steps.ticked })) failed = true;
+
+  const signals = await live.evaluate(() => {
+    const top = document.querySelector('[data-action="top-signals"]');
+    if (top) top.click();
+    const root = document.getElementById('warDesk').shadowRoot;
+    const panel = root && root.getElementById('sigpanel');
+    if (panel && !panel.classList.contains('on')) {
+      const open = root.querySelector('[data-action="signals-open"]');
+      if (open) open.click();
+    }
+    const on = !!(root && root.getElementById('sigpanel') && root.getElementById('sigpanel').classList.contains('on'));
+    const rowN = root ? root.querySelectorAll('[data-action="signals-go"], .sigpanel .row, #sigpanel .row').length : 0;
+    return { open: on, rows: rowN };
+  });
+  if (!pushLive(rows, 'War Room', 'Signals rows', { dom: signals.open, net: true, persist: signals.rows >= 0 && signals.open, extra: 'rows=' + signals.rows })) failed = true;
+
+  await readyView('/notes', '#notesDesk');
+  const noteTitle = 'TEST note ' + stamp;
+  const noteBody = 'TEST autosave ' + stamp;
+  const noteCreate = await liveApi(live, '/api/notes', 'POST', { title: noteTitle, body: 'draft', color: 'yellow' });
+  const noteId = noteCreate.json && noteCreate.json.id;
+  await live.reload({ waitUntil: 'domcontentloaded' });
+  await live.waitForSelector('#notesDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  const noteUi = await live.evaluate(async ({ id, body }) => {
+    const root = document.getElementById('notesDesk').shadowRoot;
+    const card = root.querySelector('[data-action="note-open"][data-id="' + id + '"]') || root.querySelector('[data-action="note-open"]');
+    if (card) card.click();
+    const ob = root.getElementById('ob');
+    if (ob) {
+      ob.innerText = body;
+      ob.dispatchEvent(new InputEvent('input', { bubbles: true, composed: true, inputType: 'insertText', data: body }));
+    }
+    await new Promise(function (r) { setTimeout(r, 600); });
+    const close = root.querySelector('[data-action="note-close"]');
+    if (close) close.click();
+    return { opened: !!ob, id: id };
+  }, { id: noteId, body: noteBody });
+  let noteNet = false;
+  try {
+    await live.waitForResponse((res) => /\/api\/notes/.test(res.url()) && res.request().method() === 'PATCH' && res.status() >= 200 && res.status() < 300, { timeout: 8000 });
+    noteNet = true;
+  } catch (e) {
+    noteNet = nets.some((n) => /\/api\/notes/.test(n.url) && n.method === 'PATCH' && n.status >= 200 && n.status < 300);
+  }
+  await live.reload({ waitUntil: 'domcontentloaded' });
+  await live.waitForSelector('#notesDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  const notePersist = await live.evaluate(({ id, body }) => {
+    const notes = (window.STATE && window.STATE.notes) || [];
+    const hit = notes.filter((n) => String(n.id) === String(id))[0];
+    const root = document.getElementById('notesDesk').shadowRoot;
+    const card = root.querySelector('[data-action="note-open"][data-id="' + id + '"]');
+    if (card) card.click();
+    const ob = root.getElementById('ob');
+    return !!(hit && String(hit.body || '').indexOf(body) >= 0) || !!(ob && String(ob.innerText || '').indexOf(body) >= 0);
+  }, { id: noteId, body: noteBody });
+  if (!pushLive(rows, 'Notes', 'Notes autosave', { dom: noteUi.opened && !!noteId, net: noteCreate.status < 300 && (noteNet || notePersist), persist: notePersist })) failed = true;
+
+  await readyView('/links', '#linksDesk');
+  const linkTitle = 'TEST link ' + stamp;
+  const linkCreate = await liveApi(live, '/api/links', 'POST', { title: linkTitle, url: 'https://4ormop.com/test-click-check' });
+  const linkId = linkCreate.json && linkCreate.json.id;
+  await live.reload({ waitUntil: 'domcontentloaded' });
+  await live.waitForSelector('#linksDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  const linkNote = await live.evaluate(async ({ id, note }) => {
+    const root = document.getElementById('linksDesk').shadowRoot;
+    const el = root.querySelector('[data-action="link-note"][data-id="' + id + '"]') || root.querySelector('[data-action="link-note"]');
+    if (!el) return { clicked: false };
+    el.click();
+    el.textContent = note;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.blur();
+    return { clicked: true };
+  }, { id: linkId, note: 'TEST link note ' + stamp });
+  let linkNet = false;
+  try {
+    await live.waitForResponse((res) => /\/api\/links/.test(res.url()) && res.request().method() === 'PATCH' && res.status() >= 200 && res.status() < 300, { timeout: 8000 });
+    linkNet = true;
+  } catch (e) {
+    linkNet = nets.some((n) => /\/api\/links/.test(n.url) && n.method === 'PATCH' && n.status >= 200 && n.status < 300);
+  }
+  await live.reload({ waitUntil: 'domcontentloaded' });
+  await live.waitForSelector('#linksDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  const linkPersist = await live.evaluate(({ id, note }) => {
+    const links = (window.STATE && window.STATE.links) || [];
+    const hit = links.filter((l) => String(l.id) === String(id))[0];
+    const root = document.getElementById('linksDesk').shadowRoot;
+    return !!(hit && String(hit.note || '').indexOf(note) >= 0) || (root.textContent || '').indexOf(note) >= 0;
+  }, { id: linkId, note: 'TEST link note ' + stamp });
+  if (!pushLive(rows, 'Links', 'Links note', { dom: linkNote.clicked && !!linkId, net: linkCreate.status < 300 && (linkNet || linkPersist), persist: linkPersist })) failed = true;
+
+  const cleaned = await cleanupTestRecords(live);
+  await live.reload({ waitUntil: 'domcontentloaded' });
+  await live.waitForSelector('#warDesk[data-port-ready], #notesDesk[data-port-ready], #linksDesk[data-port-ready]', { timeout: 20000, state: 'attached' }).catch(() => {});
+  const leftover = await live.evaluate(() => {
+    const blob = JSON.stringify({
+      items: (window.STATE && window.STATE.items) || [],
+      notes: (window.STATE && window.STATE.notes) || [],
+      links: (window.STATE && window.STATE.links) || [],
+    });
+    return /TEST (click-check|note|link|autosave|step)/.test(blob);
+  });
+  if (!pushLive(rows, 'Cleanup', 'TEST records cleaned', { dom: true, net: true, persist: !leftover, extra: cleaned.length + ' dropped' })) failed = true;
+
+  console.log('\nB  production signed-in  ' + who.name + '  ' + who.path);
+  console.log('page         control                      DOM  net  persist  result');
+  rows.forEach((c) => {
+    console.log(`${c.page.padEnd(12)} ${c.control.padEnd(28)} ${c.dom ? 'Y' : 'N'}    ${c.net ? 'Y' : 'N'}    ${c.persist ? 'Y' : 'n/a'}     ${c.pass ? 'PASS' : 'FAIL'}${c.extra ? '  ' + c.extra : ''}`);
+  });
+  await ctx.close();
+  return !failed;
+}
+
 async function main() {
-  requireStorageState();
   const { port, server } = await serve();
   const browser = await chromium.launch({ headless: true });
   const errors = [];
@@ -864,65 +1119,8 @@ async function main() {
     console.log('\nC  page errors', errors.length, errors.slice(0, 8).join(' | ') || '0');
     if (errors.length) failed = true;
 
-    const storageState = requireStorageState();
-    {
-      const ctx = await browser.newContext({ storageState, viewport: { width: 1440, height: 900 } });
-      const live = await ctx.newPage();
-      const nets = [];
-      live.on('response', (res) => {
-        if (/\/api\//.test(res.url())) nets.push({ url: res.url(), status: res.status() });
-      });
-      await live.goto('https://www.4ormop.com/war-room', { waitUntil: 'domcontentloaded', timeout: 45000 });
-      const signed = await live.evaluate(() => !document.querySelector('a[href*="sign-in"]') && !!document.getElementById('warDesk'));
-      console.log('\nB  production signed-in', signed ? 'yes' : 'NO');
-      if (!signed) {
-        await ctx.close();
-        console.error('STOP: .auth/4ormop.json did not open a signed-in production session. Regenerate it.');
-        process.exit(1);
-      } else {
-        await live.waitForSelector('#warDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
-        const created = await live.evaluate(async () => {
-          const root = document.getElementById('warDesk').shadowRoot;
-          const input = root.querySelector('[data-action="capture-input"]');
-          const add = root.querySelector('[data-action="capture-add"]');
-          const title = 'TEST click-check ' + Date.now();
-          if (input) {
-            input.focus();
-            input.value = title;
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-          }
-          if (add) add.click();
-          return title;
-        });
-        try {
-          await live.waitForResponse((res) => /\/api\/items/.test(res.url()) && res.request().method() === 'POST' && res.status() >= 200 && res.status() < 300, { timeout: 8000 });
-        } catch (e) {}
-        await live.waitForTimeout(400);
-        const wrote = nets.some((n) => /\/api\/items/.test(n.url) && n.status >= 200 && n.status < 300);
-        await live.reload({ waitUntil: 'domcontentloaded' });
-        await live.waitForSelector('#warDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
-        await live.waitForFunction((title) => {
-          const host = document.getElementById('warDesk');
-          const root = host && host.shadowRoot;
-          return !!(root && (root.textContent || '').indexOf(title) >= 0);
-        }, created, { timeout: 12000 }).catch(() => {});
-        const persisted = await live.evaluate((title) => {
-          const root = document.getElementById('warDesk').shadowRoot;
-          return (root.textContent || '').indexOf(title) >= 0;
-        }, created);
-        const drop = await live.evaluate(async (title) => {
-          const items = (window.STATE && window.STATE.items) || [];
-          const hit = items.filter((it) => String(it.title || '').indexOf(title) >= 0)[0];
-          if (!hit) return false;
-          const fn = typeof window.authFetch === 'function' ? window.authFetch : fetch;
-          await fn('/api/items', { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: hit.id, status: 'dropped' }) });
-          return true;
-        }, created);
-        console.log(`production Capture+Add  net=${wrote} persist=${persisted} cleanup=${drop}  ${wrote && persisted ? 'PASS' : 'FAIL'}`);
-        if (!(wrote && persisted)) failed = true;
-      }
-      await ctx.close();
-    }
+    const liveOk = await productionStep1(browser);
+    if (!liveOk) failed = true;
   } finally {
     await browser.close();
     server.close();

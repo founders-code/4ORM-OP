@@ -21,7 +21,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const h = Number(body?.h);
     const hasMeta = !!(body && body.meta && typeof body.meta === 'object');
     const meta = JSON.stringify(hasMeta ? body.meta : {});
-    await session.sql`
+    const sticky = await session.sql`
       UPDATE sticky_notes
       SET body = CASE WHEN ${body && Object.prototype.hasOwnProperty.call(body, 'body')} THEN ${text} ELSE body END,
           color = CASE WHEN ${!!color} THEN ${color || 'yellow'} ELSE color END,
@@ -31,8 +31,18 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
           h = CASE WHEN ${Number.isFinite(h)} THEN ${Number.isFinite(h) ? Math.round(h) : 120} ELSE h END,
           meta = CASE WHEN ${hasMeta} THEN ${meta}::jsonb ELSE meta END
       WHERE id = ${params.id} AND owner_id = ${session.userId}
+      RETURNING id
     `;
-    return NextResponse.json({ ok: true });
+    if (sticky.length) return NextResponse.json({ ok: true, store: 'sticky' });
+    const board = await session.sql`
+      UPDATE notes
+      SET body = CASE WHEN ${body && Object.prototype.hasOwnProperty.call(body, 'body')} THEN ${text} ELSE body END,
+          updated_at = now()
+      WHERE id = ${params.id} AND owner_id = ${session.userId}
+      RETURNING id
+    `;
+    if (!board.length) return NextResponse.json({ error: 'Note not found.' }, { status: 404 });
+    return NextResponse.json({ ok: true, store: 'board' });
   } catch (err) {
     fail('sticky', err);
     return NextResponse.json({ error: 'Could not update that note.' }, { status: 400 });

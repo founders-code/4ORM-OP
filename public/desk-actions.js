@@ -784,6 +784,7 @@
       if (t && t.closest && t.closest('.nbig') && !t.closest('[data-action="note-close"]') && attr(el, 'data-action') === 'note-close' && attr(el, 'id') === 'nscrim') return;
       var card = root.getElementById && root.getElementById('ovNote');
       var scrim = root.getElementById && root.getElementById('nscrim');
+      if (card) { card.__flushNote = true; saveNote(root, card); }
       showOv(card, false);
       if (card) card.setAttribute('hidden', '');
       if (scrim) { scrim.setAttribute('hidden', ''); scrim.classList.remove('open'); }
@@ -2358,9 +2359,14 @@
     var card = root.getElementById && root.getElementById('ovNote');
     var id = attr(ot, 'data-id') || attr(ob, 'data-id') || attr(card, 'data-id') || attr(el, 'data-id');
     if (!id) return;
-    var source = attr(ot, 'data-source') || attr(ob, 'data-source') || attr(card, 'data-source') || attr(el, 'data-source') || 'sticky';
-    var title = ot ? String(ot.textContent || '').trim() : '';
-    var body = ob ? String(ob.innerText || '') : '';
+    var source = attr(ot, 'data-source') || attr(ob, 'data-source') || attr(card, 'data-source') || attr(el, 'data-source') || '';
+    if ((S().notes || []).some(function (n) { return String(n.id) === String(id); })) source = 'board';
+    else if ((S().stickies || []).some(function (n) { return String(n.id) === String(id); })) source = 'sticky';
+    else if (!source) source = 'sticky';
+    function readTitle() { return ot ? String(ot.textContent || '').trim() : ''; }
+    function readBody() { return ob ? String(ob.innerText || '') : ''; }
+    var title = readTitle();
+    var body = readBody();
     var saved = root.getElementById && root.getElementById('ovSaved');
     if (saved) saved.innerHTML = '<i></i>Saving…';
     (S().stickies || []).forEach(function (n) {
@@ -2398,8 +2404,9 @@
       if (saved) saved.innerHTML = '<i></i>Saved · just now';
       return;
     }
-    clearTimeout(noteSaveTimer);
-    noteSaveTimer = setTimeout(function () {
+    function sendNote() {
+      title = readTitle();
+      body = readBody();
       var req;
       if (source === 'board') {
         req = api('/api/notes', { method: 'PATCH', body: { id: id, title: title || 'Note', body: body } });
@@ -2410,6 +2417,22 @@
           return api('/api/notes/sticky', { method: 'PATCH', body: { id: id, body: body, meta: meta } });
         });
       }
+      return req;
+    }
+    clearTimeout(noteSaveTimer);
+    if (el && el.__flushNote) {
+      el.__flushNote = false;
+      noteSaveTimer = 0;
+      sendNote().then(ok).then(function () {
+        if (saved) saved.innerHTML = '<i></i>Saved · just now';
+      }).catch(function () {
+        if (saved) saved.innerHTML = '<i></i>Couldn\'t save';
+        toast(root, 'Could not save that note');
+      });
+      return;
+    }
+    noteSaveTimer = setTimeout(function () {
+      var req = sendNote();
       req.then(ok).then(function () {
         if (saved) saved.innerHTML = '<i></i>Saved · just now';
       }).catch(function () {

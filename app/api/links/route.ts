@@ -161,7 +161,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ name, sub, leaf, next });
     }
     const title = cleanName(body?.title) || 'Untitled link';
-    const category = cleanName(body?.category);
+    const category = cleanName(body?.category) || 'Uncategorized';
     const sub = cleanName(body?.sub);
     const leaf = cleanName(body?.leaf);
     let url = String(body?.url || '').trim().slice(0, 500);

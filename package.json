@@ -10,7 +10,10 @@
     "check-icons": "node scripts/check-icons.mjs",
     "check-design-manifest": "node scripts/check-design-manifest.mjs",
     "visual-check": "node scripts/visual-check.mjs",
-    "calendar-interact": "node scripts/calendar-interact.mjs"
+    "calendar-interact": "node scripts/calendar-interact.mjs",
+    "click-check": "node scripts/click-check.mjs",
+    "live-qa": "node scripts/live-qa.mjs",
+    "clerk-test-user": "node scripts/ensure-clerk-test-user.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^5.7.5",
@@ -21,6 +24,7 @@
     "rss-parser": "^3.13.0"
   },
   "devDependencies": {
+    "@clerk/testing": "^2.2.50",
     "@types/node": "^20",
     "@types/react": "^18",
     "pixelmatch": "^6.0.0",

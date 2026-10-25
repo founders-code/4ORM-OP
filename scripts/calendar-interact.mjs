@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { requireStorageState } from './auth-state.mjs';
+import { signInAsTestUser } from './auth-state.mjs';
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL || 'https://www.4ormop.com';
 const TITLE = 'TEST cal-interact ' + Date.now();
@@ -38,19 +38,13 @@ async function findEvent(page, title) {
 }
 
 async function main() {
-  const storageState = requireStorageState();
   const browser = await chromium.launch({ headless: true });
-  const ctxOpts = { viewport: { width: 1440, height: 900 }, storageState };
-  const context = await browser.newContext(ctxOpts);
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
   try {
+    const who = await signInAsTestUser(page, BASE.replace(/\/$/, ''));
     await page.goto(BASE.replace(/\/$/, '') + '/calendar', { waitUntil: 'domcontentloaded', timeout: 45000 });
-    const signedIn = await page.locator('.clock, #calDesk, .side .nav').first().waitFor({ timeout: 12000 }).then(() => true).catch(() => false);
-    if (!signedIn || page.url().includes('sign-in') || page.url().endsWith('/')) {
-      console.error('STOP: .auth/4ormop.json did not open a signed-in production session. Regenerate it.');
-      process.exit(1);
-    }
-    log('signed-in session', true, page.url());
+    log('signed-in session', true, who.name + ' ' + page.url());
 
     const start = hourMs('2026-10-19', 10);
     const created = await api(page, 'POST', { title: TITLE, start, dur: 60, attendees: [ATTENDEE] });

@@ -336,7 +336,7 @@
     var activeCat = S.cat || S.linkCat || '';
     var activeSub = S.sub || '';
     var activeLeaf = S.leaf || '';
-    if (!activeCat && cats[0]) activeCat = cats[0].name || cats[0].title || '';
+    if (!activeCat && S.linkPicked && cats[0]) activeCat = cats[0].name || cats[0].title || '';
     var tree = [];
     cats.forEach(function (c) {
       var name = c.name || c.title || 'Category';
@@ -382,13 +382,13 @@
     if (!tree.length) tree = [{ name: 'Uncategorized', n: links.length, on: true, car: '', noHv: true, kind: 'cat' }];
     var active = activeLeaf || activeSub || activeCat || (tree[0] && tree[0].name) || '';
     var wallSrc = links.filter(function (l) {
-      var cat = l.cat || l.category || '';
+      var cat = l.cat || l.category || 'Uncategorized';
       if (activeLeaf) return cat === activeCat && (l.sub || '') === activeSub && (l.leaf || '') === activeLeaf;
       if (activeSub) return cat === activeCat && (l.sub || '') === activeSub;
       if (activeCat && activeCat !== 'Uncategorized') return cat === activeCat;
       return true;
     });
-    if (!wallSrc.length && !activeCat) wallSrc = links;
+    if (!wallSrc.length) wallSrc = links;
     var seen = {};
     var wall = wallSrc.filter(function (l) { return String(l.note || '') !== '__archived__'; }).slice(0, 24).map(function (l) {
       var url = l.url || '';
