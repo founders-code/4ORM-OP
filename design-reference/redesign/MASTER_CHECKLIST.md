@@ -27,8 +27,8 @@ Legend: **[D]** = has a design file to copy exactly.
 
 ## 0c. Information audit (Oct 25) - one home per fact
 - [ ] Dashboard is RETIRED. / and /control-room redirect to /war-room. Remove it from the menu.
-- [ ] War Room = landing page [D 02-war-room]: thin text ribbon (runway, raise to go + days, next meeting + Join, lights left, Signals count, Coaching note, Show $), capture bar, Today's one move + focus, ranked moves, Execution Today on the right, This week / Later / Done today below. No After-your-meetings, Next up or Reach out panels: owed items arrive as Execution cards tagged "from Zoom"; Reach out is a count linking to Pipeline.
-- [ ] Signals panel [D 02c-war-room-signals]: opens from the top-bar Signals button and the ribbon count. Sections Needs you / New since / Watch; each row links to its home page; the brain's latest line at the top; Brain log link. Counts update every 15 s.
+- [x] War Room = landing page [D 02-war-room]: thin text ribbon (runway, raise to go + days, next meeting + Join, lights left, Signals count, Coaching note, Show $), capture bar, Today's one move + focus, ranked moves, Execution Today on the right, This week / Later / Done today below. No After-your-meetings, Next up or Reach out panels: owed items arrive as Execution cards tagged "from Zoom"; Reach out is a count linking to Pipeline.
+- [x] Signals panel [D 02c-war-room-signals]: opens from the top-bar Signals button and the ribbon count. Sections Needs you / New since / Watch; each row links to its home page; the brain's latest line at the top; Brain log link. Counts update every 15 s.
 - [ ] Pipeline [D 04-pipeline]: Needs you today = ONE list (follow-ups due + going cold + reach-outs) with chips and a checkbox; Board is the default view (drag writes the stage to GHL); empty stages collapsed behind "+ N empty stages"; List and Funnel are secondary tabs; KPI strip and category × stage grid removed.
 - [ ] Spaces [D 05c-space-panel]: opening a card slides the workbench in from the right over the Spaces list (not a full page). Close / Esc / scrim closes; Prev / Next moves between spaces.
 - [ ] Menu counts on Email (need a reply), Zoom (owed), Contacts (going cold), Integrations (attention), Pipeline (needs you today).
@@ -48,19 +48,19 @@ Legend: **[D]** = has a design file to copy exactly.
 - [ ] Next meetings Join + bell; Today's 1-3 rows → War Room; Open Email
 
 ## 3. War Room (02, [D] 02b-war-room-steps)
-- [ ] Steps expands under the move exactly as 02b (checkable steps, action links, + Add a step); state persists.
-- [ ] Do, Plan (editor → /api/ceo/plan), × dismiss + undo, Re-run.
-- [ ] Capture + Add; Start 25-min focus (real countdown, pause/stop, logs a focus block); Commit as my one thing; Cancel this move.
-- [ ] After your meetings: + Today / + Week create the item; Review all.
-- [ ] Next up Join / Prep; Find a 30-min slot.
-- [ ] Reach out: shows real people (from Spaces / Pipeline next actions, not an empty table); chips filter; checkbox; + Add opens a picker.
-- [ ] Execution: drag Today ⇄ Week ⇄ Later (persists), checkbox completes, +, Full screen.
+- [x] Steps expands under the move exactly as 02b (checkable steps, action links, + Add a step); state persists.
+- [x] Do, Plan (editor → /api/ceo/plan), × dismiss + undo, Re-run.
+- [x] Capture + Add; Start 25-min focus (real countdown, pause/stop, logs a focus block); Commit as my one thing; Cancel this move.
+- [x] After your meetings: + Today / + Week create the item; Review all.
+- [x] Next up Join / Prep; Find a 30-min slot.
+- [x] Reach out: shows real people (from Spaces / Pipeline next actions, not an empty table); chips filter; checkbox; + Add opens a picker.
+- [x] Execution: drag Today ⇄ Week ⇄ Later (persists), checkbox completes, +, Full screen.
 
 ## 4. Notes (03, [D] 03b-notes-open)
-- [ ] Clicking a note opens it LARGE in the same sticky style, exactly as 03b. NOT a white text box.
-- [ ] BUG: typing shows "Saved", but the text is gone on reopen. Edits must be saved to /api/notes (or /api/notes/sticky) and reload correctly.
-- [ ] Colour dots, Pin, ··· , × close (Esc), Move to a Space, Convert to task.
-- [ ] Filter chips, search, Board / Canvas, Tidy up, + Pin a note here.
+- [x] Clicking a note opens it LARGE in the same sticky style, exactly as 03b. NOT a white text box.
+- [x] BUG: typing shows "Saved", but the text is gone on reopen. Edits must be saved to /api/notes (or /api/notes/sticky) and reload correctly.
+- [x] Colour dots, Pin, ··· , × close (Esc), Move to a Space, Convert to task.
+- [x] Filter chips, search, Board / Canvas, Tidy up, + Pin a note here.
 
 ## 5. Pipeline (04)
 - [ ] Dashboard / Board / Table tabs. Board = drag between stages, writes the stage to GHL.
@@ -82,7 +82,7 @@ Legend: **[D]** = has a design file to copy exactly.
 
 ## 8. Links (07)
 - [ ] BUG: the category menu doesn't work and subfolders won't open. Category tree: ▸ expands subfolders, click filters, + sub creates one, rename works.
-- [ ] Notes on links: "Add a note" on every tile is editable in place, saves to /api/links, shows on the tile, searchable.
+- [x] Notes on links: "Add a note" on every tile is editable in place, saves to /api/links, shows on the tile, searchable.
 - [ ] Add link, ✎ edit, ⇄ move, × soft delete, Expand all; tiles open in a new tab; favicons; counts match tiles.
 
 ## 9. Email (08b compose, [D] 08d-email-inbox, [D] 08e-email-people-grid, [D] 08c-email-people person panel) - REPLACES the old 7-column board
