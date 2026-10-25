@@ -239,6 +239,10 @@ async function productionStep1(browser) {
   const noteId = noteCreate.json && noteCreate.json.id;
   await live.reload({ waitUntil: 'domcontentloaded' });
   await live.waitForSelector('#notesDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  await live.waitForFunction((id) => {
+    const root = document.getElementById('notesDesk') && document.getElementById('notesDesk').shadowRoot;
+    return !!(root && root.querySelector('[data-action="note-open"][data-id="' + id + '"]'));
+  }, noteId, { timeout: 15000 });
   const noteUi = await live.evaluate(async ({ id, body }) => {
     const root = document.getElementById('notesDesk').shadowRoot;
     const card = root.querySelector('[data-action="note-open"][data-id="' + id + '"]') || root.querySelector('[data-action="note-open"]');
@@ -262,6 +266,10 @@ async function productionStep1(browser) {
   }
   await live.reload({ waitUntil: 'domcontentloaded' });
   await live.waitForSelector('#notesDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  await live.waitForFunction((id) => {
+    const notes = (window.STATE && window.STATE.notes) || [];
+    return notes.some((n) => String(n.id) === String(id));
+  }, noteId, { timeout: 15000 }).catch(() => {});
   const notePersist = await live.evaluate(({ id, body }) => {
     const notes = (window.STATE && window.STATE.notes) || [];
     const hit = notes.filter((n) => String(n.id) === String(id))[0];
@@ -310,11 +318,10 @@ async function productionStep1(browser) {
   await live.reload({ waitUntil: 'domcontentloaded' });
   await live.waitForSelector('#warDesk[data-port-ready], #notesDesk[data-port-ready], #linksDesk[data-port-ready]', { timeout: 20000, state: 'attached' }).catch(() => {});
   const leftover = await live.evaluate(() => {
-    const blob = JSON.stringify({
-      items: (window.STATE && window.STATE.items) || [],
-      notes: (window.STATE && window.STATE.notes) || [],
-      links: (window.STATE && window.STATE.links) || [],
-    });
+    const items = ((window.STATE && window.STATE.items) || []).filter((it) => it.status !== 'dropped');
+    const notes = (window.STATE && window.STATE.notes) || [];
+    const links = (window.STATE && window.STATE.links) || [];
+    const blob = JSON.stringify({ items, notes, links });
     return /TEST (click-check|note|link|autosave|step)/.test(blob);
   });
   if (!pushLive(rows, 'Cleanup', 'TEST records cleaned', { dom: true, net: true, persist: !leftover, extra: cleaned.length + ' dropped' })) failed = true;
