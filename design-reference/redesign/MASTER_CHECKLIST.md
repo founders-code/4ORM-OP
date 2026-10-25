@@ -25,6 +25,14 @@ Legend: **[D]** = has a design file to copy exactly.
 - [ ] Every editor field saves to its backing record (Google Calendar / Gmail / Neon) and reads back on reopen.
 - [ ] Mockups are the spec for behaviour too: every control in a design file has a live data-action that does the same thing.
 
+## 0c. Information audit (Oct 25) - one home per fact
+- [ ] Dashboard is RETIRED. / and /control-room redirect to /war-room. Remove it from the menu.
+- [ ] War Room = landing page [D 02-war-room]: thin text ribbon (runway, raise to go + days, next meeting + Join, lights left, Signals count, Coaching note, Show $), capture bar, Today's one move + focus, ranked moves, Execution Today on the right, This week / Later / Done today below. No After-your-meetings, Next up or Reach out panels: owed items arrive as Execution cards tagged "from Zoom"; Reach out is a count linking to Pipeline.
+- [ ] Signals panel [D 02c-war-room-signals]: opens from the top-bar Signals button and the ribbon count. Sections Needs you / New since / Watch; each row links to its home page; the brain's latest line at the top; Brain log link. Counts update every 15 s.
+- [ ] Pipeline [D 04-pipeline]: Needs you today = ONE list (follow-ups due + going cold + reach-outs) with chips and a checkbox; Board is the default view (drag writes the stage to GHL); empty stages collapsed behind "+ N empty stages"; List and Funnel are secondary tabs; KPI strip and category × stage grid removed.
+- [ ] Spaces [D 05c-space-panel]: opening a card slides the workbench in from the right over the Spaces list (not a full page). Close / Esc / scrim closes; Prev / Next moves between spaces.
+- [ ] Menu counts on Email (need a reply), Zoom (owed), Contacts (going cold), Integrations (attention), Pipeline (needs you today).
+
 ## 1. Site-wide
 - [ ] 1.1 Wire every control on pages 01-17 (Claude's click audit found ~250 dead controls).
 - [ ] 1.2 live-updates.js on EVERY signed-in page (today only /control-room).
