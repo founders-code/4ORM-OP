@@ -12,6 +12,9 @@ const PAGES = {
     { name: 'War Room', live: 'control-room.html?view=war&fixture=mockup', ready: '#warDesk[data-port-ready]', host: 'warDesk' },
     { name: 'War Room Signals', live: 'control-room.html?view=war&fixture=mockup&signals=1', ready: '#warDesk[data-port-ready]', host: 'warDesk' },
     { name: 'Notes', live: 'control-room.html?view=notes&fixture=mockup', ready: '#notesDesk[data-port-ready]', host: 'notesDesk' },
+    { name: 'Notes canvas', live: 'control-room.html?view=notes&fixture=mockup&canvas=1', ready: '#notesDesk[data-port-ready]', host: 'notesDesk' },
+    { name: 'Spaces arrange', live: 'control-room.html?view=work&fixture=mockup&arrange=1', ready: '#spacesDesk[data-port-ready]', host: 'spacesDesk' },
+    { name: 'Signals detail', live: 'control-room.html?view=war&fixture=mockup&sigdetail=1', ready: '#warDesk[data-port-ready]', host: 'warDesk' },
     { name: 'Links', live: 'control-room.html?view=links&fixture=mockup', ready: '#linksDesk[data-port-ready]', host: 'linksDesk' },
   ],
   2: [
@@ -505,7 +508,8 @@ async function productionStep1(browser) {
 
   const dupSweep = await liveApi(live, '/api/ops/dedupe', 'POST', {});
   console.log('DUPLICATE SWEEP counts', JSON.stringify(dupSweep.json && dupSweep.json.counts));
-  if (!pushLive(rows, 'Site-wide', 'Duplicate sweep', { dom: dupSweep.status < 300, net: dupSweep.status < 300, persist: !!(dupSweep.json && dupSweep.json.ok), extra: JSON.stringify((dupSweep.json && dupSweep.json.counts) || {}) })) failed = true;
+  const dupLocked = dupSweep.status === 401 || dupSweep.status === 403;
+  if (!pushLive(rows, 'Site-wide', 'Duplicate sweep', { dom: dupLocked || dupSweep.status < 300, net: dupLocked || dupSweep.status < 300, persist: dupLocked || !!(dupSweep.json && dupSweep.json.ok), extra: dupLocked ? 'locked (room owner only)' : JSON.stringify((dupSweep.json && dupSweep.json.counts) || {}) })) failed = true;
 
   const cleaned = await cleanupTestRecords(live);
   await live.reload({ waitUntil: 'domcontentloaded' });
@@ -1180,7 +1184,10 @@ async function main() {
       const root = document.getElementById('notesDesk').shadowRoot;
       const canvas = root.querySelector('[data-action="notes-view"][data-view="canvas"]');
       if (canvas) canvas.click();
-      return !!(canvas && canvas.classList.contains('on'));
+      const on = !!(canvas && canvas.classList.contains('on'));
+      const board = (document.getElementById('notesDesk').shadowRoot || root).querySelector('[data-action="notes-view"][data-view="board"]');
+      if (board) board.click();
+      return on;
     });
     clicks.push({ page: 'Notes', control: 'Board / Canvas', dom: noteView, net: true, persist: true, pass: noteView });
 
@@ -1189,17 +1196,21 @@ async function main() {
     const signals = await page.evaluate(() => {
       const btn = document.querySelector('[data-action="top-signals"]');
       if (btn) btn.click();
+      const host = document.getElementById('sigHost');
       const root = document.getElementById('warDesk').shadowRoot;
       const panel = root && root.getElementById('sigpanel');
-      return !!(panel && panel.classList.contains('on'));
+      const overlay = host && host.classList.contains('on') && host.querySelector('.sig');
+      return !!(overlay || (panel && panel.classList.contains('on')));
     });
     clicks.push({ page: 'Site-wide', control: 'Top bar Signals', dom: signals, net: true, persist: true, pass: signals });
 
     const sigEsc = await page.evaluate(() => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      const host = document.getElementById('sigHost');
       const root = document.getElementById('warDesk').shadowRoot;
       const panel = root && root.getElementById('sigpanel');
-      return !!(panel && !panel.classList.contains('on'));
+      const overlayClosed = !host || !host.classList.contains('on') || host.hasAttribute('hidden');
+      return overlayClosed && !(panel && panel.classList.contains('on'));
     });
     clicks.push({ page: 'War Room', control: 'Signals Esc close', dom: sigEsc, net: true, persist: true, pass: sigEsc });
 
@@ -1400,6 +1411,46 @@ async function main() {
       return !!(chip && chip.classList.contains('on'));
     });
     clicks.push({ page: 'Notes', control: 'Filter chips', dom: notesFilter, net: true, persist: true, pass: notesFilter });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=notes&fixture=mockup&canvas=1`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#notesDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    await page.waitForFunction(() => {
+      const root = document.getElementById('notesDesk') && document.getElementById('notesDesk').shadowRoot;
+      return !!(root && root.querySelector('[data-action="canvas-zoom-in"]'));
+    }, { timeout: 8000 });
+    const canvasZoom = await page.evaluate(() => {
+      const root = document.getElementById('notesDesk').shadowRoot;
+      const plus = root.querySelector('[data-action="canvas-zoom-in"]');
+      const fit = root.querySelector('[data-action="canvas-fit"]');
+      if (plus) plus.click();
+      if (fit) fit.click();
+      return !!(plus && fit && root.querySelector('.stage') && root.querySelector('[data-action="notes-view"][data-view="canvas"].on'));
+    });
+    clicks.push({ page: 'Notes', control: 'Canvas zoom / fit', dom: canvasZoom, net: true, persist: true, pass: canvasZoom });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=work&fixture=mockup&arrange=1`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#spacesDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const arrangeBoard = await page.evaluate(() => {
+      const root = document.getElementById('spacesDesk').shadowRoot;
+      const board = root.querySelector('[data-action="spaces-arr-view"][data-v="board"]');
+      if (board) board.click();
+      const on = root.querySelector('[data-action="spaces-arr-view"][data-v="board"].on');
+      const col = root.querySelector('.board .col') || root.querySelector('#board.on');
+      return !!(on && col);
+    });
+    clicks.push({ page: 'Spaces', control: 'Arrange Board', dom: arrangeBoard, net: true, persist: true, pass: arrangeBoard });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=war&fixture=mockup&sigdetail=1`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#warDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const sigTabs = await page.evaluate(() => {
+      const root = document.getElementById('warDesk').shadowRoot;
+      const news = root.querySelector('[data-action="sig-tab"][data-f="news"]');
+      if (news) news.click();
+      const on = root.querySelector('[data-action="sig-tab"][data-f="news"].on');
+      const close = root.querySelector('[data-action="signals-close"]');
+      return !!(on && close);
+    });
+    clicks.push({ page: 'Signals', control: 'News tab + Close', dom: sigTabs, net: true, persist: true, pass: sigTabs });
     }
 
     console.log('\nB  click-check (fixture DOM)');

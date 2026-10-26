@@ -32,6 +32,9 @@ const PAGES = [
   { page: '10c-calendar-event-editor', design: 'redesign/10c-calendar-event-editor.html', live: 'control-room.html?view=calendar&fixture=mockup&event=1', ready: '#calDesk[data-port-ready]', wait: 800 },
   { page: '11-zoom', design: 'redesign/11-zoom.html', live: 'control-room.html?view=znotes&fixture=mockup', ready: '#zoomDesk[data-port-ready]', wait: 500 },
   { page: '12-completed', design: 'redesign/12-completed.html', live: 'control-room.html?view=done&fixture=mockup', ready: '#doneDesk[data-port-ready]', wait: 400 },
+  { page: '03c-notes-canvas', design: 'redesign/03c-notes-canvas.html', live: 'control-room.html?view=notes&fixture=mockup&canvas=1', ready: '#notesDesk[data-port-ready]', wait: 600 },
+  { page: '05d-spaces-arrange', design: 'redesign/05d-spaces-arrange.html', live: 'control-room.html?view=work&fixture=mockup&arrange=1', ready: '#spacesDesk[data-port-ready]', wait: 600 },
+  { page: '02e-signals-detail', design: 'redesign/02e-signals-detail.html', live: 'control-room.html?view=war&fixture=mockup&sigdetail=1', ready: '#warDesk[data-port-ready]', wait: 600 },
 ];
 const INTER = '<link rel="preconnect" href="https://fonts.googleapis.com"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>';
 

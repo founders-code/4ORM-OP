@@ -43,6 +43,7 @@
     + '.pick-row:first-child{border-top:0}';
   var CSS = {
     room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=7', notes: '/port-css/notes.css?v=4',
+    notesCanvas: '/port-css/notes-canvas.css?v=1', spacesArrange: '/port-css/spaces-arrange.css?v=1', signalsDetail: '/port-css/signals-detail.css?v=3',
     contacts: '/port-css/pipeline.css?v=4', work: '/port-css/spaces.css?v=9', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css',
     links: '/port-css/links.css?v=3', mail: '/port-css/email.css?v=5', mailPeople: '/port-css/email-people.css?v=3',
     playbook: '/port-css/playbook.css?v=2', calendar: '/port-css/calendar.css?v=5', zoom: '/port-css/zoom.css',
@@ -1122,6 +1123,11 @@
     var archiveView = filt === 'archive' && !fixtureOn();
     /* N9: Canvas = free placement of sticky notes, saved to sticky_notes.x / y. */
     var canvasOn = !archiveView && String(S0.notesView || (function () { try { return localStorage.getItem('cr_notes_view') || ''; } catch (e) { return ''; } })()) === 'canvas';
+    try {
+      var qn = new URLSearchParams(String(location.search || ''));
+      if (qn.get('open') === '1') canvasOn = false;
+      if (qn.get('fixture') === 'mockup' && qn.get('canvas') !== '1') canvasOn = false;
+    } catch (e2) {}
     if (archiveView) {
       data = Object.assign({}, data, { pinned: [], notes: (data.archived || []).slice() });
     }

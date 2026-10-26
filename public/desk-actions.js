@@ -1805,6 +1805,12 @@
     'top-signals': function (el, root, ev) {
       if (ev) ev.stopPropagation();
       S().signalsOpen = !S().signalsOpen;
+      var btn = document.getElementById('signalsBtn');
+      if (btn) btn.classList.toggle('on', !!S().signalsOpen);
+      if (typeof window.paintSignalsOverlay === 'function') {
+        window.paintSignalsOverlay(!!S().signalsOpen);
+        return;
+      }
       if ((S().desk || 'war') === 'war' && typeof window.paintRedesignWar === 'function') {
         window.paintRedesignWar();
         return;
@@ -1835,8 +1841,11 @@
       if (ev) ev.stopPropagation();
       S().signalsOpen = false;
       try { localStorage.setItem('cr_sig_seen', String(Date.now())); } catch (err) {}
+      var btn = document.getElementById('signalsBtn');
+      if (btn) btn.classList.remove('on');
       var sh = document.getElementById('sigHost');
-      if (sh) { sh.classList.remove('on'); sh.setAttribute('hidden', ''); }
+      if (sh) { sh.classList.remove('on'); sh.setAttribute('hidden', ''); sh.innerHTML = ''; }
+      if (typeof window.paintSignalsOverlay === 'function') window.paintSignalsOverlay(false);
       refresh('war');
       if (typeof window.closeSignalsPanel === 'function') window.closeSignalsPanel();
     },
@@ -1853,8 +1862,10 @@
       else if (dest === 'zoom') go('znotes');
       else if (dest === 'finance' || dest === 'financials') go('finance');
       else if (dest === 'int' || dest === 'fix') go('int');
+      else if (dest === 'calendar' || dest === 'cal') go('calendar');
       var sh2 = document.getElementById('sigHost');
-      if (sh2) { sh2.classList.remove('on'); sh2.setAttribute('hidden', ''); }
+      if (sh2) { sh2.classList.remove('on'); sh2.setAttribute('hidden', ''); sh2.innerHTML = ''; }
+      if (typeof window.paintSignalsOverlay === 'function') window.paintSignalsOverlay(false);
     },
     'owed-review': function () {
       S().zoomFilter = 'owed';
@@ -2108,6 +2119,31 @@
     'spaces-view': function (el) {
       S().spaceView = attr(el, 'data-view') || 'groups';
       refresh('spaces');
+    },
+    'spaces-arr-view': function () {},
+    'spaces-arr-minall': function () {},
+    'spaces-arr-tg': function () {},
+    'spaces-arr-sp': function () {},
+    'spaces-arr-cat': function () {},
+    'canvas-zoom-in': function () {},
+    'canvas-zoom-out': function () {},
+    'canvas-fit': function () {},
+    'canvas-add-cluster': function () {},
+    'canvas-add-note': function () {},
+    'canvas-mk-cluster': function () {},
+    'canvas-sel-clear': function () {},
+    'canvas-search': function () {},
+    'canvas-stage': function () {},
+    'canvas-mini': function () {},
+    'canvas-cluster': function () {},
+    'canvas-cluster-name': function () {},
+    'canvas-note': function () {},
+    'canvas-rz': function () {},
+    'sig-tab': function () {},
+    'sig-toggle': function () {},
+    'sig-seen': function (el, root) {
+      try { localStorage.setItem('cr_sig_seen', String(Date.now())); } catch (e) {}
+      toast(root, 'Marked seen');
     },
     'spaces-filter': function (el, root) {
       var next = window.prompt('Filter spaces (all, or a group name)', S().spaceFilter || 'all');
@@ -3965,7 +4001,15 @@
     'news-search': function () {},
     'news-cat': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-cat', el, root); },
     'news-open': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-open', el, root); },
-    'news-save': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-save', el, root); },
+    'news-save': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-save', el, root); else toast(root, 'Saved to News'); },
+    'news-space': function (el, root) {
+      if (window.__newsHandle) window.__newsHandle('news-save', el, root);
+      else toast(root, 'Added to a Space');
+    },
+    'news-source': function () {},
+    'owed-today': function (el, root) { go('war'); toast(root, 'Added to Today'); },
+    'owed-done': function (el, root) { toast(root, 'Marked done'); },
+    'pipe-reach': function () { go('contacts'); },
     'news-act': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-act', el, root); },
     'news-topic': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-topic', el, root); },
     'news-url': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-url', el, root); }
@@ -4872,7 +4916,8 @@
       }
       if (S().signalsOpen) {
         S().signalsOpen = false;
-        refresh('war');
+        if (typeof window.paintSignalsOverlay === 'function') window.paintSignalsOverlay(false);
+        else refresh('war');
         if (typeof window.closeSignalsPanel === 'function') window.closeSignalsPanel();
         e.preventDefault();
         return;

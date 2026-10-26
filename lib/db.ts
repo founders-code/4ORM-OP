@@ -8,7 +8,7 @@ type Sql = NeonQueryFunction<false, false>;
 let ready: Promise<Sql> | null = null;
 
 /** Bump when migrate() gains a new step so cold starts skip the full IF NOT EXISTS pass. */
-const SCHEMA_VERSION = '2026-10-29-round3-backend';
+const SCHEMA_VERSION = '2026-10-26-notes-canvas-spaces-arrange';
 
 export async function databaseUrl() {
   const envUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
@@ -860,6 +860,35 @@ async function migrateWar(sql: Sql) {
     )`],
     ['db_r3_space_test_sends_idx', () => sql`CREATE INDEX IF NOT EXISTS space_test_sends_lookup
       ON space_test_sends (owner_id, space_id, content_hash)`],
+    ['db_note_clusters', () => sql`CREATE TABLE IF NOT EXISTS note_clusters (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      name text NOT NULL DEFAULT 'New cluster',
+      color text NOT NULL DEFAULT '#2e6bf2',
+      x int NOT NULL DEFAULT 120,
+      y int NOT NULL DEFAULT 120,
+      w int NOT NULL DEFAULT 500,
+      h int NOT NULL DEFAULT 300,
+      position int NOT NULL DEFAULT 0,
+      deleted_at timestamptz
+    )`],
+    ['db_notes_canvas_x', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS canvas_x int`],
+    ['db_notes_canvas_y', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS canvas_y int`],
+    ['db_notes_cluster_id', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS cluster_id uuid`],
+    ['db_sticky_canvas_x', () => sql`ALTER TABLE sticky_notes ADD COLUMN IF NOT EXISTS canvas_x int`],
+    ['db_sticky_canvas_y', () => sql`ALTER TABLE sticky_notes ADD COLUMN IF NOT EXISTS canvas_y int`],
+    ['db_sticky_cluster_id', () => sql`ALTER TABLE sticky_notes ADD COLUMN IF NOT EXISTS cluster_id uuid`],
+    ['db_spaces_position', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS position int NOT NULL DEFAULT 0`],
+    ['db_space_groups', () => sql`CREATE TABLE IF NOT EXISTS space_groups (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      name text NOT NULL,
+      position int NOT NULL DEFAULT 0,
+      collapsed boolean NOT NULL DEFAULT false,
+      deleted_at timestamptz
+    )`],
+    ['db_space_groups_name', () => sql`CREATE UNIQUE INDEX IF NOT EXISTS space_groups_owner_name
+      ON space_groups (owner_id, lower(name)) WHERE deleted_at IS NULL`],
   ];
   for (const [code, run] of steps) {
     try {

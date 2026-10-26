@@ -42,7 +42,7 @@ else {
   const hits = iconHits(ops.slice(nb, ne));
   if (hits.length) failures.push('public/control-room-ops.js News region has icons: ' + hits.join(', '));
 }
-for (const name of ['redesign-pages-d.js', 'redesign-pages-people.js', 'redesign-news-saved.js', 'redesign-pages-r3.js']) {
+for (const name of ['redesign-pages-d.js', 'redesign-pages-people.js', 'redesign-news-saved.js', 'redesign-pages-r3.js', 'redesign-pages-r4.js']) {
   const file = resolve(ROOT, 'public', name);
   if (!existsSync(file)) continue;
   const hits = iconHits(readFileSync(file, 'utf8'));

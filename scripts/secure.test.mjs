@@ -582,6 +582,8 @@ test('scheduled send and round 3 routes: allowlisted, fail closed, and the cron 
     'app/api/integrations/perplexity/route.ts',
     'app/api/playbook/beats/route.ts',
     'app/api/calendar/calendars/route.ts',
+    'app/api/notes/clusters/route.ts',
+    'app/api/spaces/groups/reorder/route.ts',
   ];
   for (const rel of routes) {
     const src = read(rel);

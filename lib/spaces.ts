@@ -136,6 +136,15 @@ export async function ensureSpaceTables(sql: Sql) {
       sent_to text NOT NULL,
       created_at timestamptz NOT NULL DEFAULT now()
     )`],
+    ['db_spaces_position', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS position int NOT NULL DEFAULT 0`],
+    ['db_space_groups', () => sql`CREATE TABLE IF NOT EXISTS space_groups (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      name text NOT NULL,
+      position int NOT NULL DEFAULT 0,
+      collapsed boolean NOT NULL DEFAULT false,
+      deleted_at timestamptz
+    )`],
   ];
   for (const [code, run] of steps) {
     try {
@@ -763,10 +772,11 @@ export async function listSpaces(sql: Sql, ownerId: string) {
     try {
       rows = await sql`
         SELECT id, name, kind, notes, category, stage, sent_at, drive_folder_id, drive_folder_url, pushed_to_drive_at, created_at,
-          to_jsonb(spaces) ->> 'angle' AS angle
+          to_jsonb(spaces) ->> 'angle' AS angle,
+          COALESCE(position, 0) AS position
         FROM spaces
         WHERE owner_id = ${ownerId} AND deleted_at IS NULL
-        ORDER BY created_at
+        ORDER BY COALESCE(position, 0), created_at
       ` as Record<string, unknown>[];
     } catch (err) {
       fail('spaces_list_cols', err);
@@ -800,6 +810,8 @@ export async function listSpaces(sql: Sql, ownerId: string) {
         description: String(row.notes || ''),
         angle: String(row.angle || ''),
         spaceCategory: String(row.category || ''),
+        category: String(row.category || ''),
+        position: Number(row.position || 0),
         preview: bits.preview,
         emailSubject: bits.emailSubject,
         thumbs: bits.thumbs,
@@ -812,7 +824,21 @@ export async function listSpaces(sql: Sql, ownerId: string) {
     const names = new Set(cards.map((card) => card.name));
     const extras = packages.filter((row) => !names.has(String(row.name || '')));
     const merged = cards.concat(extras as typeof cards);
-    return { spaces: merged, packages: merged };
+    let groups: Array<{ name: string; position: number }> = [];
+    try {
+      const gRows = await sql`
+        SELECT name, position FROM space_groups
+        WHERE owner_id = ${ownerId} AND deleted_at IS NULL
+        ORDER BY position, name
+      `;
+      groups = (gRows as Array<Record<string, unknown>>).map((g) => ({
+        name: String(g.name || ''),
+        position: Number(g.position || 0),
+      }));
+    } catch (gErr) {
+      fail('spaces_list_groups', gErr);
+    }
+    return { spaces: merged, packages: merged, groups };
   } catch (err) {
     fail('spaces_list', err);
     return { spaces: [], packages: [] };
@@ -894,14 +920,19 @@ export async function patchSpace(sql: Sql, ownerId: string, id: string, body: Re
     : null;
   const stageRaw = Object.prototype.hasOwnProperty.call(body, 'stage') ? String(body.stage || '').toLowerCase() : '';
   const stage = stageRaw && ['draft', 'ready', 'sent', 'replied', 'meeting', 'committed'].includes(stageRaw) ? stageRaw : (stageRaw ? 'draft' : null);
-  if (name !== null || notes !== null || kind !== null || category !== null || stage !== null) {
+  const group = Object.prototype.hasOwnProperty.call(body, 'group') ? clip(body.group, 80) : category;
+  const position = Object.prototype.hasOwnProperty.call(body, 'position') && Number.isFinite(Number(body.position))
+    ? Math.round(Number(body.position))
+    : null;
+  if (name !== null || notes !== null || kind !== null || category !== null || group !== null || stage !== null || position !== null) {
     await sql`
       UPDATE spaces SET
         name = CASE WHEN ${name !== null} THEN ${name || 'Untitled space'} ELSE name END,
         notes = CASE WHEN ${notes !== null} THEN ${notes || ''} ELSE notes END,
         kind = CASE WHEN ${kind !== null} THEN ${kind || 'data_room'} ELSE kind END,
-        category = CASE WHEN ${category !== null} THEN ${category || ''} ELSE category END,
+        category = CASE WHEN ${group !== null} THEN ${group || ''} WHEN ${category !== null} THEN ${category || ''} ELSE category END,
         stage = CASE WHEN ${stage !== null} THEN ${stage || 'draft'} ELSE stage END,
+        position = CASE WHEN ${position !== null} THEN ${position || 0} ELSE position END,
         sent_at = CASE WHEN ${stage === 'sent'} THEN now() ELSE sent_at END,
         updated_at = now()
       WHERE id = ${id} AND owner_id = ${ownerId}
@@ -1274,4 +1305,23 @@ export async function addSpaceFolder(sql: Sql, ownerId: string, spaceId: string,
     parentId,
     body: '',
   });
+}
+
+export async function reorderSpaceGroups(sql: Sql, ownerId: string, ids: string[]) {
+  await ensureSpaceTables(sql);
+  for (let i = 0; i < ids.length; i += 1) {
+    const name = ids[i];
+    const pos = i;
+    const updated = await sql`
+      UPDATE space_groups SET position = ${pos}
+      WHERE owner_id = ${ownerId} AND lower(name) = lower(${name}) AND deleted_at IS NULL
+      RETURNING id
+    `;
+    if (!updated.length) {
+      await sql`
+        INSERT INTO space_groups (owner_id, name, position)
+        VALUES (${ownerId}, ${name}, ${pos})
+      `;
+    }
+  }
 }

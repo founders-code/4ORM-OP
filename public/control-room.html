@@ -6,8 +6,9 @@
 <title>War Room - 4orm Finance</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/port-css/shell.css?v=4"/>
+<link rel="stylesheet" href="/port-css/shell.css?v=6"/>
 <link rel="stylesheet" href="/port-css/shell-live.css?v=5"/>
+<link rel="stylesheet" href="/port-css/signals-detail.css?v=3"/>
 <script src="/shadow-port.js?v=3"></script>
 <style>
 :root{--bg:#FFFFFF;--bg-2:#F7F9FC;--bg-3:#EFF3F9;--surface:#FFFFFF;--surface-2:#F4F7FB;--surface-3:#EAEFF6;--border:#E6EBF3;--border-strong:#CCD6E4;--tx:#142036;--tx-2:#46556E;--tx-3:#5E6E88;--blue:#2E6BF2;--blue-dp:#1B4ABE;--blue-50:#EAF1FE;--ok:#0E8A5F;--warn:#8F5C12;--warn-lit:#F2A104;--warn-bg:#FBF1DC;--bad:#D6334E;--info:#1B7BB5;--sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;--mono:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;--r:14px;--r-sm:10px;--sh-sm:0 1px 2px rgba(16,32,64,.05);--sh:0 14px 40px rgba(16,32,64,.12);--ok-bg:#E3F6EE;--ok-br:#9CCFBB;--bad-bg:#FCE6EA;--bad-br:#EBB6C0;}
@@ -2386,7 +2387,7 @@ function ceoSnooze(id){var data=STATE.ceo||{moves:[]};var prev=(data.moves||[]).
 function renderRoom(){renderSignals();renderNow();renderCeo();renderBrief();renderWeek();renderMatrix();renderSnap();renderKpis();renderCats();renderLinks();renderZNotes();renderPeople(document.getElementById('pSearch')?document.getElementById('pSearch').value:'');paintRunway();}
 var PKG_KIND={data_room:'Data room',investor:'Investor',partner:'Partner',regulator:'Regulator'};
 function pkgPost(id,body){return authFetch('/api/spaces/'+id,{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(d){if(!r.ok)throw d;return d;});});}
-function loadPackages(){return authFetch('/api/spaces',{credentials:'same-origin'}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){var pending=(STATE.packages||[]).filter(function(p){return String(p.id).indexOf('tmp-')===0;});var rows=((d&&(d.packages||d.spaces))||[]);if(rows.length||!STATE.packages||!STATE.packages.length)STATE.packages=rows.concat(pending);if(!STATE.pkg)renderPackages();}).catch(function(){if(!STATE.packages)STATE.packages=[];if(!STATE.pkg)renderPackages();});}
+function loadPackages(){return authFetch('/api/spaces',{credentials:'same-origin'}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){var pending=(STATE.packages||[]).filter(function(p){return String(p.id).indexOf('tmp-')===0;});var rows=((d&&(d.packages||d.spaces))||[]);if(rows.length||!STATE.packages||!STATE.packages.length)STATE.packages=rows.concat(pending);STATE.spaceGroups=(d&&d.groups)||STATE.spaceGroups||[];if(!STATE.pkg)renderPackages();}).catch(function(){if(!STATE.packages)STATE.packages=[];if(!STATE.pkg)renderPackages();});}
 function openSpace(id){id=String(id||'');if(!id||id.indexOf('tmp-')===0)return;var hit=(STATE.packages||[]).filter(function(p){return p.id===id;})[0]||{id:id,name:'Space'};STATE.pkg=Object.assign({docs:[],folders:[],recipients:[],emailSubject:'',emailBody:'',description:'',status:'draft',stage:'draft'},hit);renderPackages();deskBusy(true);authFetch('/api/spaces/'+encodeURIComponent(id),{credentials:'same-origin'}).then(function(r){return r.json();}).then(function(d){deskBusy(false);var pack=d&&d.package&&d.package.id?d.package:(d&&d.id?d:null);if(pack&&(!STATE.pkg||STATE.pkg.id===id))acceptPackage(pack);}).catch(function(){deskBusy(false);if(STATE.pkg&&STATE.pkg.id===id){STATE.pkg._err='Could not open that space.';renderPackageDetail();}});}
 function driveFolderChoices(){var out=[];function walk(nodes,prefix){(nodes||[]).forEach(function(n){if(n&&n.id)out.push({id:n.id,name:prefix+(n.name||'Folder'),url:n.url||''});walk(n.children||n.folders||[],prefix+(n.name||'Folder')+' / ');});}(STATE.drives||[]).forEach(function(d){if(d.id)out.push({id:d.id,name:d.name||'Drive',url:''});walk(d.folders, (d.name||'Drive')+' / ');});return out;}
 function spaceLabel(raw){var key=String(raw||'').trim();var map={'VC':'Venture Capital','vc':'Venture Capital','Regulatory':'Regulators','regulatory':'Regulators','regulator':'Regulators','Business':'Business','business':'Business','design':'Design partners','partner':'Design partners','Design partner':'Design partners'};return map[key]||key||'General';}
@@ -2591,17 +2592,18 @@ document.addEventListener('click',function(e){var t=e.target.closest&&e.target.c
 <script src="/shadow-port.js?v=3"></script>
 <script src="/redesign-fixture.js?v=5"></script>
 <script src="/_sounds.js?v=3"></script>
-<script src="/desk-actions.js?v=27"></script>
-<script src="/redesign-pages.js?v=19"></script>
-<script src="/redesign-pages-b.js?v=15"></script>
+<script src="/desk-actions.js?v=28"></script>
+<script src="/redesign-pages.js?v=21"></script>
+<script src="/redesign-pages-b.js?v=16"></script>
 <script src="/control-room-war.js?v=3"></script>
 <script src="/control-room-ops.js?v=5"></script>
 <script src="/shell-nav.js?v=7"></script>
 <script src="/control-room-mail.js"></script>
 <script src="/control-room-zoom.js?v=3"></script>
-<script src="/redesign-cal-engine.js?v=7"></script>
+<script src="/redesign-cal-engine.js?v=8"></script>
 <script>if(/(?:^|[?&])fixture=mockup(?:&|$)/.test(location.search))document.write('<script src="/redesign-fixture-c.js?v=4"><\/script>');</script>
 <script src="/redesign-pages-c.js?v=9"></script>
+<script src="/redesign-pages-r4.js?v=4"></script>
 <script src="/redesign-pages-d.js?v=3"></script>
 <script src="/redesign-pages-people.js?v=3"></script>
 <script src="/redesign-news-saved.js?v=2"></script>
