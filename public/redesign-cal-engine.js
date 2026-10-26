@@ -256,14 +256,22 @@ on(window,'mouseup',e=>{if(!drag)return;tip.style.display='none';const d=drag;dr
   SEL=d.x;render();
 });
 // zoom the time grid: ctrl/pinch wheel and Cmd/Ctrl + / -, 24-160 px per hour, remembered
-function setPx(v){const next=Math.max(24,Math.min(160,Math.round(v)));if(next===PX)return;const b=body;const ratio=b.scrollTop/(PX||1);PX=next;try{localStorage.setItem('cr_cal_px',String(PX))}catch(e){}if(view=='day'||view=='week'){render();b.scrollTop=ratio*PX;}}
-/* A pinch over the calendar never zooms the page: the event is always swallowed, even at the 24 or 160 limit and in month/quarter/year views. */
-on(root,'wheel',e=>{if(!e.ctrlKey&&!e.metaKey)return;e.preventDefault();e.stopPropagation();if(view=='day'||view=='week')setPx(PX-e.deltaY*0.25)},{passive:false});
+function setPx(v){const next=Math.max(24,Math.min(160,Math.round(Number(v)||PX)));const b=body;const ratio=b?(b.scrollTop/(PX||1)):0;if(next!==PX){PX=next;try{localStorage.setItem('cr_cal_px',String(PX))}catch(e){}if(view=='day'||view=='week'){render();if(b)b.scrollTop=ratio*PX;}}}
+/* A pinch over the calendar never zooms the page: always preventDefault, including at 24/160 and in Month/Quarter/Year. Hour height still updates (clamped). */
+function pinchWheel(e){if(!e.ctrlKey&&!e.metaKey)return;e.preventDefault();e.stopPropagation();setPx(PX-e.deltaY*0.25)}
+on(root,'wheel',pinchWheel,{passive:false});
+on(window,'wheel',e=>{if(!root.contains(e.target))return;pinchWheel(e)},{passive:false,capture:true});
 /* Safari sends trackpad pinch as gesture events, not ctrl+wheel. */
 let gesturePx=PX;
-on(root,'gesturestart',e=>{e.preventDefault();gesturePx=PX},{passive:false});
-on(root,'gesturechange',e=>{e.preventDefault();if(view=='day'||view=='week')setPx(gesturePx*(e.scale||1))},{passive:false});
-on(root,'gestureend',e=>{e.preventDefault()},{passive:false});
+function pinchGestureStart(e){e.preventDefault();e.stopPropagation();gesturePx=PX}
+function pinchGestureChange(e){e.preventDefault();e.stopPropagation();setPx(gesturePx*(e.scale||1))}
+function pinchGestureEnd(e){e.preventDefault();e.stopPropagation()}
+on(root,'gesturestart',pinchGestureStart,{passive:false});
+on(root,'gesturechange',pinchGestureChange,{passive:false});
+on(root,'gestureend',pinchGestureEnd,{passive:false});
+on(window,'gesturestart',e=>{if(!root.contains(e.target))return;pinchGestureStart(e)},{passive:false,capture:true});
+on(window,'gesturechange',e=>{if(!root.contains(e.target))return;pinchGestureChange(e)},{passive:false,capture:true});
+on(window,'gestureend',e=>{if(!root.contains(e.target))return;pinchGestureEnd(e)},{passive:false,capture:true});
 // suggested plays: keep / later / drop (the only path; DA cal-keep/later/drop call keepSug)
 function nextFree(d,s,len){const busyL=E.filter(v=>v.d===d&&!v.all).concat(S.filter(v=>v.d===d)).map(v=>[v.s,v.e]).sort((a,b)=>a[0]-b[0]);let t=s+0.5;for(let i=0;i<96;i++){const clash=busyL.some(([a,b])=>t<b&&t+len>a);if(!clash&&t+len<=H1)return t;t+=0.25}return null}
 function keepPlay(x,extra){var kept=Object.assign({d:x.d,s:x.s,e:x.e,t:'Play · '+x.t,c:'mile',play:x.t,ppl:x.ppl||[],loc:x.loc||[],links:x.links||[],docs:x.docs||[],notes:x.notes||''},extra||{});E.push(kept);liveWrite({type:'create',event:kept});return kept;}

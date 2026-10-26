@@ -45,14 +45,19 @@ export async function GET() {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ error: 'The library is not available right now.' }, { status: 503 });
-    const rows = await session.sql`
-      SELECT id, category, name, url, drive_file_id, mime, created_at, (body_b64 IS NOT NULL AND body_b64 <> '') AS stored
-      FROM staged_docs
-      WHERE owner_id = ${session.userId} AND COALESCE(to_jsonb(staged_docs) ->> 'deleted_at', '') = ''
-      ORDER BY category, name
-    `;
-    const docs = (rows as Record<string, unknown>[]).map(shape);
+    if (!session.sql) return NextResponse.json({ docs: [], categories: [], folders: [], sets: [] });
+    let docs: ReturnType<typeof shape>[] = [];
+    try {
+      const rows = await session.sql`
+        SELECT id, category, name, url, drive_file_id, mime, created_at, (body_b64 IS NOT NULL AND body_b64 <> '') AS stored
+        FROM staged_docs
+        WHERE owner_id = ${session.userId} AND COALESCE(to_jsonb(staged_docs) ->> 'deleted_at', '') = ''
+        ORDER BY category, name
+      `;
+      docs = (rows as Record<string, unknown>[]).map(shape);
+    } catch (err) {
+      fail('staged_docs_list', err);
+    }
     /* Real folders only: the saved folder rows plus any folder a file already sits in. No seeded names. */
     const folders: string[] = [];
     try {
@@ -78,10 +83,10 @@ export async function GET() {
     } catch (err) {
       fail('doc_sets', err);
     }
-    return NextResponse.json({ docs, categories: folders, folders, sets }, { status: 500 });
+    return NextResponse.json({ docs, categories: folders, folders, sets });
   } catch (err) {
     fail('staged_docs', err);
-    return NextResponse.json({ error: 'Could not load the library.' }, { status: 500 });
+    return NextResponse.json({ docs: [], categories: [], folders: [], sets: [] });
   }
 }
 

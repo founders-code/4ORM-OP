@@ -3,7 +3,6 @@ import { withCreds } from '@/lib/creds';
 import { getSql } from '@/lib/db';
 import { tokenOk } from '@/lib/guard.mjs';
 import { publicOrigin, safetySweep } from '@/lib/live';
-import { pollRecordSources } from '@/lib/granola';
 import { fail, note } from '@/lib/log';
 import { sendDueMail } from '@/lib/schedule';
 import { cronSecret } from '@/lib/secrets';
@@ -33,9 +32,7 @@ export async function GET(req: Request) {
     const creds = await loadCredsFor(ownerId);
     const origin = publicOrigin();
     const result = await withCreds(creds, () => safetySweep(sql, ownerId, origin));
-    // Granola and Riverside have no push for this account, so they are polled here at most every 30 minutes.
-    const records = await pollRecordSources(sql, ownerId);
-    return NextResponse.json({ ok: true, ...result, scheduled: { sent: scheduled.sent, failed: scheduled.failed }, records });
+    return NextResponse.json({ ok: true, ...result, scheduled: { sent: scheduled.sent, failed: scheduled.failed } });
   } catch (err) {
     fail('cron_live', err);
     return NextResponse.json({ ok: false }, { status: 500 });

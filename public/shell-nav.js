@@ -14,6 +14,7 @@
     ['Documents', 'M7 3h7l5 5v13H7zM14 3v5h5', '', 'docs', '/documents'],
     ['Drive', 'M8 3h8l6 10-4 7H6l-4-7z', '', 'drive', '/drive'],
     ['Links', 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1', '', 'links', '/links'],
+    ['Recordings', '', '', 'rec', '/recordings'],
     ['Record'],
     ['Zoom', 'M3 7h12v10H3zM15 10l6-3v10l-6-3', '', 'znotes', '/zoom'],
     ['Completed', 'M4 12l5 5L20 6', '', 'done', '/completed'],
@@ -25,7 +26,7 @@
   var PAGE = {
     room: 'War Room', war: 'War Room', contacts: 'Pipeline', work: 'Spaces', docs: 'Documents',
     links: 'Links', mail: 'Email', playbook: 'Playbook', calendar: 'Calendar', znotes: 'Zoom',
-    notes: 'Notes', done: 'Completed', news: 'News', drive: 'Drive', people: 'Contacts',
+    notes: 'Notes', done: 'Completed', news: 'News', drive: 'Drive', people: 'Contacts', rec: 'Recordings',
     finance: 'Financials', int: 'Integrations'
   };
   var DEFAULT = NAV.filter(function (n) { return n.length > 1; }).map(function (n) { return n[0]; });
@@ -108,8 +109,10 @@
     if (fixtureOn()) {
       NAV.forEach(function (n) {
         if (n.length === 1) { html += '<div class="grp">' + n[0] + '</div>'; return; }
+        if (n[0] === 'Recordings' && active !== 'Recordings') return;
         var badge = bag[n[0]] || '';
-        html += '<div class="nav' + (n[0] === active ? ' on' : '') + '" data-action="nav-go" data-v="' + n[3] + '" data-name="' + n[0] + '">' + n[0] + (badge ? '<span class="n">' + badge + '</span>' : '') + '</div>';
+        var chip = n[0] === 'Recordings' ? '<span class="new">new</span>' : (badge ? '<span class="n">' + badge + '</span>' : '');
+        html += '<div class="nav' + (n[0] === active ? ' on' : '') + '" data-action="nav-go" data-v="' + n[3] + '" data-name="' + n[0] + '">' + n[0] + chip + '</div>';
       });
       side.innerHTML = html;
       var crumbF = document.getElementById('pageCrumb');

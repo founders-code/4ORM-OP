@@ -30,10 +30,10 @@
 .y{background:#fff6c9}.p{background:#ffe1ea}.g{background:#ddf5e6}.b{background:#e1ecff}.o{background:#ffe6cf}.v{background:#ece4ff}.w{background:#fff}
 .ty{display:inline-block;font-size:10.5px;font-weight:800;border-radius:6px;padding:2px 8px;background:rgba(16,26,51,.08);color:var(--ink2);margin-bottom:7px}
 .ty.todo{background:#2e6bf2;color:#fff}.ty.idea{background:#c98408;color:#fff}.ty.person{background:#12a36a;color:#fff}.ty.dec{background:#6b4fd8;color:#fff}
-.note h4{margin:0 0 4px;font-size:14px;font-weight:800;line-height:1.3;color:var(--ink)}
-.note p{margin:0;font-size:12.5px;line-height:1.5;color:#33405a}
+.note h4{margin:0 0 4px;font-size:14px;font-weight:800;line-height:1.3;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.note p{margin:0;font-size:12.5px;line-height:1.5;color:#33405a;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
 .far .note p,.far .note .ty{display:none}
-.far .note{padding:10px 12px}.far .note h4{font-size:18px}
+.far .note{padding:10px 12px}.far .note h4{font-size:18px;-webkit-line-clamp:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
 .far .cluster .cn{font-size:30px;padding:10px 22px;top:-34px}
 .marq{position:absolute;border:1.5px dashed #9db9ff;background:rgba(46,107,242,.12);border-radius:6px;pointer-events:none;display:none}
 .mini{position:absolute;right:14px;bottom:14px;width:180px;height:120px;background:rgba(8,16,42,.85);border:1px solid rgba(255,255,255,.12);border-radius:10px;overflow:hidden;cursor:pointer}

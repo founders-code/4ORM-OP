@@ -533,3 +533,108 @@ export async function listPipelines() {
   });
   return { status: pipelines.length ? ('connected' as const) : ('reached_empty' as const), pipelines };
 }
+
+const TEST_PIPE_NAME = '4orm TEST';
+
+async function ghlAny(path: string, init?: { method?: string; body?: string }) {
+  if (!configured() || !locationId()) return { ok: false, json: null as unknown, status: 0 };
+  try {
+    const res = await fetch(`${BASE}${path}`, {
+      method: init?.method || 'GET',
+      headers: {
+        authorization: `Bearer ${key()}`,
+        version: '2021-07-28',
+        accept: 'application/json',
+        ...(init?.body ? { 'content-type': 'application/json' } : {}),
+      },
+      body: init?.body,
+      signal: AbortSignal.timeout(12000),
+    });
+    const json = await res.json().catch(() => null);
+    return { ok: res.ok, json, status: res.status };
+  } catch {
+    return { ok: false, json: null as unknown, status: 0 };
+  }
+}
+
+/** TEST pipeline + TEST opportunity only. Never moves a card whose name does not start with TEST. */
+export async function testOpportunityRail(step: 'ensure' | 'move' | 'archive', input?: { opportunityId?: string; stageId?: string; pipelineId?: string }) {
+  if (!configured() || !locationId()) return { ok: false as const, note: 'GoHighLevel is not connected.' };
+  const loc = locationId();
+  const listed = await ghlAny(`/opportunities/pipelines?locationId=${encodeURIComponent(loc)}`);
+  const pipes = ((listed.json as { pipelines?: Array<{ id?: string; name?: string; stages?: Array<{ id?: string; name?: string }> }> } | null)?.pipelines) || [];
+  let pipe = pipes.find((p) => String(p.name || '') === TEST_PIPE_NAME) || pipes.find((p) => /4orm\s*TEST/i.test(String(p.name || '')));
+  if (!pipe && step === 'ensure') {
+    const created = await ghlAny('/opportunities/pipelines/', {
+      method: 'POST',
+      body: JSON.stringify({
+        locationId: loc,
+        name: TEST_PIPE_NAME,
+        stages: [{ name: 'Open', position: 0 }, { name: 'Next', position: 1 }, { name: 'Done', position: 2 }],
+      }),
+    });
+    const row = created.json as { pipeline?: { id?: string; name?: string; stages?: Array<{ id?: string; name?: string }> } } | null;
+    if (row?.pipeline?.id) pipe = row.pipeline;
+  }
+  if (!pipe?.id) return { ok: false as const, note: 'No 4orm TEST pipeline in GoHighLevel.' };
+  const stages = (pipe.stages || []).filter((s) => s.id);
+  if (stages.length < 2) return { ok: false as const, note: '4orm TEST needs two stages.' };
+
+  if (step === 'ensure') {
+    const contactId = await ensureGhlContact({ name: 'TEST 4ormop', email: 'opstest@4ormfinance.com' });
+    if (!contactId) return { ok: false as const, note: 'Could not make the TEST contact.' };
+    const created = await ghlAny('/opportunities/', {
+      method: 'POST',
+      body: JSON.stringify({
+        locationId: loc,
+        pipelineId: pipe.id,
+        pipelineStageId: stages[0].id,
+        name: `TEST 4ormop drag ${new Date().toISOString().slice(0, 16)}`,
+        contactId,
+        status: 'open',
+      }),
+    });
+    const opp = created.json as { opportunity?: { id?: string; pipelineStageId?: string; name?: string } } | null;
+    const opportunityId = String(opp?.opportunity?.id || '');
+    if (!opportunityId) return { ok: false as const, note: 'GoHighLevel did not create the TEST opportunity.' };
+    return {
+      ok: true as const,
+      pipelineId: String(pipe.id),
+      pipelineName: String(pipe.name || TEST_PIPE_NAME),
+      opportunityId,
+      stageId: String(opp?.opportunity?.pipelineStageId || stages[0].id),
+      stages: stages.map((s) => ({ id: String(s.id), name: String(s.name || '') })),
+    };
+  }
+
+  const opportunityId = String(input?.opportunityId || '');
+  if (!/^[A-Za-z0-9_-]{4,64}$/.test(opportunityId)) return { ok: false as const, note: 'That opportunity id is not valid.' };
+  const got = await ghlAny(`/opportunities/${encodeURIComponent(opportunityId)}`);
+  const opp = (got.json as { opportunity?: { id?: string; name?: string; pipelineId?: string; pipelineStageId?: string; status?: string } } | null)?.opportunity;
+  if (!opp?.id || !/^TEST\b/i.test(String(opp.name || ''))) return { ok: false as const, note: 'Refusing to touch a non-TEST opportunity.' };
+  if (String(opp.pipelineId || '') !== String(pipe.id) && String(input?.pipelineId || '') !== String(pipe.id)) {
+    if (String(opp.pipelineId || '') && !/test/i.test(String(pipe.name || ''))) return { ok: false as const, note: 'That opportunity is not on 4orm TEST.' };
+  }
+
+  if (step === 'move') {
+    const stageId = String(input?.stageId || '');
+    if (!stages.some((s) => String(s.id) === stageId)) return { ok: false as const, note: 'That stage is not on 4orm TEST.' };
+    const moved = await moveOpportunityStage({ opportunityId, pipelineId: String(pipe.id), stageId });
+    if (!moved.ok) return { ok: false as const, note: moved.note };
+    const check = await ghlAny(`/opportunities/${encodeURIComponent(opportunityId)}`);
+    const now = (check.json as { opportunity?: { pipelineStageId?: string } } | null)?.opportunity;
+    return {
+      ok: true as const,
+      opportunityId,
+      pipelineId: String(pipe.id),
+      stageId: String(now?.pipelineStageId || stageId),
+      stages: stages.map((s) => ({ id: String(s.id), name: String(s.name || '') })),
+    };
+  }
+
+  await ghlAny(`/opportunities/${encodeURIComponent(opportunityId)}`, {
+    method: 'PUT',
+    body: JSON.stringify({ status: 'lost' }),
+  });
+  return { ok: true as const, opportunityId, archived: true, pipelineId: String(pipe.id), stages: stages.map((s) => ({ id: String(s.id), name: String(s.name || '') })) };
+}

@@ -53,6 +53,8 @@ const isControlRoom = createRouteMatcher([
   '/email',
   '/drive',
   '/contacts',
+  '/people',
+  '/recordings',
   '/financials',
   '/integrations',
 ]);

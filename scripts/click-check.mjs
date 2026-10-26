@@ -16,6 +16,7 @@ const PAGES = {
     { name: 'Spaces arrange', live: 'control-room.html?view=work&fixture=mockup&arrange=1', ready: '#spacesDesk[data-port-ready]', host: 'spacesDesk' },
     { name: 'Signals detail', live: 'control-room.html?view=war&fixture=mockup&sigdetail=1', ready: '#warDesk[data-port-ready]', host: 'warDesk' },
     { name: 'Links', live: 'control-room.html?view=links&fixture=mockup', ready: '#linksDesk[data-port-ready]', host: 'linksDesk' },
+    { name: 'Recordings', live: 'control-room.html?view=rec&fixture=mockup', ready: '#recDesk[data-port-ready]', host: 'recDesk' },
   ],
   2: [
     { name: 'Pipeline', live: 'control-room.html?view=contacts&fixture=mockup', ready: '#pipeDesk[data-port-ready]', host: 'pipeDesk' },
@@ -49,7 +50,7 @@ function serve() {
       const url = new URL(req.url, 'http://127.0.0.1');
       let pathName = decodeURIComponent(url.pathname);
       if (pathName === '/') pathName = '/index.html';
-      if (/^\/(control-room|war-room|notes|links|pipeline|spaces|documents|email|playbook|calendar|zoom|completed)$/.test(pathName)) pathName = '/control-room.html';
+      if (/^\/(control-room|war-room|notes|links|pipeline|spaces|documents|email|playbook|calendar|zoom|completed|people|recordings)$/.test(pathName)) pathName = '/control-room.html';
       const tries = [join(ROOT, 'public', pathName), join(ROOT, 'design-reference', pathName)];
       let body = null;
       let used = '';
@@ -505,6 +506,68 @@ async function productionStep1(browser) {
     return { all, toggled: before === 'Expand all' && after === 'Collapse all' };
   });
   if (!pushLive(rows, 'Links', 'All links + toggle', { dom: linksAll.all && linksAll.toggled, net: true, persist: true })) failed = true;
+
+  await readyWar();
+  const sigLive = await live.evaluate(() => {
+    const btn = document.querySelector('[data-action="top-signals"]');
+    if (btn) btn.click();
+    const host = document.getElementById('sigHost');
+    const box = host && host.getBoundingClientRect();
+    const text = (host && host.textContent) || '';
+    const secs = host ? host.querySelectorAll('.sec, .now, .grpx').length : 0;
+    return {
+      on: !!(host && host.classList.contains('on')),
+      right: !!(box && box.width > 500 && box.left > 200),
+      first: /Do these first/.test(text),
+      secs,
+    };
+  });
+  if (!pushLive(rows, 'Signals', 'Live panel content', { dom: sigLive.on && sigLive.first && sigLive.secs >= 1, net: true, persist: true, extra: 'right=' + sigLive.right + ' secs=' + sigLive.secs })) failed = true;
+
+  await live.goto('https://www.4ormop.com/notes?canvas=1', { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await live.waitForSelector('#notesDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  const canvasLive = await live.evaluate(() => {
+    const root = document.getElementById('notesDesk').shadowRoot;
+    const notes = Array.from(root.querySelectorAll('.note')).map((n) => n.getBoundingClientRect());
+    let overlap = 0;
+    for (let i = 0; i < notes.length; i++) for (let j = i + 1; j < notes.length; j++) {
+      const a = notes[i], b = notes[j];
+      const hit = a.left < b.right - 8 && a.right > b.left + 8 && a.top < b.bottom - 8 && a.bottom > b.top + 8;
+      if (hit) overlap += 1;
+    }
+    const mini = root.querySelectorAll('#mini i').length;
+    return { n: notes.length, overlap, mini };
+  });
+  if (!pushLive(rows, 'Notes', 'Canvas no overlap', { dom: canvasLive.overlap === 0, net: true, persist: true, extra: 'notes=' + canvasLive.n + ' mini=' + canvasLive.mini })) failed = true;
+
+  const peopleRes = await live.goto('https://www.4ormop.com/people', { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await live.waitForSelector('#peopleDesk[data-port-ready], #pipeDesk[data-port-ready], #v-people', { timeout: 20000, state: 'attached' }).catch(() => {});
+  const peopleOk = peopleRes && peopleRes.status() < 400 && await live.evaluate(() => !!document.getElementById('v-people') || !!document.getElementById('peopleDesk'));
+  if (!pushLive(rows, 'People', '/people loads', { dom: peopleOk, net: !!(peopleRes && peopleRes.status() < 400), persist: true, extra: 'http=' + (peopleRes && peopleRes.status()) })) failed = true;
+
+  const docsApi = await liveApi(live, '/api/documents', 'GET');
+  if (!pushLive(rows, 'Documents', 'GET /api/documents', { dom: docsApi.status === 200, net: docsApi.status === 200, persist: true, extra: 'n=' + ((docsApi.json && docsApi.json.docs && docsApi.json.docs.length) || 0) })) failed = true;
+
+  await live.goto('https://www.4ormop.com/recordings', { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await live.waitForSelector('#recDesk[data-port-ready]', { timeout: 20000, state: 'attached' }).catch(() => {});
+  const recLive = await live.evaluate(() => {
+    const host = document.getElementById('recDesk');
+    const root = host && host.shadowRoot;
+    return !!(root && root.querySelector('[data-action="rec-start"]') && /Recordings/.test(root.textContent || ''));
+  });
+  if (!pushLive(rows, 'Recordings', '/recordings loads', { dom: recLive, net: true, persist: true })) failed = true;
+
+  const rail1 = await liveApi(live, '/api/pipeline/test-rail', 'POST', { step: 'ensure' });
+  let railMove = { status: 0, json: {} };
+  let railBack = { status: 0, json: {} };
+  let railArch = { status: 0, json: {} };
+  if (rail1.json && rail1.json.ok && rail1.json.opportunityId && rail1.json.stages && rail1.json.stages[1]) {
+    railMove = await liveApi(live, '/api/pipeline/test-rail', 'POST', { step: 'move', opportunityId: rail1.json.opportunityId, pipelineId: rail1.json.pipelineId, stageId: rail1.json.stages[1].id });
+    railBack = await liveApi(live, '/api/pipeline/test-rail', 'POST', { step: 'move', opportunityId: rail1.json.opportunityId, pipelineId: rail1.json.pipelineId, stageId: rail1.json.stages[0].id });
+    railArch = await liveApi(live, '/api/pipeline/test-rail', 'POST', { step: 'archive', opportunityId: rail1.json.opportunityId, pipelineId: rail1.json.pipelineId });
+  }
+  const railOk = !!(rail1.json && rail1.json.ok && railMove.json && railMove.json.ok && railBack.json && railBack.json.ok && railArch.json && railArch.json.ok);
+  if (!pushLive(rows, 'Pipeline', 'TEST GHL drag', { dom: railOk, net: railOk, persist: railOk, extra: (rail1.json && rail1.json.note) || (rail1.json && rail1.json.opportunityId) || ('http=' + rail1.status) })) failed = true;
 
   const dupSweep = await liveApi(live, '/api/ops/dedupe', 'POST', {});
   console.log('DUPLICATE SWEEP counts', JSON.stringify(dupSweep.json && dupSweep.json.counts));
@@ -1451,6 +1514,24 @@ async function main() {
       return !!(on && close);
     });
     clicks.push({ page: 'Signals', control: 'News tab + Close', dom: sigTabs, net: true, persist: true, pass: sigTabs });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=rec&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#recDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const recStart = await page.evaluate(() => {
+      const root = document.getElementById('recDesk').shadowRoot;
+      const btn = root.querySelector('[data-action="rec-start"]');
+      const cols = root.querySelector('#cols .col');
+      return !!(btn && cols && /Do these first|Record meeting|Zoom/.test(root.textContent || ''));
+    });
+    clicks.push({ page: 'Recordings', control: 'Record meeting + columns', dom: recStart, net: true, persist: true, pass: recStart });
+    const recOpen = await page.evaluate(() => {
+      const root = document.getElementById('recDesk').shadowRoot;
+      const card = root.querySelector('[data-action="rec-open"]');
+      if (card) card.click();
+      const dr = root.getElementById('dr');
+      return !!(card && dr && dr.classList.contains('on') && /Add to a Space/.test(dr.textContent || ''));
+    });
+    clicks.push({ page: 'Recordings', control: 'Open drawer', dom: recOpen, net: true, persist: true, pass: recOpen });
     }
 
     console.log('\nB  click-check (fixture DOM)');

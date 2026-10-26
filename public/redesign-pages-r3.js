@@ -819,15 +819,8 @@
         }).catch(function (err) { toast(root, 'Tag saved on the box, but ' + msgOf(err, 'GoHighLevel did not take it')); });
       };
     });
-    /* Zoom Refresh also pulls Granola notes and Riverside recordings (when their keys are set). */
     wrap('zoom-refresh', function (orig) {
-      return function (el, root, ev) {
-        if (fixtureOn()) return orig(el, root, ev);
-        var pulls = ['granola', 'riverside'].map(function (k) {
-          return call('/api/integrations/' + k, { method: 'POST' }).then(function (d) { return d.added || 0; }).catch(function () { return 0; });
-        });
-        Promise.all(pulls).then(function () { orig(el, root, ev); });
-      };
+      return function (el, root, ev) { return orig(el, root, ev); };
     });
     window.__deskInputExt = window.__deskInputExt || {};
     window.__deskInputExt['r3-field'] = function () {};

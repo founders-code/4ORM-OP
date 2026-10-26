@@ -61,10 +61,26 @@
     });
     var notes = [];
     var auto = 0;
-    function push(n, src) {
+    function titleOf(n) {
+      var meta = n.meta || {};
+      var t = String(n.title || meta.title || '').trim();
+      if (!t || /^note$/i.test(t) || /^untitled/i.test(t)) {
+        t = String(n.body || '').replace(/^\s+/, '').split(/\n/)[0].trim();
+      }
+      return t || 'Note';
+    }
+    function savedPos(n) {
       var x = n.canvas_x != null ? Number(n.canvas_x) : (n.x != null ? Number(n.x) : NaN);
       var y = n.canvas_y != null ? Number(n.canvas_y) : (n.y != null ? Number(n.y) : NaN);
-      if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+      if (x === 0 && y === 0) return null;
+      return { x: x, y: y };
+    }
+    function push(n, src) {
+      var pos = savedPos(n);
+      var x, y;
+      if (pos) { x = pos.x; y = pos.y; }
+      else {
         x = 150 + (auto % 4) * 250;
         y = 160 + Math.floor(auto / 4) * 180;
         auto += 1;
@@ -72,14 +88,27 @@
       var meta = n.meta || {};
       var t = meta.kind || 'note';
       if (t === 'decision') t = 'dec';
-      notes.push({
+      var row = {
         id: n.id, c: n.cluster_id || meta.cluster || null, x: x, y: y,
         k: ({ yellow: 'y', pink: 'p', green: 'g', blue: 'b', orange: 'o', violet: 'v', white: 'w' }[n.color] || n.color || 'y'),
-        t: t, h: n.title || meta.title || 'Note', p: n.body || '', src: src
+        t: t, h: titleOf(n), p: n.body || '', src: src, laid: !pos
+      };
+      notes.push(row);
+      if (row.laid && writeOk() && row.id) saveNotePos(row);
+    }
+    var seen = {};
+    function addAll(arr, src) {
+      (arr || []).slice().sort(function (a, b) {
+        return String(b.updated_at || b.updatedAt || b.created_at || '').localeCompare(String(a.updated_at || a.updatedAt || a.created_at || ''));
+      }).forEach(function (n) {
+        if (!n || !n.id || seen[n.id]) return;
+        seen[n.id] = 1;
+        push(n, src);
       });
     }
-    (S.boardNotes || []).forEach(function (n) { push(n, 'board'); });
-    (S.stickies || []).forEach(function (n) { push(n, 'sticky'); });
+    addAll(S.notes, 'board');
+    addAll(S.boardNotes, 'board');
+    addAll(S.stickies, 'sticky');
     return { clusters: clusters, notes: notes };
   }
 
@@ -181,6 +210,9 @@
       var s = 180 / 2200;
       var h = CL.map(function (c) {
         return '<i style="left:' + (c.x * s) + 'px;top:' + (c.y * s) + 'px;width:' + (c.w * s) + 'px;height:' + (c.h * s) + 'px;background:' + esc(c.color) + '"></i>';
+      }).join('');
+      h += NOTES.map(function (n) {
+        return '<i style="left:' + (n.x * s) + 'px;top:' + (n.y * s) + 'px;width:8px;height:6px;background:#fff;opacity:.9"></i>';
       }).join('');
       var r = stage.getBoundingClientRect();
       h += '<span class="vp" style="left:' + ((-ox / z) * s) + 'px;top:' + ((-oy / z) * s) + 'px;width:' + ((r.width / z) * s) + 'px;height:' + ((r.height / z) * s) + 'px"></span>';
@@ -522,10 +554,14 @@
     var F = window.REDESIGN_FIXTURE || {};
     var live = !fixtureOn();
     var S = window.STATE || {};
-    var need = (S.mailNeed || []).slice(0, 5);
-    var owed = (S.meetingActions || []).filter(function (x) { return !x.done; }).slice(0, 8);
-    var reach = (S.reachOut || []).slice(0, 4);
-    var news = (S.newsItems || []).slice(0, 3);
+    var need = ((S.mailNeed && S.mailNeed.length) ? S.mailNeed : (S.mail || []).filter(function (m) { return m && (m.needsReply || m.needReply || m.unread); })).slice(0, 5);
+    var owed = (S.meetingActions || []).filter(function (x) { return x && x.status !== 'done' && x.status !== 'dismissed' && x.status !== 'handled' && x.status !== 'tasked' && !x.done; }).slice(0, 8);
+    var reach = ((S.reachOut && S.reachOut.length) ? S.reachOut : (S.contacts || []).filter(function (c) {
+      var last = c.lastTouch || c.last_touch || '';
+      if (!last) return !!c.nextAction;
+      return (Date.now() - new Date(last).getTime()) / 86400000 >= 9;
+    })).slice(0, 4);
+    var news = ((S.newsItems && S.newsItems.length) ? S.newsItems : (S.news || [])).slice(0, 3);
     var finOk = !!S.finUnlocked;
     try { finOk = finOk || Number(sessionStorage.getItem('cr_fin_until') || 0) > Date.now(); } catch (e) {}
     var raise = finOk && S.finance ? String(S.finance.raiseLabel || '-') : '-';
@@ -659,10 +695,13 @@
       return;
     }
     var html = fixtureOn() ? designSignalsHtml(true, '14:05') : signalsDetailHtml(true);
-    var cut = html.indexOf('<div class="scrim');
-    if (cut < 0) cut = html.indexOf('<aside class="sig');
-    if (cut < 0) cut = html.indexOf('<div class="sig');
-    host.innerHTML = cut >= 0 ? html.slice(cut) : html;
+    if (html.indexOf('<div class="ghostcard') >= 0) {
+      var cut = html.indexOf('<div class="scrim');
+      if (cut < 0) cut = html.indexOf('<aside class="sig');
+      if (cut >= 0) html = html.slice(cut);
+    }
+    host.className = '';
+    host.innerHTML = html;
     host.classList.add('on');
     host.removeAttribute('hidden');
     if (btn) {

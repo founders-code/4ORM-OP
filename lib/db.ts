@@ -8,7 +8,7 @@ type Sql = NeonQueryFunction<false, false>;
 let ready: Promise<Sql> | null = null;
 
 /** Bump when migrate() gains a new step so cold starts skip the full IF NOT EXISTS pass. */
-const SCHEMA_VERSION = '2026-10-26-notes-canvas-spaces-arrange';
+const SCHEMA_VERSION = '2026-10-26-recordings-live-qa';
 
 export async function databaseUrl() {
   const envUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
@@ -889,6 +889,32 @@ async function migrateWar(sql: Sql) {
     )`],
     ['db_space_groups_name', () => sql`CREATE UNIQUE INDEX IF NOT EXISTS space_groups_owner_name
       ON space_groups (owner_id, lower(name)) WHERE deleted_at IS NULL`],
+    ['db_recordings', () => sql`CREATE TABLE IF NOT EXISTS recordings (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      type text NOT NULL DEFAULT 'person',
+      title text NOT NULL DEFAULT '',
+      summary text NOT NULL DEFAULT '',
+      people jsonb NOT NULL DEFAULT '[]'::jsonb,
+      duration_s int NOT NULL DEFAULT 0,
+      started_at timestamptz,
+      audio_ref text NOT NULL DEFAULT '',
+      audio_b64 text NOT NULL DEFAULT '',
+      transcript jsonb NOT NULL DEFAULT '[]'::jsonb,
+      status text NOT NULL DEFAULT 'ready',
+      step text NOT NULL DEFAULT '',
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      deleted_at timestamptz
+    )`],
+    ['db_recording_chunks', () => sql`CREATE TABLE IF NOT EXISTS recording_chunks (
+      owner_id text NOT NULL,
+      rec_id uuid NOT NULL,
+      n int NOT NULL,
+      payload text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (owner_id, rec_id, n)
+    )`],
   ];
   for (const [code, run] of steps) {
     try {

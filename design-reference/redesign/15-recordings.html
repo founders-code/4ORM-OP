@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recordings - 4orm Ops</title>
+<style>
+/* ===== SHELL (shared by every page) ===== */
+:root{--ground:#0b1430;--ground2:#13224a;--side:#08102a;--card:#fff;--ink:#101a33;--ink2:#4a5672;--ink3:#7a86a0;--line:#e8ecf3;--soft:#f5f7fb;
+--blue:#2e6bf2;--blue50:#eaf1fe;--green:#12a36a;--green50:#e4f6ee;--amber:#c98408;--amber50:#fff4e0;--red:#e0364f;--red50:#fde9ec;--violet:#6b4fd8;
+font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}html,body{margin:0}html{background:#0d1838}
+body{background:linear-gradient(165deg,var(--ground),var(--ground2)) fixed;color:var(--ink);min-height:100vh;display:grid;grid-template-columns:224px minmax(0,1fr);grid-template-rows:56px auto}
+button{font:inherit;cursor:pointer}
+.top{grid-column:1/-1;height:56px;background:#fff;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid var(--line)}
+.logo img{height:30px;display:block}
+.crumb{font-size:14px;font-weight:700;color:var(--ink);padding-left:12px;border-left:1px solid var(--line)}
+.top .r{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tb{height:32px;border:1px solid var(--line);background:#fff;border-radius:9px;padding:0 12px;font-size:12.5px;font-weight:650;color:var(--ink);display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.tb .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.clock{font-size:12.5px;color:var(--ink3);font-weight:600;white-space:nowrap;margin-left:6px}
+.side{background:var(--side);padding:14px 10px;display:flex;flex-direction:column;gap:2px;min-height:calc(100vh - 56px)}
+.grp{font-size:13.5px;font-weight:850;color:#5b8cff;padding:16px 12px 6px;margin-top:6px;border-top:1px solid rgba(255,255,255,.08);letter-spacing:-.01em}.side .grp:first-child{border-top:none;margin-top:0;padding-top:4px}.side .nav{padding-left:16px}
+.nav{display:flex;align-items:center;gap:11px;padding:8px 12px;border-radius:9px;color:#cfd8ee;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.nav:hover{background:rgba(255,255,255,.05)}.nav.on{background:rgba(46,107,242,.22);color:#fff}
+.nav .n{margin-left:auto;font-size:11px;font-weight:700;color:#b9c6e6;background:rgba(255,255,255,.08);border-radius:999px;padding:1px 8px}
+.nav .new{margin-left:auto;font-size:10.5px;font-weight:800;color:#0b1430;background:#9db9ff;border-radius:999px;padding:1px 7px}
+.main{padding:20px 24px 40px;min-width:0}
+
+/* ===== RECORDINGS ===== */
+.bar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.bar h1{margin:0;font-size:24px;font-weight:850;color:#fff;letter-spacing:-.02em}
+.bar .sub{font-size:13px;color:#9fb0d0;font-weight:500}
+.bar .r{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:13px;font-weight:700;padding:0 13px;white-space:nowrap}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.rec{background:var(--red);border-color:var(--red);color:#fff}
+.btn.sm{height:30px;font-size:12.5px;padding:0 10px}
+.seg{display:flex;background:var(--soft);border:1px solid var(--line);border-radius:9px;padding:2px}.seg span{font-size:12px;font-weight:700;padding:5px 11px;border-radius:7px;color:var(--ink3);cursor:pointer;white-space:nowrap}.seg span.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.tools{display:flex;align-items:center;gap:10px;background:#fff;border-radius:14px;padding:9px 10px;box-shadow:0 10px 30px rgba(3,10,30,.22);margin-bottom:14px;flex-wrap:wrap}
+.search{flex:1;min-width:220px;height:34px;border:1px solid var(--line);border-radius:9px;padding:0 12px;font:inherit;font-size:13px;background:var(--soft);outline:none}
+.tools .lbl{font-size:12px;color:var(--ink3);font-weight:700}
+.stats{display:flex;gap:8px;flex-wrap:wrap}
+.stats span{font-size:12.5px;font-weight:700;color:#dbe4fb;background:rgba(255,255,255,.08);border-radius:999px;padding:4px 11px}.stats b{color:#fff}
+
+/* recording bar */
+.recbar{display:none;align-items:center;gap:14px;background:#fff;border-radius:14px;padding:12px 14px;margin-bottom:14px;box-shadow:0 14px 34px rgba(3,10,30,.35);border:2px solid var(--red)}
+.recbar.on{display:flex}
+.recbar .live{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:850;color:var(--red)}
+.recbar .live i{width:10px;height:10px;border-radius:50%;background:var(--red);animation:blink 1.2s infinite}
+.recbar.paused .live i{animation:none;background:var(--amber)}.recbar.paused .live{color:var(--amber)}
+@keyframes blink{50%{opacity:.25}}
+.recbar .tm{font-size:22px;font-weight:850;font-variant-numeric:tabular-nums;letter-spacing:-.02em;min-width:92px}
+.meter{display:flex;align-items:flex-end;gap:3px;height:26px}
+.meter b{width:4px;border-radius:2px;background:var(--blue);height:4px;transition:height .12s}
+.recbar .who{flex:1;min-width:180px}
+.recbar input{width:100%;height:32px;border:1px solid var(--line);border-radius:9px;padding:0 10px;font:inherit;font-size:13px;outline:none}
+.recbar small{display:block;font-size:11.5px;color:var(--ink3);margin-top:4px}
+.recbar .src{font-size:12px;color:var(--ink2);font-weight:650;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.recbar .live i{animation:none}}
+
+/* columns */
+.cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:start}
+.col{background:rgba(255,255,255,.05);border-radius:16px;padding:10px;min-width:0}
+.colh{display:flex;align-items:center;gap:8px;padding:2px 4px 10px}
+.colh b{font-size:14px;font-weight:850;color:#fff}
+.colh .n{font-size:12px;font-weight:800;color:#b9c6e6;background:rgba(255,255,255,.1);border-radius:999px;padding:1px 9px}
+.colh .s{margin-left:auto;font-size:11.5px;color:#7f90b8;font-weight:650;white-space:nowrap}
+.list{display:flex;flex-direction:column;gap:10px}
+.rc{background:#fff;border-radius:14px;padding:12px 13px;box-shadow:0 10px 26px rgba(3,10,30,.25);cursor:pointer;min-width:0;transition:transform .15s}
+.rc:hover{transform:translateY(-1px)}
+.rc .k{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+.tag{font-size:10.5px;font-weight:800;border-radius:6px;padding:2px 7px;background:var(--soft);color:var(--ink2)}
+.tag.zoom{background:var(--blue50);color:var(--blue)}.tag.person{background:var(--green50);color:var(--green)}.tag.call{background:#efe9ff;color:var(--violet)}.tag.voice{background:var(--amber50);color:var(--amber)}
+.rc .when{margin-left:auto;font-size:11.5px;color:var(--ink3);font-weight:650;white-space:nowrap}
+.rc h4{margin:0 0 5px;font-size:14px;font-weight:800;line-height:1.3}
+.rc p{margin:0;font-size:12.5px;line-height:1.5;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.rc .ft{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:11.5px;color:var(--ink3);font-weight:650}
+.rc .ft .ow{color:var(--red);font-weight:800}
+.rc .ft .pp{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.rc.proc{border:1.5px dashed #c3cde0;box-shadow:none;background:#f8faff;cursor:default}
+.rc.proc h4{color:var(--ink3)}
+.prog{height:6px;border-radius:999px;background:#e3e9f4;overflow:hidden;margin-top:8px}.prog i{display:block;height:100%;background:var(--blue);width:0;transition:width .4s}
+.empty{border:2px dashed rgba(157,185,255,.3);border-radius:14px;padding:16px;text-align:center;color:#9fb0d0;font-size:12.5px;font-weight:650}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(5,10,28,.45);display:none;z-index:40}.scrim.on{display:block}
+.dr{position:fixed;top:0;right:0;bottom:0;width:min(640px,96vw);background:#fff;z-index:50;display:none;flex-direction:column;box-shadow:-30px 0 80px rgba(3,10,30,.5)}
+.dr.on{display:flex}
+.dh{display:flex;align-items:flex-start;gap:10px;padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+.dh h2{margin:0;font-size:19px;font-weight:850;letter-spacing:-.01em;outline:none;border-radius:6px}
+.dh h2:focus{box-shadow:0 0 0 2px var(--blue)}
+.dh .m{font-size:12.5px;color:var(--ink3);margin-top:4px}
+.dh .r{margin-left:auto;display:flex;gap:6px}
+.db{overflow:auto;flex:1;padding:6px 18px 18px}
+.sec{font-size:12px;font-weight:850;color:var(--ink3);letter-spacing:.04em;text-transform:uppercase;margin:16px 0 8px}
+.sum{font-size:14px;line-height:1.6;color:var(--ink);background:var(--soft);border-radius:12px;padding:12px 14px}
+.ai{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.ai .cb{width:18px;height:18px;border-radius:6px;border:2px solid #c3cde0;cursor:pointer}
+.ai.done .cb{background:var(--green);border-color:var(--green)}.ai.done span{text-decoration:line-through;color:var(--ink3)}
+.ai small{display:block;font-size:11.5px;color:var(--ink3)}
+.player{display:flex;align-items:center;gap:10px;background:var(--soft);border-radius:12px;padding:10px 12px}
+.player .tl{flex:1;height:6px;border-radius:999px;background:#dfe6f2;position:relative;cursor:pointer}.player .tl i{position:absolute;left:0;top:0;bottom:0;background:var(--blue);border-radius:999px;width:22%}
+.player .t{font-size:12px;font-weight:750;color:var(--ink2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tr p{margin:0 0 9px;font-size:13.5px;line-height:1.55;color:var(--ink2)}
+.tr p b{color:var(--ink);font-weight:800}
+.tr p a{font-size:11.5px;font-weight:800;color:var(--blue);cursor:pointer;margin-right:6px;font-variant-numeric:tabular-nums}
+.ppl{display:flex;gap:6px;flex-wrap:wrap}.ppl span{font-size:12px;font-weight:750;background:var(--soft);border-radius:999px;padding:4px 10px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;display:none;z-index:90}.toast.show{display:block}
+</style></head>
+<body>
+<header class="top">
+  <div class="logo"><img src="../assets/logo-finance.png" alt="4orm Finance"></div><span class="crumb">Recordings</span>
+  <div class="r"><span class="tb">Today</span><span class="tb">Calendar</span><span class="tb"><span class="dot"></span>Signals</span><span class="tb">Sound on</span><span class="clock">Mon, Oct 26 &middot; 14:05 Pacific</span></div>
+</header>
+<nav class="side" id="side"></nav>
+<main class="main">
+  <div class="bar"><h1>Recordings</h1><span class="sub">Every meeting, call and voice note, titled and summed up for you</span>
+    <div class="r"><div class="stats"><span><b>14</b> recordings</span><span><b>6</b> actions owed</span><span><b>4 h 52 m</b> this month</span></div><button class="btn rec" id="recBtn">Record meeting</button></div></div>
+
+  <div class="recbar" id="recbar">
+    <span class="live"><i></i><span id="liveTxt">Recording</span></span>
+    <span class="tm" id="tm">00:00</span>
+    <div class="meter" id="meter"></div>
+    <div class="who"><input id="recWho" placeholder="Who's here? Type names, or leave it - the summary picks them up"><small>Tell people you're recording your notes. Audio stays private to you.</small></div>
+    <span class="src">Mac mic</span>
+    <button class="btn sm" id="pauseBtn">Pause</button>
+    <button class="btn sm pri" id="stopBtn">Stop and save</button>
+    <button class="btn sm" id="discardBtn">Discard</button>
+  </div>
+
+  <div class="tools">
+    <input class="search" id="q" placeholder="Search titles, summaries and transcripts">
+    <span class="lbl">Columns</span>
+    <div class="seg" id="groupSeg"><span class="on" data-g="type">Type</span><span data-g="week">Week</span><span data-g="status">Status</span></div>
+  </div>
+  <div class="cols" id="cols"></div>
+</main>
+
+<div class="scrim" id="scrim"></div>
+<aside class="dr" id="dr" role="dialog" aria-label="Recording">
+  <div class="dh"><div><h2 id="dTitle" contenteditable="true" spellcheck="false"></h2><div class="m" id="dMeta"></div></div>
+    <div class="r"><button class="btn sm" id="toSpace">Add to a Space</button><button class="btn sm" id="dClose">Close</button></div></div>
+  <div class="db">
+    <div class="player"><button class="btn sm" id="play">Play</button><div class="tl"><i></i></div><span class="t" id="dDur"></span></div>
+    <div class="sec">Summary</div><div class="sum" id="dSum"></div>
+    <div class="sec">People</div><div class="ppl" id="dPpl"></div>
+    <div class="sec">Action items</div><div id="dAi"></div>
+    <div class="sec">Transcript</div><div class="tr" id="dTr"></div>
+  </div>
+</aside>
+<div class="toast" id="toast"></div>
+
+<script>
+const NAV=[["Today"],["Playbook"],["War Room"],["Calendar"],["Email"],["People"],["Contacts"],["Spaces"],["Pipeline",0,"246"],["Library"],["Notes"],["Documents"],["Drive"],["Links"],["Recordings",0,"new"],["Record"],["Zoom"],["Completed"],["Signals"],["News"],["Financials"],["Integrations",0,"6"]];
+const GROUPS=["Today","People","Library","Record","Signals"];
+document.getElementById('side').innerHTML=NAV.map(n=>GROUPS.includes(n[0])?`<div class="grp">${n[0]}</div>`:`<div class="nav${n[0]=='Recordings'?' on':''}">${n[0]}${n[2]=='new'?'<span class="new">new</span>':n[2]?`<span class="n">${n[2]}</span>`:''}</div>`).join('');
+const T=t=>{const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1800)};
+
+const TYPES={zoom:'Zoom',person:'In person',call:'Phone call',voice:'Voice note'};
+let REC=[
+ {id:1,type:'zoom',week:'This week',title:'Dean and Chad weekly - wallet setup and investor intros',when:'Mon 26 Oct · 10:00',dur:'42 m',people:['Dean Hesse','Chad'],sum:'Dean will introduce two investors once the one-pager is updated. Wallet setup steps are blocking his test account. Agreed to send the steps today and book a follow-up Thursday.',acts:[['Send Dean the wallet setup steps','due today'],['Update the investor one-pager','Wed'],['Book Thursday follow-up','Thu']]},
+ {id:2,type:'person',week:'This week',title:'Coffee with Enrich Mortgage - discovery',when:'Mon 26 Oct · 08:15',dur:'31 m',people:['Enrich Mortgage Group','Chad'],sum:'Enrich wants proof of what each client was told before a mortgage is signed. Interested in a 30-day pilot with two brokers. Asked for pricing for 10 seats.',acts:[['Send 10-seat pricing','due today'],['Draft 30-day pilot outline','Fri']]},
+ {id:3,type:'call',week:'This week',title:'Kevin Wong - confirming the $25K',when:'Sun 25 Oct · 16:40',dur:'9 m',people:['Kevin Wong','Chad'],sum:'Kevin confirmed the $25K and will wire Thursday once he has the subscription documents. Wants a short update every month after closing.',acts:[['Send subscription documents','due today']]},
+ {id:4,type:'voice',week:'This week',title:'Idea - credit union one-pager',when:'Sun 25 Oct · 07:52',dur:'3 m',people:['Chad'],sum:'One page for credit union boards: what changes for members, what it costs, and the FINTRAC fines that make the case. Use Bow Valley as the first reader.',acts:[]},
+ {id:5,type:'zoom',week:'Last week',title:'Bow Valley CU - requirements walkthrough',when:'Thu 22 Oct · 10:00',dur:'55 m',people:['Bow Valley Credit Union','Chad'],sum:'Their compliance lead needs the requirements list and a sample record before the board meeting. Booked the next meeting for Thursday 10:00.',acts:[['Send requirements PDF','done']]},
+ {id:6,type:'call',week:'Last week',title:'BCFSA - intro call request',when:'Wed 21 Oct · 13:30',dur:'6 m',people:['BCFSA','Chad'],sum:'Left a message with the policy desk. They asked for a short written intro first, leading with conduct risk.',acts:[['Write the BCFSA intro','Mon']]},
+ {id:7,type:'person',week:'Last week',title:'Lunch with Mike - capture rate questions',when:'Tue 20 Oct · 12:00',dur:'48 m',people:['Mike Gardner','Chad'],sum:'Mike questioned the capture rate assumption. Agreed to send the base case and the three scenarios. He may join the round if the pilot numbers hold.',acts:[['Send base case and scenarios','overdue']]},
+ {id:8,type:'voice',week:'Earlier',title:'Thoughts after the Speer review',when:'Thu 8 Oct · 18:20',dur:'5 m',people:['Chad'],sum:'Keegan wants a named design partner before the next step. Bow Valley or Enrich are the two best candidates. Pivot the deck to lead with the partner.',acts:[]}];
+
+let group='type',q='';
+function colsFor(){
+ if(group=='type')return Object.keys(TYPES).map(k=>[TYPES[k],REC.filter(r=>r.type==k)]);
+ if(group=='week')return ['This week','Last week','Earlier'].map(w=>[w,REC.filter(r=>r.week==w)]).concat([['Processing',REC.filter(r=>r.proc)]]);
+ return [['Processing',REC.filter(r=>r.proc)],['Actions owed',REC.filter(r=>!r.proc&&r.acts.some(a=>a[1]!='done'))],['All done',REC.filter(r=>!r.proc&&r.acts.length&&r.acts.every(a=>a[1]=='done'))],['No actions',REC.filter(r=>!r.proc&&!r.acts.length)]];
+}
+function card(r){
+ if(r.proc)return `<div class="rc proc" data-id="${r.id}"><div class="k"><span class="tag ${r.type}">${TYPES[r.type]}</span><span class="when">${r.when}</span></div><h4>${r.step}</h4><p>${r.dur} recorded. The title, summary and actions appear here when it's done.</p><div class="prog"><i style="width:${r.pct}%"></i></div></div>`;
+ const owed=r.acts.filter(a=>a[1]!='done').length;
+ return `<div class="rc" data-id="${r.id}"><div class="k"><span class="tag ${r.type}">${TYPES[r.type]}</span><span class="when">${r.when}</span></div><h4>${r.title}</h4><p>${r.sum}</p><div class="ft"><span>${r.dur}</span><span class="pp">${r.people.filter(p=>p!='Chad').join(', ')||'Just you'}</span>${owed?`<span class="ow">${owed} owed</span>`:''}</div></div>`;
+}
+function render(){
+ const m=r=>!q||(r.title+' '+(r.sum||'')).toLowerCase().includes(q);
+ document.getElementById('cols').innerHTML=colsFor().map(([name,list])=>{list=list.filter(m);return `<div class="col"><div class="colh"><b>${name}</b><span class="n">${list.length}</span></div><div class="list">${list.map(card).join('')||'<div class="empty">Nothing here yet</div>'}</div></div>`;}).join('');
+}
+render();
+document.getElementById('groupSeg').onclick=e=>{const g=e.target.dataset.g;if(!g)return;group=g;document.querySelectorAll('#groupSeg span').forEach(s=>s.classList.toggle('on',s.dataset.g==g));render();};
+document.getElementById('q').oninput=e=>{q=e.target.value.toLowerCase();render();};
+
+/* recording */
+const bar=document.getElementById('recbar'),meter=document.getElementById('meter');
+meter.innerHTML='<b></b>'.repeat(18);
+let sec=0,tick=null,paused=false;
+const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+function startTick(){tick=setInterval(()=>{if(paused)return;sec++;document.getElementById('tm').textContent=fmt(sec);meter.querySelectorAll('b').forEach(b=>b.style.height=(4+Math.random()*22)+'px');},1000);}
+document.getElementById('recBtn').onclick=()=>{if(bar.classList.contains('on'))return;sec=0;paused=false;document.getElementById('tm').textContent='00:00';bar.classList.add('on');bar.classList.remove('paused');document.getElementById('liveTxt').textContent='Recording';startTick();T('Recording from the Mac mic');};
+document.getElementById('pauseBtn').onclick=e=>{paused=!paused;bar.classList.toggle('paused',paused);document.getElementById('liveTxt').textContent=paused?'Paused':'Recording';e.target.textContent=paused?'Resume':'Pause';};
+document.getElementById('discardBtn').onclick=()=>{clearInterval(tick);bar.classList.remove('on');T('Recording discarded - nothing was saved');};
+document.getElementById('stopBtn').onclick=()=>{
+ clearInterval(tick);bar.classList.remove('on');const dur=Math.max(1,Math.round(sec/60))+' m';
+ const r={id:Date.now(),type:'person',week:'This week',proc:true,step:'Transcribing',pct:15,when:'Mon 26 Oct · 14:05',dur,people:['Chad'],acts:[]};
+ REC.unshift(r);render();T('Saved. Transcribing now');
+ const steps=[['Transcribing',45],['Writing the title and summary',75],['Finding action items',92]];
+ steps.forEach((s,i)=>setTimeout(()=>{r.step=s[0];r.pct=s[1];render();},900*(i+1)));
+ setTimeout(()=>{Object.assign(r,{proc:false,title:'Bow Valley CU - board pack review',people:['Bow Valley Credit Union','Chad'],sum:'Went through what the board needs to see. They want the sample record and the pricing on one page. Next meeting stays Thursday 10:00.',acts:[['Send the sample record','Wed'],['One-page pricing for the board','Wed']]});render();T('Ready: "Bow Valley CU - board pack review" - 2 actions added to Owed');},900*4);
+};
+
+/* drawer */
+const dr=document.getElementById('dr'),scrim=document.getElementById('scrim');
+let cur=null;
+document.getElementById('cols').onclick=e=>{const c=e.target.closest('.rc');if(!c||c.classList.contains('proc'))return;open(REC.find(r=>r.id==c.dataset.id));};
+function open(r){cur=r;document.getElementById('dTitle').textContent=r.title;document.getElementById('dMeta').textContent=`${TYPES[r.type]} · ${r.when} · ${r.dur} · title written automatically, click to rename`;document.getElementById('dSum').textContent=r.sum;document.getElementById('dDur').textContent='09:14 / '+r.dur;
+ document.getElementById('dPpl').innerHTML=r.people.map(p=>`<span>${p}</span>`).join('');
+ document.getElementById('dAi').innerHTML=r.acts.length?r.acts.map((a,i)=>`<div class="ai${a[1]=='done'?' done':''}" data-i="${i}"><span class="cb"></span><span>${a[0]}<small>${a[1]=='done'?'done':'due '+a[1]}</small></span><button class="btn sm" data-today="${i}">+ Today</button></div>`).join(''):'<div class="sum">No action items in this one.</div>';
+ document.getElementById('dTr').innerHTML=`<p><a>00:00</a><b>Chad:</b> Thanks for making time. I want to walk through what you need before the board meeting.</p><p><a>00:42</a><b>${r.people[0]}:</b> The main thing is seeing a real record of what a client was told, start to finish.</p><p><a>02:10</a><b>Chad:</b> I can send a sample record today, with names removed.</p><p><a>03:05</a><b>${r.people[0]}:</b> That works. And pricing on one page, please.</p>`;
+ dr.classList.add('on');scrim.classList.add('on');}
+const close=()=>{dr.classList.remove('on');scrim.classList.remove('on');};
+document.getElementById('dClose').onclick=close;scrim.onclick=close;document.addEventListener('keydown',e=>{if(e.key=='Escape')close();});
+document.getElementById('dTitle').addEventListener('blur',e=>{if(cur&&e.target.textContent.trim()&&e.target.textContent.trim()!=cur.title){cur.title=e.target.textContent.trim();render();T('Title saved');}});
+document.getElementById('dTitle').addEventListener('keydown',e=>{if(e.key=='Enter'){e.preventDefault();e.target.blur();}});
+document.getElementById('dAi').onclick=e=>{const t=e.target.closest('[data-today]');if(t){T('Added to Today in the War Room');return;}const row=e.target.closest('.ai');if(row&&e.target.classList.contains('cb')){const a=cur.acts[+row.dataset.i];a[1]=a[1]=='done'?'today':'done';open(cur);render();T(a[1]=='done'?'Marked done':'Reopened');}};
+document.getElementById('dTr').onclick=e=>{if(e.target.tagName=='A')T('Plays from '+e.target.textContent);};
+document.getElementById('play').onclick=e=>{e.target.textContent=e.target.textContent=='Play'?'Pause':'Play';};
+document.getElementById('toSpace').onclick=()=>T('Pick a Space - the summary and actions go in, the audio stays here');
+</script>
+</body></html>

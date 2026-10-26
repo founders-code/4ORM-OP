@@ -72,7 +72,10 @@ body.arranging .arr-reset{display:inline}
 #opsDash,#warDesk,#notesDesk{display:block;min-width:0}
 #opsDash:empty,#warDesk:empty,#notesDesk:empty{min-height:40px}
 .mic,.heard{display:none}
-body > .scrim,body > .drawer,body > .modal,body > .emx-reader,body > .docview,body > .plan-scrim,body > .sigpanel{grid-column:1/-1}
+body > .scrim,body > .drawer,body > .modal,body > .emx-reader,body > .docview,body > .plan-scrim,body > .sigpanel,body > #sigHost{grid-column:1/-1}
+#sigHost{position:fixed;inset:0;width:auto;top:0;right:0;background:transparent;border:0;box-shadow:none;overflow:visible;display:none;z-index:80;pointer-events:none}
+#sigHost.on{display:block}
+#sigHost .sig,#sigHost .scrim{pointer-events:auto}
 .sigpanel{position:fixed;top:60px;right:22px;width:400px;background:#fff;border-radius:16px;box-shadow:0 30px 80px rgba(3,10,30,.5);border:1px solid #e8ecf3;z-index:80;color:#101a33;font-family:Inter,-apple-system,system-ui,sans-serif;overflow:hidden;display:none}
 .sigpanel.on{display:block}
 .sigpanel[hidden]{display:none!important}

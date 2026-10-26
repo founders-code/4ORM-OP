@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     if (!session.sql) return NextResponse.json({ error: 'No database' }, { status: 503 });
     const body = (await req.json().catch(() => null)) as { refresh?: unknown } | null;
     const key = String(body?.refresh || '');
-    if (!['gmail', 'calendar', 'drive', 'ghl', 'granola', 'riverside'].includes(key)) return NextResponse.json({ error: 'Nothing to refresh for that service' }, { status: 400 });
+    if (!['gmail', 'calendar', 'drive', 'ghl'].includes(key)) return NextResponse.json({ error: 'Nothing to refresh for that service' }, { status: 400 });
     try {
       await refreshService(session.sql, session.userId, key);
     } catch (err) {

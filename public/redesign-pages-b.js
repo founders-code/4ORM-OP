@@ -956,7 +956,7 @@
       }).join('') + '</div>'
       + '<h1 contenteditable="true" spellcheck="false" data-action="space-card-name" data-id="' + esc(d.id) + '">' + esc(d.name) + '</h1><div class="who" contenteditable="true" spellcheck="false" data-action="space-card-desc" data-id="' + esc(d.id) + '">' + whoHtml(d) + '</div>'
       + '<div class="facts2">' + asList(d.heroLinks).map(function (l) {
-        return '<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.label) + ' &#8599;</a>';
+        return '<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.label) + '</a>';
       }).join('') + '<span class="src">' + (d.source ? esc('Source: ' + d.source) + ' &middot; ' : '') + '<u data-action="space-hero-link" data-id="' + esc(d.id) + '">+ Add a link or article</u></span></div></div>'
       + '<div class="ready"><div class="rring"><svg viewBox="0 0 96 96" width="96" height="96"><circle cx="48" cy="48" r="40" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9"/><circle id="rg" cx="48" cy="48" r="40" fill="none" stroke="#2fe08b" stroke-width="9" stroke-linecap="round" stroke-dasharray="' + esc(d.readyDash || '100.5 251.3') + '" transform="rotate(-90 48 48)"/></svg><b id="rn">' + esc(d.ready) + '</b></div>'
       + '<div class="lbl">ready to send</div><div class="steps" id="steps">' + asList(d.steps).map(function (s) {
@@ -1215,7 +1215,7 @@
         '<div class="vscrim" data-action="doc-close"></div>'
         + '<div class="vwin" id="docView">'
         + '<div class="vtop"><span class="vty">' + esc(dv.type) + '</span><b>' + esc(dv.name) + '</b><small>' + esc(dv.sub) + '</small>'
-        + '<div class="r"><button class="vb" data-action="doc-prev">&lsaquo; Prev file</button><button class="vb" data-action="doc-next">Next file &rsaquo;</button><button class="vb" data-action="doc-download">Download</button><button class="vb" data-action="doc-drive-open">Open in Drive &#8599;</button><button class="vb pri" data-action="doc-add-space">+ Add to a Space</button><button class="vb" data-action="doc-close" title="Close (Esc)">&times;</button></div></div>'
+        + '<div class="r"><button class="vb" data-action="doc-prev">&lsaquo; Prev file</button><button class="vb" data-action="doc-next">Next file &rsaquo;</button><button class="vb" data-action="doc-download">Download</button><button class="vb" data-action="doc-drive-open">Open in Drive</button><button class="vb pri" data-action="doc-add-space">+ Add to a Space</button><button class="vb" data-action="doc-close" title="Close (Esc)">&times;</button></div></div>'
         + '<div class="vbody"><div class="vthumbs">' + thumbs + '</div>'
         + '<div class="vstage">' + stageInner
         + '<div class="vnav">' + navInner + '<span data-action="doc-zoom-out">&#8722;</span><span data-action="doc-zoom-in">+</span><span data-action="doc-fit">Fit</span></div></div>'
@@ -1267,7 +1267,7 @@
         return '<a class="tile" data-action="link-open" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" data-id="' + id + '" data-url="' + esc(href) + '">' + (w[4] == 2 ? '<span class="dup">Duplicate</span>' : '')
           + '<div class="lg' + (ico ? ' has-ico' : '') + '" style="background:' + w[2] + '14">' + ico + '<i style="background:' + w[2] + '">' + letter + '</i></div>'
           + '<div class="tm"><span title="Edit" data-action="link-edit" data-id="' + id + '" data-title="' + esc(w[0]) + '">Edit</span><span title="Move" data-action="link-move" data-id="' + id + '" data-title="' + esc(w[0]) + '" data-url="' + esc(href) + '">Move</span><span title="Delete" data-action="link-archive" data-id="' + id + '" data-note="' + esc(w[3] || '') + '">&times;</span></div>'
-          + '<div class="nb"><b>' + esc(w[0]) + '<em>&#8599;</em></b><div class="dm">' + esc(w[1]) + '</div><div class="nt' + (w[3] ? '' : ' empty') + '" data-action="link-note" data-id="' + id + '">' + (w[3] ? esc(w[3]) : 'Add a note') + '</div></div></a>';
+          + '<div class="nb"><b>' + esc(w[0]) + '</b><div class="dm">' + esc(w[1]) + '</div><div class="nt' + (w[3] ? '' : ' empty') + '" data-action="link-note" data-id="' + id + '">' + (w[3] ? esc(w[3]) : 'Add a note') + '</div></div></a>';
       }).join('') + ((data.wall || []).length ? '' : '<div class="hint">No links here yet.</div>') + '</div>'
       + '<div class="hint">Site icons load from each website. Hover a tile to edit, move or delete it.</div></section></div>';
     if (P().finishPaint) P().finishPaint(wrap);
@@ -1632,7 +1632,7 @@
         body = lk.length ? lk.map(function (row) {
           var n = row[0] || row.name || row.url || 'Link';
           var u = row[2] || row.url || '#';
-          return '<a class="lrow" href="' + esc(u) + '" target="_blank" rel="noopener"><span class="fv">' + esc(String(n)[0] || 'L') + '</span><div><b>' + esc(n) + '</b><small>' + esc(row[1] || row.label || u) + '</small></div><em>Open &#8599;</em></a>';
+          return '<a class="lrow" href="' + esc(u) + '" target="_blank" rel="noopener"><span class="fv">' + esc(String(n)[0] || 'L') + '</span><div><b>' + esc(n) + '</b><small>' + esc(row[1] || row.label || u) + '</small></div><em>Open</em></a>';
         }).join('') : '<div class="dempty">No links in these emails yet.</div>';
       } else {
         body = asList(person.m).filter(function (row) { return ppTab === 'all' || row[0] === ppTab; }).map(function (row) {

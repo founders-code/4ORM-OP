@@ -782,7 +782,7 @@
     if (!force && ig.services && Date.now() - ig.at < 30000) return Promise.resolve();
     if (ig._loading) return ig._loading;
     ig._loading = call('/api/integrations/status').then(function (d) {
-      ig.services = d.services || [];
+      ig.services = (d.services || []).filter(function (s) { return s.key !== 'granola' && s.key !== 'riverside'; });
       ig.lastSync = d.lastSync || '';
       ig.at = Date.now();
       ig.err = '';
@@ -827,16 +827,16 @@
     } else {
       /* Round 3: Granola and Riverside sync into Zoom notes; Perplexity answers Research in News and Spaces. */
       var HOW = {
-        granola: 'Granola desktop app, Settings, Connectors, API keys, Create new key (Business or Enterprise plan). Notes, summaries and transcripts land in Zoom notes as source Granola.',
-        riverside: 'Riverside issues Business API keys through your customer success manager (select Business accounts). Recordings and transcripts land in Zoom notes as source Riverside.',
+        granola: '',
+        riverside: '',
         perplexity: 'Create a key at perplexity.ai, Settings, API. Research in News and on a Space angle answers with numbered sources.'
       };
-      var keyed = s.key === 'granola' || s.key === 'riverside' || s.key === 'perplexity';
+      var keyed = s.key === 'perplexity';
       rows.push('<div>' + (s.group !== 'available' ? 'The key is set in Vercel.' : 'Set <code>' + esc(s.envVar) + '</code> in Vercel (Project, Settings, Environment variables), then redeploy.')
         + (keyed && HOW[s.key] ? ' ' + esc(HOW[s.key]) : '') + '</div>');
       rows.push('<div class="row">'
         + (s.envVar ? '<button class="btn" type="button" data-action="int-copy-env" data-key="' + esc(s.key) + '">Copy variable name</button>' : '')
-        + ((s.key === 'zoom' || s.key === 'granola' || s.key === 'riverside') && s.canRefresh ? '<button class="btn" type="button" data-action="int-refresh" data-key="' + esc(s.key) + '"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Refreshing…' : (s.key === 'zoom' ? 'Refresh now' : 'Sync now')) + '</button>' : '')
+        + (s.key === 'zoom' && s.canRefresh ? '<button class="btn" type="button" data-action="int-refresh" data-key="' + esc(s.key) + '"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Refreshing…' : 'Refresh now') + '</button>' : '')
         + (s.key === 'perplexity' && s.group !== 'available' ? '<button class="btn" type="button" data-action="int-perplexity-test"' + (busy ? ' disabled' : '') + '>Test the key</button>' : '')
         + '<button class="btn" type="button" data-action="int-check" data-key="' + esc(s.key) + '">Check again</button></div>');
     }

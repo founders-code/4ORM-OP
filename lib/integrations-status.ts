@@ -4,8 +4,6 @@ import type { getSql } from './db';
 import { env } from './env.mjs';
 import { ghlConfigured } from './ghl';
 import { googleConfigured } from './google';
-import { syncGranola } from './granola';
-import { syncRiverside } from './riverside';
 import { cacheInbox } from './live';
 import { syncCalendar, syncDrive, syncGhl } from './sync';
 import { credSources, loadCredsFor } from './vault';
@@ -172,10 +170,7 @@ export async function integrationStatus(sql: Sql | null, userId: string): Promis
     { key: 'anthropic', name: 'Anthropic', letter: 'A', color: '#d97757', envVar: 'ANTHROPIC_API_KEY', what: '4orm Intelligence: CEO moves, summaries, drafts in your voice.', feeds: ['War Room', 'Email', 'Zoom'], needed: 'Without it, CEO moves, summaries and drafts fall back to plain rules.' },
     { key: 'openai', name: 'OpenAI', letter: 'O', color: '#10a37f', envVar: 'OPENAI_API_KEY', what: 'Voice-log transcription and one-line news summaries.', feeds: ['Playbook voice log', 'News'], needed: "Without it, the voice log can't transcribe and News cards show the article's own description instead of a \"why it matters\" line." },
   ];
-  /* Round 3: Granola, Riverside and Perplexity are read by real features; status comes from their last call (sync_state). */
   const synced = [
-    { key: 'granola', name: 'Granola', letter: 'G', color: '#5a4fcf', envVar: 'GRANOLA_API_KEY', what: 'Meeting notes, summaries and transcripts into Zoom notes (source Granola). Polled every 30 minutes.', feeds: ['Zoom notes', 'War Room commitments'], refresh: true },
-    { key: 'riverside', name: 'Riverside', letter: 'R', color: '#111827', envVar: 'RIVERSIDE_API_KEY', what: 'Recordings (title, date, transcript) into Zoom notes (source Riverside). Polled every 30 minutes.', feeds: ['Zoom notes'], refresh: true },
     { key: 'perplexity', name: 'Perplexity', letter: 'P', color: '#1f6f78', envVar: 'PERPLEXITY_API_KEY', what: 'Research with cited sources from News and a Space angle.', feeds: ['News', 'Spaces'], refresh: false },
   ];
   for (const k of synced) {
@@ -264,11 +259,6 @@ export async function integrationStatus(sql: Sql | null, userId: string): Promis
 
 /** Force one source to sync now. Returns the fresh status list. */
 export async function refreshService(sql: Sql, userId: string, key: string) {
-  if (key === 'granola' || key === 'riverside') {
-    const out = key === 'granola' ? await syncGranola(sql, userId) : await syncRiverside(sql, userId);
-    if (!out.ok) throw new Error(key);
-    return;
-  }
   const creds = await loadCredsFor(userId);
   await withCreds(creds, async () => {
     if (key === 'calendar') await syncCalendar(sql, userId, true);

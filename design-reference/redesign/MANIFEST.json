@@ -217,6 +217,13 @@
     "sha256": "0db84dedbc4e0333"
   },
   {
+    "file": "redesign/15-recordings.html",
+    "page": "Recordings",
+    "route": "/recordings",
+    "bytes": 23345,
+    "sha256": "177c57009f7e0b43"
+  },
+  {
     "file": "redesign/15-contacts.html",
     "page": "Contacts",
     "route": "/contacts",

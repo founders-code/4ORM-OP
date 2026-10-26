@@ -43,7 +43,7 @@
     + '.pick-row:first-child{border-top:0}';
   var CSS = {
     room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=7', notes: '/port-css/notes.css?v=4',
-    notesCanvas: '/port-css/notes-canvas.css?v=1', spacesArrange: '/port-css/spaces-arrange.css?v=1', signalsDetail: '/port-css/signals-detail.css?v=3',
+    notesCanvas: '/port-css/notes-canvas.css?v=2', spacesArrange: '/port-css/spaces-arrange.css?v=1', signalsDetail: '/port-css/signals-detail.css?v=3', rec: '/port-css/recordings.css?v=1',
     contacts: '/port-css/pipeline.css?v=4', work: '/port-css/spaces.css?v=9', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css',
     links: '/port-css/links.css?v=3', mail: '/port-css/email.css?v=5', mailPeople: '/port-css/email-people.css?v=3',
     playbook: '/port-css/playbook.css?v=2', calendar: '/port-css/calendar.css?v=5', zoom: '/port-css/zoom.css',
@@ -52,7 +52,7 @@
   var HOSTS = {
     opsDash: 'room', warDesk: 'war', notesDesk: 'notes',
     pipeDesk: 'contacts', spacesDesk: 'work', docsDesk: 'docs', linksDesk: 'links', mailDesk: 'mail',
-    playDesk: 'playbook', calDesk: 'calendar', zoomDesk: 'zoom', doneDesk: 'completed'
+    playDesk: 'playbook', calDesk: 'calendar', zoomDesk: 'zoom', doneDesk: 'completed', recDesk: 'rec'
   };
   var cssText = {};
   var cssWait = [];
@@ -1142,7 +1142,7 @@
     }
     wrap.innerHTML =
       '<div class="bar"><h1>Notes</h1><span class="sub">Capture fast, sort later &mdash; every note can become a task, content or a Space</span>'
-      + '<div class="r"><button class="btn" data-action="notes-tidy">Tidy up</button><button class="btn" data-action="notes-full">&#8599; Full screen</button><button class="btn pri" data-action="note-new">+ New note</button></div></div>'
+      + '<div class="r"><button class="btn" data-action="notes-tidy">Tidy up</button><button class="btn" data-action="notes-full">Full screen</button><button class="btn pri" data-action="note-new">+ New note</button></div></div>'
       + '<div class="tools"><input class="search" data-action="notes-search" placeholder="Search notes, people, Spaces" value="' + esc(keepQ) + '">'
       + chip('all', 'All', c.all) + chip('pinned', 'Pinned', c.pinned)
       + chip('todo', 'To-do', c.todo) + chip('idea', 'Idea', c.idea)

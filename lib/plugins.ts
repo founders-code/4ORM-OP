@@ -17,7 +17,6 @@ export const PLUGIN_CATALOG = [
   { slug: 'openai', name: 'OpenAI', info: 'Model layer', color: '#0E8A5F', ic: 'O' },
   { slug: 'third', name: 'Third model', info: 'Confirm which provider', color: '#8A5200', ic: '3' },
   { slug: 'perplexity', name: 'Perplexity', info: 'Search', color: '#1B7BB5', ic: 'P' },
-  { slug: 'riverside', name: 'Riverside', info: 'Recording', color: '#D6334E', ic: 'R' },
   { slug: 'vercel', name: 'Vercel', info: 'Hosting', color: '#111111', ic: 'V' },
   { slug: 'cursor', name: 'Cursor', info: 'Editor', color: '#2E6BF2', ic: 'C' },
 ] as const;
@@ -26,7 +25,6 @@ const KEY_BY_SLUG: Record<string, string> = {
   anthropic: 'ANTHROPIC_API_KEY',
   openai: 'OPENAI_API_KEY',
   perplexity: 'PERPLEXITY_API_KEY',
-  riverside: 'RIVERSIDE_API_KEY',
   vercel: 'VERCEL_TOKEN',
   cursor: 'CURSOR_API_KEY',
 };
