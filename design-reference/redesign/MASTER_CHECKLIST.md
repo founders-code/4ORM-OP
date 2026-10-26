@@ -34,8 +34,15 @@ Legend: **[D]** = has a design file to copy exactly.
 - [ ] Menu counts on Email (need a reply), Zoom (owed), Contacts (going cold), Integrations (attention), Pipeline (needs you today).
 
 ## 0d. Menu order (Oct 26)
-- [x] Left menu groups and order exactly as _nav.js: Today (Playbook, War Room, Calendar, Email) · People (Contacts, Spaces, Pipeline) · Library (Notes, Documents, Drive, Links) · Record (Zoom, Completed) · Signals (News, Financials, Integrations). Landing page stays War Room. Arrange (drag to reorder) still works and the user's own order overrides this default.
-- [x] Moving menu items changes ONLY the menu. Every page, route, control, data-action, count pill and the active highlight stay exactly as they are.
+- [ ] Left menu groups and order exactly as _nav.js: Today (Playbook, War Room, Calendar, Email) · People (Contacts, Spaces, Pipeline) · Library (Notes, Documents, Drive, Links) · Record (Zoom, Completed) · Signals (News, Financials, Integrations). Landing page stays War Room. Arrange (drag to reorder) still works and the user's own order overrides this default.
+- [ ] Menu group headings in 4orm blue (#5b8cff), 13.5px bold, a thin line between groups, items indented, exactly as _shell.css.
+- [ ] Moving menu items changes ONLY the menu. Every page, route, control, data-action, count pill and the active highlight stay exactly as they are.
+
+## 0e. Oct 26 feedback (Chad, live site)
+- [ ] War Room Today: every card gets a quick × (soft delete with Undo) and a "Select" mode (checkboxes + "Delete N" bar) to remove many at once. Removing a "from Zoom" card marks that meeting action dismissed so it never comes back. Persists after reload.
+- [ ] Playbook REGRESSION: live showed "TODAY Mon 19", no rows, "All lights off - day done" on Mon Oct 26 01:50 (it was correct at 01:14). Find the root cause (failed /api/playbook load falling back to design sample?), remove every sample fallback, show "Couldn't load - Retry" on failure, and add a live check that the today column = the real date and rows > 0.
+- [ ] Spaces panel = 62% of the screen (62vw, min 880px), same two-column layout as before, per 05c. Inside: The angle + Notes (left), People + Next steps + History (right), then "The bundle" as its own full-width framed section at the bottom (email preview left, files + link + drop zone right, Send me a test / Send to <name>), then the fixed action bar. While open, the Spaces list on the left becomes compact one-line rows (ring, name, next action, group tag) so nothing is squashed: the Spaces list stays visible and usable beside it, no dark overlay; clicking another card swaps the panel; clicking the list background, Close, "All spaces" or Esc closes it. Never full screen.
+- [ ] Links: "Expand all" toggles to "Collapse all"; an "All links" row at the top of the tree shows every link.
 
 ## 1. Site-wide
 - [ ] 1.1 Wire every control on pages 01-17 (Claude's click audit found ~250 dead controls).

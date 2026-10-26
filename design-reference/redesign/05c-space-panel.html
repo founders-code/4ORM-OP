@@ -18,7 +18,7 @@ button{font:inherit;cursor:pointer}
 .tb .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
 .clock{font-size:12.5px;color:var(--ink3);font-weight:600;white-space:nowrap;margin-left:6px}
 .side{background:var(--side);padding:14px 10px;display:flex;flex-direction:column;gap:2px;min-height:calc(100vh - 56px)}
-.grp{font-size:11px;font-weight:700;color:#6f7fa6;padding:14px 12px 6px}
+.grp{font-size:13.5px;font-weight:850;color:#5b8cff;padding:16px 12px 6px;margin-top:6px;border-top:1px solid rgba(255,255,255,.08);letter-spacing:-.01em}.side .grp:first-child{border-top:none;margin-top:0;padding-top:4px}.side .nav{padding-left:16px}
 .nav{display:flex;align-items:center;gap:11px;padding:8px 12px;border-radius:9px;color:#cfd8ee;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
 .nav svg{width:17px;height:17px;flex:none;stroke:#8fa0c8;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .nav:hover{background:rgba(255,255,255,.05)}
@@ -72,8 +72,8 @@ button{font:inherit;cursor:pointer}
 .menu div{padding:8px 10px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer}.menu div:hover{background:var(--soft)}.menu .lbl{font-size:11.5px;color:var(--ink3);cursor:default;padding:6px 10px 2px}.menu .lbl:hover{background:none}.menu .del{color:var(--red)}
 .eyeT,.bellT{font-size:11px;font-weight:800;color:#4a5672;background:#f5f7fb;border-radius:6px;padding:2px 7px;cursor:pointer;white-space:nowrap}.eye{border:none;background:none;padding:0}
 /* ===== SPACE PANEL (slide-over) ===== */
-.sscrim{position:fixed;inset:0;background:rgba(5,10,28,.5);backdrop-filter:blur(3px);z-index:60}
-.spanel{position:fixed;top:0;right:0;bottom:0;width:1060px;background:linear-gradient(165deg,#0f1d4a,#0b1430);z-index:61;overflow-y:auto;padding:18px 22px 30px;box-shadow:-40px 0 90px rgba(0,0,0,.55);border-radius:18px 0 0 18px;color:var(--ink)}
+.sscrim{display:none}
+.spanel{position:fixed;top:56px;right:0;bottom:0;width:62vw;min-width:880px;background:linear-gradient(165deg,#0f1d4a,#0b1430);z-index:61;overflow-y:auto;padding:18px 22px 30px;box-shadow:-40px 0 90px rgba(0,0,0,.55);border-radius:18px 0 0 18px;color:var(--ink)}
 .spanel .crumbs{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:13px;color:#9fb0d0;font-weight:650}
 .spanel .crumbs a{color:#9db9ff;text-decoration:none;cursor:pointer}
 .spanel .crumbs .r{margin-left:auto;display:flex;gap:8px}
@@ -185,10 +185,36 @@ button{font:inherit;cursor:pointer}
 .spanel .cols{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}
 
 .spanel{padding-bottom:110px}
-.spanel .pact{position:fixed;right:0;bottom:0;width:1060px;background:rgba(8,16,42,.92);backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.1);padding:16px 22px;display:flex;align-items:center;gap:12px;z-index:62;border-radius:0 0 0 18px}
+.spanel .pact{position:fixed;right:0;bottom:0;width:62vw;min-width:880px;background:rgba(8,16,42,.92);backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.1);padding:16px 22px;display:flex;align-items:center;gap:12px;z-index:62;border-radius:0 0 0 18px}
 .spanel .pact .pst{font-size:14px;color:#c9d6f5}.spanel .pact .pst b{color:#2fe08b;font-weight:900}
 .spanel .pact .r{margin-left:auto;display:flex;gap:8px}
-.spanel .pact .hb{background:rgba(255,255,255,.1);color:#fff;height:46px;font-size:15px;padding:0 20px;border-radius:13px}.spanel .pact .hb.pri{background:#2e6bf2;color:#fff;box-shadow:0 8px 20px rgba(46,107,242,.35)}
+.spanel .pact .hb{background:rgba(255,255,255,.1);color:#fff;height:46px;font-size:14.5px;padding:0 20px;border-radius:13px}.spanel .pact .hb.pri{background:#2e6bf2;color:#fff;box-shadow:0 8px 20px rgba(46,107,242,.35)}
+.main.withpanel{margin-right:max(62vw,880px)}.main.withpanel .sp.cur{border-color:#2e6bf2;box-shadow:0 0 0 3px rgba(46,107,242,.35)}
+
+/* bundle: separate, full width, at the bottom */
+.spanel .bundle{margin-top:6px;border-radius:18px;background:linear-gradient(180deg,#f7f9ff,#eef3ff);border:2px dashed #b9c9f2;box-shadow:0 14px 40px rgba(3,10,30,.25);overflow:hidden}
+.spanel .bundle .ch{background:#fff;border-bottom:1px solid #dbe4f7;padding:14px 18px}
+.spanel .bundle .ch h3{font-size:16px}
+.spanel .bundle .bgrid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px;padding:14px 16px 4px}
+.spanel .bundle .mail{margin:0;background:#fff}
+.spanel .bundle .files{padding:0;grid-template-columns:repeat(3,minmax(0,1fr))}
+.spanel .bundle .lk{margin:10px 0 0;background:#fff}
+.spanel .bundle .drop{margin:10px 0 0;background:#fff}
+.spanel .bundle .sendbar{margin-top:12px;background:#fff;border-top:1px solid #dbe4f7}
+/* spaces list stays tidy beside the panel */
+.main.withpanel .grid{grid-template-columns:minmax(0,1fr);gap:6px}
+.main.withpanel .sp{display:grid;grid-template-columns:34px minmax(0,1fr) auto;grid-template-areas:"ring name tag" "ring next tag";align-items:center;gap:2px 10px;padding:9px 12px}
+.main.withpanel .sp .top2{grid-area:tag;margin:0}.main.withpanel .sp .top2 .ms{display:none}
+.main.withpanel .sp h4{grid-area:name;margin:0;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.main.withpanel .sp p,.main.withpanel .sp .ft,.main.withpanel .sp .rd .cnt{display:none}
+.main.withpanel .sp .rd{display:contents}
+.main.withpanel .sp .rd .ring{grid-area:ring}
+.main.withpanel .sp .rd .nxa{grid-area:next;justify-self:start;font-size:10.5px}
+.main.withpanel .addcard{min-height:40px;padding:8px}
+.main.withpanel .bar{flex-wrap:wrap}.main.withpanel .bar .sub{display:none}
+.main.withpanel .bar .r{margin-left:0;flex-wrap:wrap}
+.main.withpanel .stats{flex-wrap:wrap}.main.withpanel .stats .sx{flex:1 1 33%}
+.main.withpanel .sp .ft{flex-wrap:wrap;gap:6px}
 </style></head><body>
 
 <header class="top">
@@ -255,23 +281,12 @@ document.addEventListener('click',()=>m.style.display='none');
         <div class="angle" contenteditable="true">Neil has backed <b>QuickFacts</b>, and he spends his days on <b>insurance distribution and conduct risk</b> at Marsh. 4orm records the suitability evidence every advice conversation needs, which is the same problem QuickFacts solves, one step later. Lead with conduct risk, not AI.</div>
         <div class="hooks"><span>+ FINTRAC fines, Oct 12</span><span>+ OSFI on AI governance</span><span>+ Insurer distribution angle</span><span>+ Ask for 20 minutes</span></div>
       </section>
-
       <section class="card">
-        <div class="ch"><h3>What Neil gets</h3><span class="s">preview of the bundle</span><span class="lnk">Open full composer</span></div>
-        <div class="mail">
-          <div class="row"><label>To</label><b>Neil Mitchell</b></div>
-          <div class="row"><label>Subject</label><b>Suitability evidence for insurance advice - 20 minutes?</b></div>
-          <div class="bodyt" contenteditable="true" id="intro">Neil - you backed QuickFacts, so you know how much of distribution risk lives in what was said in the room and never written down. We built 4orm to record that evidence automatically. Two pages attached. Worth 20 minutes next week?</div>
-        </div>
-        <div class="files" id="files">
-          <div class="ft sug" data-f="1"><div class="th" style="background:#fde9ec"><div class="pg"><i></i><i></i><i></i><i></i></div></div><span class="ty" style="background:var(--red)">PDF</span><span class="add">+ Add</span><div class="nm">4orm VC and Design Partner Resources.pdf<small>suggested for VCs</small></div></div>
-          <div class="ft sug" data-f="2"><div class="th" style="background:#fff0e6"><div class="sl">Business Overview</div></div><span class="ty" style="background:#e36b1c">PPT</span><span class="add">+ Add</span><div class="nm">Business Overview | 4orm | 2026.pptx<small>suggested for VCs</small></div></div>
-          <div class="ft sug" data-f="3"><div class="th" style="background:var(--blue50)"><div class="pg"><i></i><i></i><i></i></div></div><span class="ty" style="background:var(--blue)">DOC</span><span class="add">+ Add</span><div class="nm">Top incumbents<small>from Documents &rsaquo; Legal</small></div></div>
-        </div>
-        <div class="lk"><span class="fv" style="background:#0b1430">4</span><div><b>4ormiq.com</b><span>Try the free Suitability Readiness Check</span></div><em class="lkadd" style="color:var(--blue);cursor:pointer">+ Add link</em></div>
-        <div class="drop">Drag files here from <b>Documents</b> or <b>Drive</b>, or paste a link</div>
-        <div class="sendbar"><span class="via">Sends through <b>GoHighLevel</b> &middot; test copy to chad@4ormfinance.com first</span><div class="r"><button class="btn">Send me a test</button><button class="btn pri">Send to Neil</button></div></div>
+        <div class="ch"><h3>Notes</h3><span class="s">saves as you type</span></div>
+        <div class="sticky" contenteditable="true" id="note">Advises early-stage insurtech founders; backed YouSet and QuickFacts. Marsh Canada MD - deep in insurance distribution and conduct risk. Connect-on: QuickFacts is adjacent to our suitability-evidence angle in insurance.<span class="saved" contenteditable="false">Saved &middot; Oct 18</span></div>
       </section>
+
+      
     </div>
 
     <div>
@@ -293,10 +308,7 @@ document.addEventListener('click',()=>m.style.display='none');
         </div>
       </section>
 
-      <section class="card">
-        <div class="ch"><h3>Notes</h3><span class="s">saves as you type</span></div>
-        <div class="sticky" contenteditable="true" id="note">Advises early-stage insurtech founders; backed YouSet and QuickFacts. Marsh Canada MD - deep in insurance distribution and conduct risk. Connect-on: QuickFacts is adjacent to our suitability-evidence angle in insurance.<span class="saved" contenteditable="false">Saved &middot; Oct 18</span></div>
-      </section>
+      
 
       <section class="card">
         <div class="ch"><h3>History</h3><span class="s">emails, meetings, files</span></div>
@@ -309,6 +321,22 @@ document.addEventListener('click',()=>m.style.display='none');
     </div>
   </div>
 <div class="pact"><span class="pst"><b id="pactN">2/5</b> ready to send &middot; attach the docs and the link, approve the intro</span><div class="r"><button class="hb">Move to Drive</button><button class="hb">Book 20 min</button><button class="hb">Email Neil</button><button class="hb pri" data-a="send">Send bundle</button></div></div>
+  <section class="bundle">
+        <div class="ch"><h3>The bundle</h3><span class="s">what Neil receives &middot; builds as you add</span><span class="lnk">Open full composer</span></div>
+        <div class="bgrid"><div class="bl"><div class="mail">
+          <div class="row"><label>To</label><b>Neil Mitchell</b></div>
+          <div class="row"><label>Subject</label><b>Suitability evidence for insurance advice - 20 minutes?</b></div>
+          <div class="bodyt" contenteditable="true" id="intro">Neil - you backed QuickFacts, so you know how much of distribution risk lives in what was said in the room and never written down. We built 4orm to record that evidence automatically. Two pages attached. Worth 20 minutes next week?</div>
+        </div>
+        </div><div class="br"><div class="files" id="files">
+          <div class="ft sug" data-f="1"><div class="th" style="background:#fde9ec"><div class="pg"><i></i><i></i><i></i><i></i></div></div><span class="ty" style="background:var(--red)">PDF</span><span class="add">+ Add</span><div class="nm">4orm VC and Design Partner Resources.pdf<small>suggested for VCs</small></div></div>
+          <div class="ft sug" data-f="2"><div class="th" style="background:#fff0e6"><div class="sl">Business Overview</div></div><span class="ty" style="background:#e36b1c">PPT</span><span class="add">+ Add</span><div class="nm">Business Overview | 4orm | 2026.pptx<small>suggested for VCs</small></div></div>
+          <div class="ft sug" data-f="3"><div class="th" style="background:var(--blue50)"><div class="pg"><i></i><i></i><i></i></div></div><span class="ty" style="background:var(--blue)">DOC</span><span class="add">+ Add</span><div class="nm">Top incumbents<small>from Documents &rsaquo; Legal</small></div></div>
+        </div>
+        <div class="lk"><span class="fv" style="background:#0b1430">4</span><div><b>4ormiq.com</b><span>Try the free Suitability Readiness Check</span></div><em class="lkadd" style="color:var(--blue);cursor:pointer">+ Add link</em></div>
+        <div class="drop">Drag files here from <b>Documents</b> or <b>Drive</b>, or paste a link</div>
+        </div></div><div class="sendbar"><span class="via">Sends through <b>GoHighLevel</b> &middot; test copy to chad@4ormfinance.com first</span><div class="r"><button class="btn">Send me a test</button><button class="btn pri">Send to Neil</button></div></div>
+      </section>
 </aside><script>const toast=t=>{const e=document.getElementById('toast')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'toast',className:'toast'}));e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1800)};
 let done=new Set([0,1]);
 function upd(){const n=done.size;document.getElementById('rn').textContent=n+'/5';const pn=document.getElementById('pactN');if(pn)pn.textContent=n+'/5';document.getElementById('rg').setAttribute('stroke-dasharray',(251.3*n/5).toFixed(1)+' 251.3');
@@ -329,4 +357,11 @@ document.querySelectorAll('.spanel .crumbs .ghost').forEach(g=>{if(g.classList.c
 document.querySelectorAll('.spanel .pact .hb').forEach(b=>{if(b.onclick)return;b.onclick=()=>toast(b.textContent.trim()==='Email Neil'?'Opens Compose to Neil':b.textContent.trim()==='Book 20 min'?'Opens the calendar with a 20-min slot + 4orm Zoom':'Creates the Neil Mitchell folder in Drive and moves the files')});
 document.querySelectorAll('.spanel .pp.addp').forEach(p=>p.onclick=()=>toast('Opens the people picker (Contacts / Pipeline)'));
 document.querySelectorAll('.spanel .sendbar .btn').forEach(b=>{if(b.onclick)return;b.onclick=()=>toast(/test/.test(b.textContent)?'Test copy sent to chad@4ormfinance.com':'Send to Neil goes through GoHighLevel after the test')});
-document.querySelector('.spanel .close').onclick=()=>{document.querySelector('.spanel').remove();document.querySelector('.sscrim').remove()};document.querySelector('.sscrim').onclick=()=>document.querySelector('.spanel .close').click();document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.querySelector('.spanel'))document.querySelector('.spanel .close').click()});</script></body></html>
+document.querySelector('.spanel .close').onclick=()=>{document.querySelector('.spanel').remove();document.querySelector('.sscrim').remove()};document.querySelector('.sscrim').onclick=()=>document.querySelector('.spanel .close').click();document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.querySelector('.spanel'))document.querySelector('.spanel .close').click()});</script><script>(function(){const m=document.querySelector('.main');const p=document.querySelector('.spanel');m.classList.add('withpanel');
+const close=()=>{p.style.display='none';m.classList.remove('withpanel');document.querySelectorAll('.sp.cur').forEach(x=>x.classList.remove('cur'))};
+const openFor=card=>{p.style.display='';m.classList.add('withpanel');document.querySelectorAll('.sp').forEach(x=>x.classList.toggle('cur',x===card));const n=card.querySelector('h4')?.textContent.trim();if(n){p.querySelectorAll('.hero h1, .crumbs span[style]').forEach(e=>e.textContent=n);p.scrollTop=0}};
+const first=[...document.querySelectorAll('.sp')].find(c=>/Neil Mitchell/.test(c.textContent));if(first)first.classList.add('cur');
+document.querySelectorAll('.sp').forEach(c=>c.addEventListener('click',e=>{e.stopPropagation();openFor(c)},true));
+const cb=p.querySelector('.close');if(cb)cb.onclick=close;const back=p.querySelector('.crumbs a');if(back)back.onclick=close;
+document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+m.addEventListener('click',e=>{if(!e.target.closest('.sp'))close()});})();</script></body></html>

@@ -3,196 +3,196 @@
   "file": "redesign/02-war-room.html",
   "page": "War Room (landing page)",
   "route": "/war-room (also / and /control-room redirect here)",
-  "bytes": 59737,
-  "sha256": "70019b01e046f7c2"
+  "bytes": 59916,
+  "sha256": "b720528195356f58"
  },
  {
   "file": "redesign/02b-war-room-steps.html",
   "page": "War Room - Steps open",
   "route": "/war-room (Steps clicked)",
-  "bytes": 59846,
-  "sha256": "bce3947a2c0ef50a"
+  "bytes": 60025,
+  "sha256": "94f99417a7543c63"
  },
  {
   "file": "redesign/02c-war-room-signals.html",
   "page": "War Room - Signals panel open",
   "route": "/war-room (Signals clicked)",
-  "bytes": 59809,
-  "sha256": "3856f97a6f59aa41"
+  "bytes": 59988,
+  "sha256": "1897c48d21781293"
  },
  {
   "file": "redesign/03-notes.html",
   "page": "Notes",
   "route": "/notes",
-  "bytes": 41745,
-  "sha256": "ebf932b0172c9150"
+  "bytes": 41924,
+  "sha256": "b15e89abf89405c3"
  },
  {
   "file": "redesign/03b-notes-open.html",
   "page": "Notes - note opened",
   "route": "/notes (note clicked)",
-  "bytes": 45173,
-  "sha256": "90fd7362a0c1df66"
+  "bytes": 45352,
+  "sha256": "c9842d7bf2b56ac8"
  },
  {
   "file": "redesign/04-pipeline.html",
   "page": "Pipeline",
   "route": "/pipeline",
-  "bytes": 49242,
-  "sha256": "e8ef761e28ad1c2a"
+  "bytes": 49421,
+  "sha256": "bc70dca1f6813e1d"
  },
  {
   "file": "redesign/05-spaces.html",
   "page": "Spaces",
   "route": "/spaces",
-  "bytes": 38190,
-  "sha256": "6db52c6a109e65fb"
+  "bytes": 38369,
+  "sha256": "78800d437d53cdca"
  },
  {
   "file": "redesign/05c-space-panel.html",
   "page": "Spaces - Space opened as a slide-over panel (actions bar at the bottom)",
   "route": "/spaces (card clicked)",
-  "bytes": 61871,
-  "sha256": "9923aa7cea7f223e"
+  "bytes": 65239,
+  "sha256": "19ba24c4c401a57f"
  },
  {
   "file": "redesign/06-documents.html",
   "page": "Documents",
   "route": "/documents",
-  "bytes": 39908,
-  "sha256": "67dfec2e7325e108"
+  "bytes": 40087,
+  "sha256": "5e18903bcd4d2fdf"
  },
  {
   "file": "redesign/06b-document-viewer.html",
   "page": "Documents - in-site viewer",
   "route": "/documents (file clicked)",
-  "bytes": 44883,
-  "sha256": "999dfeaece88c7d7"
+  "bytes": 45062,
+  "sha256": "14fa0aeade5132ee"
  },
  {
   "file": "redesign/07-links.html",
   "page": "Links",
   "route": "/links",
-  "bytes": 38156,
-  "sha256": "a8d61c2ee4ba325c"
+  "bytes": 39108,
+  "sha256": "719431c32e7c2c60"
  },
  {
   "file": "redesign/08-email.html",
   "page": "Email",
   "route": "/email",
-  "bytes": 50223,
-  "sha256": "573428bd40025c69"
+  "bytes": 50402,
+  "sha256": "245dea9b184257a2"
  },
  {
   "file": "redesign/08b-email-compose.html",
   "page": "Email compose panel",
   "route": "/email (Compose open)",
-  "bytes": 50290,
-  "sha256": "14dc2a968999920a"
+  "bytes": 50469,
+  "sha256": "0e5b26d44f6da390"
  },
  {
   "file": "redesign/08c-email-people.html",
   "page": "Email - People view",
   "route": "/email?view=people&person=:id (person panel)",
-  "bytes": 48557,
-  "sha256": "1a6d05c668726f08"
+  "bytes": 48736,
+  "sha256": "bbcfaf579405b3c3"
  },
  {
   "file": "redesign/08d-email-inbox.html",
   "page": "Email - Inbox feed + your columns",
   "route": "/email (default view)",
-  "bytes": 45854,
-  "sha256": "d862e00829f5a268"
+  "bytes": 46033,
+  "sha256": "1a1358fea3e19ae7"
  },
  {
   "file": "redesign/08e-email-people-grid.html",
   "page": "Email - People grid (boxes, tags, closed-box drawer)",
   "route": "/email?view=people",
-  "bytes": 64319,
-  "sha256": "470599bab7cbdb90"
+  "bytes": 64498,
+  "sha256": "209cab2f46243de0"
  },
  {
   "file": "redesign/09-playbook.html",
   "page": "Playbook",
   "route": "/playbook",
-  "bytes": 75013,
-  "sha256": "d727a074cd95f4a8"
+  "bytes": 75192,
+  "sha256": "6035c37b4ed6a541"
  },
  {
   "file": "redesign/10-calendar.html",
   "page": "Calendar",
   "route": "/calendar",
-  "bytes": 95998,
-  "sha256": "37f87f7e09ffcd94"
+  "bytes": 96177,
+  "sha256": "0c3bd0f82b435ab0"
  },
  {
   "file": "redesign/10b-calendar-rail-closed.html",
   "page": "Calendar - side panel closed",
   "route": "/calendar (rail toggle)",
-  "bytes": 96927,
-  "sha256": "75792a4717e4bdef"
+  "bytes": 97106,
+  "sha256": "fcb3eaa9d5c51129"
  },
  {
   "file": "redesign/10c-calendar-event-editor.html",
   "page": "Calendar - event editor open (no icons, 24h times)",
   "route": "/calendar (event clicked)",
-  "bytes": 96384,
-  "sha256": "7d8949cfb673cb7f"
+  "bytes": 96563,
+  "sha256": "31b7b0ac78004cc7"
  },
  {
   "file": "redesign/11-zoom.html",
   "page": "Zoom",
   "route": "/zoom",
-  "bytes": 50567,
-  "sha256": "08620c68272af6fc"
+  "bytes": 50746,
+  "sha256": "d73067133bf42962"
  },
  {
   "file": "redesign/12-completed.html",
   "page": "Completed",
   "route": "/completed",
-  "bytes": 38841,
-  "sha256": "83dbf53e93c72f84"
+  "bytes": 39020,
+  "sha256": "20975352e1d3b4e6"
  },
  {
   "file": "redesign/13-news.html",
   "page": "News",
   "route": "/news",
-  "bytes": 46117,
-  "sha256": "c120ab4127ce9125"
+  "bytes": 46296,
+  "sha256": "123bb9bd6fc64b39"
  },
  {
   "file": "redesign/13b-news-saved.html",
   "page": "News - Saved collections",
   "route": "/news?view=saved",
-  "bytes": 49447,
-  "sha256": "b9eb26031dd6191b"
+  "bytes": 49626,
+  "sha256": "ac27e37feebd8935"
  },
  {
   "file": "redesign/14-drive.html",
   "page": "Drive",
   "route": "/drive",
-  "bytes": 38079,
-  "sha256": "a6c51180271f6c66"
+  "bytes": 38258,
+  "sha256": "301d5fe8c2c3caea"
  },
  {
   "file": "redesign/15-contacts.html",
   "page": "Contacts",
   "route": "/contacts",
-  "bytes": 39405,
-  "sha256": "bbd6bee2e77ec534"
+  "bytes": 39584,
+  "sha256": "438a244a3067aeb2"
  },
  {
   "file": "redesign/16-financials.html",
   "page": "Financials",
   "route": "/financials",
-  "bytes": 36916,
-  "sha256": "a11727be2f515d7f"
+  "bytes": 37095,
+  "sha256": "fe133ff82e6bb99e"
  },
  {
   "file": "redesign/17-integrations.html",
   "page": "Integrations",
   "route": "/integrations",
-  "bytes": 36288,
-  "sha256": "dcc728649de83fff"
+  "bytes": 36467,
+  "sha256": "0aacf29fc9072250"
  }
 ]
