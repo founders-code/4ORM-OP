@@ -99,7 +99,7 @@ export async function signInAsTestUser(page, origin = LIVE_ORIGIN) {
     stopSignIn(err);
   }
 
-  await page.goto(origin + '/war-room', { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.goto(origin + '/planner', { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForSelector('#warDesk', { timeout: 20000, state: 'attached' });
   await page.waitForFunction(() => {
     const clerkObj = window.Clerk || window.__clerk;
@@ -124,8 +124,8 @@ export async function signInAsTestUser(page, origin = LIVE_ORIGIN) {
       email: email || '',
     };
   });
-  if (!/\/war-room/.test(who.path) || !who.name) {
-    stopSignIn({ message: 'test sign-in did not open /war-room with the user name. path=' + who.path + ' name=' + (who.name || '(empty)') });
+  if (!/\/(war-room|planner|timeline)/.test(who.path) || !who.name) {
+    stopSignIn({ message: 'test sign-in did not open /planner with the user name. path=' + who.path + ' name=' + (who.name || '(empty)') });
   }
   if (!/ops\s+test/i.test(who.name)) {
     stopSignIn({ message: 'signed in as ' + who.name + ' but expected ' + TEST_NAME });
