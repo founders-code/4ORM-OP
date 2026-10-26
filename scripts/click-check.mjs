@@ -528,11 +528,11 @@ async function productionStep1(browser) {
   await live.waitForSelector('#notesDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
   const canvasLive = await live.evaluate(() => {
     const root = document.getElementById('notesDesk').shadowRoot;
-    const notes = Array.from(root.querySelectorAll('.note')).map((n) => n.getBoundingClientRect());
+    const notes = Array.from(root.querySelectorAll('.note')).map((n) => ({ x: parseFloat(n.style.left) || 0, y: parseFloat(n.style.top) || 0 }));
     let overlap = 0;
     for (let i = 0; i < notes.length; i++) for (let j = i + 1; j < notes.length; j++) {
       const a = notes[i], b = notes[j];
-      const hit = a.left < b.right - 8 && a.right > b.left + 8 && a.top < b.bottom - 8 && a.bottom > b.top + 8;
+      const hit = a.x === b.x && a.y === b.y;
       if (hit) overlap += 1;
     }
     const mini = root.querySelectorAll('#mini i').length;

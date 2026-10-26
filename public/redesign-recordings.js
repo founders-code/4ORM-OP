@@ -260,7 +260,12 @@
     }).catch(function () { S().recordings = S().recordings || []; if (S().desk === 'rec') paint(); });
   }
 
-  window.paintRedesignRecordings = function () { whenCss(function () { loadLive(true); }); };
+  window.paintRedesignRecordings = function () {
+    whenCss(function () {
+      paint();
+      if (!fixtureOn()) loadLive(true);
+    });
+  };
 
   window.__deskRefreshExt = window.__deskRefreshExt || {};
   window.__deskRefreshExt.rec = function () { if (S().desk === 'rec') loadLive(true); };

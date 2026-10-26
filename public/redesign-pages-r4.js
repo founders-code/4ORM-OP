@@ -109,6 +109,18 @@
     addAll(S.notes, 'board');
     addAll(S.boardNotes, 'board');
     addAll(S.stickies, 'sticky');
+    var pile = {};
+    notes.forEach(function (n) {
+      var k = n.x + ',' + n.y;
+      pile[k] = (pile[k] || 0) + 1;
+    });
+    notes.forEach(function (n) {
+      if ((pile[n.x + ',' + n.y] || 0) < 2) return;
+      n.x = 150 + (auto % 4) * 250;
+      n.y = 160 + Math.floor(auto / 4) * 180;
+      auto += 1;
+      if (writeOk() && n.id) saveNotePos(n);
+    });
     return { clusters: clusters, notes: notes };
   }
 
