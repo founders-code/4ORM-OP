@@ -106,6 +106,37 @@ export async function POST(req: Request) {
       const listed = await listDupeGroups(sql, ownerId);
       return NextResponse.json({ ok: true, dry: true, owner: 'chad', counts: listed.counts, first15: preview(listed.tables), tables: listed.tables });
     }
+    if (body?.restoreWar) {
+      const titles = [
+        'Open the next private-network conversation with Kevin.',
+        'Write who, the chunk, the step, the next action, and the next date.',
+        'Then open Zahar, BJ, and Daryl, one $25,000 chunk each.',
+      ];
+      const restored: Array<{ title: string; id: string; via: string }> = [];
+      for (const title of titles) {
+        const key = title.toLowerCase();
+        const logged = await sql`
+          SELECT kept_id FROM dedupe_log
+          WHERE owner_id = ${ownerId} AND table_name = 'items' AND lower(dup_key) = ${key}
+          LIMIT 1
+        `;
+        let id = logged[0] ? String(logged[0].kept_id) : '';
+        let via = 'log';
+        if (!id) {
+          const oldest = await sql`
+            SELECT id FROM items
+            WHERE owner_id = ${ownerId} AND lower(trim(title)) = ${key}
+            ORDER BY created_at ASC, id ASC LIMIT 1
+          `;
+          id = oldest[0] ? String(oldest[0].id) : '';
+          via = 'oldest';
+        }
+        if (!id) continue;
+        await sql`UPDATE items SET status = 'today' WHERE id = ${id}::uuid AND owner_id = ${ownerId}`;
+        restored.push({ title, id, via });
+      }
+      return NextResponse.json({ ok: true, restoreWar: true, owner: 'chad', restored });
+    }
     const result = await applyDedupe(sql, ownerId);
     return NextResponse.json({ ok: true, dry: false, owner: 'chad', ...result });
   } catch (err) {
