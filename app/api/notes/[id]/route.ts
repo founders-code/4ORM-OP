@@ -24,10 +24,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const h = Number(body?.h);
     const hasMeta = !!(body && body.meta && typeof body.meta === 'object');
     const meta = JSON.stringify(hasMeta ? body.meta : {});
+    const hasPin = !!(body && Object.prototype.hasOwnProperty.call(body, 'pin'));
+    const pinOn = !!(body && body.pin);
     const board = await session.sql`
       UPDATE notes
       SET title = CASE WHEN ${hasTitle} THEN ${title} ELSE title END,
           body = CASE WHEN ${hasBody} THEN ${text} ELSE body END,
+          pinned = CASE WHEN ${hasPin} THEN ${pinOn} ELSE pinned END,
           updated_at = now()
       WHERE id = ${params.id} AND owner_id = ${session.userId}
       RETURNING id

@@ -19,6 +19,7 @@ function noteShape(row: Record<string, unknown>) {
     title: String(row.title || ''),
     body: String(row.body || ''),
     color: String(row.color || 'yellow'),
+    pin: !!row.pinned,
     updatedAt: row.updated_at ? new Date(String(row.updated_at)).getTime() : null,
   };
 }
@@ -44,8 +45,8 @@ export async function GET() {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!session.sql) return NextResponse.json({ notes: [] });
     const rows = await session.sql`
-      SELECT id, cat_id, title, body, color, updated_at
-      FROM notes WHERE owner_id = ${session.userId}
+      SELECT id, cat_id, title, body, color, pinned, updated_at
+      FROM notes WHERE owner_id = ${session.userId} AND deleted_at IS NULL
       ORDER BY updated_at DESC
       LIMIT 400
     `;
@@ -126,6 +127,7 @@ export async function POST(req: Request) {
     const dup = await session.sql`
       SELECT id, cat_id, title, body, color, updated_at FROM notes
       WHERE owner_id = ${session.userId}
+        AND deleted_at IS NULL
         AND lower(trim(title)) = ${title.toLowerCase()}
         AND coalesce(body, '') = ${noteBody}
       ORDER BY created_at ASC

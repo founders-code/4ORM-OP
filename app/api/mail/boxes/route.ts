@@ -47,7 +47,7 @@ export async function GET() {
     const rows = await session.sql`
       SELECT key, name, org, color, closed, position, extra
       FROM email_boxes
-      WHERE owner_id = ${session.userId}
+      WHERE owner_id = ${session.userId} AND deleted_at IS NULL
       ORDER BY position ASC, created_at ASC
     `;
     const tags = await session.sql`

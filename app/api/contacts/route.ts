@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     if (email) {
       const dup = await session.sql`
         SELECT id, name, company, role, email, phone, area, notes, type, tier, stage, next_action, next_date, last_touch, category
-        FROM contacts WHERE owner_id = ${session.userId} AND lower(trim(email)) = ${email.toLowerCase()}
+        FROM contacts WHERE owner_id = ${session.userId} AND deleted_at IS NULL AND lower(trim(email)) = ${email.toLowerCase()}
         ORDER BY created_at ASC LIMIT 1
       `;
       if (dup.length) return NextResponse.json(shape(dup[0] as Record<string, unknown>));

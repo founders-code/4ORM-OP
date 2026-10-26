@@ -645,7 +645,12 @@
       subject: p.subject || '',
       intro: p.intro || '',
       files: docs.map(function (d) {
-        return { sug: false, bg: '#e1ecff', kind: String(d.type || d.kind || 'DOC').toUpperCase().slice(0, 3), color: 'var(--blue)', name: d.name || 'File', sub: '', inner: 'pg' };
+        var driveId = d.driveFileId || d.drive_file_id || '';
+        var thumb = d.thumbUrl || d.thumb_url || (driveId ? ('https://drive.google.com/thumbnail?id=' + encodeURIComponent(driveId) + '&sz=w400') : '');
+        return { sug: false, bg: '#e1ecff', kind: String(d.type || d.kind || 'DOC').toUpperCase().slice(0, 3), color: 'var(--blue)', name: d.name || 'File', sub: '', inner: thumb ? 'img' : 'pg', thumb: thumb };
+      }),
+      heroLinks: (links || []).slice(0, 6).map(function (l) {
+        return { label: l.name || l.label || hostOf(l.url || ''), url: l.url || '#' };
       }),
       link: links[0] ? { host: hostOf(links[0].url || links[0].name || ''), label: links[0].name || links[0].url || '' } : null,
       people: people.map(function (r) { return { ini: initials(r.name || r.email || 'P'), name: r.name || r.email || 'Person', meta: r.email || r.company || '', role: r.role || 'Lead' }; }),
@@ -666,10 +671,10 @@
     }
     var d = spaceOpenData();
     var files = asList(d.files).map(function (f) {
-      var inner = f.inner === 'sl'
-        ? '<div class="sl">' + esc(f.sl || f.name) + '</div>'
-        : '<div class="pg"><i></i><i></i><i></i><i></i></div>';
-      return '<div class="ft' + (f.sug ? ' sug' : '') + '" data-action="space-docs" data-id="' + esc(d.id) + '"><div class="th" style="background:' + esc(f.bg) + '">' + inner + '</div><span class="ty" style="background:' + esc(f.color) + '">' + esc(f.kind) + '</span>' + (f.sug ? '<span class="add">+ Add</span>' : '') + '<div class="nm">' + esc(f.name) + (f.sub ? '<small>' + esc(f.sub) + '</small>' : '') + '</div></div>';
+      var inner = f.thumb
+        ? '<img alt="" src="' + esc(f.thumb) + '">'
+        : (f.inner === 'sl' ? '<div class="sl">' + esc(f.sl || f.name) + '</div>' : '<div class="pg"><i></i><i></i><i></i><i></i></div>');
+      return '<div class="ft' + (f.sug ? ' sug' : '') + '"><div class="th" style="background:' + esc(f.bg) + '">' + inner + '</div><span class="ty" style="background:' + esc(f.color) + '">' + esc(f.kind) + '</span>' + (f.sug ? '<span class="add">+ Add</span>' : '') + '<div class="nm">' + esc(f.name) + (f.sub ? '<small>' + esc(f.sub) + '</small>' : '') + '</div></div>';
     }).join('');
     var people = asList(d.people).map(function (p) {
       return '<div class="pp"><span class="av" style="background:linear-gradient(140deg,#ffb86b,#e0364f)">' + esc(p.ini) + '</span><div><b>' + esc(p.name) + '</b><span>' + esc(p.meta) + '</span></div><span class="role">' + esc(p.role || 'Lead') + '</span></div>';
@@ -706,7 +711,10 @@
       + '<div style="position:relative;z-index:1;min-width:0"><div class="tags">' + asList(d.tags).map(function (t) {
         return '<span' + (t[0] === 'vc' ? ' class="vc"' : '') + '>' + esc(t[1]) + '</span>';
       }).join('') + '</div>'
-      + '<h1>' + esc(d.name) + '</h1><div class="who">' + esc(d.who) + '</div></div>'
+      + '<h1>' + esc(d.name) + '</h1><div class="who">' + esc(d.who) + '</div>'
+      + '<div class="facts2">' + asList(d.heroLinks).map(function (l) {
+        return '<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.label) + ' &#8599;</a>';
+      }).join('') + '<span class="src" data-action="space-hero-link" data-id="' + esc(d.id) + '"><u>+ Add a link or article</u></span></div></div>'
       + '<div class="ready"><div class="rring"><svg viewBox="0 0 96 96" width="96" height="96"><circle cx="48" cy="48" r="40" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9"/><circle id="rg" cx="48" cy="48" r="40" fill="none" stroke="#2fe08b" stroke-width="9" stroke-linecap="round" stroke-dasharray="' + esc(d.readyDash || '100.5 251.3') + '" transform="rotate(-90 48 48)"/></svg><b id="rn">' + esc(d.ready) + '</b></div>'
       + '<div class="lbl">ready to send</div><div class="steps" id="steps">' + asList(d.steps).map(function (s) {
         return '<span class="' + esc(s[0]) + '"><i>' + (s[0] === 'd' ? '&#10003;' : '') + '</i>' + esc(s[1]) + '</span>';
@@ -729,13 +737,13 @@
       + '<button class="hb" data-action="space-book" data-id="' + esc(d.id) + '">Book 20 min</button>'
       + '<button class="hb" data-action="space-email" data-id="' + esc(d.id) + '">Email ' + esc(first) + '</button>'
       + '<button class="hb pri" data-action="space-send" data-id="' + esc(d.id) + '"' + (gated ? ' disabled' : '') + '>Send bundle</button></div></div>'
-      + '<section class="bundle"><div class="ch"><h3>The bundle</h3><span class="s">what ' + esc(first) + ' receives &middot; builds as you add</span><span class="lnk" data-action="mail-compose">Open full composer</span></div>'
+      + '<section class="bundle"><div class="ch"><h3>The bundle</h3><span class="s">what ' + esc(first) + ' receives &middot; builds as you add</span><span class="lnk" data-action="mail-compose" data-id="' + esc(d.id) + '">Open full composer</span></div>'
       + '<div class="bgrid"><div class="bl"><div class="mail"><div class="row"><label>To</label><b>' + esc(d.to) + '</b></div><div class="row"><label>Subject</label><b contenteditable="true" data-action="space-subject">' + esc(d.subject) + '</b></div>'
       + '<div class="bodyt" contenteditable="true" id="intro" data-action="space-intro">' + esc(d.intro) + '</div></div></div><div class="br">'
       + '<div class="files" id="files">' + files + '</div>'
-      + (d.link ? '<div class="lk"><span class="fv" style="background:#0b1430">4</span><div><b>' + esc(d.link.host) + '</b><span>' + esc(d.link.label) + '</span></div><em class="lkadd" style="color:var(--blue);cursor:pointer" data-action="space-link" data-id="' + esc(d.id) + '">+ Add link</em></div>'
-        : '<div class="lk"><em class="lkadd" style="color:var(--blue);cursor:pointer" data-action="space-link" data-id="' + esc(d.id) + '">+ Add link</em></div>')
-      + '<div class="drop" data-action="space-docs" data-id="' + esc(d.id) + '">Drag files here from <b>Documents</b> or <b>Drive</b>, or paste a link</div>'
+      + (d.link ? '<div class="lk"><span class="fv" style="background:#0b1430">4</span><div><b>' + esc(d.link.host) + '</b><span>' + esc(d.link.label) + '</span></div><em class="lkadd" style="color:var(--blue);cursor:pointer" data-action="space-link" data-id="' + esc(d.id) + '">+ Add a saved link</em></div>'
+        : '<div class="lk"><em class="lkadd" style="color:var(--blue);cursor:pointer" data-action="space-link" data-id="' + esc(d.id) + '">+ Add a saved link</em></div>')
+      + '<div class="drop" data-action="space-docs" data-id="' + esc(d.id) + '">Drop files here, or pick from <b>Documents</b> / <b>Drive</b> &middot; every file shows a first-page preview</div>'
       + '</div></div><div class="sendbar"><span class="via">Sends through <b>GoHighLevel</b> &middot; test copy to chad@4ormfinance.com first</span><div class="r"><button class="btn" data-action="space-send-test" data-id="' + esc(d.id) + '">Send me a test</button><button class="btn pri" data-action="space-send" data-id="' + esc(d.id) + '"' + (gated ? ' disabled' : '') + '>Send to ' + esc(first) + '</button></div></div></section></aside>');
   }
   function paintSpacesLive() {
@@ -913,7 +921,7 @@
         var carBtn = car
           ? '<span class="car" data-action="link-toggle" data-key="' + esc(t.key || t.name) + '" data-name="' + esc(t.name) + '">' + car + '</span>'
           : '<span class="car"></span>';
-        return '<div class="' + cls + '" data-action="link-cat" data-kind="' + esc(kind) + '" data-name="' + esc(t.name) + '" data-parent="' + esc(t.parent || '') + '" data-sub="' + esc(t.sub || '') + '">' + carBtn + esc(t.name) + '<span class="n">' + t.n + '</span>' + hv + '</div>';
+        return '<div class="' + cls + '" draggable="true" data-action="link-cat" data-kind="' + esc(kind) + '" data-name="' + esc(t.name) + '" data-parent="' + esc(t.parent || '') + '" data-sub="' + esc(t.sub || '') + '">' + carBtn + esc(t.name) + '<span class="n">' + t.n + '</span>' + hv + '</div>';
       }).join('')
       + '<div class="exp" data-action="link-expand">' + ((window.STATE && window.STATE.linkAllOpen) ? 'Collapse all' : 'Expand all') + '</div></section>'
       + '<section class="card"><div class="crumbs">Links &rsaquo; <b>' + esc(data.crumb || '') + '</b> &middot; ' + (data.crumbN || 0) + ' links</div>'
@@ -1012,7 +1020,7 @@
       }
       var dir = /out|sent|from you/i.test(String(row.dir || row.direction || '')) ? 'out' : 'in';
       if (dir === 'out') by[key].out += 1; else by[key].in += 1;
-      by[key].m.push([dir, row.subject || row.sj || '(no subject)', row.snippet || row.preview || row.pv || '', row.unread || row.un ? 1 : 0]);
+      by[key].m.push([dir, row.subject || row.sj || '(no subject)', row.snippet || row.preview || row.pv || '', row.unread || row.un ? 1 : 0, row.threadId || row.thread_id || row.id || '', row.messageId || '']);
       if (row.unread || row.un) by[key].st = ['rep', 'You owe a reply'];
     });
     return { boxes: Object.keys(by).map(function (k) { return by[k]; }), loose: [], looseMore: 0 };
@@ -1107,21 +1115,34 @@
     var ppHtml = '';
     if (person) {
       var first = String(person.n || '').split(' ')[0];
+      var lk = asList(person.links);
+      var wide = ppTab === 'files' || ppTab === 'links';
       var body;
+      function fileThumb(f) {
+        var kind = peopleFileKind(f[0]);
+        var nm = f[1] || f;
+        var col = f[0] === 'p' ? '#e36b1c' : f[0] === 'D' ? '#2e6bf2' : '#e0364f';
+        var src = f[2] || '';
+        return '<div class="fth" data-action="mail-box-file" data-id="' + esc(person.id) + '" data-file="' + esc(nm) + '"><div class="pg">' + (src ? '<img alt="" src="' + esc(src) + '">' : '<i></i><i></i><i></i><i></i>') + '</div><span class="ty" style="background:' + col + '">' + esc(kind) + '</span><div class="fn">' + esc(nm) + '</div></div>';
+      }
       if (ppTab === 'files') {
-        body = asList(person.files).map(function (f) {
-          return '<div class="ppm in" data-action="mail-box-file" data-id="' + esc(person.id) + '" data-file="' + esc(f[1] || f) + '"><span class="ic"></span><div><div class="sj">' + esc(f[1] || f) + '</div><div class="pv">Opens in the in-site viewer</div></div><span class="t">' + peopleFileKind(f[0]) + '</span></div>';
-        }).join('') || '<div class="dempty">No files yet.</div>';
+        body = asList(person.files).length ? '<div class="fgrid">' + asList(person.files).map(fileThumb).join('') + '</div>' : '<div class="dempty">No files yet.</div>';
+      } else if (ppTab === 'links') {
+        body = lk.length ? lk.map(function (row) {
+          var n = row[0] || row.name || row.url || 'Link';
+          var u = row[2] || row.url || '#';
+          return '<a class="lrow" href="' + esc(u) + '" target="_blank" rel="noopener"><span class="fv">' + esc(String(n)[0] || 'L') + '</span><div><b>' + esc(n) + '</b><small>' + esc(row[1] || row.label || u) + '</small></div><em>Open &#8599;</em></a>';
+        }).join('') : '<div class="dempty">No links in these emails yet.</div>';
       } else {
         body = asList(person.m).filter(function (row) { return ppTab === 'all' || row[0] === ppTab; }).map(function (row) {
           var d = row[0];
-          return '<div class="ppm ' + esc(d) + '" data-action="mail-pp-expand"><span class="ic">' + (d === 'out' ? '&uarr;' : '&darr;') + '</span><div style="min-width:0"><div class="w">' + (d === 'out' ? 'You sent' : esc(first) + ' sent') + '</div><div class="sj">' + esc(row[1]) + '</div><div class="pv">' + esc(row[2]) + '</div><div class="full">' + esc(row[2]) + ' (Full thread loads here from Gmail, with attachments and Reply.)</div></div><span class="t">' + esc(person.last) + '</span></div>';
+          return '<div class="ppm ' + esc(d) + '" data-action="mail-pp-expand" data-tid="' + esc(row[4] || '') + '" data-sj="' + esc(row[1]) + '" data-pv="' + esc(row[2]) + '" data-dir="' + esc(d) + '" data-who="' + esc(person.n) + '"><span class="ic">' + (d === 'out' ? 'Out' : 'In') + '</span><div style="min-width:0"><div class="w">' + (d === 'out' ? 'You sent' : esc(first) + ' sent') + '</div><div class="sj">' + esc(row[1]) + '</div><div class="pv">' + esc(row[2]) + '</div></div><span class="t">' + esc(person.last) + '</span></div>';
         }).join('') || '<div class="dempty">Nothing here.</div>';
       }
       ppHtml = '<div class="pph"><span class="av" style="background:' + esc(person.c) + '">' + esc(peopleIni(person.n)) + '</span><div style="min-width:0"><h2>' + esc(person.n) + '</h2><div class="sub">' + esc(person.o) + ' &middot; ' + asList(person.tags).map(function (t) { return '#' + esc(t); }).join(' ') + '</div></div><div class="acts"><button class="btn" data-action="mail-pp-go" data-go="pipeline" data-id="' + esc(person.id) + '">Pipeline</button><button class="btn" data-action="mail-pp-go" data-go="space" data-id="' + esc(person.id) + '">Space</button><span class="x" data-action="mail-pp-close">&times;</span></div></div>'
-        + '<div class="ppk"><div><b>' + esc(person.in) + '</b><span>from them</span></div><div><b>' + esc(person.out) + '</b><span>from you</span></div><div><b>' + esc(person.last) + '</b><span>last contact</span></div><div><b>' + esc(asList(person.files).length + (Number(person.more) || 0)) + '</b><span>files</span></div></div>'
-        + '<div class="pptabs"><span class="' + (ppTab === 'all' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="all">Everything</span><span class="' + (ppTab === 'in' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="in">From them</span><span class="' + (ppTab === 'out' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="out">From you</span><span class="' + (ppTab === 'files' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="files">Files</span></div>'
-        + '<div class="pptl" id="pptl">' + body + '</div>'
+        + '<div class="ppk"><div><b>' + esc(person.in) + '</b><span>from them</span></div><div><b>' + esc(person.out) + '</b><span>from you</span></div><div><b>' + esc(person.last) + '</b><span>last contact</span></div><div><b>' + esc(asList(person.files).length + (Number(person.more) || 0)) + '</b><span>files</span></div><div><b>' + esc(lk.length) + '</b><span>links</span></div></div>'
+        + '<div class="pptabs"><span class="' + (ppTab === 'all' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="all">Everything</span><span class="' + (ppTab === 'in' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="in">From them</span><span class="' + (ppTab === 'out' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="out">From you</span><span class="' + (ppTab === 'files' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="files">Files</span><span class="' + (ppTab === 'links' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="links">Links</span></div>'
+        + '<div class="ppbody' + (wide ? ' wide' : '') + '"><div class="pptl" id="pptl">' + body + '</div><div class="ppread" id="ppread"><div class="dempty">Click an email to read it here.</div></div></div>'
         + '<div class="ppf"><button class="btn" data-action="mail-pp-go" data-go="compose" data-id="' + esc(person.id) + '">Email ' + esc(first) + '</button><button class="btn" data-action="mail-pp-go" data-go="book" data-id="' + esc(person.id) + '">Book 20 min</button><button class="btn pri" data-action="mail-pp-go" data-go="reply" data-id="' + esc(person.id) + '">Reply to latest</button></div>';
     }
     wrap.innerHTML =

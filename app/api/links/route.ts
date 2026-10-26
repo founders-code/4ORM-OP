@@ -37,6 +37,30 @@ export async function POST(req: Request) {
     const kind = String(body?.kind || '');
     const sql = session.sql;
     const ownerId = session.userId;
+    if (kind === 'reorder') {
+      const names = Array.isArray(body?.names) ? body.names.map((n: unknown) => cleanName(n)).filter(Boolean) : [];
+      for (let i = 0; i < names.length; i++) {
+        await sql`UPDATE link_categories SET position = ${i} WHERE owner_id = ${ownerId} AND name = ${names[i]}`;
+      }
+      const nestInto = cleanName(body?.into);
+      const moving = cleanName(body?.moving);
+      const parent = cleanName(body?.parent);
+      if (nestInto && moving && nestInto !== moving) {
+        await sql`
+          UPDATE link_categories
+          SET subs = CASE WHEN ${moving} = ANY(subs) THEN subs ELSE array_append(subs, ${moving}) END
+          WHERE owner_id = ${ownerId} AND name = ${nestInto}
+        `;
+        if (parent) {
+          await sql`
+            UPDATE link_categories
+            SET subs = array_remove(subs, ${moving})
+            WHERE owner_id = ${ownerId} AND name = ${parent}
+          `;
+        }
+      }
+      return NextResponse.json({ ok: true, n: names.length });
+    }
     if (kind === 'category') {
       const name = cleanName(body?.name) || 'New category';
       const inserted = await sql`
@@ -178,7 +202,7 @@ export async function POST(req: Request) {
     }
     const existing = await sql`
       SELECT id FROM links
-      WHERE owner_id = ${ownerId} AND lower(trim(url)) = ${parsed.toString().toLowerCase()}
+      WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND lower(trim(url)) = ${parsed.toString().toLowerCase()}
       ORDER BY created_at ASC
       LIMIT 1
     `;

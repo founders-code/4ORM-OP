@@ -8,7 +8,7 @@ type Sql = NeonQueryFunction<false, false>;
 let ready: Promise<Sql> | null = null;
 
 /** Bump when migrate() gains a new step so cold starts skip the full IF NOT EXISTS pass. */
-const SCHEMA_VERSION = '2026-10-22-news-hidden';
+const SCHEMA_VERSION = '2026-10-26-dedupe';
 
 export async function databaseUrl() {
   const envUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
@@ -749,6 +749,25 @@ async function migrateWar(sql: Sql) {
       value text,
       created_at timestamptz NOT NULL DEFAULT now(),
       UNIQUE (owner_id, rhythm_id, day)
+    )`],
+    ['db_notes_pinned', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS pinned boolean NOT NULL DEFAULT false`],
+    ['db_link_cat_pos', () => sql`ALTER TABLE link_categories ADD COLUMN IF NOT EXISTS position int NOT NULL DEFAULT 0`],
+    ['db_deleted_at_notes', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_deleted_at_links', () => sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_deleted_at_contacts', () => sql`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_deleted_at_packages', () => sql`ALTER TABLE packages ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_deleted_at_documents', () => sql`ALTER TABLE documents ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_deleted_at_meeting', () => sql`ALTER TABLE meeting_actions ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_deleted_at_boxes', () => sql`ALTER TABLE email_boxes ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_dedupe_log', () => sql`CREATE TABLE IF NOT EXISTS dedupe_log (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      table_name text NOT NULL,
+      kept_id text NOT NULL,
+      removed_id text NOT NULL,
+      dup_key text NOT NULL,
+      payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+      created_at timestamptz NOT NULL DEFAULT now()
     )`],
     ['db_bookings', () => sql`CREATE TABLE IF NOT EXISTS bookings (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

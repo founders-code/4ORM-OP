@@ -150,3 +150,26 @@
 .ppm .t{font-size:11.5px;color:var(--ink3);font-weight:650;white-space:nowrap}
 .ppf{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);background:var(--soft)}
 .ppf .btn.pri{margin-left:auto}
+.pp{top:50%!important;left:50%!important;right:auto!important;bottom:auto!important;width:min(1180px,92vw)!important;height:86vh!important;transform:translate(-50%,-48%) scale(.98)!important;opacity:0;pointer-events:none;border-radius:20px!important;transition:opacity .2s,transform .2s!important}
+.pp.on{transform:translate(-50%,-50%)!important;opacity:1;pointer-events:auto}
+.ppk{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+.ppbody{flex:1;display:grid;grid-template-columns:380px minmax(0,1fr);min-height:0;border-top:1px solid var(--line)}
+.ppbody.wide{grid-template-columns:minmax(0,1fr)}.ppbody.wide .ppread{display:none}
+.ppbody .pptl{border-right:1px solid var(--line);overflow:auto;padding:10px 12px}
+.ppread{overflow:auto;padding:18px 22px}
+.ppread .rh .w{font-size:12px;color:var(--ink3);font-weight:700}
+.ppread .rh h3{margin:4px 0 12px;font-size:19px;font-weight:850;letter-spacing:-.01em}
+.ppread .rb{font-size:14.5px;line-height:1.7;color:var(--ink);white-space:normal}
+.ppread .ratt{display:flex;gap:12px;margin-top:16px}
+.ppread .rf{display:flex;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;padding:6px}
+.fth{width:180px;border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;position:relative;background:#fff}
+.fgrid .fth{width:auto}
+.fth .pg{height:120px;background:#f5f7fb;padding:14px 22px;display:flex;flex-direction:column;justify-content:center}
+.fth .pg img{width:100%;height:120px;object-fit:cover}
+.fth .pg i{display:block;height:6px;border-radius:3px;background:#d9e1f0;margin:4px 0}.fth .pg i:first-child{width:70%;background:#9fb4e4}
+.fth .ty{position:absolute;left:8px;top:8px;font-size:9.5px;font-weight:850;color:#fff;border-radius:5px;padding:2px 6px}
+.fth .fn{padding:8px 10px;font-size:12.5px;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lrow{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;text-decoration:none;color:var(--ink)}
+.lrow .fv{width:32px;height:32px;border-radius:9px;background:#101a33;color:#fff;display:grid;place-items:center;font-weight:850}
+.lrow em{margin-left:auto;font-style:normal;font-weight:800;color:var(--blue);font-size:12.5px}

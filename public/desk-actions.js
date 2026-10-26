@@ -809,17 +809,14 @@
       var next = attr(el, 'data-on') !== '1';
       el.setAttribute('data-on', next ? '1' : '0');
       if (!writeOk()) { toast(root, next ? 'Pinned' : 'Unpinned'); return; }
-      if (source === 'sticky') {
-        return api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { meta: { pin: next } } }).then(ok).then(function () {
-          refresh('notes'); toast(root, next ? 'Pinned' : 'Unpinned');
-        }).catch(function () { toast(root, 'Could not pin that note'); });
-      }
       try {
         var map = JSON.parse(localStorage.getItem('cr_note_pin') || '{}');
         map[id] = next; localStorage.setItem('cr_note_pin', JSON.stringify(map));
       } catch (e) {}
-      refresh('notes');
-      toast(root, next ? 'Pinned' : 'Unpinned');
+      var payload = source === 'sticky' ? { meta: { pin: next } } : { pin: next };
+      return api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: payload }).then(ok).then(function () {
+        refresh('notes'); toast(root, next ? 'Pinned' : 'Unpinned');
+      }).catch(function () { toast(root, 'Could not pin that note'); });
     },
     'note-archive': function (el, root, ev) {
       if (ev) ev.stopPropagation();
@@ -1646,13 +1643,32 @@
     },
     'space-link': function (el, root) {
       var id = attr(el, 'data-id') || (S().pkg && S().pkg.id);
-      var url = window.prompt('Link URL');
-      if (!url || !id) return;
+      var links = (S().links || []);
+      var pick = links.slice(0, 40).map(function (l) {
+        return (l.title || l.url || '') + ' — ' + (l.url || '');
+      });
+      var choice = window.prompt('Pick a saved link (paste URL, or type part of the title)\n\n' + pick.slice(0, 12).join('\n'));
+      if (!choice || !id) return;
+      var hit = links.filter(function (l) {
+        var hay = ((l.title || '') + ' ' + (l.url || '')).toLowerCase();
+        return hay.indexOf(String(choice).toLowerCase()) >= 0;
+      })[0];
+      var url = (hit && hit.url) || choice;
+      if (!/^https?:\/\//i.test(url) && hit) url = hit.url;
       if (!writeOk()) { toast(root, 'Link added (fixture)'); return; }
-      api('/api/spaces/' + encodeURIComponent(id), { method: 'POST', body: { action: 'add-link', url: url, name: url } }).then(ok).then(json).then(function (d) {
+      api('/api/spaces/' + encodeURIComponent(id), { method: 'POST', body: { action: 'add-link', url: url, name: (hit && hit.title) || url } }).then(ok).then(json).then(function (d) {
         S().pkg = d.package || d || S().pkg;
         refresh('spaces');
         toast(root, 'Link added');
+      }).catch(function () { toast(root, 'Could not add that link'); });
+    },
+    'space-hero-link': function (el, root) {
+      var url = window.prompt('Website, LinkedIn, or article URL');
+      if (!url) return;
+      var id = attr(el, 'data-id') || (S().pkg && S().pkg.id);
+      if (!id || !writeOk()) { toast(root, 'Link saved'); return; }
+      api('/api/spaces/' + encodeURIComponent(id), { method: 'POST', body: { action: 'add-link', url: url, name: url } }).then(ok).then(function () {
+        refresh('spaces'); toast(root, 'Link added');
       }).catch(function () { toast(root, 'Could not add that link'); });
     },
     'space-notes': function () {},
@@ -1827,10 +1843,21 @@
       el.classList.toggle('on', !!S().docPick[id]);
     },
     'mail-compose': function (el, root) {
+      var pkg = S().pkg;
+      if (pkg && pkg.id) {
+        S().composeDraft = Object.assign({}, S().composeDraft || {}, {
+          from: pkg.name || '',
+          subject: pkg.subject || '',
+          body: pkg.intro || pkg.notes || '',
+          attachments: pkg.docs || []
+        });
+        S().composeOpen = true;
+      }
       var cp = root.getElementById && root.getElementById('compose');
       var sc = root.getElementById && root.getElementById('scrim');
       if (cp) cp.classList.add('open');
       if (sc) sc.classList.add('open');
+      if (!cp && pkg && pkg.id) go('mail');
     },
     'mail-compose-close': function (el, root) {
       var cp = root.getElementById && root.getElementById('compose');
@@ -2009,8 +2036,25 @@
       S().mailPpTab = attr(el, 'data-tab') || 'all';
       refresh('mail');
     },
-    'mail-pp-expand': function (el) {
-      if (el && el.classList) el.classList.toggle('open');
+    'mail-pp-expand': function (el, root) {
+      if (el && el.classList) el.classList.add('open');
+      var pane = root.querySelector && root.querySelector('#ppread');
+      var sj = attr(el, 'data-sj') || '';
+      var pv = attr(el, 'data-pv') || '';
+      var dir = attr(el, 'data-dir') || 'in';
+      var tid = attr(el, 'data-tid') || '';
+      var who = attr(el, 'data-who') || '';
+      function paint(body) {
+        if (!pane) return;
+        pane.innerHTML = '<div class="rh"><div class="w">' + esc(dir === 'out' ? 'You to ' + who : who + ' to you') + '</div><h3>' + esc(sj) + '</h3></div><div class="rb">' + (body || esc(pv)).replace(/\n/g, '<br>') + '</div><div class="rf"><button class="btn pri" data-action="mail-pp-go" data-go="reply">Reply</button><button class="btn" data-action="mail-pp-go" data-go="fwd">Forward</button><button class="btn" data-action="mail-pp-go" data-go="space">Add to a Space</button></div>';
+      }
+      paint(esc(pv));
+      if (!tid || !writeOk()) return;
+      api('/api/mail/thread?id=' + encodeURIComponent(tid), { method: 'GET' }).then(json).then(function (d) {
+        var th = d && d.thread;
+        var html = (th && (th.html || th.body || th.text || th.snippet)) || pv;
+        paint(String(html));
+      }).catch(function () {});
     },
     'mail-pp-go': function (el, root) {
       var goTo = attr(el, 'data-go');
@@ -2018,7 +2062,7 @@
       var name = box ? box.n : 'this person';
       if (goTo === 'pipeline') { toast(root, 'Opens ' + name + ' in Pipeline'); go('contacts'); return; }
       if (goTo === 'space') { toast(root, 'Opens the ' + name + ' Space'); go('work'); return; }
-      if (goTo === 'compose' || goTo === 'reply') {
+      if (goTo === 'compose' || goTo === 'reply' || goTo === 'fwd') {
         S().composeOpen = true;
         S().mailView = 'inbox';
         if (box) S().composeTo = (box.addrs && box.addrs[0]) || '';
@@ -2860,12 +2904,13 @@
     var el = t && t.closest ? t.closest('[draggable="true"]') : null;
     if (!el || !e.dataTransfer) return;
     var action = attr(el, 'data-action');
-    var kind = attr(el, 'data-kind') || (action === 'mail-card' ? 'mail' : action === 'contact-drag' ? 'contact' : action === 'doc-drag' ? 'doc' : 'task');
+    var kind = attr(el, 'data-kind') || (action === 'mail-card' ? 'mail' : action === 'contact-drag' ? 'contact' : action === 'doc-drag' ? 'doc' : action === 'link-cat' ? 'folder' : 'task');
     var payload = JSON.stringify({
       id: attr(el, 'data-id'),
       kind: kind,
       email: attr(el, 'data-email'),
       name: attr(el, 'data-name') || '',
+      parent: attr(el, 'data-parent') || '',
       url: attr(el, 'data-url') || attr(el, 'data-web') || '',
       drive: attr(el, 'data-drive') || '',
       mime: attr(el, 'data-mime') || '',
@@ -2877,8 +2922,28 @@
     onDragStart.moved = true;
     setTimeout(function () { onDragStart.moved = false; }, 400);
   }
-  function dropSel() { return '[data-action="col-drop"], [data-action="stage-drop"], [data-action="mail-col-drop"], [data-action="space-drop"]'; }
+  function dropSel() { return '[data-action="col-drop"], [data-action="stage-drop"], [data-action="mail-col-drop"], [data-action="space-drop"], [data-action="space-docs"], [data-action="link-cat"]'; }
+  function hasFiles(e) {
+    try { return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') >= 0; } catch (err) { return false; }
+  }
+  function uploadDroppedFiles(root, files, spaceId) {
+    Array.prototype.forEach.call(files, function (f) {
+      var fd = new FormData();
+      fd.append('file', f);
+      fd.append('name', f.name);
+      fd.append('mime', f.type || '');
+      var url = spaceId && /^[0-9a-f-]{36}$/i.test(String(spaceId))
+        ? '/api/spaces/' + encodeURIComponent(spaceId) + '/upload'
+        : '/api/documents/upload';
+      api(url, { method: 'POST', body: fd }).then(ok).then(json).then(function (d) {
+        if (spaceId) S().pkg = d.package || d || S().pkg;
+        refresh('docs'); refresh('spaces'); refresh('drive');
+        toast(root, f.name + ' uploaded to Drive');
+      }).catch(function () { toast(root, 'Could not upload ' + f.name); });
+    });
+  }
   function onDragOver(e) {
+    if (hasFiles(e)) e.preventDefault();
     var t = (e.composedPath && e.composedPath()[0]) || e.target;
     var col = t && t.closest ? t.closest(dropSel()) : null;
     if (!col) return;
@@ -2887,10 +2952,35 @@
   }
   function onDrop(e) {
     var t = (e.composedPath && e.composedPath()[0]) || e.target;
+    var files = e.dataTransfer && e.dataTransfer.files;
+    var root = (t && t.getRootNode && t.getRootNode()) || document;
+    if (files && files.length) {
+      e.preventDefault();
+      e.stopPropagation();
+      var zone = t.closest ? t.closest('[data-action="space-docs"], [data-action="space-drop"]') : null;
+      var spaceId = zone ? (attr(zone, 'data-id') || (S().pkg && S().pkg.id) || '') : '';
+      uploadDroppedFiles(root, files, spaceId);
+      return;
+    }
     var col = t && t.closest ? t.closest(dropSel()) : null;
     if (!col) return;
     e.preventDefault();
     col.classList.remove('drop-on');
+    if (attr(col, 'data-action') === 'link-cat') {
+      var payloadF = parseDrag(e);
+      if (payloadF.kind !== 'folder' || !payloadF.name) return;
+      var names = [];
+      (root.querySelectorAll ? root.querySelectorAll('[data-action="link-cat"][data-kind="cat"]') : []).forEach(function (row) {
+        names.push(attr(row, 'data-name'));
+      });
+      var into = attr(col, 'data-name');
+      var parent = payloadF.parent || '';
+      if (into === payloadF.name) return;
+      api('/api/links', { method: 'POST', body: { kind: 'reorder', names: names, moving: payloadF.name, into: attr(col, 'data-kind') === 'cat' ? into : '', parent: parent } }).then(ok).then(function () {
+        refresh('links'); toast(root, 'Folder order saved');
+      }).catch(function () { toast(root, 'Could not save folder order'); });
+      return;
+    }
     var payload = parseDrag(e);
     var id = payload.id;
     var root = col.getRootNode ? col.getRootNode() : document;

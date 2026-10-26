@@ -120,7 +120,7 @@ export async function listMeetingActions(sql: Sql, ownerId: string) {
     const rows = await sql`
       SELECT id, source, meeting_id, meeting_title, meeting_date, text, kind, status, created_at
       FROM meeting_actions
-      WHERE owner_id = ${ownerId} AND status = 'open'
+      WHERE owner_id = ${ownerId} AND status = 'open' AND deleted_at IS NULL
       ORDER BY meeting_date DESC, created_at DESC
       LIMIT 80
     `;

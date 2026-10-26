@@ -1,159 +1,86 @@
 import { currentUser } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
+import { applyDedupe, listDupeGroups } from '@/lib/dedupe';
+import { getSql } from '@/lib/db';
+import { tokenOk } from '@/lib/guard.mjs';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { cronSecret } from '@/lib/secrets';
+import { openBoard, roomOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
-type Sql = NonNullable<Awaited<ReturnType<typeof openBoard>>>['sql'];
-
-async function logDupes(sql: NonNullable<Sql>, ownerId: string, table: string, rows: Record<string, unknown>[]) {
-  if (!rows.length) return;
-  await sql`
-    INSERT INTO change_log (owner_id, kind, payload)
-    VALUES (${ownerId}, ${'dedupe:' + table}, ${JSON.stringify({ table, ids: rows.map((r) => r.id), rows })}::jsonb)
-  `;
+async function chadOwner() {
+  const sql = await getSql();
+  if (!sql) return { sql: null as Awaited<ReturnType<typeof getSql>>, ownerId: '' };
+  const ownerId = (await roomOwner(sql)) || '';
+  return { sql, ownerId };
 }
 
-export async function POST() {
-  try {
-    const session = await openBoard();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const user = await currentUser();
-    if (user?.publicMetadata?.test !== true) return NextResponse.json({ error: 'Test users only.' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
-    const sql = session.sql;
-    const ownerId = session.userId;
-    const counts: Record<string, number> = {};
+async function allowed(req: Request) {
+  const header = req.headers.get('authorization') || '';
+  const presented = header.slice(0, 7).toLowerCase() === 'bearer ' ? header.slice(7).trim() : '';
+  if (tokenOk(presented, cronSecret())) return true;
+  const session = await openBoard();
+  if (!session) return false;
+  const user = await currentUser();
+  const email = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || '';
+  if (user?.publicMetadata?.test === true) return false;
+  return email.toLowerCase() === 'chad@4ormfinance.com';
+}
 
-    const itemDupes = await sql`
-      UPDATE items SET status = 'dropped', updated_at = now()
-      WHERE owner_id = ${ownerId} AND status <> 'dropped' AND id IN (
-        SELECT id FROM (
-          SELECT id, row_number() OVER (PARTITION BY lower(trim(title)) ORDER BY created_at ASC, id ASC) AS rn
-          FROM items WHERE owner_id = ${ownerId} AND status <> 'dropped'
-        ) t WHERE rn > 1
-      )
-      RETURNING id, title
-    `;
-    counts.items = itemDupes.length;
-    await logDupes(sql, ownerId, 'items', itemDupes as Record<string, unknown>[]);
-
-    const noteDupes = await sql`
-      DELETE FROM notes WHERE owner_id = ${ownerId} AND id IN (
-        SELECT id FROM (
-          SELECT id, row_number() OVER (
-            PARTITION BY lower(trim(title)), md5(coalesce(body, ''))
-            ORDER BY created_at ASC, id ASC
-          ) AS rn
-          FROM notes WHERE owner_id = ${ownerId}
-        ) t WHERE rn > 1
-      )
-      RETURNING id, title
-    `;
-    counts.notes = noteDupes.length;
-    await logDupes(sql, ownerId, 'notes', noteDupes as Record<string, unknown>[]);
-
-    const linkDupes = await sql`
-      DELETE FROM links WHERE owner_id = ${ownerId} AND id IN (
-        SELECT id FROM (
-          SELECT id, row_number() OVER (
-            PARTITION BY lower(trim(url))
-            ORDER BY created_at ASC, id ASC
-          ) AS rn
-          FROM links WHERE owner_id = ${ownerId}
-        ) t WHERE rn > 1
-      )
-      RETURNING id, url, title
-    `;
-    counts.links = linkDupes.length;
-    await logDupes(sql, ownerId, 'links', linkDupes as Record<string, unknown>[]);
-
-    const contactDupes = await sql`
-      DELETE FROM contacts WHERE owner_id = ${ownerId} AND id IN (
-        SELECT id FROM (
-          SELECT id, row_number() OVER (
-            PARTITION BY lower(trim(coalesce(nullif(email, ''), id::text)))
-            ORDER BY created_at ASC, id ASC
-          ) AS rn
-          FROM contacts WHERE owner_id = ${ownerId} AND coalesce(email, '') <> ''
-        ) t WHERE rn > 1
-      )
-      RETURNING id, email, name
-    `;
-    counts.contacts = contactDupes.length;
-    await logDupes(sql, ownerId, 'contacts', contactDupes as Record<string, unknown>[]);
-
-    const spaceDupes = await sql`
-      DELETE FROM packages WHERE owner_id = ${ownerId} AND id IN (
-        SELECT id FROM (
-          SELECT id, row_number() OVER (
-            PARTITION BY lower(trim(name))
-            ORDER BY created_at ASC, id ASC
-          ) AS rn
-          FROM packages WHERE owner_id = ${ownerId}
-        ) t WHERE rn > 1
-      )
-      RETURNING id, name
-    `;
-    counts.spaces = spaceDupes.length;
-    await logDupes(sql, ownerId, 'packages', spaceDupes as Record<string, unknown>[]);
-
-    const docDupes = await sql`
-      DELETE FROM documents WHERE owner_id = ${ownerId} AND id IN (
-        SELECT id FROM (
-          SELECT id, row_number() OVER (
-            PARTITION BY coalesce(nullif(drive_file_id, ''), id::text)
-            ORDER BY created_at ASC, id ASC
-          ) AS rn
-          FROM documents WHERE owner_id = ${ownerId} AND coalesce(drive_file_id, '') <> ''
-        ) t WHERE rn > 1
-      )
-      RETURNING id, name, drive_file_id
-    `;
-    counts.documents = docDupes.length;
-    await logDupes(sql, ownerId, 'documents', docDupes as Record<string, unknown>[]);
-
-    let meeting = 0;
-    try {
-      const meetingDupes = await sql`
-        UPDATE meeting_actions SET status = 'handled'
-        WHERE owner_id = ${ownerId} AND status = 'open' AND id IN (
-          SELECT id FROM (
-            SELECT id, row_number() OVER (
-              PARTITION BY lower(trim(text))
-              ORDER BY created_at ASC, id ASC
-            ) AS rn
-            FROM meeting_actions WHERE owner_id = ${ownerId} AND status = 'open'
-          ) t WHERE rn > 1
-        )
-        RETURNING id, text
-      `;
-      meeting = meetingDupes.length;
-      await logDupes(sql, ownerId, 'meeting_actions', meetingDupes as Record<string, unknown>[]);
-    } catch (err) {
-      fail('dedupe_meeting', err);
+function preview(tables: Awaited<ReturnType<typeof listDupeGroups>>['tables']) {
+  const first: Array<{ table: string; key: string; keep: string; keepAt: string | null; remove: number }> = [];
+  for (const [table, groups] of Object.entries(tables)) {
+    for (const g of groups) {
+      if (first.length >= 15) return first;
+      first.push({
+        table,
+        key: g.key.slice(0, 120),
+        keep: g.keep.label.slice(0, 120),
+        keepAt: g.keep.created_at,
+        remove: g.remove.length,
+      });
     }
-    counts.meeting_actions = meeting;
+  }
+  return first;
+}
 
-    const boxDupes = await sql`
-      DELETE FROM email_boxes WHERE owner_id = ${ownerId} AND id IN (
-        SELECT id FROM (
-          SELECT id, row_number() OVER (
-            PARTITION BY lower(trim(name))
-            ORDER BY created_at ASC, id ASC
-          ) AS rn
-          FROM email_boxes WHERE owner_id = ${ownerId}
-        ) t WHERE rn > 1
-      )
-      RETURNING id, name, key
-    `;
-    counts.email_boxes = boxDupes.length;
-    await logDupes(sql, ownerId, 'email_boxes', boxDupes as Record<string, unknown>[]);
-
-    return NextResponse.json({ ok: true, owner: 'session', counts });
+export async function GET(req: Request) {
+  try {
+    if (!(await allowed(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { sql, ownerId } = await chadOwner();
+    if (!sql || !ownerId) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    const listed = await listDupeGroups(sql, ownerId);
+    return NextResponse.json({
+      ok: true,
+      dry: true,
+      owner: 'chad',
+      counts: listed.counts,
+      groups: Object.fromEntries(Object.entries(listed.tables).map(([k, v]) => [k, v.length])),
+      first15: preview(listed.tables),
+      tables: listed.tables,
+    });
   } catch (err) {
-    fail('dedupe', err);
+    fail('dedupe_dry', err);
+    return NextResponse.json({ error: 'Could not list duplicates.' }, { status: 400 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    if (!(await allowed(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { sql, ownerId } = await chadOwner();
+    if (!sql || !ownerId) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    const body = await req.json().catch(() => null);
+    if (body?.dry) {
+      const listed = await listDupeGroups(sql, ownerId);
+      return NextResponse.json({ ok: true, dry: true, owner: 'chad', counts: listed.counts, first15: preview(listed.tables), tables: listed.tables });
+    }
+    const result = await applyDedupe(sql, ownerId);
+    return NextResponse.json({ ok: true, dry: false, owner: 'chad', ...result });
+  } catch (err) {
+    fail('dedupe_apply', err);
     return NextResponse.json({ error: 'Could not sweep duplicates.' }, { status: 400 });
   }
 }

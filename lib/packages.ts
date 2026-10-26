@@ -139,7 +139,7 @@ export async function listPackages(sql: Sql, ownerId: string) {
       rows = (await sql`
         SELECT id, name, kind, status, drive_folder_url, space_type, subject_label, pushed_to_drive_at, description, space_category
         FROM packages
-        WHERE owner_id = ${ownerId}
+        WHERE owner_id = ${ownerId} AND deleted_at IS NULL
         ORDER BY created_at
       `) as Record<string, unknown>[];
     } catch (err) {
@@ -147,7 +147,7 @@ export async function listPackages(sql: Sql, ownerId: string) {
       rows = (await sql`
         SELECT id, name, kind, status, drive_folder_url
         FROM packages
-        WHERE owner_id = ${ownerId}
+        WHERE owner_id = ${ownerId} AND deleted_at IS NULL
         ORDER BY created_at
       `) as Record<string, unknown>[];
     }
@@ -281,6 +281,12 @@ export async function createPackage(
   if (spaceType === 'project' && !subjectLabel) subjectLabel = clean;
   if (!clean) clean = 'Untitled space';
   if (!allowed) return null;
+  const existing = await sql`
+    SELECT id FROM packages
+    WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND lower(trim(name)) = ${clean.toLowerCase()}
+    ORDER BY created_at ASC LIMIT 1
+  `;
+  if (existing[0]?.id) return String(existing[0].id);
   const description = clip(meta.description, 240);
   const spaceCategory = clip(meta.spaceCategory, 80);
   let rows;

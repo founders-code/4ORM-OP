@@ -417,8 +417,10 @@
       } else if (kind === 'contact') {
         var name = act.getAttribute('data-zname');
         var c = contactFor(name);
-        if (c && typeof openContactCard === 'function') openContactCard(c.id);
-        else if (typeof switchView === 'function') switchView('people');
+        if (typeof switchView === 'function') switchView('contacts');
+        setTimeout(function () {
+          if (c && typeof openContactCard === 'function') openContactCard(c.id);
+        }, 80);
       }
     };
   }

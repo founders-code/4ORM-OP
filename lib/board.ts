@@ -217,6 +217,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
       SELECT id, title, area, status, priority, due, owner, source, category, notes, updated_at
       FROM items
       WHERE owner_id = ${ownerId}
+        AND status <> 'dropped'
         AND (snooze_until IS NULL OR snooze_until <= now())
       ORDER BY updated_at DESC
       LIMIT 200
@@ -228,8 +229,8 @@ export async function loadBoard(sql: Sql, ownerId: string) {
   const contacts = await read(reads, 'contacts', async () => {
     const rows = await sql`
       SELECT id, name, company, role, email, phone, area, notes, type, tier, stage, next_action, next_date, last_touch
-      FROM contacts
-      WHERE owner_id = ${ownerId}
+        FROM contacts
+        WHERE owner_id = ${ownerId} AND deleted_at IS NULL
       ORDER BY name
       LIMIT 400
     `;
@@ -266,12 +267,12 @@ export async function loadBoard(sql: Sql, ownerId: string) {
     }) as Row[];
   }, []);
   const categories = await read(reads, 'categories', async () => {
-    const rows = await sql`SELECT id, name, subs, nest FROM link_categories WHERE owner_id = ${ownerId} ORDER BY name`;
+    const rows = await sql`SELECT id, name, subs, nest, position FROM link_categories WHERE owner_id = ${ownerId} ORDER BY position ASC, name`;
     return rows as Row[];
   }, []);
   const links = await read(reads, 'links', async () => {
     const rows = await sql`
-      SELECT id, title, url, category, sub, note, leaf FROM links WHERE owner_id = ${ownerId} ORDER BY created_at DESC LIMIT 200
+      SELECT id, title, url, category, sub, note, leaf FROM links WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 200
     `;
     return rows as Row[];
   }, []);
@@ -307,7 +308,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
   }, []);
   const notes = await read(reads, 'notes', async () => {
     const rows = await sql`
-      SELECT id, cat_id, title, body, color, updated_at FROM notes WHERE owner_id = ${ownerId} ORDER BY updated_at DESC LIMIT 400
+      SELECT id, cat_id, title, body, color, pinned, updated_at FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 400
     `;
     return rows as Row[];
   }, []);
@@ -447,6 +448,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
       title: String(row.title || ''),
       body: String(row.body || ''),
       color: String(row.color || 'yellow'),
+      pin: !!row.pinned,
       updatedAt: row.updated_at ? new Date(String(row.updated_at)).getTime() : null,
     })),
     runwayWeeks: settings[0]?.runway_weeks == null ? null : Number(settings[0].runway_weeks),

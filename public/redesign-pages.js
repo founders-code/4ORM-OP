@@ -43,8 +43,8 @@
     + '.pick-row:first-child{border-top:0}';
   var CSS = {
     room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=5', notes: '/port-css/notes.css?v=2',
-    contacts: '/port-css/pipeline.css', work: '/port-css/spaces.css?v=5', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css',
-    links: '/port-css/links.css?v=2', mail: '/port-css/email.css?v=2', mailPeople: '/port-css/email-people.css?v=1',
+    contacts: '/port-css/pipeline.css', work: '/port-css/spaces.css?v=6', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css',
+    links: '/port-css/links.css?v=2', mail: '/port-css/email.css?v=2', mailPeople: '/port-css/email-people.css?v=2',
     playbook: '/port-css/playbook.css?v=2', calendar: '/port-css/calendar.css?v=3', zoom: '/port-css/zoom.css',
     completed: '/port-css/completed.css'
   };
@@ -893,9 +893,7 @@
     var id = esc(n.id || '');
     var src = esc(n.source || 'sticky');
     var ttl = esc(n.title || '');
-    var pin = n.pin
-      ? '<span class="pin" data-action="note-pin" data-id="' + id + '" data-source="' + src + '" data-on="1"></span><span class="nx x" data-action="note-archive" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '">&times;</span>'
-      : '<span class="nx x" style="margin-left:auto" data-action="note-archive" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '">&times;</span>';
+    var pin = '<span class="pin" data-action="note-pin" data-id="' + id + '" data-source="' + src + '" data-on="' + (n.pin ? '1' : '0') + '" title="Pin"></span><span class="nx x" data-action="note-archive" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '">&times;</span>';
     var title = n.title ? '<h4>' + esc(n.title) + '</h4>' : '';
     var body = n.body ? '<p>' + esc(n.body) + '</p>' : '';
     var checks = (n.checks || []).map(function (c) {
@@ -907,7 +905,7 @@
     });
     if (n.reminder) metaBits.push('<span class="mc rem">&#9200; ' + esc(n.reminder) + '</span>');
     var meta = metaBits.length ? '<div class="meta">' + metaBits.join('') + '</div>' : '';
-    return '<div class="note ' + n.color + '" data-action="note-open" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '" data-body="' + esc(n.body || '') + '" data-type="' + esc(n.typeCls || '') + '" data-color="' + esc(n.color || 'y') + '" data-pin="' + (n.pin ? '1' : '0') + '"><div class="nh"><span class="' + ty + '">' + esc(n.type) + '</span>' + pin + '</div>'
+    return '<div class="note ' + n.color + '" data-action="note-open" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '" data-body="' + esc(n.body || '') + '" data-type="' + esc(n.typeCls || '') + '" data-color="' + esc(n.color || 'y') + '" data-pin="' + (n.pin ? '1' : '0') + '"><div class="nh"><span class="' + ty + '" data-action="notes-filter" data-filter="' + esc(n.typeCls || 'all') + '">' + esc(n.type) + '</span>' + pin + '</div>'
       + title + body + checks + meta
       + '<div class="na"><span class="conv cvt" data-action="note-task" data-id="' + id + '" data-title="' + ttl + '">' + esc(n.convert) + '</span><span class="sp"></span><span class="ic" data-action="note-open" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '" data-body="' + esc(n.body || '') + '" data-type="' + esc(n.typeCls || '') + '" data-color="' + esc(n.color || 'y') + '">Edit</span><span class="ic" data-action="note-menu" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '" data-on="' + (n.pin ? '1' : '0') + '">&#8943;</span></div></div>';
   }
