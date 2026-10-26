@@ -1010,7 +1010,7 @@
     authFetch('/api/notes', { credentials: 'include', quiet: true }).then(function (r) { return r.json(); }).then(function (d) {
       var rows = (d && d.notes) || [];
       console.info('[live-map] /api/notes', { count: rows.length, keys: rows[0] ? Object.keys(rows[0]) : [] });
-      if (rows.length) STATE.notes = rows;
+      STATE.notes = rows;
       if (STATE.desk === 'notes' && typeof renderNotes === 'function') renderNotes();
     }).catch(function () {});
   }

@@ -65,6 +65,14 @@ export async function POST(req: Request) {
     const nextAction = text(body?.nextAction, 180);
     const nextDate = when(body?.nextDate);
     if (nextDate === undefined) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    if (email) {
+      const dup = await session.sql`
+        SELECT id, name, company, role, email, phone, area, notes, type, tier, stage, next_action, next_date, last_touch, category
+        FROM contacts WHERE owner_id = ${session.userId} AND lower(trim(email)) = ${email.toLowerCase()}
+        ORDER BY created_at ASC LIMIT 1
+      `;
+      if (dup.length) return NextResponse.json(shape(dup[0] as Record<string, unknown>));
+    }
     const rows = await session.sql`
       INSERT INTO contacts (owner_id, name, company, role, email, phone, area, notes, source, type, tier, stage, next_action, next_date, category)
       VALUES (${session.userId}, ${name}, ${company}, ${role}, ${email}, ${phone}, ${area}, ${notes}, 'manual', ${type}, ${tier}, ${stage}, ${nextAction}, ${nextDate}, ${category})

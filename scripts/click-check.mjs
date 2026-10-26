@@ -245,53 +245,67 @@ async function productionStep1(browser) {
   if (!pushLive(rows, 'War Room', 'Signals rows', { dom: signals.open, net: true, persist: signals.rows >= 0 && signals.open, extra: 'rows=' + signals.rows })) failed = true;
 
   await readyView('/notes', '#notesDesk');
-  const noteTitle = 'TEST note ' + stamp;
-  const noteBody = 'TEST autosave ' + stamp;
-  const noteCreate = await liveApi(live, '/api/notes', 'POST', { title: noteTitle, body: 'draft', color: 'yellow' });
-  const noteId = noteCreate.json && noteCreate.json.id;
-  await live.reload({ waitUntil: 'domcontentloaded' });
-  await live.waitForSelector('#notesDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
-  await live.waitForFunction((id) => {
-    const root = document.getElementById('notesDesk') && document.getElementById('notesDesk').shadowRoot;
-    return !!(root && root.querySelector('[data-action="note-open"][data-id="' + id + '"]'));
-  }, noteId, { timeout: 15000 });
-  const noteUi = await live.evaluate(async ({ id, body }) => {
-    const root = document.getElementById('notesDesk').shadowRoot;
-    const card = root.querySelector('[data-action="note-open"][data-id="' + id + '"]') || root.querySelector('[data-action="note-open"]');
-    if (card) card.click();
-    const ob = root.getElementById('ob');
-    if (ob) {
-      ob.innerText = body;
-      ob.dispatchEvent(new InputEvent('input', { bubbles: true, composed: true, inputType: 'insertText', data: body }));
+  for (let noteRun = 1; noteRun <= 5; noteRun++) {
+    const noteTitle = 'TEST note ' + stamp + ' r' + noteRun;
+    const noteBody = 'TEST autosave ' + stamp + ' r' + noteRun;
+    const noteCreate = await liveApi(live, '/api/notes', 'POST', { title: noteTitle, body: 'draft', color: 'yellow' });
+    const noteId = noteCreate.json && noteCreate.json.id;
+    await live.reload({ waitUntil: 'domcontentloaded' });
+    await live.waitForSelector('#notesDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+    await live.waitForFunction((id) => {
+      const root = document.getElementById('notesDesk') && document.getElementById('notesDesk').shadowRoot;
+      return !!(root && root.querySelector('[data-action="note-open"][data-id="' + id + '"]'));
+    }, noteId, { timeout: 15000 });
+    const patchWait = live.waitForResponse((res) => {
+      const url = res.url();
+      if (res.request().method() !== 'PATCH' || res.status() < 200 || res.status() >= 300) return false;
+      if (!/\/api\/notes\/[0-9a-f-]{36}/i.test(url) || /sticky/i.test(url)) return false;
+      try {
+        const body = res.request().postDataJSON() || {};
+        return String(body.body || '').indexOf(noteBody) >= 0;
+      } catch (e) {
+        return false;
+      }
+    }, { timeout: 12000 }).catch(() => null);
+    const noteUi = await live.evaluate(async ({ id, body }) => {
+      const root = document.getElementById('notesDesk').shadowRoot;
+      const card = root.querySelector('[data-action="note-open"][data-id="' + id + '"]') || root.querySelector('[data-action="note-open"]');
+      if (card) card.click();
+      const ob = root.getElementById('ob');
+      const ot = root.getElementById('ot');
+      if (ob) {
+        ob.focus();
+        ob.innerText = body;
+        ob.dispatchEvent(new InputEvent('input', { bubbles: true, composed: true, inputType: 'insertText', data: body }));
+      }
+      await new Promise(function (r) { setTimeout(r, 1000); });
+      const sendBody = ob ? String(ob.innerText || '') : '';
+      const close = root.querySelector('[data-action="note-close"]');
+      if (close) close.click();
+      return { opened: !!ob, id: id, sendBody: sendBody, title: ot ? String(ot.innerText || '') : '' };
+    }, { id: noteId, body: noteBody });
+    const patchRes = await patchWait;
+    let patchInfo = { url: '', method: '', status: 0, request: null, response: null };
+    if (patchRes) {
+      patchInfo.url = patchRes.url();
+      patchInfo.method = patchRes.request().method();
+      patchInfo.status = patchRes.status();
+      try { patchInfo.request = patchRes.request().postDataJSON(); } catch (e) { patchInfo.request = patchRes.request().postData(); }
+      try { patchInfo.response = await patchRes.json(); } catch (e) { patchInfo.response = null; }
     }
-    await new Promise(function (r) { setTimeout(r, 600); });
-    const close = root.querySelector('[data-action="note-close"]');
-    if (close) close.click();
-    return { opened: !!ob, id: id };
-  }, { id: noteId, body: noteBody });
-  let noteNet = false;
-  try {
-    await live.waitForResponse((res) => /\/api\/notes/.test(res.url()) && res.request().method() === 'PATCH' && res.status() >= 200 && res.status() < 300, { timeout: 8000 });
-    noteNet = true;
-  } catch (e) {
-    noteNet = nets.some((n) => /\/api\/notes/.test(n.url) && n.method === 'PATCH' && n.status >= 200 && n.status < 300);
+    const noteNet = !!(patchRes && patchInfo.status >= 200 && patchInfo.status < 300 && patchInfo.response && patchInfo.response.rowsAffected > 0 && patchInfo.response.store === 'board' && !/sticky/i.test(patchInfo.url));
+    console.log('NOTES AUTOSAVE run ' + noteRun + ' request/response', JSON.stringify({
+      sendTimeShadow: noteUi.sendBody,
+      patch: patchInfo
+    }));
+    await live.reload({ waitUntil: 'domcontentloaded' });
+    await live.waitForSelector('#notesDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+    const fresh = await liveApi(live, '/api/notes', 'GET');
+    const hit = ((fresh.json && fresh.json.notes) || []).filter((n) => String(n.id) === String(noteId))[0];
+    const notePersist = !!(hit && String(hit.body || '').indexOf(noteBody) >= 0);
+    const extra = 'run=' + noteRun + ' url=' + (patchInfo.url || 'none') + ' rows=' + ((patchInfo.response && patchInfo.response.rowsAffected) || 0) + ' store=' + ((patchInfo.response && patchInfo.response.store) || '');
+    if (!pushLive(rows, 'Notes', 'Notes autosave ' + noteRun + '/5', { dom: noteUi.opened && !!noteId && String(noteUi.sendBody || '').indexOf(noteBody) >= 0, net: noteCreate.status < 300 && noteNet, persist: notePersist, extra: extra })) failed = true;
   }
-  await live.reload({ waitUntil: 'domcontentloaded' });
-  await live.waitForSelector('#notesDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
-  await live.waitForFunction((id) => {
-    const notes = (window.STATE && window.STATE.notes) || [];
-    return notes.some((n) => String(n.id) === String(id));
-  }, noteId, { timeout: 15000 }).catch(() => {});
-  const notePersist = await live.evaluate(({ id, body }) => {
-    const notes = (window.STATE && window.STATE.notes) || [];
-    const hit = notes.filter((n) => String(n.id) === String(id))[0];
-    const root = document.getElementById('notesDesk').shadowRoot;
-    const card = root.querySelector('[data-action="note-open"][data-id="' + id + '"]');
-    if (card) card.click();
-    const ob = root.getElementById('ob');
-    return !!(hit && String(hit.body || '').indexOf(body) >= 0) || !!(ob && String(ob.innerText || '').indexOf(body) >= 0);
-  }, { id: noteId, body: noteBody });
-  if (!pushLive(rows, 'Notes', 'Notes autosave', { dom: noteUi.opened && !!noteId, net: noteCreate.status < 300 && (noteNet || notePersist), persist: notePersist })) failed = true;
 
   await readyView('/links', '#linksDesk');
   const linkTitle = 'TEST link ' + stamp;
@@ -365,6 +379,98 @@ async function productionStep1(browser) {
   }, delTitle);
   if (!pushLive(rows, 'War Room', 'Today × persist', { dom: xClick, net: true, persist: xGone })) failed = true;
 
+  const laterTitle = 'TEST later ' + stamp;
+  const laterCreate = await liveApi(live, '/api/items', 'POST', { title: laterTitle, area: 'other', column: 'later' });
+  const laterId = laterCreate.json && laterCreate.json.id;
+  await readyWar();
+  await live.waitForFunction((id) => {
+    const root = document.getElementById('warDesk') && document.getElementById('warDesk').shadowRoot;
+    return !!(root && root.querySelector('.task[data-id="' + id + '"]'));
+  }, laterId, { timeout: 15000 }).catch(() => {});
+  const laterDrag = { dragged: false };
+  try {
+    const taskLoc = live.locator('#warDesk').locator('.task[data-id="' + laterId + '"]');
+    const weekLoc = live.locator('#warDesk').locator('[data-action="col-drop"][data-bucket="week"]');
+    await taskLoc.dragTo(weekLoc, { timeout: 8000 });
+    laterDrag.dragged = true;
+  } catch (e) {
+    laterDrag.dragged = await live.evaluate((id) => {
+      const root = document.getElementById('warDesk').shadowRoot;
+      const task = root.querySelector('.task[data-id="' + id + '"]');
+      const week = root.querySelector('[data-action="col-drop"][data-bucket="week"]');
+      if (!task || !week) return false;
+      const dt = new DataTransfer();
+      dt.setData('text/plain', JSON.stringify({ id: id, kind: 'task' }));
+      task.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
+      week.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }));
+      week.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+      return true;
+    }, laterId);
+  }
+  await live.waitForTimeout(700);
+  await live.reload({ waitUntil: 'domcontentloaded' });
+  await live.waitForSelector('#warDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  const laterPersist = await live.evaluate((id) => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    const inWeek = !!(root.querySelector('[data-action="col-drop"][data-bucket="week"] .task[data-id="' + id + '"]'));
+    const it = (((window.STATE && window.STATE.items) || []).filter((n) => String(n.id) === String(id))[0]) || {};
+    return inWeek || it.column === 'week' || (it.due && (it.due - Date.now()) > 86400000 && (it.due - Date.now()) < 8 * 86400000);
+  }, laterId);
+  if (!pushLive(rows, 'War Room', 'Later → This week drag', { dom: laterDrag.dragged && !!laterId, net: laterCreate.status < 300, persist: laterPersist })) failed = true;
+
+  const hoverTitle = 'TEST hover ' + stamp;
+  const hoverCreate = await liveApi(live, '/api/items', 'POST', { title: hoverTitle, area: 'other', column: 'today' });
+  const hoverId = hoverCreate.json && hoverCreate.json.id;
+  await readyWar();
+  await live.waitForFunction((id) => {
+    const root = document.getElementById('warDesk') && document.getElementById('warDesk').shadowRoot;
+    return !!(root && root.querySelector('.task[data-id="' + id + '"] [data-action="task-move"][data-bucket="week"]'));
+  }, hoverId, { timeout: 15000 }).catch(() => {});
+  const hoverClick = await live.evaluate((id) => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    const btn = root.querySelector('.task[data-id="' + id + '"] [data-action="task-move"][data-bucket="week"]');
+    if (btn) btn.click();
+    return !!btn;
+  }, hoverId);
+  await live.waitForTimeout(700);
+  await live.reload({ waitUntil: 'domcontentloaded' });
+  await live.waitForSelector('#warDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  const hoverPersist = await live.evaluate((id) => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    return !!(root.querySelector('[data-action="col-drop"][data-bucket="week"] .task[data-id="' + id + '"]'));
+  }, hoverId);
+  if (!pushLive(rows, 'War Room', 'Today/Week/Later buttons', { dom: hoverClick && !!hoverId, net: hoverCreate.status < 300, persist: hoverPersist })) failed = true;
+
+  const bulkA = 'TEST bulk A ' + stamp;
+  const bulkB = 'TEST bulk B ' + stamp;
+  const bulk1 = await liveApi(live, '/api/items', 'POST', { title: bulkA, area: 'other', column: 'today' });
+  const bulk2 = await liveApi(live, '/api/items', 'POST', { title: bulkB, area: 'other', column: 'today' });
+  const bulkIds = [bulk1.json && bulk1.json.id, bulk2.json && bulk2.json.id].filter(Boolean);
+  await readyWar();
+  const bulkDom = await live.evaluate(async (ids) => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    const sel = root.querySelector('[data-action="exec-select"]');
+    if (sel) sel.click();
+    await new Promise(function (r) { setTimeout(r, 250); });
+    const root2 = document.getElementById('warDesk').shadowRoot;
+    ids.forEach((id) => {
+      const box = root2.querySelector('.task[data-id="' + id + '"] [data-action="exec-pick"]');
+      if (box) box.click();
+    });
+    await new Promise(function (r) { setTimeout(r, 250); });
+    const del = document.getElementById('warDesk').shadowRoot.querySelector('[data-action="exec-bulk-drop"]');
+    if (del) del.click();
+    return { select: !!sel, del: !!del };
+  }, bulkIds);
+  await live.waitForTimeout(800);
+  await live.reload({ waitUntil: 'domcontentloaded' });
+  await live.waitForSelector('#warDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  const bulkGone = await live.evaluate((ids) => {
+    const items = ((window.STATE && window.STATE.items) || []).filter((it) => it.status !== 'dropped');
+    return ids.every((id) => !items.some((it) => String(it.id) === String(id)));
+  }, bulkIds);
+  if (!pushLive(rows, 'War Room', 'Bulk delete persist', { dom: bulkDom.select && bulkDom.del && bulkIds.length === 2, net: true, persist: bulkGone })) failed = true;
+
   const pb = await liveApi(live, '/api/playbook', 'GET');
   await readyView('/playbook', '#playDesk');
   await live.waitForFunction(() => {
@@ -396,6 +502,10 @@ async function productionStep1(browser) {
     return { all, toggled: before === 'Expand all' && after === 'Collapse all' };
   });
   if (!pushLive(rows, 'Links', 'All links + toggle', { dom: linksAll.all && linksAll.toggled, net: true, persist: true })) failed = true;
+
+  const dupSweep = await liveApi(live, '/api/ops/dedupe', 'POST', {});
+  console.log('DUPLICATE SWEEP counts', JSON.stringify(dupSweep.json && dupSweep.json.counts));
+  if (!pushLive(rows, 'Site-wide', 'Duplicate sweep', { dom: dupSweep.status < 300, net: dupSweep.status < 300, persist: !!(dupSweep.json && dupSweep.json.ok), extra: JSON.stringify((dupSweep.json && dupSweep.json.counts) || {}) })) failed = true;
 
   const cleaned = await cleanupTestRecords(live);
   await live.reload({ waitUntil: 'domcontentloaded' });

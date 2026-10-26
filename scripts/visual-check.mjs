@@ -15,6 +15,7 @@ const PAGES = [
   { page: '03-notes', design: 'redesign/03-notes.html', live: 'control-room.html?view=notes&fixture=mockup', ready: '#notesDesk[data-port-ready]' },
   { page: '02b-war-room-steps', design: 'redesign/02b-war-room-steps.html', live: 'control-room.html?view=war&fixture=mockup&steps=1', ready: '#warDesk[data-port-ready]', wait: 400 },
   { page: '02c-war-room-signals', design: 'redesign/02c-war-room-signals.html', live: 'control-room.html?view=war&fixture=mockup&signals=1', ready: '#warDesk[data-port-ready]', wait: 400 },
+  { page: '02d-war-room-select', design: 'redesign/02d-war-room-select.html', live: 'control-room.html?view=war&fixture=mockup&select=1', ready: '#warDesk[data-port-ready]', wait: 400 },
   { page: '03b-notes-open', design: 'redesign/03b-notes-open.html', live: 'control-room.html?view=notes&fixture=mockup&open=1', ready: '#notesDesk[data-port-ready]', wait: 400 },
   { page: '04-pipeline', design: 'redesign/04-pipeline.html', live: 'control-room.html?view=contacts&fixture=mockup', ready: '#pipeDesk[data-port-ready]' },
   { page: '05-spaces', design: 'redesign/05-spaces.html', live: 'control-room.html?view=work&fixture=mockup', ready: '#spacesDesk[data-port-ready]' },

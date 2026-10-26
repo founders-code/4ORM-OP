@@ -123,6 +123,15 @@ export async function POST(req: Request) {
     } else {
       catId = await inbox(session.sql, session.userId);
     }
+    const dup = await session.sql`
+      SELECT id, cat_id, title, body, color, updated_at FROM notes
+      WHERE owner_id = ${session.userId}
+        AND lower(trim(title)) = ${title.toLowerCase()}
+        AND coalesce(body, '') = ${noteBody}
+      ORDER BY created_at ASC
+      LIMIT 1
+    `;
+    if (dup.length) return NextResponse.json(noteShape(dup[0] as Record<string, unknown>));
     const made = await session.sql`
       INSERT INTO notes (owner_id, cat_id, title, body, color)
       VALUES (${session.userId}, ${catId}, ${title}, ${noteBody}, ${color})

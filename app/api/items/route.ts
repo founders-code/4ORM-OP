@@ -58,6 +58,15 @@ export async function POST(req: Request) {
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     const write = readWrite(body);
     const category = String(body?.category || '').trim().slice(0, 80);
+    const dup = await session.sql`
+      SELECT id, title, area, status, priority, due, owner, source, category FROM items
+      WHERE owner_id = ${session.userId}
+        AND status <> 'dropped'
+        AND lower(trim(title)) = ${write.title.toLowerCase()}
+      ORDER BY created_at ASC
+      LIMIT 1
+    `;
+    if (dup.length) return NextResponse.json(shapeItem(dup[0] as Record<string, unknown>));
     const rows = await session.sql`
       INSERT INTO items (owner_id, title, area, status, priority, due, source, category)
       VALUES (${session.userId}, ${write.title}, ${write.area}, ${write.status}, ${write.priority}, ${write.dueIso}, 'manual', ${category})

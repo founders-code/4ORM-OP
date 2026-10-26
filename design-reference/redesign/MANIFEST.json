@@ -21,6 +21,13 @@
   "sha256": "1897c48d21781293"
  },
  {
+  "file": "redesign/02d-war-room-select.html",
+  "page": "War Room - Select mode + quick delete",
+  "route": "/war-room (Select)",
+  "bytes": 65322,
+  "sha256": "bde8a50857d8ef47"
+ },
+ {
   "file": "redesign/03-notes.html",
   "page": "Notes",
   "route": "/notes",
@@ -33,6 +40,13 @@
   "route": "/notes (note clicked)",
   "bytes": 45352,
   "sha256": "c9842d7bf2b56ac8"
+ },
+ {
+  "file": "redesign/03c-notes-categories.html",
+  "page": "Notes - categories + Pin",
+  "route": "/notes",
+  "bytes": 45914,
+  "sha256": "98aa3eb0893c65fb"
  },
  {
   "file": "redesign/04-pipeline.html",
@@ -52,8 +66,8 @@
   "file": "redesign/05c-space-panel.html",
   "page": "Spaces - Space opened as a slide-over panel (actions bar at the bottom)",
   "route": "/spaces (card clicked)",
-  "bytes": 65239,
-  "sha256": "19ba24c4c401a57f"
+  "bytes": 73549,
+  "sha256": "ce9027050c366904"
  },
  {
   "file": "redesign/06-documents.html",
@@ -73,8 +87,8 @@
   "file": "redesign/07-links.html",
   "page": "Links",
   "route": "/links",
-  "bytes": 39108,
-  "sha256": "719431c32e7c2c60"
+  "bytes": 43058,
+  "sha256": "72ce584b776afc1d"
  },
  {
   "file": "redesign/08-email.html",
@@ -108,8 +122,15 @@
   "file": "redesign/08e-email-people-grid.html",
   "page": "Email - People grid (boxes, tags, closed-box drawer)",
   "route": "/email?view=people",
-  "bytes": 64498,
-  "sha256": "209cab2f46243de0"
+  "bytes": 70800,
+  "sha256": "75af188f5f54c591"
+ },
+ {
+  "file": "redesign/08f-email-person-open.html",
+  "page": "Email - person pop-up (full emails, files, links)",
+  "route": "/email?view=people (box clicked)",
+  "bytes": 70869,
+  "sha256": "0e90727c2c8d1a89"
  },
  {
   "file": "redesign/09-playbook.html",

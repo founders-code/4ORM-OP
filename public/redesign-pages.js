@@ -42,7 +42,7 @@
     + '.pick-row{display:flex;gap:10px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);font-size:13.5px}'
     + '.pick-row:first-child{border-top:0}';
   var CSS = {
-    room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=4', notes: '/port-css/notes.css?v=2',
+    room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=5', notes: '/port-css/notes.css?v=2',
     contacts: '/port-css/pipeline.css', work: '/port-css/spaces.css?v=5', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css',
     links: '/port-css/links.css?v=2', mail: '/port-css/email.css?v=2', mailPeople: '/port-css/email-people.css?v=1',
     playbook: '/port-css/playbook.css?v=2', calendar: '/port-css/calendar.css?v=3', zoom: '/port-css/zoom.css',
@@ -276,6 +276,9 @@
     return n;
   }
   function itemBucket(it) {
+    var col = String((it && (it.column || it.bucket)) || '').toLowerCase();
+    if (col === 'today' || col === 'week' || col === 'later') return col;
+    if (col === 'overdue') return 'overdue';
     if (typeof bucket === 'function') return bucket(it);
     var due = itemDue(it);
     if (due == null) return 'later';
@@ -751,22 +754,21 @@
     markReady('opsDash');
   }
 
-  function execSelecting() { return !!(window.STATE && window.STATE.execSelect); }
+  function execSelecting() { return !!(window.STATE && window.STATE.execSelect) || qFlag('select'); }
   function execBar() {
-    if (!execSelecting()) return '';
     var n = Object.keys((window.STATE && window.STATE.execPicked) || {}).length;
-    return '<div class="exec-bar"><button data-action="exec-bulk-drop">Delete ' + n + '</button><button data-action="exec-bulk-week">Move to Week</button><button data-action="exec-bulk-later">Move to Later</button><button data-action="exec-cancel">Cancel</button></div>';
+    return '<div class="selbar"><b data-role="selN">' + n + ' selected</b><button class="all" data-action="exec-select-all">Select all</button><button class="del" data-action="exec-bulk-drop">' + (n ? ('Delete ' + n) : 'Delete') + '</button><button data-action="exec-bulk-week">Move to Week</button><button data-action="exec-bulk-later">Move to Later</button><button data-action="exec-cancel">Cancel</button></div>';
   }
   function warTask(it, dests, done) {
     var id = esc(it.id || '');
     var hv = done ? '' : '<div class="hv">' + dests.map(function (d) {
       return '<button data-action="task-move" data-id="' + id + '" data-bucket="' + d[0] + '">' + d[1] + '</button>';
     }).join('') + '</div>';
-    var selecting = execSelecting() && !done && !fixtureOn();
-    var picked = selecting && window.STATE.execPicked && window.STATE.execPicked[it.id];
-    var pick = selecting ? '<input class="pick" type="checkbox" data-action="exec-pick" data-id="' + id + '"' + (picked ? ' checked' : '') + '>' : '';
-    var x = (done || fixtureOn()) ? '' : '<button class="x" data-action="task-drop" data-id="' + id + '" title="Remove">&times;</button>';
-    return '<div class="task' + (done ? ' d' : '') + '" draggable="true" data-action="task-drag" data-id="' + id + '">' + pick + '<span class="cb' + (done ? ' on' : '') + '" data-action="task-done" data-id="' + id + '"></span><div><div class="tt">' + esc(it.title) + '</div><div class="tg">' + esc(it.tag || '') + '</div></div>' + hv + x + '</div>';
+    var selecting = execSelecting() && !done;
+    var picked = selecting && window.STATE && window.STATE.execPicked && window.STATE.execPicked[it.id];
+    var sb = done ? '' : '<span class="sb" title="Select" data-action="exec-pick" data-id="' + id + '"></span>';
+    var x = done ? '' : '<span class="x2" data-action="task-drop" data-id="' + id + '" title="Delete">&times;</span>';
+    return '<div class="task' + (done ? ' d' : '') + (picked ? ' picked' : '') + '" draggable="true" data-action="task-drag" data-id="' + id + '">' + sb + '<span class="cb' + (done ? ' on' : '') + '" data-action="task-done" data-id="' + id + '"></span><div><div class="tt">' + esc(it.title) + '</div><div class="tg">' + esc(it.tag || '') + '</div></div>' + hv + x + '</div>';
   }
   function execCol(label, col, bucket, dests, done) {
     var tasks = (col && col.tasks) || [];
@@ -775,8 +777,7 @@
       : '<div class="empty">Nothing set for this ' + (label === 'This week' ? 'week' : 'column') + '.<br>Drag a task here or press +.</div>';
     var more = col && col.more ? '<div class="more2">+ ' + col.more + ' more</div>' : '';
     var plus = done ? '' : '<button class="plus" data-action="exec-add" data-bucket="' + bucket + '">+</button>';
-    var sel = (done || fixtureOn()) ? '' : '<span class="sel" data-action="exec-select">' + (execSelecting() ? 'Selecting' : 'Select') + '</span>';
-    return '<div class="col' + (done ? ' done' : '') + '" data-action="col-drop" data-bucket="' + bucket + '"><div class="colh"><b>' + label + '</b><span class="c">' + ((col && col.count) || 0) + '</span>' + sel + plus + '</div>' + (done ? '' : execBar()) + body + more + '</div>';
+    return '<div class="col' + (done ? ' done' : '') + '" data-action="col-drop" data-bucket="' + bucket + '"><div class="colh"><b>' + label + '</b><span class="c">' + ((col && col.count) || 0) + '</span>' + plus + '</div>' + body + more + '</div>';
   }
   function signalsHtml(data, open) {
     var sig = data.signals || {};
@@ -807,6 +808,16 @@
     var next = data.nextMeet || {};
     var sigOpen = qFlag('signals') || !!(window.STATE && window.STATE.signalsOpen);
     var today = data.today || { tasks: [], count: 0 };
+    if (qFlag('select')) {
+      window.STATE = window.STATE || {};
+      window.STATE.execSelect = true;
+      if (!window.STATE.execPicked || !Object.keys(window.STATE.execPicked).length) {
+        window.STATE.execPicked = {};
+        (today.tasks || []).slice(0, 3).forEach(function (t) {
+          if (t && t.id) window.STATE.execPicked[t.id] = true;
+        });
+      }
+    }
     var todayBody = (today.tasks || []).length
       ? today.tasks.map(function (it) { return warTask(it, [['week', 'Week'], ['later', 'Later']]); }).join('')
       : '<div class="empty">Nothing on Today.<br>Capture above or press + Add.</div>';
@@ -845,9 +856,9 @@
         }
         return '<div class="mv2' + (m.one ? ' one' : '') + '"><span class="rk">' + (i + 1) + '</span><div><div class="mt">' + esc(m.title) + ' <span class="zn ' + m.zone + '">' + esc(m.zoneLabel) + '</span>' + (m.one ? '<span class="yo">Your one move</span>' : '') + '</div><div class="ms2">' + esc(m.why) + '</div><div class="src">' + esc(m.src) + '</div></div><div class="ma"><button class="do" data-action="move-do" data-id="' + esc(mid) + '">Do</button><button data-action="move-steps" data-id="' + esc(mid) + '"' + (wantOpen ? ' class="on-steps" style="background:#101a33;color:#fff"' : '') + '>Steps</button><button data-action="move-plan" data-id="' + esc(mid) + '" data-title="' + esc(m.title) + '">Plan</button><button class="x" data-action="move-dismiss" data-id="' + esc(mid) + '"' + (m.one ? ' title="Dismiss - the next move takes its place"' : '') + '>&times;</button></div>' + stp + '</div>';
       }).join('') + '</div></section>'
-      + '<div class="rstack"><section class="card exec today">'
-      + '<div class="ch"><h3>Today</h3><span class="s">' + esc(today.count || (today.tasks || []).length) + ' on the desk &middot; drag to reorder</span>' + (fixtureOn() ? '' : '<span class="sel" data-action="exec-select">' + (execSelecting() ? 'Selecting' : 'Select') + '</span>') + '<span class="lnk" style="margin-left:auto" data-action="exec-add" data-bucket="today">+ Add</span></div>'
-      + (fixtureOn() ? '' : execBar())
+      + '<div class="rstack"><section class="card exec today' + (execSelecting() ? ' sel' : '') + '">'
+      + '<div class="ch"><h3>Today</h3><span class="s">' + esc(today.count || (today.tasks || []).length) + ' on the desk &middot; drag to reorder</span><span class="selbtn" data-action="exec-select">' + (execSelecting() ? 'Done' : 'Select') + '</span><span class="lnk" style="margin-left:auto" data-action="exec-add" data-bucket="today">+ Add</span></div>'
+      + execBar()
       + '<div class="tl" data-action="col-drop" data-bucket="today">' + todayBody + '</div>'
       + '<div class="foot"><span class="lnk" data-action="owed-review">' + esc(data.meetingActionTotal != null ? data.meetingActionTotal : 8) + ' owed from meetings &middot; review</span><span class="lnk" style="margin-left:auto" data-action="reach-pipe">Reach out &middot; ' + esc(data.reachToday != null ? data.reachToday : 4) + ' today &rsaquo;</span></div>'
       + '</section></div></div>'
@@ -904,6 +915,12 @@
   function paintNotesLive() {
     var wrap = wrapOf('notesDesk');
     if (!wrap) return;
+    var openCard = wrap.getElementById ? wrap.getElementById('ovNote') : wrap.querySelector('#ovNote');
+    if (openCard && !openCard.hasAttribute('hidden')) {
+      finishPaint(wrap);
+      markReady('notesDesk');
+      return;
+    }
     var data = notesData();
     var c = data.counts || {};
     wrap.innerHTML =

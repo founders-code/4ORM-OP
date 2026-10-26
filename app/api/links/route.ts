@@ -176,6 +176,15 @@ export async function POST(req: Request) {
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
       return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     }
+    const existing = await sql`
+      SELECT id FROM links
+      WHERE owner_id = ${ownerId} AND lower(trim(url)) = ${parsed.toString().toLowerCase()}
+      ORDER BY created_at ASC
+      LIMIT 1
+    `;
+    if (existing.length) {
+      return NextResponse.json({ id: existing[0]?.id || '', title, url: parsed.toString(), cat: category, sub, leaf });
+    }
     const inserted = await sql`
       INSERT INTO links (owner_id, title, url, category, sub, leaf)
       VALUES (${ownerId}, ${title}, ${parsed.toString()}, ${category}, ${sub}, ${leaf})

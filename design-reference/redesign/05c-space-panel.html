@@ -215,6 +215,25 @@ button{font:inherit;cursor:pointer}
 .main.withpanel .bar .r{margin-left:0;flex-wrap:wrap}
 .main.withpanel .stats{flex-wrap:wrap}.main.withpanel .stats .sx{flex:1 1 33%}
 .main.withpanel .sp .ft{flex-wrap:wrap;gap:6px}
+
+.spanel .who a.xl{color:#fff;text-decoration:underline;text-decoration-color:rgba(255,255,255,.4);text-underline-offset:3px}
+.spanel .facts2{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center}
+.spanel .facts2 a{font-size:12px;font-weight:750;color:#dbe4fb;background:rgba(255,255,255,.12);border-radius:999px;padding:4px 10px;text-decoration:none}
+.spanel .facts2 a:hover{background:rgba(255,255,255,.22)}
+.spanel .facts2 .src{font-size:11.5px;color:#9fb0d0;margin-left:4px}.spanel .facts2 .src u{color:#9db9ff;cursor:pointer;text-decoration:none;font-weight:750}
+.spanel .drop.over{border-color:#2e6bf2;background:#eaf1fe;color:#2e6bf2}
+.lpick{position:fixed;z-index:80;width:340px;background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(3,10,30,.45);border:1px solid #e8ecf3;padding:10px;display:none;color:#101a33;font-family:Inter,-apple-system,system-ui,sans-serif}
+.lpick.on{display:block}.lpick input{width:100%;height:34px;border:1px solid #e8ecf3;border-radius:9px;padding:0 10px;font:inherit;font-size:13px;margin-bottom:6px;outline:none}
+.lpick .lo{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:9px;cursor:pointer;font-size:13px}.lpick .lo:hover{background:#f5f7fb}
+.lpick .lo span{width:26px;height:26px;border-radius:7px;background:#101a33;color:#fff;display:grid;place-items:center;font-weight:850;font-size:12px;flex:none}
+.lpick .lo small{display:block;color:#7a86a0;font-size:11.5px}.lpick .lc{font-size:11px;font-weight:800;color:#7a86a0;padding:6px 8px 2px}
+.cmp{position:fixed;inset:0;z-index:85;background:rgba(5,10,28,.55);display:none;align-items:center;justify-content:center}.cmp.on{display:flex}
+.cmp .w{width:760px;max-height:88vh;background:#fff;border-radius:18px;overflow:auto;color:#101a33;font-family:Inter,-apple-system,system-ui,sans-serif;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.cmp .h{display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid #e8ecf3}.cmp .h b{font-size:16px}.cmp .h span{margin-left:auto;cursor:pointer;font-size:20px;color:#7a86a0}
+.cmp .r{display:grid;grid-template-columns:70px 1fr;padding:9px 18px;border-bottom:1px solid #e8ecf3;font-size:13.5px}.cmp .r label{color:#7a86a0;font-weight:650}
+.cmp .bd{padding:16px 18px;font-size:14.5px;line-height:1.7;min-height:160px;outline:none}
+.cmp .at{display:flex;gap:10px;padding:0 18px 14px;flex-wrap:wrap}
+.cmp .f{display:flex;gap:8px;padding:12px 18px;border-top:1px solid #e8ecf3;background:#f5f7fb}.cmp .f button{height:36px;border-radius:10px;border:1px solid #e8ecf3;background:#fff;font-weight:750;padding:0 14px;cursor:pointer}.cmp .f .pri{margin-left:auto;background:#2e6bf2;color:#fff;border-color:#2e6bf2}
 </style></head><body>
 
 <header class="top">
@@ -265,7 +284,7 @@ document.addEventListener('click',()=>m.style.display='none');
     <div style="position:relative;z-index:1;min-width:0">
       <div class="tags"><span class="vc">Venture Capital</span><span>Angel &middot; insurtech</span><span>Pipeline: Storage</span><span>Never contacted</span></div>
       <h1>Neil Mitchell</h1>
-      <div class="who">Marsh Canada MD &middot; advises early-stage insurtech founders &middot; backed YouSet and QuickFacts</div>
+      <div class="who"><a class="xl" href="#" target="_blank">Marsh Canada</a> MD &middot; advises early-stage insurtech founders &middot; backed <a class="xl" href="#" target="_blank">YouSet</a> and <a class="xl" href="#" target="_blank">QuickFacts</a></div><div class="facts2"><a href="#" target="_blank">LinkedIn &#8599;</a><a href="#" target="_blank">marsh.com &#8599;</a><a href="#" target="_blank">QuickFacts &#8599;</a><a href="#" target="_blank">YouSet &#8599;</a><span class="src">Source: VC research list, Oct 18 &middot; <u>+ Add a link or article</u></span></div>
           </div>
     <div class="ready">
       <div class="rring"><svg viewBox="0 0 96 96" width="96" height="96"><circle cx="48" cy="48" r="40" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9"/><circle id="rg" cx="48" cy="48" r="40" fill="none" stroke="#2fe08b" stroke-width="9" stroke-linecap="round" stroke-dasharray="100.5 251.3" transform="rotate(-90 48 48)"/></svg><b id="rn">2/5</b></div>
@@ -333,8 +352,8 @@ document.addEventListener('click',()=>m.style.display='none');
           <div class="ft sug" data-f="2"><div class="th" style="background:#fff0e6"><div class="sl">Business Overview</div></div><span class="ty" style="background:#e36b1c">PPT</span><span class="add">+ Add</span><div class="nm">Business Overview | 4orm | 2026.pptx<small>suggested for VCs</small></div></div>
           <div class="ft sug" data-f="3"><div class="th" style="background:var(--blue50)"><div class="pg"><i></i><i></i><i></i></div></div><span class="ty" style="background:var(--blue)">DOC</span><span class="add">+ Add</span><div class="nm">Top incumbents<small>from Documents &rsaquo; Legal</small></div></div>
         </div>
-        <div class="lk"><span class="fv" style="background:#0b1430">4</span><div><b>4ormiq.com</b><span>Try the free Suitability Readiness Check</span></div><em class="lkadd" style="color:var(--blue);cursor:pointer">+ Add link</em></div>
-        <div class="drop">Drag files here from <b>Documents</b> or <b>Drive</b>, or paste a link</div>
+        <div class="lk"><span class="fv" style="background:#0b1430">4</span><div><b>4ormiq.com</b><span>Try the free Suitability Readiness Check</span></div><em class="lkadd" style="color:var(--blue);cursor:pointer">+ Add a saved link</em></div>
+        <div class="drop" id="dropz">Drop files here, or pick from <b>Documents</b> / <b>Drive</b> &middot; every file shows a first-page preview</div>
         </div></div><div class="sendbar"><span class="via">Sends through <b>GoHighLevel</b> &middot; test copy to chad@4ormfinance.com first</span><div class="r"><button class="btn">Send me a test</button><button class="btn pri">Send to Neil</button></div></div>
       </section>
 </aside><script>const toast=t=>{const e=document.getElementById('toast')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'toast',className:'toast'}));e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1800)};
@@ -364,4 +383,24 @@ const first=[...document.querySelectorAll('.sp')].find(c=>/Neil Mitchell/.test(c
 document.querySelectorAll('.sp').forEach(c=>c.addEventListener('click',e=>{e.stopPropagation();openFor(c)},true));
 const cb=p.querySelector('.close');if(cb)cb.onclick=close;const back=p.querySelector('.crumbs a');if(back)back.onclick=close;
 document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
-m.addEventListener('click',e=>{if(!e.target.closest('.sp'))close()});})();</script></body></html>
+m.addEventListener('click',e=>{if(!e.target.closest('.sp'))close()});})();</script><div class="lpick" id="lpick"><input placeholder="Search your saved links"><div class="lc">AI</div><div class="lo" data-n="4ormiq.com" data-d="Suitability Readiness Check"><span>4</span><div>4ormiq.com<small>Suitability Readiness Check</small></div></div><div class="lo" data-n="Perplexity" data-d="perplexity.ai"><span>P</span><div>Perplexity<small>perplexity.ai</small></div></div><div class="lc">Company</div><div class="lo" data-n="4orm Finance site" data-d="4ormfinance.com"><span>4</span><div>4orm Finance site<small>4ormfinance.com</small></div></div><div class="lo" data-n="Data room" data-d="4ormdr.com"><span>D</span><div>Data room<small>4ormdr.com</small></div></div><div class="lc">Regulation</div><div class="lo" data-n="FINTRAC fines, Oct 12" data-d="canadianmortgagetrends.com"><span>F</span><div>FINTRAC fines, Oct 12<small>canadianmortgagetrends.com</small></div></div></div>
+<div class="cmp" id="cmp"><div class="w"><div class="h"><b>Email to Neil Mitchell</b><span id="cmpx">&times;</span></div><div class="r"><label>To</label><div>Neil Mitchell</div></div><div class="r"><label>Subject</label><div contenteditable="true">Suitability evidence for insurance advice - 20 minutes?</div></div><div class="bd" contenteditable="true">Neil - you backed QuickFacts, so you know how much of distribution risk lives in what was said in the room and never written down. We built 4orm to record that evidence automatically. Two pages attached. Worth 20 minutes next week?<br><br>Chad</div><div class="at" id="cmpat"></div><div class="f"><button>Save draft</button><button id="cmptest">Send me a test</button><button class="pri" id="cmpsend">Send to Neil</button></div></div></div>
+<script>(function(){
+const T=t=>{const e=document.getElementById('toast');if(e){e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1800)}};
+const files=document.querySelector('.spanel .bundle .files');
+const tile=(name)=>{const ext=(name.split('.').pop()||'').toLowerCase();const k=ext==='pptx'||ext==='ppt'?['PPT','#e36b1c','background:#fff0e6','<div class="sl">'+name.replace(/\.[a-z]+$/,'')+'</div>']:ext==='pdf'?['PDF','var(--red)','background:#fde9ec','<div class="pg"><i></i><i></i><i></i><i></i></div>']:['DOC','var(--blue)','background:var(--blue50)','<div class="pg"><i></i><i></i><i></i></div>'];return `<div class="ft"><div class="th" style="${k[2]}">${k[3]}</div><span class="ty" style="background:${k[1]}">${k[0]}</span><span class="rm">&times;</span><div class="nm">${name}<small>attached</small></div></div>`};
+const dz=document.getElementById('dropz');
+['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('over')}));
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');const fs=[...(e.dataTransfer&&e.dataTransfer.files||[])];(fs.length?fs.map(f=>f.name):['Dropped file.pdf']).forEach(n=>files.insertAdjacentHTML('beforeend',tile(n)));T('Attached to the bundle')});
+window.addEventListener('dragover',e=>e.preventDefault());window.addEventListener('drop',e=>e.preventDefault());
+dz.onclick=()=>{files.insertAdjacentHTML('beforeend',tile('Business Overview | 4orm | 2026.pptx'));T('Picked from Documents')};
+const lp=document.getElementById('lpick');document.querySelectorAll('.lkadd').forEach(a=>a.onclick=e=>{e.stopPropagation();const r=a.getBoundingClientRect();lp.style.left=Math.max(10,r.right-340)+'px';lp.style.top=(r.bottom+6)+'px';lp.classList.toggle('on')});
+lp.querySelectorAll('.lo').forEach(o=>o.onclick=()=>{const lk=document.querySelector('.spanel .bundle .lk');lk.insertAdjacentHTML('afterend',`<div class="lk"><span class="fv" style="background:#0b1430">${o.dataset.n[0].toUpperCase()}</span><div><b>${o.dataset.n}</b><span>${o.dataset.d}</span></div><em style="color:var(--green)">Added</em></div>`);lp.classList.remove('on');T('Link added from your Links')});
+lp.querySelector('input').oninput=e=>{const q=e.target.value.toLowerCase();lp.querySelectorAll('.lo').forEach(o=>o.style.display=o.textContent.toLowerCase().includes(q)?'':'none')};
+document.addEventListener('click',e=>{if(!e.target.closest('#lpick,.lkadd'))lp.classList.remove('on')});
+const cmp=document.getElementById('cmp');document.querySelectorAll('.spanel .ch .lnk').forEach(l=>{if(/composer/i.test(l.textContent))l.onclick=e=>{e.stopPropagation();document.getElementById('cmpat').innerHTML=[...files.querySelectorAll('.ft:not(.sug)')].map(f=>f.outerHTML).join('')||'<span style="color:#7a86a0;font-size:12.5px">No files attached yet</span>';cmp.classList.add('on')}});
+document.getElementById('cmpx').onclick=()=>cmp.classList.remove('on');cmp.onclick=e=>{if(e.target===cmp)cmp.classList.remove('on')};
+document.getElementById('cmptest').onclick=()=>T('Test sent to chad@4ormfinance.com');document.getElementById('cmpsend').onclick=()=>T('Sends through GoHighLevel after the test');
+document.querySelectorAll('.spanel .facts2 .src u').forEach(u=>u.onclick=()=>T('Add a website, LinkedIn or article link to this person'));
+})();</script></body></html>

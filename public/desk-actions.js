@@ -304,13 +304,54 @@
       return row;
     });
   }
+  function localDueForColumn(column) {
+    var key = String(column || '').toLowerCase();
+    if (key === 'later') return null;
+    if (key === 'today' || key === 'overdue') {
+      var n = new Date();
+      n.setHours(12, 0, 0, 0);
+      return n.getTime();
+    }
+    if (key === 'week' || key === 'this week') return Date.now() + 3 * 86400000;
+    return undefined;
+  }
   function patchItem(id, body) {
     if (!id) return Promise.reject(new Error('id'));
+    var extra = {};
+    if (body && (body.column || body.bucket) && !Object.prototype.hasOwnProperty.call(body, 'due')) {
+      var due = localDueForColumn(body.column || body.bucket);
+      if (due !== undefined) extra.due = due;
+      extra.column = body.column || body.bucket;
+    }
+    var next = Object.assign({}, body, extra);
     S().items = (S().items || []).map(function (it) {
-      return String(it.id) === String(id) ? Object.assign({}, it, body) : it;
+      return String(it.id) === String(id) ? Object.assign({}, it, next) : it;
     });
+    var fx = window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.war;
+    if (fx && next.column) {
+      ['today', 'week', 'later', 'done'].forEach(function (key) {
+        var col = fx[key];
+        if (!col || !col.tasks) return;
+        var hit = col.tasks.filter(function (t) { return String(t.id) === String(id); })[0];
+        if (!hit) return;
+        col.tasks = col.tasks.filter(function (t) { return String(t.id) !== String(id); });
+        col.count = Math.max(0, (col.count || 0) - 1);
+        var dest = fx[next.column] || fx[next.column === 'week' ? 'week' : next.column];
+        if (dest && dest.tasks) {
+          dest.tasks.unshift(hit);
+          dest.count = (dest.count || 0) + 1;
+        }
+      });
+    }
     if (!writeOk()) return Promise.resolve({});
-    return api('/api/items', { method: 'PATCH', body: Object.assign({ id: id }, body) }).then(ok).then(json);
+    return api('/api/items', { method: 'PATCH', body: Object.assign({ id: id }, next) }).then(ok).then(json).then(function (row) {
+      if (row && row.id) {
+        S().items = (S().items || []).map(function (it) {
+          return String(it.id) === String(id) ? Object.assign({}, it, row, { column: next.column || it.column }) : it;
+        });
+      }
+      return row;
+    });
   }
   function softDrop(id) {
     return patchItem(id, { status: 'dropped' });
@@ -585,8 +626,20 @@
       var id = attr(el, 'data-id');
       if (!id) return;
       S().execPicked = S().execPicked || {};
-      if (el.checked) S().execPicked[id] = true;
-      else delete S().execPicked[id];
+      if (S().execPicked[id]) delete S().execPicked[id];
+      else S().execPicked[id] = true;
+      refresh('war');
+    },
+    'exec-select-all': function () {
+      var root = document.getElementById('warDesk');
+      root = root && root.shadowRoot;
+      var tasks = root ? root.querySelectorAll('.exec.today .tl .task[data-id]') : [];
+      var ids = [];
+      tasks.forEach(function (t) { var id = attr(t, 'data-id'); if (id) ids.push(id); });
+      S().execPicked = S().execPicked || {};
+      var every = ids.length && ids.every(function (id) { return S().execPicked[id]; });
+      S().execPicked = {};
+      if (!every) ids.forEach(function (id) { S().execPicked[id] = true; });
       refresh('war');
     },
     'exec-cancel': function () {
@@ -2493,11 +2546,17 @@
     var source = attr(ot, 'data-source') || attr(ob, 'data-source') || attr(card, 'data-source') || attr(el, 'data-source') || '';
     if ((S().notes || []).some(function (n) { return String(n.id) === String(id); })) source = 'board';
     else if ((S().stickies || []).some(function (n) { return String(n.id) === String(id); })) source = 'sticky';
-    else if (!source) source = 'sticky';
-    function readTitle() { return ot ? String(ot.textContent || '').trim() : ''; }
-    function readBody() { return ob ? String(ob.innerText || '') : ''; }
+    function readTitle() {
+      var node = (root.getElementById && root.getElementById('ot')) || ot;
+      return node ? String(node.innerText || node.textContent || '').trim() : '';
+    }
+    function readBody() {
+      var node = (root.getElementById && root.getElementById('ob')) || ob;
+      return node ? String(node.innerText || node.textContent || '') : '';
+    }
     var title = readTitle();
     var body = readBody();
+    if (card) card.__noteDraft = { title: title, body: body };
     var saved = root.getElementById && root.getElementById('ovSaved');
     if (saved) saved.innerHTML = '<i></i>Saving…';
     (S().stickies || []).forEach(function (n) {
@@ -2536,41 +2595,57 @@
       return;
     }
     function sendNote() {
+      ot = root.getElementById && root.getElementById('ot');
+      ob = root.getElementById && root.getElementById('ob');
       title = readTitle();
       body = readBody();
+      if ((!title && !body) && card && card.__noteDraft) {
+        title = card.__noteDraft.title || title;
+        body = card.__noteDraft.body || body;
+      }
       var req;
       if (source === 'board') {
-        req = api('/api/notes', { method: 'PATCH', body: { id: id, title: title || 'Note', body: body } });
+        req = api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { title: title || 'Note', body: body } });
       } else {
         var row = (S().stickies || []).filter(function (n) { return String(n.id) === String(id); })[0] || {};
         var meta = Object.assign({}, row.meta && typeof row.meta === 'object' ? row.meta : {}, { title: title });
-        req = api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { body: body, meta: meta } }).catch(function () {
-          return api('/api/notes/sticky', { method: 'PATCH', body: { id: id, body: body, meta: meta } });
-        });
+        req = api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { body: body, meta: meta } });
       }
+      window.__noteSave = req;
       return req;
+    }
+    function afterSend(req) {
+      return req.then(ok).then(function (r) {
+        if (source !== 'board' || !r || typeof r.json !== 'function') return r;
+        return r.json().then(function (d) {
+          if (!d || !(d.rowsAffected > 0) || d.store === 'sticky') throw d || new Error('note not saved');
+          return d;
+        });
+      }).then(function () {
+        if (saved) saved.innerHTML = '<i></i>Saved · just now';
+      }).catch(function () {
+        if (saved) saved.innerHTML = '<i></i>Couldn\'t save';
+        toast(root, 'Could not save that note');
+      });
     }
     clearTimeout(noteSaveTimer);
     if (el && el.__flushNote) {
       el.__flushNote = false;
       noteSaveTimer = 0;
-      sendNote().then(ok).then(function () {
-        if (saved) saved.innerHTML = '<i></i>Saved · just now';
-      }).catch(function () {
-        if (saved) saved.innerHTML = '<i></i>Couldn\'t save';
-        toast(root, 'Could not save that note');
-      });
-      return;
+      return afterSend(sendNote());
     }
     noteSaveTimer = setTimeout(function () {
-      var req = sendNote();
-      req.then(ok).then(function () {
-        if (saved) saved.innerHTML = '<i></i>Saved · just now';
-      }).catch(function () {
-        if (saved) saved.innerHTML = '<i></i>Couldn\'t save';
-        toast(root, 'Could not save that note');
-      });
+      afterSend(sendNote());
     }, 400);
+  }
+  function flushOpenNote() {
+    var host = document.getElementById('notesDesk');
+    var root = host && host.shadowRoot;
+    if (!root) return;
+    var card = root.getElementById && root.getElementById('ovNote');
+    if (!card || card.hasAttribute('hidden')) return;
+    card.__flushNote = true;
+    saveNote(root, card);
   }
 
   function onClick(e) {
@@ -2595,6 +2670,17 @@
     onClick._t = e.timeStamp; onClick._x = e.clientX; onClick._y = e.clientY;
     var el = actionElFromEvent(e);
     var t = (e.composedPath && e.composedPath()[0]) || e.target;
+    if (t && t.closest) {
+      var todaySel = t.closest('.exec.today.sel');
+      if (todaySel && !t.closest('.cb, .hv, .x2, .selbar, .selbtn, [data-action="exec-select"], [data-action="task-done"], [data-action="task-move"], [data-action="task-drop"]')) {
+        var pickTask = t.closest('.task');
+        if (pickTask && attr(pickTask, 'data-id')) {
+          e.preventDefault();
+          actions['exec-pick'](pickTask, rootOf(pickTask, e), e);
+          return;
+        }
+      }
+    }
     if (t && t.closest) {
       var ignore = t.closest('input, textarea, select, [contenteditable="true"]');
       var ignAct = ignore && ignore.getAttribute ? (ignore.getAttribute('data-action') || '') : '';
@@ -2628,7 +2714,9 @@
     if (e.key === 'Escape') {
       var nbig = root.getElementById && root.getElementById('ovNote');
       var nscrim = root.getElementById && root.getElementById('nscrim');
-      if (nbig && !nbig.hidden) {
+      if (nbig && !nbig.hidden && !nbig.hasAttribute('hidden')) {
+        nbig.__flushNote = true;
+        saveNote(root, nbig);
         showOv(nbig, false);
         nbig.setAttribute('hidden', '');
         if (nscrim) { nscrim.setAttribute('hidden', ''); nscrim.classList.remove('open'); }
@@ -2909,6 +2997,10 @@
     document.addEventListener('dragover', onDragOver, true);
     document.addEventListener('drop', onDrop, true);
     document.addEventListener('dragleave', onDragLeave, true);
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') flushOpenNote();
+    });
+    window.addEventListener('pagehide', flushOpenNote);
   }
 
   window.bindShadowActions = bindShadowActions;
