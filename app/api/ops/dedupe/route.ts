@@ -132,7 +132,7 @@ export async function POST(req: Request) {
           via = 'oldest';
         }
         if (!id) continue;
-        await sql`UPDATE items SET status = 'today' WHERE id = ${id}::uuid AND owner_id = ${ownerId}`;
+        await sql`UPDATE items SET status = 'today' WHERE id::text = ${id} AND owner_id = ${ownerId}`;
         restored.push({ title, id, via });
       }
       return NextResponse.json({ ok: true, restoreWar: true, owner: 'chad', restored });
@@ -141,6 +141,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, dry: false, owner: 'chad', ...result });
   } catch (err) {
     fail('dedupe_apply', err);
-    return NextResponse.json({ error: 'Could not sweep duplicates.' }, { status: 400 });
+    return NextResponse.json({ error: 'Could not sweep duplicates.', detail: String((err as Error)?.message || err) }, { status: 400 });
   }
 }
