@@ -583,26 +583,34 @@ export async function testOpportunityRail(step: 'ensure' | 'move' | 'archive', i
   if (step === 'ensure') {
     const contactId = await ensureGhlContact({ name: 'TEST 4ormop', email: 'opstest@4ormfinance.com' });
     if (!contactId) return { ok: false as const, note: 'Could not make the TEST contact.' };
-    const created = await ghlAny('/opportunities/', {
-      method: 'POST',
-      body: JSON.stringify({
-        locationId: loc,
-        pipelineId: pipe.id,
-        pipelineStageId: stages[0].id,
-        name: `TEST 4ormop drag ${new Date().toISOString().slice(0, 16)}`,
-        contactId,
-        status: 'open',
-      }),
-    });
-    const opp = created.json as { opportunity?: { id?: string; pipelineStageId?: string; name?: string } } | null;
-    const opportunityId = String(opp?.opportunity?.id || '');
+    const listed = await listPipelines();
+    const current = listed.pipelines.find((p) => String(p.id) === String(pipe.id));
+    const existing = (current?.stages || []).flatMap((s) => s.opps || []).find((o) => /^TEST 4ormop drag/i.test(String(o.name || '')) && String(o.status || '') !== 'lost');
+    let opportunityId = String(existing?.id || '');
+    let stageId = String(existing ? (current?.stages.find((s) => s.opps.some((o) => o.id === existing.id))?.id || stages[0].id) : '');
+    if (!opportunityId) {
+      const created = await ghlAny('/opportunities/', {
+        method: 'POST',
+        body: JSON.stringify({
+          locationId: loc,
+          pipelineId: pipe.id,
+          pipelineStageId: stages[0].id,
+          name: `TEST 4ormop drag ${Date.now()}`,
+          contactId,
+          status: 'open',
+        }),
+      });
+      const opp = created.json as { opportunity?: { id?: string; pipelineStageId?: string; name?: string } } | null;
+      opportunityId = String(opp?.opportunity?.id || '');
+      stageId = String(opp?.opportunity?.pipelineStageId || stages[0].id);
+    }
     if (!opportunityId) return { ok: false as const, note: 'GoHighLevel did not create the TEST opportunity.' };
     return {
       ok: true as const,
       pipelineId: String(pipe.id),
       pipelineName: String(pipe.name || TEST_PIPE_NAME),
       opportunityId,
-      stageId: String(opp?.opportunity?.pipelineStageId || stages[0].id),
+      stageId: stageId || String(stages[0].id),
       stages: stages.map((s) => ({ id: String(s.id), name: String(s.name || '') })),
     };
   }

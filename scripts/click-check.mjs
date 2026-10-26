@@ -526,9 +526,13 @@ async function productionStep1(browser) {
 
   await live.goto('https://www.4ormop.com/notes?canvas=1', { waitUntil: 'domcontentloaded', timeout: 45000 });
   await live.waitForSelector('#notesDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  await live.waitForFunction(() => {
+    const root = document.getElementById('notesDesk') && document.getElementById('notesDesk').shadowRoot;
+    return !!(root && root.querySelector('[data-action="canvas-zoom-in"] .note, .world .note, [data-action="canvas-zoom-in"]'));
+  }, { timeout: 15000 }).catch(() => {});
   const canvasLive = await live.evaluate(() => {
     const root = document.getElementById('notesDesk').shadowRoot;
-    const notes = Array.from(root.querySelectorAll('.note')).map((n) => ({ x: parseFloat(n.style.left) || 0, y: parseFloat(n.style.top) || 0 }));
+    const notes = Array.from(root.querySelectorAll('.world .note')).map((n) => ({ x: parseFloat(n.style.left) || 0, y: parseFloat(n.style.top) || 0 }));
     let overlap = 0;
     for (let i = 0; i < notes.length; i++) for (let j = i + 1; j < notes.length; j++) {
       const a = notes[i], b = notes[j];
@@ -549,13 +553,18 @@ async function productionStep1(browser) {
   if (!pushLive(rows, 'Documents', 'GET /api/documents', { dom: docsApi.status === 200, net: docsApi.status === 200, persist: true, extra: 'n=' + ((docsApi.json && docsApi.json.docs && docsApi.json.docs.length) || 0) })) failed = true;
 
   await live.goto('https://www.4ormop.com/recordings', { waitUntil: 'domcontentloaded', timeout: 45000 });
-  await live.waitForSelector('#recDesk[data-port-ready]', { timeout: 20000, state: 'attached' }).catch(() => {});
+  await live.waitForFunction(() => {
+    if (typeof window.switchView === 'function' && window.STATE && window.STATE.desk !== 'rec') window.switchView('rec');
+    const host = document.getElementById('recDesk');
+    const root = host && host.shadowRoot;
+    return !!(root && root.querySelector('[data-action="rec-start"]'));
+  }, { timeout: 25000 }).catch(() => {});
   const recLive = await live.evaluate(() => {
     const host = document.getElementById('recDesk');
     const root = host && host.shadowRoot;
-    return !!(root && root.querySelector('[data-action="rec-start"]') && /Recordings/.test(root.textContent || ''));
+    return { ok: !!(root && root.querySelector('[data-action="rec-start"]') && /Recordings/.test(root.textContent || '')), desk: window.STATE && window.STATE.desk, path: location.pathname };
   });
-  if (!pushLive(rows, 'Recordings', '/recordings loads', { dom: recLive, net: true, persist: true })) failed = true;
+  if (!pushLive(rows, 'Recordings', '/recordings loads', { dom: !!recLive.ok, net: true, persist: true, extra: 'desk=' + recLive.desk + ' path=' + recLive.path })) failed = true;
 
   const rail1 = await liveApi(live, '/api/pipeline/test-rail', 'POST', { step: 'ensure' });
   let railMove = { status: 0, json: {} };
