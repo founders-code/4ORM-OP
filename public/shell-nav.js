@@ -1,21 +1,24 @@
 (function () {
   var NAV = [
-    ['Workspace'],
-    ['War Room', 'M12 2l3 6 6 .9-4.5 4.3 1 6.3L12 16.6 6.5 19.5l1-6.3L3 8.9 9 8z', '', 'war', '/war-room'],
-    ['Pipeline', 'M3 5h18l-7 8v6l-4 2v-8z', '', 'contacts', '/pipeline'],
-    ['Spaces', 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', '', 'work', '/spaces'],
-    ['Documents', 'M7 3h7l5 5v13H7zM14 3v5h5', '', 'docs', '/documents'],
-    ['Links', 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1', '', 'links', '/links'],
-    ['Email', 'M3 6h18v12H3zM3 7l9 6 9-6', '', 'mail', '/email'],
+    ['Today'],
     ['Playbook', 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3', '', 'playbook', '/playbook'],
+    ['War Room', 'M12 2l3 6 6 .9-4.5 4.3 1 6.3L12 16.6 6.5 19.5l1-6.3L3 8.9 9 8z', '', 'war', '/war-room'],
     ['Calendar', 'M4 6h16v14H4zM4 10h16M9 3v4M15 3v4', '', 'calendar', '/calendar'],
-    ['Zoom', 'M3 7h12v10H3zM15 10l6-3v10l-6-3', '', 'znotes', '/zoom'],
-    ['Notes', 'M5 3h14v18l-4-3H5z', '', 'notes', '/notes'],
-    ['Completed', 'M4 12l5 5L20 6', '', 'done', '/completed'],
-    ['Signals & data'],
-    ['News', 'M4 5h13v14H6a2 2 0 0 1-2-2zM17 9h3v8a2 2 0 0 1-2 2M8 9h5M8 13h5', '', 'news', '/news'],
-    ['Drive', 'M8 3h8l6 10-4 7H6l-4-7z', '', 'drive', '/control-room?view=drive'],
+    ['Email', 'M3 6h18v12H3zM3 7l9 6 9-6', '', 'mail', '/email'],
+    ['People'],
     ['Contacts', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0', '', 'people', '/control-room?view=people'],
+    ['Spaces', 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', '', 'work', '/spaces'],
+    ['Pipeline', 'M3 5h18l-7 8v6l-4 2v-8z', '', 'contacts', '/pipeline'],
+    ['Library'],
+    ['Notes', 'M5 3h14v18l-4-3H5z', '', 'notes', '/notes'],
+    ['Documents', 'M7 3h7l5 5v13H7zM14 3v5h5', '', 'docs', '/documents'],
+    ['Drive', 'M8 3h8l6 10-4 7H6l-4-7z', '', 'drive', '/control-room?view=drive'],
+    ['Links', 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1', '', 'links', '/links'],
+    ['Record'],
+    ['Zoom', 'M3 7h12v10H3zM15 10l6-3v10l-6-3', '', 'znotes', '/zoom'],
+    ['Completed', 'M4 12l5 5L20 6', '', 'done', '/completed'],
+    ['Signals'],
+    ['News', 'M4 5h13v14H6a2 2 0 0 1-2-2zM17 9h3v8a2 2 0 0 1-2 2M8 9h5M8 13h5', '', 'news', '/news'],
     ['Financials', 'M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6', '', 'finance', '/control-room?view=finance'],
     ['Integrations', 'M9 7V3M15 7V3M6 7h12v5a6 6 0 0 1-12 0zM12 18v3', '', 'int', '/control-room?view=int']
   ];
@@ -35,7 +38,7 @@
   }
   function groups() {
     var out = [];
-    var cur = { title: 'Workspace', items: [] };
+    var cur = { title: 'Today', items: [] };
     NAV.forEach(function (n) {
       if (n.length === 1) {
         if (cur.items.length || out.length) out.push(cur);
@@ -95,6 +98,9 @@
   function paint() {
     var side = document.getElementById('side');
     if (!side) return;
+    if (!fixtureOn()) {
+      try { order = JSON.parse(localStorage.getItem('cr_nav_order') || 'null'); } catch (e) { order = null; }
+    }
     var active = activeName();
     var bag = badges();
     var html = '';
