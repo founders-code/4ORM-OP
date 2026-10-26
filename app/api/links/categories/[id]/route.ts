@@ -46,7 +46,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ ok: false, error: 'Unavailable' });
+    if (!session.sql) return NextResponse.json({ ok: false, error: 'Unavailable' }, { status: 503 });
     const sql = session.sql;
     const ownerId = session.userId;
     const query = new URL(req.url).searchParams;
@@ -74,7 +74,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     }
     const row = rows[0];
     const name = clean(row?.name) || fallback;
-    if (!name || (!sub && name === UNCAT)) return NextResponse.json({ ok: false, error: 'Unavailable' });
+    if (!name || (!sub && name === UNCAT)) return NextResponse.json({ ok: false, error: 'Unavailable' }, { status: 400 });
     await sql`
       INSERT INTO link_categories (owner_id, name, subs)
       VALUES (${ownerId}, ${UNCAT}, '{}')
@@ -132,6 +132,6 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     });
   } catch (err) {
     fail('links_category_delete', err);
-    return NextResponse.json({ ok: false, error: 'Unavailable' });
+    return NextResponse.json({ ok: false, error: 'Unavailable' }, { status: 500 });
   }
 }

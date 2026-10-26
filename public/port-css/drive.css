@@ -62,3 +62,17 @@
 .askb .er{color:var(--red);font-size:12.5px;font-weight:700;min-height:16px;margin-top:6px}
 .plist{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:12px;margin-top:10px}
 .plist div{padding:9px 12px;border-top:1px solid var(--line);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.plist div:first-child{border-top:0}.plist div:hover{background:var(--soft)}
+
+/* design 14: pinned cards keep the page thumbnail; Unpin and the row Pin / Copy appear on hover without adding height or a column */
+.pin{position:relative}
+.pin .th{position:relative}
+.pin .th img{position:absolute;inset:0}
+.pin .ac{position:absolute;right:8px;top:8px;padding:3px 8px;background:#fff;border-radius:7px;box-shadow:0 2px 8px rgba(16,32,64,.12);opacity:0;transition:opacity .15s}
+.pin:hover .ac{opacity:1}
+.tbl td.ownc{position:relative}
+.tbl .rpin{position:absolute;right:16px;top:50%;transform:translateY(-50%);display:flex;gap:10px;align-items:center;opacity:0;background:inherit;padding-left:8px}
+.tbl tr:hover .rpin{opacity:1}
+.tbl .rpin .star.on{opacity:1}
+/* design 14: folder names start at the row padding; the +/- expander sits in the left gutter */
+.dr{position:relative}
+.dr .tg{position:absolute;margin-left:-14px;width:12px}

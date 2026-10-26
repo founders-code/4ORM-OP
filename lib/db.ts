@@ -8,7 +8,7 @@ type Sql = NeonQueryFunction<false, false>;
 let ready: Promise<Sql> | null = null;
 
 /** Bump when migrate() gains a new step so cold starts skip the full IF NOT EXISTS pass. */
-const SCHEMA_VERSION = '2026-10-28-round2-docs';
+const SCHEMA_VERSION = '2026-10-29-round3-backend';
 
 export async function databaseUrl() {
   const envUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
@@ -844,6 +844,22 @@ async function migrateWar(sql: Sql) {
     // Round 2 (War Room): W39 Today drag order, W25 undo for a dismissed move (snooze marker kept, marked cleared).
     ['db_r2_items_position', () => sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS position int`],
     ['db_r2_move_snooze_cleared', () => sql`ALTER TABLE move_snooze ADD COLUMN IF NOT EXISTS cleared_at timestamptz`],
+    // Round 3 (backend): the last hard deletes become soft (undone / removed flags), plus the Spaces send gate.
+    ['db_r3_doc_folders_deleted', () => sql`ALTER TABLE doc_folders ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_r3_playbook_log_deleted', () => sql`ALTER TABLE playbook_log ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_r3_inbox_hidden_deleted', () => sql`ALTER TABLE inbox_hidden ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_r3_box_tags_deleted', () => sql`ALTER TABLE email_box_tags ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_r3_box_addresses_deleted', () => sql`ALTER TABLE email_box_addresses ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_r3_space_test_sends', () => sql`CREATE TABLE IF NOT EXISTS space_test_sends (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      space_id uuid NOT NULL,
+      content_hash text NOT NULL,
+      sent_to text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_r3_space_test_sends_idx', () => sql`CREATE INDEX IF NOT EXISTS space_test_sends_lookup
+      ON space_test_sends (owner_id, space_id, content_hash)`],
   ];
   for (const [code, run] of steps) {
     try {

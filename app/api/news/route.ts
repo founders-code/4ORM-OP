@@ -23,6 +23,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ items, chips: NEWS_CHIPS, categories, sweptAt });
   } catch (err) {
     fail('news_failed', err);
-    return NextResponse.json({ items: [], chips: NEWS_CHIPS, categories: NEWS_CATEGORIES });
+    return NextResponse.json({ items: [], chips: NEWS_CHIPS, categories: NEWS_CATEGORIES }, { status: 500 });
   }
 }

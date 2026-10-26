@@ -1,5 +1,6 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { fail } from './log';
+import { ensureBeats, listBeats } from './playbook-beats';
 import { pacificDay } from './snapshots';
 
 type Sql = NeonQueryFunction<false, false>;
@@ -128,6 +129,8 @@ export async function seedRhythms(sql: Sql, ownerId: string) {
 
 export async function listPlaybook(sql: Sql, ownerId: string, weekStart?: string) {
   await seedRhythms(sql, ownerId);
+  // P13: rhythms with a cadence are longer beats; they leave the daily grid and come back as `beats`.
+  await ensureBeats(sql);
   const today = pacificDay();
   const start = weekStart && /^\d{4}-\d{2}-\d{2}$/.test(weekStart) ? weekStart : mondayOf(today);
   const days = [0, 1, 2, 3, 4, 5, 6].map((n) => addDays(start, n));
@@ -137,13 +140,13 @@ export async function listPlaybook(sql: Sql, ownerId: string, weekStart?: string
   const rhythms = await sql`
     SELECT id, name, color, route, schedule, target, sort, active, created_at::text AS created_at, sub, grp
     FROM playbook_rhythms
-    WHERE owner_id = ${ownerId} AND active = true
+    WHERE owner_id = ${ownerId} AND active = true AND cadence IS NULL
     ORDER BY sort, name
   `;
   const logs = await sql`
     SELECT rhythm_id, day::text AS day, status, value
     FROM playbook_log
-    WHERE owner_id = ${ownerId} AND day >= ${monthFrom}::date AND day <= ${monthTo}::date
+    WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND day >= ${monthFrom}::date AND day <= ${monthTo}::date
   `;
   const logMap = new Map<string, { status: string; value: string }>();
   for (const row of logs as Array<{ rhythm_id?: string; day?: string; status?: string; value?: string }>) {
@@ -198,6 +201,10 @@ export async function listPlaybook(sql: Sql, ownerId: string, weekStart?: string
     monthTo,
     monthLogs,
     bestStreak: streaks.best,
+    beats: await listBeats(sql, ownerId).catch((err) => {
+      fail('playbook_beats', err);
+      return [];
+    }),
   };
 }
 
@@ -213,7 +220,7 @@ async function rhythmStreaks(sql: Sql, ownerId: string, today: string, rows: Arr
     done = await sql`
       SELECT rhythm_id::text AS rhythm_id, day::text AS day
       FROM playbook_log
-      WHERE owner_id = ${ownerId} AND status = 'done' AND day >= (${today}::date - 180) AND day <= ${today}::date
+      WHERE owner_id = ${ownerId} AND status = 'done' AND deleted_at IS NULL AND day >= (${today}::date - 180) AND day <= ${today}::date
     ` as Array<{ rhythm_id?: string; day?: string }>;
   } catch (err) {
     fail('playbook_streaks', err);
@@ -260,14 +267,15 @@ function labelRange(start: string) {
 export async function logPlay(sql: Sql, ownerId: string, rhythmId: string, day: string, status: string, value = '') {
   const next = status === 'done' || status === 'snoozed' || status === 'missed' || status === 'open' ? status : 'done';
   if (next === 'open') {
-    await sql`DELETE FROM playbook_log WHERE owner_id = ${ownerId} AND rhythm_id = ${rhythmId}::uuid AND day = ${day}::date`;
+    // Un-tick keeps the row and marks it undone (soft delete); ticking again clears the mark.
+    await sql`UPDATE playbook_log SET deleted_at = now() WHERE owner_id = ${ownerId} AND rhythm_id = ${rhythmId}::uuid AND day = ${day}::date AND deleted_at IS NULL`;
     return listPlaybook(sql, ownerId);
   }
   await sql`
     INSERT INTO playbook_log (owner_id, rhythm_id, day, status, value)
     VALUES (${ownerId}, ${rhythmId}::uuid, ${day}::date, ${next}, ${value.slice(0, 80)})
     ON CONFLICT (owner_id, rhythm_id, day)
-    DO UPDATE SET status = EXCLUDED.status, value = EXCLUDED.value
+    DO UPDATE SET status = EXCLUDED.status, value = EXCLUDED.value, deleted_at = NULL
   `;
   return listPlaybook(sql, ownerId);
 }

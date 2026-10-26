@@ -35,6 +35,8 @@
 
   function canPoll() {
     if (stopped) return false;
+    /* A signed-in account that is not on the allowlist: one "no access" screen, no polling. */
+    if (window.__noAccess) return false;
     if (typeof window.authFetch !== 'function') return false;
     if (!clerkReady()) return false;
     if (clerkObj() && !hasSession()) return false;

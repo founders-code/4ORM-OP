@@ -11,12 +11,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-    if (!session.sql) return NextResponse.json({ id: params.id, saved: false });
+    if (!session.sql) return NextResponse.json({ id: params.id, saved: false }, { status: 503 });
     const person = await patchReach(session.sql, session.userId, params.id, body);
-    if (!person) return NextResponse.json({ id: params.id, saved: false });
+    if (!person) return NextResponse.json({ id: params.id, saved: false }, { status: 404 });
     return NextResponse.json(person);
   } catch (err) {
     fail('reach_patch', err);
-    return NextResponse.json({ id: params.id, saved: false });
+    return NextResponse.json({ id: params.id, saved: false }, { status: 500 });
   }
 }

@@ -19,6 +19,6 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     return NextResponse.json({ ok: true });
   } catch (err) {
     fail('disconnect', err);
-    return NextResponse.json({ error: 'Could not disconnect that integration.' }, { status: 400 });
+    return NextResponse.json({ error: 'Could not disconnect that integration.' }, { status: 500 });
   }
 }

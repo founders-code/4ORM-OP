@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ saved: false });
+    if (!session.sql) return NextResponse.json({ saved: false }, { status: 503 });
     const type = req.headers.get('content-type') || '';
     if (type.includes('application/json')) {
       const body = await req.json().catch(() => ({})) as Record<string, unknown>;
@@ -77,20 +77,20 @@ export async function POST(req: Request) {
       const parsed = fromDataUrl(String(body.dataUrl || body.body || ''), String(body.mime || '').slice(0, 120));
       if (parsed.raw.length > RAW_CAP) return NextResponse.json({ error: TOO_BIG }, { status: 413 });
       const saved = await store(session.sql, session.userId, category, name, parsed.mime, parsed.raw);
-      return NextResponse.json(saved ? { ok: true, name, category } : { saved: false, name, category });
+      return NextResponse.json(saved ? { ok: true, name, category } : { saved: false, name, category }, saved ? undefined : { status: 500 });
     }
     const form = await req.formData();
     const file = form.get('file');
-    if (!(file instanceof File)) return NextResponse.json({ saved: false });
+    if (!(file instanceof File)) return NextResponse.json({ saved: false }, { status: 400 });
     const category = String(form.get('category') || '').trim().slice(0, 80) || 'Dev';
     const name = String(form.get('name') || file.name || 'File').slice(0, 180);
     const mime = String(form.get('mime') || file.type || '').slice(0, 120);
     const raw = Buffer.from(await file.arrayBuffer()).toString('base64');
     if (raw.length > RAW_CAP) return NextResponse.json({ error: TOO_BIG }, { status: 413 });
     const saved = await store(session.sql, session.userId, category, name, mime, raw);
-    return NextResponse.json(saved ? { ok: true, name, category } : { saved: false, name, category });
+    return NextResponse.json(saved ? { ok: true, name, category } : { saved: false, name, category }, saved ? undefined : { status: 500 });
   } catch (err) {
     fail('documents_upload', err);
-    return NextResponse.json({ saved: false });
+    return NextResponse.json({ saved: false }, { status: 500 });
   }
 }

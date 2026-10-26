@@ -45,6 +45,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ ...body, bytes: Buffer.byteLength(json) });
   } catch (err) {
     fail('changes', err);
-    return NextResponse.json({ cursor: '0', kinds: [], bytes: 0 });
+    return NextResponse.json({ cursor: '0', kinds: [], bytes: 0 }, { status: 500 });
   }
 }

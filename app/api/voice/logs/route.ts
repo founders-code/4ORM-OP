@@ -29,7 +29,7 @@ export async function GET() {
     return NextResponse.json({ logs: rows });
   } catch (err) {
     fail('voice_logs', err);
-    return NextResponse.json({ logs: [] });
+    return NextResponse.json({ logs: [] }, { status: 500 });
   }
 }
 
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ ok: false });
+    if (!session.sql) return NextResponse.json({ ok: false }, { status: 503 });
     await session.sql`CREATE TABLE IF NOT EXISTS voice_logs (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       owner_id text NOT NULL,
@@ -63,6 +63,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, id: rows[0]?.id, created_at: rows[0]?.created_at });
   } catch (err) {
     fail('voice_logs_save', err);
-    return NextResponse.json({ ok: false });
+    return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

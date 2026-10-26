@@ -88,7 +88,7 @@ export async function POST(req: Request) {
     }
   } catch (err) {
     fail('items_failed', err);
-    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 500 });
   }
 }
 
@@ -149,6 +149,6 @@ export async function PATCH(req: Request) {
     return NextResponse.json(shapeItem(rows[0] as Record<string, unknown>));
   } catch (err) {
     fail('items_failed', err);
-    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 500 });
   }
 }

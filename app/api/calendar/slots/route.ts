@@ -29,7 +29,7 @@ export async function GET() {
     });
   } catch (err) {
     fail('slots_failed', err);
-    return NextResponse.json({ slots: openSlots(Date.now(), []), error: 'Calendar could not be read.' });
+    return NextResponse.json({ slots: openSlots(Date.now(), []), error: 'Calendar could not be read.' }, { status: 500 });
   }
 }
 
@@ -49,6 +49,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ id, start });
   } catch (err) {
     fail('slots_failed', err);
-    return NextResponse.json({ error: 'Calendar could not book that slot.' }, { status: 400 });
+    return NextResponse.json({ error: 'Calendar could not book that slot.' }, { status: 500 });
   }
 }

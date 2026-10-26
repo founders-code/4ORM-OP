@@ -45,7 +45,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ id: String((rows[0] as { id: string }).id), status: String((rows[0] as { status: string }).status) });
   } catch (err) {
     fail('items_failed', err);
-    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 500 });
   }
 }
 
@@ -66,6 +66,6 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     return NextResponse.json({ id: String((rows[0] as { id: string }).id) });
   } catch {
     fail('items_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 500 });
   }
 }

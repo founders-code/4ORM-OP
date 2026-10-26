@@ -19,7 +19,7 @@ export async function GET(req: Request) {
     return NextResponse.json(desk);
   } catch (err) {
     fail('playbook_failed', err);
-    return NextResponse.json({ rows: [], days: [], todayLit: 0, score: 0, error: 'Playbook could not be read.' });
+    return NextResponse.json({ rows: [], days: [], todayLit: 0, score: 0, error: 'Playbook could not be read.' }, { status: 500 });
   }
 }
 
@@ -50,6 +50,6 @@ export async function POST(req: Request) {
     return NextResponse.json(desk);
   } catch (err) {
     fail('playbook_failed', err);
-    return NextResponse.json({ error: 'Playbook could not be updated.' }, { status: 400 });
+    return NextResponse.json({ error: 'Playbook could not be updated.' }, { status: 500 });
   }
 }

@@ -15,7 +15,7 @@ export async function GET() {
     return NextResponse.json({ commitments: await listCommitments(session.sql, session.userId) });
   } catch (err) {
     fail('commitments_failed', err);
-    return NextResponse.json({ commitments: [] });
+    return NextResponse.json({ commitments: [] }, { status: 500 });
   }
 }
 
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ commitments: [] });
+    if (!session.sql) return NextResponse.json({ commitments: [] }, { status: 503 });
     const body = await req.json().catch(() => null);
     const id = String(body?.id || '');
     const action = String(body?.action || '');
@@ -48,6 +48,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ commitments: await listCommitments(session.sql, session.userId) });
   } catch (err) {
     fail('commitments_failed', err);
-    return NextResponse.json({ commitments: [] });
+    return NextResponse.json({ commitments: [] }, { status: 500 });
   }
 }

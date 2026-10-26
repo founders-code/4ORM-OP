@@ -23,7 +23,7 @@ export async function GET() {
     return NextResponse.json({ categories: rows });
   } catch (err) {
     fail('links_categories', err);
-    return NextResponse.json({ categories: [] });
+    return NextResponse.json({ categories: [] }, { status: 500 });
   }
 }
 
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = await req.json().catch(() => ({})) as Record<string, unknown>;
     const name = clean(body.name) || 'Uncategorized';
-    if (!session.sql) return NextResponse.json({ name, saved: false });
+    if (!session.sql) return NextResponse.json({ name, saved: false }, { status: 503 });
     await session.sql`
       INSERT INTO link_categories (owner_id, name, subs)
       VALUES (${session.userId}, ${name}, '{}')
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ name });
   } catch (err) {
     fail('links_categories', err);
-    return NextResponse.json({ saved: false });
+    return NextResponse.json({ saved: false }, { status: 500 });
   }
 }
 
@@ -63,6 +63,6 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ ok: true, moved: 'Uncategorized', links: removed.moved });
   } catch (err) {
     fail('links_categories', err);
-    return NextResponse.json({ ok: false });
+    return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

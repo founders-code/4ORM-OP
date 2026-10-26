@@ -31,7 +31,7 @@ export async function GET() {
     return NextResponse.json({ stages, pipelines, error });
   } catch (err) {
     fail('pipeline', err);
-    return NextResponse.json({ stages: [], pipelines: [], error: 'GHL sync failed' });
+    return NextResponse.json({ stages: [], pipelines: [], error: 'GHL sync failed' }, { status: 500 });
   }
 }
 
@@ -84,9 +84,9 @@ export async function POST(req: Request) {
         stage,
       });
     });
-    return NextResponse.json({ ok: !!ghlId, opportunityId: ghlId || '' });
+    return NextResponse.json({ ok: !!ghlId, opportunityId: ghlId || '', note: ghlId ? '' : 'GoHighLevel did not take that stage' }, ghlId ? undefined : { status: 502 });
   } catch (err) {
     fail('pipeline_write', err);
-    return NextResponse.json({ ok: false, note: 'GoHighLevel did not take that stage' });
+    return NextResponse.json({ ok: false, note: 'GoHighLevel did not take that stage' }, { status: 500 });
   }
 }

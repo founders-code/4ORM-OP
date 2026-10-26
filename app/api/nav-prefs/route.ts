@@ -27,7 +27,7 @@ export async function GET() {
     return NextResponse.json({ order: rows[0]?.order_json ?? null });
   } catch {
     fail('nav_prefs_get');
-    return NextResponse.json({ order: null });
+    return NextResponse.json({ order: null }, { status: 500 });
   }
 }
 
@@ -36,7 +36,7 @@ export async function PUT(req: Request) {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ saved: false });
+    if (!session.sql) return NextResponse.json({ saved: false }, { status: 503 });
     const body = await req.json().catch(() => null);
     const order = Array.isArray(body?.order) ? body.order.map((x: unknown) => String(x || '')).filter(Boolean) : null;
     if (!order) return NextResponse.json({ saved: false }, { status: 400 });
@@ -49,6 +49,6 @@ export async function PUT(req: Request) {
     return NextResponse.json({ saved: true, order });
   } catch {
     fail('nav_prefs_put');
-    return NextResponse.json({ saved: false });
+    return NextResponse.json({ saved: false }, { status: 500 });
   }
 }

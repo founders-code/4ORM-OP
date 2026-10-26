@@ -25,7 +25,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     return NextResponse.json({ id: String((rows[0] as { id: string }).id) });
   } catch {
     fail('contacts_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 500 });
   }
 }
 

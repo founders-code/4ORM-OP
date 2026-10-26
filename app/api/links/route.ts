@@ -182,7 +182,7 @@ export async function POST(req: Request) {
     try {
       parsed = new URL(url);
     } catch {
-      return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+      return NextResponse.json({ error: 'Unavailable' }, { status: 500 });
     }
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
       return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
@@ -204,6 +204,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ id: inserted[0]?.id || '', title, url: parsed.toString(), cat: category, sub, leaf });
   } catch (err) {
     fail('links_failed', err);
-    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 500 });
   }
 }

@@ -13,7 +13,7 @@ export async function POST() {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ items: [], chips: NEWS_CHIPS, categories: NEWS_CATEGORIES });
+    if (!session.sql) return NextResponse.json({ items: [], chips: NEWS_CHIPS, categories: NEWS_CATEGORIES }, { status: 503 });
     await ensureNewsTables(session.sql).catch(() => {});
     const result = await runNewsSweep(session.sql, session.userId, 55000);
     const categories = await newsCategories(session.sql, session.userId).catch(() => NEWS_CATEGORIES.slice());
@@ -29,6 +29,6 @@ export async function POST() {
     });
   } catch (err) {
     fail('news_refresh', err);
-    return NextResponse.json({ items: [], chips: NEWS_CHIPS, categories: NEWS_CATEGORIES });
+    return NextResponse.json({ items: [], chips: NEWS_CHIPS, categories: NEWS_CATEGORIES }, { status: 500 });
   }
 }

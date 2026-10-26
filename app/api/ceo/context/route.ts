@@ -10,10 +10,10 @@ export async function GET() {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ cash: 100, runwayDays: 1, raise: {}, pipelines: [], meetings: [], inbox: {}, commitments: [], news: [] });
+    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
     return NextResponse.json(await ceoContext(session.sql, session.userId));
   } catch (err) {
     fail('ceo_context', err);
-    return NextResponse.json({ cash: 100, runwayDays: 1, raise: {}, pipelines: [], meetings: [], inbox: {}, commitments: [], news: [] });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 500 });
   }
 }

@@ -33,6 +33,6 @@ export async function GET(req: Request) {
     });
   } catch (err) {
     fail('drive_file', err);
-    return NextResponse.json({ error: 'This file cannot be previewed here.' }, { status: 400 });
+    return NextResponse.json({ error: 'This file cannot be previewed here.' }, { status: 500 });
   }
 }

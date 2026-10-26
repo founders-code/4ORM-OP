@@ -14,7 +14,7 @@ export async function GET() {
     return NextResponse.json({ plans: await listPlans(session.sql, session.userId) });
   } catch (err) {
     fail('plans_failed', err);
-    return NextResponse.json({ plans: [] });
+    return NextResponse.json({ plans: [] }, { status: 500 });
   }
 }
 
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ itemId: '', steps: [], needs: [], draft: '', created: [] });
+    if (!session.sql) return NextResponse.json({ itemId: '', steps: [], needs: [], draft: '', created: [] }, { status: 503 });
     const body = await req.json().catch(() => null);
     const saved = await savePlan(session.sql, session.userId, {
       itemId: String(body?.itemId || ''),
@@ -39,6 +39,6 @@ export async function POST(req: Request) {
     return NextResponse.json(saved);
   } catch (err) {
     fail('plans_failed', err);
-    return NextResponse.json({ itemId: '', steps: [], needs: [], draft: '', created: [] });
+    return NextResponse.json({ itemId: '', steps: [], needs: [], draft: '', created: [] }, { status: 500 });
   }
 }

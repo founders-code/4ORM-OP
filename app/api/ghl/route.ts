@@ -1,4 +1,6 @@
-export { GET } from '../pipeline/route';
+import { aliasTo } from '@/lib/alias';
 
-// Route segment config is not inherited through a re-export; without this Next tries to prerender it at build.
+// Alias of /api/pipeline (one route per job).
 export const dynamic = 'force-dynamic';
+const go = aliasTo('/api/pipeline');
+export { go as GET };

@@ -16,6 +16,7 @@ import { fail } from '@/lib/log';
 import { ROOM_EMAIL, openBoard, sessionOwner } from '@/lib/session';
 import { type CalEvent, calendarPayload, extendCalendar } from '@/lib/sync';
 import { loadCredsFor } from '@/lib/vault';
+import { CAL_ID, createOnCalendar, isSourceCalendar, moveToCalendar, sourceCalendarId, writableCalendar } from './_google-calendars';
 
 export const dynamic = 'force-dynamic';
 
@@ -135,6 +136,20 @@ function eventHasGuests(cached: CalEvent | undefined, input: CalendarEventInput)
   return cached.attendees === undefined ? true : cached.attendees.length > 0;
 }
 
+/**
+ * C22: calendarId from the editor. '' or the source calendar = the normal path. Another calendar must be writable
+ * in the user's calendarList; returns { id, color } or an error response.
+ */
+async function targetCalendar(body: Record<string, unknown>) {
+  const raw = String(body.calendarId || '').trim();
+  if (!raw) return { id: '', color: '' };
+  if (!CAL_ID.test(raw)) return { error: NextResponse.json({ error: 'That calendar is not valid.' }, { status: 400 }) };
+  if (await isSourceCalendar(raw)) return { id: '', color: '' };
+  const cal = await writableCalendar(raw);
+  if (!cal) return { error: NextResponse.json({ error: 'You cannot add events to that calendar.' }, { status: 403 }) };
+  return { id: cal.id, color: cal.color };
+}
+
 /** Signed-in, allowlisted caller (see sessionOwner). */
 async function calendarSession() {
   const session = await openBoard();
@@ -168,7 +183,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ events: shapeEvents(result.events), calendarUntil: result.until });
   } catch (err) {
     fail('calendar_failed', err);
-    return NextResponse.json({ events: [], calendarUntil: 0, error: 'Calendar could not be read.' });
+    return NextResponse.json({ events: [], calendarUntil: 0, error: 'Calendar could not be read.' }, { status: 500 });
   }
 }
 
@@ -197,12 +212,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 429 });
     }
     const creds = await loadCredsFor(session.userId);
+    const target = await withCreds(creds, () => targetCalendar(body));
+    if ('error' in target) return target.error;
     if (!id && title) {
       const input = readEditorFields(body, 'create');
-      const created = await withCreds(creds, () => createEvent(start, dur, title, input));
+      const created = target.id
+        ? await withCreds(creds, () => createOnCalendar(target.id, start, dur, title, input))
+        : await withCreds(creds, () => createEvent(start, dur, title, input));
       if (!created) return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 502 });
       return NextResponse.json({
         id: created,
+        calendarId: target.id || sourceCalendarId(),
+        ...(target.color ? { color: target.color } : {}),
         start,
         dur,
         title,
@@ -223,6 +244,11 @@ export async function POST(req: Request) {
     const length = current?.dur || dur;
     const moved = await withCreds(creds, () => moveEvent(id, start, length, eventHasGuests(current, {})));
     if (!moved) return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 502 });
+    if (target.id) {
+      const shifted = await withCreds(creds, () => moveToCalendar(sourceCalendarId(), id, target.id));
+      if (!shifted) return NextResponse.json({ error: 'The time moved, but Google would not move it to that calendar.' }, { status: 502 });
+      return NextResponse.json({ id, start, calendarId: target.id, color: target.color });
+    }
     const next = events.map((event) => (event.id === id ? { ...event, start } : event));
     await session.sql`
       INSERT INTO calendar_cache (owner_id, events, fetched_at)
@@ -265,13 +291,20 @@ export async function PATCH(req: Request) {
       fields.end = { dateTime: end.toISOString(), timeZone: CALENDAR_TIME_ZONE };
     }
     if (title) fields.summary = title;
+    const target = await withCreds(creds, () => targetCalendar(body));
+    if ('error' in target) return target.error;
     const cached = (await calendarPayload(session.sql, ownerId)).find((event) => event.id === id);
     const patched = String(body.action || '') === 'decline'
       ? await withCreds(creds, () => declineCalendarEvent(id, ROOM_EMAIL))
       : await withCreds(creds, () => patchCalendarEvent(id, fields, input, eventHasGuests(cached, input)));
     if (!patched) return NextResponse.json({ error: 'Calendar could not be updated.' }, { status: 502 });
+    if (target.id) {
+      const shifted = await withCreds(creds, () => moveToCalendar(sourceCalendarId(), id, target.id));
+      if (!shifted) return NextResponse.json({ error: 'Saved, but Google would not move it to that calendar.' }, { status: 502 });
+    }
     return NextResponse.json({
       id,
+      ...(target.id ? { calendarId: target.id, color: target.color, moved: true } : {}),
       start: Number.isFinite(start) ? start : undefined,
       dur,
       title,

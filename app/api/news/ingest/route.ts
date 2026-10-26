@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({})) as { items?: unknown } | unknown[];
     const raw = Array.isArray(body) ? body : (Array.isArray(body.items) ? body.items : []);
     const items = raw.filter((item): item is Record<string, unknown> => !!item && typeof item === 'object').slice(0, 60);
-    if (!who.sql) return NextResponse.json({ ok: false, saved: 0, chips: NEWS_CHIPS });
+    if (!who.sql) return NextResponse.json({ ok: false, saved: 0, chips: NEWS_CHIPS }, { status: 503 });
     await ensureNewsTables(who.sql).catch(() => {});
     const result = await saveStories(who.sql, who.userId, items, Date.now() + 45000);
     const saved = typeof result === 'number' ? result : result.saved;
@@ -46,6 +46,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, saved, items: list });
   } catch (err) {
     fail('news_ingest', err);
-    return NextResponse.json({ ok: false, saved: 0 });
+    return NextResponse.json({ ok: false, saved: 0 }, { status: 500 });
   }
 }

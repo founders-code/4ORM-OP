@@ -12,12 +12,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql || !packageIdOk(params.id)) {
-      return NextResponse.json({ saved: false, error: 'Could not stage that file. The Space is unchanged.' });
+      return NextResponse.json({ saved: false, error: 'Could not stage that file. The Space is unchanged.' }, { status: session.sql ? 400 : 503 });
     }
     const form = await req.formData();
     const file = form.get('file');
     if (!(file instanceof File)) {
-      return NextResponse.json({ saved: false, error: 'Could not stage that file. The Space is unchanged.' });
+      return NextResponse.json({ saved: false, error: 'Could not stage that file. The Space is unchanged.' }, { status: 400 });
     }
     const bytes = Buffer.from(await file.arrayBuffer());
     const space = await readSpace(session.sql, session.userId, params.id);
@@ -28,7 +28,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         mime: String(form.get('mime') || file.type || ''),
         parentId: String(form.get('folderId') || ''),
       }, bytes);
-      if (!added) return NextResponse.json({ saved: false, error: 'Could not stage that file. The Space is unchanged.' });
+      if (!added) return NextResponse.json({ saved: false, error: 'Could not stage that file. The Space is unchanged.' }, { status: 404 });
       return NextResponse.json({ id: params.id, item: added.item, package: added.package || added });
     }
     const staged = await uploadSpaceFile(session.sql, session.userId, params.id, {
@@ -38,11 +38,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       bytes,
     });
     if (staged.error || !staged.package) {
-      return NextResponse.json({ saved: false, error: staged.error || 'Could not stage that file. The Space is unchanged.' });
+      return NextResponse.json({ saved: false, error: staged.error || 'Could not stage that file. The Space is unchanged.' }, { status: 400 });
     }
     return NextResponse.json(staged.package);
   } catch (err) {
     fail('spaces_upload', err);
-    return NextResponse.json({ saved: false, error: 'Could not stage that file. The Space is unchanged.' });
+    return NextResponse.json({ saved: false, error: 'Could not stage that file. The Space is unchanged.' }, { status: 500 });
   }
 }

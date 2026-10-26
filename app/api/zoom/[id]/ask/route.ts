@@ -16,7 +16,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql || !ID.test(params.id)) return NextResponse.json({ answer: '' });
+    if (!session.sql || !ID.test(params.id)) return NextResponse.json({ answer: '' }, { status: session.sql ? 400 : 503 });
     await ensureZoomExtra(session.sql);
     const body = await req.json().catch(() => null) as { q?: string } | null;
     const q = String(body?.q || '').trim().slice(0, 240);
@@ -66,6 +66,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ answer: hit || 'Nothing in this meeting\'s notes matches that. Open the transcript to check.' });
   } catch (err) {
     fail('zoom_ask', err);
-    return NextResponse.json({ answer: '' });
+    return NextResponse.json({ answer: '' }, { status: 500 });
   }
 }

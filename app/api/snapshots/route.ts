@@ -38,15 +38,15 @@ export async function POST() {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ ok: false, date: pacificDay(), summary: '', payload: {} });
+    if (!session.sql) return NextResponse.json({ ok: false, date: pacificDay(), summary: '', payload: {} }, { status: 503 });
     const built = await saveSnapshot(session.sql, session.userId).catch((err) => {
       fail('snap_save', err);
       return null;
     });
-    if (!built) return NextResponse.json({ ok: false, date: pacificDay(), summary: '', payload: {} });
+    if (!built) return NextResponse.json({ ok: false, date: pacificDay(), summary: '', payload: {} }, { status: 500 });
     return NextResponse.json({ ok: true, ...built });
   } catch (err) {
     fail('snap_post', err);
-    return NextResponse.json({ ok: false, snapshots: [] });
+    return NextResponse.json({ ok: false, snapshots: [] }, { status: 500 });
   }
 }

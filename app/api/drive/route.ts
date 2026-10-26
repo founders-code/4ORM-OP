@@ -59,11 +59,11 @@ export async function POST(req: Request) {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ ok: false, error: 'Unavailable' });
+    if (!session.sql) return NextResponse.json({ ok: false, error: 'Unavailable' }, { status: 503 });
     const body = await req.json().catch(() => null);
     const action = String(body?.action || '');
     if (action !== 'mkdir' && action !== 'mkfile' && action !== 'rename' && action !== 'move') {
-      return NextResponse.json({ ok: false, error: 'Unavailable' });
+      return NextResponse.json({ ok: false, error: 'Unavailable' }, { status: 400 });
     }
     const cached = await session.sql`SELECT tree FROM drive_cache WHERE owner_id = ${session.userId}`;
     let raw: unknown = cached[0]?.tree;
@@ -81,16 +81,16 @@ export async function POST(req: Request) {
     if (action === 'mkdir' || action === 'mkfile') {
       const parentDepth = depthOf(tree, parentId, 1);
       if (!/^[\w-]{8,}$/.test(parentId) || (action === 'mkdir' && parentDepth && parentDepth >= 5)) {
-        return NextResponse.json({ ok: false, error: 'Unavailable' });
+        return NextResponse.json({ ok: false, error: 'Unavailable' }, { status: 400 });
       }
     }
     const weight = action === 'move' ? 2 : 1;
     if (!(await claimBudget(session.sql, session.userId, 'google_drive', weight))) {
-      return NextResponse.json({ ok: false, error: 'Unavailable' });
+      return NextResponse.json({ ok: false, error: 'Unavailable' }, { status: 429 });
     }
     const creds = await loadCredsFor(session.userId);
     const written = (await withCreds(creds, () => driveWrite(action, { name, parentId, id }))) as { id?: string; name?: string; webViewLink?: string } | null;
-    if (!written) return NextResponse.json({ ok: false, error: 'Unavailable' });
+    if (!written) return NextResponse.json({ ok: false, error: 'Unavailable' }, { status: 502 });
     if (action === 'rename') {
       const node = findNode(tree, id);
       if (node) node.name = name;
@@ -114,6 +114,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, id: written.id || id, name: written.name || name, url: written.webViewLink || '' });
   } catch {
     fail('drive_failed');
-    return NextResponse.json({ ok: false, error: 'Unavailable' });
+    return NextResponse.json({ ok: false, error: 'Unavailable' }, { status: 500 });
   }
 }

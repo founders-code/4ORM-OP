@@ -21,16 +21,16 @@ export async function GET(req: Request) {
     return NextResponse.json(desk);
   } catch (err) {
     fail('book_failed', err);
-    return NextResponse.json({ minutes: 30, slots: [], error: 'Openings could not be read.' });
+    return NextResponse.json({ minutes: 30, slots: [], error: 'Openings could not be read.' }, { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
   try {
     const sql = await getSql();
-    if (!sql) return NextResponse.json({ error: 'Booking is not available.' }, { status: 400 });
+    if (!sql) return NextResponse.json({ error: 'Booking is not available.' }, { status: 503 });
     const ownerId = await roomOwner(sql);
-    if (!ownerId) return NextResponse.json({ error: 'Booking is not available.' }, { status: 400 });
+    if (!ownerId) return NextResponse.json({ error: 'Booking is not available.' }, { status: 503 });
     if (!(await takeRateLimit(sql, 'book', clientIp(req), BOOKINGS_PER_HOUR, 3600))) {
       return NextResponse.json({ error: 'Too many booking attempts. Please try again in an hour.' }, { status: 429 });
     }
@@ -48,6 +48,6 @@ export async function POST(req: Request) {
     return NextResponse.json(result);
   } catch (err) {
     fail('book_failed', err);
-    return NextResponse.json({ error: 'That slot could not be booked.' }, { status: 400 });
+    return NextResponse.json({ error: 'That slot could not be booked.' }, { status: 500 });
   }
 }

@@ -28,6 +28,6 @@ export async function POST(req: Request) {
     return NextResponse.json(rows[0]);
   } catch (err) {
     fail('zoom_note', err);
-    return NextResponse.json({ error: 'Could not save that note.' }, { status: 400 });
+    return NextResponse.json({ error: 'Could not save that note.' }, { status: 500 });
   }
 }

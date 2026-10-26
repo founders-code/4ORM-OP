@@ -27,13 +27,13 @@ export async function GET(req: Request) {
   if (pacificHour() !== '06') return NextResponse.json({ ok: true, skipped: true });
   try {
     const sql = await getSql();
-    if (!sql) return NextResponse.json({ ok: false });
+    if (!sql) return NextResponse.json({ ok: false }, { status: 503 });
     const ownerId = await roomOwner(sql);
     if (!ownerId) return NextResponse.json({ ok: true });
     await dailyCeo(sql, ownerId, null);
     return NextResponse.json({ ok: true });
   } catch (err) {
     fail('ceo_cron', err);
-    return NextResponse.json({ ok: false });
+    return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

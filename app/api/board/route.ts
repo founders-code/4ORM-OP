@@ -28,6 +28,6 @@ export async function GET() {
     return NextResponse.json(board);
   } catch (err) {
     fail('board_failed', err);
-    return NextResponse.json({ ...idleBoard(false), reads: { board: 'failed' } });
+    return NextResponse.json({ ...idleBoard(false), reads: { board: 'failed' } }, { status: 500 });
   }
 }

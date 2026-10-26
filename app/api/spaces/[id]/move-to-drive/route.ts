@@ -11,13 +11,13 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql || !spaceIdOk(params.id)) {
-      return NextResponse.json({ ok: false, error: 'Drive could not take this Space. The staged files are still here.' });
+      return NextResponse.json({ ok: false, error: 'Drive could not take this Space. The staged files are still here.' }, { status: session.sql ? 400 : 503 });
     }
     const pushed = await moveSpaceToDrive(session.sql, session.userId, params.id);
-    if (!pushed) return NextResponse.json({ ok: false, error: 'Drive could not take this Space. The staged files are still here.' });
+    if (!pushed) return NextResponse.json({ ok: false, error: 'Drive could not take this Space. The staged files are still here.' }, { status: 502 });
     return NextResponse.json(pushed);
   } catch (err) {
     fail('spaces_drive', err);
-    return NextResponse.json({ ok: false, error: 'Drive could not take this Space. The staged files are still here.' });
+    return NextResponse.json({ ok: false, error: 'Drive could not take this Space. The staged files are still here.' }, { status: 500 });
   }
 }

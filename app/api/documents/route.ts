@@ -56,7 +56,7 @@ export async function GET() {
     /* Real folders only: the saved folder rows plus any folder a file already sits in. No seeded names. */
     const folders: string[] = [];
     try {
-      const saved = await session.sql`SELECT name FROM doc_folders WHERE owner_id = ${session.userId} ORDER BY name`;
+      const saved = await session.sql`SELECT name FROM doc_folders WHERE owner_id = ${session.userId} AND deleted_at IS NULL ORDER BY name`;
       (saved as Record<string, unknown>[]).forEach((row) => {
         const name = String(row.name || '');
         if (name && !folders.includes(name)) folders.push(name);
@@ -78,7 +78,7 @@ export async function GET() {
     } catch (err) {
       fail('doc_sets', err);
     }
-    return NextResponse.json({ docs, categories: folders, folders, sets });
+    return NextResponse.json({ docs, categories: folders, folders, sets }, { status: 500 });
   } catch (err) {
     fail('staged_docs', err);
     return NextResponse.json({ error: 'Could not load the library.' }, { status: 500 });
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ saved: false });
+    if (!session.sql) return NextResponse.json({ saved: false }, { status: 503 });
     const body = await req.json().catch(() => ({})) as Record<string, unknown>;
     const action = String(body?.action || '');
     if (action === 'pull') {
@@ -107,7 +107,7 @@ export async function POST(req: Request) {
       if (found[0]?.id) return NextResponse.json({ ok: true, id: String(found[0].id), existing: true });
       await session.sql`
         INSERT INTO doc_folders (owner_id, name) VALUES (${session.userId}, ${category})
-        ON CONFLICT (owner_id, name) DO NOTHING
+        ON CONFLICT (owner_id, name) DO UPDATE SET deleted_at = NULL
       `;
       const url = String(body?.url || '').slice(0, 500);
       const inserted = await session.sql`
@@ -165,7 +165,7 @@ export async function POST(req: Request) {
         await session.sql`
           INSERT INTO doc_folders (owner_id, name)
           VALUES (${session.userId}, ${name})
-          ON CONFLICT (owner_id, name) DO NOTHING
+          ON CONFLICT (owner_id, name) DO UPDATE SET deleted_at = NULL
         `;
       }
       if (action === 'rename-folder' && from && name && from !== name) {
@@ -173,9 +173,16 @@ export async function POST(req: Request) {
           UPDATE staged_docs SET category = ${name}
           WHERE owner_id = ${session.userId} AND category = ${from}
         `;
+        // Soft rename: the new name is created (or restored) and the old row is marked removed, so the
+        // UNIQUE(owner_id, name) index never clashes with a removed folder of the same name.
         await session.sql`
-          UPDATE doc_folders SET name = ${name}
-          WHERE owner_id = ${session.userId} AND name = ${from}
+          INSERT INTO doc_folders (owner_id, name)
+          VALUES (${session.userId}, ${name})
+          ON CONFLICT (owner_id, name) DO UPDATE SET deleted_at = NULL
+        `;
+        await session.sql`
+          UPDATE doc_folders SET deleted_at = now()
+          WHERE owner_id = ${session.userId} AND name = ${from} AND deleted_at IS NULL
         `;
       }
       if (action === 'remove-folder' && name) {
@@ -186,11 +193,11 @@ export async function POST(req: Request) {
         await session.sql`
           INSERT INTO doc_folders (owner_id, name)
           VALUES (${session.userId}, 'Uncategorized')
-          ON CONFLICT (owner_id, name) DO NOTHING
+          ON CONFLICT (owner_id, name) DO UPDATE SET deleted_at = NULL
         `;
         await session.sql`
-          DELETE FROM doc_folders
-          WHERE owner_id = ${session.userId} AND name = ${name} AND name <> 'Uncategorized'
+          UPDATE doc_folders SET deleted_at = now()
+          WHERE owner_id = ${session.userId} AND name = ${name} AND name <> 'Uncategorized' AND deleted_at IS NULL
         `;
       }
       return NextResponse.json({ ok: true, name: name || from });
@@ -198,7 +205,7 @@ export async function POST(req: Request) {
     if (action === 'move') {
       const id = String(body?.id || '');
       const category = String(body?.category || '').trim().slice(0, 80);
-      if (!/^[0-9a-f-]{36}$/i.test(id) || !category) return NextResponse.json({ ok: false });
+      if (!/^[0-9a-f-]{36}$/i.test(id) || !category) return NextResponse.json({ ok: false }, { status: 400 });
       await session.sql`
         UPDATE staged_docs SET category = ${category}
         WHERE id = ${id} AND owner_id = ${session.userId}
@@ -278,7 +285,7 @@ export async function POST(req: Request) {
       }
       const parent = String((Array.isArray(raw) ? raw[0] : null)?.id || '');
       if (!/^[\w-]{8,}$/.test(parent)) {
-        return NextResponse.json({ ok: false, error: 'Drive has no shared drive to receive these files. The library is unchanged.' });
+        return NextResponse.json({ ok: false, error: 'Drive has no shared drive to receive these files. The library is unchanged.' }, { status: 409 });
       }
       const folders: Record<string, string> = {};
       let failed = false;
@@ -296,12 +303,12 @@ export async function POST(req: Request) {
         const copied = await withCreds(creds, () => copyDriveFile(fileId, folders[category], String(row.name || 'File')));
         if (!copied) failed = true;
       }
-      if (failed) return NextResponse.json({ ok: false, error: 'Drive did not take every file. The library is unchanged.' });
+      if (failed) return NextResponse.json({ ok: false, error: 'Drive did not take every file. The library is unchanged.' }, { status: 502 });
       return NextResponse.json({ ok: true, error: '' });
     }
-    return NextResponse.json({ ok: false });
+    return NextResponse.json({ ok: false }, { status: 400 });
   } catch (err) {
     fail('staged_docs', err);
-    return NextResponse.json({ saved: false });
+    return NextResponse.json({ saved: false }, { status: 500 });
   }
 }

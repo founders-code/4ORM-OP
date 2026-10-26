@@ -22,6 +22,6 @@ export async function GET() {
     return NextResponse.json({ drives: tree?.drives || [], status: tree?.status || 'unavailable' });
   } catch (err) {
     fail('drives', err);
-    return NextResponse.json({ drives: [] });
+    return NextResponse.json({ drives: [] }, { status: 500 });
   }
 }

@@ -274,12 +274,18 @@
       funnel: [['Storage', 103], ['Cold', 21], ['1st reach out', 1], ['2nd reach out', 0], ['Contact made', 0], ['Send email', 2], ['Check back', 0], ['Call back', 1], ['Meeting booked', 0], ['Info pack sent', 0], ['Rebooked', 0], ['Meeting done', 0], ['2nd meeting', 0]],
       funnelLabel: 'Design partners \u00b7 13 stages \u00b7 click a stage to filter the list',
       needs: [
-        { name: 'AMF', color: '#e0364f', meta: 'Regulator \u00b7 cold, no touch on record' },
-        { name: 'ASC', color: '#2e6bf2', meta: 'Regulator \u00b7 cold, no touch on record' },
-        { name: 'Alan Goff', color: '#12a36a', meta: 'Network \u00b7 cold, no touch on record' },
-        { name: 'Alex Fontaine', color: '#c98408', meta: 'Network \u00b7 cold' },
-        { name: 'Mary Morris', color: '#6b4fd8', meta: 'Network \u00b7 cold' }
+        { name: "Kevin Wong", color: "#0f8a8a", meta: "VC \u00b7 private network \u00b7 call about the $25K", kind: "reach", why: "Reach out", act: "Call" },
+        { name: "Bow Valley Credit Union", color: "#c2560c", meta: "Design partner \u00b7 asked for the compliance requirements", kind: "follow", why: "Follow up \u00b7 1d", act: "Reply" },
+        { name: "Joe Canavan", color: "#e0364f", meta: "VC \u00b7 angel \u00b7 email", kind: "reach", why: "Reach out", act: "Email" },
+        { name: "Enrich Mortgage Group", color: "#12a36a", meta: "Design partner \u00b7 discovery call to book", kind: "follow", why: "Follow up \u00b7 3d", act: "Book" },
+        { name: "Dean Hesse", color: "#6b4fd8", meta: "Advisor \u00b7 offered investor intros", kind: "cold", why: "Going cold \u00b7 16d", act: "Email" },
+        { name: "BCFSA", color: "#b02a3c", meta: "Regulator \u00b7 intro meeting requested Oct 1", kind: "cold", why: "Going cold \u00b7 21d", act: "Nudge" },
+        { name: "Mench Capital", color: "#c98408", meta: "Investor \u00b7 questions on the capture rate", kind: "follow", why: "Follow up \u00b7 1d", act: "Reply" },
+        { name: "CLHIA Affiliates", color: "#0f6e8a", meta: "Association \u00b7 wants the insurer list", kind: "follow", why: "Follow up \u00b7 9h", act: "Reply" },
+        { name: "Ashish Dhir", color: "#2a7f62", meta: "Prospect \u00b7 settlement finality", kind: "cold", why: "Going cold \u00b7 9d", act: "Reply" }
       ],
+      ro: "2 moved today \u00b7 54 sent this week \u00b7 0 replies",
+      board: [{"id": "fx0", "name": "Storage", "count": 103, "pipe": "", "opps": [{"id": "fx0-0", "contact": "AMF", "sub": "regulatory", "hot": false}, {"id": "fx0-1", "contact": "ASC", "sub": "regulatory", "hot": false}, {"id": "fx0-2", "contact": "Alan Goff", "sub": "network \u00b7 0d", "hot": false}, {"id": "fx0-3", "contact": "Alex Fontaine", "sub": "network", "hot": false}]}, {"id": "fx1", "name": "Cold", "count": 21, "pipe": "", "opps": [{"id": "fx1-0", "contact": "BDC Seed Venture Fund", "sub": "vc", "hot": false}, {"id": "fx1-1", "contact": "Bank of Canada RPAA", "sub": "regulatory", "hot": false}, {"id": "fx1-2", "contact": "Amy Morris", "sub": "facebook", "hot": false}]}, {"id": "fx2", "name": "1st reach out", "count": 1, "pipe": "", "opps": [{"id": "fx2-0", "contact": "Grande Prairie Mortgage Group", "sub": "broker \u00b7 5d", "hot": false}]}, {"id": "fx3", "name": "Send email", "count": 2, "pipe": "", "opps": [{"id": "fx3-0", "contact": "Enrich Mortgage Group", "sub": "design partner \u00b7 due", "hot": true}, {"id": "fx3-1", "contact": "Century 21 desk", "sub": "broker", "hot": false}]}, {"id": "fx4", "name": "Call back", "count": 1, "pipe": "", "opps": [{"id": "fx4-0", "contact": "Remax desk", "sub": "broker \u00b7 2d", "hot": false}]}, {"id": "fx5", "name": "Meeting booked", "count": 1, "pipe": "", "opps": [{"id": "fx5-0", "contact": "Bow Valley Credit Union", "sub": "credit union \u00b7 Thu 10:00", "hot": true}]}, {"id": "fxe0", "name": "2nd reach out", "count": 0, "pipe": "", "opps": []}, {"id": "fxe1", "name": "Contact made", "count": 0, "pipe": "", "opps": []}, {"id": "fxe2", "name": "Check back", "count": 0, "pipe": "", "opps": []}, {"id": "fxe3", "name": "Info pack", "count": 0, "pipe": "", "opps": []}, {"id": "fxe4", "name": "Rebooked", "count": 0, "pipe": "", "opps": []}, {"id": "fxe5", "name": "Meeting done", "count": 0, "pipe": "", "opps": []}, {"id": "fxe6", "name": "2nd meeting", "count": 0, "pipe": "", "opps": []}, {"id": "fxe7", "name": "Legal counsel", "count": 0, "pipe": "", "opps": []}, {"id": "fxe8", "name": "Not now", "count": 0, "pipe": "", "opps": []}, {"id": "fxe9", "name": "Not interested", "count": 0, "pipe": "", "opps": []}],
       matrix: [
         { cat: 'Strategic', cells: [107, 3, 0, 0, 0] },
         { cat: 'Network', cells: [36, 1, 0, 0, 0] },
@@ -328,6 +334,9 @@
         group: 'Venture Capital',
         ini: 'NM',
         who: 'Marsh Canada MD \u00b7 advises early-stage insurtech founders \u00b7 backed YouSet and QuickFacts',
+        whoLinks: [['Marsh Canada', '#'], ['YouSet', '#'], ['QuickFacts', '#']],
+        heroLinks: [{ label: 'LinkedIn', url: '#' }, { label: 'marsh.com', url: '#' }, { label: 'QuickFacts', url: '#' }, { label: 'YouSet', url: '#' }],
+        source: 'VC research list, Oct 18',
         tags: [['vc', 'Venture Capital'], ['', 'Angel \u00b7 insurtech'], ['', 'Pipeline: Storage'], ['', 'Never contacted']],
         ready: '2/5',
         readyDash: '100.5 251.3',
@@ -429,19 +438,19 @@
     email: {
       unread: 58, need: 5, colN: 2, feedTab: 'everything',
       messages: [
-        { id: 1, day: 'Today', f: 'Bruce Fair', e: 'bruce@4ormfinance.com', c: '#2e6bf2', sj: 'Revised - This version may be better', pv: 'Let me know your thoughts. B', t: '47m', un: 1, att: ['2-pager v3.pdf'], tag: 'Needs reply' },
-        { id: 2, day: 'Today', f: 'CLHIA Affiliates Program', e: 'affiliates@clhia.ca', c: '#0f6e8a', sj: 'RE: Are we a bad fit for the Affiliates Program?', pv: 'Hi Chad, thank you for your email. Can you provide a list of Canadian life and health insurers that you\u2026', t: '9h', un: 1, att: [], tag: 'Needs reply' },
-        { id: 3, day: 'Today', f: 'Simen Ruud', e: 'simen@foundersuite.com', c: '#4a5672', sj: 'Chad\u2019s Foundersuite account', pv: 'Hi Chad, Simen here from Foundersuite\u2026', t: '10h', un: 0, att: [], tag: '' },
+        { id: 1, day: 'Today', f: 'Bruce Fair', e: 'teammate@4orm.example', c: '#2e6bf2', sj: 'Revised - This version may be better', pv: 'Let me know your thoughts. B', t: '47m', un: 1, att: ['2-pager v3.pdf'], tag: 'Needs reply' },
+        { id: 2, day: 'Today', f: 'CLHIA Affiliates Program', e: 'affiliates@ins.test', c: '#0f6e8a', sj: 'RE: Are we a bad fit for the Affiliates Program?', pv: 'Hi Chad, thank you for your email. Can you provide a list of Canadian life and health insurers that you\u2026', t: '9h', un: 1, att: [], tag: 'Needs reply' },
+        { id: 3, day: 'Today', f: 'Simen Ruud', e: 'sam@fundraisetool.test', c: '#4a5672', sj: 'Chad\u2019s Foundersuite account', pv: 'Hi Chad, Simen here from Foundersuite\u2026', t: '10h', un: 0, att: [], tag: '' },
         { id: 4, day: 'Today', f: 'Michael Stevens', e: 'michael@example.ca', c: '#6b4fd8', sj: 'NMDA with James - next steps', pv: 'Chad, James sent over the markup. Two points I\u2019d push back on\u2026', t: '11h', un: 1, att: ['NMDA-markup.docx'], tag: '' },
-        { id: 5, day: 'Yesterday', f: 'Kevin Wong', e: 'kevin@4ormfinance.com', c: '#0f8a8a', sj: 'Re: GTM outline', pv: 'Looked at it. Two edits on the broker section, then it\u2019s good.', t: '1d', un: 0, att: [], tag: '' },
-        { id: 6, day: 'Yesterday', f: 'Bow Valley Credit Union', e: 'partnerships@bowvalleycu.com', c: '#c2560c', sj: 'Follow-up from Thursday\u2019s call', pv: 'Thanks for walking us through the suitability record. Our compliance lead would like to see\u2026', t: '1d', un: 1, att: ['BVCU-requirements.pdf'], tag: 'Needs reply' },
-        { id: 7, day: 'Yesterday', f: 'Mike (Mench Capital)', e: 'menchcapital@telus.net', c: '#c98408', sj: 'Re: 4orm Finance - Overview for Investors', pv: 'Had a look over the weekend. A couple of questions on the capture rate\u2026', t: '1d', un: 0, att: [], tag: '' },
-        { id: 8, day: 'Yesterday', f: 'TekSavvy', e: 'billing@teksavvy.com', c: '#7a86a0', sj: 'TekSavvy invoice for account 4421', pv: 'Your invoice is ready.', t: '1d', un: 0, att: ['invoice.pdf'], tag: 'Bulk' },
-        { id: 9, day: 'Yesterday', f: 'Don Hickling', e: 'donhickling.dh@gmail.com', c: '#6b4fd8', sj: 'Friday 1on1 - agenda', pv: 'Three things: the raise, Kevin\u2019s path, and the regulator note.', t: '1d', un: 0, att: [], tag: '' }
+        { id: 5, day: 'Yesterday', f: 'Kevin Wong', e: 'engineer@4orm.example', c: '#0f8a8a', sj: 'Re: GTM outline', pv: 'Looked at it. Two edits on the broker section, then it\u2019s good.', t: '1d', un: 0, att: [], tag: '' },
+        { id: 6, day: 'Yesterday', f: 'Bow Valley Credit Union', e: 'partnerships@example-cu.test', c: '#c2560c', sj: 'Follow-up from Thursday\u2019s call', pv: 'Thanks for walking us through the suitability record. Our compliance lead would like to see\u2026', t: '1d', un: 1, att: ['BVCU-requirements.pdf'], tag: 'Needs reply' },
+        { id: 7, day: 'Yesterday', f: 'Mike (Mench Capital)', e: 'ridgecapital@mail.test', c: '#c98408', sj: 'Re: 4orm Finance - Overview for Investors', pv: 'Had a look over the weekend. A couple of questions on the capture rate\u2026', t: '1d', un: 0, att: [], tag: '' },
+        { id: 8, day: 'Yesterday', f: 'TekSavvy', e: 'billing@ispcorp.test', c: '#7a86a0', sj: 'TekSavvy invoice for account 4421', pv: 'Your invoice is ready.', t: '1d', un: 0, att: ['invoice.pdf'], tag: 'Bulk' },
+        { id: 9, day: 'Yesterday', f: 'Don Hickling', e: 'angel.investor@mail.test', c: '#6b4fd8', sj: 'Friday 1on1 - agenda', pv: 'Three things: the raise, Kevin\u2019s path, and the regulator note.', t: '1d', un: 0, att: [], tag: '' }
       ],
       cols: [
-        { id: 'c1', n: 'Raise', c: '#c2560c', from: ['bruce@4ormfinance.com', 'menchcapital@telus.net'], ids: [1, 7] },
-        { id: 'c2', n: 'Regulators & associations', c: '#e0364f', from: ['affiliates@clhia.ca'], ids: [2] }
+        { id: 'c1', n: 'Raise', c: '#c2560c', from: ['teammate@4orm.example', 'ridgecapital@mail.test'], ids: [1, 7] },
+        { id: 'c2', n: 'Regulators & associations', c: '#e0364f', from: ['affiliates@ins.test'], ids: [2] }
       ],
       people: {
         looseMore: 10,

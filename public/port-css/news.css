@@ -207,3 +207,19 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,s
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);opacity:0;background:#0f1a3a;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:650;transition:.25s;box-shadow:0 12px 30px rgba(0,0,0,.35);z-index:50}
 .toast.show{opacity:1;transform:translateX(-50%)}
 .pop,.toast{--ink:#101a33;--ink2:#4a5672;--ink3:#7a86a0;--soft:#f5f7fb;--violet:#6b4fd8;--line:#e8ecf3;--blue:#2e6bf2;font-family:inherit}
+/* design 13: the page sits on the dark ground (no white sheet), white 24px title, 290px rail */
+.nwx{background:transparent!important;padding:0!important;border-radius:0!important}
+.nwx>.top>.t{font-size:24px;font-weight:850;letter-spacing:-.02em;color:#fff}
+.nwx .sweeps{font-size:12px;color:#9fb0d0;font-weight:600;letter-spacing:0}
+.nwx .right .search{width:240px}
+.nwx .chips .chip{font-size:11.5px}
+.nwx .wrap{grid-template-columns:minmax(0,1fr) 290px;gap:16px}
+.nwx .grid{gap:14px}
+.nwx .rail .card{border-radius:14px;padding:14px}
+.nwx .rail .card .ch .t{font-size:13.5px;font-weight:750}
+.nwx .comp .comprow{font-size:12px}
+@media(max-width:820px){.nwx .wrap{grid-template-columns:1fr}}
+.port-body{background:transparent!important;padding:0!important}
+/* competitor rows: the saved-list .cl grid must not apply here */
+.nwx .comp .cl{display:block;padding:0;border-radius:0;color:var(--ink);cursor:inherit;grid-template-columns:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nwx .comp .cl b{display:inline;font-size:inherit;font-weight:700;white-space:nowrap}

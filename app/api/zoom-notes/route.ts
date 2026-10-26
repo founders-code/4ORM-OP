@@ -34,12 +34,12 @@ export async function POST() {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ ok: false, notes: [], error: 'Unavailable' });
+    if (!session.sql) return NextResponse.json({ ok: false, notes: [], error: 'Unavailable' }, { status: 503 });
     const sql = session.sql;
     await seedZoomNotes(sql, session.userId);
     if (!(await claimBudget(sql, session.userId, 'zoom', 25))) {
       const notes = await listZoomNotes(sql, session.userId);
-      return NextResponse.json({ ok: false, busy: true, notes, error: 'Zoom refreshed a moment ago. Try again in a few minutes.' });
+      return NextResponse.json({ ok: false, busy: true, notes, error: 'Zoom refreshed a moment ago. Try again in a few minutes.' }, { status: 429 });
     }
     const known = await filledZoomIds(sql, session.userId);
     const api = await syncZoomApi(sql, session.userId, known).catch((err) => {
@@ -65,6 +65,6 @@ export async function POST() {
     });
   } catch (err) {
     fail('zoom_refresh', err);
-    return NextResponse.json({ ok: false, notes: [], error: 'Unavailable' });
+    return NextResponse.json({ ok: false, notes: [], error: 'Unavailable' }, { status: 500 });
   }
 }

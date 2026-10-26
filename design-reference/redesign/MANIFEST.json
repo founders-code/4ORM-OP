@@ -1,219 +1,219 @@
 [
- {
-  "file": "redesign/02-war-room.html",
-  "page": "War Room (landing page)",
-  "route": "/war-room (also / and /control-room redirect here)",
-  "bytes": 63846,
-  "sha256": "1de7bee7012e482d"
- },
- {
-  "file": "redesign/02b-war-room-steps.html",
-  "page": "War Room - Steps open",
-  "route": "/war-room (Steps clicked)",
-  "bytes": 63955,
-  "sha256": "5ef33dd6aceaf301"
- },
- {
-  "file": "redesign/02c-war-room-signals.html",
-  "page": "War Room - Signals panel open",
-  "route": "/war-room (Signals clicked)",
-  "bytes": 63918,
-  "sha256": "1fe3f5342412e5ff"
- },
- {
-  "file": "redesign/02d-war-room-select.html",
-  "page": "War Room - Select mode + quick delete",
-  "route": "/war-room (Select)",
-  "bytes": 69252,
-  "sha256": "1676cc3fa98583e8"
- },
- {
-  "file": "redesign/03-notes.html",
-  "page": "Notes",
-  "route": "/notes",
-  "bytes": 45854,
-  "sha256": "2bc91cb1a51674cf"
- },
- {
-  "file": "redesign/03b-notes-open.html",
-  "page": "Notes - note opened",
-  "route": "/notes (note clicked)",
-  "bytes": 49282,
-  "sha256": "4056eca639d2f22d"
- },
- {
-  "file": "redesign/03c-notes-categories.html",
-  "page": "Notes - categories + Pin",
-  "route": "/notes",
-  "bytes": 49844,
-  "sha256": "82e1daa88b5d68e5"
- },
- {
-  "file": "redesign/04-pipeline.html",
-  "page": "Pipeline",
-  "route": "/pipeline",
-  "bytes": 53351,
-  "sha256": "8cb7e9b0ce96d981"
- },
- {
-  "file": "redesign/05-spaces.html",
-  "page": "Spaces",
-  "route": "/spaces",
-  "bytes": 44792,
-  "sha256": "26b682ba13d6870d"
- },
- {
-  "file": "redesign/05c-space-panel.html",
-  "page": "Spaces - Space opened as a slide-over panel (actions bar at the bottom)",
-  "route": "/spaces (card clicked)",
-  "bytes": 80112,
-  "sha256": "31881f89f136b98d"
- },
- {
-  "file": "redesign/06-documents.html",
-  "page": "Documents",
-  "route": "/documents",
-  "bytes": 44017,
-  "sha256": "c12bbffe2f9df03b"
- },
- {
-  "file": "redesign/06b-document-viewer.html",
-  "page": "Documents - in-site viewer",
-  "route": "/documents (file clicked)",
-  "bytes": 48992,
-  "sha256": "95f92c18c916ff70"
- },
- {
-  "file": "redesign/07-links.html",
-  "page": "Links",
-  "route": "/links",
-  "bytes": 46988,
-  "sha256": "e3826a851ceed82d"
- },
- {
-  "file": "redesign/08-email.html",
-  "page": "Email",
-  "route": "/email",
-  "bytes": 54332,
-  "sha256": "32bd67e1924aecbc"
- },
- {
-  "file": "redesign/08b-email-compose.html",
-  "page": "Email compose panel",
-  "route": "/email (Compose open)",
-  "bytes": 54399,
-  "sha256": "f58d3e508a8b295f"
- },
- {
-  "file": "redesign/08c-email-people.html",
-  "page": "Email - People view",
-  "route": "/email?view=people&person=:id (person panel)",
-  "bytes": 52666,
-  "sha256": "feeac8a7f949d273"
- },
- {
-  "file": "redesign/08d-email-inbox.html",
-  "page": "Email - Inbox feed + your columns",
-  "route": "/email (default view)",
-  "bytes": 49963,
-  "sha256": "cc89c87b9c1e4f5d"
- },
- {
-  "file": "redesign/08e-email-people-grid.html",
-  "page": "Email - People grid (boxes, tags, closed-box drawer)",
-  "route": "/email?view=people",
-  "bytes": 74730,
-  "sha256": "f35357c8d14a0d6c"
- },
- {
-  "file": "redesign/08f-email-person-open.html",
-  "page": "Email - person pop-up (full emails, files, links)",
-  "route": "/email?view=people (box clicked)",
-  "bytes": 74799,
-  "sha256": "4e5c5028ba5c6db7"
- },
- {
-  "file": "redesign/09-playbook.html",
-  "page": "Playbook",
-  "route": "/playbook",
-  "bytes": 79122,
-  "sha256": "1e6f5a882d528914"
- },
- {
-  "file": "redesign/10-calendar.html",
-  "page": "Calendar",
-  "route": "/calendar",
-  "bytes": 100107,
-  "sha256": "bf7407df26892410"
- },
- {
-  "file": "redesign/10b-calendar-rail-closed.html",
-  "page": "Calendar - side panel closed",
-  "route": "/calendar (rail toggle)",
-  "bytes": 101036,
-  "sha256": "66975d7c3b173262"
- },
- {
-  "file": "redesign/10c-calendar-event-editor.html",
-  "page": "Calendar - event editor open (no icons, 24h times)",
-  "route": "/calendar (event clicked)",
-  "bytes": 100493,
-  "sha256": "e548a06836440d8e"
- },
- {
-  "file": "redesign/11-zoom.html",
-  "page": "Zoom",
-  "route": "/zoom",
-  "bytes": 54676,
-  "sha256": "73092b3f98e5a4f6"
- },
- {
-  "file": "redesign/12-completed.html",
-  "page": "Completed",
-  "route": "/completed",
-  "bytes": 42950,
-  "sha256": "b0b0d2cdff8a06bf"
- },
- {
-  "file": "redesign/13-news.html",
-  "page": "News",
-  "route": "/news",
-  "bytes": 50226,
-  "sha256": "b394dd5d7b2996d9"
- },
- {
-  "file": "redesign/13b-news-saved.html",
-  "page": "News - Saved collections",
-  "route": "/news?view=saved",
-  "bytes": 53556,
-  "sha256": "c20ffac42e2304b8"
- },
- {
-  "file": "redesign/14-drive.html",
-  "page": "Drive",
-  "route": "/drive",
-  "bytes": 42188,
-  "sha256": "0db84dedbc4e0333"
- },
- {
-  "file": "redesign/15-contacts.html",
-  "page": "Contacts",
-  "route": "/contacts",
-  "bytes": 43514,
-  "sha256": "cb8eae8672a68837"
- },
- {
-  "file": "redesign/16-financials.html",
-  "page": "Financials",
-  "route": "/financials",
-  "bytes": 41025,
-  "sha256": "cd2d730660289f04"
- },
- {
-  "file": "redesign/17-integrations.html",
-  "page": "Integrations",
-  "route": "/integrations",
-  "bytes": 40397,
-  "sha256": "9269cc7f9890172d"
- }
+  {
+    "file": "redesign/02-war-room.html",
+    "page": "War Room (landing page)",
+    "route": "/war-room (also / and /control-room redirect here)",
+    "bytes": 63846,
+    "sha256": "1de7bee7012e482d"
+  },
+  {
+    "file": "redesign/02b-war-room-steps.html",
+    "page": "War Room - Steps open",
+    "route": "/war-room (Steps clicked)",
+    "bytes": 63955,
+    "sha256": "5ef33dd6aceaf301"
+  },
+  {
+    "file": "redesign/02c-war-room-signals.html",
+    "page": "War Room - Signals panel open",
+    "route": "/war-room (Signals clicked)",
+    "bytes": 63918,
+    "sha256": "1fe3f5342412e5ff"
+  },
+  {
+    "file": "redesign/02d-war-room-select.html",
+    "page": "War Room - Select mode + quick delete",
+    "route": "/war-room (Select)",
+    "bytes": 69252,
+    "sha256": "1676cc3fa98583e8"
+  },
+  {
+    "file": "redesign/03-notes.html",
+    "page": "Notes",
+    "route": "/notes",
+    "bytes": 45854,
+    "sha256": "2bc91cb1a51674cf"
+  },
+  {
+    "file": "redesign/03b-notes-open.html",
+    "page": "Notes - note opened",
+    "route": "/notes (note clicked)",
+    "bytes": 49282,
+    "sha256": "4056eca639d2f22d"
+  },
+  {
+    "file": "redesign/03c-notes-categories.html",
+    "page": "Notes - categories + Pin",
+    "route": "/notes",
+    "bytes": 49844,
+    "sha256": "82e1daa88b5d68e5"
+  },
+  {
+    "file": "redesign/04-pipeline.html",
+    "page": "Pipeline",
+    "route": "/pipeline",
+    "bytes": 53351,
+    "sha256": "8cb7e9b0ce96d981"
+  },
+  {
+    "file": "redesign/05-spaces.html",
+    "page": "Spaces",
+    "route": "/spaces",
+    "bytes": 44792,
+    "sha256": "26b682ba13d6870d"
+  },
+  {
+    "file": "redesign/05c-space-panel.html",
+    "page": "Spaces - Space opened as a slide-over panel (actions bar at the bottom)",
+    "route": "/spaces (card clicked)",
+    "bytes": 80112,
+    "sha256": "31881f89f136b98d"
+  },
+  {
+    "file": "redesign/06-documents.html",
+    "page": "Documents",
+    "route": "/documents",
+    "bytes": 44017,
+    "sha256": "c12bbffe2f9df03b"
+  },
+  {
+    "file": "redesign/06b-document-viewer.html",
+    "page": "Documents - in-site viewer",
+    "route": "/documents (file clicked)",
+    "bytes": 48992,
+    "sha256": "95f92c18c916ff70"
+  },
+  {
+    "file": "redesign/07-links.html",
+    "page": "Links",
+    "route": "/links",
+    "bytes": 46988,
+    "sha256": "e3826a851ceed82d"
+  },
+  {
+    "file": "redesign/08-email.html",
+    "page": "Email",
+    "route": "/email",
+    "bytes": 54332,
+    "sha256": "32bd67e1924aecbc"
+  },
+  {
+    "file": "redesign/08b-email-compose.html",
+    "page": "Email compose panel",
+    "route": "/email (Compose open)",
+    "bytes": 54399,
+    "sha256": "f58d3e508a8b295f"
+  },
+  {
+    "file": "redesign/08c-email-people.html",
+    "page": "Email - People view",
+    "route": "/email?view=people&person=:id (person panel)",
+    "bytes": 52666,
+    "sha256": "feeac8a7f949d273"
+  },
+  {
+    "file": "redesign/08d-email-inbox.html",
+    "page": "Email - Inbox feed + your columns",
+    "route": "/email (default view)",
+    "bytes": 49963,
+    "sha256": "cc89c87b9c1e4f5d"
+  },
+  {
+    "file": "redesign/08e-email-people-grid.html",
+    "page": "Email - People grid (boxes, tags, closed-box drawer)",
+    "route": "/email?view=people",
+    "bytes": 74730,
+    "sha256": "f35357c8d14a0d6c"
+  },
+  {
+    "file": "redesign/08f-email-person-open.html",
+    "page": "Email - person pop-up (full emails, files, links)",
+    "route": "/email?view=people (box clicked)",
+    "bytes": 74799,
+    "sha256": "4e5c5028ba5c6db7"
+  },
+  {
+    "file": "redesign/09-playbook.html",
+    "page": "Playbook",
+    "route": "/playbook",
+    "bytes": 79122,
+    "sha256": "1e6f5a882d528914"
+  },
+  {
+    "file": "redesign/10-calendar.html",
+    "page": "Calendar",
+    "route": "/calendar",
+    "bytes": 100107,
+    "sha256": "bf7407df26892410"
+  },
+  {
+    "file": "redesign/10b-calendar-rail-closed.html",
+    "page": "Calendar - side panel closed",
+    "route": "/calendar (rail toggle)",
+    "bytes": 101036,
+    "sha256": "66975d7c3b173262"
+  },
+  {
+    "file": "redesign/10c-calendar-event-editor.html",
+    "page": "Calendar - event editor open (no icons, 24h times)",
+    "route": "/calendar (event clicked)",
+    "bytes": 100493,
+    "sha256": "e548a06836440d8e"
+  },
+  {
+    "file": "redesign/11-zoom.html",
+    "page": "Zoom",
+    "route": "/zoom",
+    "bytes": 54676,
+    "sha256": "73092b3f98e5a4f6"
+  },
+  {
+    "file": "redesign/12-completed.html",
+    "page": "Completed",
+    "route": "/completed",
+    "bytes": 42941,
+    "sha256": "3a9db0f046b5e57d"
+  },
+  {
+    "file": "redesign/13-news.html",
+    "page": "News",
+    "route": "/news",
+    "bytes": 50226,
+    "sha256": "b394dd5d7b2996d9"
+  },
+  {
+    "file": "redesign/13b-news-saved.html",
+    "page": "News - Saved collections",
+    "route": "/news?view=saved",
+    "bytes": 53556,
+    "sha256": "c20ffac42e2304b8"
+  },
+  {
+    "file": "redesign/14-drive.html",
+    "page": "Drive",
+    "route": "/drive",
+    "bytes": 42188,
+    "sha256": "0db84dedbc4e0333"
+  },
+  {
+    "file": "redesign/15-contacts.html",
+    "page": "Contacts",
+    "route": "/contacts",
+    "bytes": 43514,
+    "sha256": "cb8eae8672a68837"
+  },
+  {
+    "file": "redesign/16-financials.html",
+    "page": "Financials",
+    "route": "/financials",
+    "bytes": 41025,
+    "sha256": "cd2d730660289f04"
+  },
+  {
+    "file": "redesign/17-integrations.html",
+    "page": "Integrations",
+    "route": "/integrations",
+    "bytes": 40397,
+    "sha256": "9269cc7f9890172d"
+  }
 ]

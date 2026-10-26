@@ -19,6 +19,6 @@ export async function GET() {
     return NextResponse.json(queue);
   } catch (err) {
     fail('content_queue', err);
-    return NextResponse.json({ left: 0, cadence: 0, empty: true });
+    return NextResponse.json({ left: 0, cadence: 0, empty: true }, { status: 500 });
   }
 }

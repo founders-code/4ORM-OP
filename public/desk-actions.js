@@ -912,8 +912,6 @@
     'task-done': function (el, root) {
       var id = attr(el, 'data-id');
       var task = el.closest('.task');
-      if (!id) return;
-      var zoom = isZoomCard(el, root, id);
       var wasDone = !!(task && task.classList.contains('d'));
       if (task) {
         task.classList.toggle('d');
@@ -921,6 +919,9 @@
         var cb = task.querySelector('.cb');
         if (cb) cb.classList.toggle('on');
       }
+      /* No id = a sample row (fixture): the tick shows, nothing is written. */
+      if (!id) return;
+      var zoom = isZoomCard(el, root, id);
       if (!wasDone) {
         var left = root.querySelectorAll ? root.querySelectorAll('.exec.today .tl .task:not(.d)').length : 1;
         fourmSound(left ? 'pop' : 'levelUp');
@@ -2327,7 +2328,10 @@
       if (gated) { toast(root, 'Send a test to chad@4ormfinance.com first'); return; }
       if (!window.confirm('Send this Space via GoHighLevel? Nothing goes out until you confirm.')) return;
       if (!writeOk()) { toast(root, 'Send (fixture)'); return; }
-      api('/api/spaces/' + encodeURIComponent(id), { method: 'POST', body: { action: 'send-ghl' } }).then(ok).then(json).then(function (d) {
+      api('/api/spaces/' + encodeURIComponent(id), { method: 'POST', body: { action: 'send-ghl' } }).then(function (r) {
+        // The server refuses (409) unless a test of this exact content went first; show its reason.
+        return r.json().catch(function () { return null; }).then(function (d) { if (!r.ok && !(d && d.note)) throw new Error('fail'); return d; });
+      }).then(function (d) {
         toast(root, d && d.sent ? 'Sent via GHL' : ((d && d.note) || 'GHL did not send that'));
       }).catch(function () { toast(root, 'Could not send that Space'); });
     },
@@ -2726,14 +2730,20 @@
       d.attachments.splice(Number(attr(el, 'data-i')) || 0, 1);
       repaintMail();
     },
-    'mail-tog': function (el) {
+    'mail-tog': function (el, root) {
       var d = composeState();
       var k = attr(el, 'data-k');
       if (k !== 'nudge' && k !== 'log') return;
       d[k] = !d[k];
-      var sw = el.querySelector('.sw');
-      if (sw) sw.classList.toggle('off', !d[k]);
-      el.setAttribute('aria-checked', String(d[k]));
+      /* The whole switch (dot and label text) toggles; paint the switch that is on screen now,
+         even if a blur repainted the compose panel between mousedown and click. */
+      var shown = root && root.querySelector ? root.querySelector('.tog[data-k="' + k + '"]') : null;
+      [el, shown].forEach(function (t) {
+        if (!t) return;
+        var sw = t.querySelector('.sw');
+        if (sw) sw.classList.toggle('off', !d[k]);
+        t.setAttribute('aria-checked', String(d[k]));
+      });
     },
     'mail-send': function (el, root) {
       var d = composeState();
@@ -4692,6 +4702,23 @@
       return;
     }
     if (act === 'mail-box-drag') {
+      /* B59: a loose sender dropped on a box adds that address to the box (saved). */
+      if (payload.kind === 'loose') {
+        var into = findPeopleBox(attr(col, 'data-id'), true);
+        var addr = String(payload.email || payload.id || '').trim().toLowerCase();
+        if (!into || !EMAIL_RE.test(addr)) return;
+        into.addrs = into.addrs || [];
+        if (into.addrs.indexOf(addr) < 0) into.addrs.push(addr);
+        if (!into.o) into.o = addr;
+        persistPeopleBoxes();
+        refresh('mail');
+        toast(root, (payload.name || addr) + ' now lands in ' + (into.n || 'that box'), function () {
+          into.addrs = (into.addrs || []).filter(function (a) { return a !== addr; });
+          persistPeopleBoxes();
+          refresh('mail');
+        });
+        return;
+      }
       if (payload.kind !== 'box' || String(payload.id) === attr(col, 'data-id')) return;
       var mover = findPeopleBox(payload.id, true);
       var target = findPeopleBox(attr(col, 'data-id'), true);
@@ -4834,6 +4861,14 @@
   window.syncDeskFocus = paintFocus;
   window.deskActions = actions;
   window.__deskControlSel = CONTROL_SEL;
+  /* Round 3 features (redesign-pages-r3.js) reuse the compose helpers and add their handlers to deskActions. */
+  window.__deskMail = { sync: syncCompose, state: composeState, open: openCompose, repaint: repaintMail, bundle: bundleLinksText, toast: toast, root: mailRoot };
+  if (!window.__r3Loaded && !document.querySelector('script[data-r3]')) {
+    var r3 = document.createElement('script');
+    r3.src = '/redesign-pages-r3.js?v=1';
+    r3.setAttribute('data-r3', '1');
+    document.head.appendChild(r3);
+  }
   window.deskInventory = function (root) {
     if (!root) return { withAction: 0, without: 0 };
     var nodes = root.querySelectorAll(CONTROL_SEL);

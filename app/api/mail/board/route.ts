@@ -71,6 +71,6 @@ export async function GET(req: Request) {
     return NextResponse.json(payload);
   } catch (err) {
     fail('mail_board', err);
-    return NextResponse.json({ messages: [], columns: [], rules: [], counts: { unread: 0, needs: 0, total: 0 } });
+    return NextResponse.json({ messages: [], columns: [], rules: [], counts: { unread: 0, needs: 0, total: 0 } }, { status: 500 });
   }
 }

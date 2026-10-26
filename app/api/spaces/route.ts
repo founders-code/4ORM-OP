@@ -20,7 +20,7 @@ export async function GET() {
     return NextResponse.json(listed);
   } catch (err) {
     fail('spaces_list', err);
-    return NextResponse.json({ spaces: [], packages: [] });
+    return NextResponse.json({ spaces: [], packages: [] }, { status: 500 });
   }
 }
 
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) {
       fail('spaces_create', 'no database');
-      return NextResponse.json({ name, saved: false });
+      return NextResponse.json({ name, saved: false }, { status: 503 });
     }
     try {
       const created = await createSpace(session.sql, session.userId, { ...(body || {}), name });
@@ -54,9 +54,9 @@ export async function POST(req: Request) {
     } catch (err) {
       fail('spaces_create', err);
     }
-    return NextResponse.json({ name, saved: false });
+    return NextResponse.json({ name, saved: false }, { status: 500 });
   } catch (err) {
     fail('spaces_create', err);
-    return NextResponse.json({ name, saved: false });
+    return NextResponse.json({ name, saved: false }, { status: 500 });
   }
 }

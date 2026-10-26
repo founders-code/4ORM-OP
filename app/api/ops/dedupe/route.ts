@@ -101,7 +101,7 @@ export async function GET(req: Request) {
     });
   } catch (err) {
     fail('dedupe_dry', err);
-    return NextResponse.json({ error: 'Could not list duplicates.' }, { status: 400 });
+    return NextResponse.json({ error: 'Could not list duplicates.' }, { status: 500 });
   }
 }
 
@@ -152,6 +152,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, dry: false, owner: 'chad', ...result });
   } catch (err) {
     fail('dedupe_apply', err);
-    return NextResponse.json({ error: 'Could not sweep duplicates.', detail: String((err as Error)?.message || err) }, { status: 400 });
+    return NextResponse.json({ error: 'Could not sweep duplicates.' }, { status: 500 });
   }
 }

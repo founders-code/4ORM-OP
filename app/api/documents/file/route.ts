@@ -30,6 +30,6 @@ export async function GET(req: Request) {
     return new NextResponse(new Uint8Array(bytes), { headers });
   } catch (err) {
     fail('staged_file', err);
-    return NextResponse.json({ error: 'This file cannot be previewed here.' }, { status: 400 });
+    return NextResponse.json({ error: 'This file cannot be previewed here.' }, { status: 500 });
   }
 }

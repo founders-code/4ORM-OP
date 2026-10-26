@@ -10,12 +10,12 @@ export async function POST(req: Request) {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ categories: [] });
+    if (!session.sql) return NextResponse.json({ categories: [] }, { status: 503 });
     const body = await req.json().catch(() => null);
     const categories = await saveNewsCategories(session.sql, session.userId, body?.categories);
     return NextResponse.json({ categories });
   } catch (err) {
     fail('news_failed', err);
-    return NextResponse.json({ categories: [] });
+    return NextResponse.json({ categories: [] }, { status: 500 });
   }
 }

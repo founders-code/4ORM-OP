@@ -10,12 +10,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql || !spaceIdOk(params.id)) return NextResponse.json({ saved: false });
+    if (!session.sql || !spaceIdOk(params.id)) return NextResponse.json({ saved: false }, { status: session.sql ? 400 : 503 });
     const contentType = req.headers.get('content-type') || '';
     if (contentType.includes('multipart/form-data')) {
       const form = await req.formData();
       const file = form.get('file');
-      if (!(file instanceof File)) return NextResponse.json({ saved: false });
+      if (!(file instanceof File)) return NextResponse.json({ saved: false }, { status: 400 });
       const bytes = Buffer.from(await file.arrayBuffer());
       const added = await addSpaceItem(session.sql, session.userId, params.id, {
         kind: String(form.get('mime') || file.type || '').startsWith('image/') ? 'image' : 'file',
@@ -23,15 +23,15 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         mime: String(form.get('mime') || file.type || ''),
         parentId: String(form.get('parentId') || form.get('folderId') || ''),
       }, bytes);
-      if (!added?.item) return NextResponse.json({ saved: false });
+      if (!added?.item) return NextResponse.json({ saved: false }, { status: 404 });
       return NextResponse.json({ id: params.id, item: added.item, package: added.package || added });
     }
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const added = await addSpaceItem(session.sql, session.userId, params.id, body);
-    if (!added) return NextResponse.json({ saved: false });
+    if (!added) return NextResponse.json({ saved: false }, { status: 404 });
     return NextResponse.json({ id: params.id, item: added.item, package: added.package || added });
   } catch (err) {
     fail('spaces_item', err);
-    return NextResponse.json({ saved: false });
+    return NextResponse.json({ saved: false }, { status: 500 });
   }
 }

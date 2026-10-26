@@ -99,14 +99,26 @@
     var S = window.STATE || {};
     var openKeys = S.linkOpen;
     var cat = S.cat || S.linkCat || '';
-    var allN = (data.wall || []).length || 79;
-    var tree = [{ name: 'All links', n: allN, on: !cat, kind: 'all', noHv: true, noSub: true, car: '' }].concat((data.tree || []).map(function (t) {
+    var src = data.tree || [];
+    var allN = src.filter(function (t) { return !t.indent; }).reduce(function (a, t) { return a + (Number(t.n) || 0); }, 0) || (data.wall || []).length;
+    /* Same rules as the live tree: collapsed until opened, a caret only where subfolders exist. */
+    var opened = Array.isArray(openKeys) ? openKeys : [];
+    var hideBelow = 0;
+    var rows = [];
+    src.forEach(function (t, i) {
+      var lvl = t.indent || 1;
+      var nxt = src[i + 1];
+      var kids = !!(nxt && (nxt.indent || 1) > lvl);
+      if (hideBelow && lvl > hideBelow) return;
+      hideBelow = 0;
       var next = Object.assign({}, t);
       next.on = !!cat && t.name === cat;
-      if (Array.isArray(openKeys) && t.car) next.car = openKeys.indexOf(t.name) >= 0 ? 'open' : 'closed';
-      return next;
-    }));
-    return Object.assign({}, data, { tree: tree, crumb: cat || 'All links', crumbN: cat ? data.crumbN : allN });
+      next.car = kids ? (opened.indexOf(t.name) >= 0 ? 'open' : 'closed') : '';
+      if (kids && next.car !== 'open') hideBelow = lvl;
+      rows.push(next);
+    });
+    var tree = [{ name: 'All links', n: allN, on: !cat, kind: 'all', noHv: true, noSub: true, car: '' }].concat(rows);
+    return Object.assign({}, data, { tree: tree, crumb: cat || 'All links', crumbN: cat ? data.crumbN : (data.wall || []).length });
   }
   function emailData() { return fixtureOn() ? (F().email || {}) : liveEmailState(); }
 
@@ -628,7 +640,8 @@
     var wrap = wrapOf('pipeDesk');
     if (!wrap) return;
     var S = window.STATE || {};
-    var view = S.pipeView || 'board';
+    /* Board is the default; the legacy STATE.pipeView 'dash' (old Dashboard tab) is not a view here. */
+    var view = S.pipeView === 'table' || S.pipeView === 'funnel' ? S.pipeView : 'board';
     var data = pipelineData();
     var catLabel = (!S.pipeType || S.pipeType === 'all') ? 'All' : S.pipeType;
     var ST = data.funnel || [];
@@ -654,7 +667,7 @@
       }).join('')
       + (data.more ? '<button class="pl more" data-action="pipe-more">+ ' + data.more + ' more &#9662;</button>' : '')
       + '<span class="div"></span><button class="pl" data-action="pipe-cat">Category: ' + esc(catLabel) + ' &#9662;</button>'
-      + '<span class="ro">' + ((data.pills || []).length + (data.more || 0)) + ' pipelines from GoHighLevel &middot; read-only</span></div>';
+      + '<span class="ro">' + (data.ro ? esc(data.ro) : ((data.pills || []).length + (data.more || 0)) + ' pipelines from GoHighLevel &middot; read-only') + '</span></div>';
     var tableCard =
       '<section class="card"><div class="ch"><h3>Storage</h3><span class="s">' + esc(data.storageHead || (data.tableFoot || '').replace(/^Showing /, '') || '0') + ' &middot; sorted by needs attention</span></div>'
       + '<table class="tbl"><tr><th>Person / company</th><th>Category</th><th>Stage</th><th>Last touch</th><th>Next step</th><th></th></tr><tbody id="rows">' + rows + '</tbody></table>'
@@ -681,8 +694,9 @@
       var colAll = S.pipeColAll || {};
       function cardHtml(o, st) {
         var age = daysAgo(o.updatedAt);
-        var sub = [o.company || '', o.email || '', age < 99 ? age + 'd' : ''].filter(Boolean).join(' · ');
-        return '<div class="bcard' + (age <= 3 ? ' hot' : '') + '" draggable="true" data-action="contact-drag" data-kind="opp" data-id="' + esc(o.id) + '" data-opp="' + esc(o.id) + '" data-pipe="' + esc(st.pipe) + '" data-stage-id="' + esc(st.id) + '" data-stage="' + esc(st.name) + '" data-contact="' + esc(o.contactId || '') + '" data-email="' + esc(o.email || '') + '" data-name="' + esc(o.contact || o.name || '') + '"><b>' + esc(o.contact || o.name || 'Opportunity') + '</b><span>' + esc(sub || o.name || '') + '</span></div>';
+        var sub = o.sub != null ? String(o.sub) : [o.company || '', o.email || '', age < 99 ? age + 'd' : ''].filter(Boolean).join(' · ');
+        var hot = o.hot != null ? !!o.hot : age <= 3;
+        return '<div class="bcard' + (hot ? ' hot' : '') + '" draggable="true" data-action="contact-drag" data-kind="opp" data-id="' + esc(o.id) + '" data-opp="' + esc(o.id) + '" data-pipe="' + esc(st.pipe) + '" data-stage-id="' + esc(st.id) + '" data-stage="' + esc(st.name) + '" data-contact="' + esc(o.contactId || '') + '" data-email="' + esc(o.email || '') + '" data-name="' + esc(o.contact || o.name || '') + '"><b>' + esc(o.contact || o.name || 'Opportunity') + '</b><span>' + esc(sub || o.name || '') + '</span></div>';
       }
       function colHtml(st, ghost) {
         var all = !!colAll[st.id];
@@ -693,7 +707,7 @@
             ? '<div class="emptyb">' + empty.map(function (e) { return esc(e.name); }).join(', ') + '</div>'
             : shown.map(function (o) { return cardHtml(o, st); }).join('')
               + (more && st.opps.length > shown.length ? '<div class="more3" data-action="pipe-col-more" data-stage-id="' + esc(st.id) + '">+ ' + more + ' more</div>' : '')
-              + (more && st.opps.length <= shown.length ? '<div class="more3">+ ' + more + ' more in GoHighLevel</div>' : ''))
+              + (more && st.opps.length <= shown.length ? '<div class="more3">+ ' + more + ' more</div>' : ''))
           + '</div>';
       }
       var boardCols = filled.map(function (c) { return colHtml(c, false); }).join('')
@@ -720,6 +734,17 @@
     markReady('pipeDesk');
   }
 
+  /* Hero description: names that have a link (whoLinks, or a hero link whose label appears in the text) are underlined links. */
+  function whoHtml(d) {
+    var html = esc(d.who || '');
+    var pairs = asList(d.whoLinks).length ? asList(d.whoLinks) : asList(d.heroLinks).map(function (l) { return [l.label, l.url]; });
+    pairs.forEach(function (p) {
+      var name = esc(p[0] || '');
+      if (!name || html.indexOf(name) < 0) return;
+      html = html.replace(name, '<a class="xl" href="' + esc(p[1] || '#') + '" target="_blank" rel="noopener">' + name + '</a>');
+    });
+    return html;
+  }
   function spaceOpenWanted() {
     var S = window.STATE || {};
     try {
@@ -866,16 +891,16 @@
       + '<div style="position:relative;z-index:1;min-width:0"><div class="tags">' + asList(d.tags).map(function (t) {
         return '<span' + (t[0] === 'vc' ? ' class="vc"' : '') + '>' + esc(t[1]) + '</span>';
       }).join('') + '</div>'
-      + '<h1 contenteditable="true" spellcheck="false" data-action="space-card-name" data-id="' + esc(d.id) + '">' + esc(d.name) + '</h1><div class="who" contenteditable="true" spellcheck="false" data-action="space-card-desc" data-id="' + esc(d.id) + '">' + esc(d.who) + '</div>'
+      + '<h1 contenteditable="true" spellcheck="false" data-action="space-card-name" data-id="' + esc(d.id) + '">' + esc(d.name) + '</h1><div class="who" contenteditable="true" spellcheck="false" data-action="space-card-desc" data-id="' + esc(d.id) + '">' + whoHtml(d) + '</div>'
       + '<div class="facts2">' + asList(d.heroLinks).map(function (l) {
         return '<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.label) + ' &#8599;</a>';
-      }).join('') + '<span class="src" data-action="space-hero-link" data-id="' + esc(d.id) + '"><u>+ Add a link or article</u></span></div></div>'
+      }).join('') + '<span class="src">' + (d.source ? esc('Source: ' + d.source) + ' &middot; ' : '') + '<u data-action="space-hero-link" data-id="' + esc(d.id) + '">+ Add a link or article</u></span></div></div>'
       + '<div class="ready"><div class="rring"><svg viewBox="0 0 96 96" width="96" height="96"><circle cx="48" cy="48" r="40" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9"/><circle id="rg" cx="48" cy="48" r="40" fill="none" stroke="#2fe08b" stroke-width="9" stroke-linecap="round" stroke-dasharray="' + esc(d.readyDash || '100.5 251.3') + '" transform="rotate(-90 48 48)"/></svg><b id="rn">' + esc(d.ready) + '</b></div>'
       + '<div class="lbl">ready to send</div><div class="steps" id="steps">' + asList(d.steps).map(function (s) {
         return '<span class="' + esc(s[0]) + '"><i>' + (s[0] === 'd' ? '&#10003;' : '') + '</i>' + esc(s[1]) + '</span>';
       }).join('') + '</div></div></section>'
       + '<div class="cols"><div>'
-      + '<section class="card"><div class="ch"><h3>The angle</h3><span class="ai">4orm Intelligence</span><span class="lnk" data-action="space-rewrite" data-id="' + esc(d.id) + '" title="Rewrite the angle and suggest hooks with 4orm Intelligence">Rewrite</span></div>'
+      + '<section class="card"><div class="ch"><h3>The angle</h3><span class="ai">4orm Intelligence</span><span class="lnk" data-action="space-rewrite" data-id="' + esc(d.id) + '" title="Rewrite the angle and suggest hooks with 4orm Intelligence">Rewrite</span><span class="lnk" style="margin-left:10px" data-action="space-research" data-id="' + esc(d.id) + '" title="Research this angle with Perplexity, with sources">Research</span></div>'
       + '<div class="angle" contenteditable="true" data-action="space-angle" data-id="' + esc(d.id) + '" data-placeholder="Add the angle for this send.">' + (fixtureOn() ? (d.angle || '') : esc(d.angle || '')) + '</div>'
       + '<div class="hooks">' + asList(d.hooks).map(function (h) { return '<span data-action="space-hook" data-id="' + esc(d.id) + '" title="Put this hook at the top of the intro">' + esc(h) + '</span>'; }).join('') + '</div></section>'
       + '<section class="card"><div class="ch"><h3>Notes</h3><span class="s">saves as you type</span></div>'
@@ -929,7 +954,7 @@
       var id = esc(s[4] || ('fx-' + String(s[0] || 'space').replace(/\s+/g, '-')));
       var naAct = s[3] === 'ppl' ? 'space-people' : s[3] === 'send' ? 'space-send' : 'space-docs';
       var openId = (S.pkg && S.pkg.id) || '';
-      var cur = !!openId && String(s[4] || '') === String(openId);
+      var cur = !!openId && (String(s[4] || '') === String(openId) || (!s[4] && String((S.pkg && S.pkg.name) || '') === String(s[0] || '')));
       return '<div class="sp' + (cur ? ' cur' : '') + '"' + (panelOn ? ' data-action="space-open" data-space="' + id + '"' : '') + ' data-id="' + id + '"><div class="top2"><span class="cat ' + g[1] + '">' + esc(g[0]) + '</span><span class="ms" title="More" data-action="space-menu" data-id="' + id + '">&middot;&middot;&middot;</span></div><h4 contenteditable="true" spellcheck="false" data-action="space-card-name" data-id="' + id + '">' + esc(s[0]) + '</h4><p contenteditable="true" spellcheck="false" data-action="space-card-desc" data-id="' + id + '">' + esc(s[1]) + '</p><div class="rd">' + ring(s[2]) + '<span class="nxa ' + na[0] + '" data-action="' + naAct + '" data-id="' + id + '">' + na[1] + '</span><span class="cnt wrap">' + (Number(s[5]) || 0) + ' files &middot; ' + (Number(s[6]) || 0) + ' links</span></div><div class="ft"><button class="op" data-action="space-open" data-id="' + id + '"' + (s[4] ? ' data-space="' + id + '"' : '') + '>Open</button><button class="dr" data-action="space-drive" data-id="' + id + '">Move to Drive</button></div></div>';
     }
     var groups = data.groups || [];
@@ -1147,10 +1172,11 @@
     wrap.innerHTML =
       '<div class="bar"><h1>Links</h1><span class="sub">Every bookmark, sorted &mdash; each opens the site in a new tab</span>'
       + '<div class="r"><input class="search" data-action="link-search" placeholder="Search links, notes or sites"></div></div>'
-      + '<div class="lay"><section class="card tree"><div class="lh">Categories <span class="lnk" data-action="link-cat-new">+ New</span></div>'
+      + '<div class="lay"><section class="card tree"><div class="lh">Categories <span class="lnk" data-action="link-cat-new">+ New</span></div><div id="tree2">'
       + (data.tree || []).map(function (t) {
         var car = t.car === 'open' ? '&#9662;' : t.car === 'closed' ? '&#9656;' : '';
-        var cls = 'cr' + (t.on ? ' on' : '') + (t.kind === 'all' ? ' all' : '') + (t.indent === 2 ? ' sub2' : '') + (t.indent === 3 ? ' sub3' : '');
+        /* Design 07 tree v2: drag grip on every movable row, a caret only where there are subfolders. */
+        var cls = 'cr' + (t.on ? ' on' : '') + (t.kind === 'all' ? ' all' : '') + (t.indent === 2 ? ' sub' : '') + (t.indent === 3 ? ' sub3' : '');
         var kind = t.kind || 'cat';
         var hv = t.noHv ? '' : '<span class="hv">'
           + (t.noSub ? '' : '<span data-action="link-sub" data-name="' + esc(t.parent || t.name) + '">+ sub</span>')
@@ -1159,19 +1185,20 @@
           + '</span>';
         var carBtn = car
           ? '<span class="car" data-action="link-toggle" data-key="' + esc(t.key || t.name) + '" data-name="' + esc(t.name) + '">' + car + '</span>'
-          : '<span class="car"></span>';
+          : (t.indent ? '' : '<span class="car"></span>');
+        if (kind !== 'all') carBtn = '<span class="grip">::</span>' + carBtn;
         var rowId = t.id || (kind === 'all' ? 'all' : (t.key || t.name));
         return '<div class="' + cls + '" draggable="' + (kind === 'all' ? 'false' : 'true') + '" data-action="link-cat" data-id="' + esc(rowId) + '" data-kind="' + esc(kind) + '" data-name="' + esc(t.name) + '" data-parent="' + esc(t.parent || '') + '" data-sub="' + esc(t.sub || '') + '">' + carBtn + esc(t.name) + '<span class="n">' + t.n + '</span>' + hv + '</div>';
       }).join('')
-      + '<div class="exp" data-action="link-expand">' + ((window.STATE && window.STATE.linkAllOpen) ? 'Collapse all' : 'Expand all') + '</div></section>'
+      + '<div class="exp" data-action="link-expand">' + ((window.STATE && window.STATE.linkAllOpen) ? 'Collapse all' : 'Expand all') + '</div><div class="hint2">Drag to reorder. Drop a folder onto another to make it a subfolder.</div></div></section>'
       + '<section class="card"><div class="crumbs">Links &rsaquo; <b>' + esc(data.crumb || '') + '</b> &middot; ' + (data.crumbN || 0) + ' links</div>'
       + '<div class="add"><input data-action="link-title" placeholder="Title (optional - we\'ll read it from the site)"><input data-action="link-url" placeholder="Paste a link - https://"><button data-action="link-add">Add link</button></div>'
       + '<div class="wall" id="wall">' + (data.wall || []).map(function (w) {
         var href = absUrl(w[5] || w[1]);
         var letter = esc(String(w[0] || '?')[0]);
-        var hostName = hostOf(href);
         var id = esc(w[6] || '');
-        var ico = fixtureOn() ? '' : '<img class="ico" alt="" src="/api/favicon?d=' + encodeURIComponent(hostName) + '" onerror="this.parentNode.classList.remove(\'has-ico\');this.remove()">';
+        /* Letter tile only, as in design 07: no favicon images (no icons). */
+        var ico = '';
         return '<a class="tile" data-action="link-open" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" data-id="' + id + '" data-url="' + esc(href) + '">' + (w[4] == 2 ? '<span class="dup">Duplicate</span>' : '')
           + '<div class="lg' + (ico ? ' has-ico' : '') + '" style="background:' + w[2] + '14">' + ico + '<i style="background:' + w[2] + '">' + letter + '</i></div>'
           + '<div class="tm"><span title="Edit" data-action="link-edit" data-id="' + id + '" data-title="' + esc(w[0]) + '">Edit</span><span title="Move" data-action="link-move" data-id="' + id + '" data-title="' + esc(w[0]) + '" data-url="' + esc(href) + '">Move</span><span title="Delete" data-action="link-archive" data-id="' + id + '" data-note="' + esc(w[3] || '') + '">&times;</span></div>'
@@ -1270,7 +1297,7 @@
       + '<div class="tbar"><span data-action="mail-fmt" data-fmt="b" title="Bold (*text*)">B</span><span data-action="mail-fmt" data-fmt="i" title="Italic (_text_)"><i>I</i></span><span data-action="mail-fmt" data-fmt="ul" title="Bullet list">&#8226;</span><span data-action="mail-fmt" data-fmt="ol" title="Numbered list">1.</span><span class="sep"></span><span data-action="mail-fmt" data-fmt="link" title="Insert link">Link</span><span class="sep"></span><span data-action="mail-fmt" data-fmt="name" title="Insert first name">{ }</span></div>'
       + '<div class="body" contenteditable="true" data-action="mail-body" data-placeholder="Write your email">' + body + '</div>'
       + (atts ? '<div class="atts">' + atts + '</div>' : '')
-      + '<div class="cfoot"><button class="send" data-action="mail-send">Send</button><button class="send2" data-action="coming-soon" data-label="Schedule send">Schedule &#9662;</button>'
+      + '<div class="cfoot"><button class="send" data-action="mail-send">Send</button><button class="send2" data-action="mail-schedule">' + (d.schedEditId ? 'Update schedule' : 'Schedule') + ' &#9662;</button>'
       + '<span class="tog" data-action="mail-tog" data-k="nudge" role="switch" aria-checked="' + d.nudge + '"><span class="sw' + (d.nudge ? '' : ' off') + '"></span>Nudge in 3 days</span>'
       + '<span class="tog" data-action="mail-tog" data-k="log" role="switch" aria-checked="' + d.log + '"><span class="sw' + (d.log ? '' : ' off') + '"></span>Log to Pipeline</span></div></div>'
       + '<div class="side2" id="composeSide">' + composeSide(d) + '</div></aside>';
@@ -1374,14 +1401,25 @@
       });
       return box;
     });
+    /* B59: once Chad has boxes of his own, senders not in any box wait in the "Not in a box yet" strip
+       (drag one onto a box to add the address). With no stored boxes yet, every sender still gets a box. */
+    var stored = out.length;
+    var loose = [];
     Object.keys(derived).forEach(function (k) {
-      if (!claimed[k]) out.push(derived[k]);
+      if (claimed[k]) return;
+      if (stored && /@/.test(k)) loose.push(derived[k]);
+      else out.push(derived[k]);
     });
     out.forEach(function (b) {
       b.m.sort(function (x, y) { return (y[7] || 0) - (x[7] || 0); });
       b.links = linksFor(b.m);
     });
-    return { boxes: out, loose: [], looseMore: 0, stored: storedBoxes(S).length };
+    loose.sort(function (a, b) { return (b.lastAt || 0) - (a.lastAt || 0); });
+    var looseRows = loose.slice(0, 12).map(function (b) {
+      var top = b.m.slice().sort(function (x, y) { return (y[7] || 0) - (x[7] || 0); })[0] || [];
+      return { n: b.n || b.o, e: b.o, c: b.c, pv: top[1] || '' };
+    });
+    return { boxes: out, loose: looseRows, looseMore: Math.max(0, loose.length - looseRows.length), stored: storedBoxes(S).length };
   }
   window.__peopleState = function () { return liveEmailPeopleState(); };
   function peopleData() {
@@ -1442,7 +1480,7 @@
       return !dq || (b.n + ' ' + b.o + ' ' + asList(b.tags).join(' ')).toLowerCase().indexOf(dq) >= 0;
     });
     var looseHtml = asList(data.loose).map(function (p) {
-      return '<div class="lm" draggable="true" data-action="mail-loose-drag" data-from="' + esc(p.n) + '"><span class="av" style="background:' + esc(p.c) + '">' + esc(peopleIni(p.n)) + '</span><div><b>' + esc(p.n) + '</b><span>' + esc(p.pv) + '</span></div></div>';
+      return '<div class="lm" draggable="true" data-action="mail-loose-drag" data-kind="loose" data-id="' + esc(p.e || p.n) + '" data-email="' + esc(p.e || '') + '" data-name="' + esc(p.n) + '" data-from="' + esc(p.n) + '" title="Drag onto a box to file ' + esc(p.e || p.n) + ' there"><span class="av" style="background:' + esc(p.c) + '">' + esc(peopleIni(p.n)) + '</span><div><b>' + esc(p.n) + '</b><span>' + esc(p.pv) + '</span></div></div>';
     }).join('');
     var gridHtml = open.map(function (b) {
       var hide = matchBox(b) ? '' : ' hide';
@@ -1629,7 +1667,7 @@
     var colsHtml = cols.map(function (c) { return columnHtml(c, msgs); }).join('');
     wrap.innerHTML =
       '<div class="bar"><h1>Email</h1>'
-      + '<div class="seg"><span class="' + (view === 'inbox' ? 'on' : '') + '" data-action="mail-view" data-view="inbox">Inbox</span><span class="' + (view === 'people' ? 'on' : '') + '" data-action="mail-view" data-view="people">People</span></div>'
+      + '<div class="seg"><span class="' + (view === 'inbox' ? 'on' : '') + '" data-action="mail-view" data-view="inbox">Inbox</span><span class="' + (view === 'people' ? 'on' : '') + '" data-action="mail-view" data-view="people">People</span><span data-action="mail-sched-list">Scheduled' + ((S.mailSchedCount | 0) > 0 ? ' <em>' + (S.mailSchedCount | 0) + '</em>' : '') + '</span></div>'
       + '<div class="cnt"><span><b>' + esc(data.unread != null ? data.unread : msgs.filter(function (m) { return m.un; }).length) + '</b> unread</span><span><b>' + esc(data.need != null ? data.need : 0) + '</b> need a reply</span><span><b>' + esc(cols.length) + '</b> columns</span></div>'
       + '<div class="r"><input class="search" data-action="mail-search" placeholder="Search all mail" value="' + esc(S.mailQ || '') + '"><button class="btn" data-action="mail-filters">Filters</button><button class="btn pri" id="composeBtn" data-action="mail-compose">Compose</button></div></div>'
       + '<div class="lay"><section class="feed"><div class="fh"><h3>' + (S.mailQ ? 'Search: ' + esc(S.mailQ) : 'All mail') + '</h3><span class="s">one feed, newest first</span><div class="tabs">'

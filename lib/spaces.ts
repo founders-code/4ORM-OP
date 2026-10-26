@@ -5,6 +5,7 @@ import { addGhlTask, ensureGhlContact, ghlConfigured, opportunityStages, pushOpp
 import { copyDriveFile, createGmailDraft, driveWrite, uploadDriveBytes } from './google';
 import { fail } from './log';
 import { STARTERS, assembleMail, fillToken } from './packages-core.mjs';
+import { TEST_SEND_TO, gateRealSend, spaceSendHash } from './send-gate.mjs';
 import outreachSeed from '../data/spaces_seed.json';
 
 type Sql = NeonQueryFunction<false, false>;
@@ -127,6 +128,14 @@ export async function ensureSpaceTables(sql: Sql) {
     ['db_space_recipients_deleted', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
     ['db_spaces_angle', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS angle text`],
     ['db_r2_spaces_steps', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS steps jsonb`],
+    ['db_r3_space_test_sends', () => sql`CREATE TABLE IF NOT EXISTS space_test_sends (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      space_id uuid NOT NULL,
+      content_hash text NOT NULL,
+      sent_to text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
   ];
   for (const [code, run] of steps) {
     try {
@@ -558,22 +567,61 @@ async function rememberOpportunity(sql: Sql, ownerId: string, id: string, stage:
 
 const SIGN_OFF = '\n\nChad Johnston\n4orm Finance\nchad@4ormfinance.com';
 
+/** What a real send would deliver, for the send gate: subject and body templates plus listed recipients. */
+function sendContent(current: { emailSubject?: string; emailBody?: string; name?: string; recipients: Array<{ email?: string; listed?: boolean }> }) {
+  return {
+    subject: String(current.emailSubject || current.name || ''),
+    body: String(current.emailBody || ''),
+    recipients: current.recipients.filter((person) => person.listed !== false && person.email).map((person) => String(person.email)),
+  };
+}
+
+async function hasTestSend(sql: Sql, ownerId: string, spaceId: string, hash: string) {
+  const rows = await sql`
+    SELECT 1 FROM space_test_sends
+    WHERE owner_id = ${ownerId} AND space_id = ${spaceId}::uuid AND content_hash = ${hash}
+    LIMIT 1
+  `;
+  return rows.length > 0;
+}
+
+/** Failure codes the route maps to HTTP statuses (test_required 409, no_recipients 400, not_connected 503, else 502). */
+export type SpaceSendCode = 'not_found' | 'not_connected' | 'test_required' | 'no_recipients' | 'vendor';
+
 export async function sendSpaceGhl(sql: Sql, ownerId: string, spaceId: string, flags: { docs?: boolean; links?: boolean; test?: boolean; to?: string }) {
   const current = await readSpace(sql, ownerId, spaceId);
-  if (!current) return { sent: false, note: 'That space could not be read.' };
-  if (!ghlConfigured()) return { sent: false, note: 'GoHighLevel is not connected. The email stays here.', package: current };
+  if (!current) return { sent: false, code: 'not_found' as SpaceSendCode, note: 'That space could not be read.' };
+  if (!flags.test) {
+    // Server-side send gate: the real send refuses unless a test of this exact content went to Chad first.
+    const gate = await gateRealSend(sendContent(current), (hash: string) => hasTestSend(sql, ownerId, spaceId, hash));
+    if (!gate.ok) {
+      return { sent: false, code: 'test_required' as SpaceSendCode, note: `Send a test to ${TEST_SEND_TO} first. The email or the recipients changed since the last test.`, package: current };
+    }
+  }
+  if (!ghlConfigured()) return { sent: false, code: 'not_connected' as SpaceSendCode, note: 'GoHighLevel is not connected. The email stays here.', package: current };
   if (flags.test) {
-    const email = 'chad@4ormfinance.com';
+    const email = TEST_SEND_TO;
     const contactId = await ensureGhlContact({ name: 'Chad Johnston', email, company: '4orm' });
     const subject = `[TEST] ${current.emailSubject || current.name}`;
     let body = fillToken(current.emailBody || current.name, { name: 'Chad', email });
     if (!body.includes('chad@4ormfinance.com')) body += SIGN_OFF;
     const html = body.slice(0, 8000).replaceAll('\n', '<br>');
     const ok = contactId ? await sendViaGhl({ contactId, email, subject, html }) : false;
-    return { sent: !!ok, test: true, note: ok ? 'Test sent to chad@4ormfinance.com' : 'GoHighLevel did not send the test.', package: current };
+    if (ok) {
+      try {
+        await sql`
+          INSERT INTO space_test_sends (owner_id, space_id, content_hash, sent_to)
+          VALUES (${ownerId}, ${spaceId}::uuid, ${spaceSendHash(sendContent(current))}, ${email})
+        `;
+      } catch (err) {
+        fail('spaces_test_record', err);
+        return { sent: true, test: true, recorded: false, note: 'Test sent, but it could not be recorded. Send the test again before the real send.', package: current };
+      }
+    }
+    return { sent: !!ok, test: true, code: ok ? undefined : ('vendor' as SpaceSendCode), note: ok ? 'Test sent to chad@4ormfinance.com' : 'GoHighLevel did not send the test.', package: current };
   }
   const people = current.recipients.filter((person) => person.listed !== false && person.email);
-  if (!people.length) return { sent: false, note: 'Add a recipient with an email before sending.', package: current };
+  if (!people.length) return { sent: false, code: 'no_recipients' as SpaceSendCode, note: 'Add a recipient with an email before sending.', package: current };
   const includeDocs = flags.docs !== false;
   const includeLinks = flags.links !== false;
   let sent = 0;
@@ -605,7 +653,7 @@ export async function sendSpaceGhl(sql: Sql, ownerId: string, spaceId: string, f
       fail('spaces_send_status', err);
     }
   }
-  if (!sent) return { sent: false, note: 'GoHighLevel did not accept the send. Nothing was marked sent.', package: current };
+  if (!sent) return { sent: false, code: 'vendor' as SpaceSendCode, note: 'GoHighLevel did not accept the send. Nothing was marked sent.', package: current };
   const next = await patchSpace(sql, ownerId, spaceId, { stage: 'sent' });
   return { sent: true, count: sent, note: 'Sent from chad@4ormfinance.com through GoHighLevel. Opens and replies update when GoHighLevel reports them.', package: next || current };
 }

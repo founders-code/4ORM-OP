@@ -30,7 +30,7 @@ export async function GET() {
     return NextResponse.json({ notes: (rows as Record<string, unknown>[]).map(shape) });
   } catch (err) {
     fail('sticky', err);
-    return NextResponse.json({ notes: [] });
+    return NextResponse.json({ notes: [] }, { status: 500 });
   }
 }
 
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ saved: false });
+    if (!session.sql) return NextResponse.json({ saved: false }, { status: 503 });
     const body = await req.json().catch(() => null);
     const text = String(body?.body || '').slice(0, 2000);
     const color = allowNoteColor(String(body?.color || 'yellow')) || 'yellow';
@@ -52,6 +52,6 @@ export async function POST(req: Request) {
     return NextResponse.json(shape(rows[0] as Record<string, unknown>));
   } catch (err) {
     fail('sticky', err);
-    return NextResponse.json({ saved: false });
+    return NextResponse.json({ saved: false }, { status: 500 });
   }
 }

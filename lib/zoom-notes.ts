@@ -39,7 +39,7 @@ function asArray(value: unknown): unknown[] {
 
 function originOf(row: Record<string, unknown>) {
   const stored = String(row.origin || '').toLowerCase();
-  if (stored === 'granola' || stored === 'zoom') return stored;
+  if (stored === 'granola' || stored === 'zoom' || stored === 'riverside') return stored;
   const blob = asArray(row.sources).map((item) => String((item as { name?: string })?.name || '')).join(' ').toLowerCase();
   if (/granola/.test(blob)) return 'granola';
   return 'zoom';

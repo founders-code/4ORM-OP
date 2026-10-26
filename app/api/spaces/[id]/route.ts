@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
+import { statusFor } from '@/lib/http';
 import { fail } from '@/lib/log';
-import { DELETE as packageDelete, GET as packageGet, PATCH as packagePatch, POST as packagePost } from '../../packages/[id]/route';
+import { legacyPackageDelete as packageDelete, legacyPackageGet as packageGet, legacyPackagePatch as packagePatch, legacyPackagePost as packagePost } from '@/lib/package-legacy';
 import { openBoard, sessionOwner } from '@/lib/session';
 import {
   addSpaceFolder,
@@ -47,7 +48,7 @@ export async function GET(req: Request, ctx: { params: { id: string } }) {
     return packageGet(req, ctx);
   } catch (err) {
     fail('spaces_read', err);
-    return NextResponse.json({ space: null, items: [], recipients: [], email: { subject: '', body: '' }, package: null });
+    return NextResponse.json({ space: null, items: [], recipients: [], email: { subject: '', body: '' }, package: null }, { status: 500 });
   }
 }
 
@@ -57,7 +58,7 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-    if (!session.sql) return NextResponse.json({ id: ctx.params.id, saved: false });
+    if (!session.sql) return NextResponse.json({ id: ctx.params.id, saved: false }, { status: 503 });
     const existing = await spaceOrNull(session.userId, ctx.params.id, session.sql);
     if (!existing) return packagePatch(new Request(req.url, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }), ctx);
     const saved = await patchSpace(session.sql, session.userId, ctx.params.id, body);
@@ -65,7 +66,7 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
     return NextResponse.json(saved);
   } catch (err) {
     fail('spaces_patch', err);
-    return NextResponse.json({ id: ctx.params.id, saved: false });
+    return NextResponse.json({ id: ctx.params.id, saved: false }, { status: 500 });
   }
 }
 
@@ -74,14 +75,14 @@ export async function DELETE(req: Request, ctx: { params: { id: string } }) {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ ok: false });
+    if (!session.sql) return NextResponse.json({ ok: false }, { status: 503 });
     const existing = await spaceOrNull(session.userId, ctx.params.id, session.sql);
     if (!existing) return packageDelete(req, ctx);
     const ok = await deleteSpace(session.sql, session.userId, ctx.params.id);
-    return NextResponse.json({ ok });
+    return NextResponse.json({ ok }, ok ? undefined : { status: 404 });
   } catch (err) {
     fail('spaces_delete', err);
-    return NextResponse.json({ ok: false });
+    return NextResponse.json({ ok: false }, { status: 500 });
   }
 }
 
@@ -91,7 +92,7 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-    if (!session.sql) return NextResponse.json({ saved: false });
+    if (!session.sql) return NextResponse.json({ saved: false }, { status: 503 });
     const existing = await spaceOrNull(session.userId, ctx.params.id, session.sql);
     if (!existing) {
       return packagePost(new Request(req.url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }), ctx);
@@ -152,11 +153,12 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
     }
     if (action === 'push-drive') {
       const pushed = await moveSpaceToDrive(sql, session.userId, id);
-      return NextResponse.json(pushed || { ok: false, package: existing, error: 'Drive could not take this Space. The staged files are still here.' });
+      return NextResponse.json(pushed || { ok: false, package: existing, error: 'Drive could not take this Space. The staged files are still here.' }, statusFor(pushed, 502));
     }
     if (action === 'prepare-send') {
       const sent = await sendSpace(sql, session.userId, id);
-      return NextResponse.json(sent || { prepared: false, package: existing, note: 'Could not prepare that send.' });
+      if (!sent) return NextResponse.json({ prepared: false, package: existing, note: 'Could not prepare that send.' }, { status: 500 });
+      return NextResponse.json(sent, sent.prepared === false ? { status: 400 } : undefined);
     }
     if (action === 'send-ghl') {
       const sent = await sendSpaceGhl(sql, session.userId, id, {
@@ -165,11 +167,14 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
         test: body.test === true,
         to: String(body.to || ''),
       });
-      return NextResponse.json(sent || { sent: false, note: 'GoHighLevel did not send that.', package: existing });
+      if (sent.sent) return NextResponse.json(sent);
+      const code = (sent as { code?: string }).code;
+      const status = code === 'test_required' ? 409 : code === 'no_recipients' ? 400 : code === 'not_connected' ? 503 : code === 'not_found' ? 404 : 502;
+      return NextResponse.json(sent, { status });
     }
     if (action === 'follow-up') {
       const followed = await followSpaceGhl(sql, session.userId, id);
-      return NextResponse.json(followed || { ok: false, note: 'Follow up is on the desk.' });
+      return NextResponse.json(followed || { ok: false, note: 'Follow up is on the desk.' }, statusFor(followed, 502));
     }
     if (action === 'add-note') {
       const added = await addSpaceItem(sql, session.userId, id, { kind: 'note', name: body.name || 'Note', body: body.body || '', parentId: body.parentId });
@@ -178,6 +183,6 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
     return NextResponse.json(existing);
   } catch (err) {
     fail('spaces_post', err);
-    return NextResponse.json({ saved: false });
+    return NextResponse.json({ saved: false }, { status: 500 });
   }
 }

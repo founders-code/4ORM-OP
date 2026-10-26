@@ -56,7 +56,7 @@ export async function GET() {
     });
   } catch (err) {
     fail('notes_failed', err);
-    return NextResponse.json({ notes: [] });
+    return NextResponse.json({ notes: [] }, { status: 500 });
   }
 }
 
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ saved: false });
+    if (!session.sql) return NextResponse.json({ saved: false }, { status: 503 });
     const body = await req.json().catch(() => null);
     if (String(body?.kind || '') === 'category') {
       const name = clean(body?.name, 80);
@@ -144,7 +144,7 @@ export async function POST(req: Request) {
     return NextResponse.json(noteShape(made[0] as Record<string, unknown>));
   } catch (err) {
     fail('notes_failed', err);
-    return NextResponse.json({ saved: false });
+    return NextResponse.json({ saved: false }, { status: 500 });
   }
 }
 
@@ -186,7 +186,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json(noteShape(rows[0] as Record<string, unknown>));
   } catch {
     fail('notes_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 500 });
   }
 }
 
@@ -234,6 +234,6 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ id, movedTo: inboxId });
   } catch {
     fail('notes_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 500 });
   }
 }

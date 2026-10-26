@@ -46,6 +46,9 @@ async function ensureSchema(sql: Sql) {
   await sql`ALTER TABLE meeting_actions ADD COLUMN IF NOT EXISTS deleted_at timestamptz`;
   await sql`ALTER TABLE email_boxes ADD COLUMN IF NOT EXISTS deleted_at timestamptz`;
   await sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS deleted_at timestamptz`;
+  await sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS deleted_at timestamptz`;
+  await sql`ALTER TABLE space_items ADD COLUMN IF NOT EXISTS deleted_at timestamptz`;
+  await sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS deleted_at timestamptz`;
   await sql`
     CREATE TABLE IF NOT EXISTS dedupe_log (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -91,11 +94,16 @@ export async function listDupeGroups(sql: Sql, ownerId: string) {
     WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND coalesce(trim(email), '') <> ''
     ORDER BY created_at ASC, id ASC
   `;
+  // Spaces live in the spaces table (packages is the legacy store and is no longer swept). Live rows only.
+  // Keeper: the Space with the most live content (items + people), then the most recently touched.
   const spaces = await sql`
-    SELECT id, name AS label, created_at, lower(trim(name)) AS k
-    FROM packages
-    WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND trim(name) <> ''
-    ORDER BY created_at ASC, id ASC
+    SELECT s.id, s.name AS label, s.created_at, lower(trim(s.name)) AS k
+    FROM spaces s
+    WHERE s.owner_id = ${ownerId} AND s.deleted_at IS NULL AND trim(s.name) <> ''
+    ORDER BY
+      (SELECT count(*) FROM space_items i WHERE i.space_id = s.id AND i.owner_id = s.owner_id AND i.deleted_at IS NULL)
+      + (SELECT count(*) FROM space_recipients r WHERE r.space_id = s.id AND r.owner_id = s.owner_id AND r.deleted_at IS NULL) DESC,
+      coalesce(s.updated_at, s.created_at) DESC, s.created_at ASC, s.id ASC
   `;
   const documents = await sql`
     SELECT id, name AS label, drive_file_id, created_at, drive_file_id AS k
@@ -199,9 +207,9 @@ async function sweepRow(sql: Sql, ownerId: string, table: SweptTable, keptId: st
       break;
     case 'spaces':
       rows = await sql`
-        WITH prior AS (SELECT to_jsonb(t) AS row FROM packages t WHERE t.id = ${removedId}::uuid AND t.owner_id = ${ownerId}),
+        WITH prior AS (SELECT to_jsonb(t) AS row FROM spaces t WHERE t.id = ${removedId}::uuid AND t.owner_id = ${ownerId}),
         gone AS (
-          UPDATE packages SET deleted_at = now()
+          UPDATE spaces SET deleted_at = now()
           WHERE id = ${removedId}::uuid AND owner_id = ${ownerId} AND deleted_at IS NULL
           RETURNING id
         )
@@ -325,6 +333,7 @@ export async function listRestorable(sql: Sql, ownerId: string) {
         SELECT 'notes' AS t, id::text AS id, deleted_at FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NOT NULL
         UNION ALL SELECT 'links', id::text, deleted_at FROM links WHERE owner_id = ${ownerId} AND deleted_at IS NOT NULL
         UNION ALL SELECT 'contacts', id::text, deleted_at FROM contacts WHERE owner_id = ${ownerId} AND deleted_at IS NOT NULL
+        UNION ALL SELECT 'spaces', id::text, deleted_at FROM spaces WHERE owner_id = ${ownerId} AND deleted_at IS NOT NULL
         UNION ALL SELECT 'spaces', id::text, deleted_at FROM packages WHERE owner_id = ${ownerId} AND deleted_at IS NOT NULL
         UNION ALL SELECT 'documents', id::text, deleted_at FROM documents WHERE owner_id = ${ownerId} AND deleted_at IS NOT NULL
         UNION ALL SELECT 'meeting_actions', id::text, deleted_at FROM meeting_actions WHERE owner_id = ${ownerId} AND deleted_at IS NOT NULL
@@ -334,6 +343,7 @@ export async function listRestorable(sql: Sql, ownerId: string) {
         SELECT 'notes' AS t, id::text AS id FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NULL
         UNION ALL SELECT 'links', id::text FROM links WHERE owner_id = ${ownerId} AND deleted_at IS NULL
         UNION ALL SELECT 'contacts', id::text FROM contacts WHERE owner_id = ${ownerId} AND deleted_at IS NULL
+        UNION ALL SELECT 'spaces', id::text FROM spaces WHERE owner_id = ${ownerId} AND deleted_at IS NULL
         UNION ALL SELECT 'spaces', id::text FROM packages WHERE owner_id = ${ownerId} AND deleted_at IS NULL
         UNION ALL SELECT 'documents', id::text FROM documents WHERE owner_id = ${ownerId} AND deleted_at IS NULL
         UNION ALL SELECT 'meeting_actions', id::text FROM meeting_actions WHERE owner_id = ${ownerId} AND deleted_at IS NULL

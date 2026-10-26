@@ -717,7 +717,7 @@
       busyMin += Number(ev.dur) || 30;
     });
     var openH = Math.max(0, Math.round((15 * 60 - busyMin) / 60));
-    var budget = (STATE.events || []).length ? (openH + 'h still open today between 6am and 9pm after what is already booked. Block the morning for the one thing.') : 'Open focus sits next to the calendar. Block the morning for the one thing.';
+    var budget = (STATE.events || []).length ? (openH + 'h still open today between 06:00 and 21:00 after what is already booked. Block the morning for the one thing.') : 'Open focus sits next to the calendar. Block the morning for the one thing.';
     var streak = 0;
     for (var sd = 0; sd < 60; sd += 1) {
       var sk = laDay(Date.now() - sd * 86400000);
@@ -733,7 +733,7 @@
       return '<div class="arow"><span class="kind ' + (row.kind === 'follow_up' ? 'fu' : 'you') + '">' + (row.kind === 'follow_up' ? 'Follow up' : 'You said') + '</span><div class="tx"><div class="nm">' + esc(row.text) + '</div><div class="meta">' + esc(row.meetingTitle || 'Meeting') + (row.meetingDate ? ' - ' + esc(row.meetingDate) : '') + '</div></div><div class="acts"><button type="button" class="btn sm" data-act-col="today" data-act-id="' + esc(row.id) + '">+ Today</button><button type="button" class="btn sm" data-act-col="week" data-act-id="' + esc(row.id) + '">+ Week</button></div></div>';
     }).join('') + (actions.length > 5 ? '<button type="button" class="lk" id="meetActAll">Review all ' + actions.length + ' meeting action items</button>' : '') : '<div class="quiet" style="padding:4px 0">No commitments scraped from Zoom notes yet.</div>') + '</div>';
     var ranked = moves.slice(0, 3);
-    var rankHtml = '<div class="ceo-rank"><div class="rh"><span class="t">4orm Intelligence - CEO ranked moves</span><span class="badge">Rebuilt every morning 6:30am</span><button type="button" class="btn sm" id="ceoRerun">Re-run</button></div>' + (ranked.length ? ranked.map(function (move, i) {
+    var rankHtml = '<div class="ceo-rank"><div class="rh"><span class="t">4orm Intelligence - CEO ranked moves</span><span class="badge">Rebuilt every morning 06:30</span><button type="button" class="btn sm" id="ceoRerun">Re-run</button></div>' + (ranked.length ? ranked.map(function (move, i) {
       var zone = String(move.zone || move.area || 'Raise');
       var zn = /regulat/i.test(zone) ? 'regulator' : /partner/i.test(zone) ? 'partners' : /cash|runway/i.test(zone) ? 'cash' : /product|dev/i.test(zone) ? 'product' : 'raise';
       var src = move.source || move.sourceLine || '';
@@ -2729,7 +2729,7 @@
   }
   function whenLine(ev) {
     try {
-      return new Date(ev.start).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+      return new Date(ev.start).toLocaleTimeString('en-GB', { timeZone: 'America/Vancouver', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
     } catch (err) { return ''; }
   }
   function showMeetAlarm(ev, lead) {

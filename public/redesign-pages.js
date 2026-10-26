@@ -42,9 +42,9 @@
     + '.pick-row{display:flex;gap:10px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);font-size:13.5px}'
     + '.pick-row:first-child{border-top:0}';
   var CSS = {
-    room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=6', notes: '/port-css/notes.css?v=4',
-    contacts: '/port-css/pipeline.css?v=3', work: '/port-css/spaces.css?v=8', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css',
-    links: '/port-css/links.css?v=2', mail: '/port-css/email.css?v=2', mailPeople: '/port-css/email-people.css?v=3',
+    room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=7', notes: '/port-css/notes.css?v=4',
+    contacts: '/port-css/pipeline.css?v=4', work: '/port-css/spaces.css?v=9', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css',
+    links: '/port-css/links.css?v=3', mail: '/port-css/email.css?v=3', mailPeople: '/port-css/email-people.css?v=3',
     playbook: '/port-css/playbook.css?v=2', calendar: '/port-css/calendar.css?v=3', zoom: '/port-css/zoom.css',
     completed: '/port-css/completed.css'
   };
@@ -912,7 +912,10 @@
   function warLoadsOnce() {
     if (fixtureOn()) return;
     var S = window.STATE || (window.STATE = {});
-    if (!S.finance && !S.__warFinReq && typeof window.authFetch === 'function') {
+    var finOk = !!S.finUnlocked;
+    try { finOk = finOk || Number(sessionStorage.getItem('cr_fin_until') || 0) > Date.now(); } catch (e) {}
+    /* Locked: no /api/finance call at all (it would 403); the ribbon shows "-" until Financials is unlocked. */
+    if (finOk && !S.finance && !S.__warFinReq && typeof window.authFetch === 'function') {
       S.__warFinReq = true;
       window.authFetch('/api/finance', { credentials: 'same-origin', quiet: true }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
         /* 403 {locked:true} until the Finance page is unlocked: the War Room keeps showing "-". */
@@ -1036,7 +1039,7 @@
         return '<div class="mv2' + (m.one ? ' one' : '') + '"><span class="rk">' + (i + 1) + '</span><div><div class="mt">' + esc(m.title) + ' <span class="zn ' + m.zone + '">' + esc(m.zoneLabel) + '</span>' + (m.one ? '<span class="yo">Your one move</span>' : '') + '</div><div class="ms2">' + esc(m.why) + '</div><div class="src">' + esc(m.src) + '</div></div><div class="ma"><button class="do" data-action="move-do" data-id="' + esc(mid) + '">Do</button><button data-action="move-steps" data-id="' + esc(mid) + '"' + (wantOpen ? ' class="on-steps" style="background:#101a33;color:#fff"' : '') + '>Steps</button><button data-action="move-plan" data-id="' + esc(mid) + '" data-title="' + esc(m.title) + '">Plan</button><button class="x" data-action="move-dismiss" data-id="' + esc(mid) + '"' + (m.one ? ' title="Dismiss - the next move takes its place"' : '') + '>&times;</button></div>' + stp + '</div>';
       }).join('') + '</div></section>'
       + '<div class="rstack"><section class="card exec today' + (execSelecting() ? ' sel' : '') + '">'
-      + '<div class="ch"><h3>Today</h3><span class="s">' + esc(today.count || (today.tasks || []).length) + ' on the desk</span><span class="selbtn" data-action="exec-select">' + (execSelecting() ? 'Done' : 'Select') + '</span><span class="lnk" style="margin-left:auto" data-action="exec-add" data-bucket="today">+ Add</span></div>'
+      + '<div class="ch"><h3>Today</h3><span class="s">' + esc(today.count || (today.tasks || []).length) + ' on the desk' + (execSelecting() ? '' : ' &middot; drag to reorder') + '</span><span class="selbtn" data-action="exec-select">' + (execSelecting() ? 'Done' : 'Select') + '</span><span class="lnk" style="margin-left:auto" data-action="exec-add" data-bucket="today">+ Add</span></div>'
       + execBar()
       + '<div class="tl" data-action="col-drop" data-bucket="today">' + todayBody + '</div>'
       + '<div class="foot"><span class="lnk" data-action="owed-review">' + esc(data.meetingActionTotal || 0) + ' owed from meetings &middot; review</span><span class="lnk" style="margin-left:auto" data-action="reach-pipe">Reach out &middot; ' + esc(data.reachToday || 0) + ' today &rsaquo;</span></div>'
@@ -1068,13 +1071,15 @@
     };
   }
 
+  /* Fixture mode reproduces design 03 (no categories bar) unless ?cats=1 (design 03c). */
+  var NOTE_CATS_ON = true;
   function noteCard(n) {
     var ty = 'ty' + (n.typeCls ? ' ' + n.typeCls : '');
     var id = esc(n.id || '');
     var src = esc(n.source || 'sticky');
     var ttl = esc(n.title || '');
     var catName = String(n.category || '');
-    var pin = '<span class="catg" data-action="note-cat-tag" data-id="' + id + '" data-source="' + src + '" data-cat="' + esc(catName) + '">' + esc(catName || '+ Category') + '</span><span class="pin" data-action="note-pin" data-id="' + id + '" data-source="' + src + '" data-on="' + (n.pin ? '1' : '0') + '" title="Pin"></span><span class="nx x" data-action="note-archive" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '">&times;</span>';
+    var pin = (NOTE_CATS_ON ? '<span class="catg" data-action="note-cat-tag" data-id="' + id + '" data-source="' + src + '" data-cat="' + esc(catName) + '">' + esc(catName || '+ Category') + '</span>' : '') + '<span class="pin" data-action="note-pin" data-id="' + id + '" data-source="' + src + '" data-on="' + (n.pin ? '1' : '0') + '" title="Pin"></span><span class="nx x" data-action="note-archive" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '">&times;</span>';
     var title = n.title ? '<h4>' + esc(n.title) + '</h4>' : '';
     var body = n.body ? '<p>' + esc(n.body) + '</p>' : '';
     var checks = (n.checks || []).map(function (c, ci) {
@@ -1106,6 +1111,13 @@
     var filt = String(S0.noteFilter || 'all');
     var cats = fixtureOn() ? ['Raise', 'Regulators', 'Product', 'Team', 'Research'] : noteCategoryNames((data.notes || []).concat(data.pinned || []));
     var catOn = String(S0.noteCatName || 'all');
+    NOTE_CATS_ON = fixtureOn() ? qFlag('cats') : true;
+    var catCount = { all: 0 };
+    (data.notes || []).concat(data.pinned || []).forEach(function (n) {
+      catCount.all += 1;
+      var k = String(n.category || '').toLowerCase();
+      if (k) catCount[k] = (catCount[k] || 0) + 1;
+    });
     if (catOn !== 'all' && cats.map(function (c) { return c.toLowerCase(); }).indexOf(catOn.toLowerCase()) < 0) catOn = 'all';
     var archiveView = filt === 'archive' && !fixtureOn();
     /* N9: Canvas = free placement of sticky notes, saved to sticky_notes.x / y. */
@@ -1133,10 +1145,11 @@
       + '<div class="cols" title="Filter by colour"><span class="cdot y" data-action="notes-color" data-color="y" style="background:#fff6c9"></span><span class="cdot" data-action="notes-color" data-color="p" style="background:#ffe1ea"></span><span class="cdot" data-action="notes-color" data-color="g" style="background:#ddf5e6"></span><span class="cdot" data-action="notes-color" data-color="b" style="background:#e1ecff"></span><span class="cdot" data-action="notes-color" data-color="o" style="background:#ffe6cf"></span><span class="cdot" data-action="notes-color" data-color="v" style="background:#ece4ff"></span></div>'
       + (archiveView ? '' : '<div class="seg"><span' + (canvasOn ? '' : ' class="on"') + ' data-action="notes-view" data-view="board">Board</span><span' + (canvasOn ? ' class="on"' : '') + ' data-action="notes-view" data-view="canvas">Canvas</span></div>')
       + '</div>'
-      + '<div class="cats" id="cats"><span class="cl">Categories</span>' + ['All'].concat(cats).map(function (name) {
+      + (NOTE_CATS_ON ? '<div class="cats" id="cats"><span class="cl">Categories</span>' + ['All'].concat(cats).map(function (name) {
         var key = name === 'All' ? 'all' : name;
-        return '<span class="ct' + (catOn.toLowerCase() === key.toLowerCase() ? ' on' : '') + '" data-action="notes-cat" data-c="' + esc(key) + '">' + esc(name) + '</span>';
-      }).join('') + '<span class="ct add" data-action="notes-cat" data-c="new">+ New category</span></div>'
+        var cnt = catCount[key.toLowerCase()] || 0;
+        return '<span class="ct' + (catOn.toLowerCase() === key.toLowerCase() ? ' on' : '') + '" data-action="notes-cat" data-c="' + esc(key) + '">' + esc(name) + ' <i>' + cnt + '</i></span>';
+      }).join('') + '<span class="ct add" data-action="notes-cat" data-c="new">+ New category</span></div>' : '')
       + (archiveView ? '' : '<div class="sec">Pinned</div><div class="board" style="margin-bottom:6px">'
         + (data.pinned || []).map(noteCard).join('') + '<div class="newcard" data-action="note-new" data-pin="1">+ Pin a note here</div></div>')
       + '<div class="sec">' + (archiveView ? 'Archived' : 'All notes') + (canvasOn ? ' &middot; drag sticky notes to place them' : '') + '</div>'

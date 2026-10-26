@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     // Gmail is read with the room's Google credentials: only the allowlisted owner (see sessionOwner) may use it.
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
-    if (!session.sql || !body) return NextResponse.json({ ok: false });
+    if (!session.sql || !body) return NextResponse.json({ ok: false }, { status: session.sql ? 400 : 503 });
     await ensureMailBoard(session.sql);
     const action = String(body.action || '');
     const id = String(body.id || '');
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
           sticky: true,
         });
       }
-      return NextResponse.json({ ok });
+      return NextResponse.json({ ok }, ok ? undefined : { status: 404 });
     }
     if (action === 'reply' || action === 'compose') {
       const sent = await withCreds(creds, () => gmailSend({
@@ -45,23 +45,23 @@ export async function POST(req: Request) {
         messageId: String(body.messageId || ''),
         reply: action === 'reply',
       }));
-      return NextResponse.json({ ok: sent.ok, drafted: sent.drafted, status: sent.status });
+      return NextResponse.json({ ok: sent.ok, drafted: sent.drafted, status: sent.status }, sent.ok || sent.drafted ? undefined : { status: 502 });
     }
     if (action === 'archive') {
       const sent = await withCreds(creds, () => gmailModify(id, [], ['INBOX']));
-      return NextResponse.json({ ok: sent.ok, status: sent.status });
+      return NextResponse.json({ ok: sent.ok, status: sent.status }, sent.ok ? undefined : { status: 502 });
     }
     if (action === 'done') {
       const sent = await withCreds(creds, () => gmailModify(id, [], ['INBOX', 'UNREAD']));
-      return NextResponse.json({ ok: sent.ok, status: sent.status });
+      return NextResponse.json({ ok: sent.ok, status: sent.status }, sent.ok ? undefined : { status: 502 });
     }
     if (action === 'read') {
       const sent = await withCreds(creds, () => gmailModify(id, [], ['UNREAD']));
-      return NextResponse.json({ ok: sent.ok, status: sent.status });
+      return NextResponse.json({ ok: sent.ok, status: sent.status }, sent.ok ? undefined : { status: 502 });
     }
     if (action === 'unread') {
       const sent = await withCreds(creds, () => gmailModify(id, ['UNREAD'], []));
-      return NextResponse.json({ ok: sent.ok, status: sent.status });
+      return NextResponse.json({ ok: sent.ok, status: sent.status }, sent.ok ? undefined : { status: 502 });
     }
     if (action === 'snooze') {
       const hours = Math.min(72, Math.max(1, Number(body.hours) || 24));
@@ -76,11 +76,11 @@ export async function POST(req: Request) {
         fail('mail_snooze', err);
       }
       const sent = await withCreds(creds, () => gmailModify(id, [], ['INBOX']));
-      return NextResponse.json({ ok: sent.ok, status: sent.status, until });
+      return NextResponse.json({ ok: sent.ok, status: sent.status, until }, sent.ok ? undefined : { status: 502 });
     }
-    return NextResponse.json({ ok: false });
+    return NextResponse.json({ ok: false }, { status: 400 });
   } catch (err) {
     fail('mail_act', err);
-    return NextResponse.json({ ok: false });
+    return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

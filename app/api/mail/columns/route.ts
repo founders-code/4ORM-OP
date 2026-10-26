@@ -23,7 +23,7 @@ export async function GET() {
     return NextResponse.json({ columns: await listColumns(session.sql, session.userId) });
   } catch (err) {
     fail('mail_cols', err);
-    return NextResponse.json({ columns: [] });
+    return NextResponse.json({ columns: [] }, { status: 500 });
   }
 }
 
@@ -33,9 +33,10 @@ export async function POST(req: Request) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
-    if (!session.sql || !body) return NextResponse.json({ saved: false });
+    if (!session.sql || !body) return NextResponse.json({ saved: false }, { status: session.sql ? 400 : 503 });
     await ensureMailBoard(session.sql);
     const action = String(body.action || '');
+    let failed = false;
     if (action === 'create') {
       const name = String(body.name || 'Column').replace(/[\u2013\u2014]/g, '-').trim().slice(0, 40) || 'Column';
       const key = keyOf(name);
@@ -49,7 +50,7 @@ export async function POST(req: Request) {
         `;
       } catch (err) {
         fail('mail_col_create', err);
-        return NextResponse.json({ saved: false });
+        return NextResponse.json({ saved: false }, { status: 500 });
       }
     }
     if (action === 'rename') {
@@ -60,6 +61,7 @@ export async function POST(req: Request) {
           await session.sql`UPDATE email_columns SET name = ${name} WHERE owner_id = ${session.userId} AND key = ${key}`;
         } catch (err) {
           fail('mail_col_rename', err);
+          failed = true;
         }
       }
     }
@@ -71,6 +73,7 @@ export async function POST(req: Request) {
           await session.sql`UPDATE email_file SET column_key = ${'prospects'} WHERE owner_id = ${session.userId} AND column_key = ${key}`;
         } catch (err) {
           fail('mail_col_del', err);
+          failed = true;
         }
       }
     }
@@ -82,6 +85,7 @@ export async function POST(req: Request) {
         }
       } catch (err) {
         fail('mail_col_order', err);
+        failed = true;
       }
     }
     if (action === 'width') {
@@ -92,6 +96,7 @@ export async function POST(req: Request) {
           await session.sql`UPDATE email_columns SET width = ${width} WHERE owner_id = ${session.userId} AND key = ${key}`;
         } catch (err) {
           fail('mail_col_width', err);
+          failed = true;
         }
       }
     }
@@ -102,12 +107,15 @@ export async function POST(req: Request) {
           await session.sql`UPDATE email_columns SET collapsed = ${!!body.collapsed} WHERE owner_id = ${session.userId} AND key = ${key}`;
         } catch (err) {
           fail('mail_col_collapse', err);
+          failed = true;
         }
       }
     }
-    return NextResponse.json({ saved: true, columns: await listColumns(session.sql, session.userId) });
+    const columns = await listColumns(session.sql, session.userId);
+    if (failed) return NextResponse.json({ saved: false, columns, error: 'That column change did not save.' }, { status: 500 });
+    return NextResponse.json({ saved: true, columns });
   } catch (err) {
     fail('mail_cols_write', err);
-    return NextResponse.json({ saved: false });
+    return NextResponse.json({ saved: false }, { status: 500 });
   }
 }

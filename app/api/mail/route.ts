@@ -32,7 +32,7 @@ export async function GET() {
         created_at timestamptz NOT NULL DEFAULT now(),
         PRIMARY KEY (owner_id, email)
       )`;
-      const rows = await session.sql`SELECT email FROM inbox_hidden WHERE owner_id = ${session.userId}`;
+      const rows = await session.sql`SELECT email FROM inbox_hidden WHERE owner_id = ${session.userId} AND deleted_at IS NULL`;
       hidden = (rows as Array<{ email?: string }>).map((row) => String(row.email || '').toLowerCase()).filter(Boolean);
     } catch (err) {
       fail('mail_hidden', err);
@@ -55,7 +55,7 @@ export async function GET() {
     return NextResponse.json({ messages, linkedin: cached?.linkedin || [], hidden });
   } catch (err) {
     fail('mail_inbox', err);
-    return NextResponse.json({ messages: [], linkedin: [], hidden: [] });
+    return NextResponse.json({ messages: [], linkedin: [], hidden: [] }, { status: 500 });
   }
 }
 
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
-    if (!session.sql || !body) return NextResponse.json({ saved: false });
+    if (!session.sql || !body) return NextResponse.json({ saved: false }, { status: session.sql ? 400 : 503 });
     const hide = String(body.hide || body.hideEmail || '').trim().toLowerCase().slice(0, 180);
     const show = String(body.show || body.showEmail || '').trim().toLowerCase().slice(0, 180);
     if (hide || show) {
@@ -76,15 +76,16 @@ export async function POST(req: Request) {
           created_at timestamptz NOT NULL DEFAULT now(),
           PRIMARY KEY (owner_id, email)
         )`;
+        await session.sql`ALTER TABLE inbox_hidden ADD COLUMN IF NOT EXISTS deleted_at timestamptz`;
         if (hide && hide.includes('@')) {
-          await session.sql`INSERT INTO inbox_hidden (owner_id, email) VALUES (${session.userId}, ${hide}) ON CONFLICT (owner_id, email) DO NOTHING`;
+          await session.sql`INSERT INTO inbox_hidden (owner_id, email) VALUES (${session.userId}, ${hide}) ON CONFLICT (owner_id, email) DO UPDATE SET deleted_at = NULL`;
         }
         if (show && show.includes('@')) {
-          await session.sql`DELETE FROM inbox_hidden WHERE owner_id = ${session.userId} AND email = ${show}`;
+          await session.sql`UPDATE inbox_hidden SET deleted_at = now() WHERE owner_id = ${session.userId} AND email = ${show} AND deleted_at IS NULL`;
         }
       } catch (err) {
         fail('mail_hidden', err);
-        return NextResponse.json({ saved: false });
+        return NextResponse.json({ saved: false }, { status: 500 });
       }
       return NextResponse.json({ saved: true });
     }
@@ -96,9 +97,9 @@ export async function POST(req: Request) {
       threadId: String(body.threadId || ''),
       messageId: String(body.messageId || ''),
     }));
-    return NextResponse.json({ saved: !!id });
+    return NextResponse.json({ saved: !!id }, id ? undefined : { status: 502 });
   } catch (err) {
     fail('mail_reply', err);
-    return NextResponse.json({ saved: false });
+    return NextResponse.json({ saved: false }, { status: 500 });
   }
 }

@@ -80,8 +80,15 @@
       if (/clear/i.test(r.n)) return (pad && pad.value) || '3';
       return (pad && pad.value) || 'GO';
     }
-    if (s === N) return r.target === '6pm' ? '6pm' : ((pad && pad.value) || '');
+    if (s === N) return /^6\s*pm$/i.test(String(r.target || '')) ? '18:00' : ((pad && pad.value) || '');
     return '';
+  }
+  /* Clock labels like "6pm" or "9:30 am" render as 24-hour ("18:00", "09:30"); anything else is left alone. */
+  function t24label(v) {
+    var m = String(v == null ? '' : v).trim().match(/^(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?$/i);
+    if (!m) return v;
+    var h = Number(m[1]) % 12 + (/p/i.test(m[3]) ? 12 : 0);
+    return String(h).padStart(2, '0') + ':' + (m[2] || '00');
   }
   function weekdayIso(day) {
     var m = String(day).match(/(\d{4})-(\d{2})-(\d{2})/);
@@ -205,7 +212,7 @@
         var col = colOf(r), rm = ROOMS[r.room] || ROOMS.dash;
         h += '<div class="track"><span class="swatch" style="background:' + col + '"></span><div><div class="t">' + r.n + (r.nw ? '<span class="new">NEW</span>' : '') + '</div><div class="r"><a href="' + rm[1] + '" data-action="play-go" data-view="' + (r.room || 'dash') + '">' + rm[0] + ' &rarr;</a>' + (r.sub ? ' &middot; ' + r.sub : '') + '</div></div></div>';
         r.d.forEach(function (s, i) {
-          var l = (r.lab && r.lab[i]) || '';
+          var l = t24label((r.lab && r.lab[i]) || '');
           var day = (r.pads && r.pads[i] && r.pads[i].day) || '';
           var ids = ' data-action="play-pad" data-r="' + ri + '" data-i="' + i + '" data-id="' + esc(r.id || '') + '" data-day="' + esc(day) + '"';
           if (s === D) h += '<div class="pad done" style="--c:' + col + ';color:#fff"' + ids + '>' + l + '</div>';
@@ -309,6 +316,8 @@
     var beats = wrap.querySelector('.beats');
     var beatsHead = beats && beats.previousElementSibling && /LONGER BEATS/i.test(beats.previousElementSibling.textContent || '') ? beats.previousElementSibling : null;
     var ahead = miles.filter(function (m) { return !m.done && m.ymd >= today; }).slice(0, 6);
+    /* Round 3 (P13): cadence beats with real countdowns, painted by redesign-pages-r3.js when it is loaded. */
+    if (beats && window.__r3 && typeof window.__r3.paintBeats === 'function' && window.__r3.paintBeats(beats, beatsHead, pb, today, ahead)) beats = null;
     if (beats) {
       if (!ahead.length) {
         beats.style.display = 'none';
@@ -471,8 +480,8 @@
         else if (x.cls === 'b') tasks++; else notes++;
       });
       if (typeof render === 'function') render(); if (typeof count === 'function') count();
-      var now = new Date(), h = now.getHours(), m = String(now.getMinutes()).padStart(2, '0');
-      root.getElementById('vHist').insertAdjacentHTML('afterbegin', '<div class="vrow"><span class="pl">&#9654;</span><span class="tm">' + ((h % 12) || 12) + ':' + m + ' ' + (h < 12 ? 'am' : 'pm') + '</span><span>&ldquo;' + tx.textContent.slice(0, 90) + '&hellip;&rdquo;</span><span class="c">' + plays + ' plays &middot; ' + tasks + ' task &middot; ' + notes + ' note</span></div>');
+      var hm = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Vancouver', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
+      root.getElementById('vHist').insertAdjacentHTML('afterbegin', '<div class="vrow"><span class="pl">&#9654;</span><span class="tm">' + hm + '</span><span>&ldquo;' + tx.textContent.slice(0, 90) + '&hellip;&rdquo;</span><span class="c">' + plays + ' plays &middot; ' + tasks + ' task &middot; ' + notes + ' note</span></div>');
       toast("Saved to today’s log - " + plays + ' plays updated'); ds.onclick();
     };
   }
@@ -605,7 +614,7 @@
       markReady('playDesk');
       return;
     }
-    loadSnip('/pbwrap-snippet.html', function (html) {
+    loadSnip('/pbwrap-snippet.html?v=2', function (html) {
       try {
         wrap.innerHTML = html || '<div class="pbwrap"></div>';
         if (!fixtureOn()) {
@@ -682,6 +691,9 @@
       attendees: attendees, location: loc, description: desc, attachments: attachments,
       extendedProperties: { private: { fourm: '1', play: String(ev.play || '') } }
     };
+    /* C22: the Google calendar picked in the editor (redesign-pages-r3.js); '' keeps the default calendar. */
+    var gcal = window.__r3 && typeof window.__r3.calendarFor === 'function' ? window.__r3.calendarFor(ev, payload.type) : '';
+    if (gcal) extra.calendarId = gcal;
     /* Reminders: a new event defaults to a 10-minute pop-up. An existing event keeps Google's reminders
        unless the editor set one (alertMin is undefined for events on the calendar's default reminders). */
     if (ev.alertMin != null || payload.type === 'create') {
@@ -836,7 +848,7 @@
     var keepView = window.__redesignCal && window.__redesignCal.root === wrap.getRootNode() && window.__redesignCal.view ? window.__redesignCal.view() : '';
     var keepFocus = focusDate || (window.__redesignCal && window.__redesignCal.root === wrap.getRootNode() && window.__redesignCal.focusYmd ? new Date(window.__redesignCal.focusYmd() + 'T12:00') : null);
     if (!wrap.querySelector('.calwrap')) wrap.innerHTML = '<div class="card" style="padding:28px 24px">Loading&hellip;</div>';
-    loadSnip('/calwrap-snippet.html', function (html) {
+    loadSnip('/calwrap-snippet.html?v=2', function (html) {
       var live = !fixtureOn();
       function go(events) {
         try {
@@ -982,7 +994,7 @@
         id: id, noteId: n.noteId, ymd: ymd, y: Number(dt[0] || 0), wk: weekOf(ymd || n.date), m: mon, d: Number(dt[2] || 0), t: n.title, p: people,
         transcript: n.transcript || '', recordingUrl: n.recordingUrl || n.recording_url || '',
         solo: n.solo || !people.length ? 1 : 0, owe: owe, s: stripLead(quote, people),
-        src: /granola/i.test(String(n.origin || '') + JSON.stringify(n.sources || [])) ? 'Granola' : 'Zoom',
+        src: /riverside/i.test(String(n.origin || '')) ? 'Riverside' : /granola/i.test(String(n.origin || '') + JSON.stringify(n.sources || [])) ? 'Granola' : 'Zoom',
         improve: n.improve, aiSummary: n.aiSummary, quotes: quotes, decided: n.decided, said: n.said, roles: n.roles,
         actions: oweRows.length ? oweRows : n.actions
       };
@@ -1051,7 +1063,7 @@
           + '<div class="when">' + esc(r.when) + ' &middot; ' + esc(x.src) + ' notes' + (x.src === 'Zoom' ? ' + recording + transcript' : '') + '</div>'
           + '<div class="ppl">' + people.map(function (n) { return '<span class="pp">' + av(n) + esc(n) + (r.roles[n] ? ' <em>&middot; ' + esc(r.roles[n]) + '</em>' : '') + '</span>'; }).join('') + '<span class="pp"><span class="av" style="background:#8a96ad">CJ</span>You</span></div>'
           + '<div class="acts">' + (x.transcript ? '<button class="btn sm pri" data-action="zoom-transcript" data-i="' + i + '">Open transcript</button>' : '') + (x.recordingUrl ? '<button class="btn sm" data-action="zoom-play" data-url="' + esc(x.recordingUrl) + '">Play recording</button>' : '') + '<button class="btn sm" data-action="zoom-follow" data-name="' + esc(people[0] || '') + '">Draft follow-up email</button><button class="btn sm" data-action="zoom-space" data-i="' + i + '" data-id="' + esc(x.id || '') + '">Add to a Space</button>' + (people[0] ? '<button class="btn sm" data-action="zoom-contact" data-name="' + esc(people[0]) + '">Open ' + esc(people[0].split(' ')[0]) + ' in Contacts</button>' : '') + '</div>'
-          + '<div class="ai"><div class="sh"><b>&#10022; 4orm Intelligence on this meeting</b><span>summary</span></div><p>' + esc(r.summary) + '</p><div class="ask"><input placeholder="Ask about this meeting" data-action="zoom-ask-input"><button class="btn sm pri" data-action="zoom-ask">Ask</button></div></div>'
+          + '<div class="ai"><div class="sh"><b>4orm Intelligence on this meeting</b><span>summary</span></div><p>' + esc(r.summary) + '</p><div class="ask"><input placeholder="Ask about this meeting" data-action="zoom-ask-input"><button class="btn sm pri" data-action="zoom-ask">Ask</button></div></div>'
           + '<div class="grid2"><div>'
           + (x.solo ? '' : '<div class="sec" style="margin-bottom:14px"><div class="sh"><b>What others said</b><span>intel first</span></div>' + Object.keys(r.said || {}).map(function (n) { return '<div class="said"><div class="who">' + av(n) + esc(n) + (r.roles[n] ? ' <em>' + esc(r.roles[n]) + '</em>' : '') + '</div><ul>' + asList(r.said[n]).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>'; }).join('') + '</div>')
           + (asList(r.improve).length ? '<div class="sec imp" style="margin-bottom:14px"><div class="sh"><b>Where you can improve</b><span>coaching</span></div>' + r.improve.map(function (t, k) { return '<div class="iv"><span>' + (k + 1) + '</span>' + esc(t) + '</div>'; }).join('') + '</div>' : '')
@@ -1093,7 +1105,7 @@
     var wrap = wrapOf('doneDesk');
     if (!wrap) { markReady('doneDesk'); return; }
     if (fixtureOn()) {
-      loadSnip('/done-snippet.html', function (html) {
+      loadSnip('/done-snippet.html?v=2', function (html) {
         wrap.innerHTML = html;
         if (P().finishPaint) P().finishPaint(wrap);
         markReady('doneDesk');
@@ -1194,10 +1206,10 @@
         return '<div class="li"><span class="tag t4">' + esc(tag) + '</span><span>' + esc(label) + '</span>' + (time ? '<em>' + esc(time) + '</em>' : '') + '</div>';
       }).join('');
     }
-    wrap.innerHTML = '<div class="bar"><h1>Completed</h1><span class="sub">A snapshot of every day, saved at 11:55 pm — what moved, who you met, what you owe</span><div class="r"><button class="btn" type="button" data-action="done-search">Search days</button><button class="btn pri" type="button" id="snapNowLive" data-action="done-snap">Snapshot now</button></div></div>'
-      + '<div class="lay"><section class="card"><div class="today"><span class="pulse"></span>Today is being recorded — snapshot at 11:55 pm</div>' + list + '</section>'
-      + '<section class="card det"><div class="dh"><div><h2>' + esc(title) + '</h2><div class="meta">' + (cur.date && cur.date >= vancouverTodayIso() ? 'Recording - not yet saved' : 'Snapshot saved · read-only') + '</div></div><div class="r2"><button class="btn" type="button" data-action="done-export">Export PDF</button><button class="btn" type="button" data-action="done-investor">Add to investor update</button></div></div>'
-      + '<div class="moved"><b>&#10022; What moved today</b><p>' + esc(headline) + '</p></div>'
+    wrap.innerHTML = '<div class="bar"><h1>Completed</h1><span class="sub">A snapshot of every day, saved at 23:55 — what moved, who you met, what you owe</span><div class="r"><button class="btn" type="button" data-action="done-search">Search days</button><button class="btn pri" type="button" id="snapNowLive" data-action="done-snap">Snapshot now</button></div></div>'
+      + '<div class="lay"><section class="card"><div class="today"><span class="pulse"></span>Today is being recorded — snapshot at 23:55</div>' + list + '</section>'
+      + '<section class="card det"><div class="dh"><div><h2>' + esc(title) + '</h2><div class="meta">' + (cur.date && cur.date >= vancouverTodayIso() ? 'Recording - not yet saved' : 'Snapshot saved · read-only') + '</div></div><div class="r2"><button class="btn" type="button" data-action="done-export">Export PDF</button><button class="btn" type="button" data-action="done-investor" data-date="' + esc(cur.date || '') + '" data-headline="' + esc(headline) + '">Add to investor update</button></div></div>'
+      + '<div class="moved"><b>What moved today</b><p>' + esc(headline) + '</p></div>'
       + '<div class="tiles">'
       + '<div class="tl"><b>' + (counts.tasks || 0) + '</b><span>tasks done</span></div>'
       + '<div class="tl"><b>' + (counts.meetings || 0) + '</b><span>meeting</span></div>'

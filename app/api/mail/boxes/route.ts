@@ -33,6 +33,8 @@ async function ensureBoxes(sql: NonNullable<Awaited<ReturnType<typeof openBoard>
     tag text NOT NULL,
     PRIMARY KEY (owner_id, box_key, tag)
   )`;
+  await sql`ALTER TABLE email_box_addresses ADD COLUMN IF NOT EXISTS deleted_at timestamptz`;
+  await sql`ALTER TABLE email_box_tags ADD COLUMN IF NOT EXISTS deleted_at timestamptz`;
 }
 
 function asBoxes(raw: unknown): Record<string, unknown>[] {
@@ -54,10 +56,10 @@ export async function GET() {
       ORDER BY position ASC, created_at ASC
     `;
     const tags = await session.sql`
-      SELECT box_key, tag FROM email_box_tags WHERE owner_id = ${session.userId}
+      SELECT box_key, tag FROM email_box_tags WHERE owner_id = ${session.userId} AND deleted_at IS NULL
     `;
     const addrs = await session.sql`
-      SELECT box_key, email FROM email_box_addresses WHERE owner_id = ${session.userId}
+      SELECT box_key, email FROM email_box_addresses WHERE owner_id = ${session.userId} AND deleted_at IS NULL
     `;
     const tagMap: Record<string, string[]> = {};
     const addrMap: Record<string, string[]> = {};
@@ -88,7 +90,7 @@ export async function GET() {
     return NextResponse.json({ boxes });
   } catch (err) {
     fail('mail_boxes', err);
-    return NextResponse.json({ boxes: [] });
+    return NextResponse.json({ boxes: [] }, { status: 500 });
   }
 }
 
@@ -158,22 +160,22 @@ export async function POST(req: Request) {
           position = EXCLUDED.position, extra = EXCLUDED.extra, deleted_at = NULL
       `);
       queries.push(sql`
-        DELETE FROM email_box_tags
-        WHERE owner_id = ${ownerId} AND box_key = ${b.key} AND NOT (tag = ANY(${b.tags}::text[]))
+        UPDATE email_box_tags SET deleted_at = now()
+        WHERE owner_id = ${ownerId} AND box_key = ${b.key} AND deleted_at IS NULL AND NOT (tag = ANY(${b.tags}::text[]))
       `);
       queries.push(sql`
         INSERT INTO email_box_tags (owner_id, box_key, tag)
         SELECT ${ownerId}, ${b.key}, t FROM unnest(${b.tags}::text[]) AS t
-        ON CONFLICT DO NOTHING
+        ON CONFLICT (owner_id, box_key, tag) DO UPDATE SET deleted_at = NULL
       `);
       queries.push(sql`
-        DELETE FROM email_box_addresses
-        WHERE owner_id = ${ownerId} AND box_key = ${b.key} AND NOT (email = ANY(${b.addrs}::text[]))
+        UPDATE email_box_addresses SET deleted_at = now()
+        WHERE owner_id = ${ownerId} AND box_key = ${b.key} AND deleted_at IS NULL AND NOT (email = ANY(${b.addrs}::text[]))
       `);
       queries.push(sql`
         INSERT INTO email_box_addresses (owner_id, box_key, email)
         SELECT ${ownerId}, ${b.key}, e FROM unnest(${b.addrs}::text[]) AS e
-        ON CONFLICT DO NOTHING
+        ON CONFLICT (owner_id, box_key, email) DO UPDATE SET deleted_at = NULL
       `);
     }
     await sql.transaction(queries);

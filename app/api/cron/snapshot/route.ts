@@ -27,7 +27,7 @@ export async function GET(req: Request) {
   if (pacificHour() !== '23') return NextResponse.json({ ok: true, skipped: true });
   try {
     const sql = await getSql();
-    if (!sql) return NextResponse.json({ ok: false });
+    if (!sql) return NextResponse.json({ ok: false }, { status: 503 });
     const ownerId = await roomOwner(sql);
     if (!ownerId) return NextResponse.json({ ok: true });
     const day = pacificDay();
@@ -45,6 +45,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: true, date: day });
   } catch (err) {
     fail('snap_cron', err);
-    return NextResponse.json({ ok: false });
+    return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ items: Array.isArray(parsed.items) ? parsed.items : heuristic(transcript, rhythms) });
   } catch (err) {
     fail('voice_parse', err);
-    return NextResponse.json({ items: [] });
+    return NextResponse.json({ items: [] }, { status: 500 });
   }
 }
 

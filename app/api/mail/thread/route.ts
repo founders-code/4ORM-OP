@@ -30,6 +30,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ thread, assist: assistFor(thread, contact), contact });
   } catch (err) {
     fail('mail_thread', err);
-    return NextResponse.json({ thread: null });
+    return NextResponse.json({ thread: null }, { status: 500 });
   }
 }

@@ -326,6 +326,26 @@ export async function repliedInbound(contactId: string) {
   return direction.includes('inbound');
 }
 
+/** Round 3 (B56): GHL contact id for an email, or '' (never creates a contact). */
+export async function findGhlContactId(email: string) {
+  const clean = String(email || '').trim().toLowerCase();
+  if (!clean || !configured() || !locationId()) return '';
+  const found = (await ghl(`/contacts/search/duplicate?locationId=${encodeURIComponent(locationId())}&email=${encodeURIComponent(clean)}`)) as {
+    contact?: { id?: string };
+  } | null;
+  return found?.contact?.id ? String(found.contact.id) : '';
+}
+
+/** Round 3 (B56): add or remove tags on one GHL contact (POST / DELETE /contacts/{id}/tags { tags }). */
+export async function setGhlContactTags(contactId: string, tags: string[], mode: 'add' | 'remove') {
+  if (!contactId || !tags.length) return false;
+  const json = await ghl(`/contacts/${encodeURIComponent(contactId)}/tags`, {
+    method: mode === 'add' ? 'POST' : 'DELETE',
+    body: JSON.stringify({ tags: tags.slice(0, 20) }),
+  });
+  return !!json;
+}
+
 export async function addGhlTask(contactId: string, title: string) {
   if (!contactId) return false;
   const json = await ghl(`/contacts/${encodeURIComponent(contactId)}/tasks`, {

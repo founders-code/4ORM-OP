@@ -89,7 +89,7 @@ export async function PUT(req: Request) {
     const category = String(up.category || 'Uncategorized');
     await session.sql`
       INSERT INTO doc_folders (owner_id, name) VALUES (${session.userId}, ${category})
-      ON CONFLICT (owner_id, name) DO NOTHING
+      ON CONFLICT (owner_id, name) DO UPDATE SET deleted_at = NULL
     `;
     const url = sent.url || `https://drive.google.com/file/d/${sent.id}/view`;
     const inserted = await session.sql`

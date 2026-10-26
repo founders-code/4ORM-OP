@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql) return NextResponse.json({ ok: false });
+    if (!session.sql) return NextResponse.json({ ok: false }, { status: 503 });
     const body = await req.json().catch(() => null);
     const sourceKey = String(body?.sourceKey || '').trim().slice(0, 180);
     if (!sourceKey) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
@@ -21,6 +21,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, sourceKey });
   } catch (err) {
     fail('waiting_failed', err);
-    return NextResponse.json({ ok: false });
+    return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

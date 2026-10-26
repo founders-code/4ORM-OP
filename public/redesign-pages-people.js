@@ -12,6 +12,8 @@
     + '.lnk{color:var(--blue);font-weight:700;font-size:12.5px;white-space:nowrap;cursor:pointer}'
     + '.foot{padding:10px 16px 14px;font-size:12.5px;color:var(--ink3);border-top:1px solid var(--line)}'
     + '.port-body{display:block;min-width:0}'
+    /* design shell av-fix: avatar initials are white and bold on every page */
+    + '.av{color:#fff!important;font-size:11.5px!important;font-weight:800!important}'
     + '.av{color:#fff;font-weight:800;font-size:11px}'
     + '.desk-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:95;background:#142036;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;display:none;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(3,10,30,.28)}'
     + '.desk-toast.show{display:flex}.desk-toast button{background:#fff;color:#142036;border:0;border-radius:8px;padding:4px 10px;font-weight:800}'
@@ -30,7 +32,7 @@
     + '.pbox textarea{min-height:150px;resize:vertical}.pbox .er{color:var(--red);font-size:12.5px;font-weight:700;min-height:16px}'
     + '.pbox .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}'
     + '.btn[disabled]{opacity:.55;cursor:default}';
-  var CSS = { contacts: '/port-css/contacts.css?v=1', finance: '/port-css/financials.css?v=1' };
+  var CSS = { contacts: '/port-css/contacts.css?v=2', finance: '/port-css/financials.css?v=1' };
   var cssText = {};
   var NA = 'Fills in from the master finance sheet once it\'s connected';
   var COLD_DAYS = 21;
@@ -332,7 +334,7 @@
       + '<div class="r"><input class="search" placeholder="Search name, company, tag" aria-label="Search contacts" data-action="people-search" data-ext-field value="' + esc(vm.q) + '"><button type="button" class="btn pri" data-action="people-add">+ Add contact</button></div></div>'
       + '<div class="lay"><section class="card">' + rail + '</section><div style="min-width:0">' + cold
       + '<section class="card">' + flt
-      + '<table class="tbl"><colgroup><col style="width:25%"><col style="width:11%"><col style="width:13%"><col style="width:11%"><col style="width:18%"><col style="width:22%"></colgroup>'
+      + '<table class="tbl"><colgroup><col style="width:26%"><col style="width:12%"><col style="width:14%"><col style="width:12%"><col style="width:26%"><col style="width:10%"></colgroup>'
       + '<tr><th>Person</th><th>Role</th><th>Warmth</th><th>Last touch</th><th>Next step</th><th></th></tr><tbody id="rows">' + body + '</tbody></table>'
       + (vm.rows.length ? '' : '<div class="nomatch">' + (vm.total ? 'No contacts match.' : 'No contacts yet. Add one, or connect GoHighLevel on Integrations.') + '</div>')
       + '<div class="foot">' + foot + '</div></section></div></div>';
@@ -616,7 +618,7 @@
     var r = f.raise || {};
     var cash = has(f.cashLabel) ? f.cashLabel : (has(f.cash) ? money(f.cash) : null);
     function kp(label, val, sub, cls, rawLabel) {
-      return '<div class="kp' + (cls && has(val) ? ' ' + cls : '') + '"><span>' + (rawLabel ? label : esc(label)) + '</span><b>' + (has(val) ? esc(val) : '-') + '</b><small>' + (has(val) ? sub : esc(NA)) + '</small></div>';
+      return '<div class="kp' + (cls && has(val) ? ' ' + cls : '') + '"><span>' + (rawLabel ? label : esc(label)) + '</span><b>' + (has(val) ? esc(val) : '&mdash;') + '</b><small>' + (has(val) ? sub : 'reads from the master finance sheet') + '</small></div>';
     }
     var raiseSub = r.sub || [has(r.targetLabel) ? 'of ' + esc(r.targetLabel) : '', has(r.closeDate) ? 'closes ' + esc(shortDate(r.closeDate)) : ''].filter(Boolean).join(' &middot; ') || 'raised to date';
     var stateWord = { in: 'In', pending: 'Pending', pd: 'Pending', open: 'Open', op: 'Open' };
@@ -681,7 +683,7 @@
       api('/api/finance').then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {
         s.__finChecking = false;
         s.__finChecked = true;
-        if (d && d.locked === false && s.desk === 'finance') { s.finance = d; s.finUnlocked = true; }
+        if (d && d.locked === false && s.desk === 'finance') { s.finance = d; s.finUnlocked = true; try { sessionStorage.setItem('cr_fin_until', String(Date.now() + 15 * 60000)); } catch (e) {} }
         paintFinance();
       }).catch(function () { s.__finChecking = false; s.__finChecked = true; });
     }
@@ -708,6 +710,7 @@
       g.busy = false;
       s.finance = d;
       s.finUnlocked = true;
+      try { sessionStorage.setItem('cr_fin_until', String(Date.now() + 15 * 60000)); } catch (e) {}
       paintFinance();
     }).catch(function () { bad('Finance is unavailable right now.'); });
   }
@@ -719,6 +722,7 @@
       s.finUnlocked = false;
       s.finance = null;
       s.__finChecked = true;
+      try { sessionStorage.removeItem('cr_fin_until'); } catch (e) {}
       paintFinance();
       api('/api/finance', { method: 'POST', body: { lock: true } }).then(function (r) {
         if (!r || !r.ok) toast(root, 'Locked here; the server lock did not confirm');

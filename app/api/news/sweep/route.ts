@@ -45,7 +45,7 @@ async function run(req: Request) {
     if (caller === 'unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (caller === 'forbidden') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     session = caller;
-    if (!session.sql) return NextResponse.json({ items: [], saved: 0, thumbs: 0, chips: NEWS_CHIPS, categories: NEWS_CATEGORIES, swept: false });
+    if (!session.sql) return NextResponse.json({ items: [], saved: 0, thumbs: 0, chips: NEWS_CHIPS, categories: NEWS_CATEGORIES, swept: false }, { status: 503 });
     await ensureNewsTables(session.sql).catch(() => {});
     const capSec = Number(process.env.AWS_LAMBDA_FUNCTION_TIMEOUT || 60);
     const left = Math.max(7000, Math.min(55000, (Number.isFinite(capSec) ? capSec : 60) * 1000 - 1500));
@@ -69,7 +69,7 @@ async function run(req: Request) {
     } catch {
       items = [];
     }
-    return NextResponse.json({ items, saved: items.length, thumbs: 0, chips: NEWS_CHIPS, categories: NEWS_CATEGORIES, swept: false });
+    return NextResponse.json({ items, saved: items.length, thumbs: 0, chips: NEWS_CHIPS, categories: NEWS_CATEGORIES, swept: false }, { status: 500 });
   }
 }
 

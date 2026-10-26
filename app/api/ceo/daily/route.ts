@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   try {
     const who = await target(req);
     if (!who) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!who.sql) return NextResponse.json({ moves: [] });
+    if (!who.sql) return NextResponse.json({ moves: [] }, { status: 503 });
     const body = await req.json().catch(() => ({})) as { moves?: unknown };
     const desk = await dailyCeo(who.sql, who.userId, Array.isArray(body.moves) ? body.moves : null);
     return NextResponse.json(desk || { moves: [] });
@@ -45,6 +45,6 @@ export async function POST(req: Request) {
     } catch {
       /* fail soft */
     }
-    return NextResponse.json({ moves: [] });
+    return NextResponse.json({ moves: [] }, { status: 500 });
   }
 }

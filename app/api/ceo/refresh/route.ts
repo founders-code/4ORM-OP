@@ -14,6 +14,6 @@ export async function POST() {
     return NextResponse.json(await refreshCeo(session.sql, session.userId));
   } catch {
     fail('ceo_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 500 });
   }
 }

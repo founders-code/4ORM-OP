@@ -15,7 +15,7 @@ export async function GET() {
     return NextResponse.json({ rules: await listRules(session.sql, session.userId) });
   } catch (err) {
     fail('mail_rules', err);
-    return NextResponse.json({ rules: [] });
+    return NextResponse.json({ rules: [] }, { status: 500 });
   }
 }
 
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
-    if (!session.sql || !body) return NextResponse.json({ saved: false });
+    if (!session.sql || !body) return NextResponse.json({ saved: false }, { status: session.sql ? 400 : 503 });
     await ensureMailBoard(session.sql);
     const drop = String(body.delete || body.id || '');
     if (body.delete && /^[0-9a-f-]{36}$/i.test(drop)) {
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         await session.sql`UPDATE email_rules SET deleted_at = now() WHERE id = ${drop} AND owner_id = ${session.userId} AND deleted_at IS NULL`;
       } catch (err) {
         fail('mail_rule_del', err);
-        return NextResponse.json({ saved: false });
+        return NextResponse.json({ saved: false }, { status: 500 });
       }
       return NextResponse.json({ saved: true, rules: await listRules(session.sql, session.userId) });
     }
@@ -43,9 +43,9 @@ export async function POST(req: Request) {
       target: String(body.target || body.target_column || ''),
       sticky: body.sticky !== false,
     });
-    return NextResponse.json({ saved: !!rule, rule, rules: await listRules(session.sql, session.userId) });
+    return NextResponse.json({ saved: !!rule, rule, rules: await listRules(session.sql, session.userId) }, rule ? undefined : { status: 400 });
   } catch (err) {
     fail('mail_rules_write', err);
-    return NextResponse.json({ saved: false });
+    return NextResponse.json({ saved: false }, { status: 500 });
   }
 }

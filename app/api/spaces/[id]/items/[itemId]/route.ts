@@ -28,7 +28,7 @@ export async function GET(_req: Request, { params }: { params: { id: string; ite
     });
   } catch (err) {
     fail('spaces_file', err);
-    return NextResponse.json({ error: 'This file cannot be previewed here.' }, { status: 400 });
+    return NextResponse.json({ error: 'This file cannot be previewed here.' }, { status: 500 });
   }
 }
 
@@ -38,13 +38,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string; it
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-    if (!session.sql || !spaceIdOk(params.id)) return NextResponse.json({ saved: false });
+    if (!session.sql || !spaceIdOk(params.id)) return NextResponse.json({ saved: false }, { status: session.sql ? 400 : 503 });
     const saved = await patchSpaceItem(session.sql, session.userId, params.id, params.itemId, body);
-    if (!saved) return NextResponse.json({ saved: false });
+    if (!saved) return NextResponse.json({ saved: false }, { status: 404 });
     return NextResponse.json(saved);
   } catch (err) {
     fail('spaces_item', err);
-    return NextResponse.json({ saved: false });
+    return NextResponse.json({ saved: false }, { status: 500 });
   }
 }
 
@@ -53,11 +53,11 @@ export async function DELETE(_req: Request, { params }: { params: { id: string; 
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    if (!session.sql || !spaceIdOk(params.id)) return NextResponse.json({ ok: false });
+    if (!session.sql || !spaceIdOk(params.id)) return NextResponse.json({ ok: false }, { status: session.sql ? 400 : 503 });
     const saved = await deleteSpaceItem(session.sql, session.userId, params.id, params.itemId);
-    return NextResponse.json({ ok: !!saved, package: saved });
+    return NextResponse.json({ ok: !!saved, package: saved }, saved ? undefined : { status: 404 });
   } catch (err) {
     fail('spaces_item', err);
-    return NextResponse.json({ ok: false });
+    return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

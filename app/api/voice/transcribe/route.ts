@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     if (!file || typeof file === 'string') {
       return NextResponse.json({ transcript: '', error: 'No audio' }, { status: 400 });
     }
-    if (!key) return NextResponse.json({ transcript: '', error: 'Transcription unavailable' });
+    if (!key) return NextResponse.json({ transcript: '', error: 'Transcription unavailable' }, { status: 503 });
     const body = new FormData();
     body.append('file', file, 'voice.webm');
     body.append('model', 'gpt-4o-transcribe');
@@ -30,6 +30,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ transcript: String(json?.text || '') });
   } catch (err) {
     fail('voice_transcribe', err);
-    return NextResponse.json({ transcript: '', error: 'Transcription unavailable' });
+    return NextResponse.json({ transcript: '', error: 'Transcription unavailable' }, { status: 500 });
   }
 }

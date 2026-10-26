@@ -42,7 +42,7 @@ else {
   const hits = iconHits(ops.slice(nb, ne));
   if (hits.length) failures.push('public/control-room-ops.js News region has icons: ' + hits.join(', '));
 }
-for (const name of ['redesign-pages-d.js', 'redesign-pages-people.js', 'redesign-news-saved.js']) {
+for (const name of ['redesign-pages-d.js', 'redesign-pages-people.js', 'redesign-news-saved.js', 'redesign-pages-r3.js']) {
   const file = resolve(ROOT, 'public', name);
   if (!existsSync(file)) continue;
   const hits = iconHits(readFileSync(file, 'utf8'));
@@ -56,4 +56,4 @@ if (failures.length) {
 }
 console.log('icon / time check PASS');
 console.log('  one path: left menu is text-only live and fixture; clock is 24-hour America/Vancouver');
-console.log('  no <svg>, emoji or icon glyphs in News (control-room-ops.js) or redesign-pages-d / -people / news-saved');
+console.log('  no <svg>, emoji or icon glyphs in News (control-room-ops.js) or redesign-pages-d / -people / news-saved / -r3');

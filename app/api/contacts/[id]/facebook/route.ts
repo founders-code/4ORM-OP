@@ -36,6 +36,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: 'Could not update that contact.' }, { status: 400 });
   } catch (err) {
     fail('facebook_contact', err);
-    return NextResponse.json({ error: 'Could not update that contact.' }, { status: 400 });
+    return NextResponse.json({ error: 'Could not update that contact.' }, { status: 500 });
   }
 }

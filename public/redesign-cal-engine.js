@@ -32,6 +32,20 @@ if(fixture&&!opts.events){
  const FX=(window.REDESIGN_FIXTURE_C||{}).CAL_FIXTURE||{events:[],allDay:[]};
  FX.events.forEach(a=>ev(a[0],a[1],a[2],a[3],a[4]||'meet'));
  FX.allDay.forEach(a=>ad(a[0],a[1],a[2]));
+ /* The rest of design 10-calendar's sample set: later all-day dates and the recurring meetings / bills. */
+ const haveAd=k=>E.some(x=>x.all&&(x.d+'|'+x.t)===k);
+ [['2026-10-31','Halloween','hol'],['2026-11-01','Daylight Saving ends','hol'],['2026-11-03','Marketing drop','mile'],['2026-11-11','Remembrance Day','hol'],
+  ['2026-11-17','Marketing drop','mile'],['2026-11-30','Newsletter + paper + update','mile'],['2026-12-01','Marketing drop','mile'],['2026-12-15','Marketing drop','mile'],
+  ['2026-12-25','Christmas','hol'],['2026-12-29','Marketing drop','mile'],['2026-12-31','Q4 investor letter','mile']].forEach(a=>{if(!haveAd(a[0]+'|'+a[1]))ad(a[0],a[1],a[2])});
+ for(let d=new Date(2026,8,27);d<=new Date(2027,0,31);d=add(d,1)){
+  const k=ymd(d),w=d.getDay(),m=d.getDate();
+  if(w==1){ev(k,9,10,"Executive Advisor's | War Room",'meet');ev(k,11,12,'Dean and Chad Weekly Call','meet');}
+  if(w==3&&d>=new Date(2026,9,7))ev(k,10,10.5,'Kevin and Chad | 1on1 GTM','meet');
+  if(w==5&&d>=new Date(2026,9,23))ev(k,10,11,'Don and Chad 1on1','inv');
+  if(m==14||m==28)ad(k,'Car Payment $285.21','pay');
+  if(m==7)ad(k,'Zoom $22.56','pay');if(m==8)ad(k,'Canva $16','pay');if(m==22)ad(k,'Quick Books $53.76','pay');
+  if(w==0&&Math.round((d-new Date(2026,8,27))/864e5)%14==0)ad(k,'Delayed communication','hol');
+ }
 }
 if(opts.events){E.length=0;opts.events.forEach(function(x){E.push(x);});}
 // ---------- SUGGESTED PLAYS (4orm Intelligence) ----------
@@ -59,7 +73,8 @@ function planRange(from,days){for(let d=new Date(from.getFullYear(),from.getMont
 planRange(TODAY,21);
 // ---------- STATE ----------
 let view=opts.view||'week',focus=opts.focus||opts.today||new Date();
-const H0=0,H1=24;
+/* Live: the full day, 00:00-24:00 (MASTER_CHECKLIST C43). Fixture: design 10-calendar's 07:00-20:00 window. */
+const H0=fixture?7:0,H1=fixture?20:24;
 let PX=(function(){const v=+(localStorage.getItem('cr_cal_px')||46);return Number.isFinite(v)?Math.max(24,Math.min(160,v)):46})();
 const HIDE={};
 const FOURM_ZOOM_URL='https://us06web.zoom.us/j/7783632424';
@@ -70,7 +85,8 @@ function hasZoom(loc){return asList(loc).some(function(l){return /7783632424|us0
 function ensureZoom(x){x.loc=x.loc||[];if(!hasZoom(x.loc))x.loc.push(ZOOM_CHIP);return x;}
 function asList(v){return Array.isArray(v)?v:(v==null?[]:[v]);}
 function label(v){if(v&&typeof v==='object')return String(v.name||v.title||v.email||'');return String(v==null?'':v).replace(/\s*<[^>]+>\s*$/,'');}
-const weekStart=d=>add(d,-d.getDay());
+/* Midnight-based: a focus date carried over as noon (repaints) must not shift the week by half a day. */
+const weekStart=d=>{const x=add(d,-d.getDay());x.setHours(0,0,0,0);return x};
 function isoWeek(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-n);const y=new Date(Date.UTC(t.getUTCFullYear(),0,1));return Math.ceil(((t-y)/864e5+1)/7)}
 const visible=x=>!HIDE[x.c];
 // ---------- RAIL ----------
@@ -89,12 +105,12 @@ function mini(){const m=gid('mini');if(!m)return;let h='';DOW.forEach((x,i)=>h+=
  }
 }
 function nowHour(){const p=new Intl.DateTimeFormat('en-GB',{timeZone:'America/Vancouver',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date()).split(':');return +p[0]+(+p[1])/60}
-function ribbon(){const r=gid('ribbon');if(!r)return;const k=ymd(TODAY);const a=6,span=16;let h='';
+function ribbon(){const r=gid('ribbon');if(!r)return;const k=ymd(TODAY);const a=fixture?7:6,span=fixture?13:16;let h='';
  E.filter(x=>x.d==k&&!x.all&&visible(x)).forEach(x=>{const s=Math.max(a,x.s),e=Math.min(a+span,x.e);if(e>s)h+=`<div class="seg" style="left:${(s-a)/span*100}%;width:${(e-s)/span*100}%;background:${C[x.c]}"></div>`});
- h+=`<div class="now" style="left:${Math.max(0,Math.min(99,(nowHour()-a)/span*100))}%"></div>`;r.innerHTML=h;
- const t=root.querySelector&&root.querySelector('.rticks');if(t)t.innerHTML='<span>06</span><span>10</span><span>14</span><span>18</span><span>22</span>';
+ h+=`<div class="now" style="left:${fixture?99:Math.max(0,Math.min(99,(nowHour()-a)/span*100))}%"></div>`;r.innerHTML=h;
+ const t=root.querySelector&&root.querySelector('.rticks');if(t)t.innerHTML=fixture?'<span>07</span><span>10</span><span>13</span><span>16</span><span>19</span><span>20</span>':'<span>06</span><span>10</span><span>14</span><span>18</span><span>22</span>';
 }
-function nextCard(){const card=root.querySelector&&root.querySelector('.nextcard');if(!card)return;
+function nextCard(){const card=root.querySelector&&root.querySelector('.nextcard');if(!card||fixture)return;
  const now=Date.now();const list=(opts.upcoming||[]).filter(x=>x.start>now).sort((a,b)=>a.start-b.start);const n=list[0];
  const k=card.querySelector('.k'),t=card.querySelector('.t'),cs=card.querySelector('.c-s');
  if(!n){if(k)k.textContent='NEXT UP';if(t)t.textContent='Nothing booked';if(cs)cs.textContent='';return;}
@@ -102,7 +118,7 @@ function nextCard(){const card=root.querySelector&&root.querySelector('.nextcard
  if(k)k.textContent='NEXT UP · '+f;if(t)t.textContent=n.title||'Meeting';if(cs)cs.textContent=n.join?'Join link on the event':'';
  const prep=card.querySelector('[data-action="cal-prep"]');if(prep){prep.setAttribute('data-title',n.title||'');prep.setAttribute('data-id',n.id||'');}
 }
-function shape(){const box=root.querySelector&&root.querySelector('.shape');const leg=root.querySelector&&root.querySelector('.slegend');if(!box||!leg)return;
+function shape(){const box=root.querySelector&&root.querySelector('.shape');const leg=root.querySelector&&root.querySelector('.slegend');if(!box||!leg||fixture)return;
  const ws=add(weekStart(TODAY),7);const keys=[...Array(7)].map((_,i)=>ymd(add(ws,i)));
  let meet=0,focusH=0,plays=0;E.forEach(x=>{if(!x.all&&keys.indexOf(x.d)>=0)meet+=x.e-x.s});S.forEach(x=>{if(keys.indexOf(x.d)<0)return;if(/^Focus/.test(x.t))focusH+=x.e-x.s;else plays+=x.e-x.s});
  const free=Math.max(0,5*10-meet-focusH-plays);const r=v=>Math.round(v*10)/10;
@@ -121,7 +137,7 @@ function timeGrid(days,showSug){
  for(let i=H0;i<H1;i++)h+=`<div class="hl" style="height:${PX}px">${i==H0?'':fmt(i)}</div>`;h+=`</div>`;
  days.forEach(d=>{const k=ymd(d);h+=`<div class="col${same(d,TODAY)?' today':''}" data-k="${k}" style="height:${(H1-H0)*PX}px">`;for(let i=H0;i<H1;i++)h+=`<div class="line" style="height:${PX}px"></div>`;
   E.filter(x=>x.d==k&&!x.all&&visible(x)).forEach(x=>h+=`<div class="ev real${(x.e-x.s)*PX-3<26?' short':''}${SEL===x?' sel':''}" data-action="cal-event" data-id="${escH(x.id||'')}" data-i="${E.indexOf(x)}" data-d="${x.d}" style="top:${(x.s-H0)*PX+1}px;height:${Math.max(10,(x.e-x.s)*PX-3)}px;background:${C[x.c]}"><div class="tt">${escH(x.t)}</div><div class="tm">${fmt(x.s)} - ${fmt(x.e)}</div>${x.ppl&&x.ppl.length?`<div class="tm">${x.ppl.length} invited</div>`:''}<span class="rz"></span></div>`);
-  if(showSug&&!HIDE.plays)S.filter(x=>x.d==k).forEach(x=>{const ht=(x.e-x.s)*PX-3;h+=`<div class="ev sug${ht<26?' short':''}${SELSUG===x?' sel':''}" data-action="cal-sug" data-si="${S.indexOf(x)}" style="top:${(x.s-H0)*PX+1}px;height:${Math.max(10,ht)}px;border-color:${x.c};background:color-mix(in srgb,${x.c} 14%,transparent)"><div class="tt" style="color:${x.c}">Play · ${escH(x.t)}</div>${ht>22?`<div class="tm">${fmt(x.s)} - ${fmt(x.e)}</div>`:''}<span class="ok"><b class="k" data-action="cal-keep">Keep</b><b class="l" data-action="cal-later">Later</b><b class="x" data-action="cal-drop">Drop</b></span><span class="rz"></span></div>`});
+  if(showSug&&!HIDE.plays)S.filter(x=>x.d==k).forEach(x=>{const ht=(x.e-x.s)*PX-3;h+=`<div class="ev sug${ht<26?' short':''}${SELSUG===x?' sel':''}" data-action="cal-sug" data-si="${S.indexOf(x)}" style="top:${(x.s-H0)*PX+1}px;height:${Math.max(10,ht)}px;border-color:${x.c};background:color-mix(in srgb,${x.c} 14%,transparent)"><div class="tt" style="color:${x.c}">${escH(x.t)}</div>${ht>22?`<div class="tm">${fmt(x.s)} - ${fmt(x.e)}</div>`:''}<span class="ok"><b class="k" data-action="cal-keep">Keep</b><b class="l" data-action="cal-later">Later</b><b class="x" data-action="cal-drop">Drop</b></span><span class="rz"></span></div>`});
   h+=`</div>`;});
  return h+`</div>`;
 }
@@ -142,7 +158,8 @@ function render(){
    h+=`<section class="wkb" data-ws="${ymd(ws)}" data-cw="${isoWeek(add(ws,1))}" data-m="${MON[add(ws,3).getMonth()]}" data-y="${add(ws,3).getFullYear()}"><div class="wklab"><span>CW ${isoWeek(add(ws,1))}</span>${lab}${wkPill(ws,we,tws)}</div>${timeGrid(days,true)}</section>`;}
   body.innerHTML=h+'</div>';
   const tgt=body.querySelector(`.wkb[data-ws="${ymd(fws)}"]`);
-  if(tgt){const keys=[...Array(7)].map((_,i)=>ymd(add(fws,i)));const grid=tgt.querySelector('.tgrid');body.scrollTop=(grid?grid.offsetTop:tgt.offsetTop)+firstHour(keys)*PX-40;}
+  if(tgt&&fixture)body.scrollTop=tgt.offsetTop-70;
+  else if(tgt){const keys=[...Array(7)].map((_,i)=>ymd(add(fws,i)));const grid=tgt.querySelector('.tgrid');body.scrollTop=(grid?grid.offsetTop:tgt.offsetTop)+firstHour(keys)*PX-40;}
   const upd=()=>{const bs=[...body.querySelectorAll('.wkb')];let cur=bs[0];bs.forEach(b=>{if(b.offsetTop-90<=body.scrollTop)cur=b});if(cur)title.innerHTML=`<span class="cw">CW ${cur.dataset.cw}</span>${cur.dataset.m} <span>${cur.dataset.y}</span>`;};
   body.onscroll=upd;upd();}
  if(view=='day'){const d=focus;title.innerHTML=`<span class="cw">CW ${isoWeek(d)}</span><span style="color:var(--blue2)">${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d.getDay()]}</span> ${MON[d.getMonth()]} ${d.getDate()}, <span>${d.getFullYear()}</span>`;

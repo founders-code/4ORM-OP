@@ -10,6 +10,7 @@ import { organizeText } from '../lib/organize.mjs';
 import { openSeal, seal } from '../lib/seal.mjs';
 import { readState, signState } from '../lib/oauth-state.mjs';
 import { calendarTokenOk, ghlOk, hookTokenOk, zoomCrc, zoomOk, zoomSignature } from '../lib/hook-auth.mjs';
+import { nextStatus, processDue, readMessage, readSendAt, schedulePresets, vancouverLabel, vancouverToUtc } from '../lib/schedule-core.mjs';
 
 test('token gate rejects a missing or wrong secret', () => {
   assert.equal(tokenOk(null, 'correct'), false);
@@ -378,4 +379,233 @@ test('every signed-in API route is allowlisted (sessionOwner) and fails closed',
   const privateDoc = readFileSync(new URL('private-doc/route.ts', apiRoot), 'utf8');
   assert.match(privateDoc, /isRoomEmail\(email\)/);
   assert.match(privateDoc, /status: 403/);
+});
+
+test('middleware fails closed in production when Clerk keys are missing', async () => {
+  const { clerkMissingDecision } = await import('../lib/gate.mjs');
+  // Production: gated pages and private APIs refuse with 503; public APIs and public pages still run.
+  assert.equal(clerkMissingDecision({ production: true, isApi: true, isPublicApiPath: false, isGatedPage: false }), 'unavailable');
+  assert.equal(clerkMissingDecision({ production: true, isApi: false, isPublicApiPath: false, isGatedPage: true }), 'unavailable');
+  assert.equal(clerkMissingDecision({ production: true, isApi: true, isPublicApiPath: true, isGatedPage: false }), 'next');
+  assert.equal(clerkMissingDecision({ production: true, isApi: false, isPublicApiPath: false, isGatedPage: false }), 'next');
+  // Development keeps working without keys.
+  assert.equal(clerkMissingDecision({ production: false, isApi: true, isPublicApiPath: false, isGatedPage: true }), 'next');
+  const mw = readFileSync(new URL('../middleware.ts', import.meta.url), 'utf8');
+  assert.match(mw, /clerkMissingDecision\(/);
+  assert.match(mw, /status: 503/);
+  assert.doesNotMatch(mw, /if \(!hasClerk\) return NextResponse\.next\(\);/);
+});
+
+test('middleware gates every private API centrally and keeps public routes open', async () => {
+  const { apiDecision, isPublicApi } = await import('../lib/gate.mjs');
+  const none = () => null;
+  for (const p of ['/api/book', '/api/clerk-publishable-key', '/api/hooks/gmail', '/api/hooks/zoom', '/api/cron/live', '/api/cron/brief', '/api/news/sweep', '/api/ingest', '/api/mcp', '/api/news/image/0b6c', '/api/news/thumb/0b6c']) {
+    assert.equal(apiDecision(p, none), 'pass', p);
+  }
+  for (const p of ['/api/mail', '/api/spaces/abc', '/api/finance', '/api/board', '/api/private-doc', '/api/news', '/api/news/ingest', '/api/ceo/daily', '/api/ops/dedupe', '/api/hooks', '/api/bookx', '/api/cron/live/extra']) {
+    assert.equal(apiDecision(p, none), 'session', p);
+  }
+  // Machine-credential routes pass only with their header; the route then verifies it in constant time.
+  const h = (name) => (k) => (k === name ? 'x' : null);
+  assert.equal(apiDecision('/api/news/ingest', h('x-news-key')), 'pass');
+  assert.equal(apiDecision('/api/ceo/daily', h('x-ceo-key')), 'pass');
+  assert.equal(apiDecision('/api/ops/dedupe', h('authorization')), 'pass');
+  assert.equal(apiDecision('/api/mail', h('authorization')), 'session');
+  // Every public route still authenticates itself (token, signature, rate limit) or serves only public data.
+  const apiRoot = new URL('../app/api/', import.meta.url);
+  const read = (rel) => readFileSync(new URL(rel + '/route.ts', apiRoot), 'utf8');
+  assert.match(read('news/sweep'), /cronSecret\(\)/);
+  for (const rel of ['cron/live', 'cron/brief', 'cron/ceo', 'cron/snapshot']) assert.match(read(rel), /tokenOk\(/, rel);
+  for (const rel of ['ingest', 'mcp']) assert.match(read(rel), /tokenOk\(/, rel);
+  assert.equal(isPublicApi('/api/spaces'), false);
+  const mw = readFileSync(new URL('../middleware.ts', import.meta.url), 'utf8');
+  assert.match(mw, /apiDecision\(/);
+  assert.match(mw, /status: 401/);
+  assert.match(mw, /'\/\(api\|trpc\)\(\.\*\)'/);
+});
+
+test('control room pages allow only Chad or a Clerk test user', async () => {
+  const { roomAccessFromClaims, roomAccessFromUser } = await import('../lib/gate.mjs');
+  assert.equal(roomAccessFromClaims({ email: 'Chad@4ormFinance.com' }), true);
+  assert.equal(roomAccessFromClaims({ metadata: { test: true } }), true);
+  assert.equal(roomAccessFromClaims({ metadata: { test: 'true' }, email: 'someone@4ormfinance.com' }), false);
+  assert.equal(roomAccessFromClaims({ metadata: { roles: ['advisor'] }, email: 'advisor@4ormfinance.com' }), false);
+  assert.equal(roomAccessFromClaims({}), null);
+  assert.equal(roomAccessFromClaims({ email: 'advisor@4ormfinance.com' }), null);
+  const user = (email, meta = {}) => ({ primaryEmailAddressId: 'e1', emailAddresses: [{ id: 'e1', emailAddress: email }, { id: 'e2', emailAddress: 'chad@4ormfinance.com' }], publicMetadata: meta });
+  assert.equal(roomAccessFromUser(user('chad@4ormfinance.com')), true);
+  assert.equal(roomAccessFromUser(user('advisor@4ormfinance.com')), false);
+  assert.equal(roomAccessFromUser(user('qa@4ormfinance.com', { test: true })), true);
+  assert.equal(roomAccessFromUser(user('qa@4ormfinance.com', { test: 'yes' })), false);
+  assert.equal(roomAccessFromUser(null), false);
+  const mw = readFileSync(new URL('../middleware.ts', import.meta.url), 'utf8');
+  assert.match(mw, /isControlRoom\(req\) && !\(await roomAllowed\(/);
+  assert.match(mw, /catch \{\s*return false;/);
+});
+
+test('Spaces real send refuses until a test of the same content went to Chad', async () => {
+  const { spaceSendHash, gateRealSend, TEST_SEND_TO } = await import('../lib/send-gate.mjs');
+  assert.equal(TEST_SEND_TO, 'chad@4ormfinance.com');
+  const base = { subject: 'Hello {name}', body: 'Body', recipients: ['a@x.com', 'B@y.com'] };
+  const h = spaceSendHash(base);
+  assert.equal(h, spaceSendHash({ ...base, recipients: ['b@y.com', 'a@x.com', 'a@x.com'] }));
+  assert.notEqual(h, spaceSendHash({ ...base, subject: 'Hello again' }));
+  assert.notEqual(h, spaceSendHash({ ...base, body: 'Body changed' }));
+  assert.notEqual(h, spaceSendHash({ ...base, recipients: ['a@x.com', 'c@z.com'] }));
+  const tested = new Set([h]);
+  assert.equal((await gateRealSend(base, async (k) => tested.has(k))).ok, true);
+  assert.equal((await gateRealSend({ ...base, body: 'Edited after the test' }, async (k) => tested.has(k))).ok, false);
+  assert.equal((await gateRealSend(base, async () => { throw new Error('db down'); })).ok, false);
+  const lib = readFileSync(new URL('../lib/spaces.ts', import.meta.url), 'utf8');
+  const fn = lib.slice(lib.indexOf('export async function sendSpaceGhl'), lib.indexOf('export async function followSpaceGhl'));
+  assert.ok(fn.indexOf('gateRealSend(') > 0 && fn.indexOf('gateRealSend(') < fn.indexOf('for (const person of people)'));
+  assert.match(fn, /INSERT INTO space_test_sends/);
+  const route = readFileSync(new URL('../app/api/spaces/[id]/route.ts', import.meta.url), 'utf8');
+  assert.match(route, /'test_required' \? 409/);
+});
+
+test('scheduled send: status moves only forward, so a sent row can never be sent again', () => {
+  assert.equal(nextStatus('queued', 'claim'), 'sending');
+  assert.equal(nextStatus('sending', 'claim'), null);
+  assert.equal(nextStatus('sent', 'claim'), null);
+  assert.equal(nextStatus('cancelled', 'claim'), null);
+  assert.equal(nextStatus('failed', 'claim'), null);
+  assert.equal(nextStatus('sending', 'sent'), 'sent');
+  assert.equal(nextStatus('queued', 'sent'), null);
+  assert.equal(nextStatus('sent', 'cancel'), null);
+  assert.equal(nextStatus('sending', 'cancel'), null);
+  assert.equal(nextStatus('queued', 'cancel'), 'cancelled');
+  assert.equal(nextStatus('sent', 'edit'), null);
+  assert.equal(nextStatus('failed', 'edit'), 'queued');
+  assert.equal(nextStatus('queued', 'bogus'), null);
+});
+
+test('scheduled send: overlapping cron runs send each due row exactly once', async () => {
+  const now = Date.now();
+  const rows = [
+    { id: 'a', status: 'queued', at: now - 1000 },
+    { id: 'b', status: 'queued', at: now - 500 },
+    { id: 'c', status: 'queued', at: now + 3600_000 },
+    { id: 'd', status: 'cancelled', at: now - 1000 },
+    { id: 'e', status: 'sent', at: now - 1000 },
+  ];
+  const sends = [];
+  // Mirrors the SQL: one atomic UPDATE ... WHERE status = 'queued' AND send_at <= now() RETURNING.
+  const claim = async (max) => {
+    const due = rows.filter((r) => r.status === 'queued' && r.at <= now).slice(0, max);
+    due.forEach((r) => { r.status = nextStatus(r.status, 'claim'); });
+    return due.map((r) => ({ ...r }));
+  };
+  const finish = async (row, move) => {
+    const r = rows.find((x) => x.id === row.id);
+    const to = nextStatus(r.status, move);
+    if (to) r.status = to;
+  };
+  const send = async (row) => { await new Promise((res) => setTimeout(res, 5)); sends.push(row.id); return { ok: true, drafted: false }; };
+  const runs = await Promise.all([processDue({ claim, send, finish }), processDue({ claim, send, finish }), processDue({ claim, send, finish })]);
+  assert.deepEqual(sends.sort(), ['a', 'b']);
+  assert.equal(runs.reduce((n, r) => n + r.sent, 0), 2);
+  assert.equal(rows.find((r) => r.id === 'a').status, 'sent');
+  assert.equal(rows.find((r) => r.id === 'c').status, 'queued');
+  assert.equal(rows.find((r) => r.id === 'd').status, 'cancelled');
+  // A later run finds nothing new to send.
+  const again = await processDue({ claim, send, finish });
+  assert.equal(again.sent, 0);
+  assert.equal(sends.length, 2);
+});
+
+test('scheduled send: a refused or drafted send fails and is not retried', async () => {
+  const rows = [{ id: 'x', status: 'queued' }];
+  let calls = 0;
+  const claim = async () => rows.filter((r) => r.status === 'queued').map((r) => { r.status = 'sending'; return { ...r }; });
+  const finish = async (row, move) => { const r = rows[0]; const to = nextStatus(r.status, move); if (to) r.status = to; };
+  const send = async () => { calls += 1; return { ok: true, drafted: true }; };
+  const first = await processDue({ claim, send, finish });
+  assert.equal(first.failed, 1);
+  assert.equal(rows[0].status, 'failed');
+  await processDue({ claim, send, finish });
+  assert.equal(calls, 1);
+  const thrower = async () => { throw new Error('network'); };
+  rows[0].status = 'queued';
+  const third = await processDue({ claim, send: thrower, finish });
+  assert.equal(third.failed, 1);
+  assert.equal(rows[0].status, 'failed');
+});
+
+test('scheduled send: times are 24-hour Vancouver wall time and must be in the future', () => {
+  // Summer 08:00 PDT = 15:00Z. Winter offsets follow the installed tzdata (BC's 2026 time change), so they are
+  // checked as a round trip rather than a fixed UTC hour.
+  assert.equal(new Date(vancouverToUtc('2026-07-15', '08:00')).toISOString(), '2026-07-15T15:00:00.000Z');
+  for (const [d, t] of [['2026-11-02', '08:00'], ['2027-01-15', '23:59'], ['2026-12-31', '00:00']]) {
+    assert.equal(vancouverLabel(vancouverToUtc(d, t)), d + ' ' + t);
+  }
+  assert.equal(vancouverLabel(Date.parse('2026-07-15T22:30:00Z')), '2026-07-15 15:30');
+  assert.equal(vancouverToUtc('2026-07-15', '8:00'), null);
+  assert.equal(vancouverToUtc('2026-07-15', '24:00'), null);
+  assert.equal(vancouverToUtc('2026-07-15', '3pm'), null);
+  const now = Date.parse('2026-10-26T18:00:00Z');
+  assert.equal(readSendAt({ date: '2026-10-26', time: '09:00' }, now).ok, false);
+  assert.equal(readSendAt({ date: '2026-10-27', time: '08:00' }, now).ok, true);
+  assert.equal(readSendAt({ date: '2028-10-27', time: '08:00' }, now).ok, false);
+  assert.equal(readSendAt({}, now).ok, false);
+  const presets = schedulePresets(now);
+  assert.ok(presets.length >= 3);
+  for (const p of presets) {
+    assert.match(p.time, /^([01]\d|2[0-3]):[0-5]\d$/);
+    assert.ok(p.at > now);
+  }
+});
+
+test('scheduled send: the stored message is validated and capped', () => {
+  assert.equal(readMessage({ to: 'not-an-address', subject: 'x' }).ok, false);
+  assert.equal(readMessage({ to: 'a@b.co' }).ok, false);
+  const m = readMessage({ to: ['A@B.co', 'a@b.co'], cc: 'a@b.co, c@d.co', bcc: 'c@d.co; e@f.co', subject: 'Hi\r\nBcc: x@y.z', text: 'Body', threadId: 'bad id', reply: true });
+  assert.equal(m.ok, true);
+  assert.deepEqual(m.message.to, ['a@b.co']);
+  assert.deepEqual(m.message.cc, ['c@d.co']);
+  assert.deepEqual(m.message.bcc, ['e@f.co']);
+  assert.equal(/[\r\n]/.test(m.message.subject), false);
+  assert.equal(m.message.threadId, '');
+  assert.equal(m.message.reply, false);
+});
+
+test('scheduled send and round 3 routes: allowlisted, fail closed, and the cron sends only after its token check', () => {
+  const read = (rel) => readFileSync(new URL('../' + rel, import.meta.url), 'utf8');
+  const routes = [
+    'app/api/mail/schedule/route.ts',
+    'app/api/mail/schedule/[id]/route.ts',
+    'app/api/ghl/tags/route.ts',
+    'app/api/investor-update/route.ts',
+    'app/api/investor-update/items/[id]/route.ts',
+    'app/api/integrations/granola/route.ts',
+    'app/api/integrations/riverside/route.ts',
+    'app/api/integrations/perplexity/route.ts',
+    'app/api/playbook/beats/route.ts',
+    'app/api/calendar/calendars/route.ts',
+  ];
+  for (const rel of routes) {
+    const src = read(rel);
+    assert.match(src, /sessionOwner\(/, rel);
+    assert.match(src, /status: 403/, rel);
+    assert.match(src, /status: 401/, rel);
+  }
+  const lib = read('lib/schedule.ts');
+  // Atomic claim: only queued rows, skipped when another run holds them.
+  assert.match(lib, /SET status = 'sending'[\s\S]*FOR UPDATE SKIP LOCKED[\s\S]*AND status = 'queued'/);
+  // Finishing only moves a row that is still 'sending'.
+  assert.match(lib, /SET status = 'sent'[^`]*AND status = 'sending'/);
+  assert.match(lib, /SET status = 'failed'[^`]*AND status = 'sending'/);
+  // Edit and cancel never touch a row that is sending or sent.
+  assert.equal((lib.match(/status IN \('queued', 'failed'\)\s*\n\s*RETURNING/g) || []).length >= 3, true);
+  // Stale 'sending' rows are failed, never re-queued.
+  assert.match(lib, /WHERE status = 'sending' AND claimed_at </);
+  assert.equal(/status = 'queued'[^`]*WHERE status = 'sending'/.test(lib), false);
+  // No delete of scheduled rows: hide is a soft delete.
+  assert.equal(/DELETE FROM scheduled_mail/.test(lib), false);
+  const cron = read('app/api/cron/live/route.ts');
+  const gateAt = cron.indexOf('tokenOk(presented, cronSecret())');
+  const sendAt = cron.indexOf('sendDueMail(sql, ownerId)');
+  assert.ok(gateAt > 0 && sendAt > gateAt);
+  // The browser only queues; it never calls the cron.
+  assert.equal(/\/api\/cron/.test(read('public/redesign-pages-r3.js')), false);
 });

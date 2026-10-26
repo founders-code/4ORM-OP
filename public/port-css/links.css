@@ -36,3 +36,12 @@
 .tm span{width:26px;height:26px;border-radius:7px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;font-size:12px;color:var(--ink3)}
 .dup{position:absolute;top:8px;left:8px;font-size:10.5px;font-weight:800;background:var(--amber50);color:var(--amber);border-radius:6px;padding:2px 7px}
 .hint{padding:0 16px 14px;font-size:12px;color:var(--ink3)}
+
+/* tree v2 (design 07): All row, collapse toggle, drag to reorder / nest */
+#tree2 .cr{user-select:none}
+#tree2 .cr.all{font-weight:800}
+#tree2 .cr .grip{width:14px;color:#c3cde0;font-size:11px;letter-spacing:-2px;cursor:grab;opacity:0}
+#tree2 .cr:hover .grip{opacity:1}
+#tree2 .cr.sub{padding-left:38px;font-size:13px;color:var(--ink2)}
+#tree2 .cr.sub3{padding-left:58px;font-size:13px;color:var(--ink2)}
+#tree2 .hint2{font-size:11.5px;color:var(--ink3);padding:6px 14px 2px}

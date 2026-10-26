@@ -15,10 +15,12 @@
     + '.lnk{color:var(--blue);font-weight:700;font-size:12.5px;white-space:nowrap;cursor:pointer}'
     + '.foot{padding:10px 16px 14px;font-size:12.5px;color:var(--ink3);border-top:1px solid var(--line)}'
     + '.port-body{display:block;min-width:0}'
+    /* design shell av-fix: avatar initials are white and bold on every page */
+    + '.av{color:#fff!important;font-size:11.5px!important;font-weight:800!important}'
     + '.av{color:#fff;font-weight:800;font-size:11px}'
     + '.desk-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:95;background:#142036;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;display:none;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(3,10,30,.28)}'
     + '.desk-toast.show{display:flex}.desk-toast button{background:#fff;color:#142036;border:0;border-radius:8px;padding:4px 10px;font-weight:800}';
-  var CSS = { drive: '/port-css/drive.css?v=1', int: '/port-css/integrations.css?v=1' };
+  var CSS = { drive: '/port-css/drive.css?v=2', int: '/port-css/integrations.css?v=2' };
   var cssText = {};
   var PAGE_ROWS = 12;
   var TOP_DRIVES = 14;
@@ -378,7 +380,7 @@
       var k = kindOf(p);
       var img = thumbOf(p);
       return '<div class="pin" data-action="drive-open" data-drop-ext="drive-pin"' + fileAttrs(p).replace('data-kind="drivefile"', 'data-kind="drivepin"') + '>'
-        + '<div class="th" style="background:' + TINT[k] + '">' + (img ? '<img alt="" loading="lazy" src="' + esc(img) + '" onerror="this.remove()">' : '<i></i>') + '</div>'
+        + '<div class="th" style="background:' + TINT[k] + '"><i></i>' + (img ? '<img alt="" loading="lazy" src="' + esc(img) + '" onerror="this.remove()">' : '') + '</div>'
         + '<div class="nm">' + esc(p.name || 'File') + '</div><div class="mt">' + esc(WORD[k] + (p.modified ? ' · ' + ago(p.modified) : '')) + '</div>'
         + '<div class="ac"><span data-action="drive-unpin" data-id="' + esc(p.id) + '">Unpin</span></div></div>';
     }).join('');
@@ -411,15 +413,16 @@
           + '<div class="nm">' + esc(f.name || 'File') + '</div><div class="mt">' + esc(BADGE[k] + ' · ' + when(f.modified)) + '</div></div>';
       }).join('') + '</div>';
     } else {
-      body = '<table class="tbl"><colgroup><col style="width:42%"><col style="width:20%"><col style="width:13%"><col style="width:13%"><col style="width:12%"></colgroup>'
-        + '<tr><th>Name</th><th>Linked to</th><th>Modified</th><th>Owner</th><th></th></tr><tbody>'
+      /* Design 14: four columns. Pin and Copy float in on row hover inside the Owner cell. */
+      body = '<table class="tbl">'
+        + '<tr><th>Name</th><th>Linked to</th><th>Modified</th><th>Owner</th></tr><tbody>'
         + shown.map(function (r) {
           var f = r.f, k = kindOf(f), link = linkFor(f.id), av = avOf(f.owner), pin = pinned(f.id);
           return '<tr data-action="drive-open"' + fileAttrs(f) + '><td><div class="fn"><span class="ty t-' + k + '">' + BADGE[k] + '</span><div style="min-width:0"><b>' + esc(f.name || 'File') + '</b><span>' + esc(r.folder) + '</span></div></div></td>'
             + '<td>' + (link ? '<span class="sp" data-action="drive-space-open" data-space="' + esc(link.spaceId) + '">' + esc(link.space) + '</span>' : '<span class="lk" data-action="drive-link" data-id="' + esc(f.id) + '">+ Link to Space</span>') + '</td>'
             + '<td class="when">' + esc(when(f.modified)) + '</td>'
-            + '<td><div class="who"><span class="av" style="background:' + av.c + '">' + esc(av.t === 'You' ? 'Me' : av.t) + '</span>' + esc(av.w) + '</div></td>'
-            + '<td><span class="star' + (pin ? ' on' : '') + '" data-action="drive-pin" data-id="' + esc(f.id) + '">' + (pin ? 'Pinned' : 'Pin') + '</span> <span class="racts" style="display:inline-flex"><span data-action="drive-copy" data-id="' + esc(f.id) + '">Copy</span></span></td></tr>';
+            + '<td class="ownc"><div class="who"><span class="av" style="background:' + av.c + '">' + esc(av.t === 'You' ? 'Me' : av.t) + '</span>' + esc(av.w) + '</div>'
+            + '<span class="rpin"><span class="star' + (pin ? ' on' : '') + '" data-action="drive-pin" data-id="' + esc(f.id) + '">' + (pin ? 'Pinned' : 'Pin') + '</span><span class="racts" style="display:inline-flex"><span data-action="drive-copy" data-id="' + esc(f.id) + '">Copy</span></span></span></td></tr>';
         }).join('') + '</tbody></table>';
     }
     var foot = total > PAGE_ROWS
@@ -822,12 +825,19 @@
       rows.push('<div>' + esc(s.detail || '') + '. Paste a Postgres connection string to replace it.</div>');
       rows.push('<div class="row"><input type="password" autocomplete="off" placeholder="postgres://…" data-action="int-db-conn" data-ext-field value="' + esc(db.conn || '') + '"><button class="btn pri" type="button" data-action="int-db-save"' + (busy ? ' disabled' : '') + '>Save</button></div>');
     } else {
-      var unused = s.key === 'granola' || s.key === 'riverside' || s.key === 'perplexity';
-      rows.push('<div>' + (s.group === 'connected' ? 'The key is set in Vercel.' : 'Set <code>' + esc(s.envVar) + '</code> in Vercel (Project, Settings, Environment variables), then redeploy.')
-        + (unused ? ' No 4orm feature reads this key yet; the ' + esc(s.name) + ' sync still has to be built.' : '') + '</div>');
+      /* Round 3: Granola and Riverside sync into Zoom notes; Perplexity answers Research in News and Spaces. */
+      var HOW = {
+        granola: 'Granola desktop app, Settings, Connectors, API keys, Create new key (Business or Enterprise plan). Notes, summaries and transcripts land in Zoom notes as source Granola.',
+        riverside: 'Riverside issues Business API keys through your customer success manager (select Business accounts). Recordings and transcripts land in Zoom notes as source Riverside.',
+        perplexity: 'Create a key at perplexity.ai, Settings, API. Research in News and on a Space angle answers with numbered sources.'
+      };
+      var keyed = s.key === 'granola' || s.key === 'riverside' || s.key === 'perplexity';
+      rows.push('<div>' + (s.group !== 'available' ? 'The key is set in Vercel.' : 'Set <code>' + esc(s.envVar) + '</code> in Vercel (Project, Settings, Environment variables), then redeploy.')
+        + (keyed && HOW[s.key] ? ' ' + esc(HOW[s.key]) : '') + '</div>');
       rows.push('<div class="row">'
         + (s.envVar ? '<button class="btn" type="button" data-action="int-copy-env" data-key="' + esc(s.key) + '">Copy variable name</button>' : '')
-        + (s.key === 'zoom' && s.canRefresh ? '<button class="btn" type="button" data-action="int-refresh" data-key="zoom"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Refreshing…' : 'Refresh now') + '</button>' : '')
+        + ((s.key === 'zoom' || s.key === 'granola' || s.key === 'riverside') && s.canRefresh ? '<button class="btn" type="button" data-action="int-refresh" data-key="' + esc(s.key) + '"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Refreshing…' : (s.key === 'zoom' ? 'Refresh now' : 'Sync now')) + '</button>' : '')
+        + (s.key === 'perplexity' && s.group !== 'available' ? '<button class="btn" type="button" data-action="int-perplexity-test"' + (busy ? ' disabled' : '') + '>Test the key</button>' : '')
         + '<button class="btn" type="button" data-action="int-check" data-key="' + esc(s.key) + '">Check again</button></div>');
     }
     return '<div class="mg">' + rows.join('') + msg + '</div>';

@@ -197,3 +197,11 @@
 .withpanel .bar .r{margin-left:0;flex-wrap:wrap}
 .withpanel .stats{flex-wrap:wrap}.withpanel .stats .sx{flex:1 1 33%}
 .withpanel .sp .ft{flex-wrap:wrap;gap:6px}
+/* hero links, source line, drop target and in-place edit, verbatim from 05c-space-panel.html */
+.spanel .who a.xl{color:#fff;text-decoration:underline;text-decoration-color:rgba(255,255,255,.4);text-underline-offset:3px}
+.spanel .facts2{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center}
+.spanel .facts2 a{font-size:12px;font-weight:750;color:#dbe4fb;background:rgba(255,255,255,.12);border-radius:999px;padding:4px 10px;text-decoration:none}
+.spanel .facts2 a:hover{background:rgba(255,255,255,.22)}
+.spanel .facts2 .src{font-size:11.5px;color:#9fb0d0;margin-left:4px}.spanel .facts2 .src u{color:#9db9ff;cursor:pointer;text-decoration:none;font-weight:750}
+.spanel .drop.over{border-color:#2e6bf2;background:#eaf1fe;color:#2e6bf2}
+.sp h4.editing,.sp p.editing,.spanel h1.editing,.spanel .who.editing{outline:2px solid #2e6bf2;outline-offset:3px;border-radius:6px;background:#f3f7ff;color:#101a33;cursor:text}.sp h4,.sp p{cursor:text}.sp h4:hover,.sp p:hover{background:rgba(46,107,242,.06);border-radius:6px}

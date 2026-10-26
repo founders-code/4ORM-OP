@@ -46,7 +46,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ ok: true });
   } catch (err) {
     fail('zoom_note', err);
-    return NextResponse.json({ error: 'Could not update that note.' }, { status: 400 });
+    return NextResponse.json({ error: 'Could not update that note.' }, { status: 500 });
   }
 }
 
@@ -64,6 +64,6 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     return NextResponse.json({ ok: true });
   } catch (err) {
     fail('zoom_note', err);
-    return NextResponse.json({ error: 'Could not delete that note.' }, { status: 400 });
+    return NextResponse.json({ error: 'Could not delete that note.' }, { status: 500 });
   }
 }
