@@ -136,8 +136,8 @@ button{font:inherit;cursor:pointer}
 </aside>
 <div class="toast" id="toast"></div>
 <script>
-const NAV=[["Today"],["Playbook"],["War Room"],["Calendar"],["Email"],["People"],["Contacts"],["Spaces"],["Pipeline",0,"246"],["Library"],["Notes"],["Documents"],["Drive"],["Links"],["Recordings"],["Record"],["Zoom"],["Completed"],["Signals"],["News"],["Financials"],["Integrations",0,"6"]];
-const GROUPS=["Today","People","Library","Record","Signals"];
+const NAV=[["Today"],["News",""],["Playbook",""],["Planner",""],["Calendar",""],["Email",""],["People"],["Contacts",""],["Spaces",""],["Pipeline","","246"],["Library"],["Links",""],["Notes",""],["Documents",""],["Recordings",""],["Zoom",""],["Signals"],["Completed",""],["Financials",""],["Integrations","","6"]];
+const GROUPS=["Today","People","Library","Signals"];
 document.getElementById('side').innerHTML=NAV.map(n=>GROUPS.includes(n[0])?`<div class="grp">${n[0]}</div>`:`<div class="nav${n[0]=='Spaces'?' on':''}">${n[0]}${n[2]?`<span class="n">${n[2]}</span>`:''}</div>`).join('');
 const T=t=>{const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1800)};
 const COL=['#2e6bf2','#12a36a','#c98408','#6b4fd8','#e0364f','#0f8a8a'];
