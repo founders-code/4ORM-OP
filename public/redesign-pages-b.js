@@ -1355,16 +1355,22 @@
     markReady('linksDesk');
     if (!fixtureOn() && !window.__linksThumbFill) {
       window.__linksThumbFill = true;
-      function fillThumbs() {
-        fetch('/api/links/preview?backfill=1', { credentials: 'include' }).then(function (r) { return r.json(); }).then(function (d) {
-          if (d && d.n) {
+      window.__linksThumbReport = { ok: 0, failed: 0, letter: 0 };
+      function fillThumbs(offset) {
+        var q = offset == null ? '/api/links/preview?backfill=all&offset=0' : '/api/links/preview?backfill=all&offset=' + offset;
+        fetch(q, { credentials: 'include' }).then(function (r) { return r.json(); }).then(function (d) {
+          if (!d) return;
+          window.__linksThumbReport.ok += Number(d.ok || 0);
+          window.__linksThumbReport.failed += Number(d.failed || 0);
+          window.__linksThumbReport.letter += Number(d.letter || 0);
+          if (d.n) {
             if (typeof window.refreshBoard === 'function') window.refreshBoard();
             else if (typeof window.loadBoard === 'function') window.loadBoard();
-            setTimeout(fillThumbs, 400);
           }
+          if (d.next != null) setTimeout(function () { fillThumbs(d.next); }, 200);
         }).catch(function () {});
       }
-      fillThumbs();
+      fillThumbs(0);
     }
   }
 
@@ -1482,7 +1488,7 @@
       var how = attIsReal(a) ? '' : ' <span class="sz">link</span>';
       return '<span class="att' + (a.busy ? ' busy' : '') + '"><span class="ty" style="background:#2e6bf2">' + esc(kind === 'img' ? 'IMG' : String(kind || 'file').toUpperCase()) + '</span>' + esc(a.name || 'File') + (a.size ? ' <span class="sz">' + esc(sizeLabel(a.size)) + '</span>' : '') + how + '<span class="x2" data-action="mail-att-remove" data-i="' + i + '" title="Remove">&times;</span></span>';
     }).join('');
-    return '<aside class="compose' + (open ? ' open' : '') + '" id="compose">'
+    return '<aside class="compose' + (open ? ' open' : '') + '" id="compose" aria-hidden="' + (open ? 'false' : 'true') + '"' + (open ? '' : ' inert') + '>'
       + '<div class="cw"><div class="ctop"><h2>' + title + '</h2><button class="btn x" id="cclose" data-action="mail-compose-close">Close &times;</button></div>'
       + '<div class="fr"><label>From</label><div class="val from">Chad Johnston &lt;chad@4ormfinance.com&gt;<small>sends from your Gmail</small></div><span></span></div>'
       + rcptRow(d, 'to', 'To', '<span class="sm" data-action="mail-cc-toggle">' + (d.showCc ? 'Hide Cc' : 'Cc &nbsp; Bcc') + '</span>')
@@ -1580,7 +1586,12 @@
     if (!stored.length) {
       try { stored = JSON.parse(localStorage.getItem('cr_email_boxes') || '[]'); } catch (e) { stored = []; }
     }
-    return stored;
+    return stored.filter(function (sb) {
+      if (!sb || typeof sb !== 'object') return false;
+      var addrs = asList(sb.addrs);
+      var n = String(sb.n || sb.name || '').trim();
+      return !!(n || addrs.length);
+    });
   }
   /* Stored boxes (names, tags, order, closed) overlaid on live mail. A new box never hides the others. */
   function liveEmailPeopleState() {
@@ -1626,6 +1637,71 @@
     }
     return liveEmailPeopleState();
   }
+  function paintEmail08g(wrap, personId, mailIdx) {
+    var CAT = { team: ['Team', '#2e6bf2', '#eaf1fe'], inv: ['Investors', '#12a36a', '#e4f6ee'], dp: ['Design partners', '#c98408', '#fff4e0'], reg: ['Regulators', '#6b4fd8', '#efe9ff'], legal: ['Legal', '#e0364f', '#fde9ec'], other: ['Other', '#7a86a0', '#f0f3f8'] };
+    var BODY = 'Sending this over before Thursday so you have it in front of you. The two-pager is the short version; the deck has the market numbers and the compliance slide we talked about. Let me know what you would change before it goes to the angels.';
+    var PPL = asList((F().email && F().email.people && F().email.people.person08g));
+    function card(p) {
+      var c = CAT[p.cat];
+      return '<div class="pb" data-action="mail-08g-open" data-id="' + p.id + '" style="--c:' + c[1] + ';--cbg:' + c[2] + '"><div class="h"><span class="av" style="background:' + p.col + '">' + p.ini + '</span><div style="min-width:0"><h4>' + esc(p.n) + '</h4><div class="org">' + esc(p.org) + '</div></div><span class="cat">' + c[0] + '</span></div>'
+        + '<div class="nums"><div><b>' + p.from + '</b><small>from them</small></div><div><b>' + p.to + '</b><small>from you</small></div><div><b>' + (p.files + p.links) + '</b><small>files, links</small></div><div class="' + (/[mh]$/.test(p.last) ? 'hot' : '') + '"><b>' + p.last + '</b><small>last</small></div></div>'
+        + '<div class="lt">Latest</div>' + p.em.slice(0, 3).map(function (e) { return '<div class="em"><b>' + esc(e[1]) + '</b><span>' + esc(e[2]) + '</span></div>'; }).join('')
+        + '<div class="ft"><span class="fl">' + p.files + ' files · ' + p.links + ' links</span>' + (p.owe ? '<span class="owe">You owe a reply</span>' : '') + '<span class="go">Open</span></div></div>';
+    }
+    wrap.innerHTML = '<div class="bar"><h1>Email</h1><div class="seg"><span data-action="mail-view" data-view="inbox">Inbox</span><span class="on" data-action="mail-view" data-view="people">People</span><span>Scheduled</span></div><span class="stat"><b>60</b> unread</span><span class="stat"><b>10</b> need a reply</span></div>'
+      + '<div class="grid g08" id="grid">' + PPL.map(card).join('') + '</div>'
+      + '<div class="scrim" id="scrim" data-action="mail-08g-close"></div>'
+      + '<aside class="pc" id="pc" role="dialog" aria-label="Person"></aside>'
+      + '<section class="rd" id="rd" role="dialog" aria-label="Email"></section>'
+      + '<div class="toast" id="toast"></div>';
+    var tab = 'em';
+    var cur = PPL.filter(function (p) { return p.id === personId; })[0] || PPL[0];
+    function openMail(ei) {
+      var p = cur, e = p.em[ei] || p.em[0], c = CAT[p.cat];
+      var rd = wrap.querySelector('#rd');
+      var thread = [[p.n, p.ini, p.col, 'Mon 26 Oct, 14:58', 'Hi Chad,|' + BODY + '|One question on slide 1: do we lead with the new AML and compliance rules, or with the record itself? I think the record, but you know the regulators better.|Best regards,|Bruce', true],
+        ['Chad Johnston', 'CJ', '#2e6bf2', 'Mon 26 Oct, 11:20', 'Bruce, can you send the latest two-pager and the overview deck? I want both in the investor place card sessions this week.', false],
+        [p.n, p.ini, p.col, 'Sun 25 Oct, 19:04', 'FYI - first pass at the AML slide attached. Rough, but the structure is there.', false]];
+      rd.innerHTML = '<div class="rdh"><button class="back" data-action="mail-08g-rd-back">&lsaquo; Back to ' + esc(p.n.split(' ')[0]) + '</button><span class="who">' + c[0] + ' · ' + esc(p.org) + '</span><div class="r"><button class="btn" data-action="mail-08g-toast" data-msg="Opens Compose to forward this thread">Forward</button><button class="btn" data-action="mail-08g-toast" data-msg="Files this email into a column">Move to column</button><button class="btn" data-action="mail-08g-toast" data-msg="Adds the thread to a Space">Add to a Space</button><button class="btn" data-action="mail-08g-toast" data-msg="Snoozed until tomorrow 08:00">Snooze</button></div></div>'
+        + '<div class="rdb"><div class="rdw"><h1>' + esc(e[1]) + '</h1><div class="meta"><span>' + thread.length + ' messages</span><span>' + p.files + ' attachments</span><span>' + (e[0] === 'in' ? 'You owe a reply' : 'Waiting on them') + '</span></div>'
+        + thread.map(function (m, i) {
+          return '<div class="msg' + (m[5] ? '' : ' fold') + '" data-action="mail-08g-unfold"><div class="mh"><span class="av" style="background:' + m[2] + '">' + m[1] + '</span><div><b>' + esc(m[0]) + '</b><small>to ' + (m[0] === 'Chad Johnston' ? esc(p.n) : 'Chad Johnston') + '</small></div><span class="t">' + m[3] + '</span></div><div class="body">' + String(m[4]).split('|').map(function (x) { return '<p>' + esc(x) + '</p>'; }).join('') + '</div>'
+            + (m[5] ? '<div class="att">' + p.fl.slice(0, 3).map(function (f) { return '<span data-action="mail-08g-toast" data-msg="Opens ' + esc(f[1]) + ' in the viewer"><span class="ty ' + f[0] + '">' + f[0].toUpperCase() + '</span>' + esc(f[1]) + '</span>'; }).join('') + '</div>' : '') + '</div>';
+        }).join('')
+        + '<div class="reply"><div class="to">Reply to ' + esc(p.n) + ' · signature added</div><div class="ed" contenteditable="true"></div><div class="rf"><button class="btn pri" data-action="mail-08g-toast" data-msg="Shows the recipients, then sends after you confirm">Send</button><button class="btn" data-action="mail-08g-toast" data-msg="Attach from your computer, Documents, Drive or a Space">Attach</button><button class="btn" data-action="mail-08g-toast" data-msg="Select text, then add a link">Link</button><span class="sp"></span><span class="m">Nudge in 3 days</span></div></div></div></div>';
+      rd.classList.add('on');
+      wrap.querySelectorAll('.row.mail').forEach(function (r) { r.classList.toggle('cur', +r.getAttribute('data-mail') === ei); });
+    }
+    function openP(id) {
+      cur = PPL.filter(function (p) { return p.id === id; })[0] || cur;
+      var p = cur, c = CAT[p.cat];
+      var pc = wrap.querySelector('#pc');
+      pc.style.setProperty('--c', c[1]);
+      pc.innerHTML = '<div class="ph"><div class="tl"><span class="cr">Email / People / ' + c[0] + '</span><div class="r"><button class="gb" data-action="mail-08g-prev">&lsaquo; Prev</button><button class="gb" data-action="mail-08g-next">Next &rsaquo;</button><button class="gb" data-action="mail-08g-close">Close</button></div></div>'
+        + '<div class="who"><span class="av" style="background:' + p.col + '">' + p.ini + '</span><div style="min-width:0"><h2>' + esc(p.n) + '</h2><div class="role">' + esc(p.role) + ' · ' + esc(p.org) + '</div><div class="tags"><span class="cc">' + c[0] + '</span>' + (p.owe ? '<span>You owe a reply</span>' : '') + '<span>' + (p.from + p.to) + ' emails</span></div></div></div>'
+        + '<div class="info"><div><b>' + esc(p.org) + '</b><small>company</small></div><div><b>' + esc(p.role) + '</b><small>role</small></div><div><b>' + esc(p.stage) + '</b><small>pipeline stage</small></div><div><b>' + esc(p.meet) + '</b><small>last meeting</small></div><div class="' + (p.items ? 'hot' : '') + '"><b>' + p.items + ' open</b><small>items owed</small></div><div><b>' + esc(p.first) + '</b><small>first contact</small></div></div></div>'
+        + '<div class="tabs"><span data-action="mail-08g-tab" data-t="em" class="' + (tab === 'em' ? 'on' : '') + '">Emails<i>' + p.em.length + '</i></span><span data-action="mail-08g-tab" data-t="fl" class="' + (tab === 'fl' ? 'on' : '') + '">Files<i>' + p.fl.length + '</i></span><span data-action="mail-08g-tab" data-t="lk" class="' + (tab === 'lk' ? 'on' : '') + '">Links<i>' + p.lk.length + '</i></span></div>'
+        + '<div class="pbody">' + (tab === 'em' ? p.em.map(function (e, ei) {
+          return '<div class="row mail" data-action="mail-08g-mail" data-mail="' + ei + '"><div><b><span class="dir ' + e[0] + '">' + (e[0] === 'in' ? 'In' : 'Out') + '</span>' + esc(e[1]) + '</b><p>' + esc(e[2]) + ' ' + esc(BODY) + '</p></div><div class="r"><span class="m">' + e[3] + '</span></div></div>';
+        }).join('') : tab === 'fl' ? (p.fl.length ? p.fl.map(function (f) {
+          return '<div class="row"><div><b><span class="ty ' + f[0] + '">' + f[0].toUpperCase() + '</span>' + esc(f[1]) + '</b><p>' + f[2] + ' · from ' + f[3] + '</p></div></div>';
+        }).join('') : '<div class="row"><div><b>No files yet</b><p>Attachments from this person land here.</p></div></div>')
+          : (p.lk.length ? p.lk.map(function (l) { return '<div class="row"><div><b>' + esc(l[0]) + '</b><p>' + esc(l[1]) + ' · ' + l[2] + '</p></div></div>'; }).join('') : '<div class="row"><div><b>No links yet</b><p>Links found in the emails land here.</p></div></div>'))
+        + '</div><div class="pfoot"><button class="btn pri" data-action="mail-compose">Email</button><button class="btn" data-action="mail-08g-toast" data-msg="Opens the calendar with + 4orm Zoom">Book</button><button class="btn" data-action="mail-08g-toast" data-msg="Opens the person in Pipeline">Pipeline</button><button class="btn" data-action="mail-08g-toast" data-msg="Adds to a Space">Add to a Space</button><span class="sp"></span><button class="btn" data-action="mail-08g-toast" data-msg="Opens the full contact">Contact</button></div>';
+      pc.classList.add('on');
+      wrap.querySelector('#scrim').classList.add('on');
+      wrap.querySelectorAll('.pb').forEach(function (b) { b.classList.toggle('cur', b.getAttribute('data-id') === id); });
+    }
+    wrap.__08g = { openP: openP, openMail: openMail, close: function () {
+      wrap.querySelector('#rd').classList.remove('on');
+      wrap.querySelector('#pc').classList.remove('on');
+      wrap.querySelector('#scrim').classList.remove('on');
+    }, PPL: PPL, tabSet: function (t) { tab = t; openP(cur.id); } };
+    openP(cur.id);
+    if (mailIdx != null && !Number.isNaN(mailIdx)) openMail(mailIdx);
+    if (P().finishPaint) P().finishPaint(wrap);
+    markReady('mailDesk');
+  }
   function sortPeopleBoxes(boxes, sort) {
     var list = boxes.slice();
     var ord = { rep: 0, wait: 1, cold: 2, ok: 3 };
@@ -1642,6 +1718,17 @@
     return list;
   }
   function paintEmailPeople(wrap) {
+    var personQ = '';
+    var mailQ = '';
+    try {
+      var qp0 = new URLSearchParams(String(location.search || ''));
+      personQ = qp0.get('person') || '';
+      mailQ = qp0.get('mail');
+    } catch (e0) {}
+    if (fixtureOn() && personQ) {
+      paintEmail08g(wrap, personQ === 'open' ? 'bf' : personQ, mailQ == null || mailQ === '' ? 0 : Number(mailQ));
+      return;
+    }
     var S = window.STATE || {};
     var data = peopleData();
     var sort = S.mailPeopleSort || 'my order';
@@ -1701,6 +1788,19 @@
       var tags = asList(b.tags).map(function (t) {
         return '<span data-action="mail-people-tag" data-tag="' + esc(t) + '">#' + esc(t) + '</span>';
       }).join('');
+      if (!fixtureOn()) {
+        var tag0 = asList(b.tags)[0] || 'Other';
+        var fileN = asList(b.files).length + (Number(b.more) || 0);
+        var linkN = asList(b.links).length;
+        var latest = asList(b.m).slice(0, 3).map(function (row) {
+          return '<div class="em"><b>' + esc(row[1]) + '</b><span>' + esc(row[2]) + '</span></div>';
+        }).join('');
+        return '<div class="pb' + hide + '" draggable="true" data-action="mail-box-open" data-id="' + esc(b.id) + '" style="--c:' + esc(b.c || '#2e6bf2') + ';--cbg:#eaf1fe">'
+          + '<div class="h"><span class="av" style="background:' + esc(b.c) + '">' + esc(peopleIni(b.n)) + '</span><div style="min-width:0"><h4>' + esc(b.n) + '</h4><div class="org">' + esc(b.o) + '</div></div><span class="cat">' + esc(tag0) + '</span></div>'
+          + '<div class="nums"><div><b>' + esc(b.in) + '</b><small>from them</small></div><div><b>' + esc(b.out) + '</b><small>from you</small></div><div><b>' + (fileN + linkN) + '</b><small>files, links</small></div><div class="' + ((b.st || [])[0] === 'rep' ? 'hot' : '') + '"><b>' + esc(b.last) + '</b><small>last</small></div></div>'
+          + '<div class="lt">Latest</div>' + latest
+          + '<div class="ft"><span class="fl">' + fileN + ' files · ' + linkN + ' links</span>' + ((b.st || [])[0] === 'rep' ? '<span class="owe">You owe a reply</span>' : '') + '<span class="go">Open</span></div></div>';
+      }
       return '<div class="bx' + hide + '" draggable="true" data-action="mail-box-drag" data-kind="box" data-id="' + esc(b.id) + '">'
         + '<div class="bh"><span class="grab" title="Drag to move">&#8942;&#8942;</span><span class="av" style="background:' + esc(b.c) + '">' + esc(peopleIni(b.n)) + '</span><div style="min-width:0"><b>' + esc(b.n) + '</b><span>' + esc(b.o) + '</span></div><span class="acts"><span class="m" data-action="mail-box-menu" data-id="' + esc(b.id) + '">&middot;&middot;&middot;</span><span class="x" data-action="mail-box-close" data-id="' + esc(b.id) + '" title="Close this box (it moves to the Closed list)">&times;</span></span></div>'
         + '<div class="tags">' + tags + '<span class="add" data-action="mail-box-tag-add" data-id="' + esc(b.id) + '">+ tag</span></div>'

@@ -692,6 +692,32 @@
     });
   }
 
+  function closeComposeDrawer(root) {
+    S().composeOpen = false;
+    var cp = root && root.getElementById && root.getElementById('compose');
+    if (!cp) { S().composeDraft = null; repaintMail(); return; }
+    cp.classList.remove('open');
+    var finished = false;
+    function finish() {
+      if (finished) return;
+      finished = true;
+      cp.setAttribute('aria-hidden', 'true');
+      cp.setAttribute('inert', '');
+      cp.style.visibility = 'hidden';
+      var side = cp.querySelector('#composeSide');
+      if (side) { side.setAttribute('aria-hidden', 'true'); side.setAttribute('inert', ''); }
+      S().composeDraft = null;
+      var focusable = cp.querySelectorAll('a,button,input,textarea,select,[contenteditable="true"],[tabindex]');
+      focusable.forEach(function (el) { el.setAttribute('tabindex', '-1'); });
+    }
+    cp.addEventListener('transitionend', function onEnd(ev) {
+      if (ev && ev.propertyName && String(ev.propertyName).indexOf('transform') < 0) return;
+      cp.removeEventListener('transitionend', onEnd);
+      finish();
+    });
+    setTimeout(finish, 420);
+  }
+
   /* ---------- actions ---------- */
   var actions = {
     'coming-soon': function (el, root) { soon(root, attr(el, 'data-label') || (el.textContent || '').trim().slice(0, 60) || 'This control'); },
@@ -2144,6 +2170,7 @@
     'canvas-cluster-name': function () {},
     'canvas-note': function () {},
     'canvas-rz': function () {},
+    'canvas-note-rz': function () {},
     'sig-tab': function () {},
     'sig-toggle': function () {},
     'sig-seen': function (el, root) {
@@ -2732,10 +2759,11 @@
     },
     /* ---------- Email: compose ---------- */
     'mail-compose': function () { openCompose({ to: [], cc: [], bcc: [] }); },
-    'mail-compose-close': function () {
-      S().composeOpen = false;
-      S().composeDraft = null;
-      repaintMail();
+    'mail-compose-close': function (el, root) {
+      closeComposeDrawer(root);
+    },
+    'planner-retry': function () {
+      if (typeof window.__plannerRetry === 'function') window.__plannerRetry();
     },
     'mail-to': function () {},
     'mail-subject': function () {},
@@ -2845,7 +2873,7 @@
         + (bcc.length ? '\nBcc: ' + bcc.join(', ') : '');
       var attLine = realAtts.length ? '\nAttachments: ' + realAtts.map(function (a) { return a.name || 'File'; }).join(', ') : '';
       if (!window.confirm('Send this email from Gmail?\n\n' + who + '\nSubject: ' + (d.subject || '(no subject)') + attLine + '\n\nNothing goes out until you confirm.')) return;
-      if (!writeOk()) { toast(root, 'Send (fixture)'); return; }
+      if (!writeOk()) { toast(root, 'Send (fixture)'); closeComposeDrawer(root); return; }
       var reply = !!(d.reply && d.threadId);
       var attPayload = realAtts.map(function (a) {
         if (a.data) return { name: a.name || 'File', type: a.type || a.mime || 'application/octet-stream', data: a.data };
@@ -2865,9 +2893,7 @@
         if (d.nudge) nudgeLater(root, name, to, d.subject);
         if (d.log) logToPipeline(root, name, to);
         toast(root, (res.drafted && !res.ok ? 'Saved as a Gmail draft' : 'Sent from Gmail') + (d.nudge ? ' · nudge set for 3 days' : '') + (d.log ? ' · logging to Pipeline' : ''));
-        S().composeOpen = false;
-        S().composeDraft = null;
-        repaintMail();
+        closeComposeDrawer(root);
       }).catch(function (err) { toast(root, errText(err, 'Gmail did not take that send')); });
     },
     'intel-ask': function () {},
@@ -3368,6 +3394,49 @@
       S().mailPerson = '';
       refresh('mail');
     },
+    'mail-08g-open': function (el, root) {
+      var st = (root.getElementById && root.getElementById('mailDesk')) ? null : null;
+      var wrap = root.getElementById ? (root.getElementById('grid') && root.getElementById('grid').parentNode) : null;
+      wrap = wrap || (root.querySelector && root.querySelector('.grid') && root.querySelector('.grid').parentNode);
+      if (wrap && wrap.__08g) wrap.__08g.openP(attr(el, 'data-id'));
+    },
+    'mail-08g-mail': function (el, root) {
+      var wrap = root.querySelector && root.querySelector('.grid') && root.querySelector('.grid').parentNode;
+      if (wrap && wrap.__08g) wrap.__08g.openMail(+attr(el, 'data-mail'));
+    },
+    'mail-08g-rd-back': function (el, root) {
+      var rd = root.getElementById && root.getElementById('rd');
+      if (rd) rd.classList.remove('on');
+    },
+    'mail-08g-close': function (el, root) {
+      var wrap = root.querySelector && root.querySelector('.grid') && root.querySelector('.grid').parentNode;
+      if (wrap && wrap.__08g) wrap.__08g.close();
+    },
+    'mail-08g-tab': function (el, root) {
+      var wrap = root.querySelector && root.querySelector('.grid') && root.querySelector('.grid').parentNode;
+      if (wrap && wrap.__08g) wrap.__08g.tabSet(attr(el, 'data-t') || 'em');
+    },
+    'mail-08g-prev': function (el, root) {
+      var wrap = root.querySelector && root.querySelector('.grid') && root.querySelector('.grid').parentNode;
+      if (!wrap || !wrap.__08g) return;
+      var list = wrap.__08g.PPL; var pc = root.getElementById('pc');
+      var id = list.map(function (p) { return p.id; });
+      var cur = wrap.querySelector('.pb.cur');
+      var i = cur ? id.indexOf(cur.getAttribute('data-id')) : 0;
+      wrap.__08g.openP(id[(i - 1 + id.length) % id.length]);
+    },
+    'mail-08g-next': function (el, root) {
+      var wrap = root.querySelector && root.querySelector('.grid') && root.querySelector('.grid').parentNode;
+      if (!wrap || !wrap.__08g) return;
+      var id = wrap.__08g.PPL.map(function (p) { return p.id; });
+      var cur = wrap.querySelector('.pb.cur');
+      var i = cur ? id.indexOf(cur.getAttribute('data-id')) : 0;
+      wrap.__08g.openP(id[(i + 1) % id.length]);
+    },
+    'mail-08g-unfold': function (el) {
+      if (el && el.classList) el.classList.remove('fold');
+    },
+    'mail-08g-toast': function (el, root) { toast(root, attr(el, 'data-msg') || 'Done'); },
     'mail-pp-tab': function (el) {
       S().mailPpTab = attr(el, 'data-tab') || 'all';
       refresh('mail');
@@ -3375,7 +3444,8 @@
     'mail-pp-expand': function (el, root) {
       if (root.querySelectorAll) root.querySelectorAll('.ppm.open').forEach(function (n) { n.classList.remove('open'); });
       if (el && el.classList) el.classList.add('open');
-      var pane = root.querySelector && root.querySelector('#ppread');
+      var rd = root.getElementById && root.getElementById('rd');
+      var pane = (rd && rd) || (root.querySelector && root.querySelector('#ppread'));
       var mid = attr(el, 'data-mid');
       var sj = attr(el, 'data-sj');
       var pv = attr(el, 'data-pv');
@@ -3384,9 +3454,10 @@
       var btn = ' data-id="' + esc(attr(el, 'data-id')) + '" data-mid="' + esc(mid) + '" data-hdr="' + esc(attr(el, 'data-hdr')) + '" data-tid="' + esc(attr(el, 'data-tid')) + '" data-sj="' + esc(sj) + '"';
       function paint(text, note) {
         if (!pane) return;
-        pane.innerHTML = '<div class="rh"><div class="w">' + esc(dir === 'out' ? 'You to ' + who : who + ' to you') + '</div><h3>' + esc(sj) + '</h3></div>'
-          + '<div class="rb" style="white-space:pre-wrap">' + esc(text) + (note ? '<div class="dempty">' + esc(note) + '</div>' : '') + '</div>'
-          + '<div class="rf"><button class="btn pri" data-action="mail-pp-go" data-go="reply"' + btn + '>Reply</button><button class="btn" data-action="mail-pp-go" data-go="fwd"' + btn + '>Forward</button><button class="btn" data-action="mail-pp-go" data-go="addspace"' + btn + '>Add to a Space</button></div>';
+        pane.innerHTML = '<div class="rdh"><button class="back" data-action="mail-08g-rd-back">&lsaquo; Back</button><span class="who">' + esc(dir === 'out' ? 'You to ' + who : who + ' to you') + '</span><div class="r"><button class="btn" data-action="mail-pp-go" data-go="fwd"' + btn + '>Forward</button><button class="btn" data-action="mail-08g-toast" data-msg="Files this email into a column">Move to column</button><button class="btn" data-action="mail-pp-go" data-go="addspace"' + btn + '>Add to a Space</button><button class="btn" data-action="mail-08g-toast" data-msg="Snoozed until tomorrow 08:00">Snooze</button></div></div>'
+          + '<div class="rdb"><div class="rdw"><h1>' + esc(sj) + '</h1><div class="rb" style="white-space:pre-wrap">' + esc(text) + (note ? '<div class="dempty">' + esc(note) + '</div>' : '') + '</div>'
+          + '<div class="reply"><div class="to">Reply · signature added</div><div class="ed" contenteditable="true"></div><div class="rf"><button class="btn pri" data-action="mail-pp-go" data-go="reply"' + btn + '>Send</button></div></div></div></div>';
+        if (pane.id === 'rd') pane.classList.add('on');
       }
       var cached = (S().mailBodies || {})[mid];
       if (cached != null) { paint(cached); return; }
@@ -4933,6 +5004,9 @@
         return;
       }
       if (S().docOpen) { S().docOpen = null; refresh('docs'); e.preventDefault(); return; }
+      var rd = root.getElementById && root.getElementById('rd');
+      if (rd && rd.classList.contains('on')) { rd.classList.remove('on'); e.preventDefault(); return; }
+      if (S().composeOpen) { closeComposeDrawer(root); e.preventDefault(); return; }
       if (S().mailPerson) { S().mailPerson = ''; refresh('mail'); e.preventDefault(); return; }
       if (S().mailOpen && !S().composeOpen) { S().mailOpen = null; S().mailOpenThread = null; refresh('mail'); e.preventDefault(); return; }
       if (S().mailPeopleDrawer) { S().mailPeopleDrawer = false; refresh('mail'); e.preventDefault(); return; }

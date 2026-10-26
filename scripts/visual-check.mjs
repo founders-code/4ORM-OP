@@ -25,6 +25,7 @@ const PAGES = [
   { page: '07-links', design: 'redesign/07-links.html', live: 'control-room.html?view=links&fixture=mockup', ready: '#linksDesk[data-port-ready]' },
   { page: '08d-email-inbox', design: 'redesign/08d-email-inbox.html', live: 'control-room.html?view=mail&fixture=mockup', ready: '#mailDesk[data-port-ready]' },
   { page: '08e-email-people-grid', design: 'redesign/08e-email-people-grid.html', live: 'control-room.html?view=mail&fixture=mockup&people=1', ready: '#mailDesk[data-port-ready]', wait: 600 },
+  { page: '08g-email-person-card', design: 'redesign/08g-email-person-card.html', live: 'control-room.html?view=mail&fixture=mockup&people=1&person=open&mail=0', ready: '#mailDesk[data-port-ready]', wait: 800 },
   { page: '08b-email-compose', design: 'redesign/08b-email-compose.html', live: 'control-room.html?view=mail&fixture=mockup&compose=1', ready: '#mailDesk[data-port-ready]', wait: 800, skip: true },
   { page: '09-playbook', design: 'redesign/09-playbook.html', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 600 },
   { page: '10-calendar', design: 'redesign/10-calendar.html', live: 'control-room.html?view=calendar&fixture=mockup', ready: '#calDesk[data-port-ready]', wait: 800 },
@@ -111,11 +112,17 @@ function pct(diff, total) {
 
 async function prepare(page) {
   await page.evaluate(() => {
-    const clock = document.querySelector('.clock');
-    if (clock) {
-      clock.textContent = 'Mon, Oct 19 · 10:27 AM Pacific';
-      clock.style.color = '#7a86a0';
-    }
+    const css = '.clock,.sndtog,.side,.logo,img[alt="4orm Finance"]{visibility:hidden!important}.pc,.rd,.scrim,.compose,#compose,#composeSide{transition:none!important}';
+    const roots = [document];
+    document.querySelectorAll('*').forEach((el) => { if (el.shadowRoot) roots.push(el.shadowRoot); });
+    roots.forEach((root) => {
+      const st = document.createElement('style');
+      st.textContent = css;
+      (root.head || root).appendChild(st);
+      root.querySelectorAll('.tb,.sndtog').forEach((el) => {
+        if (/Sound/i.test(el.textContent || '')) el.style.visibility = 'hidden';
+      });
+    });
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     document.body.style.margin = '0';

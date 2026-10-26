@@ -948,6 +948,50 @@ async function main() {
         return !!(cp && cp.classList.contains('open'));
       });
       clicks.push({ page: 'Email', control: 'Compose', dom: compose, net: true, persist: true, pass: compose });
+      for (const width of [1280, 1440, 1920]) {
+        await page.setViewportSize({ width, height: 900 });
+        const closed = await page.evaluate(async () => {
+          const root = document.getElementById('mailDesk').shadowRoot;
+          function hidden(cp) {
+            if (!cp) return true;
+            const r = cp.getBoundingClientRect();
+            const vis = r.width > 2 && r.height > 2 && r.left < window.innerWidth - 8 && r.right > 8;
+            const focusable = cp.querySelectorAll('a,button,input,textarea,select,[contenteditable="true"]');
+            const canFocus = Array.from(focusable).some((el) => el.tabIndex >= 0 && !el.hasAttribute('inert') && cp.getAttribute('aria-hidden') !== 'true' && getComputedStyle(cp).visibility !== 'hidden');
+            return !vis && !canFocus;
+          }
+          const btn = root.querySelector('[data-action="mail-compose"]');
+          if (btn) btn.click();
+          await new Promise((r) => setTimeout(r, 80));
+          const closeBtn = root.querySelector('[data-action="mail-compose-close"]');
+          if (closeBtn) closeBtn.click();
+          await new Promise((r) => setTimeout(r, 450));
+          const afterClose = hidden(root.getElementById('compose'));
+          if (btn) btn.click();
+          await new Promise((r) => setTimeout(r, 80));
+          root.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+          await new Promise((r) => setTimeout(r, 450));
+          const afterEsc = hidden(root.getElementById('compose'));
+          if (btn) btn.click();
+          await new Promise((r) => setTimeout(r, 80));
+          const to = root.querySelector('[data-action="mail-to"]');
+          if (to) {
+            to.value = 'opstest@4ormfinance.com';
+            to.dispatchEvent(new Event('input', { bubbles: true }));
+            to.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+          }
+          const send = root.querySelector('[data-action="mail-send"]');
+          const orig = window.confirm;
+          window.confirm = function () { return true; };
+          if (send) send.click();
+          window.confirm = orig;
+          await new Promise((r) => setTimeout(r, 450));
+          const afterSend = hidden(root.getElementById('compose'));
+          return afterClose && afterEsc && afterSend;
+        });
+        clicks.push({ page: 'Email', control: 'Compose closed ' + width, dom: closed, net: true, persist: true, pass: closed });
+      }
+      await page.setViewportSize({ width: 1440, height: 900 });
     } else if (STEP === '4') {
       const liveJs = readFileSync(join(ROOT, 'public/live-updates.js'), 'utf8');
       const liveOk = liveJs.includes('/api/changes') && liveJs.includes('15000') && liveJs.includes("document.visibilityState !== 'visible'") && liveJs.includes('visibilitychange') && liveJs.includes('Signed out, sign in again') && liveJs.includes('401');

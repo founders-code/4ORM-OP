@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email - person card - 4orm Ops</title>
+<style>
+/* ===== SHELL (shared by every page) ===== */
+:root{--ground:#0b1430;--ground2:#13224a;--side:#08102a;--card:#fff;--ink:#101a33;--ink2:#4a5672;--ink3:#7a86a0;--line:#e8ecf3;--soft:#f5f7fb;
+--blue:#2e6bf2;--blue50:#eaf1fe;--green:#12a36a;--green50:#e4f6ee;--amber:#c98408;--amber50:#fff4e0;--red:#e0364f;--red50:#fde9ec;--violet:#6b4fd8;--violet50:#efe9ff;
+font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}html,body{margin:0}html{background:#0d1838}
+body{background:linear-gradient(165deg,var(--ground),var(--ground2)) fixed;color:var(--ink);min-height:100vh;display:grid;grid-template-columns:224px minmax(0,1fr);grid-template-rows:56px auto}
+button{font:inherit;cursor:pointer}
+.top{grid-column:1/-1;height:56px;background:#fff;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid var(--line)}
+.logo img{height:30px;display:block}
+.crumb{font-size:14px;font-weight:700;color:var(--ink);padding-left:12px;border-left:1px solid var(--line)}
+.top .r{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tb{height:32px;border:1px solid var(--line);background:#fff;border-radius:9px;padding:0 12px;font-size:12.5px;font-weight:650;color:var(--ink);display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.tb .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.clock{font-size:12.5px;color:var(--ink3);font-weight:600;white-space:nowrap;margin-left:6px}
+.side{background:var(--side);padding:14px 10px;display:flex;flex-direction:column;gap:2px;min-height:calc(100vh - 56px)}
+.grp{font-size:13.5px;font-weight:850;color:#5b8cff;padding:16px 12px 6px;margin-top:6px;border-top:1px solid rgba(255,255,255,.08);letter-spacing:-.01em}.side .grp:first-child{border-top:none;margin-top:0;padding-top:4px}.side .nav{padding-left:16px}
+.nav{display:flex;align-items:center;gap:11px;padding:8px 12px;border-radius:9px;color:#cfd8ee;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.nav.on{background:rgba(46,107,242,.22);color:#fff}
+.nav .n{margin-left:auto;font-size:11px;font-weight:700;color:#b9c6e6;background:rgba(255,255,255,.08);border-radius:999px;padding:1px 8px}
+.main{padding:20px 24px 40px;min-width:0}
+
+/* ===== EMAIL PEOPLE + PERSON CARD ===== */
+.bar{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.bar h1{margin:0;font-size:24px;font-weight:850;color:#fff;letter-spacing:-.02em}
+.seg{display:flex;background:rgba(255,255,255,.08);border-radius:11px;padding:3px}.seg span{font-size:13px;font-weight:750;padding:6px 14px;border-radius:8px;color:#cfd8ee;cursor:pointer}.seg span.on{background:#fff;color:var(--ink)}
+.stat{font-size:12.5px;font-weight:700;color:#dbe4fb;background:rgba(255,255,255,.08);border-radius:999px;padding:5px 11px}.stat b{color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.pb{background:#fff;border-radius:16px;box-shadow:0 12px 30px rgba(3,10,30,.28);overflow:hidden;cursor:pointer;border-left:5px solid var(--c);display:flex;flex-direction:column;transition:transform .15s}
+.pb:hover{transform:translateY(-2px)}
+.pb.cur{box-shadow:0 0 0 3px #5b8cff,0 18px 40px rgba(3,10,30,.38)}
+.pb .h{display:flex;align-items:center;gap:10px;padding:13px 14px 8px}
+.av{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:850;flex:none}
+.pb h4{margin:0;font-size:15px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pb .org{font-size:12px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat{margin-left:auto;font-size:11px;font-weight:800;border-radius:7px;padding:3px 8px;white-space:nowrap;background:var(--cbg);color:var(--c)}
+.pb .nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.pb .nums div{text-align:center;padding:7px 4px;border-left:1px solid var(--line)}.pb .nums div:first-child{border-left:0}
+.pb .nums b{display:block;font-size:15px;font-weight:850}.pb .nums small{font-size:10.5px;color:var(--ink3);font-weight:650}
+.pb .nums .hot b{color:var(--red)}
+.pb .lt{padding:8px 14px 2px;font-size:11.5px;font-weight:800;color:var(--ink3)}
+.pb .em{padding:4px 14px;font-size:12.5px;line-height:1.35}
+.pb .em b{display:block;font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pb .em span{color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.pb .ft{display:flex;align-items:center;gap:8px;padding:10px 14px 12px;margin-top:auto}
+.fl{font-size:12px;font-weight:750;color:var(--ink2);background:var(--soft);border-radius:999px;padding:3px 10px}
+.owe{font-size:11.5px;font-weight:800;color:var(--red);background:var(--red50);border-radius:7px;padding:3px 8px}
+.pb .go{margin-left:auto;font-size:12.5px;font-weight:800;color:var(--blue)}
+
+.scrim{position:fixed;inset:56px 0 0 224px;background:rgba(5,10,28,.45);opacity:0;pointer-events:none;transition:opacity .2s;z-index:40}.scrim.on{opacity:1;pointer-events:auto}
+.pc{position:fixed;top:68px;right:14px;bottom:14px;width:min(640px,50vw);background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 30px 90px rgba(3,10,30,.6);z-index:50;display:flex;flex-direction:column;transform:translateX(110%);transition:transform .32s cubic-bezier(.32,.72,0,1)}
+.pc.on{transform:none}
+@media (prefers-reduced-motion:reduce){.pc,.scrim{transition:none}}
+.ph{background:linear-gradient(160deg,#13224a,#0b1430);color:#fff;padding:14px 18px 16px;border-bottom:4px solid var(--c)}
+.ph .tl{display:flex;align-items:center;gap:8px}
+.ph .tl .cr{font-size:12px;color:#9fb0d0;font-weight:650}
+.ph .tl .r{margin-left:auto;display:flex;gap:6px}
+.gb{height:30px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;font-size:12.5px;font-weight:700;padding:0 10px}
+.ph .who{display:flex;align-items:center;gap:14px;margin-top:12px}
+.ph .av{width:56px;height:56px;font-size:19px;border-radius:16px;box-shadow:0 8px 20px rgba(0,0,0,.3)}
+.ph h2{margin:0;font-size:22px;font-weight:850;letter-spacing:-.02em}
+.ph .role{font-size:13px;color:#c9d6f5;margin-top:2px}
+.ph .tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.ph .tags span{font-size:11.5px;font-weight:800;border-radius:7px;padding:3px 9px;background:rgba(255,255,255,.1);color:#dbe4fb}
+.ph .tags .cc{background:var(--c);color:#fff}
+.info{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:rgba(255,255,255,.1);border-radius:12px;overflow:hidden;margin-top:14px}
+.info div{background:rgba(8,16,42,.55);padding:9px 11px;min-width:0}
+.info b{display:block;font-size:13.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.info small{font-size:11px;color:#9fb0d0;font-weight:650}
+.info .hot b{color:#ff8fa1}
+.tabs{display:flex;gap:4px;padding:10px 16px 0;border-bottom:1px solid var(--line);background:#fff}
+.tabs span{font-size:13px;font-weight:750;color:var(--ink3);padding:8px 12px;border-bottom:3px solid transparent;cursor:pointer;margin-bottom:-1px}
+.tabs span.on{color:var(--ink);border-bottom-color:var(--blue)}
+.tabs span i{font-style:normal;font-size:11.5px;font-weight:800;background:var(--soft);border-radius:999px;padding:1px 7px;margin-left:5px;color:var(--ink2)}
+.pbody{flex:1;overflow:auto;padding:12px 16px 16px;background:var(--soft)}
+.row{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+.row b{font-size:13.5px;font-weight:800;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .m{font-size:12px;color:var(--ink3)}
+.row p{margin:3px 0 0;font-size:12.5px;color:var(--ink2);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .r{display:flex;gap:6px}
+.dir{font-size:10.5px;font-weight:800;border-radius:6px;padding:1px 6px;margin-right:6px}
+.dir.in{background:var(--blue50);color:var(--blue)}.dir.out{background:var(--green50);color:var(--green)}
+.ty{display:inline-block;min-width:38px;text-align:center;font-size:10.5px;font-weight:850;border-radius:6px;padding:2px 6px;margin-right:8px;color:#fff}
+.ty.pdf{background:#e0364f}.ty.ppt{background:#e2621d}.ty.doc{background:#2e6bf2}.ty.img{background:#6b4fd8}.ty.xls{background:#12a36a}
+.btn{height:30px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:12.5px;font-weight:700;padding:0 10px;white-space:nowrap}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.pfoot{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);background:#fff}
+.pfoot .sp{flex:1}
+/* email rows in the person card: more of the body */
+.row.mail{cursor:pointer;align-items:start}
+.row.mail:hover{border-color:#cfdcf6;box-shadow:0 4px 14px rgba(16,32,64,.06)}
+.row.mail p{white-space:normal;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px;line-height:1.5}
+/* big reader: slides over to the left, white, quiet */
+.rd{position:fixed;top:68px;bottom:14px;left:238px;right:calc(min(640px,50vw) + 26px);min-width:520px;background:#fff;border-radius:22px;box-shadow:0 40px 110px rgba(3,10,30,.6);z-index:60;display:flex;flex-direction:column;transform:translateX(105%);transition:transform .38s cubic-bezier(.32,.72,0,1);overflow:hidden}
+.rd.on{transform:none}
+.rd{transform:translateX(-110%)}.rd.on{transform:none}
+.row.mail.cur{border-color:var(--blue);box-shadow:0 0 0 2px rgba(46,107,242,.25)}
+@media (prefers-reduced-motion:reduce){.rd{transition:none}}
+.rdh{display:flex;align-items:center;gap:10px;padding:14px 22px;border-bottom:1px solid #eef1f6}
+.rdh .back{height:32px;border-radius:10px;border:1px solid #e6eaf2;background:#fff;font-size:13px;font-weight:700;padding:0 12px;color:var(--ink)}
+.rdh .who{font-size:13px;color:var(--ink3);font-weight:600}
+.rdh .r{margin-left:auto;display:flex;gap:8px}
+.rdb{flex:1;overflow:auto;padding:28px 0 40px}
+.rdw{max-width:760px;margin:0 auto;padding:0 28px}
+.rdw h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.025em;line-height:1.2;color:#0f1729}
+.rdw .meta{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 24px}
+.rdw .meta span{font-size:12px;font-weight:700;color:var(--ink2);background:#f4f6fa;border-radius:999px;padding:4px 10px}
+.msg{padding:20px 0;border-top:1px solid #eef1f6}
+.msg .mh{display:flex;align-items:center;gap:12px}
+.msg .mh .av{width:38px;height:38px;border-radius:50%;font-size:13px}
+.msg .mh b{font-size:14.5px;font-weight:800;color:#0f1729}
+.msg .mh small{display:block;font-size:12.5px;color:var(--ink3)}
+.msg .mh .t{margin-left:auto;font-size:12.5px;color:var(--ink3);font-weight:600;white-space:nowrap}
+.msg .body{margin:14px 0 0 50px;font-size:15.5px;line-height:1.7;color:#1d2840}
+.msg .body p{margin:0 0 12px}
+.msg .att{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 0 50px}
+.msg .att span{display:inline-flex;align-items:center;gap:8px;border:1px solid #e6eaf2;border-radius:12px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;background:#fff}
+.msg.fold .body{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--ink3);font-size:14px}
+.msg.fold{cursor:pointer}
+.reply{margin-top:24px;border:1px solid #e3e8f1;border-radius:16px;padding:14px 16px;box-shadow:0 6px 20px rgba(16,32,64,.06)}
+.reply .to{font-size:12.5px;color:var(--ink3);font-weight:650;margin-bottom:8px}
+.reply .ed{min-height:90px;font-size:15px;line-height:1.6;outline:none;color:#1d2840}
+.reply .ed:empty::before{content:"Write a reply...";color:#9aa6bd}
+.reply .rf{display:flex;gap:8px;margin-top:10px;align-items:center}
+.reply .rf .sp{flex:1}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;display:none;z-index:90}.toast.show{display:block}
+</style></head>
+<body>
+<header class="top">
+  <div class="logo"><img src="../assets/logo-finance.png" alt="4orm Finance"></div><span class="crumb">Email</span>
+  <div class="r"><span class="tb">Today</span><span class="tb">Calendar</span><span class="tb"><span class="dot"></span>Signals</span><span class="tb">Sound on</span><span class="clock">Mon, Oct 26 &middot; 14:05 Pacific</span></div>
+</header>
+<nav class="side" id="side"></nav>
+<main class="main">
+  <div class="bar"><h1>Email</h1><div class="seg"><span>Inbox</span><span class="on">People</span><span>Scheduled</span></div><span class="stat"><b>60</b> unread</span><span class="stat"><b>10</b> need a reply</span></div>
+  <div class="grid" id="grid"></div>
+</main>
+<div class="scrim" id="scrim"></div>
+<aside class="pc" id="pc" role="dialog" aria-label="Person"></aside>
+<section class="rd" id="rd" role="dialog" aria-label="Email"></section>
+<div class="toast" id="toast"></div>
+<script>
+const NAV=[["Today"],["News"],["Playbook"],["Planner"],["Calendar"],["Email",0,"16"],["People"],["Contacts",0,"53"],["Spaces"],["Pipeline",0,"191"],["Library"],["Links"],["Notes"],["Documents"],["Recordings"],["Zoom"],["Signals"],["Completed"],["Financials"],["Integrations",0,"6"]];
+const GROUPS=["Today","People","Library","Signals"];
+document.getElementById('side').innerHTML=NAV.map(n=>GROUPS.includes(n[0])?`<div class="grp">${n[0]}</div>`:`<div class="nav${n[0]=='Email'?' on':''}">${n[0]}${n[2]?`<span class="n">${n[2]}</span>`:''}</div>`).join('');
+const T=t=>{const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1800)};
+const CAT={team:['Team','#2e6bf2','#eaf1fe'],inv:['Investors','#12a36a','#e4f6ee'],dp:['Design partners','#c98408','#fff4e0'],reg:['Regulators','#6b4fd8','#efe9ff'],legal:['Legal','#e0364f','#fde9ec'],other:['Other','#7a86a0','#f0f3f8']};
+const P=[
+ {id:'bf',n:'Bruce Fair',org:'4orm Finance',role:'Co-founder, Capital',cat:'team',ini:'BF',col:'#e0364f',from:7,to:0,files:12,links:3,last:'7m',owe:true,stage:'-',meet:'Mon 26 Oct 09:00 · Weekly Kick-Off',items:2,first:'3 Mar 2026',
+  em:[['in','4orm Finance - 2 pager','FYI Best regards, Bruce','7m'],['in','4orm Finance - Business Overview Deck','FYI Best regards, Bruce','1h'],['in','Slide #1 - AML and Compliance Regulations','What does Canada\'s new AML and Compliance rules...','3h'],['out','Re: Pitch Deck','Sending the PDF version now','1d']],
+  fl:[['pdf','4orm_Finance_-_2_Pager.pdf','26 Oct','Bruce'],['ppt','4orm Finance - Business Overview.pptx','26 Oct','Bruce'],['pdf','4orm Finance - 2 Pager v3.pdf','25 Oct','Bruce'],['ppt','Slide 1 - AML and Compliance.pptx','25 Oct','Bruce'],['img','image001.png','25 Oct','Bruce']],
+  lk:[['Canada AML rules - FINTRAC guidance','fintrac-canafe.canada.ca','25 Oct'],['Capital roadmap - data room','4ormdr.com','22 Oct'],['Investor place card booking','4ormop.com/book','20 Oct']]},
+ {id:'mg',n:'Mike Gardner',org:'Mench Capital',role:'Investor',cat:'inv',ini:'MG',col:'#c98408',from:3,to:5,files:2,links:1,last:'2d',owe:true,stage:'Info pack sent',meet:'Tue 20 Oct 12:00 · Lunch',items:1,first:'14 Sep 2026',
+  em:[['in','Re: 4orm Finance - Overview for Investors','A couple of questions on the capture rate...','2d'],['out','4orm Finance - Overview for Investors','Base case and the three scenarios attached','5d']],fl:[['pdf','Base case model.pdf','21 Oct','You'],['pdf','Three scenarios.pdf','21 Oct','You']],lk:[['Data room','4ormdr.com','21 Oct']]},
+ {id:'bv',n:'Bow Valley Credit Union',org:'Compliance lead',role:'Design partner',cat:'dp',ini:'BV',col:'#12a36a',from:4,to:4,files:3,links:0,last:'1d',owe:true,stage:'Meeting booked',meet:'Thu 22 Oct 10:00 · Requirements walkthrough',items:2,first:'2 Oct 2026',
+  em:[['in','Follow-up from Thursday\'s call','Our compliance lead would like to see...','1d']],fl:[['pdf','BVCU-requirements.pdf','25 Oct','Bow Valley']],lk:[]},
+ {id:'cl',n:'CLHIA Affiliates',org:'Canadian Life and Health Insurance Association',role:'Association',cat:'reg',ini:'CL',col:'#6b4fd8',from:2,to:1,files:0,links:1,last:'9h',owe:true,stage:'Contact made',meet:'-',items:1,first:'16 Oct 2026',
+  em:[['in','Re: 4orm introduction','Could you send the list of insurers?','9h']],fl:[],lk:[['CLHIA members','clhia.ca','19 Oct']]},
+ {id:'ja',n:'James Atherton',org:'Capiche Legal LLP',role:'Partner, counsel',cat:'legal',ini:'JA',col:'#0f8a8a',from:9,to:8,files:6,links:0,last:'4h',owe:false,stage:'-',meet:'Wed 26 Aug 11:00 · Closing agenda',items:0,first:'2 Jul 2026',
+  em:[['out','Updated cap table','Capital_Table__4orm__10242026.xlsx','4h']],fl:[['xls','Capital_Table__4orm__10242026.xlsx','26 Oct','You']],lk:[]},
+ {id:'li',n:'LinkedIn',org:'notifications-noreply@linkedin.com',role:'Notifications',cat:'other',ini:'L',col:'#0a66c2',from:24,to:0,files:0,links:0,last:'7m',owe:false,stage:'-',meet:'-',items:0,first:'-',
+  em:[['in','Chad R, your posts got 173 impressions last week','Your weekly performance...','7m']],fl:[],lk:[]}];
+const BODY=['Sending this over before Thursday so you have it in front of you. The two-pager is the short version; the deck has the market numbers and the compliance slide we talked about. Let me know what you would change before it goes to the angels.'];
+const rd=document.getElementById('rd');
+function openMail(ei){const p=cur,e=p.em[ei],c=CAT[p.cat];
+ const thread=[[p.n,p.ini,p.col,'Mon 26 Oct, 14:58','Hi Chad,|'+BODY[0]+'|One question on slide 1: do we lead with the new AML and compliance rules, or with the record itself? I think the record, but you know the regulators better.|Best regards,|Bruce',true],
+  ['Chad Johnston','CJ','#2e6bf2','Mon 26 Oct, 11:20','Bruce, can you send the latest two-pager and the overview deck? I want both in the investor place card sessions this week.',false],
+  [p.n,p.ini,p.col,'Sun 25 Oct, 19:04','FYI - first pass at the AML slide attached. Rough, but the structure is there.',false]];
+ rd.innerHTML=`<div class="rdh"><button class="back" data-r="back">&lsaquo; Back to ${p.n.split(' ')[0]}</button><span class="who">${c[0]} &middot; ${p.org}</span><div class="r"><button class="btn" data-msg="Opens Compose to forward this thread">Forward</button><button class="btn" data-msg="Files this email into a column">Move to column</button><button class="btn" data-msg="Adds the thread to a Space">Add to a Space</button><button class="btn" data-msg="Snoozed until tomorrow 08:00">Snooze</button></div></div>
+ <div class="rdb"><div class="rdw"><h1>${e[1]}</h1><div class="meta"><span>${thread.length} messages</span><span>${p.files} attachments</span><span>${e[0]=='in'?'You owe a reply':'Waiting on them'}</span></div>
+ ${thread.map((m,i)=>`<div class="msg${m[5]?'':' fold'}" data-fold="${i}"><div class="mh"><span class="av" style="background:${m[2]}">${m[1]}</span><div><b>${m[0]}</b><small>to ${m[0]=='Chad Johnston'?p.n:'Chad Johnston'}</small></div><span class="t">${m[3]}</span></div><div class="body">${m[4].split('|').map(x=>`<p>${x}</p>`).join('')}</div>${m[5]?`<div class="att">${p.fl.slice(0,3).map(f=>`<span data-msg="Opens ${f[1]} in the viewer"><span class="ty ${f[0]}">${f[0].toUpperCase()}</span>${f[1]}</span>`).join('')}</div>`:''}</div>`).join('')}
+ <div class="reply"><div class="to">Reply to ${p.n} &middot; signature added</div><div class="ed" contenteditable="true"></div><div class="rf"><button class="btn pri" data-msg="Shows the recipients, then sends after you confirm">Send</button><button class="btn" data-msg="Attach from your computer, Documents, Drive or a Space">Attach</button><button class="btn" data-msg="Select text, then add a link">Link</button><span class="sp"></span><span class="m">Nudge in 3 days</span></div></div></div></div>`;
+ rd.classList.add('on');pc.querySelectorAll('.row.mail').forEach(r=>r.classList.toggle('cur',+r.dataset.mail===ei));}
+rd.onclick=e=>{const b=e.target.closest('[data-r=back]');if(b){rd.classList.remove('on');return;}const f=e.target.closest('.msg.fold');if(f){f.classList.remove('fold');return;}const m=e.target.closest('[data-msg]');if(m)T(m.dataset.msg);};
+function card(p){const c=CAT[p.cat];return `<div class="pb" data-id="${p.id}" style="--c:${c[1]};--cbg:${c[2]}"><div class="h"><span class="av" style="background:${p.col}">${p.ini}</span><div style="min-width:0"><h4>${p.n}</h4><div class="org">${p.org}</div></div><span class="cat">${c[0]}</span></div>
+ <div class="nums"><div><b>${p.from}</b><small>from them</small></div><div><b>${p.to}</b><small>from you</small></div><div><b>${p.files+p.links}</b><small>files, links</small></div><div class="${p.last.endsWith('m')||p.last.endsWith('h')?'hot':''}"><b>${p.last}</b><small>last</small></div></div>
+ <div class="lt">Latest</div>${p.em.slice(0,3).map(e=>`<div class="em"><b>${e[1]}</b><span>${e[2]}</span></div>`).join('')}
+ <div class="ft"><span class="fl">${p.files} files &middot; ${p.links} links</span>${p.owe?'<span class="owe">You owe a reply</span>':''}<span class="go">Open</span></div></div>`}
+document.getElementById('grid').innerHTML=P.map(card).join('');
+const pc=document.getElementById('pc'),scrim=document.getElementById('scrim');let cur=null,tab='em';
+function openP(id){cur=P.find(p=>p.id==id);const p=cur,c=CAT[p.cat];pc.style.setProperty('--c',c[1]);
+ pc.innerHTML=`<div class="ph"><div class="tl"><span class="cr">Email / People / ${c[0]}</span><div class="r"><button class="gb" data-a="prev">&lsaquo; Prev</button><button class="gb" data-a="next">Next &rsaquo;</button><button class="gb" data-a="close">Close</button></div></div>
+ <div class="who"><span class="av" style="background:${p.col}">${p.ini}</span><div style="min-width:0"><h2>${p.n}</h2><div class="role">${p.role} &middot; ${p.org}</div><div class="tags"><span class="cc">${c[0]}</span>${p.owe?'<span>You owe a reply</span>':''}<span>${p.from+p.to} emails</span></div></div></div>
+ <div class="info"><div><b>${p.org}</b><small>company</small></div><div><b>${p.role}</b><small>role</small></div><div><b>${p.stage}</b><small>pipeline stage</small></div><div><b>${p.meet}</b><small>last meeting</small></div><div class="${p.items?'hot':''}"><b>${p.items} open</b><small>items owed</small></div><div><b>${p.first}</b><small>first contact</small></div></div></div>
+ <div class="tabs"><span data-t="em" class="${tab=='em'?'on':''}">Emails<i>${p.em.length}</i></span><span data-t="fl" class="${tab=='fl'?'on':''}">Files<i>${p.fl.length}</i></span><span data-t="lk" class="${tab=='lk'?'on':''}">Links<i>${p.lk.length}</i></span></div>
+ <div class="pbody">${tab=='em'?p.em.map((e,ei)=>`<div class="row mail" data-mail="${ei}"><div><b><span class="dir ${e[0]}">${e[0]=='in'?'In':'Out'}</span>${e[1]}</b><p>${e[2]} ${BODY[0]}</p></div><div class="r"><span class="m">${e[3]}</span></div></div>`).join(''):
+  tab=='fl'?(p.fl.length?p.fl.map(f=>`<div class="row"><div><b><span class="ty ${f[0]}">${f[0].toUpperCase()}</span>${f[1]}</b><p>${f[2]} &middot; from ${f[3]}</p></div><div class="r"><button class="btn" data-msg="Opens the file in the viewer">Open</button><button class="btn" data-msg="Downloads the file">Download</button><button class="btn" data-msg="Adds the file to a Space">To a Space</button></div></div>`).join(''):'<div class="row"><div><b>No files yet</b><p>Attachments from this person land here.</p></div></div>'):
+  (p.lk.length?p.lk.map(l=>`<div class="row"><div><b>${l[0]}</b><p>${l[1]} &middot; ${l[2]}</p></div><div class="r"><button class="btn" data-msg="Opens the link in a new tab">Open</button><button class="btn" data-msg="Saved to Links">Save to Links</button></div></div>`).join(''):'<div class="row"><div><b>No links yet</b><p>Links found in the emails land here.</p></div></div>')}</div>
+ <div class="pfoot"><button class="btn pri" data-msg="Opens Compose to ${p.n}">Email</button><button class="btn" data-msg="Opens the calendar with + 4orm Zoom">Book</button><button class="btn" data-msg="Opens the person in Pipeline">Pipeline</button><button class="btn" data-msg="Adds to a Space">Add to a Space</button><span class="sp"></span><button class="btn" data-msg="Opens the full contact">Contact</button></div>`;
+ pc.classList.add('on');scrim.classList.add('on');document.querySelectorAll('.pb').forEach(b=>b.classList.toggle('cur',b.dataset.id==id));}
+function closeP(){rd.classList.remove('on');pc.classList.remove('on');scrim.classList.remove('on');cur=null;document.querySelectorAll('.pb').forEach(b=>b.classList.remove('cur'));}
+document.getElementById('grid').onclick=e=>{const b=e.target.closest('.pb');if(b){tab='em';openP(b.dataset.id);}};
+scrim.onclick=()=>{rd.classList.remove('on');closeP();};document.addEventListener('keydown',e=>{if(e.key=='Escape'){if(rd.classList.contains('on'))rd.classList.remove('on');else closeP();}});
+pc.onclick=e=>{const ml=e.target.closest('[data-mail]');if(ml){openMail(+ml.dataset.mail);return;}const t=e.target.closest('[data-t]');if(t){tab=t.dataset.t;openP(cur.id);return;}const a=e.target.closest('[data-a]');if(a){if(a.dataset.a=='close')closeP();else{const i=P.indexOf(cur);const n=P[(i+(a.dataset.a=='next'?1:P.length-1))%P.length];tab='em';openP(n.id);}return;}const m=e.target.closest('[data-msg]');if(m)T(m.dataset.msg);};
+/* this file shows the open state: Bruce Fair, Emails tab (click an email to open the big reader) */
+tab='em';openP('bf');openMail(0);
+</script>
+</body></html>

@@ -113,8 +113,17 @@ export async function seedPlanner(sql: Sql, ownerId: string) {
   return { seeded: true, n: PLANNER_SEED.length };
 }
 
+function isoDay(value: unknown) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', year: 'numeric', month: '2-digit', day: '2-digit' }).format(value);
+  }
+  const s = String(value || '');
+  const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : '';
+}
+
 function dayNum(iso: unknown) {
-  const s = String(iso || '').slice(0, 10);
+  const s = isoDay(iso);
   const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!m) return 0;
   return Math.round(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) / 86400000);
@@ -124,16 +133,37 @@ function expandRecur(rule: string) {
   const dates: number[] = [];
   const start = dayNum('2026-10-01');
   const end = dayNum('2027-06-30');
+  const push = (y: number, m: number, d: number) => {
+    const n = Math.round(Date.UTC(y, m, d) / 86400000);
+    if (n >= start && n <= end) dates.push(n);
+  };
   if (rule.startsWith('monthly:')) {
     const day = Number(rule.slice(8)) || 1;
     let y = 2026, m = 9;
     for (;;) {
-      const d = Math.round(Date.UTC(y, m, day) / 86400000);
-      if (d > end) break;
-      if (d >= start) dates.push(d);
+      const n = Math.round(Date.UTC(y, m, day) / 86400000);
+      if (n > end) break;
+      if (n >= start) dates.push(n);
       m += 1;
       if (m > 11) { m = 0; y += 1; }
     }
+  } else if (rule.startsWith('weekly:')) {
+    const want = rule.slice(7).split('|').map((w) => w.trim().toUpperCase());
+    const map: Record<string, number> = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
+    const days = want.map((w) => map[w]).filter((n) => n != null);
+    for (let n = start; n <= end; n++) {
+      if (days.indexOf(new Date(n * 86400000).getUTCDay()) >= 0) dates.push(n);
+    }
+  } else if (rule === 'weekdays') {
+    for (let n = start; n <= end; n++) {
+      const wd = new Date(n * 86400000).getUTCDay();
+      if (wd !== 0 && wd !== 6) dates.push(n);
+    }
+  } else if (rule.startsWith('every14:')) {
+    let n = dayNum(rule.slice(8));
+    if (!n) n = start;
+    while (n < start) n += 14;
+    for (; n <= end; n += 14) dates.push(n);
   }
   return dates;
 }

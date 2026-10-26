@@ -50,7 +50,12 @@ button{font:inherit;cursor:pointer}
 .cluster .cn[contenteditable=true]{outline:2px solid #fff;cursor:text}
 .cluster .rz{position:absolute;right:-7px;bottom:-7px;width:16px;height:16px;border-radius:5px;background:#fff;cursor:nwse-resize;opacity:.0;transition:opacity .15s}
 .cluster:hover .rz{opacity:.9}
-.note{position:absolute;width:220px;border-radius:14px;padding:12px 13px 10px;box-shadow:0 8px 22px rgba(3,10,30,.35);cursor:move;user-select:none}
+.note{position:absolute;width:240px;height:180px;border-radius:14px;padding:12px 13px 10px;box-shadow:0 8px 22px rgba(3,10,30,.35);cursor:move;user-select:none;display:flex;flex-direction:column;overflow:hidden}
+.note p{flex:1;min-height:0;overflow:hidden;-webkit-mask-image:linear-gradient(#000 80%,transparent)}
+.note .nrz{position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 50%,rgba(16,26,51,.28) 50%);border-bottom-right-radius:14px;opacity:0;transition:opacity .15s}
+.note:hover .nrz,.note.sel .nrz{opacity:1}
+.note .sz{position:absolute;right:22px;bottom:4px;font-size:10.5px;font-weight:800;color:rgba(16,26,51,.45);display:none}
+.note.rs .sz{display:block}
 .note.sel{outline:3px solid #2e6bf2;outline-offset:2px}
 .y{background:#fff6c9}.p{background:#ffe1ea}.g{background:#ddf5e6}.b{background:#e1ecff}.o{background:#ffe6cf}.v{background:#ece4ff}.w{background:#fff}
 .ty{display:inline-block;font-size:10.5px;font-weight:800;border-radius:6px;padding:2px 8px;background:rgba(16,26,51,.08);color:var(--ink2);margin-bottom:7px}
@@ -95,7 +100,7 @@ button{font:inherit;cursor:pointer}
 </main>
 <div class="toast" id="toast"></div>
 <script>
-const NAV=[["Today"],["News",""],["Playbook",""],["Planner",""],["Calendar",""],["Email",""],["People"],["Contacts",""],["Spaces",""],["Pipeline","","246"],["Library"],["Links",""],["Notes",""],["Documents",""],["Recordings",""],["Zoom",""],["Signals"],["Completed",""],["Financials",""],["Integrations","","6"]];
+const NAV=[["Today"],["News"],["Playbook"],["Planner"],["Calendar"],["Email"],["People"],["Contacts"],["Spaces"],["Pipeline"],["Library"],["Links"],["Notes"],["Documents"],["Recordings"],["Zoom"],["Signals"],["Completed"],["Financials"],["Integrations"]];
 const GROUPS=["Today","People","Library","Signals"];
 document.getElementById('side').innerHTML=NAV.map(n=>GROUPS.includes(n[0])?`<div class="grp">${n[0]}</div>`:`<div class="nav${n[0]=='Notes'?' on':''}">${n[0]}${n[2]?`<span class="n">${n[2]}</span>`:''}</div>`).join('');
 const T=t=>{const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1700)};
@@ -125,7 +130,7 @@ let z=1,ox=-60,oy=-40;
 function apply(){world.style.transform=`translate(${ox}px,${oy}px) scale(${z})`;world.classList.toggle('far',z<.55);document.getElementById('zLbl').textContent=Math.round(z*100)+'%';mini();}
 function render(){
  world.innerHTML=CL.map(c=>`<div class="cluster" data-id="${c.id}" style="left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px;border-color:${c.color}"><div class="cn" style="background:${c.color}">${c.name} <i>${NOTES.filter(n=>n.c==c.id).length}</i></div><span class="rz"></span></div>`).join('')
- +NOTES.map((n,i)=>`<div class="note ${n.k}" data-i="${i}" style="left:${n.x}px;top:${n.y}px"><span class="ty ${n.t}">${{todo:'To do',idea:'Idea',person:'Person',dec:'Decision',note:'Note'}[n.t]}</span><h4>${n.h}</h4><p>${n.p}</p></div>`).join('');
+ +NOTES.map((n,i)=>`<div class="note ${n.k}" data-i="${i}" style="left:${n.x}px;top:${n.y}px;width:${n.w||240}px;height:${n.hh||180}px"><span class="ty ${n.t}">${{todo:'To do',idea:'Idea',person:'Person',dec:'Decision',note:'Note'}[n.t]}</span><h4>${n.h}</h4><p>${n.p}</p><span class="sz">${n.w||240} x ${n.hh||180}</span><span class="nrz" title="Drag to resize"></span></div>`).join('');
  apply();
 }
 function toWorld(cx,cy){const r=stage.getBoundingClientRect();return [(cx-r.left-ox)/z,(cy-r.top-oy)/z];}
@@ -137,10 +142,11 @@ document.getElementById('fit').onclick=fit;
 
 let drag=null,sel=new Set();
 stage.addEventListener('pointerdown',e=>{
- const note=e.target.closest('.note'),cn=e.target.closest('.cn'),rz=e.target.closest('.rz');
+ const note=e.target.closest('.note'),cn=e.target.closest('.cn'),rz=e.target.closest('.rz'),nrz=e.target.closest('.nrz');
  if(cn&&cn.isContentEditable)return;
  const [wx,wy]=toWorld(e.clientX,e.clientY);
- if(rz){const c=CL.find(c=>c.id==rz.parentNode.dataset.id);drag={type:'rz',c,sx:wx,sy:wy,w:c.w,h:c.h};}
+ if(nrz){const i=+nrz.parentNode.dataset.i;drag={type:'nrz',i,sx:wx,sy:wy,w:NOTES[i].w||240,h:NOTES[i].hh||180};nrz.parentNode.classList.add('rs');}
+ else if(rz){const c=CL.find(c=>c.id==rz.parentNode.dataset.id);drag={type:'rz',c,sx:wx,sy:wy,w:c.w,h:c.h};}
  else if(note){const i=+note.dataset.i;if(!sel.has(i)){if(!e.shiftKey)sel.clear();sel.add(i);}drag={type:'note',sx:wx,sy:wy,start:[...sel].map(i=>[i,NOTES[i].x,NOTES[i].y])};markSel();}
  else if(cn){const c=CL.find(c=>c.id==cn.parentNode.dataset.id);drag={type:'cl',c,sx:wx,sy:wy,x:c.x,y:c.y,inner:NOTES.map((n,i)=>[i,n.x,n.y]).filter(([i])=>NOTES[i].c==c.id)};}
  else if(e.shiftKey){drag={type:'marq',sx:e.clientX,sy:e.clientY};}
@@ -155,12 +161,14 @@ stage.addEventListener('pointermove',e=>{
  if(drag.type=='note'){drag.start.forEach(([i,x,y])=>{NOTES[i].x=x+dx;NOTES[i].y=y+dy;const el=world.querySelector(`.note[data-i="${i}"]`);el.style.left=NOTES[i].x+'px';el.style.top=NOTES[i].y+'px';});const hit=clusterAt(wx,wy);world.querySelectorAll('.cluster').forEach(c=>c.classList.toggle('drop',hit&&c.dataset.id==hit.id));}
  if(drag.type=='cl'){drag.c.x=drag.x+dx;drag.c.y=drag.y+dy;drag.inner.forEach(([i,x,y])=>{NOTES[i].x=x+dx;NOTES[i].y=y+dy;});render();markSel();}
  if(drag.type=='rz'){drag.c.w=Math.max(260,drag.w+dx);drag.c.h=Math.max(200,drag.h+dy);render();}
+ if(drag.type=='nrz'){const n=NOTES[drag.i];n.w=Math.round(Math.min(900,Math.max(160,drag.w+dx)));n.hh=Math.round(Math.min(900,Math.max(100,drag.h+dy)));const el=world.querySelector(`.note[data-i="${drag.i}"]`);el.style.width=n.w+'px';el.style.height=n.hh+'px';el.querySelector('.sz').textContent=n.w+' x '+n.hh;}
 });
 stage.addEventListener('pointerup',e=>{
  if(!drag)return;stage.classList.remove('pan');
  if(drag.type=='note'){const [wx,wy]=toWorld(e.clientX,e.clientY);const hit=clusterAt(wx,wy);let moved=0;drag.start.forEach(([i])=>{const nc=hit?hit.id:null;if(NOTES[i].c!==nc){NOTES[i].c=nc;moved++;}});render();markSel();if(moved)T(hit?`Filed in ${hit.name}`:'Taken out of the cluster');else T('Position saved');}
  if(drag.type=='cl')T(`${drag.c.name} moved with its ${drag.inner.length} notes`);
  if(drag.type=='rz')T('Cluster resized');
+ if(drag.type=='nrz'){world.querySelectorAll('.note.rs').forEach(x=>x.classList.remove('rs'));T('Note size saved');}
  if(drag.type=='marq'&&drag.ex){const [a,b]=toWorld(drag.sx,drag.sy),[c,d]=toWorld(drag.ex,drag.ey);const x0=Math.min(a,c),x1=Math.max(a,c),y0=Math.min(b,d),y1=Math.max(b,d);sel=new Set(NOTES.map((n,i)=>i).filter(i=>NOTES[i].x<x1&&NOTES[i].x+220>x0&&NOTES[i].y<y1&&NOTES[i].y+120>y0));document.getElementById('marq').style.display='none';markSel();}
  document.getElementById('marq').style.display='none';drag=null;
 });

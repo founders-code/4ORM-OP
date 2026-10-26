@@ -460,6 +460,22 @@
           { n: 'Antonia Pettenon', c: '#2b8a9a', pv: 'Re: Invoice payment' },
           { n: 'Ashish Dhir', c: '#2a7f62', pv: 'Re: Settlement finality for PSPs' }
         ],
+        person08g: [
+          { id: 'bf', n: 'Bruce Fair', org: '4orm Finance', role: 'Co-founder, Capital', cat: 'team', ini: 'BF', col: '#e0364f', from: 7, to: 0, files: 12, links: 3, last: '7m', owe: true, stage: '-', meet: 'Mon 26 Oct 09:00 · Weekly Kick-Off', items: 2, first: '3 Mar 2026',
+            em: [['in', '4orm Finance - 2 pager', 'FYI Best regards, Bruce', '7m'], ['in', '4orm Finance - Business Overview Deck', 'FYI Best regards, Bruce', '1h'], ['in', 'Slide #1 - AML and Compliance Regulations', 'What does Canada\'s new AML and Compliance rules...', '3h'], ['out', 'Re: Pitch Deck', 'Sending the PDF version now', '1d']],
+            fl: [['pdf', '4orm_Finance_-_2_Pager.pdf', '26 Oct', 'Bruce'], ['ppt', '4orm Finance - Business Overview.pptx', '26 Oct', 'Bruce'], ['pdf', '4orm Finance - 2 Pager v3.pdf', '25 Oct', 'Bruce'], ['ppt', 'Slide 1 - AML and Compliance.pptx', '25 Oct', 'Bruce'], ['img', 'image001.png', '25 Oct', 'Bruce']],
+            lk: [['Canada AML rules - FINTRAC guidance', 'fintrac-canafe.canada.ca', '25 Oct'], ['Capital roadmap - data room', '4ormdr.com', '22 Oct'], ['Investor place card booking', '4ormop.com/book', '20 Oct']] },
+          { id: 'mg', n: 'Mike Gardner', org: 'Mench Capital', role: 'Investor', cat: 'inv', ini: 'MG', col: '#c98408', from: 3, to: 5, files: 2, links: 1, last: '2d', owe: true, stage: 'Info pack sent', meet: 'Tue 20 Oct 12:00 · Lunch', items: 1, first: '14 Sep 2026',
+            em: [['in', 'Re: 4orm Finance - Overview for Investors', 'A couple of questions on the capture rate...', '2d'], ['out', '4orm Finance - Overview for Investors', 'Base case and the three scenarios attached', '5d']], fl: [['pdf', 'Base case model.pdf', '21 Oct', 'You'], ['pdf', 'Three scenarios.pdf', '21 Oct', 'You']], lk: [['Data room', '4ormdr.com', '21 Oct']] },
+          { id: 'bv', n: 'Bow Valley Credit Union', org: 'Compliance lead', role: 'Design partner', cat: 'dp', ini: 'BV', col: '#12a36a', from: 4, to: 4, files: 3, links: 0, last: '1d', owe: true, stage: 'Meeting booked', meet: 'Thu 22 Oct 10:00 · Requirements walkthrough', items: 2, first: '2 Oct 2026',
+            em: [['in', 'Follow-up from Thursday\'s call', 'Our compliance lead would like to see...', '1d']], fl: [['pdf', 'BVCU-requirements.pdf', '25 Oct', 'Bow Valley']], lk: [] },
+          { id: 'cl', n: 'CLHIA Affiliates', org: 'Canadian Life and Health Insurance Association', role: 'Association', cat: 'reg', ini: 'CL', col: '#6b4fd8', from: 2, to: 1, files: 0, links: 1, last: '9h', owe: true, stage: 'Contact made', meet: '-', items: 1, first: '16 Oct 2026',
+            em: [['in', 'Re: 4orm introduction', 'Could you send the list of insurers?', '9h']], fl: [], lk: [['CLHIA members', 'clhia.ca', '19 Oct']] },
+          { id: 'ja', n: 'James Atherton', org: 'Capiche Legal LLP', role: 'Partner, counsel', cat: 'legal', ini: 'JA', col: '#0f8a8a', from: 9, to: 8, files: 6, links: 0, last: '4h', owe: false, stage: '-', meet: 'Wed 26 Aug 11:00 · Closing agenda', items: 0, first: '2 Jul 2026',
+            em: [['out', 'Updated cap table', 'Capital_Table__4orm__10242026.xlsx', '4h']], fl: [['xls', 'Capital_Table__4orm__10242026.xlsx', '26 Oct', 'You']], lk: [] },
+          { id: 'li', n: 'LinkedIn', org: 'notifications-noreply@linkedin.com', role: 'Notifications', cat: 'other', ini: 'L', col: '#0a66c2', from: 24, to: 0, files: 0, links: 0, last: '7m', owe: false, stage: '-', meet: '-', items: 0, first: '-',
+            em: [['in', 'Chad R, your posts got 173 impressions last week', 'Your weekly performance...', '7m']], fl: [], lk: [] }
+        ],
         boxes: [
           { id: 'bf', n: 'Bruce Fair', o: '4orm Finance \u00b7 co-founder', c: '#2e6bf2', tags: ['team', 'raise'], in: 19, out: 14, files: [['P', '2-pager v3.pdf'], ['p', 'Business Overview.pptx'], ['D', 'Deck notes.docx']], more: 4, st: ['rep', 'You owe a reply'], last: '47m',
             m: [['in', 'Revised - This version may be better', 'Let me know your thoughts. B', 1], ['out', 'Re: 4orm Finance - 2 pager', 'Thanks Bruce. Looking now; I\u2019ll mark up the numbers\u2026', 0], ['in', 'Deck - Notes', 'Need to tighten messaging with respect to\u2026', 0]] },

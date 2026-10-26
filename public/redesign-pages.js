@@ -43,11 +43,11 @@
     + '.pick-row:first-child{border-top:0}';
   var CSS = {
     room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=7', notes: '/port-css/notes.css?v=4',
-    notesCanvas: '/port-css/notes-canvas.css?v=6', spacesArrange: '/port-css/spaces-arrange.css?v=1', spacesCards: '/port-css/spaces-cards.css?v=1', signalsDetail: '/port-css/signals-detail.css?v=3', rec: '/port-css/recordings.css?v=1',
-    contacts: '/port-css/pipeline.css?v=5', work: '/port-css/spaces.css?v=9', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css?v=2',
-    links: '/port-css/links.css?v=4', mail: '/port-css/email.css?v=7', mailPeople: '/port-css/email-people.css?v=4',
+    notesCanvas: '/port-css/notes-canvas.css?v=8', spacesArrange: '/port-css/spaces-arrange.css?v=1', spacesCards: '/port-css/spaces-cards.css?v=2', signalsDetail: '/port-css/signals-detail.css?v=4', rec: '/port-css/recordings.css?v=1',
+    contacts: '/port-css/pipeline.css?v=5', work: '/port-css/spaces.css?v=9', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css?v=3',
+    links: '/port-css/links.css?v=4', mail: '/port-css/email.css?v=8', mailPeople: '/port-css/email-people.css?v=6',
     playbook: '/port-css/playbook.css?v=2', calendar: '/port-css/calendar.css?v=5', zoom: '/port-css/zoom.css?v=2',
-    completed: '/port-css/completed.css?v=2', planner: '/port-css/planner.css?v=2'
+    completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=2'
   };
   var HOSTS = {
     opsDash: 'room', warDesk: 'war', notesDesk: 'notes',
@@ -654,7 +654,7 @@
     }).length;
     var attn = asList(S.integrations).filter(function (g) { return /warn|error|off|attention|missing/i.test(String(g.state || g.word || '')); }).length;
     var reachN = people.filter(function (p) { return !p.done; }).length;
-    var sigCount = [mailNeed, actions.length, reachN, cold, attn].filter(Boolean).length;
+    var sigCount = mailNeed + actions.length + reachN;
     var ceo = S.ceo || {};
     var rebuilt = ceo.rebuiltAt || ceo.generatedAt || ceo.refreshedAt || ceo.updatedAt || null;
     if (rebuilt && typeof rebuilt !== 'number') rebuilt = Date.parse(rebuilt);
@@ -702,7 +702,7 @@
     });
     return {
       brain: '4orm Intelligence: ' + (brain || '-'),
-      needYou: n.sigCount != null ? n.sigCount : ((n.mailNeed ? 1 : 0) + (n.owed ? 1 : 0) + (n.reach ? 1 : 0) + (n.cold ? 1 : 0)),
+      needYou: n.sigCount != null ? n.sigCount : ((n.mailNeed || 0) + (n.owed || 0) + (n.reach || 0)),
       since: seen ? hhmm(seen) : '',
       needs: [
         { color: '#e0364f', title: 'Inbox', count: (n.mailNeed || 0) + ' need a reply', detail: 'People waiting on you', dest: 'mail', go: 'Email' },

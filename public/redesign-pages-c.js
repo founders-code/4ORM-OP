@@ -1208,20 +1208,28 @@
         return '<div class="li"><span class="tag t4">' + esc(tag) + '</span><span>' + esc(label) + '</span>' + (time ? '<em>' + esc(time) + '</em>' : '') + '</div>';
       }).join('');
     }
-    var itemsAll = asList((window.STATE || {}).items);
+    var Sdone = window.STATE || {};
+    var itemsAll = asList(Sdone.items).concat(asList(Sdone.plannerItems), asList(Sdone.timeline));
     function toMs(v) { var n = typeof v === 'number' ? v : Date.parse(String(v || '')); return Number.isFinite(n) ? n : 0; }
+    function snapActive(s) {
+      var c = s.counts || {};
+      var p = s.payload || {};
+      return (Number(c.tasks) || 0) + (Number(c.meetings) || 0) + (Number(c.sent) || 0) + asList(p.tasks).length + asList(p.meetings).length + asList(p.sent).length;
+    }
     var now = Date.now();
     var d30 = now - 30 * 86400000;
     var d60 = now - 60 * 86400000;
-    var done30 = itemsAll.filter(function (it) { return it.status === 'done' && toMs(it.updatedAt || it.due) >= d30; });
-    var onTime = done30.filter(function (it) { return !it.due || toMs(it.updatedAt) <= toMs(it.due); });
-    var prevDone = itemsAll.filter(function (it) { return it.status === 'done' && toMs(it.updatedAt) >= d60 && toMs(it.updatedAt) < d30; });
-    var prevOn = prevDone.filter(function (it) { return !it.due || toMs(it.updatedAt) <= toMs(it.due); });
+    var dated = itemsAll.filter(function (it) { return it && it.due; });
+    var done30 = dated.filter(function (it) { return (it.status === 'done' || it.done) && toMs(it.updatedAt || it.updated_at || it.due) >= d30; });
+    var onTime = done30.filter(function (it) { return toMs(it.updatedAt || it.updated_at) <= toMs(it.due) || !toMs(it.updatedAt || it.updated_at); });
+    var prevDone = dated.filter(function (it) { return (it.status === 'done' || it.done) && toMs(it.updatedAt || it.updated_at) >= d60 && toMs(it.updatedAt || it.updated_at) < d30; });
+    var prevOn = prevDone.filter(function (it) { return toMs(it.updatedAt || it.updated_at) <= toMs(it.due); });
     var daysWith = {};
-    done30.forEach(function (it) { var d = ymdOf(it.updatedAt); if (d) daysWith[d] = 1; });
+    snaps.forEach(function (s) { if (snapActive(s) && s.date) daysWith[s.date] = 1; });
+    done30.forEach(function (it) { var d = ymdOf(it.updatedAt || it.updated_at); if (d) daysWith[d] = 1; });
     var dayN = Object.keys(daysWith).length;
-    var fall = itemsAll.filter(function (it) { return (it.status === 'dropped') || (it.status !== 'done' && it.due && toMs(it.due) < d30 && toMs(it.due) >= d60); });
-    var thin = snaps.length < 7 && done30.length < 7;
+    var fall = dated.filter(function (it) { return (it.status === 'dropped') || (it.status !== 'done' && !it.done && toMs(it.due) < d30 && toMs(it.due) >= d60); });
+    var thin = dayN < 7;
     function pctN(a, b) { return b ? Math.round(100 * a / b) : 0; }
     var onPct = thin ? '-' : (pctN(onTime.length, done30.length) + '%');
     var cons = thin ? '-' : (dayN + ' / 30');

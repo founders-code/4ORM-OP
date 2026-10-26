@@ -96,11 +96,10 @@
         k: ({ yellow: 'y', pink: 'p', green: 'g', blue: 'b', orange: 'o', violet: 'v', white: 'w' }[n.color] || n.color || 'y'),
         t: t, h: titleOf(n), p: n.body || '', src: src, laid: !pos,
         w: Math.max(160, Math.min(900, Number(n.canvas_w || n.w) || 240)),
-        h: Math.max(100, Math.min(900, Number(n.canvas_h || n.h) || 180)),
+        hh: Math.max(100, Math.min(900, Number(n.canvas_h || n.hh) || 180)),
         updated: n.updated_at || n.updatedAt || n.created_at || ''
       };
       notes.push(row);
-      if (row.laid && writeOk() && row.id) saveNotePos(row);
     }
     var seen = {};
     function addAll(arr, src) {
@@ -125,14 +124,13 @@
       n.x = 150 + (auto % 4) * 264;
       n.y = 160 + Math.floor(auto / 4) * 204;
       auto += 1;
-      if (writeOk() && n.id) saveNotePos(n);
     });
     return { clusters: clusters, notes: notes };
   }
 
   function saveNotePos(n) {
     if (!writeOk() || !n.id) return;
-    api('/api/notes/' + encodeURIComponent(n.id), { method: 'PATCH', body: { canvas_x: n.x, canvas_y: n.y, x: n.x, y: n.y, w: n.w, h: n.h, canvas_w: n.w, canvas_h: n.h, cluster_id: n.c || null } }).catch(function () {});
+    api('/api/notes/' + encodeURIComponent(n.id), { method: 'PATCH', body: { canvas_x: n.x, canvas_y: n.y, x: n.x, y: n.y, w: n.w, h: n.hh, canvas_w: n.w, canvas_h: n.hh, cluster_id: n.c || null } }).catch(function () {});
   }
   function saveCluster(c) {
     if (!writeOk() || !c.id || String(c.id).length < 30) return;
@@ -162,30 +160,8 @@
       + '<div class="toast" id="toast"></div>';
     if (P().finishPaint) P().finishPaint(wrap);
     bindCanvas(wrap, CL, NOTES);
-    function fitFixture() {
-      var worldEl = wrap.querySelector('#world');
-      var stageEl = wrap.querySelector('#stage');
-      var zl = wrap.querySelector('#zLbl');
-      if (!worldEl || !stageEl) return;
-      var xs = [], ys = [];
-      CL.forEach(function (c) { xs.push(c.x, c.x + c.w); ys.push(c.y, c.y + c.h); });
-      NOTES.forEach(function (n) { xs.push(n.x, n.x + 220); ys.push(n.y, n.y + 150); });
-      var x0 = Math.min.apply(null, xs) - 60, x1 = Math.max.apply(null, xs) + 60;
-      var y0 = Math.min.apply(null, ys) - 80, y1 = Math.max.apply(null, ys) + 60;
-      var r = stageEl.getBoundingClientRect();
-      var rw = r.width > 80 ? r.width : 1168;
-      var rh = r.height > 80 ? r.height : 620;
-      var zz = Math.min(rw / Math.max(1, x1 - x0), rh / Math.max(1, y1 - y0));
-      if (!Number.isFinite(zz) || zz <= 0) zz = 0.57;
-      var oxx = -x0 * zz + (rw - (x1 - x0) * zz) / 2;
-      var oyy = -y0 * zz + (rh - (y1 - y0) * zz) / 2;
-      worldEl.style.transform = 'translate(' + oxx + 'px,' + oyy + 'px) scale(' + zz + ')';
-      if (zl) zl.textContent = Math.round(zz * 100) + '%';
-    }
-    if (fixtureOn()) {
-      fitFixture();
-      setTimeout(function () { fitFixture(); markReady('notesDesk'); }, 220);
-    } else markReady('notesDesk');
+    if (fixtureOn()) setTimeout(function () { markReady('notesDesk'); }, 220);
+    else markReady('notesDesk');
   }
 
   function bindCanvas(root, CL, NOTES) {
@@ -196,7 +172,7 @@
     var types = TY();
     function apply() {
       world.style.transform = 'translate(' + ox + 'px,' + oy + 'px) scale(' + z + ')';
-      world.classList.toggle('far', z < 0.4);
+      world.classList.toggle('far', z < 0.55);
       var zl = root.getElementById ? root.getElementById('zLbl') : root.querySelector('#zLbl');
       if (zl) zl.textContent = (Number.isFinite(z) ? Math.round(z * 100) : 100) + '%';
       mini();
@@ -206,10 +182,8 @@
       world.innerHTML = CL.map(function (c) {
         return '<div class="cluster" data-id="' + esc(c.id) + '" data-action="canvas-cluster" style="left:' + c.x + 'px;top:' + c.y + 'px;width:' + c.w + 'px;height:' + c.h + 'px;border-color:' + esc(c.color) + '"><div class="cn" data-action="canvas-cluster-name" style="background:' + esc(c.color) + '">' + esc(c.name) + ' <i>' + NOTES.filter(function (n) { return n.c == c.id; }).length + '</i></div><span class="rz" data-action="canvas-rz"></span></div>';
       }).join('') + NOTES.map(function (n, i) {
-        var nw = fixtureOn() ? 220 : (n.w || 240);
-        var nh = fixtureOn() ? 'auto' : ((n.h || 180) + 'px');
-        var rz = fixtureOn() ? '' : '<span class="rz" data-action="canvas-note-rz"></span>';
-        return '<div class="note ' + esc(n.k) + '" data-i="' + i + '" data-action="canvas-note" style="left:' + n.x + 'px;top:' + n.y + 'px;width:' + nw + 'px;height:' + nh + '"><span class="ty ' + esc(n.t) + '">' + esc(types[n.t] || 'Note') + '</span><h4>' + esc(n.h) + '</h4><p>' + esc(n.p) + '</p>' + rz + '</div>';
+        var nw = n.w || 240, nh = n.hh || 180;
+        return '<div class="note ' + esc(n.k) + '" data-i="' + i + '" data-action="canvas-note" style="left:' + n.x + 'px;top:' + n.y + 'px;width:' + nw + 'px;height:' + nh + 'px"><span class="ty ' + esc(n.t) + '">' + esc(types[n.t] || 'Note') + '</span><h4>' + esc(n.h) + '</h4><p>' + esc(n.p) + '</p><span class="sz">' + nw + ' x ' + nh + '</span><span class="nrz" data-action="canvas-note-rz"></span></div>';
       }).join('');
       apply();
     }
@@ -236,7 +210,7 @@
       var maxX = 2400, maxY = 1600;
       NOTES.forEach(function (n) {
         maxX = Math.max(maxX, (n.x || 0) + (n.w || 240) + 480);
-        maxY = Math.max(maxY, (n.y || 0) + (n.h || 180) + 480);
+        maxY = Math.max(maxY, (n.y || 0) + (n.hh || 180) + 480);
       });
       CL.forEach(function (c) {
         maxX = Math.max(maxX, c.x + c.w + 480);
@@ -324,7 +298,9 @@
       var w = toWorld(e.clientX, e.clientY), wx = w[0], wy = w[1];
       if (rz && rz.getAttribute('data-action') === 'canvas-note-rz' && note) {
         var ni = +note.dataset.i;
-        drag = { type: 'n-rz', i: ni, sx: wx, sy: wy, w: NOTES[ni].w || 240, h: NOTES[ni].h || 180 };
+        drag = { type: 'n-rz', i: ni, sx: wx, sy: wy, w: NOTES[ni].w || 240, h: NOTES[ni].hh || 180 };
+        var rzEl = world.querySelector('.note[data-i="' + ni + '"]');
+        if (rzEl) rzEl.classList.add('rs');
       } else if (rz) {
         var c = CL.find(function (x) { return String(x.id) === String(rz.parentNode.dataset.id); });
         drag = { type: 'rz', c: c, sx: wx, sy: wy, w: c.w, h: c.h };
@@ -370,9 +346,14 @@
       if (drag.type === 'rz') { drag.c.w = Math.max(260, drag.w + dx); drag.c.h = Math.max(200, drag.h + dy); render(); }
       if (drag.type === 'n-rz') {
         NOTES[drag.i].w = Math.max(160, Math.min(900, drag.w + dx));
-        NOTES[drag.i].h = Math.max(100, Math.min(900, drag.h + dy));
+        NOTES[drag.i].hh = Math.max(100, Math.min(900, drag.h + dy));
         var nel = world.querySelector('.note[data-i="' + drag.i + '"]');
-        if (nel) { nel.style.width = NOTES[drag.i].w + 'px'; nel.style.height = NOTES[drag.i].h + 'px'; }
+        if (nel) {
+          nel.style.width = NOTES[drag.i].w + 'px';
+          nel.style.height = NOTES[drag.i].hh + 'px';
+          var sz = nel.querySelector('.sz');
+          if (sz) sz.textContent = Math.round(NOTES[drag.i].w) + ' x ' + Math.round(NOTES[drag.i].hh);
+        }
       }
     });
     stage.addEventListener('pointerup', function (e) {
@@ -392,7 +373,11 @@
       }
       if (drag.type === 'cl') { saveCluster(drag.c); drag.inner.forEach(function (p) { saveNotePos(NOTES[p[0]]); }); toast(root, drag.c.name + ' moved with its ' + drag.inner.length + ' notes'); }
       if (drag.type === 'rz') { saveCluster(drag.c); toast(root, 'Cluster resized'); }
-      if (drag.type === 'n-rz') { saveNotePos(NOTES[drag.i]); grow(); toast(root, 'Note resized'); }
+      if (drag.type === 'n-rz') {
+        var doneEl = world.querySelector('.note[data-i="' + drag.i + '"]');
+        if (doneEl) doneEl.classList.remove('rs');
+        saveNotePos(NOTES[drag.i]); grow(); toast(root, 'Note resized');
+      }
       if (drag.type === 'marq' && drag.ex) {
         var a = toWorld(drag.sx, drag.sy), c = toWorld(drag.ex, drag.ey);
         var x0 = Math.min(a[0], c[0]), x1 = Math.max(a[0], c[0]), y0 = Math.min(a[1], c[1]), y1 = Math.max(a[1], c[1]);
@@ -438,7 +423,7 @@
         var r2 = stage.getBoundingClientRect();
         var w2 = toWorld(r2.left + r2.width / 2, r2.top + r2.height / 2);
         var hit = clusterAt(w2[0], w2[1]);
-        var n = { c: hit ? hit.id : null, x: w2[0] - 120, y: w2[1] - 90, w: 240, h: 180, k: 'y', t: 'note', h: '', p: 'Type here. Saves as you type.' };
+        var n = { c: hit ? hit.id : null, x: w2[0] - 120, y: w2[1] - 90, w: 240, hh: 180, k: 'y', t: 'note', h: 'New note', p: 'Type here. Saves as you type.' };
         NOTES.push(n); render();
         toast(root, hit ? 'New note in ' + hit.name : 'New note on the canvas');
         if (writeOk()) {
@@ -531,7 +516,16 @@
         return '<div class="col' + (c.min ? ' min' : '') + '" draggable="true" data-action="spaces-arr-cat" data-c="' + ci + '"><div class="ch"><span class="grab">MOVE</span><h2>' + esc(c.name) + '</h2><span class="n">' + c.sp.length + '</span><span class="tg" data-action="spaces-arr-tg" data-tg="' + ci + '">' + (c.min ? 'Open' : 'Fold') + '</span></div><div class="list" data-c="' + ci + '">' + c.sp.map(function (s, si) { return card(s, ci, si); }).join('') + '</div></div>';
       }).join('') + '</div>';
     }
-    function render() { renderGroups(); renderBoard(); }
+    function render() {
+      var on = root.querySelector('#seg span.on');
+      var v = (on && on.getAttribute('data-v')) || 'groups';
+      var g = root.querySelector('#groups');
+      var b = root.querySelector('#board');
+      if (g) g.classList.toggle('on', v === 'groups');
+      if (b) b.classList.toggle('on', v === 'board');
+      if (v === 'groups') { renderGroups(); if (b) b.innerHTML = ''; }
+      else { renderBoard(); if (g) g.innerHTML = ''; }
+    }
     function persist() {
       if (!writeOk()) return;
       api('/api/spaces/groups/reorder', { method: 'PATCH', body: { ids: CATS.map(function (c) { return c.name; }) } }).catch(function () {});
@@ -550,7 +544,7 @@
       if (a === 'spaces-arr-view') {
         var v = t.getAttribute('data-v');
         root.querySelectorAll('#seg span').forEach(function (s) { s.classList.toggle('on', s.getAttribute('data-v') === v); });
-        root.querySelectorAll('.view').forEach(function (x) { x.classList.toggle('on', x.id === v); });
+        render();
         var tip = root.getElementById ? root.getElementById('tip') : root.querySelector('#tip');
         if (tip) tip.innerHTML = v === 'board' ? '<b>Drag a card</b> up or down, or into another column. <b>Drag a column header</b> left or right to put that group first or second. Fold a column to make room.' : '<b>Drag a space</b> to reorder it or drop it in another category. <b>Drag a category header</b> to move the whole category up or down. Collapse them to arrange the order quickly.';
       }
@@ -852,7 +846,20 @@
         e.classList.toggle('cur', !!(cur && +e.getAttribute('data-c') === cur.ci && +e.getAttribute('data-s') === cur.si));
       });
     }
-    function render() { renderGroups(); renderBoard(); if (cur) markCur(); }
+    function activeView() {
+      var on = root.querySelector('#seg span.on');
+      return (on && on.getAttribute('data-v')) || 'groups';
+    }
+    function render() {
+      var v = activeView();
+      var g = root.querySelector('#groups');
+      var b = root.querySelector('#board');
+      if (g) g.classList.toggle('on', v === 'groups');
+      if (b) b.classList.toggle('on', v === 'board');
+      if (v === 'groups') { renderGroups(); if (b) b.innerHTML = ''; }
+      else { renderBoard(); var cats = root.querySelector('#cats'); if (cats) cats.innerHTML = ''; }
+      if (cur) markCur();
+    }
     function fillWindow() {
       if (!cur) return;
       var s = CATS[cur.ci].sp[cur.si], k = pctOf(s), c = ringColor(k);
@@ -943,7 +950,7 @@
       if (a === 'spaces-arr-view') {
         var v = t.getAttribute('data-v');
         root.querySelectorAll('#seg span').forEach(function (s) { s.classList.toggle('on', s.getAttribute('data-v') === v); });
-        root.querySelectorAll('.view').forEach(function (x) { x.classList.toggle('on', x.id === v); });
+        render();
       }
       if (a === 'spaces-arr-minall') {
         var anyOpen = CATS.some(function (c) { return !c.min; });
@@ -1108,11 +1115,30 @@
     if (fixtureOn() || qFlag('sigdetail')) {
       return designSignalsHtml(open, hh);
     }
+    function contactName(raw) {
+      var s = String(raw || '').trim();
+      var email = (s.match(/<([^>]+)>/) || [])[1] || (/@/.test(s) ? s : '');
+      var local = email ? email.split('@')[0] : '';
+      var people = [].concat(S.contacts || [], S.people || []);
+      var hit = people.filter(function (c) {
+        var e = String(c.email || c.addr || '').toLowerCase();
+        return (email && e === email.toLowerCase()) || (local && e.split('@')[0] === local.toLowerCase()) || String(c.name || '').toLowerCase() === s.toLowerCase();
+      })[0];
+      if (hit && hit.name) return hit.name;
+      var quoted = s.match(/^"?([^"<]+?)"?\s*</);
+      if (quoted) return quoted[1].trim();
+      if (email && s.indexOf('@') >= 0 && s.indexOf(' ') < 0) return s.split('@')[0];
+      return s.replace(/<[^>]+>/g, '').trim() || s;
+    }
+    function mailReason(m) {
+      return String(m.why || m.reason || m.subject || m.preview || m.snippet || m.body || '').replace(/\s+/g, ' ').trim() || 'Needs a reply.';
+    }
     var nNeed = need.length + owed.length + reach.length;
+    window.__signalsNeedCount = nNeed;
     var first = [];
-    if (need[0]) first.push({ t: 'Reply to ' + (need[0].from || need[0].name || 'inbox'), r: need[0].subject || '', act: 'Reply', go: 'mail-reply', id: need[0].id });
-    if (reach[0]) first.push({ t: (reach[0].name || 'Reach out'), r: reach[0].nextAction || reach[0].why || '', act: 'Email', go: 'pipe-reach', id: reach[0].id });
-    if (owed[0]) first.push({ t: owed[0].title || owed[0].text || 'Meeting follow-up', r: owed[0].meeting || '', act: '+ Today', go: 'owed-today', id: owed[0].id });
+    if (need[0]) first.push({ t: 'Reply to ' + contactName(need[0].from || need[0].name || 'inbox'), r: mailReason(need[0]), act: 'Reply', go: 'mail-reply', id: need[0].id });
+    if (reach[0]) first.push({ t: (reach[0].name || 'Reach out'), r: String(reach[0].nextAction || reach[0].why || reach[0].context || 'No recent touch — send one line today.'), act: 'Email', go: 'pipe-reach', id: reach[0].id });
+    if (owed[0]) first.push({ t: owed[0].title || owed[0].text || 'Meeting follow-up', r: String(owed[0].meeting || owed[0].why || owed[0].context || 'From the last meeting.'), act: '+ Today', go: 'owed-today', id: owed[0].id });
     function itemRow(b, p, acts) {
       return '<div class="it"><div><b>' + esc(b) + '</b><p>' + esc(p) + '</p></div><div class="r">' + acts + '</div></div>';
     }
@@ -1122,7 +1148,7 @@
       }).join('') + '</div>'
       + '<div class="sec" data-sec="need"><h3>Needs you</h3><span class="s">open a row to see the actual items</span><span class="go" data-action="signals-go" data-dest="mail">All in Email</span></div>'
       + '<div class="grpx open" data-sec="need"><div class="gh" data-action="sig-toggle"><i style="background:#e0364f"></i><div><b>Inbox</b> <span>' + need.length + ' need a reply</span></div><em></em><span class="ar">Hide</span></div><div class="items">'
-      + (need.map(function (m) { return itemRow(m.from || m.name || 'Mail', m.subject || m.preview || '', '<button class="act" data-action="mail-open" data-id="' + esc(m.id || '') + '">Open</button><button class="act pri" data-action="mail-reply" data-id="' + esc(m.id || '') + '">Reply</button>'); }).join('') || '<div class="it"><div><b>None</b><p>Inbox is clear.</p></div></div>')
+      + (need.map(function (m) { return itemRow(contactName(m.from || m.name || 'Mail'), m.subject || m.preview || '', '<button class="act" data-action="mail-open" data-id="' + esc(m.id || '') + '">Open</button><button class="act pri" data-action="mail-reply" data-id="' + esc(m.id || '') + '">Reply</button>'); }).join('') || '<div class="it"><div><b>None</b><p>Inbox is clear.</p></div></div>')
       + '</div></div>'
       + '<div class="grpx" data-sec="need"><div class="gh" data-action="sig-toggle"><i style="background:#e0364f"></i><div><b>Owed from meetings</b> <span>' + owed.length + ' open</span></div><em></em><span class="ar">Show</span></div><div class="items">'
       + owed.map(function (o) { return itemRow(o.title || o.text || 'Action', o.meeting || '', '<button class="act" data-action="owed-today" data-id="' + esc(o.id || '') + '">+ Today</button><button class="act" data-action="owed-done" data-id="' + esc(o.id || '') + '">Done</button>'); }).join('')
@@ -1237,18 +1263,31 @@
       if (cut < 0) cut = html.indexOf('<aside class="sig');
       if (cut >= 0) html = html.slice(cut);
     }
+    if (!document.getElementById('sigCss')) {
+      var link = document.createElement('link');
+      link.id = 'sigCss';
+      link.rel = 'stylesheet';
+      link.href = '/port-css/signals-detail.css?v=4';
+      document.head.appendChild(link);
+    }
     host.className = '';
     host.innerHTML = html;
     host.classList.add('on');
     host.removeAttribute('hidden');
+    var nNeed = window.__signalsNeedCount;
+    if (nNeed == null) {
+      var mNeed = html.match(/(\d+)\s+need you/);
+      nNeed = mNeed ? Number(mNeed[1]) : 0;
+    }
     if (btn) {
       btn.classList.add('on');
-      if (!btn.querySelector('.ct')) {
-        var ct = document.createElement('span');
+      var ct = btn.querySelector('.ct') || btn.querySelector('.n') || btn.querySelector('b');
+      if (!ct) {
+        ct = document.createElement('span');
         ct.className = 'ct';
-        ct.textContent = '6';
         btn.appendChild(ct);
       }
+      ct.textContent = String(nNeed);
     }
     if (typeof window.bindShadowActions === 'function') window.bindShadowActions(document);
     bindSignals(host);
@@ -1335,41 +1374,63 @@
     } catch (e) {}
     return !fixtureOn();
   }
-  function paintPlannerLive() {
+  var plannerCache = { items: null, inflight: null, painted: 0 };
+  function paintPlannerLive(opts) {
+    opts = opts || {};
     var wrap = wrapOf('warDesk');
     if (!wrap) { markReady('warDesk'); return; }
     if (P().applyPageCss) P().applyPageCss(wrap, 'planner');
-    wrap.innerHTML = window.__plannerBody || '<div class="page"><h1>Planner</h1></div>';
-    wrap.querySelectorAll('[data-act],[data-pop],[data-zoom],[data-toggle],[data-chip]').forEach(function (el) {
-      if (!el.getAttribute('data-action')) el.setAttribute('data-action', el.getAttribute('data-act') || el.getAttribute('data-pop') || el.getAttribute('data-zoom') || 'planner');
-    });
-    var h1 = wrap.querySelector('h1');
-    if (h1) h1.textContent = 'Planner';
     function go(items) {
-      var root = wrap;
+      wrap.innerHTML = window.__plannerBody || '<div class="page"><h1>Planner</h1></div>';
+      wrap.querySelectorAll('[data-act],[data-pop],[data-zoom],[data-toggle],[data-chip]').forEach(function (el) {
+        if (!el.getAttribute('data-action')) el.setAttribute('data-action', el.getAttribute('data-act') || el.getAttribute('data-pop') || el.getAttribute('data-zoom') || 'planner');
+      });
+      var h1 = wrap.querySelector('h1');
+      if (h1) h1.textContent = 'Planner';
       try {
-        if (typeof window.bindPlannerPage === 'function') window.bindPlannerPage(root, items || null);
+        if (typeof window.bindPlannerPage === 'function') window.bindPlannerPage(wrap, items || null);
       } catch (err) {
         wrap.setAttribute('data-planner-err', String((err && err.message) || err));
       }
-      try {} catch (e) {}
       if (P().finishPaint) P().finishPaint(wrap);
+      markReady('warDesk');
+      plannerCache.painted = Date.now();
+    }
+    function fail() {
+      wrap.innerHTML = '<div class="page"><h1>Planner</h1><div class="card" style="padding:24px">Couldn\'t load - <span class="lnk" data-action="planner-retry">Retry</span></div></div>';
       markReady('warDesk');
     }
     if (fixtureOn() || !window.authFetch) { go(null); return; }
-    window.authFetch('/api/timeline', { credentials: 'same-origin', quiet: true }).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {
-      go(d && d.items ? d.items : []);
+    if (!opts.force && plannerCache.items && wrap.querySelector('.page') && Date.now() - plannerCache.painted < 14000) {
+      go(plannerCache.items);
+      return;
+    }
+    if (plannerCache.inflight) { plannerCache.inflight.then(function (items) { if (items) go(items); else fail(); }); return; }
+    if (!wrap.querySelector('.page')) {
+      wrap.innerHTML = '<div class="page"><h1>Planner</h1><div class="ghostcard"></div><div class="ghostcard"></div><div class="ghostcard"></div></div>';
+    }
+    plannerCache.inflight = window.authFetch('/api/timeline', { credentials: 'same-origin', quiet: true }).then(function (r) {
+      if (!r || !r.ok) throw new Error('load');
+      return r.json();
+    }).then(function (d) {
+      plannerCache.items = (d && d.items) || [];
+      plannerCache.inflight = null;
+      go(plannerCache.items);
+      return plannerCache.items;
     }).catch(function () {
-      wrap.innerHTML = '<div class="page"><h1>Planner</h1><div class="card" style="padding:24px">Couldn\'t load - <span class="lnk" data-action="planner-retry">Retry</span></div></div>';
-      markReady('warDesk');
+      plannerCache.inflight = null;
+      fail();
+      return null;
     });
   }
+  window.__plannerRetry = function () { paintPlannerLive({ force: true }); };
   var _paintWar = window.paintRedesignWar;
   window.paintRedesignWar = function () {
-    if (plannerMode()) { whenCss(paintPlannerLive); return; }
+    if (plannerMode()) { whenCss(function () { paintPlannerLive({ force: plannerCache.painted && (Date.now() - plannerCache.painted > 14000) }); }); return; }
     if (typeof _paintWar === 'function') _paintWar();
   };
-  if (plannerMode()) whenCss(paintPlannerLive);
+  if (plannerMode()) whenCss(function () { paintPlannerLive({ force: true }); });
+  if (qFlag('canvas')) whenCss(paintNotesCanvasPage);
   if (qFlag('arrange')) paintSpacesArrangePage();
   if (qFlag('cards') || qParam('space') === 'open') paintSpacesCardsPage(qParam('space') === 'open');
   if (qFlag('sigdetail')) paintSignalsDetailPage();
