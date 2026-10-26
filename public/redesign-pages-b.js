@@ -513,7 +513,7 @@
     var wrap = wrapOf('pipeDesk');
     if (!wrap) return;
     var S = window.STATE || {};
-    var view = S.pipeView || 'dash';
+    var view = S.pipeView || 'board';
     var data = pipelineData();
     var catLabel = (!S.pipeType || S.pipeType === 'all') ? 'All' : S.pipeType;
     var ST = data.funnel || [];
@@ -532,8 +532,8 @@
       return '<tr data-action="pipe-open" data-id="' + id + '"><td><div class="who"><span class="av" style="background:' + C6[i % 6] + '">' + esc(ini) + '</span><div><b>' + esc(r[0]) + '</b><span>' + (r[1] ? esc(r[1]) : '&nbsp;') + '</span></div></div></td><td class="cat">' + esc(r[2]) + '</td><td><span class="stg ' + esc(r[4] || '') + '">' + esc(r[3]) + '</span></td><td class="tch">' + esc(r[5]) + (r[5] && r[5] !== '—' ? ' ago' : '') + '</td><td class="nxs">' + esc(r[6]) + '</td><td><div class="ra"><button class="act" data-action="pipe-open" data-id="' + id + '">Open</button></div></td></tr>';
     }).join('');
     var bar =
-      '<div class="bar"><h1>Pipeline</h1><span class="sub">Your cockpit &mdash; GoHighLevel runs the pipeline and the automations</span>'
-      + '<div class="r"><div class="seg"><span' + (view === 'dash' ? ' class="on"' : '') + ' data-action="pipe-view" data-view="dash">Dashboard</span><span' + (view === 'board' ? ' class="on"' : '') + ' data-action="pipe-view" data-view="board">Board</span><span' + (view === 'table' ? ' class="on"' : '') + ' data-action="pipe-view" data-view="table">Table</span></div><input class="search" data-action="pipe-search" placeholder="Search people or companies"></div></div>'
+      '<div class="bar"><h1>Pipeline</h1><span class="sub">GoHighLevel runs it &middot; this is where you work it</span>'
+      + '<div class="r"><div class="seg"><span' + (view === 'board' ? ' class="on"' : '') + ' data-action="pipe-view" data-view="board">Board</span><span' + (view === 'table' ? ' class="on"' : '') + ' data-action="pipe-view" data-view="list">List</span><span' + (view === 'funnel' ? ' class="on"' : '') + ' data-action="pipe-view" data-view="funnel">Funnel</span></div><input class="search" data-action="pipe-search" placeholder="Search people or companies"></div></div>'
       + '<div class="picker">' + (data.pills || []).map(function (p) {
         return '<button class="pl' + (p.on ? ' on' : '') + '" data-action="pipe-pill"' + (p.id ? ' data-pipe="' + esc(p.id) + '"' : '') + '>' + esc(p.name) + ' <b>' + esc(p.n) + '</b></button>';
       }).join('')
@@ -544,9 +544,28 @@
       '<section class="card"><div class="ch"><h3>Storage</h3><span class="s">' + esc(data.storageHead || (data.tableFoot || '').replace(/^Showing /, '') || '0') + ' &middot; sorted by needs attention</span></div>'
       + '<table class="tbl"><tr><th>Person / company</th><th>Category</th><th>Stage</th><th>Last touch</th><th>Next step</th><th></th></tr><tbody id="rows">' + rows + '</tbody></table>'
       + '<div class="foot">' + esc(data.tableFoot || '') + ' &middot; <span class="lnk" data-action="pipe-show-all">Show all</span></div></section>';
+    var needChip = S.pipeNeedChip || 'all';
+    var needsAll = data.needs || [];
+    var needsFiltered = needsAll.filter(function (n) {
+      if (needChip === 'all') return true;
+      return String(n.why || n.kind || n.meta || '').toLowerCase().indexOf(needChip) >= 0;
+    });
+    var needHtml =
+      '<section class="card" style="margin-bottom:14px"><div class="ch"><h3>Needs you today</h3><span class="s">one list &middot; follow-ups due, going cold, and your reach-outs</span><span class="chips2">'
+      + [['all', 'All ' + needsAll.length], ['follow', 'Follow up'], ['cold', 'Going cold'], ['reach', 'Reach out']].map(function (c) {
+        return '<span class="c2' + (needChip === c[0] ? ' on' : '') + '" data-action="pipe-need-chip" data-chip="' + c[0] + '">' + esc(c[1]) + '</span>';
+      }).join('') + '</span><span class="lnk" style="margin-left:auto" data-action="pipe-add">+ Add a person</span></div><div class="ndg">'
+      + (needsFiltered.length ? needsFiltered.map(function (n, i) {
+        var why = n.why || n.kind || 'Follow up';
+        var whyCls = /cold/i.test(why) ? ' amb' : /reach/i.test(why) ? '' : ' red';
+        return '<div class="nd"><span class="cb" data-action="pipe-need-tick"></span><span class="av" style="background:' + (n.color || C6[i % 6]) + '">' + esc(initials(n.name)) + '</span><div style="min-width:0"><b>' + esc(n.name) + '</b><span>' + esc(n.meta || '') + '</span></div><span class="why2' + whyCls + '">' + esc(why) + '</span><button class="act" data-action="pipe-follow" data-id="' + esc(n.id || '') + '" data-name="' + esc(n.name) + '" data-email="' + esc(n.email || '') + '">' + esc(n.act || 'Follow up') + '</button></div>';
+      }).join('') : '<div class="nd"><div style="min-width:0"><b>Nobody waiting</b><span>Follow-ups and cold reach-outs land here.</span></div></div>')
+      + '</div></section>';
     if (view === 'board') {
       var used = {};
-      var boardCols = ST.map(function (s, si) {
+      var filled = [];
+      var empty = [];
+      ST.forEach(function (s, si) {
         var cards = (data.rows || []).filter(function (r, i) {
           var hit = String(r[3] || '') === String(s[0]);
           if (hit) used[i] = 1;
@@ -555,37 +574,38 @@
         if (si === 0) {
           (data.rows || []).forEach(function (r, i) { if (!used[i]) cards.push(r); });
         }
-        return '<div class="pipe-col" data-action="stage-drop" data-stage="' + esc(s[0]) + '"><div class="colh"><b>' + esc(s[0]) + '</b><span class="c">' + cards.length + '</span></div>'
-          + cards.map(function (r, i) {
-            return '<div class="pcard" draggable="true" data-action="contact-drag" data-kind="contact" data-id="' + esc(r[7] || '') + '" data-email="' + esc(r[8] || '') + '" data-name="' + esc(r[0] || '') + '"><b>' + esc(r[0]) + '</b><span>' + esc(r[1] || r[2] || '') + '</span></div>';
-          }).join('') + '</div>';
-      }).join('');
-      wrap.innerHTML = bar + '<div class="pipe-board">' + boardCols + '</div>';
+        var col = { name: s[0], cards: cards };
+        if (cards.length) filled.push(col);
+        else empty.push(col);
+      });
+      function colHtml(col, ghost) {
+        var more = Math.max(0, col.cards.length - 4);
+        var shown = col.cards.slice(0, 4);
+        return '<div class="bcol' + (ghost ? ' ghost' : '') + '" data-action="stage-drop" data-stage="' + esc(col.name) + '"><div class="bch"><b>' + esc(ghost ? ('+ ' + empty.length + ' empty') : col.name) + '</b><span class="c">' + (ghost ? 0 : col.cards.length) + '</span></div>'
+          + (ghost
+            ? '<div class="emptyb">' + empty.map(function (e) { return esc(e.name); }).join(', ') + '</div>'
+            : shown.map(function (r) {
+              var hot = String(r[4] || '') === 'hot' ? ' hot' : '';
+              return '<div class="bcard' + hot + '" draggable="true" data-action="contact-drag" data-kind="contact" data-id="' + esc(r[7] || '') + '" data-email="' + esc(r[8] || '') + '" data-name="' + esc(r[0] || '') + '"><b>' + esc(r[0]) + '</b><span>' + esc((r[1] || r[2] || '') + (r[5] && r[5] !== '—' ? ' · ' + r[5] : '')) + '</span></div>';
+            }).join('') + (more ? '<div class="more3">+ ' + more + ' more</div>' : ''))
+          + '</div>';
+      }
+      var boardCols = filled.map(function (c) { return colHtml(c, false); }).join('')
+        + (empty.length ? (S.pipeShowEmpty
+          ? empty.map(function (c) { return colHtml(c, false); }).join('')
+          : colHtml({ name: 'empty', cards: [] }, true)) : '');
+      var pipeName = ((data.pills || []).filter(function (p) { return p.on; })[0] || { name: 'Pipeline' }).name;
+      wrap.innerHTML = bar + needHtml
+        + '<section class="card board" id="boardCard"><div class="ch"><h3>' + esc(pipeName) + ' &middot; Board</h3><span class="s">drag a card to move it &middot; writes the stage to GoHighLevel</span>'
+        + (empty.length ? '<span class="lnk" style="margin-left:auto" data-action="pipe-empty">' + (S.pipeShowEmpty ? 'Hide empty stages' : '+ ' + empty.length + ' empty stages') + '</span>' : '')
+        + '</div><div class="bcols" id="bcols">' + boardCols + '</div></section>';
     } else if (view === 'table') {
-      wrap.innerHTML = bar + tableCard;
+      wrap.innerHTML = bar + needHtml + tableCard;
     } else {
       wrap.innerHTML = bar
-        + '<div class="kpis">' + (data.kpis || []).map(function (k) {
-          return '<div class="kpi"><b>' + esc(k.n) + '</b><span>' + esc(k.label) + '</span><small class="' + esc(k.tone) + '">' + esc(k.note) + '</small></div>';
-        }).join('') + '</div>'
         + '<section class="card" style="margin-bottom:16px"><div class="ch"><h3>Funnel</h3><span class="s">' + esc(data.funnelLabel || '') + '</span></div>'
         + '<div class="funnel" id="funnel"' + (ST.length !== 13 ? ' style="grid-template-columns:repeat(' + ST.length + ',minmax(0,1fr))"' : '') + '>' + funnel + '</div>'
-        + '<div class="cvn">Conversion shown under each stage = share of the previous stage that moved forward. Storage is the holding pen and is not counted.</div></section>'
-        + '<div class="g2"><section class="card"><div class="ch"><h3>Needs you today</h3><span class="s">cold &gt; 14 days &middot; follow-ups due</span></div>'
-        + ((data.needs || []).length ? (data.needs || []).map(function (n) {
-          return '<div class="nd"><span class="av" style="background:' + n.color + '">' + esc(initials(n.name)) + '</span><div style="min-width:0"><b>' + esc(n.name) + '</b><span>' + esc(n.meta) + '</span></div><button class="act" data-action="pipe-follow" data-id="' + esc(n.id || '') + '" data-name="' + esc(n.name) + '" data-email="' + esc(n.email || '') + '">Follow up</button></div>';
-        }).join('') : '<div class="nd"><div style="min-width:0"><b>Nobody waiting</b><span>Cold follow-ups will land here.</span></div></div>')
-        + '</section><section class="card"><div class="ch"><h3>Category &times; stage</h3><span class="s">where people sit</span></div>'
-        + '<table class="mx"><tr><th></th><th>Cold</th><th>Reached</th><th>Contact</th><th>Meeting</th><th>Done</th></tr>'
-        + (data.matrix || []).map(function (r) {
-          return '<tr><td>' + esc(r.cat) + '</td>' + r.cells.map(function (n, i) { return '<td class="' + heat(n) + '" data-action="pipe-matrix" data-cat="' + esc(r.cat) + '" data-cell="' + i + '">' + n + '</td>'; }).join('') + '</tr>';
-        }).join('') + '</table></section>'
-        + '<section class="card"><div class="ch"><h3>Recent activity</h3><span class="s">from GoHighLevel</span></div>'
-        + ((data.activity || []).length ? (data.activity || []).map(function (a) {
-          return '<div class="fe"><i' + (a.tone === 'g' ? ' style="background:var(--green)"' : '') + '></i><span>' + esc(a.text) + '</span><em>' + esc(a.when) + '</em></div>';
-        }).join('') : '<div class="fe"><span>No recent pipeline moves.</span></div>')
-        + '</section></div>'
-        + tableCard;
+        + '<div class="cvn">Conversion shown under each stage = share of the previous stage that moved forward. Storage is the holding pen and is not counted.</div></section>';
     }
     wrap.innerHTML += '<div class="pick-ov" id="contactOv" hidden data-action="pipe-close"><div class="pick-box" data-action="note-keep"><h3 id="contactHd">Contact</h3><div id="contactBody"></div><div class="pick-acts"><button class="pri" id="contactFollow" data-action="pipe-follow">Follow up</button><button data-action="pipe-close">Close</button></div></div></div>';
     if (P().finishPaint) P().finishPaint(wrap);
@@ -711,7 +731,7 @@
       + '<div style="position:relative;z-index:1;min-width:0"><div class="tags">' + asList(d.tags).map(function (t) {
         return '<span' + (t[0] === 'vc' ? ' class="vc"' : '') + '>' + esc(t[1]) + '</span>';
       }).join('') + '</div>'
-      + '<h1>' + esc(d.name) + '</h1><div class="who">' + esc(d.who) + '</div>'
+      + '<h1 contenteditable="true" spellcheck="false" data-action="space-card-name" data-id="' + esc(d.id) + '">' + esc(d.name) + '</h1><div class="who" contenteditable="true" spellcheck="false" data-action="space-card-desc" data-id="' + esc(d.id) + '">' + esc(d.who) + '</div>'
       + '<div class="facts2">' + asList(d.heroLinks).map(function (l) {
         return '<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.label) + ' &#8599;</a>';
       }).join('') + '<span class="src" data-action="space-hero-link" data-id="' + esc(d.id) + '"><u>+ Add a link or article</u></span></div></div>'
@@ -773,7 +793,7 @@
       var naAct = s[3] === 'ppl' ? 'space-people' : s[3] === 'send' ? 'space-send' : 'space-docs';
       var openId = (S.pkg && S.pkg.id) || '';
       var cur = (openId && String(s[4] || '') === String(openId)) || (panelOn && /Neil Mitchell/i.test(String(s[0] || '')));
-      return '<div class="sp' + (cur ? ' cur' : '') + '" data-action="space-open" data-id="' + id + '"><div class="top2"><span class="cat ' + g[1] + '">' + esc(g[0]) + '</span><span class="ms" title="More" data-action="space-menu" data-id="' + id + '">&middot;&middot;&middot;</span></div><h4>' + esc(s[0]) + '</h4><p>' + esc(s[1]) + '</p><div class="rd">' + ring(s[2]) + '<span class="nxa ' + na[0] + '" data-action="' + naAct + '" data-id="' + id + '">' + na[1] + '</span><span class="cnt wrap">' + (Number(s[5]) || 0) + ' files &middot; ' + (Number(s[6]) || 0) + ' links</span></div><div class="ft"><button class="op" data-action="space-open" data-id="' + id + '"' + (s[4] ? ' data-space="' + id + '"' : '') + '>Open</button><button class="dr" data-action="space-drive" data-id="' + id + '">Move to Drive</button></div></div>';
+      return '<div class="sp' + (cur ? ' cur' : '') + '"' + (panelOn ? ' data-action="space-open" data-space="' + id + '"' : '') + ' data-id="' + id + '"><div class="top2"><span class="cat ' + g[1] + '">' + esc(g[0]) + '</span><span class="ms" title="More" data-action="space-menu" data-id="' + id + '">&middot;&middot;&middot;</span></div><h4 contenteditable="true" spellcheck="false" data-action="space-card-name" data-id="' + id + '">' + esc(s[0]) + '</h4><p contenteditable="true" spellcheck="false" data-action="space-card-desc" data-id="' + id + '">' + esc(s[1]) + '</p><div class="rd">' + ring(s[2]) + '<span class="nxa ' + na[0] + '" data-action="' + naAct + '" data-id="' + id + '">' + na[1] + '</span><span class="cnt wrap">' + (Number(s[5]) || 0) + ' files &middot; ' + (Number(s[6]) || 0) + ' links</span></div><div class="ft"><button class="op" data-action="space-open" data-id="' + id + '"' + (s[4] ? ' data-space="' + id + '"' : '') + '>Open</button><button class="dr" data-action="space-drive" data-id="' + id + '">Move to Drive</button></div></div>';
     }
     var groups = data.groups || [];
     if (S.spaceFilter && S.spaceFilter !== 'all') {
@@ -804,6 +824,17 @@
         }
       });
     }
+    if (S.spaceFocusId) {
+      var focusEl = wrap.querySelector('[data-action="space-card-name"][data-id="' + S.spaceFocusId + '"]');
+      if (focusEl) {
+        focusEl.focus();
+        try { document.execCommand('selectAll', false, null); } catch (e) {}
+      }
+      S.spaceFocusId = '';
+    }
+    wrap.querySelectorAll('[data-action="space-card-name"], [data-action="space-card-desc"]').forEach(function (node) {
+      node.setAttribute('data-orig', node.textContent || '');
+    });
     if (P().finishPaint) P().finishPaint(wrap);
     else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
     markReady('spacesDesk');

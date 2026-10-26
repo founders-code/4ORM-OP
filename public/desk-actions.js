@@ -1399,7 +1399,18 @@
     'space-drop': function () {},
 
     'pipe-view': function (el) {
-      S().pipeView = attr(el, 'data-view') || 'dash';
+      var v = attr(el, 'data-view') || 'board';
+      if (v === 'list') v = 'table';
+      if (v === 'funnel') v = 'funnel';
+      S().pipeView = v;
+      refresh('pipe');
+    },
+    'pipe-empty': function () {
+      S().pipeShowEmpty = !S().pipeShowEmpty;
+      refresh('pipe');
+    },
+    'pipe-need-chip': function (el) {
+      S().pipeNeedChip = attr(el, 'data-chip') || 'all';
       refresh('pipe');
     },
     'pipe-pill': function (el) {
@@ -1426,13 +1437,19 @@
     },
     'pipe-funnel': function (el) {
       S().ghlStage = attr(el, 'data-stage');
-      S().pipeView = S().pipeView || 'dash';
+      S().pipeView = 'funnel';
       refresh('pipe');
     },
     'pipe-matrix': function (el) {
       S().pipeMatrix = { cat: attr(el, 'data-cat'), cell: attr(el, 'data-cell') };
       refresh('pipe');
     },
+    'pipe-need-tick': function (el) {
+      el.classList.toggle('on');
+      if (el.classList.contains('on')) { el.style.background = 'var(--green)'; el.style.borderColor = 'var(--green)'; }
+      else { el.style.background = ''; el.style.borderColor = ''; }
+    },
+    'pipe-add': function () { go('contacts'); },
     'pipe-follow': function (el, root) {
       var name = attr(el, 'data-name') || 'there';
       var email = attr(el, 'data-email') || '';
@@ -1498,20 +1515,23 @@
     },
     'spaces-new': function (el, root) {
       var name = 'Untitled space';
-      var temp = { id: 'tmp-' + Date.now(), name: name, kind: 'data_room', status: 'draft', docs: [], recipients: [] };
-      S().packages = (S().packages || []).concat([temp]);
-      S().pkg = temp;
+      S().pkg = null;
+      var temp = { id: 'tmp-' + Date.now(), name: name, kind: 'data_room', status: 'draft', docs: [], recipients: [], description: '' };
+      S().packages = [temp].concat(S().packages || []);
+      S().spaceFocusId = temp.id;
       refresh('spaces');
       if (!writeOk()) { toast(root, 'New space (fixture)'); return; }
       api('/api/spaces', { method: 'POST', body: { name: name, kind: 'data_room', spaceType: 'project' } }).then(ok).then(json).then(function (row) {
         if (row && row.id) {
           temp.id = row.id;
-          S().pkg = Object.assign({}, temp, row);
+          S().spaceFocusId = row.id;
         }
         refresh('spaces');
         toast(root, 'Space created');
       }).catch(function () { toast(root, 'Space is on the desk — not saved yet'); });
     },
+    'space-card-name': function () {},
+    'space-card-desc': function () {},
     'space-open': function (el, root) {
       var card = el.closest && el.closest('.sp');
       var id = attr(el, 'data-id') || attr(el, 'data-space') || (card && attr(card, 'data-id')) || '';
@@ -2752,9 +2772,41 @@
     e.preventDefault();
     try { fn(el, root, e); } catch (err) { toast(root, 'Could not run that action'); }
   }
+  function saveSpaceField(el, root) {
+    if (!el) return;
+    var id = attr(el, 'data-id');
+    var act = attr(el, 'data-action');
+    var text = String(el.textContent || '').replace(/\s+/g, ' ').trim();
+    if (act === 'space-card-name' && !text) {
+      text = 'Untitled space';
+      el.textContent = text;
+    }
+    (S().packages || []).forEach(function (p) {
+      if (String(p.id) !== String(id)) return;
+      if (act === 'space-card-name') p.name = text;
+      else { p.description = text; p.notes = text; }
+    });
+    if (S().pkg && String(S().pkg.id) === String(id)) {
+      if (act === 'space-card-name') S().pkg.name = text;
+      else { S().pkg.description = text; S().pkg.notes = text; }
+    }
+    if (!id || !writeOk() || !/^[0-9a-f-]{36}$/i.test(String(id))) return;
+    var body = act === 'space-card-name' ? { name: text } : { notes: text, description: text };
+    api('/api/spaces/' + encodeURIComponent(id), { method: 'PATCH', body: body }).catch(function () {
+      toast(root, 'Could not save that space');
+    });
+  }
   function onKey(e) {
     var el = actionElFromEvent(e) || (e.target && e.target.closest ? e.target.closest('[data-action]') : null);
     var root = rootOf(el || e.target, e);
+    var fieldAct = el && attr(el, 'data-action');
+    if ((fieldAct === 'space-card-name' || fieldAct === 'space-card-desc') && (e.key === 'Enter' || e.key === 'Escape')) {
+      e.preventDefault();
+      if (e.key === 'Escape' && el.getAttribute('data-orig') != null) el.textContent = el.getAttribute('data-orig');
+      else saveSpaceField(el, root);
+      if (el.blur) el.blur();
+      return;
+    }
     if (e.key === 'Escape') {
       var nbig = root.getElementById && root.getElementById('ovNote');
       var nscrim = root.getElementById && root.getElementById('nscrim');
@@ -3042,6 +3094,7 @@
     var withAction = 0, without = 0;
     nodes.forEach(function (el) {
       if (el.tagName === 'STYLE' || el.tagName === 'LINK' || el.tagName === 'SVG' || el.tagName === 'PATH') return;
+      if (el.isContentEditable) return;
       if (!el.getAttribute('data-action')) {
         if (el.querySelector && el.querySelector('[data-action]')) return;
         without += 1;
@@ -3067,7 +3120,10 @@
       root.addEventListener('input', onInput);
       root.addEventListener('focusout', function (e) {
         var t = e.target;
-        if (t && t.getAttribute && t.getAttribute('data-action') === 'note-edit') saveNote(root, t);
+        if (!t || !t.getAttribute) return;
+        var act = t.getAttribute('data-action');
+        if (act === 'note-edit') saveNote(root, t);
+        if (act === 'space-card-name' || act === 'space-card-desc') saveSpaceField(t, root);
       }, true);
       root.addEventListener('dragstart', onDragStart);
       root.addEventListener('dragover', onDragOver);

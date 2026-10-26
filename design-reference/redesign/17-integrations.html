@@ -92,4 +92,84 @@ const ACTIVE='Integrations';
 const NAV=[["Today"], ["Playbook", "M5 4h14v16H5zM9 8h6M9 12h6M9 16h3"], ["War Room", "M12 2l3 6 6 .9-4.5 4.3 1 6.3L12 16.6 6.5 19.5l1-6.3L3 8.9 9 8z", 0, 1], ["Calendar", "M4 6h16v14H4zM4 10h16M9 3v4M15 3v4"], ["Email", "M3 6h18v12H3zM3 7l9 6 9-6"], ["People"], ["Contacts", "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"], ["Spaces", "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"], ["Pipeline", "M3 5h18l-7 8v6l-4 2v-8z", "246"], ["Library"], ["Notes", "M5 3h14v18l-4-3H5z"], ["Documents", "M7 3h7l5 5v13H7zM14 3v5h5"], ["Drive", "M8 3h8l6 10-4 7H6l-4-7z"], ["Links", "M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"], ["Record"], ["Zoom", "M3 7h12v10H3zM15 10l6-3v10l-6-3"], ["Completed", "M4 12l5 5L20 6"], ["Signals"], ["News", "M4 5h13v14H6a2 2 0 0 1-2-2zM17 9h3v8a2 2 0 0 1-2 2M8 9h5M8 13h5"], ["Financials", "M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"], ["Integrations", "M9 7V3M15 7V3M6 7h12v5a6 6 0 0 1-12 0zM12 18v3", "6"]];
 document.getElementById('side').innerHTML=NAV.map(n=>n.length==1?`<div class="grp">${n[0]}</div>`:`<div class="nav${n[0]==ACTIVE?' on':''}">${n[0]}${n[2]?`<span class="n">${n[2]}</span>`:''}</div>`).join('');
 </script>
-</body></html>
+<script id="fourm-sounds">/* 4ormop sounds - original Web Audio sounds, no audio files.
+   pop()     : every checkbox / pad / step ticked on
+   levelUp() : a whole thing finished (last step of a move, last pad of the day,
+               last Today task, a Space reaching 5/5 or being sent)
+   Sound on/off is remembered per browser (localStorage key 4orm_sound, default on). */
+(function () {
+  let AC = null;
+  const VOL = 0.6;
+  const ac = () => AC || (AC = new (window.AudioContext || window.webkitAudioContext)());
+  const on = () => { try { return localStorage.getItem('4orm_sound') !== 'off'; } catch (e) { return true; } };
+  function tone(f, t0, d, type, g, f2) {
+    const c = ac(), o = c.createOscillator(), a = c.createGain();
+    o.type = type || 'square';
+    o.frequency.setValueAtTime(f, c.currentTime + t0);
+    if (f2) o.frequency.exponentialRampToValueAtTime(f2, c.currentTime + t0 + d);
+    a.gain.setValueAtTime(0, c.currentTime + t0);
+    a.gain.linearRampToValueAtTime((g || .2) * VOL, c.currentTime + t0 + .005);
+    a.gain.exponentialRampToValueAtTime(.0001, c.currentTime + t0 + d);
+    o.connect(a).connect(c.destination);
+    o.start(c.currentTime + t0); o.stop(c.currentTime + t0 + d + .02);
+  }
+  const S = {
+    pop() { if (!on()) return; tone(300, 0, .12, 'sine', .35, 900); },
+    levelUp() {
+      if (!on()) return;
+      [523, 659, 784, 1047].forEach((f, i) => tone(f, i * .09, .16, 'square', .14));
+      tone(1319, .38, .45, 'square', .14); tone(1047, .38, .45, 'triangle', .1);
+    },
+    isOn: on,
+    toggle() { try { localStorage.setItem('4orm_sound', on() ? 'off' : 'on'); } catch (e) {} return on(); }
+  };
+  window.FourmSound = S;
+})();
+
+/* Auto-wiring: pop when anything gets ticked on; level up when a whole group is finished.
+   Groups: move steps (.stp), Today list (.exec.today), Space next steps (#todo),
+   note checklists (.note), Playbook pads for today (.pad.due -> none left). */
+(function () {
+  const S = window.FourmSound;
+  const DONE = '.task.d, .cb.on, .stp .s.d, .td.d, .pad.done, .ck.done, .ck.on';
+  const GROUPS = [
+    ['.stp', '.s', '.s.d'],
+    ['.exec.today .tl', '.task', '.task.d, .task:has(.cb.on)'],
+    ['#todo', '.td', '.td.d'],
+    ['.note', '.ck', '.ck.done, .ck.on']
+  ];
+  const full = () => {
+    const r = [];
+    GROUPS.forEach(([g, all, done]) => document.querySelectorAll(g).forEach(el => {
+      const a = el.querySelectorAll(all).length, d = el.querySelectorAll(done).length;
+      r.push(a > 0 && a === d);
+    }));
+    r.push(document.querySelectorAll('.pad.due').length === 0 && document.querySelectorAll('.pad').length > 0);
+    return r;
+  };
+  document.addEventListener('click', e => {
+    if (e.target.closest('.sndtog')) return;
+    const b = document.querySelectorAll(DONE).length, f0 = full(), due0 = document.querySelectorAll('.pad.due').length;
+    setTimeout(() => {
+      const a = document.querySelectorAll(DONE).length, f1 = full(), due1 = document.querySelectorAll('.pad.due').length;
+      const ticked = a > b || due1 < due0;
+      if (!ticked) return;
+      const finished = f1.some((v, i) => v && !f0[i]);
+      const now = Date.now();
+      if (finished) { if (now - (window.__lvl || 0) < 600) return; window.__lvl = now; window.__snd = now; S.levelUp(); }
+      else { if (now - (window.__snd || 0) < 250) return; window.__snd = now; S.pop(); }
+    }, 60);
+  }, true);
+  const addToggle = () => {
+    const r = document.querySelector('.top .r');
+    if (!r || r.querySelector('.sndtog')) return;
+    const b = document.createElement('button');
+    b.className = 'tb sndtog';
+    const paint = () => { b.textContent = S.isOn() ? 'Sound on' : 'Sound off'; };
+    paint();
+    b.onclick = () => { S.toggle(); paint(); if (S.isOn()) S.pop(); };
+    r.insertBefore(b, r.querySelector('.clock'));
+  };
+  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', addToggle) : addToggle();
+})();
+</script></body></html>

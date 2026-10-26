@@ -57,6 +57,10 @@ Legend: **[D]** = has a design file to copy exactly.
 - [ ] ZOOM: the "Open in Contacts" control opens that person in Contacts (today it opens Pipeline).
 - [ ] STORAGE DECISION: Google Drive stays the single store. Documents and Drive pages read from Drive; dropping a file anywhere on the site uploads it to the right Drive folder automatically and it appears everywhere at once; every picker (Email compose, Spaces bundle, person pop-up) pulls from the same Drive / Documents list.
 
+## 0g. Sounds + Spaces editing (Oct 26)
+- [ ] SOUNDS exactly as design-reference/redesign/_sounds.js (original Web Audio, no audio files): "pop" every time anything is ticked on (Playbook pad marked done, task checkbox, move step, Space next step, note checklist item); "level up" when a whole group is finished (last step of a move, last Today task, last Playbook pad of the day, a Space reaching 5/5 or being sent). Never both at once; no sound on unticking. A "Sound on / Sound off" button in the top bar on every page, remembered per browser (localStorage 4orm_sound), default on. Same file on every page.
+- [ ] SPACES CARDS EDIT IN PLACE [D 05, 05c]: clicking a card's name or description edits it right on the card (no panel opens); Enter or click away saves (PATCH the space, persists), Esc stops. Only the Open button opens the panel (when the panel is already open, clicking a compact row swaps it). "+ New space" adds a card at the top of its group with the name already selected for typing, and does NOT open the panel. In the panel, the name and the line under it are also editable in place.
+
 ## 1. Site-wide
 - [ ] 1.1 Wire every control on pages 01-17 (Claude's click audit found ~250 dead controls).
 - [ ] 1.2 live-updates.js on EVERY signed-in page (today only /control-room).

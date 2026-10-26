@@ -51,6 +51,33 @@ export async function GET(req: Request) {
     const { sql, ownerId } = await chadOwner();
     if (!sql || !ownerId) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const listed = await listDupeGroups(sql, ownerId);
+    const warItems = await sql`
+      SELECT title AS t, count(*)::int AS n
+      FROM items
+      WHERE owner_id = ${ownerId} AND status <> 'dropped'
+        AND (
+          lower(title) LIKE 'open the next private-network conversation with kevin%'
+          OR lower(title) LIKE 'write who, the chunk%'
+          OR lower(title) LIKE 'then open zahar, bj, and daryl%'
+        )
+      GROUP BY title ORDER BY n DESC
+    `;
+    let warActions: Record<string, unknown>[] = [];
+    try {
+      warActions = await sql`
+        SELECT text AS t, count(*)::int AS n
+        FROM meeting_actions
+        WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND status = 'open'
+          AND (
+            lower(text) LIKE 'open the next private-network conversation with kevin%'
+            OR lower(text) LIKE 'write who, the chunk%'
+            OR lower(text) LIKE 'then open zahar, bj, and daryl%'
+          )
+        GROUP BY text ORDER BY n DESC
+      `;
+    } catch {
+      warActions = [];
+    }
     return NextResponse.json({
       ok: true,
       dry: true,
@@ -58,6 +85,8 @@ export async function GET(req: Request) {
       counts: listed.counts,
       groups: Object.fromEntries(Object.entries(listed.tables).map(([k, v]) => [k, v.length])),
       first15: preview(listed.tables),
+      warItems,
+      warActions,
       tables: listed.tables,
     });
   } catch (err) {
