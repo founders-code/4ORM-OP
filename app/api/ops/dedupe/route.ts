@@ -132,7 +132,7 @@ export async function POST(req: Request) {
           via = 'oldest';
         }
         if (!id) continue;
-        await sql`UPDATE items SET status = 'today' WHERE id::text = ${id} AND owner_id = ${ownerId}`;
+        await sql`UPDATE items SET status = 'new', due = now() WHERE id::text = ${id} AND owner_id = ${ownerId}`;
         restored.push({ title, id, via });
       }
       return NextResponse.json({ ok: true, restoreWar: true, owner: 'chad', restored });
