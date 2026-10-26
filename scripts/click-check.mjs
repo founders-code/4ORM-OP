@@ -250,7 +250,13 @@ async function productionStep1(browser) {
   });
   if (!pushLive(rows, 'War Room', 'Signals rows', { dom: signals.open, net: true, persist: signals.rows >= 0 && signals.open, extra: 'rows=' + signals.rows })) failed = true;
 
-  await readyView('/notes', '#notesDesk');
+  await readyView('/notes?board=1', '#notesDesk');
+  await live.evaluate(() => {
+    const root = document.getElementById('notesDesk') && document.getElementById('notesDesk').shadowRoot;
+    const board = root && root.querySelector('[data-action="notes-view"][data-view="board"]');
+    if (board) board.click();
+  });
+  await live.waitForTimeout(500);
   for (let noteRun = 1; noteRun <= 5; noteRun++) {
     const noteTitle = 'TEST note ' + stamp + ' r' + noteRun;
     const noteBody = 'TEST autosave ' + stamp + ' r' + noteRun;
@@ -258,6 +264,12 @@ async function productionStep1(browser) {
     const noteId = noteCreate.json && noteCreate.json.id;
     await live.reload({ waitUntil: 'domcontentloaded' });
     await live.waitForSelector('#notesDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+    await live.evaluate(() => {
+      const root = document.getElementById('notesDesk') && document.getElementById('notesDesk').shadowRoot;
+      const board = root && root.querySelector('[data-action="notes-view"][data-view="board"]');
+      if (board) board.click();
+    });
+    await live.waitForTimeout(400);
     await live.waitForFunction((id) => {
       const root = document.getElementById('notesDesk') && document.getElementById('notesDesk').shadowRoot;
       return !!(root && root.querySelector('[data-action="note-open"][data-id="' + id + '"]'));

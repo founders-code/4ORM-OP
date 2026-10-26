@@ -1261,9 +1261,10 @@
     whenCss(function () {
       var S0 = window.STATE || {};
       var stored = String(S0.notesView || (function () { try { return localStorage.getItem('cr_notes_view') || ''; } catch (e) { return ''; } })());
-      var canvasOn = qFlag('canvas') || (!qFlag('open') && stored !== 'board' && (!fixtureOn() || qFlag('canvas')));
+      var canvasOn = qFlag('canvas') || (!qFlag('open') && !qFlag('board') && stored !== 'board' && (!fixtureOn() || qFlag('canvas')));
       if (fixtureOn() && !qFlag('canvas')) canvasOn = false;
-      if (!fixtureOn() && !stored && !qFlag('open')) canvasOn = true;
+      if (qFlag('board')) canvasOn = false;
+      if (!fixtureOn() && !stored && !qFlag('open') && !qFlag('board')) canvasOn = true;
       if (canvasOn) paintNotesCanvasPage();
       else if (typeof prevNotes === 'function') prevNotes();
     });
