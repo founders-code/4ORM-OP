@@ -3,12 +3,12 @@ import { CEILINGS, BUDGET_WINDOW_MS } from './guard.mjs';
 import { fail } from './log';
 import { rememberDatabaseUrl, savedDatabaseUrl } from './vault';
 
-type Sql = NeonQueryFunction<false, false>;
+export type Sql = NeonQueryFunction<false, false>;
 
 let ready: Promise<Sql> | null = null;
 
 /** Bump when migrate() gains a new step so cold starts skip the full IF NOT EXISTS pass. */
-const SCHEMA_VERSION = '2026-10-26-recordings-live-qa';
+const SCHEMA_VERSION = '2026-10-26-prompt3-canvas-planner';
 
 export async function databaseUrl() {
   const envUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
@@ -874,6 +874,10 @@ async function migrateWar(sql: Sql) {
     )`],
     ['db_notes_canvas_x', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS canvas_x int`],
     ['db_notes_canvas_y', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS canvas_y int`],
+    ['db_notes_canvas_w', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS canvas_w int`],
+    ['db_notes_canvas_h', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS canvas_h int`],
+    ['db_archive_test_notes', () => sql`UPDATE notes SET deleted_at = now() WHERE deleted_at IS NULL AND (title ~* '^TEST([ :]|$)' OR title ILIKE 'TEST note%' OR title ILIKE 'TEST click-check%')`],
+    ['db_links_thumb', () => sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS thumb_url text`],
     ['db_notes_cluster_id', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS cluster_id uuid`],
     ['db_sticky_canvas_x', () => sql`ALTER TABLE sticky_notes ADD COLUMN IF NOT EXISTS canvas_x int`],
     ['db_sticky_canvas_y', () => sql`ALTER TABLE sticky_notes ADD COLUMN IF NOT EXISTS canvas_y int`],
@@ -915,6 +919,43 @@ async function migrateWar(sql: Sql) {
       created_at timestamptz NOT NULL DEFAULT now(),
       PRIMARY KEY (owner_id, rec_id, n)
     )`],
+    ['db_timeline_items', () => sql`CREATE TABLE IF NOT EXISTS timeline_items (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      seed_key text,
+      pipeline text NOT NULL,
+      stream text NOT NULL DEFAULT '',
+      title text NOT NULL,
+      kind text NOT NULL,
+      start_date date,
+      due_date date,
+      recur_rule text,
+      owner_name text NOT NULL DEFAULT '',
+      note text NOT NULL DEFAULT '',
+      status_override text,
+      milestone_id uuid,
+      position int NOT NULL DEFAULT 0,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      archived_at timestamptz
+    )`],
+    ['db_timeline_deps', () => sql`CREATE TABLE IF NOT EXISTS timeline_deps (
+      item_id uuid NOT NULL,
+      depends_on_id uuid NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (item_id, depends_on_id)
+    )`],
+    ['db_timeline_prefs', () => sql`CREATE TABLE IF NOT EXISTS timeline_prefs (
+      owner_id text PRIMARY KEY,
+      pipeline_order jsonb NOT NULL DEFAULT '[]'::jsonb,
+      hidden jsonb NOT NULL DEFAULT '[]'::jsonb,
+      open jsonb NOT NULL DEFAULT '[]'::jsonb,
+      zoom text NOT NULL DEFAULT '6',
+      show_links boolean NOT NULL DEFAULT true,
+      one_move_id uuid,
+      updated_at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_items_plan_of', () => sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS plan_of uuid`],
   ];
   for (const [code, run] of steps) {
     try {

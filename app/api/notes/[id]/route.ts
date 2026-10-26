@@ -40,6 +40,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
           pinned = CASE WHEN ${hasPin} THEN ${pinOn} ELSE pinned END,
           canvas_x = CASE WHEN ${Number.isFinite(x)} THEN ${Number.isFinite(x) ? Math.round(x) : 0} ELSE canvas_x END,
           canvas_y = CASE WHEN ${Number.isFinite(y)} THEN ${Number.isFinite(y) ? Math.round(y) : 0} ELSE canvas_y END,
+          canvas_w = CASE WHEN ${Number.isFinite(w)} THEN ${Number.isFinite(w) ? Math.max(160, Math.min(900, Math.round(w))) : 240} ELSE canvas_w END,
+          canvas_h = CASE WHEN ${Number.isFinite(h)} THEN ${Number.isFinite(h) ? Math.max(100, Math.min(900, Math.round(h))) : 180} ELSE canvas_h END,
           cluster_id = CASE WHEN ${hasCluster && clusterOk} THEN ${clusterId} ELSE cluster_id END,
           updated_at = now()
       WHERE id = ${params.id} AND owner_id = ${session.userId} AND deleted_at IS NULL

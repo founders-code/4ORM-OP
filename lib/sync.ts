@@ -315,6 +315,8 @@ export async function ingestMail(sql: Sql, ownerId: string, force = false) {
     const status = allowStatus('new');
     const priority = allowPriority('normal');
     if (!area || !status || !priority) continue;
+    const titleBlob = String(message.title || '');
+    if (/\b(newsletter|unsubscribe|weekly digest|daily digest|your receipt)\b/i.test(titleBlob)) continue;
     const rawFrom = String(message.from || '');
     const fromEmail = ((rawFrom.match(/<([^>]+)>/) || [])[1] || '').trim();
     if (fromEmail && message.at) {

@@ -983,6 +983,14 @@ export async function deleteSpace(sql: Sql, ownerId: string, id: string) {
   return true;
 }
 
+export async function restoreSpace(sql: Sql, ownerId: string, id: string) {
+  const rows = await sql`
+    UPDATE spaces SET deleted_at = NULL WHERE id = ${id} AND owner_id = ${ownerId} AND deleted_at IS NOT NULL
+    RETURNING id
+  `;
+  return !!rows.length;
+}
+
 async function depthOf(sql: Sql, spaceId: string, itemId: string) {
   let depth = 1;
   let current = itemId;

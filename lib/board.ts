@@ -214,13 +214,13 @@ export async function loadBoard(sql: Sql, ownerId: string) {
 
   const items = await read(reads, 'items', async () => {
     const rows = await sql`
-      SELECT id, title, area, status, priority, due, owner, source, category, notes, updated_at, to_jsonb(items) ->> 'position' AS position
+      SELECT id, title, area, status, priority, due, owner, source, category, notes, updated_at, to_jsonb(items) ->> 'position' AS position, to_jsonb(items) ->> 'plan_of' AS plan_of
       FROM items
       WHERE owner_id = ${ownerId}
         AND status <> 'dropped'
         AND (snooze_until IS NULL OR snooze_until <= now())
       ORDER BY updated_at DESC
-      LIMIT 200
+      LIMIT 2000
     `;
     return rows as Row[];
   }, []);
@@ -272,7 +272,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
   }, []);
   const links = await read(reads, 'links', async () => {
     const rows = await sql`
-      SELECT id, title, url, category, sub, note, leaf FROM links WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 200
+      SELECT id, title, url, category, sub, note, leaf, thumb_url FROM links WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 400
     `;
     return rows as Row[];
   }, []);
@@ -416,7 +416,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
       source: String(row.source || 'manual'),
       category: row.category ? String(row.category) : '',
       waitingOn: '',
-      planOf: '',
+      planOf: row.plan_of ? String(row.plan_of) : '',
       position: row.position == null || row.position === '' ? null : Number(row.position),
     })),
     zoomNotes,
@@ -467,6 +467,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
       sub: String(row.sub || ''),
       leaf: String(row.leaf || ''),
       note: String(row.note || ''),
+      thumb_url: row.thumb_url ? String(row.thumb_url) : '',
     })),
     events: calendar.events.map((event) => ({
       id: event.id,
