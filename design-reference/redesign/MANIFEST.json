@@ -3,196 +3,196 @@
   "file": "redesign/02-war-room.html",
   "page": "War Room (landing page)",
   "route": "/war-room (also / and /control-room redirect here)",
-  "bytes": 59674,
-  "sha256": "bdf958ca8fcfae47"
+  "bytes": 59737,
+  "sha256": "70019b01e046f7c2"
  },
  {
   "file": "redesign/02b-war-room-steps.html",
   "page": "War Room - Steps open",
   "route": "/war-room (Steps clicked)",
-  "bytes": 59783,
-  "sha256": "34cb9cde6bdbaf18"
+  "bytes": 59846,
+  "sha256": "bce3947a2c0ef50a"
  },
  {
   "file": "redesign/02c-war-room-signals.html",
   "page": "War Room - Signals panel open",
   "route": "/war-room (Signals clicked)",
-  "bytes": 59746,
-  "sha256": "550afb3c8c274252"
+  "bytes": 59809,
+  "sha256": "3856f97a6f59aa41"
  },
  {
   "file": "redesign/03-notes.html",
   "page": "Notes",
   "route": "/notes",
-  "bytes": 41682,
-  "sha256": "e021d79be85f5b9a"
+  "bytes": 41745,
+  "sha256": "ebf932b0172c9150"
  },
  {
   "file": "redesign/03b-notes-open.html",
   "page": "Notes - note opened",
   "route": "/notes (note clicked)",
-  "bytes": 45110,
-  "sha256": "c67a6f0c61415ba4"
+  "bytes": 45173,
+  "sha256": "90fd7362a0c1df66"
  },
  {
   "file": "redesign/04-pipeline.html",
   "page": "Pipeline",
   "route": "/pipeline",
-  "bytes": 49179,
-  "sha256": "73d787a7be876e11"
+  "bytes": 49242,
+  "sha256": "e8ef761e28ad1c2a"
  },
  {
   "file": "redesign/05-spaces.html",
   "page": "Spaces",
   "route": "/spaces",
-  "bytes": 38127,
-  "sha256": "47c2601020a1a930"
+  "bytes": 38190,
+  "sha256": "6db52c6a109e65fb"
  },
  {
   "file": "redesign/05c-space-panel.html",
   "page": "Spaces - Space opened as a slide-over panel (actions bar at the bottom)",
   "route": "/spaces (card clicked)",
-  "bytes": 61808,
-  "sha256": "3e1b4d21377b72cb"
+  "bytes": 61871,
+  "sha256": "9923aa7cea7f223e"
  },
  {
   "file": "redesign/06-documents.html",
   "page": "Documents",
   "route": "/documents",
-  "bytes": 39845,
-  "sha256": "c7b516c4ae84fd73"
+  "bytes": 39908,
+  "sha256": "67dfec2e7325e108"
  },
  {
   "file": "redesign/06b-document-viewer.html",
   "page": "Documents - in-site viewer",
   "route": "/documents (file clicked)",
-  "bytes": 44820,
-  "sha256": "70c4f53e42502a47"
+  "bytes": 44883,
+  "sha256": "999dfeaece88c7d7"
  },
  {
   "file": "redesign/07-links.html",
   "page": "Links",
   "route": "/links",
-  "bytes": 38093,
-  "sha256": "bd5e91da79008f3b"
+  "bytes": 38156,
+  "sha256": "a8d61c2ee4ba325c"
  },
  {
   "file": "redesign/08-email.html",
   "page": "Email",
   "route": "/email",
-  "bytes": 50160,
-  "sha256": "6336652c1fcd8b49"
+  "bytes": 50223,
+  "sha256": "573428bd40025c69"
  },
  {
   "file": "redesign/08b-email-compose.html",
   "page": "Email compose panel",
   "route": "/email (Compose open)",
-  "bytes": 50227,
-  "sha256": "2b6ba1adfc61d6ed"
+  "bytes": 50290,
+  "sha256": "14dc2a968999920a"
  },
  {
   "file": "redesign/08c-email-people.html",
   "page": "Email - People view",
   "route": "/email?view=people&person=:id (person panel)",
-  "bytes": 48494,
-  "sha256": "c2b84c8ee6e1059c"
+  "bytes": 48557,
+  "sha256": "1a6d05c668726f08"
  },
  {
   "file": "redesign/08d-email-inbox.html",
   "page": "Email - Inbox feed + your columns",
   "route": "/email (default view)",
-  "bytes": 45791,
-  "sha256": "07edef542e270ed7"
+  "bytes": 45854,
+  "sha256": "d862e00829f5a268"
  },
  {
   "file": "redesign/08e-email-people-grid.html",
   "page": "Email - People grid (boxes, tags, closed-box drawer)",
   "route": "/email?view=people",
-  "bytes": 64256,
-  "sha256": "c7a624dd0d5df324"
+  "bytes": 64319,
+  "sha256": "470599bab7cbdb90"
  },
  {
   "file": "redesign/09-playbook.html",
   "page": "Playbook",
   "route": "/playbook",
-  "bytes": 74950,
-  "sha256": "c575a14232ff2609"
+  "bytes": 75013,
+  "sha256": "d727a074cd95f4a8"
  },
  {
   "file": "redesign/10-calendar.html",
   "page": "Calendar",
   "route": "/calendar",
-  "bytes": 95935,
-  "sha256": "406f7c611e834215"
+  "bytes": 95998,
+  "sha256": "37f87f7e09ffcd94"
  },
  {
   "file": "redesign/10b-calendar-rail-closed.html",
   "page": "Calendar - side panel closed",
   "route": "/calendar (rail toggle)",
-  "bytes": 96864,
-  "sha256": "800974070fa6d08a"
+  "bytes": 96927,
+  "sha256": "75792a4717e4bdef"
  },
  {
   "file": "redesign/10c-calendar-event-editor.html",
   "page": "Calendar - event editor open (no icons, 24h times)",
   "route": "/calendar (event clicked)",
-  "bytes": 96321,
-  "sha256": "fd0607dd0e8b1f24"
+  "bytes": 96384,
+  "sha256": "7d8949cfb673cb7f"
  },
  {
   "file": "redesign/11-zoom.html",
   "page": "Zoom",
   "route": "/zoom",
-  "bytes": 50504,
-  "sha256": "b62ddf8bf76c9d2c"
+  "bytes": 50567,
+  "sha256": "08620c68272af6fc"
  },
  {
   "file": "redesign/12-completed.html",
   "page": "Completed",
   "route": "/completed",
-  "bytes": 38778,
-  "sha256": "a9ad256f281848d8"
+  "bytes": 38841,
+  "sha256": "83dbf53e93c72f84"
  },
  {
   "file": "redesign/13-news.html",
   "page": "News",
   "route": "/news",
-  "bytes": 46054,
-  "sha256": "425410bb60dfbf23"
+  "bytes": 46117,
+  "sha256": "c120ab4127ce9125"
  },
  {
   "file": "redesign/13b-news-saved.html",
   "page": "News - Saved collections",
   "route": "/news?view=saved",
-  "bytes": 49384,
-  "sha256": "adbe0aa7ba4673eb"
+  "bytes": 49447,
+  "sha256": "b9eb26031dd6191b"
  },
  {
   "file": "redesign/14-drive.html",
   "page": "Drive",
   "route": "/drive",
-  "bytes": 38016,
-  "sha256": "d953824e7a6a9578"
+  "bytes": 38079,
+  "sha256": "a6c51180271f6c66"
  },
  {
   "file": "redesign/15-contacts.html",
   "page": "Contacts",
   "route": "/contacts",
-  "bytes": 39342,
-  "sha256": "e916bc6d489de8ac"
+  "bytes": 39405,
+  "sha256": "bbd6bee2e77ec534"
  },
  {
   "file": "redesign/16-financials.html",
   "page": "Financials",
   "route": "/financials",
-  "bytes": 36853,
-  "sha256": "89f44eae1b115067"
+  "bytes": 36916,
+  "sha256": "a11727be2f515d7f"
  },
  {
   "file": "redesign/17-integrations.html",
   "page": "Integrations",
   "route": "/integrations",
-  "bytes": 36225,
-  "sha256": "12d2ea899a6fbab8"
+  "bytes": 36288,
+  "sha256": "dcc728649de83fff"
  }
 ]
