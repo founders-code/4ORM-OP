@@ -55,6 +55,8 @@ const isControlRoom = createRouteMatcher([
   '/contacts',
   '/people',
   '/recordings',
+  '/planner',
+  '/timeline',
   '/financials',
   '/integrations',
 ]);
@@ -113,7 +115,7 @@ const gated = clerkMiddleware(async (auth, req) => {
     const { userId, sessionClaims } = await auth();
     // Only allowlisted users bounce into the room; anyone else stays on the landing page (no loop).
     if (userId && (await roomAllowed(userId, sessionClaims))) {
-      return NextResponse.redirect(new URL('/war-room', req.url));
+      return NextResponse.redirect(new URL('/planner', req.url));
     }
     return NextResponse.next();
   }
@@ -186,6 +188,8 @@ export const config = {
     '/news',
     '/email-board',
     '/war-room',
+    '/planner',
+    '/timeline',
     '/space-detail',
     '/zoom',
     '/completed',

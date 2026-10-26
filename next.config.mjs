@@ -34,7 +34,10 @@ const nextConfig = {
   // /control-room rewrites to the Control Room prototype.
   async redirects() {
     return [
-      { source: '/control-room', destination: '/war-room', permanent: false },
+      { source: '/control-room', destination: '/planner', permanent: false },
+      { source: '/war-room', destination: '/planner', permanent: false },
+      { source: '/timeline', destination: '/planner', permanent: false },
+      { source: '/drive', destination: '/documents?source=drive', permanent: false },
     ];
   },
   async rewrites() {
@@ -55,7 +58,8 @@ const nextConfig = {
       { source: '/zoom', destination: '/control-room.html' },
       { source: '/completed', destination: '/control-room.html' },
       { source: '/notes', destination: '/control-room.html' },
-      { source: '/drive', destination: '/control-room.html' },
+      { source: '/planner', destination: '/control-room.html' },
+      { source: '/timeline', destination: '/control-room.html' },
       { source: '/contacts', destination: '/control-room.html' },
       { source: '/people', destination: '/control-room.html' },
       { source: '/recordings', destination: '/control-room.html' },

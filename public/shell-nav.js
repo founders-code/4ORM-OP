@@ -1,32 +1,30 @@
 (function () {
   var NAV = [
     ['Today'],
-    ['Playbook', 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h3', '', 'playbook', '/playbook'],
-    ['War Room', 'M12 2l3 6 6 .9-4.5 4.3 1 6.3L12 16.6 6.5 19.5l1-6.3L3 8.9 9 8z', '', 'war', '/war-room'],
-    ['Calendar', 'M4 6h16v14H4zM4 10h16M9 3v4M15 3v4', '', 'calendar', '/calendar'],
-    ['Email', 'M3 6h18v12H3zM3 7l9 6 9-6', '', 'mail', '/email'],
+    ['News', '', '', 'news', '/news'],
+    ['Playbook', '', '', 'playbook', '/playbook'],
+    ['Planner', '', '', 'war', '/planner'],
+    ['Calendar', '', '', 'calendar', '/calendar'],
+    ['Email', '', '', 'mail', '/email'],
     ['People'],
-    ['Contacts', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0', '', 'people', '/contacts'],
-    ['Spaces', 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', '', 'work', '/spaces'],
-    ['Pipeline', 'M3 5h18l-7 8v6l-4 2v-8z', '', 'contacts', '/pipeline'],
+    ['Contacts', '', '', 'people', '/contacts'],
+    ['Spaces', '', '', 'work', '/spaces'],
+    ['Pipeline', '', '', 'contacts', '/pipeline'],
     ['Library'],
-    ['Notes', 'M5 3h14v18l-4-3H5z', '', 'notes', '/notes'],
-    ['Documents', 'M7 3h7l5 5v13H7zM14 3v5h5', '', 'docs', '/documents'],
-    ['Drive', 'M8 3h8l6 10-4 7H6l-4-7z', '', 'drive', '/drive'],
-    ['Links', 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1', '', 'links', '/links'],
+    ['Links', '', '', 'links', '/links'],
+    ['Notes', '', '', 'notes', '/notes'],
+    ['Documents', '', '', 'docs', '/documents'],
     ['Recordings', '', '', 'rec', '/recordings'],
-    ['Record'],
-    ['Zoom', 'M3 7h12v10H3zM15 10l6-3v10l-6-3', '', 'znotes', '/zoom'],
-    ['Completed', 'M4 12l5 5L20 6', '', 'done', '/completed'],
+    ['Zoom', '', '', 'znotes', '/zoom'],
     ['Signals'],
-    ['News', 'M4 5h13v14H6a2 2 0 0 1-2-2zM17 9h3v8a2 2 0 0 1-2 2M8 9h5M8 13h5', '', 'news', '/news'],
-    ['Financials', 'M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6', '', 'finance', '/financials'],
-    ['Integrations', 'M9 7V3M15 7V3M6 7h12v5a6 6 0 0 1-12 0zM12 18v3', '', 'int', '/integrations']
+    ['Completed', '', '', 'done', '/completed'],
+    ['Financials', '', '', 'finance', '/financials'],
+    ['Integrations', '', '', 'int', '/integrations']
   ];
   var PAGE = {
-    room: 'War Room', war: 'War Room', contacts: 'Pipeline', work: 'Spaces', docs: 'Documents',
+    room: 'Planner', war: 'Planner', planner: 'Planner', contacts: 'Pipeline', work: 'Spaces', docs: 'Documents',
     links: 'Links', mail: 'Email', playbook: 'Playbook', calendar: 'Calendar', znotes: 'Zoom',
-    notes: 'Notes', done: 'Completed', news: 'News', drive: 'Drive', people: 'Contacts', rec: 'Recordings',
+    notes: 'Notes', done: 'Completed', news: 'News', people: 'Contacts', rec: 'Recordings',
     finance: 'Financials', int: 'Integrations'
   };
   var DEFAULT = NAV.filter(function (n) { return n.length > 1; }).map(function (n) { return n[0]; });
@@ -51,6 +49,11 @@
   }
   function applied() {
     var names = Array.isArray(order) ? order.slice() : DEFAULT.slice();
+    names = names.map(function (n) {
+      if (n === 'War Room' || n === 'Timeline') return 'Planner';
+      if (n === 'Drive' || n === 'Record') return '';
+      return n;
+    }).filter(Boolean);
     DEFAULT.forEach(function (n) { if (names.indexOf(n) < 0) names.push(n); });
     return names.filter(function (n) { return !!itemByName(n); });
   }
@@ -109,13 +112,8 @@
     if (fixtureOn()) {
       NAV.forEach(function (n) {
         if (n.length === 1) { html += '<div class="grp">' + n[0] + '</div>'; return; }
-        if (n[0] === 'Recordings' && active !== 'Recordings') {
-          var showRec = false;
-          try { showRec = /(?:cards=1|space=open)/.test(location.search || ''); } catch (e) {}
-          if (!showRec) return;
-        }
         var badge = bag[n[0]] || '';
-        var chip = (n[0] === 'Recordings' && active === 'Recordings') ? '<span class="new">new</span>' : (badge ? '<span class="n">' + badge + '</span>' : '');
+        var chip = badge ? '<span class="n">' + badge + '</span>' : '';
         html += '<div class="nav' + (n[0] === active ? ' on' : '') + '" data-action="nav-go" data-v="' + n[3] + '" data-name="' + n[0] + '">' + n[0] + chip + '</div>';
       });
       side.innerHTML = html;
