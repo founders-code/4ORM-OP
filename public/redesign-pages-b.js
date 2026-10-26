@@ -100,13 +100,14 @@
     var S = window.STATE || {};
     var openKeys = S.linkOpen;
     var cat = S.cat || S.linkCat || '';
-    var tree = (data.tree || []).map(function (t) {
+    var allN = (data.wall || []).length || 79;
+    var tree = [{ name: 'All links', n: allN, on: !cat, kind: 'all', noHv: true, noSub: true, car: '' }].concat((data.tree || []).map(function (t) {
       var next = Object.assign({}, t);
-      if (cat) next.on = t.name === cat;
+      next.on = !!cat && t.name === cat;
       if (Array.isArray(openKeys) && t.car) next.car = openKeys.indexOf(t.name) >= 0 ? 'open' : 'closed';
       return next;
-    });
-    return Object.assign({}, data, { tree: tree, crumb: cat || data.crumb });
+    }));
+    return Object.assign({}, data, { tree: tree, crumb: cat || 'All links', crumbN: cat ? data.crumbN : allN });
   }
   function emailData() { return fixtureOn() ? (F().email || {}) : liveEmailState(); }
 
@@ -336,8 +337,11 @@
     var activeCat = S.cat || S.linkCat || '';
     var activeSub = S.sub || '';
     var activeLeaf = S.leaf || '';
-    if (!activeCat && S.linkPicked && cats[0]) activeCat = cats[0].name || cats[0].title || '';
     var tree = [];
+    tree.push({
+      name: 'All links', n: links.length, on: !activeCat,
+      car: '', kind: 'all', key: 'all', noSub: true, noHv: true
+    });
     cats.forEach(function (c) {
       var name = c.name || c.title || 'Category';
       var key = name;
@@ -379,8 +383,8 @@
         });
       }
     });
-    if (!tree.length) tree = [{ name: 'Uncategorized', n: links.length, on: true, car: '', noHv: true, kind: 'cat' }];
-    var active = activeLeaf || activeSub || activeCat || (tree[0] && tree[0].name) || '';
+    if (tree.length <= 1) tree.push({ name: 'Uncategorized', n: links.length, on: !activeCat, car: '', noHv: true, kind: 'cat' });
+    var active = activeLeaf || activeSub || activeCat || 'All links';
     var wallSrc = links.filter(function (l) {
       var cat = l.cat || l.category || 'Uncategorized';
       if (activeLeaf) return cat === activeCat && (l.sub || '') === activeSub && (l.leaf || '') === activeLeaf;
@@ -646,7 +650,9 @@
       link: links[0] ? { host: hostOf(links[0].url || links[0].name || ''), label: links[0].name || links[0].url || '' } : null,
       people: people.map(function (r) { return { ini: initials(r.name || r.email || 'P'), name: r.name || r.email || 'Person', meta: r.email || r.company || '', role: r.role || 'Lead' }; }),
       facts: [[p.lastContact || '\u2014', 'last contact'], [String(p.emails || 0), 'emails'], [p.stage || p.status || '\u2014', 'pipeline stage']],
-      todos: [],
+      todos: (function () {
+        try { return JSON.parse(localStorage.getItem('cr_space_steps_' + (p.id || '')) || '[]'); } catch (e) { return []; }
+      }()),
       notes: p.notes || p.description || '',
       saved: 'Saved',
       history: []
@@ -678,15 +684,29 @@
       return '<div><b>' + esc(f[0]) + '</b><span>' + esc(f[1]) + '</span></div>';
     }).join('');
     var doneN = asList(d.todos).filter(function (t) { return t.d; }).length;
-    wrap.innerHTML =
-      '<div class="crumbs space-detail" data-id="' + esc(d.id) + '"><a data-action="space-back">&larr; All spaces</a><span>/</span><span>' + esc(d.group) + '</span><span>/</span><span style="color:#fff">' + esc(d.name) + '</span>'
-      + '<div class="r"><button class="ghost" data-action="space-prev">&lsaquo; Prev</button><button class="ghost" data-action="space-next">Next &rsaquo;</button><button class="ghost" data-action="space-menu" data-id="' + esc(d.id) + '">&middot;&middot;&middot;</button></div></div>'
+    if (!asList(d.todos).length) {
+      todos = asList(d.steps).map(function (s) {
+        return '<div class="td' + (s[0] === 'd' ? ' d' : '') + '" data-action="space-todo-toggle" data-id="' + esc(d.id) + '"><i>' + (s[0] === 'd' ? '&#10003;' : '') + '</i><span>' + esc(s[1]) + '</span></div>';
+      }).join('');
+      doneN = asList(d.steps).filter(function (s) { return s[0] === 'd'; }).length;
+    }
+    var first = String(d.name || '').split(' ')[0] || 'them';
+    var gated = !fixtureOn();
+    try {
+      var sentMap = JSON.parse(localStorage.getItem('cr_space_test') || '{}');
+      if (sentMap && sentMap[d.id]) gated = false;
+      if (fixtureOn()) gated = false;
+    } catch (e) { gated = !fixtureOn(); }
+    var readyN = String(d.ready || '0/5').split('/')[0] || '0';
+    wrap.insertAdjacentHTML('beforeend',
+      '<aside class="spanel space-detail" data-id="' + esc(d.id) + '">'
+      + '<div class="crumbs"><a data-action="space-back">&larr; All spaces</a><span>/</span><span>' + esc(d.group) + '</span><span>/</span><span style="color:#fff">' + esc(d.name) + '</span>'
+      + '<div class="r"><button class="ghost" data-action="space-prev">&lsaquo; Prev</button><button class="ghost" data-action="space-next">Next &rsaquo;</button><button class="ghost" data-action="space-menu" data-id="' + esc(d.id) + '">&middot;&middot;&middot;</button><button class="ghost close" data-action="space-back" title="Close (Esc)">Close</button></div></div>'
       + '<section class="hero"><div class="bav">' + esc(d.ini) + '</div>'
       + '<div style="position:relative;z-index:1;min-width:0"><div class="tags">' + asList(d.tags).map(function (t) {
         return '<span' + (t[0] === 'vc' ? ' class="vc"' : '') + '>' + esc(t[1]) + '</span>';
       }).join('') + '</div>'
-      + '<h1>' + esc(d.name) + '</h1><div class="who">' + esc(d.who) + '</div>'
-      + '<div class="acts"><button class="hb pri" data-action="space-send" data-id="' + esc(d.id) + '"><i></i> Send bundle</button><button class="hb" data-action="space-email" data-id="' + esc(d.id) + '">Email ' + esc(String(d.name || '').split(' ')[0]) + '</button><button class="hb" data-action="space-book" data-id="' + esc(d.id) + '"> Book 20 min</button><button class="hb" data-action="space-drive" data-id="' + esc(d.id) + '">Move to Drive</button></div></div>'
+      + '<h1>' + esc(d.name) + '</h1><div class="who">' + esc(d.who) + '</div></div>'
       + '<div class="ready"><div class="rring"><svg viewBox="0 0 96 96" width="96" height="96"><circle cx="48" cy="48" r="40" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9"/><circle id="rg" cx="48" cy="48" r="40" fill="none" stroke="#2fe08b" stroke-width="9" stroke-linecap="round" stroke-dasharray="' + esc(d.readyDash || '100.5 251.3') + '" transform="rotate(-90 48 48)"/></svg><b id="rn">' + esc(d.ready) + '</b></div>'
       + '<div class="lbl">ready to send</div><div class="steps" id="steps">' + asList(d.steps).map(function (s) {
         return '<span class="' + esc(s[0]) + '"><i>' + (s[0] === 'd' ? '&#10003;' : '') + '</i>' + esc(s[1]) + '</span>';
@@ -695,35 +715,40 @@
       + '<section class="card"><div class="ch"><h3>The angle</h3><span class="ai">4orm Intelligence</span><span class="lnk" data-action="space-rewrite">Rewrite</span></div>'
       + '<div class="angle" contenteditable="true" data-action="space-angle">' + (d.angle || '') + '</div>'
       + '<div class="hooks">' + asList(d.hooks).map(function (h) { return '<span data-action="space-hook">' + esc(h) + '</span>'; }).join('') + '</div></section>'
-      + '<section class="card"><div class="ch"><h3>What ' + esc(String(d.name || '').split(' ')[0]) + ' gets</h3><span class="s">preview of the bundle</span><span class="lnk" data-action="mail-compose">Open full composer</span></div>'
-      + '<div class="mail"><div class="row"><label>To</label><b>' + esc(d.to) + '</b></div><div class="row"><label>Subject</label><b contenteditable="true" data-action="space-subject">' + esc(d.subject) + '</b></div>'
-      + '<div class="bodyt" contenteditable="true" id="intro" data-action="space-intro">' + esc(d.intro) + '</div></div>'
-      + '<div class="files" id="files">' + files + '</div>'
-      + (d.link ? '<div class="lk"><span class="fv" style="background:#0b1430">4</span><div><b>' + esc(d.link.host) + '</b><span>' + esc(d.link.label) + '</span></div><em class="lkadd" style="color:var(--blue);cursor:pointer" data-action="space-link" data-id="' + esc(d.id) + '">+ Add link</em></div>' : '')
-      + '<div class="drop">Drag files here from <b>Documents</b> or <b>Drive</b>, or paste a link</div>'
-      + '<div class="sendbar"><span class="via">Sends through <b>GoHighLevel</b> &middot; test copy to chad@4ormfinance.com first</span><div class="r"><button class="btn" data-action="space-send-test" data-id="' + esc(d.id) + '">Send me a test</button><button class="btn pri" data-action="space-send" data-id="' + esc(d.id) + '">Send to ' + esc(String(d.name || '').split(' ')[0]) + '</button></div></div></section></div>'
+      + '<section class="card"><div class="ch"><h3>Notes</h3><span class="s">saves as you type</span></div>'
+      + '<div class="sticky" contenteditable="true" id="note" data-action="space-notes" data-id="' + esc(d.id) + '">' + esc(d.notes) + '<span class="saved" contenteditable="false">' + esc(d.saved || 'Saved') + '</span></div></section></div>'
       + '<div><section class="card"><div class="ch"><h3>People</h3><span class="s">who this is for</span></div>' + people
       + '<div class="pp addp" data-action="space-people" data-id="' + esc(d.id) + '"><i>+</i>Add people from Contacts or Pipeline</div>'
       + '<div class="facts">' + facts + '</div></section>'
-      + '<section class="card"><div class="ch"><h3>Next steps</h3><span class="s" id="tdc">' + doneN + ' of ' + asList(d.todos).length + ' done</span></div><div class="todo" id="todo">' + todos + '</div></section>'
-      + '<section class="card"><div class="ch"><h3>Notes</h3><span class="s">saves as you type</span></div>'
-      + '<div class="sticky" contenteditable="true" id="note" data-action="space-notes" data-id="' + esc(d.id) + '">' + esc(d.notes) + '<span class="saved" contenteditable="false">' + esc(d.saved || 'Saved') + '</span></div></section>'
+      + '<section class="card"><div class="ch"><h3>Next steps</h3><span class="s" id="tdc">' + doneN + ' of ' + Math.max(asList(d.todos).length, asList(d.steps).length) + ' done</span></div><div class="todo" id="todo">' + todos + '</div></section>'
       + '<section class="card"><div class="ch"><h3>History</h3><span class="s">emails, meetings, files</span></div>'
       + '<div class="firsttouch">No contact yet. This bundle will be the first touch.</div>'
-      + '<div class="tl">' + hist + '</div></section></div></div>';
-    if (P().finishPaint) P().finishPaint(wrap);
-    markReady('spacesDesk');
+      + '<div class="tl">' + hist + '</div></section></div></div>'
+      + '<div class="pact"><span class="pst"><b id="pactN">' + esc(d.ready || (readyN + '/5')) + '</b> ready to send &middot; attach the docs and the link, approve the intro</span><div class="r">'
+      + '<button class="hb" data-action="space-drive" data-id="' + esc(d.id) + '">Move to Drive</button>'
+      + '<button class="hb" data-action="space-book" data-id="' + esc(d.id) + '">Book 20 min</button>'
+      + '<button class="hb" data-action="space-email" data-id="' + esc(d.id) + '">Email ' + esc(first) + '</button>'
+      + '<button class="hb pri" data-action="space-send" data-id="' + esc(d.id) + '"' + (gated ? ' disabled' : '') + '>Send bundle</button></div></div>'
+      + '<section class="bundle"><div class="ch"><h3>The bundle</h3><span class="s">what ' + esc(first) + ' receives &middot; builds as you add</span><span class="lnk" data-action="mail-compose">Open full composer</span></div>'
+      + '<div class="bgrid"><div class="bl"><div class="mail"><div class="row"><label>To</label><b>' + esc(d.to) + '</b></div><div class="row"><label>Subject</label><b contenteditable="true" data-action="space-subject">' + esc(d.subject) + '</b></div>'
+      + '<div class="bodyt" contenteditable="true" id="intro" data-action="space-intro">' + esc(d.intro) + '</div></div></div><div class="br">'
+      + '<div class="files" id="files">' + files + '</div>'
+      + (d.link ? '<div class="lk"><span class="fv" style="background:#0b1430">4</span><div><b>' + esc(d.link.host) + '</b><span>' + esc(d.link.label) + '</span></div><em class="lkadd" style="color:var(--blue);cursor:pointer" data-action="space-link" data-id="' + esc(d.id) + '">+ Add link</em></div>'
+        : '<div class="lk"><em class="lkadd" style="color:var(--blue);cursor:pointer" data-action="space-link" data-id="' + esc(d.id) + '">+ Add link</em></div>')
+      + '<div class="drop" data-action="space-docs" data-id="' + esc(d.id) + '">Drag files here from <b>Documents</b> or <b>Drive</b>, or paste a link</div>'
+      + '</div></div><div class="sendbar"><span class="via">Sends through <b>GoHighLevel</b> &middot; test copy to chad@4ormfinance.com first</span><div class="r"><button class="btn" data-action="space-send-test" data-id="' + esc(d.id) + '">Send me a test</button><button class="btn pri" data-action="space-send" data-id="' + esc(d.id) + '"' + (gated ? ' disabled' : '') + '>Send to ' + esc(first) + '</button></div></div></section></aside>');
   }
   function paintSpacesLive() {
     var wrap = wrapOf('spacesDesk');
     if (!wrap) return;
     var S = window.STATE || {};
-    if (spaceOpenWanted()) {
-      if (P().applyPageCss) P().applyPageCss(wrap, 'spaceOpen');
-      paintSpaceOpen(wrap);
-      return;
+    var panelOn = spaceOpenWanted();
+    if (panelOn && (!S.pkg || !S.pkg.id)) {
+      var seed = (F().spaces && F().spaces.open) || {};
+      S.pkg = { id: seed.id || 'neil', name: seed.name || 'Neil Mitchell', notes: seed.notes || '', docs: [], recipients: [] };
     }
-    if (P().applyPageCss) P().applyPageCss(wrap, 'work');
+    if (P().applyPageCss) P().applyPageCss(wrap, panelOn ? 'work+spaceOpen' : 'work');
+    wrap.classList.toggle('withpanel', !!panelOn);
     var view = S.spaceView || 'groups';
     var data = spacesData();
     var filterLabel = (!S.spaceFilter || S.spaceFilter === 'all') ? 'all' : S.spaceFilter;
@@ -738,7 +763,9 @@
       var na = NA[s[3]] || NA.docs;
       var id = esc(s[4] || ('fx-' + String(s[0] || 'space').replace(/\s+/g, '-')));
       var naAct = s[3] === 'ppl' ? 'space-people' : s[3] === 'send' ? 'space-send' : 'space-docs';
-      return '<div class="sp" data-action="space-open" data-id="' + id + '"><div class="top2"><span class="cat ' + g[1] + '">' + esc(g[0]) + '</span><span class="ms" title="More" data-action="space-menu" data-id="' + id + '">&middot;&middot;&middot;</span></div><h4>' + esc(s[0]) + '</h4><p>' + esc(s[1]) + '</p><div class="rd">' + ring(s[2]) + '<span class="nxa ' + na[0] + '" data-action="' + naAct + '" data-id="' + id + '">' + na[1] + '</span><span class="cnt wrap">' + (Number(s[5]) || 0) + ' files &middot; ' + (Number(s[6]) || 0) + ' links</span></div><div class="ft"><button class="op" data-action="space-open" data-id="' + id + '"' + (s[4] ? ' data-space="' + id + '"' : '') + '>Open</button><button class="dr" data-action="space-drive" data-id="' + id + '">Move to Drive</button></div></div>';
+      var openId = (S.pkg && S.pkg.id) || '';
+      var cur = (openId && String(s[4] || '') === String(openId)) || (panelOn && /Neil Mitchell/i.test(String(s[0] || '')));
+      return '<div class="sp' + (cur ? ' cur' : '') + '" data-action="space-open" data-id="' + id + '"><div class="top2"><span class="cat ' + g[1] + '">' + esc(g[0]) + '</span><span class="ms" title="More" data-action="space-menu" data-id="' + id + '">&middot;&middot;&middot;</span></div><h4>' + esc(s[0]) + '</h4><p>' + esc(s[1]) + '</p><div class="rd">' + ring(s[2]) + '<span class="nxa ' + na[0] + '" data-action="' + naAct + '" data-id="' + id + '">' + na[1] + '</span><span class="cnt wrap">' + (Number(s[5]) || 0) + ' files &middot; ' + (Number(s[6]) || 0) + ' links</span></div><div class="ft"><button class="op" data-action="space-open" data-id="' + id + '"' + (s[4] ? ' data-space="' + id + '"' : '') + '>Open</button><button class="dr" data-action="space-drive" data-id="' + id + '">Move to Drive</button></div></div>';
     }
     var groups = data.groups || [];
     if (S.spaceFilter && S.spaceFilter !== 'all') {
@@ -753,11 +780,21 @@
       wrap.innerHTML = bar
         + '<div id="groups">' + groups.map(function (g) {
           var shown = (g[3] || []).length, rest = g[2] - shown;
-          return '<div class="gh" data-action="space-collapse"><span class="car" data-action="space-collapse">&#9662;</span><b>' + esc(g[0]) + '</b><span class="c">' + g[2] + '</span><span class="ln"></span>' + (rest > 0 ? '<span class="lnk" data-action="space-show-all">Show all ' + g[2] + '</span>' : '') + '</div><div class="grid">'
+          return '<div class="gh" data-action="' + (panelOn ? 'space-back' : 'space-collapse') + '"><span class="car" data-action="space-collapse">&#9662;</span><b>' + esc(g[0]) + '</b><span class="c">' + g[2] + '</span><span class="ln"></span>' + (rest > 0 ? '<span class="lnk" data-action="space-show-all">Show all ' + g[2] + '</span>' : '') + '</div><div class="grid">'
             + (g[3] || []).map(function (s) { return cardHtml(g, s); }).join('')
             + (g[0] === 'General' ? '<div class="addcard" data-action="spaces-new">+ New space</div>' : '') + '</div>';
         }).join('') + '</div>'
         + menu;
+    }
+    if (panelOn) paintSpaceOpen(wrap);
+    if (!window.__spaceEscBound) {
+      window.__spaceEscBound = true;
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && window.STATE && window.STATE.pkg) {
+          window.STATE.pkg = null;
+          if (typeof window.paintRedesignSpaces === 'function') window.paintRedesignSpaces();
+        }
+      });
     }
     if (P().finishPaint) P().finishPaint(wrap);
     else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
@@ -866,7 +903,7 @@
       + '<div class="lay"><section class="card tree"><div class="lh">Categories <span class="lnk" data-action="link-cat-new">+ New</span></div>'
       + (data.tree || []).map(function (t) {
         var car = t.car === 'open' ? '&#9662;' : t.car === 'closed' ? '&#9656;' : '';
-        var cls = 'cr' + (t.on ? ' on' : '') + (t.indent === 2 ? ' sub2' : '') + (t.indent === 3 ? ' sub3' : '');
+        var cls = 'cr' + (t.on ? ' on' : '') + (t.kind === 'all' ? ' all' : '') + (t.indent === 2 ? ' sub2' : '') + (t.indent === 3 ? ' sub3' : '');
         var kind = t.kind || 'cat';
         var hv = t.noHv ? '' : '<span class="hv">'
           + (t.noSub ? '' : '<span data-action="link-sub" data-name="' + esc(t.parent || t.name) + '">+ sub</span>')
@@ -878,7 +915,7 @@
           : '<span class="car"></span>';
         return '<div class="' + cls + '" data-action="link-cat" data-kind="' + esc(kind) + '" data-name="' + esc(t.name) + '" data-parent="' + esc(t.parent || '') + '" data-sub="' + esc(t.sub || '') + '">' + carBtn + esc(t.name) + '<span class="n">' + t.n + '</span>' + hv + '</div>';
       }).join('')
-      + '<div class="exp" data-action="link-expand">Expand all</div></section>'
+      + '<div class="exp" data-action="link-expand">' + ((window.STATE && window.STATE.linkAllOpen) ? 'Collapse all' : 'Expand all') + '</div></section>'
       + '<section class="card"><div class="crumbs">Links &rsaquo; <b>' + esc(data.crumb || '') + '</b> &middot; ' + (data.crumbN || 0) + ' links</div>'
       + '<div class="add"><input data-action="link-title" placeholder="Title (optional - we\'ll read it from the site)"><input data-action="link-url" placeholder="Paste a link - https://"><button data-action="link-add">Add link</button></div>'
       + '<div class="wall" id="wall">' + (data.wall || []).map(function (w) {

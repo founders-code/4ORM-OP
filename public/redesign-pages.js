@@ -42,9 +42,9 @@
     + '.pick-row{display:flex;gap:10px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);font-size:13.5px}'
     + '.pick-row:first-child{border-top:0}';
   var CSS = {
-    room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=3', notes: '/port-css/notes.css?v=2',
-    contacts: '/port-css/pipeline.css', work: '/port-css/spaces.css?v=2', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css',
-    links: '/port-css/links.css', mail: '/port-css/email.css?v=2', mailPeople: '/port-css/email-people.css?v=1',
+    room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=4', notes: '/port-css/notes.css?v=2',
+    contacts: '/port-css/pipeline.css', work: '/port-css/spaces.css?v=4', spaceOpen: '/port-css/space-open.css?v=1', spacePanel: '/port-css/space-panel.css?v=1', docs: '/port-css/documents.css',
+    links: '/port-css/links.css?v=2', mail: '/port-css/email.css?v=2', mailPeople: '/port-css/email-people.css?v=1',
     playbook: '/port-css/playbook.css?v=2', calendar: '/port-css/calendar.css?v=3', zoom: '/port-css/zoom.css',
     completed: '/port-css/completed.css'
   };
@@ -111,7 +111,12 @@
   function applyPageCss(wrap, key) {
     var root = wrap && wrap.getRootNode ? wrap.getRootNode() : null;
     var style = root && root.querySelector ? root.querySelector('style') : null;
-    if (style && cssText[key] != null) style.textContent = TOKEN + cssText[key];
+    if (!style) return;
+    if (key === 'work+spaceOpen') {
+      style.textContent = TOKEN + (cssText.work || '') + '\n' + (cssText.spacePanel || '');
+      return;
+    }
+    if (cssText[key] != null) style.textContent = TOKEN + cssText[key];
   }
   function finishPaint(wrap) {
     var root = wrap && wrap.getRootNode ? wrap.getRootNode() : null;
@@ -746,12 +751,22 @@
     markReady('opsDash');
   }
 
+  function execSelecting() { return !!(window.STATE && window.STATE.execSelect); }
+  function execBar() {
+    if (!execSelecting()) return '';
+    var n = Object.keys((window.STATE && window.STATE.execPicked) || {}).length;
+    return '<div class="exec-bar"><button data-action="exec-bulk-drop">Delete ' + n + '</button><button data-action="exec-bulk-week">Move to Week</button><button data-action="exec-bulk-later">Move to Later</button><button data-action="exec-cancel">Cancel</button></div>';
+  }
   function warTask(it, dests, done) {
     var id = esc(it.id || '');
     var hv = done ? '' : '<div class="hv">' + dests.map(function (d) {
       return '<button data-action="task-move" data-id="' + id + '" data-bucket="' + d[0] + '">' + d[1] + '</button>';
     }).join('') + '</div>';
-    return '<div class="task' + (done ? ' d' : '') + '" draggable="true" data-action="task-drag" data-id="' + id + '"><span class="cb' + (done ? ' on' : '') + '" data-action="task-done" data-id="' + id + '"></span><div><div class="tt">' + esc(it.title) + '</div><div class="tg">' + esc(it.tag || '') + '</div></div>' + hv + '</div>';
+    var selecting = execSelecting() && !done && !fixtureOn();
+    var picked = selecting && window.STATE.execPicked && window.STATE.execPicked[it.id];
+    var pick = selecting ? '<input class="pick" type="checkbox" data-action="exec-pick" data-id="' + id + '"' + (picked ? ' checked' : '') + '>' : '';
+    var x = (done || fixtureOn()) ? '' : '<button class="x" data-action="task-drop" data-id="' + id + '" title="Remove">&times;</button>';
+    return '<div class="task' + (done ? ' d' : '') + '" draggable="true" data-action="task-drag" data-id="' + id + '">' + pick + '<span class="cb' + (done ? ' on' : '') + '" data-action="task-done" data-id="' + id + '"></span><div><div class="tt">' + esc(it.title) + '</div><div class="tg">' + esc(it.tag || '') + '</div></div>' + hv + x + '</div>';
   }
   function execCol(label, col, bucket, dests, done) {
     var tasks = (col && col.tasks) || [];
@@ -760,7 +775,8 @@
       : '<div class="empty">Nothing set for this ' + (label === 'This week' ? 'week' : 'column') + '.<br>Drag a task here or press +.</div>';
     var more = col && col.more ? '<div class="more2">+ ' + col.more + ' more</div>' : '';
     var plus = done ? '' : '<button class="plus" data-action="exec-add" data-bucket="' + bucket + '">+</button>';
-    return '<div class="col' + (done ? ' done' : '') + '" data-action="col-drop" data-bucket="' + bucket + '"><div class="colh"><b>' + label + '</b><span class="c">' + ((col && col.count) || 0) + '</span>' + plus + '</div>' + body + more + '</div>';
+    var sel = (done || fixtureOn()) ? '' : '<span class="sel" data-action="exec-select">' + (execSelecting() ? 'Selecting' : 'Select') + '</span>';
+    return '<div class="col' + (done ? ' done' : '') + '" data-action="col-drop" data-bucket="' + bucket + '"><div class="colh"><b>' + label + '</b><span class="c">' + ((col && col.count) || 0) + '</span>' + sel + plus + '</div>' + (done ? '' : execBar()) + body + more + '</div>';
   }
   function signalsHtml(data, open) {
     var sig = data.signals || {};
@@ -830,7 +846,8 @@
         return '<div class="mv2' + (m.one ? ' one' : '') + '"><span class="rk">' + (i + 1) + '</span><div><div class="mt">' + esc(m.title) + ' <span class="zn ' + m.zone + '">' + esc(m.zoneLabel) + '</span>' + (m.one ? '<span class="yo">Your one move</span>' : '') + '</div><div class="ms2">' + esc(m.why) + '</div><div class="src">' + esc(m.src) + '</div></div><div class="ma"><button class="do" data-action="move-do" data-id="' + esc(mid) + '">Do</button><button data-action="move-steps" data-id="' + esc(mid) + '"' + (wantOpen ? ' class="on-steps" style="background:#101a33;color:#fff"' : '') + '>Steps</button><button data-action="move-plan" data-id="' + esc(mid) + '" data-title="' + esc(m.title) + '">Plan</button><button class="x" data-action="move-dismiss" data-id="' + esc(mid) + '"' + (m.one ? ' title="Dismiss - the next move takes its place"' : '') + '>&times;</button></div>' + stp + '</div>';
       }).join('') + '</div></section>'
       + '<div class="rstack"><section class="card exec today">'
-      + '<div class="ch"><h3>Today</h3><span class="s">' + esc(today.count || (today.tasks || []).length) + ' on the desk &middot; drag to reorder</span><span class="lnk" style="margin-left:auto" data-action="exec-add" data-bucket="today">+ Add</span></div>'
+      + '<div class="ch"><h3>Today</h3><span class="s">' + esc(today.count || (today.tasks || []).length) + ' on the desk &middot; drag to reorder</span>' + (fixtureOn() ? '' : '<span class="sel" data-action="exec-select">' + (execSelecting() ? 'Selecting' : 'Select') + '</span>') + '<span class="lnk" style="margin-left:auto" data-action="exec-add" data-bucket="today">+ Add</span></div>'
+      + (fixtureOn() ? '' : execBar())
       + '<div class="tl" data-action="col-drop" data-bucket="today">' + todayBody + '</div>'
       + '<div class="foot"><span class="lnk" data-action="owed-review">' + esc(data.meetingActionTotal != null ? data.meetingActionTotal : 8) + ' owed from meetings &middot; review</span><span class="lnk" style="margin-left:auto" data-action="reach-pipe">Reach out &middot; ' + esc(data.reachToday != null ? data.reachToday : 4) + ' today &rsaquo;</span></div>'
       + '</section></div></div>'

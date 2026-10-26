@@ -33,7 +33,7 @@ nav.side .nav{
   letter-spacing:0!important;
   text-transform:none!important;
   color:#cfd8ee!important;
-  padding:8px 12px!important;
+  padding:8px 12px 8px 16px!important;
   border:0!important;
   border-bottom:0!important;
   border-radius:9px!important;
@@ -41,6 +41,8 @@ nav.side .nav{
   align-items:center!important;
   gap:11px!important;
 }
+nav.side .grp{font-size:13.5px!important;font-weight:850!important;color:#5b8cff!important;padding:16px 12px 6px!important;margin-top:6px;border-top:1px solid rgba(255,255,255,.08);letter-spacing:-.01em}
+nav.side .grp:first-child{border-top:none;margin-top:0;padding-top:4px!important}
 nav.side .nav.on{background:rgba(46,107,242,.22)!important;color:#fff!important}
 nav.side .nav .nl{font:inherit;color:inherit}
 html.fixture-mockup .arr-row,body.fixture-mockup .arr-row{display:none!important}

@@ -32,7 +32,9 @@
   function api(url, opts) {
     opts = opts || {};
     var headers = Object.assign({}, opts.headers || {});
-    if (opts.body && typeof opts.body !== 'string') {
+    if (opts.body && typeof FormData !== 'undefined' && opts.body instanceof FormData) {
+      opts = Object.assign({}, opts, { headers: headers });
+    } else if (opts.body && typeof opts.body !== 'string') {
       headers['content-type'] = headers['content-type'] || 'application/json';
       opts = Object.assign({}, opts, { body: JSON.stringify(opts.body), headers: headers });
     } else if (opts.headers) opts = Object.assign({}, opts, { headers: headers });
@@ -557,10 +559,71 @@
     'task-drop': function (el, root) {
       var id = attr(el, 'data-id');
       if (!id) return;
-      return softDrop(id).then(function () {
+      var task = el.closest && el.closest('.task');
+      var tag = task && task.querySelector('.tg');
+      var fromZoom = tag && /from Zoom/i.test(tag.textContent || '');
+      var hide = function () {
+        return softDrop(id).then(function () {
+          refresh('war');
+          toast(root, 'Removed', function () { patchItem(id, { status: 'new' }).then(function () { refresh('war'); }); });
+        });
+      };
+      if (fromZoom) {
+        return api('/api/meeting-actions', { method: 'POST', body: { id: id, status: 'handled' } }).then(ok).then(json).then(function (d) {
+          if (d && d.actions) S().meetingActions = d.actions;
+          return hide();
+        }).catch(function () { toast(root, 'Could not hide that task'); });
+      }
+      return hide().catch(function () { toast(root, 'Could not hide that task'); });
+    },
+    'exec-select': function () {
+      S().execSelect = !S().execSelect;
+      if (!S().execSelect) S().execPicked = {};
+      refresh('war');
+    },
+    'exec-pick': function (el) {
+      var id = attr(el, 'data-id');
+      if (!id) return;
+      S().execPicked = S().execPicked || {};
+      if (el.checked) S().execPicked[id] = true;
+      else delete S().execPicked[id];
+      refresh('war');
+    },
+    'exec-cancel': function () {
+      S().execSelect = false;
+      S().execPicked = {};
+      refresh('war');
+    },
+    'exec-bulk-drop': function (el, root) {
+      var ids = Object.keys(S().execPicked || {});
+      if (!ids.length) return;
+      var n = ids.length;
+      Promise.all(ids.map(function (id) {
+        var task = root.querySelector('.task[data-id="' + id + '"]');
+        var tag = task && task.querySelector('.tg');
+        var fromZoom = tag && /from Zoom/i.test(tag.textContent || '');
+        var req = fromZoom ? api('/api/meeting-actions', { method: 'POST', body: { id: id, status: 'handled' } }) : Promise.resolve();
+        return req.then(function () { return softDrop(id); });
+      })).then(function () {
+        S().execSelect = false;
+        S().execPicked = {};
         refresh('war');
-        toast(root, 'Hidden from the board', function () { patchItem(id, { status: 'new' }).then(function () { refresh('war'); }); });
-      }).catch(function () { toast(root, 'Could not hide that task'); });
+        toast(root, 'Deleted ' + n, function () {
+          Promise.all(ids.map(function (id) { return patchItem(id, { status: 'new' }); })).then(function () { refresh('war'); });
+        });
+      }).catch(function () { toast(root, 'Could not delete those tasks'); });
+    },
+    'exec-bulk-week': function (el, root) {
+      var ids = Object.keys(S().execPicked || {});
+      Promise.all(ids.map(function (id) { return patchItem(id, { column: 'week' }); })).then(function () {
+        S().execSelect = false; S().execPicked = {}; refresh('war'); toast(root, 'Moved to Week');
+      }).catch(function () { toast(root, 'Could not move those tasks'); });
+    },
+    'exec-bulk-later': function (el, root) {
+      var ids = Object.keys(S().execPicked || {});
+      Promise.all(ids.map(function (id) { return patchItem(id, { column: 'later' }); })).then(function () {
+        S().execSelect = false; S().execPicked = {}; refresh('war'); toast(root, 'Moved to Later');
+      }).catch(function () { toast(root, 'Could not move those tasks'); });
     },
     'open-need': function (el) {
       var view = attr(el, 'data-view') || 'war';
@@ -854,7 +917,11 @@
       var kind = attr(el, 'data-kind') || 'cat';
       var parent = attr(el, 'data-parent') || '';
       var sub = attr(el, 'data-sub') || '';
-      if (kind === 'sub') {
+      if (kind === 'all' || name === 'All links') {
+        S().cat = '';
+        S().sub = '';
+        S().leaf = '';
+      } else if (kind === 'sub') {
         S().cat = parent || name;
         S().sub = name;
         S().leaf = '';
@@ -1027,6 +1094,15 @@
       }).catch(function () { toast(root, 'Could not hide that link'); });
     },
     'link-expand': function (el, root) {
+      var collapsing = !!(S().linkAllOpen);
+      if (collapsing) {
+        S().linkOpen = [];
+        S().linkAllOpen = false;
+        try { localStorage.setItem('cr_link_open', '[]'); } catch (e) {}
+        refresh('links');
+        toast(root, 'Categories collapsed');
+        return;
+      }
       var open = [];
       (S().categories || []).forEach(function (c) {
         open.push(c.name);
@@ -1036,6 +1112,7 @@
         (window.REDESIGN_FIXTURE.links.tree || []).forEach(function (t) { if (t.name) open.push(t.name); });
       }
       S().linkOpen = open;
+      S().linkAllOpen = true;
       try { localStorage.setItem('cr_link_open', JSON.stringify(open)); } catch (e) {}
       refresh('links');
       toast(root, 'All categories expanded');
@@ -1417,11 +1494,58 @@
         cal.openPop({ d: d, s: s, e: s + 20 / 60, t: '20 min', c: 'meet', isNew: true, ppl: [], loc: [], links: [], docs: [] }, 620, 220);
       }, 500);
     },
-    'space-send-test': function (el, root) { toast(root, 'Test copy queued to chad@4ormfinance.com'); },
+    'space-send-test': function (el, root) {
+      var id = attr(el, 'data-id') || (S().pkg && S().pkg.id);
+      if (!id) return;
+      if (!writeOk()) {
+        try {
+          var m = JSON.parse(localStorage.getItem('cr_space_test') || '{}');
+          m[id] = Date.now();
+          localStorage.setItem('cr_space_test', JSON.stringify(m));
+        } catch (e) {}
+        refresh('spaces');
+        toast(root, 'Test copy queued to chad@4ormfinance.com');
+        return;
+      }
+      api('/api/spaces/' + encodeURIComponent(id), { method: 'POST', body: { action: 'send-ghl', test: true, to: 'chad@4ormfinance.com' } }).then(ok).then(json).then(function (d) {
+        if (d && d.sent) {
+          try {
+            var map = JSON.parse(localStorage.getItem('cr_space_test') || '{}');
+            map[id] = Date.now();
+            localStorage.setItem('cr_space_test', JSON.stringify(map));
+          } catch (e) {}
+          refresh('spaces');
+          toast(root, 'Test sent to chad@4ormfinance.com');
+        } else toast(root, (d && d.note) || 'Test did not send');
+      }).catch(function () { toast(root, 'Could not send the test'); });
+    },
     'space-rewrite': function (el, root) { toast(root, '4orm Intelligence will rewrite the angle'); },
-    'space-prev': function (el, root) { toast(root, 'Previous space'); },
-    'space-next': function (el, root) { toast(root, 'Next space'); },
-    'space-todo-toggle': function (el) { if (el && el.classList) el.classList.toggle('d'); },
+    'space-prev': function () {
+      var packs = S().packages || [];
+      var id = S().pkg && S().pkg.id;
+      var i = packs.map(function (p) { return String(p.id); }).indexOf(String(id));
+      if (i > 0) S().pkg = packs[i - 1];
+      refresh('spaces');
+    },
+    'space-next': function () {
+      var packs = S().packages || [];
+      var id = S().pkg && S().pkg.id;
+      var i = packs.map(function (p) { return String(p.id); }).indexOf(String(id));
+      if (i >= 0 && i < packs.length - 1) S().pkg = packs[i + 1];
+      refresh('spaces');
+    },
+    'space-todo-toggle': function (el) {
+      if (el && el.classList) el.classList.toggle('d');
+      var id = attr(el, 'data-id') || (S().pkg && S().pkg.id);
+      if (!id) return;
+      var root = el.getRootNode && el.getRootNode();
+      var rows = root && root.querySelectorAll ? root.querySelectorAll('.todo .td') : [];
+      var steps = [];
+      Array.prototype.forEach.call(rows, function (row) {
+        steps.push({ d: row.classList.contains('d'), t: (row.querySelector('span') && row.querySelector('span').textContent) || '' });
+      });
+      try { localStorage.setItem('cr_space_steps_' + id, JSON.stringify(steps)); } catch (e) {}
+    },
     'space-hook': function (el, root) { toast(root, (el.textContent || '').trim() || 'Hook'); },
     'space-angle': function () {},
     'space-subject': function () {},
@@ -1455,10 +1579,14 @@
         toast(root, input.files.length + ' file' + (input.files.length === 1 ? '' : 's') + ' staged');
         if (!id || !writeOk() || !/^[0-9a-f-]{36}$/i.test(String(id))) return;
         Array.prototype.forEach.call(input.files, function (f) {
-          api('/api/spaces/' + encodeURIComponent(id), { method: 'POST', body: { action: 'add-doc', name: f.name, mime: f.type || '', url: '' } }).then(ok).then(json).then(function (d) {
+          var fd = new FormData();
+          fd.append('file', f);
+          fd.append('name', f.name);
+          fd.append('mime', f.type || '');
+          api('/api/spaces/' + encodeURIComponent(id) + '/upload', { method: 'POST', body: fd }).then(ok).then(json).then(function (d) {
             S().pkg = d.package || d || S().pkg;
             refresh('spaces');
-          }).catch(function () {});
+          }).catch(function () { toast(root, 'Could not attach ' + f.name); });
         });
       };
       input.click();
@@ -1478,6 +1606,9 @@
     'space-send': function (el, root) {
       var id = attr(el, 'data-id') || (S().pkg && S().pkg.id);
       if (!id) return;
+      var gated = true;
+      try { gated = !(JSON.parse(localStorage.getItem('cr_space_test') || '{}')[id]); } catch (e) {}
+      if (gated) { toast(root, 'Send a test to chad@4ormfinance.com first'); return; }
       if (!window.confirm('Send this Space via GoHighLevel? Nothing goes out until you confirm.')) return;
       if (!writeOk()) { toast(root, 'Send (fixture)'); return; }
       api('/api/spaces/' + encodeURIComponent(id), { method: 'POST', body: { action: 'send-ghl' } }).then(ok).then(json).then(function (d) {

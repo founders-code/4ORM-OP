@@ -326,6 +326,73 @@ async function productionStep1(browser) {
   }, { id: linkId, note: 'TEST link note ' + stamp });
   if (!pushLive(rows, 'Links', 'Links note', { dom: linkNote.clicked && !!linkId, net: linkCreate.status < 300 && (linkNet || linkPersist), persist: linkPersist })) failed = true;
 
+  const menu = await live.evaluate(() => {
+    const labels = Array.from(document.querySelectorAll('nav.side .nav .nl, nav.side .nav')).map((n) => (n.querySelector && n.querySelector('.nl') ? n.querySelector('.nl').textContent : n.textContent) || '').map((s) => s.trim()).filter(Boolean);
+    const want = ['Playbook', 'War Room', 'Calendar', 'Email', 'Contacts', 'Spaces', 'Pipeline', 'Notes', 'Documents', 'Drive', 'Links', 'Zoom', 'Completed', 'News', 'Financials', 'Integrations'];
+    const idx = want.map((w) => labels.findIndex((l) => l.indexOf(w) >= 0));
+    const ordered = idx.every((n, i) => n >= 0 && (i === 0 || n > idx[i - 1]));
+    const grp = document.querySelector('nav.side .grp');
+    const cs = grp ? getComputedStyle(grp) : {};
+    const blue = cs.color === 'rgb(91, 140, 255)' || /5b8cff/i.test(cs.color || '');
+    document.querySelectorAll('nav.side .nav').forEach((n) => n.click());
+    return { ordered, blue, labels: labels.slice(0, 20).join('|') };
+  });
+  if (!pushLive(rows, 'Menu', 'Order + blue headings', { dom: menu.ordered && menu.blue, net: true, persist: true, extra: menu.labels })) failed = true;
+
+  await readyWar();
+  const delTitle = 'TEST drop ' + stamp;
+  await live.evaluate(async (title) => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    const input = root.querySelector('[data-action="capture-input"]');
+    const add = root.querySelector('[data-action="capture-add"]');
+    if (input) { input.value = title; input.dispatchEvent(new Event('input', { bubbles: true })); }
+    if (add) add.click();
+  }, delTitle);
+  await live.waitForTimeout(600);
+  const xClick = await live.evaluate((title) => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    const task = Array.from(root.querySelectorAll('.exec.today .task')).filter((n) => (n.textContent || '').indexOf(title) >= 0)[0];
+    const x = task && task.querySelector('[data-action="task-drop"]');
+    if (x) x.click();
+    return !!x;
+  }, delTitle);
+  await live.waitForTimeout(400);
+  await live.reload({ waitUntil: 'domcontentloaded' });
+  await live.waitForSelector('#warDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  const xGone = await live.evaluate((title) => {
+    const items = ((window.STATE && window.STATE.items) || []).filter((it) => it.status !== 'dropped');
+    return !items.some((it) => String(it.title || '') === title);
+  }, delTitle);
+  if (!pushLive(rows, 'War Room', 'Today × persist', { dom: xClick, net: true, persist: xGone })) failed = true;
+
+  const pb = await liveApi(live, '/api/playbook', 'GET');
+  await readyView('/playbook', '#playDesk');
+  const playUi = await live.evaluate((apiToday) => {
+    const root = document.getElementById('playDesk').shadowRoot;
+    const todayCol = root.querySelector('.dh.today small') || root.querySelector('#fri small');
+    const dayN = todayCol ? Number(String(todayCol.textContent || '').trim()) : 0;
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', day: 'numeric' }).formatToParts(new Date());
+    const van = Number((parts.filter((p) => p.type === 'day')[0] || {}).value || 0);
+    const rows = root.querySelectorAll('.track').length;
+    const sample = /TODAY Mon 19|WEEK 43 · OCT 19/.test(root.textContent || '');
+    return { dayN, van, rows, sample, apiToday };
+  }, pb.json && pb.json.today);
+  const playOk = playUi.dayN === playUi.van && playUi.rows > 0 && !playUi.sample && pb.status < 300;
+  if (!pushLive(rows, 'Playbook', 'Vancouver date + rows', { dom: playOk, net: pb.status < 300, persist: playOk, extra: 'api=' + (pb.json && pb.json.today) + ' col=' + playUi.dayN + ' rows=' + playUi.rows })) failed = true;
+
+  await readyView('/links', '#linksDesk');
+  const linksAll = await live.evaluate(() => {
+    const root = document.getElementById('linksDesk').shadowRoot;
+    const first = root.querySelector('.tree .cr');
+    const all = first && /All links/i.test(first.textContent || '');
+    const exp = root.querySelector('[data-action="link-expand"]');
+    const before = exp && exp.textContent;
+    if (exp) exp.click();
+    const after = (root.querySelector('[data-action="link-expand"]') || {}).textContent;
+    return { all, toggled: before === 'Expand all' && after === 'Collapse all' };
+  });
+  if (!pushLive(rows, 'Links', 'All links + toggle', { dom: linksAll.all && linksAll.toggled, net: true, persist: true })) failed = true;
+
   const cleaned = await cleanupTestRecords(live);
   await live.reload({ waitUntil: 'domcontentloaded' });
   await live.waitForSelector('#warDesk[data-port-ready], #notesDesk[data-port-ready], #linksDesk[data-port-ready]', { timeout: 20000, state: 'attached' }).catch(() => {});
@@ -390,6 +457,21 @@ async function productionStep2(browser) {
     return !!(root.querySelector('.space-detail') || root.querySelector('.hero') || root.getElementById('spaceOv'));
   }, spaceId);
   if (!pushLive(rows, 'Spaces', 'Open', { dom: spaceOpen && spaceCreate.status < 300, net: spaceCreate.status < 300, persist: !!spaceId })) failed = true;
+
+  const panel = await live.evaluate(() => {
+    const root = document.getElementById('spacesDesk').shadowRoot;
+    const panelEl = root.querySelector('.spanel');
+    const scrim = root.querySelector('.sscrim');
+    const overlay = scrim && getComputedStyle(scrim).display !== 'none';
+    const w = panelEl ? panelEl.getBoundingClientRect().width : 0;
+    const list = root.querySelector('.sp.on') || root.querySelector('.grid .sp');
+    const send = root.querySelector('[data-action="space-send"]');
+    const gated = !!(send && send.hasAttribute('disabled'));
+    const bundle = !!root.querySelector('.bundle');
+    const pact = !!root.querySelector('.pact');
+    return { w, overlay: !!overlay, gated, bundle, pact, list: !!list };
+  });
+  if (!pushLive(rows, 'Spaces', '05c panel beside list', { dom: panel.w >= 880 && !panel.overlay && panel.bundle && panel.pact && panel.list && panel.gated, net: true, persist: true, extra: 'w=' + Math.round(panel.w) })) failed = true;
 
   await readyView('/documents', '#docsDesk');
   const docsList = await live.evaluate(async () => {

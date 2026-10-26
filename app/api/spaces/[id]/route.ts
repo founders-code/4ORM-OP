@@ -135,6 +135,8 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
       const sent = await sendSpaceGhl(sql, session.userId, id, {
         docs: body.includeDocs !== false,
         links: body.includeLinks !== false,
+        test: body.test === true,
+        to: String(body.to || ''),
       });
       return NextResponse.json(sent || { sent: false, note: 'GoHighLevel did not send that.', package: existing });
     }

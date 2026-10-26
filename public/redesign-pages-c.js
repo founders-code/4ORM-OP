@@ -145,6 +145,24 @@
       return { day: day, due: due, state: st, value: prev.value || '' };
     });
   }
+  function vancouverTodayIso() {
+    var parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+    function g(t) {
+      for (var i = 0; i < parts.length; i++) if (parts[i].type === t) return parts[i].value;
+      return '';
+    }
+    return g('year') + '-' + g('month') + '-' + g('day');
+  }
+  function vancouverWeekDays() {
+    var today = vancouverTodayIso();
+    var p = today.split('-').map(Number);
+    var utc = Date.UTC(p[0], p[1] - 1, p[2]);
+    var dow = new Date(utc).getUTCDay();
+    var monday = utc - ((dow + 6) % 7) * 86400000;
+    var days = [];
+    for (var i = 0; i < 7; i++) days.push(new Date(monday + i * 86400000).toISOString().slice(0, 10));
+    return days;
+  }
   function livePlaybookState() {
     var pb = (window.STATE || {}).playbook || {};
     var days = asList(pb.days);
@@ -155,10 +173,17 @@
       var m = String(d).match(/(\d{4})-(\d{2})-(\d{2})/);
       return m ? Number(m[3]) : Number(String(d).slice(8));
     });
-    while (dates.length < 7) dates.push(dates.length ? dates[dates.length - 1] + 1 : 19);
-    if (!days.length) {
-      days = dates.map(function (n, i) { return '2026-10-' + String(n).padStart(2, '0'); });
+    if (!days.length || !today) {
+      days = vancouverWeekDays();
+      today = vancouverTodayIso();
+      todayIdx = days.indexOf(today);
+      if (todayIdx < 0) todayIdx = 0;
+      dates = days.map(function (d) {
+        var m = String(d).match(/(\d{4})-(\d{2})-(\d{2})/);
+        return m ? Number(m[3]) : 0;
+      });
     }
+    while (dates.length < 7) dates.push((dates[dates.length - 1] || 1) + 1);
     var apiRows = asList(pb.rows);
     var rows = [];
     var weekly = false;
@@ -185,10 +210,10 @@
   }
 
   function mountPlaybook(root, wrap, data) {
-    var srcRows = data.rows && data.rows.length ? data.rows : (data.live ? [] : PB_ROWS);
+    var srcRows = data.rows && data.rows.length ? data.rows : ((data.live || data.error) ? [] : PB_ROWS);
     if (data.error) srcRows = [];
     var rows = srcRows.map(function (r) { return r.s ? r : Object.assign({}, r, { d: (r.d || []).slice(), lab: (r.lab || []).slice() }); });
-    var dates = data.dates || [19, 20, 21, 22, 23, 24, 25];
+    var dates = data.dates && data.dates.length ? data.dates : (data.live ? vancouverWeekDays().map(function (d) { return Number(String(d).slice(8)); }) : [19, 20, 21, 22, 23, 24, 25]);
     var todayIdx = data.todayIdx == null ? 0 : data.todayIdx;
     var document = root;
     function gid(id) { return root.getElementById(id); }
@@ -420,9 +445,13 @@
   function paintPlaybookLive() {
     var wrap = wrapOf('playDesk');
     if (!wrap) { markReady('playDesk'); return; }
+    if (!fixtureOn() && !(window.STATE || {}).playbook && !(window.STATE || {}).playbookError) {
+      if (window.__portLoadC) window.__portLoadC('playbook');
+      return;
+    }
     var data = playbookData();
     if (!fixtureOn() && ((window.STATE || {}).playbookError || data.error)) {
-      wrap.innerHTML = '<div class="bar"><h1>Playbook</h1></div><div class="card" style="padding:28px 24px"><p>Couldn\'t load, retry</p><p><span class="lnk" data-action="play-retry">Retry</span></p></div>';
+      wrap.innerHTML = '<div class="bar"><h1>Playbook</h1></div><div class="card" style="padding:28px 24px"><p>Couldn\'t load &mdash; Retry</p><p><span class="lnk" data-action="play-retry">Retry</span></p></div>';
       if (P().finishPaint) P().finishPaint(wrap);
       markReady('playDesk');
       return;
@@ -868,6 +897,7 @@
         if (!r || !r.ok) throw new Error('playbook');
         return r.json();
       }).then(function (d) {
+        if (d && d.error) throw new Error(String(d.error));
         if (window.STATE) {
           window.STATE.playbook = d;
           window.STATE.playbookError = false;

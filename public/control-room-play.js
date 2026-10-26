@@ -337,7 +337,10 @@
     authFetch('/api/playbook', { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
       .then(function (d) { fromApi(d); render(); monthStack(); })
-      .catch(function () { fromApi(desk); render(); });
+      .catch(function () {
+        var host = document.getElementById('playDesk') || document.getElementById('g');
+        if (host) host.innerHTML = '<div class="card" style="padding:28px 24px"><p>Couldn\'t load &mdash; Retry</p></div>';
+      });
   }
   window.loadPlaybook = loadPlaybook;
 })();

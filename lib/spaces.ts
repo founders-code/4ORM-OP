@@ -456,10 +456,20 @@ async function rememberOpportunity(sql: Sql, ownerId: string, id: string, stage:
 
 const SIGN_OFF = '\n\nChad Johnston\n4orm Finance\nchad@4ormfinance.com';
 
-export async function sendSpaceGhl(sql: Sql, ownerId: string, spaceId: string, flags: { docs?: boolean; links?: boolean }) {
+export async function sendSpaceGhl(sql: Sql, ownerId: string, spaceId: string, flags: { docs?: boolean; links?: boolean; test?: boolean; to?: string }) {
   const current = await readSpace(sql, ownerId, spaceId);
   if (!current) return { sent: false, note: 'That space could not be read.' };
   if (!ghlConfigured()) return { sent: false, note: 'GoHighLevel is not connected. The email stays here.', package: current };
+  if (flags.test) {
+    const email = 'chad@4ormfinance.com';
+    const contactId = await ensureGhlContact({ name: 'Chad Johnston', email, company: '4orm' });
+    const subject = `[TEST] ${current.emailSubject || current.name}`;
+    let body = fillToken(current.emailBody || current.name, { name: 'Chad', email });
+    if (!body.includes('chad@4ormfinance.com')) body += SIGN_OFF;
+    const html = body.slice(0, 8000).replaceAll('\n', '<br>');
+    const ok = contactId ? await sendViaGhl({ contactId, email, subject, html }) : false;
+    return { sent: !!ok, test: true, note: ok ? 'Test sent to chad@4ormfinance.com' : 'GoHighLevel did not send the test.', package: current };
+  }
   const people = current.recipients.filter((person) => person.listed !== false && person.email);
   if (!people.length) return { sent: false, note: 'Add a recipient with an email before sending.', package: current };
   const includeDocs = flags.docs !== false;
