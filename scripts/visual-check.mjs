@@ -38,6 +38,9 @@ const PAGES = [
   { page: '15-recordings', design: 'redesign/15-recordings.html', live: 'control-room.html?view=rec&fixture=mockup', ready: '#recDesk[data-port-ready]', wait: 600 },
   { page: '05e-spaces-cards', design: 'redesign/05e-spaces-cards.html', live: 'control-room.html?view=work&fixture=mockup&cards=1', ready: '#spacesDesk[data-port-ready]', wait: 600 },
   { page: '05f-spaces-card-open', design: 'redesign/05f-spaces-card-open.html', live: 'control-room.html?view=work&fixture=mockup&space=open', ready: '#spacesDesk[data-port-ready]', wait: 800 },
+  { page: '18-timeline', design: 'redesign/18-timeline.html', live: 'control-room.html?view=planner&fixture=mockup', ready: '#warDesk[data-port-ready]', wait: 800 },
+  { page: '18b-timeline-item-open', design: 'redesign/18b-timeline-item-open.html', live: 'control-room.html?view=planner&fixture=mockup&state=item', ready: '#warDesk[data-port-ready]', wait: 800 },
+  { page: '18c-timeline-milestone-open', design: 'redesign/18c-timeline-milestone-open.html', live: 'control-room.html?view=planner&fixture=mockup&state=milestone', ready: '#warDesk[data-port-ready]', wait: 800 },
 ];
 const INTER = '<link rel="preconnect" href="https://fonts.googleapis.com"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>';
 
@@ -59,7 +62,7 @@ function serve() {
       const url = new URL(req.url, 'http://127.0.0.1');
       let pathName = decodeURIComponent(url.pathname);
       if (pathName === '/') pathName = '/index.html';
-      if (pathName === '/control-room' || pathName === '/war-room' || pathName === '/notes' || pathName === '/pipeline' || pathName === '/spaces' || pathName === '/documents' || pathName === '/links' || pathName === '/email' || pathName === '/email-board' || pathName === '/playbook' || pathName === '/calendar' || pathName === '/zoom' || pathName === '/completed') {
+      if (pathName === '/control-room' || pathName === '/war-room' || pathName === '/planner' || pathName === '/timeline' || pathName === '/notes' || pathName === '/pipeline' || pathName === '/spaces' || pathName === '/documents' || pathName === '/links' || pathName === '/email' || pathName === '/email-board' || pathName === '/playbook' || pathName === '/calendar' || pathName === '/zoom' || pathName === '/completed') {
         pathName = '/control-room.html';
       }
       const tries = [];
@@ -192,6 +195,37 @@ async function main() {
       overflow1280.push({ page: spec.page, live: live1280 ? 'yes' : 'no', design: design1280 ? 'yes' : 'no' });
       console.log(`${spec.page.padEnd(16)} ${p.toFixed(3)}%  overflow1440=${overflow ? 'yes' : 'no'}  overflow1280=${live1280 ? 'yes' : 'no'}  ${ok ? 'PASS' : 'FAIL'}  (${n}/${total})`);
     }
+    const page = await context.newPage();
+    async function docsFrame(url) {
+      await page.goto(`http://127.0.0.1:${port}/${url}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      await page.waitForSelector('#docsDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+      await page.waitForTimeout(400);
+      await page.evaluate(() => {
+        const root = document.getElementById('docsDesk') && document.getElementById('docsDesk').shadowRoot;
+        if (!root) return;
+        root.querySelectorAll('.files').forEach((el) => { el.innerHTML = ''; });
+        root.querySelectorAll('[data-action="docs-source"]').forEach((el) => { el.classList.remove('on'); });
+      });
+      return page.screenshot({ type: 'png', fullPage: false });
+    }
+    const localBuf = await docsFrame('control-room.html?view=docs&fixture=mockup');
+    const driveBuf = await docsFrame('control-room.html?view=docs&fixture=mockup&source=drive');
+    await page.close();
+    const loc = PNG.sync.read(localBuf);
+    const drv = PNG.sync.read(driveBuf);
+    const fw = Math.min(loc.width, drv.width);
+    const fh = Math.min(loc.height, drv.height);
+    const fa = new PNG({ width: fw, height: fh });
+    const fb = new PNG({ width: fw, height: fh });
+    PNG.bitblt(loc, fa, 0, 0, fw, fh, 0, 0);
+    PNG.bitblt(drv, fb, 0, 0, fw, fh, 0, 0);
+    const fdiff = new PNG({ width: fw, height: fh });
+    const fn = pixelmatch(fa.data, fb.data, fdiff.data, fw, fh, { threshold: 0.2 });
+    const fp = pct(fn, fw * fh);
+    const frameOk = fp <= 0;
+    if (!frameOk) failed += 1;
+    rows.push({ page: 'documents-local-drive-frame', pct: fp, pass: frameOk, pixels: fn, total: fw * fh, overflow: 'no' });
+    console.log(`documents-frame  ${fp.toFixed(3)}%  ${frameOk ? 'PASS' : 'FAIL'}  (${fn}/${fw * fh})`);
   } finally {
     await browser.close();
     server.close();

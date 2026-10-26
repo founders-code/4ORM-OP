@@ -17,6 +17,9 @@
   function ageLabel(ms) { return P().ageLabel ? P().ageLabel(ms) : ''; }
 
   var C6 = ['#2e6bf2', '#12a36a', '#c98408', '#6b4fd8', '#e0364f', '#0f9fb5'];
+  function pipeTitle(s) {
+    return String(s || '').toLowerCase().replace(/(^|[\s\-/&])([a-z])/g, function (_, a, b) { return a + b.toUpperCase(); });
+  }
   var NA = { docs: ['na-docs', 'Add docs'], send: ['na-send', 'Send today'], ppl: ['na-ppl', 'Add people'] };
   var CAT_CLS = { General: 'c-gen', 'Venture Capital': 'c-vc', Business: 'c-bus', Regulators: 'c-reg' };
   /* Built-in classifier keys the server seeds. They are never shown as user columns. */
@@ -174,7 +177,7 @@
     var S = window.STATE || {};
     var pipes = asList(S.ghlPipes).map(function (p) {
       var n = (p.stages || []).reduce(function (a, s) { return a + (Number(s.count) || 0); }, 0);
-      return { id: p.id, name: p.name || 'Pipeline', n: n, stages: p.stages || [] };
+      return { id: p.id, name: pipeTitle(p.name || 'Pipeline'), n: n, stages: p.stages || [], rawName: p.name || 'Pipeline' };
     }).sort(function (a, b) { return b.n - a.n; });
     var sel = pipes.filter(function (p) { return p.id === S.ghlPipe; })[0] || pipes[0] || null;
     var allPills = pipes.map(function (p, i) {
@@ -185,7 +188,7 @@
     var funnel = stages.map(function (s) { return [s.name || s.s || 'Stage', Number(s.count != null ? s.count : s.v) || 0]; });
     if (!funnel.length) funnel = [['Storage', 0]];
     var contacts = asList(S.contacts);
-    var needs = buildNeeds(S, contacts);
+    var needs = buildNeeds(S, contacts, sel);
     var cats = {};
     contacts.forEach(function (c) {
       var cat = normCat(c.category || c.type || 'Other');
@@ -196,25 +199,43 @@
       cats[cat][ix] += 1;
     });
     var matrix = Object.keys(cats).slice(0, 6).map(function (cat) { return { cat: cat, cells: cats[cat] }; });
-    var rowsSrc = contacts.slice();
+    var inPipe = {};
+    var rowsSrc = [];
+    asList(sel && sel.stages).forEach(function (st) {
+      asList(st.opps).forEach(function (o) {
+        var email = String(o.email || '').toLowerCase();
+        if (email) inPipe[email] = 1;
+        var c = contacts.filter(function (x) { return email && String(x.email || '').toLowerCase() === email; })[0] || {};
+        rowsSrc.push({
+          name: o.contact || o.name || c.name || 'Person',
+          company: o.company || c.company || '',
+          category: c.category || c.type || '',
+          stage: st.name || o.stage || 'Storage',
+          lastTouch: o.updatedAt || c.lastTouch || c.last_touch,
+          nextAction: c.nextAction || c.next_action || '',
+          id: o.id || c.id || '',
+          email: o.email || c.email || ''
+        });
+      });
+    });
     if (S.ghlStage) {
-      rowsSrc = rowsSrc.filter(function (c) { return String(c.ghlStage || c.stage || '') === String(S.ghlStage); });
+      rowsSrc = rowsSrc.filter(function (c) { return String(c.stage || '') === String(S.ghlStage); });
     }
     if (S.pipeType && S.pipeType !== 'all') {
-      rowsSrc = rowsSrc.filter(function (c) { return normCat(c.category || c.type || '') === S.pipeType; });
+      rowsSrc = rowsSrc.filter(function (c) { return normCat(c.category || '') === S.pipeType; });
     }
     if (S.pipeMatrix && S.pipeMatrix.cat) {
-      rowsSrc = rowsSrc.filter(function (c) { return normCat(c.category || c.type || '') === S.pipeMatrix.cat; });
+      rowsSrc = rowsSrc.filter(function (c) { return normCat(c.category || '') === S.pipeMatrix.cat; });
     }
     var pq = String(S.pipeQ || '').trim().toLowerCase();
     if (pq) {
       rowsSrc = rowsSrc.filter(function (c) { return ((c.name || '') + ' ' + (c.company || '') + ' ' + (c.email || '')).toLowerCase().indexOf(pq) >= 0; });
     }
     var rows = (S.pipeAllRows ? rowsSrc : rowsSrc.slice(0, 8)).map(function (c) {
-      var days = daysAgo(c.lastTouch || c.last_touch);
-      var stage = c.ghlStage || c.stage || 'Storage';
+      var days = daysAgo(c.lastTouch);
+      var stage = pipeTitle(c.stage || 'Storage');
       var warm = days <= 3 ? 'hot' : days <= 10 ? 'warm' : days >= 14 ? 'cold' : '';
-      return [c.name || 'Person', c.company || '', normCat(c.category || c.type || ''), stage, warm, (days >= 99 ? '—' : days + 'd'), c.nextAction || c.next_action || 'Follow up', c.id || '', c.email || ''];
+      return [c.name || 'Person', c.company || '', normCat(c.category || ''), stage, warm, (days >= 99 ? '—' : days + 'd'), c.nextAction || 'Follow up', c.id || '', c.email || ''];
     });
     liveLog('pipeline', { pipes: pipes.length, contacts: contacts.length, funnel: funnel.length, rows: rows.length });
     return {
@@ -234,7 +255,7 @@
         return { text: (c.name || 'Contact') + ' — ' + (c.nextAction || c.stage || 'updated'), when: (daysAgo(c.lastTouch || c.last_touch) >= 99 ? '—' : daysAgo(c.lastTouch || c.last_touch) + 'd'), tone: '' };
       }),
       storageHead: (sel ? sel.n : contacts.length) ? ((funnel[0] && funnel[0][1]) + ' of ' + (sel ? sel.n : contacts.length)) : '',
-      tableFoot: 'Showing ' + rows.length + ' of ' + contacts.length,
+      tableFoot: 'Showing ' + rows.length + ' of ' + rowsSrc.length,
       rows: rows,
       board: boardStages(sel, pq)
     };
@@ -246,7 +267,7 @@
       var opps = asList(st.opps).filter(function (o) {
         return !q || ((o.contact || '') + ' ' + (o.name || '') + ' ' + (o.company || '') + ' ' + (o.email || '')).toLowerCase().indexOf(q) >= 0;
       });
-      return { id: st.id || '', name: st.name || 'Stage', count: q ? opps.length : (Number(st.count) || opps.length), pipe: sel.id, opps: opps };
+      return { id: st.id || '', name: pipeTitle(st.name || 'Stage'), count: q ? opps.length : (Number(st.count) || opps.length), pipe: sel.id, opps: opps };
     });
   }
   /* Fixture (design mock) only: stage columns from the mock rows. Live always uses GHL opportunities. */
@@ -270,7 +291,7 @@
     return n < 1e12 ? n * 1000 : n;
   }
   /* Needs you today: follow-ups due, then going cold, then open reach-outs. One merged list. */
-  function buildNeeds(S, contacts) {
+  function buildNeeds(S, contacts, sel) {
     var done = S.pipeNeedDone || {};
     var seen = {};
     var out = [];
@@ -282,8 +303,27 @@
       row.key = key;
       out.push(row);
     }
+    var inSel = null;
+    if (sel && sel.id) {
+      inSel = {};
+      asList(sel.stages).forEach(function (st) {
+        asList(st.opps).forEach(function (o) {
+          var e = String(o.email || '').toLowerCase();
+          var n = String(o.contact || o.name || '').toLowerCase();
+          if (e) inSel[e] = 1;
+          if (n) inSel['n:' + n] = 1;
+        });
+      });
+    }
+    function inPipe(c, o) {
+      if (!inSel) return true;
+      var e = String((c && c.email) || (o && o.email) || '').toLowerCase();
+      var n = String((c && c.name) || (o && (o.contact || o.name)) || '').toLowerCase();
+      return !!(e && inSel[e]) || !!(n && inSel['n:' + n]);
+    }
     var eod = endOfToday();
     contacts.forEach(function (c) {
+      if (!inPipe(c)) return;
       var due = toMs(c.nextDate || c.next_date);
       if (!due || due > eod) return;
       var late = Math.max(0, Math.round((Date.now() - due) / 86400000));
@@ -302,7 +342,7 @@
     var oppDone = {};
     try { oppDone = JSON.parse(localStorage.getItem('cr_pipe_opp_done') || '{}') || {}; } catch (e) { oppDone = {}; }
     var oppRows = [];
-    asList(S.ghlPipes).forEach(function (pipe) {
+    asList(sel ? [sel] : S.ghlPipes).forEach(function (pipe) {
       asList(pipe.stages).forEach(function (st) {
         var stName = String(st.name || '');
         if (!FOLLOW_STAGE.test(stName)) return;
@@ -320,19 +360,21 @@
             kind: 'follow', why: 'Follow up · ' + days + 'd', act: 'Follow up', opp: 1,
             id: c && c.id ? String(c.id) : 'opp:' + String(o.id || ''), contactId: c && c.id ? String(c.id) : '', ghlContactId: o.contactId || '', oppId: o.id || '',
             name: o.contact || o.name || 'Person', email: o.email || (c && c.email) || '',
-            meta: [stName, pipe.name || '', o.company || ''].filter(Boolean).join(' · ')
+            meta: [pipeTitle(stName), pipeTitle(pipe.name || pipe.rawName || ''), o.company || ''].filter(Boolean).join(' · ')
           } });
         });
       });
     });
     oppRows.sort(function (a, b) { return b.days - a.days; }).forEach(function (x) { push(x.row); });
     contacts.forEach(function (c) {
+      if (!inPipe(c)) return;
       var d = daysAgo(c.lastTouch || c.last_touch);
       if (d < 14) return;
       push({ kind: 'cold', why: 'Going cold' + (d < 99 ? ' · ' + d + 'd' : ''), act: c.email ? 'Email' : 'Nudge', id: c.id || '', name: c.name || 'Person', email: c.email || '', meta: [normCat(c.category || c.type || 'Contact'), d < 99 ? '' : 'no touch on record'].filter(Boolean).join(' · ') });
     });
     asList(S.reachOut).filter(function (r) { return !r.done; }).forEach(function (r) {
       var c = contacts.filter(function (x) { return r.contactId && String(x.id) === String(r.contactId); })[0] || {};
+      if (!inPipe(c, { email: c.email, name: r.name || c.name })) return;
       push({ kind: 'reach', why: 'Reach out', act: c.email ? 'Email' : 'Reach out', id: r.id || '', reachId: r.id || '', contactId: r.contactId || '', name: r.name || c.name || 'Person', email: c.email || '', meta: [r.company || c.company || '', r.nextAction || ''].filter(Boolean).join(' · ') });
     });
     return out.map(function (n, i) { n.color = C6[i % 6]; return n; });
@@ -375,7 +417,31 @@
 
   function liveDocumentsState() {
     var S = window.STATE || {};
+    var driveOn = S.docSource === 'drive';
     var docs = asList(S.staged).length ? asList(S.staged) : asList(S.docs);
+    if (driveOn) {
+      docs = [];
+      function walkDrive(nodes, folder) {
+        asList(nodes).forEach(function (n) {
+          if (n && n.files) walkDrive(n.files, n.name || folder);
+          else if (n && n.children) walkDrive(n.children, n.name || folder);
+          if (n && (n.mimeType || n.mime) && !n.files) {
+            docs.push({
+              id: n.id || n.fileId,
+              name: n.name,
+              mime: n.mimeType || n.mime,
+              driveFileId: n.id || n.fileId,
+              folder: folder || 'Drive',
+              category: folder || 'Drive',
+              url: n.webViewLink || n.url,
+              thumbUrl: n.thumbnailLink ? '/api/documents/thumb?id=' + encodeURIComponent(n.id || n.fileId || '') : '',
+              stored: true
+            });
+          }
+        });
+      }
+      walkDrive(S.drives || S.drive || []);
+    }
     var keptDrive = {};
     var keptName = {};
     var uniq = [];
@@ -443,7 +509,7 @@
       var uuid = /^[0-9a-f-]{36}$/i.test(String(d.id || '')) ? String(d.id) : '';
       /* First-page preview: Drive renders PDFs, Office and Google files; stored images show as themselves;
          a stored PDF that is not in Drive renders its first page in a small frame. */
-      var thumb = drive ? '/api/documents/thumb?id=' + encodeURIComponent(drive) : (k === 'img' && d.stored && uuid ? '/api/documents/thumb?id=' + uuid : '');
+      var thumb = d.thumbUrl || (drive ? '/api/documents/thumb?id=' + encodeURIComponent(drive) : (k === 'img' && d.stored && uuid ? '/api/documents/thumb?id=' + uuid : ''));
       var pdfFrame = !drive && k === 'pdf' && d.stored && uuid ? '/api/documents/file?id=' + uuid : '';
       return [k, d.name || 'File', meta, loc, bg, d.url || '', d.id || '', drive, String(d.category || d.folder || 'Other'), String(d.mime || ''), thumb, pdfFrame];
     });
@@ -553,7 +619,7 @@
       var url = l.url || '';
       var host = hostOf(url);
       var n = (seen[host + '|' + url] = (seen[host + '|' + url] || 0) + 1);
-      return [l.title || l.name || host || 'Link', host || url, l.color || '#2e6bf2', l.note || '', n > 1 ? 2 : 1, absUrl(url), l.id || ''];
+      return [l.title || l.name || host || 'Link', host || url, l.color || '#2e6bf2', l.note || '', n > 1 ? 2 : 1, absUrl(url), l.id || '', l.thumb_url || l.thumbUrl || ''];
     });
     var dups = {};
     wall.forEach(function (w) { var k = String(w[5] || w[1]).replace(/\/$/, ''); dups[k] = (dups[k] || 0) + 1; });
@@ -737,19 +803,23 @@
     var needChip = S.pipeNeedChip || 'all';
     var needsAll = data.needs || [];
     var needsFiltered = needsAll.filter(function (n) { return needChip === 'all' || n.kind === needChip; });
+    var needCap = S.pipeNeedAll ? needsFiltered.length : Math.min(9, needsFiltered.length);
+    var needsShown = needsFiltered.slice(0, needCap);
     function chipCount(k) { return needsAll.filter(function (n) { return n.kind === k; }).length; }
     var needHtml =
       '<section class="card" style="margin-bottom:14px"><div class="ch"><h3>Needs you today</h3><span class="s">one list &middot; follow-ups due, going cold, and your reach-outs</span><span class="chips2">'
       + [['all', 'All ' + needsAll.length], ['follow', 'Follow up ' + chipCount('follow')], ['cold', 'Going cold ' + chipCount('cold')], ['reach', 'Reach out ' + chipCount('reach')]].map(function (c) {
         return '<span class="c2' + (needChip === c[0] ? ' on' : '') + '" data-action="pipe-need-chip" data-chip="' + c[0] + '">' + esc(c[1]) + '</span>';
       }).join('') + '</span><span class="lnk" style="margin-left:auto" data-action="pipe-add">+ Add a person</span></div><div class="ndg">'
-      + (needsFiltered.length ? needsFiltered.map(function (n, i) {
+      + (needsShown.length ? needsShown.map(function (n, i) {
         var whyCls = n.kind === 'cold' ? ' amb' : n.kind === 'reach' ? '' : ' red';
         var rowAttrs = ' data-id="' + esc(n.id || '') + '" data-kind="' + esc(n.kind) + '" data-key="' + esc(n.key || '') + '" data-contact="' + esc(n.contactId || '') + '" data-name="' + esc(n.name) + '" data-email="' + esc(n.email || '') + '"'
           + (n.opp ? ' data-opp="' + esc(n.oppId || '') + '" data-ghl-contact="' + esc(n.ghlContactId || '') + '"' : '');
         return '<div class="nd"' + rowAttrs + '><span class="cb" data-action="pipe-need-tick"' + rowAttrs + ' title="Mark handled"></span><span class="av" style="background:' + (n.color || C6[i % 6]) + '">' + esc(initials(n.name)) + '</span><div style="min-width:0"><b>' + esc(n.name) + '</b><span>' + esc(n.meta || '') + '</span></div><span class="why2' + whyCls + '">' + esc(n.why || 'Follow up') + '</span><button class="act" data-action="' + (n.opp ? 'pipe-opp-follow' : 'pipe-follow') + '"' + rowAttrs + '>' + esc(n.act || 'Follow up') + '</button></div>';
       }).join('') : '<div class="nd"><div style="min-width:0"><b>Nobody waiting</b><span>Follow-ups due, people going cold and your reach-outs land here.</span></div></div>')
-      + '</div></section>';
+      + '</div>'
+      + (needsFiltered.length > 9 ? '<div class="foot"><span class="lnk" data-action="pipe-need-more">' + (S.pipeNeedAll ? 'Show fewer' : ('Show all ' + needsFiltered.length)) + '</span></div>' : '')
+      + '</section>';
     if (view === 'board') {
       var stages = asList(data.board).length || !fixtureOn() ? asList(data.board) : fixtureBoard(ST, data.rows || []);
       var filled = stages.filter(function (s) { return s.opps.length; });
@@ -1111,6 +1181,7 @@
     if (!wrap) return;
     var S = window.STATE || {};
     var view = S.docsView || 'grid';
+    var source = S.docSource === 'drive' ? 'drive' : 'local';
     var typeOn = S.docType || 'all';
     var data = documentsData();
     var pick = S.docPick || {};
@@ -1136,7 +1207,7 @@
     var folderRows = data.folders || [];
     wrap.innerHTML =
       '<div class="bar"><h1>Documents</h1><span class="sub">Your staging library &mdash; preview, select, and drop straight into a Space</span>'
-      + '<div class="r"><input class="search" data-action="docs-search" placeholder="Search by name, type or what\'s inside"><div class="seg"><span' + (view === 'grid' ? ' class="on"' : '') + ' data-action="docs-view" data-view="grid">Grid</span><span' + (view === 'list' ? ' class="on"' : '') + ' data-action="docs-view" data-view="list">List</span></div><button class="btn" data-action="docs-drive">Pull from Drive</button><button class="btn pri" data-action="docs-upload">Upload</button></div></div>'
+      + '<div class="r"><input class="search" data-action="docs-search" placeholder="Search by name, type or what\'s inside"><div class="seg"><span' + (view === 'grid' ? ' class="on"' : '') + ' data-action="docs-view" data-view="grid">Grid</span><span' + (view === 'list' ? ' class="on"' : '') + ' data-action="docs-view" data-view="list">List</span></div><div class="seg"><span' + (source === 'local' ? ' class="on"' : '') + ' data-action="docs-source" data-source="local">Local</span><span' + (source === 'drive' ? ' class="on"' : '') + ' data-action="docs-source" data-source="drive">Drive</span></div><button class="btn" data-action="docs-drive">Pull from Drive</button><button class="btn pri" data-action="docs-upload">Upload</button></div></div>'
       + '<div class="lay"><section class="card"><div class="lh">Folders <span class="lnk" data-action="docs-new-folder">+ New</span></div>'
       + folderRows.map(function (f) {
         var on = S.docSet ? false : (S.docFolder ? String(S.docFolder) === String(f[0]) : !!f[2]);
@@ -1271,17 +1342,30 @@
         var href = absUrl(w[5] || w[1]);
         var letter = esc(String(w[0] || '?')[0]);
         var id = esc(w[6] || '');
-        /* Letter tile only, as in design 07: no favicon images (no icons). */
-        var ico = '';
+        var thumb = w[7] ? '/api/links/thumb?id=' + encodeURIComponent(w[6] || '') : '';
+        var cover = thumb ? '<img alt="" loading="lazy" src="' + esc(thumb) + '" style="width:100%;height:100%;object-fit:cover;display:block">' : '<i style="background:' + w[2] + '">' + letter + '</i>';
         return '<a class="tile" data-action="link-open" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" data-id="' + id + '" data-url="' + esc(href) + '">' + (w[4] == 2 ? '<span class="dup">Duplicate</span>' : '')
-          + '<div class="lg' + (ico ? ' has-ico' : '') + '" style="background:' + w[2] + '14">' + ico + '<i style="background:' + w[2] + '">' + letter + '</i></div>'
+          + '<div class="lg" style="background:' + w[2] + '14">' + cover + '</div>'
           + '<div class="tm"><span title="Edit" data-action="link-edit" data-id="' + id + '" data-title="' + esc(w[0]) + '">Edit</span><span title="Move" data-action="link-move" data-id="' + id + '" data-title="' + esc(w[0]) + '" data-url="' + esc(href) + '">Move</span><span title="Delete" data-action="link-archive" data-id="' + id + '" data-note="' + esc(w[3] || '') + '">&times;</span></div>'
           + '<div class="nb"><b>' + esc(w[0]) + '</b><div class="dm">' + esc(w[1]) + '</div><div class="nt' + (w[3] ? '' : ' empty') + '" data-action="link-note" data-id="' + id + '">' + (w[3] ? esc(w[3]) : 'Add a note') + '</div></div></a>';
       }).join('') + ((data.wall || []).length ? '' : '<div class="hint">No links here yet.</div>') + '</div>'
-      + '<div class="hint">Site icons load from each website. Hover a tile to edit, move or delete it.</div></section></div>';
+      + '<div class="hint">Hover a tile to edit, move or delete it.</div></section></div>';
     if (P().finishPaint) P().finishPaint(wrap);
     else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
     markReady('linksDesk');
+    if (!fixtureOn() && !window.__linksThumbFill) {
+      window.__linksThumbFill = true;
+      function fillThumbs() {
+        fetch('/api/links/preview?backfill=1', { credentials: 'include' }).then(function (r) { return r.json(); }).then(function (d) {
+          if (d && d.n) {
+            if (typeof window.refreshBoard === 'function') window.refreshBoard();
+            else if (typeof window.loadBoard === 'function') window.loadBoard();
+            setTimeout(fillThumbs, 400);
+          }
+        }).catch(function () {});
+      }
+      fillThumbs();
+    }
   }
 
   /* ---------- Compose (08b): starts empty, holds only what the draft holds ---------- */
@@ -1573,7 +1657,7 @@
       var qp = new URLSearchParams(String(location.search || ''));
       if (!personId && qp.get('person')) personId = qp.get('person');
     } catch (e) {}
-    var ppTab = S.mailPpTab || 'all';
+      var ppTab = S.mailPpTab || 'emails';
     var boxes = sortPeopleBoxes(asList(data.boxes), sort);
     var qn = q.toLowerCase().replace(/^#/, '');
     function matchBox(b) {
@@ -1602,11 +1686,18 @@
         var d = row[0], sj = row[1], pv = row[2], un = row[3];
         return '<div class="mi" data-action="mail-box-open" data-id="' + esc(b.id) + '"><i class="' + (un ? '' : 'r') + '"></i><div style="min-width:0"><div class="sj">' + esc(sj) + '</div><div class="pv"><span class="dir ' + esc(d) + '">' + (d === 'out' ? 'You:' : esc(first) + ':') + '</span> ' + esc(pv) + '</div></div><em>' + (d === 'out' ? '&uarr;' : '&darr;') + '</em></div>';
       }).join('');
-      var files = asList(b.files).map(function (f) {
-        return '<span data-action="mail-box-file" data-id="' + esc(b.id) + '" data-file="' + esc(f[1] || f) + '" data-mid="' + esc(f[3] || '') + '" data-aid="' + esc(f[4] || '') + '"><i class="' + peopleFileCls(f[0]) + '">' + peopleFileKind(f[0]) + '</i>' + esc(f[1] || f) + '</span>';
-      }).join('');
-      if (b.more) files += '<span class="more" data-action="mail-box-open" data-id="' + esc(b.id) + '">+ ' + esc(b.more) + ' more</span>';
-      if (!asList(b.files).length) files += '<span class="more">no files yet</span>';
+      var files;
+      if (fixtureOn()) {
+        files = asList(b.files).map(function (f) {
+          return '<span data-action="mail-box-file" data-id="' + esc(b.id) + '" data-file="' + esc(f[1] || f) + '" data-mid="' + esc(f[3] || '') + '" data-aid="' + esc(f[4] || '') + '"><i class="' + peopleFileCls(f[0]) + '">' + peopleFileKind(f[0]) + '</i>' + esc(f[1] || f) + '</span>';
+        }).join('');
+        if (b.more) files += '<span class="more" data-action="mail-box-open" data-id="' + esc(b.id) + '">+ ' + esc(b.more) + ' more</span>';
+        if (!asList(b.files).length) files += '<span class="more">no files yet</span>';
+      } else {
+        var fileN = asList(b.files).length + (Number(b.more) || 0);
+        var linkN = asList(b.links).length;
+        files = '<span class="more">' + fileN + ' files · ' + linkN + ' links</span>';
+      }
       var tags = asList(b.tags).map(function (t) {
         return '<span data-action="mail-people-tag" data-tag="' + esc(t) + '">#' + esc(t) + '</span>';
       }).join('');
@@ -1636,22 +1727,32 @@
         return '<div class="fth" data-action="mail-box-file" data-id="' + esc(person.id) + '" data-file="' + esc(nm) + '" data-mid="' + esc(f[3] || '') + '" data-aid="' + esc(f[4] || '') + '"><div class="pg">' + (src ? '<img alt="" src="' + esc(src) + '">' : '<i></i><i></i><i></i><i></i>') + '</div><span class="ty" style="background:' + col + '">' + esc(kind) + '</span><div class="fn">' + esc(nm) + '</div></div>';
       }
       if (ppTab === 'files') {
-        body = asList(person.files).length ? '<div class="fgrid">' + asList(person.files).map(fileThumb).join('') + '</div>' : '<div class="dempty">No files yet.</div>';
+        body = asList(person.files).length ? asList(person.files).map(function (f) {
+          var nm = f[1] || f;
+          var kind = peopleFileKind(f[0]);
+          return '<div class="lrow" data-action="mail-box-file" data-id="' + esc(person.id) + '" data-file="' + esc(nm) + '" data-mid="' + esc(f[3] || '') + '" data-aid="' + esc(f[4] || '') + '"><div><b>' + esc(nm) + '</b><small>' + esc(kind) + ' · ' + esc(person.last) + ' · from ' + esc(person.n) + '</small></div><em>Open</em><a data-action="mail-box-file" data-id="' + esc(person.id) + '" data-file="' + esc(nm) + '" data-mid="' + esc(f[3] || '') + '" data-aid="' + esc(f[4] || '') + '">Download</a></div>';
+        }).join('') : '<div class="dempty">No files yet.</div>';
       } else if (ppTab === 'links') {
         body = lk.length ? lk.map(function (row) {
           var n = row[0] || row.name || row.url || 'Link';
           var u = row[2] || row.url || '#';
-          return '<a class="lrow" href="' + esc(u) + '" target="_blank" rel="noopener"><span class="fv">' + esc(String(n)[0] || 'L') + '</span><div><b>' + esc(n) + '</b><small>' + esc(row[1] || row.label || u) + '</small></div><em>Open</em></a>';
+          return '<a class="lrow" href="' + esc(u) + '" target="_blank" rel="noopener"><div><b>' + esc(n) + '</b><small>' + esc(row[1] || row.label || u) + ' · ' + esc(person.last) + '</small></div><em>Open</em></a>';
         }).join('') : '<div class="dempty">No links in these emails yet.</div>';
       } else {
-        body = asList(person.m).filter(function (row) { return ppTab === 'all' || row[0] === ppTab; }).map(function (row) {
+        body = asList(person.m).map(function (row) {
           var d = row[0];
           return '<div class="ppm ' + esc(d) + '" data-action="mail-pp-expand" data-id="' + esc(person.id) + '" data-mid="' + esc(row[6] || '') + '" data-hdr="' + esc(row[5] || '') + '" data-tid="' + esc(row[4] || '') + '" data-sj="' + esc(row[1]) + '" data-pv="' + esc(row[2]) + '" data-dir="' + esc(d) + '" data-who="' + esc(person.n) + '"><span class="ic">' + (d === 'out' ? 'Out' : 'In') + '</span><div style="min-width:0"><div class="w">' + (d === 'out' ? 'You sent' : esc(first) + ' sent') + '</div><div class="sj">' + esc(row[1]) + '</div><div class="pv">' + esc(row[2]) + '</div></div><span class="t">' + esc(ageLabel(row[7]) || person.last) + '</span></div>';
         }).join('') || '<div class="dempty">Nothing here.</div>';
       }
-      ppHtml = '<div class="pph"><span class="av" style="background:' + esc(person.c) + '">' + esc(peopleIni(person.n)) + '</span><div style="min-width:0"><h2>' + esc(person.n) + '</h2><div class="sub">' + esc(person.o) + ' &middot; ' + asList(person.tags).map(function (t) { return '#' + esc(t); }).join(' ') + '</div></div><div class="acts"><button class="btn" data-action="mail-pp-go" data-go="pipeline" data-id="' + esc(person.id) + '">Pipeline</button><button class="btn" data-action="mail-pp-go" data-go="space" data-id="' + esc(person.id) + '">Space</button><span class="x" data-action="mail-pp-close">&times;</span></div></div>'
-        + '<div class="ppk"><div><b>' + esc(person.in) + '</b><span>from them</span></div><div><b>' + esc(person.out) + '</b><span>from you</span></div><div><b>' + esc(person.last) + '</b><span>last contact</span></div><div><b>' + esc(asList(person.files).length + (Number(person.more) || 0)) + '</b><span>files</span></div><div><b>' + esc(lk.length) + '</b><span>links</span></div></div>'
-        + '<div class="pptabs"><span class="' + (ppTab === 'all' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="all">Everything</span><span class="' + (ppTab === 'in' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="in">From them</span><span class="' + (ppTab === 'out' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="out">From you</span><span class="' + (ppTab === 'files' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="files">Files</span><span class="' + (ppTab === 'links' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="links">Links</span></div>'
+      var role = person.role || String(person.o || '').split('·')[0] || '';
+      var company = person.company || person.o || '';
+      var stage = person.stage || person.pipelineStage || '—';
+      var owed = (person.st && person.st[0] === 'rep') ? 'Reply owed' : 'None';
+      var firstContact = person.first || person.since || '—';
+      var lastMeet = person.lastMeet || person.lastMeeting || '—';
+      ppHtml = '<div class="pph navy"><span class="av" style="background:' + esc(person.c) + '">' + esc(peopleIni(person.n)) + '</span><div style="min-width:0"><h2>' + esc(person.n) + '</h2><div class="sub">' + esc(role) + (company ? ' · ' + esc(company) : '') + '</div></div><div class="acts"><button class="btn" data-action="mail-pp-go" data-go="pipeline" data-id="' + esc(person.id) + '">Pipeline</button><button class="btn" data-action="mail-pp-go" data-go="space" data-id="' + esc(person.id) + '">Space</button><span class="x" data-action="mail-pp-close">&times;</span></div></div>'
+        + '<div class="ppk info"><div><b>' + esc(company || '—') + '</b><span>company</span></div><div><b>' + esc(role || '—') + '</b><span>role</span></div><div><b>' + esc(stage) + '</b><span>pipeline stage</span></div><div><b>' + esc(lastMeet) + '</b><span>last meeting</span></div><div><b>' + esc(owed) + '</b><span>open items owed</span></div><div><b>' + esc(firstContact) + '</b><span>first contact</span></div></div>'
+        + '<div class="pptabs"><span class="' + (ppTab === 'emails' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="emails">Emails</span><span class="' + (ppTab === 'files' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="files">Files</span><span class="' + (ppTab === 'links' ? 'on' : '') + '" data-action="mail-pp-tab" data-tab="links">Links</span></div>'
         + '<div class="ppbody' + (wide ? ' wide' : '') + '"><div class="pptl" id="pptl">' + body + '</div><div class="ppread" id="ppread"><div class="dempty">Click an email to read it here.</div></div></div>'
         + '<div class="ppf"><button class="btn" data-action="mail-pp-go" data-go="compose" data-id="' + esc(person.id) + '">Email ' + esc(first) + '</button><button class="btn" data-action="mail-pp-go" data-go="book" data-id="' + esc(person.id) + '">Book 20 min</button><button class="btn pri" data-action="mail-pp-go" data-go="reply" data-id="' + esc(person.id) + '">Reply to latest</button></div>';
     }
@@ -1706,7 +1807,14 @@
     }
     var racts = fixtureOn() ? '' : ('<span class="racts"><span class="rowact" data-action="mail-junk" data-junk="' + (m.junk ? '0' : '1') + '"' + mailRowAttrs(m) + ' title="' + (m.junk ? 'Not junk: show mail from this sender again' : 'Junk: hide mail from this sender') + '">' + (m.junk ? 'Not junk' : 'Junk') + '</span>'
       + '<span class="rowact del" data-action="mail-trash"' + mailRowAttrs(m) + ' title="Move to Gmail Trash (undo for 30 days)">Delete</span></span>');
-    return '<div class="em" draggable="true" data-kind="mail" data-action="mail-open"' + mailRowAttrs(m) + '><span class="un' + (m.un ? '' : ' r') + '"></span><span class="av" style="background:' + esc(m.c) + '">' + esc(iniOf(m.f)) + '</span><div style="min-width:0"><div class="l1"><b>' + esc(m.f) + '</b><span>' + esc(m.e) + '</span></div><div class="sj">' + esc(m.sj) + '</div><div class="pv">' + esc(m.pv) + '</div>' + fl + '</div><div class="rt"><span class="t">' + esc(m.t) + '</span><span class="flag' + (filed.length ? ' on' : '') + '" data-action="mail-flag"' + mailRowAttrs(m) + '>Flag</span>'
+    var cat = String(m.cat || m.tag || m.column || '').toLowerCase();
+    var catCls = fixtureOn() ? '' : (/team/.test(cat) ? 'cat-team' : /invest/.test(cat) ? 'cat-inv' : /design/.test(cat) ? 'cat-dp' : /regulat/.test(cat) ? 'cat-rg' : /legal/.test(cat) ? 'cat-lg' : 'cat-ot');
+    var catLab = /team/.test(cat) ? 'Team' : /invest/.test(cat) ? 'Investors' : /design/.test(cat) ? 'Design partners' : /regulat/.test(cat) ? 'Regulators' : /legal/.test(cat) ? 'Legal' : (m.tag ? m.tag : 'Other');
+    if (!fixtureOn()) {
+      if (m.tag && !fl) fl = '<div class="fl"><span class="ctag">' + esc(catLab) + '</span></div>';
+      else if (m.tag) fl = fl.replace('<div class="fl">', '<div class="fl"><span class="ctag">' + esc(catLab) + '</span>');
+    }
+    return '<div class="em ' + catCls + '" draggable="true" data-kind="mail" data-action="mail-open"' + mailRowAttrs(m) + '><span class="un' + (m.un ? '' : ' r') + '"></span><span class="av" style="background:' + esc(m.c) + '">' + esc(iniOf(m.f)) + '</span><div style="min-width:0"><div class="l1"><b>' + esc(m.f) + '</b><span>' + esc(m.e) + '</span></div><div class="sj">' + esc(m.sj) + '</div><div class="pv">' + esc(m.pv) + '</div>' + fl + '</div><div class="rt"><span class="t">' + esc(m.t) + '</span><span class="flag' + (filed.length ? ' on' : '') + '" data-action="mail-flag"' + mailRowAttrs(m) + '>Flag</span>'
       + '</div>' + racts + '</div>';
   }
   function columnHtml(c, msgs) {

@@ -70,7 +70,7 @@
       if (!t || /^note$/i.test(t) || /^untitled/i.test(t)) {
         t = String(n.body || '').replace(/^\s+/, '').split(/\n/)[0].trim();
       }
-      return t || 'Note';
+      return t;
     }
     function savedPos(n) {
       var x = n.canvas_x != null ? Number(n.canvas_x) : (n.x != null ? Number(n.x) : NaN);
@@ -84,8 +84,8 @@
       var x, y;
       if (pos) { x = pos.x; y = pos.y; }
       else {
-        x = 150 + (auto % 4) * 250;
-        y = 160 + Math.floor(auto / 4) * 180;
+        x = 150 + (auto % 4) * 264;
+        y = 160 + Math.floor(auto / 4) * 204;
         auto += 1;
       }
       var meta = n.meta || {};
@@ -94,7 +94,10 @@
       var row = {
         id: n.id, c: n.cluster_id || meta.cluster || null, x: x, y: y,
         k: ({ yellow: 'y', pink: 'p', green: 'g', blue: 'b', orange: 'o', violet: 'v', white: 'w' }[n.color] || n.color || 'y'),
-        t: t, h: titleOf(n), p: n.body || '', src: src, laid: !pos
+        t: t, h: titleOf(n), p: n.body || '', src: src, laid: !pos,
+        w: Math.max(160, Math.min(900, Number(n.canvas_w || n.w) || 240)),
+        h: Math.max(100, Math.min(900, Number(n.canvas_h || n.h) || 180)),
+        updated: n.updated_at || n.updatedAt || n.created_at || ''
       };
       notes.push(row);
       if (row.laid && writeOk() && row.id) saveNotePos(row);
@@ -119,8 +122,8 @@
     });
     notes.forEach(function (n) {
       if ((pile[n.x + ',' + n.y] || 0) < 2) return;
-      n.x = 150 + (auto % 4) * 250;
-      n.y = 160 + Math.floor(auto / 4) * 180;
+      n.x = 150 + (auto % 4) * 264;
+      n.y = 160 + Math.floor(auto / 4) * 204;
       auto += 1;
       if (writeOk() && n.id) saveNotePos(n);
     });
@@ -129,7 +132,7 @@
 
   function saveNotePos(n) {
     if (!writeOk() || !n.id) return;
-    api('/api/notes/' + encodeURIComponent(n.id), { method: 'PATCH', body: { canvas_x: n.x, canvas_y: n.y, x: n.x, y: n.y, cluster_id: n.c || null } }).catch(function () {});
+    api('/api/notes/' + encodeURIComponent(n.id), { method: 'PATCH', body: { canvas_x: n.x, canvas_y: n.y, x: n.x, y: n.y, w: n.w, h: n.h, canvas_w: n.w, canvas_h: n.h, cluster_id: n.c || null } }).catch(function () {});
   }
   function saveCluster(c) {
     if (!writeOk() || !c.id || String(c.id).length < 30) return;
@@ -159,7 +162,30 @@
       + '<div class="toast" id="toast"></div>';
     if (P().finishPaint) P().finishPaint(wrap);
     bindCanvas(wrap, CL, NOTES);
-    markReady('notesDesk');
+    function fitFixture() {
+      var worldEl = wrap.querySelector('#world');
+      var stageEl = wrap.querySelector('#stage');
+      var zl = wrap.querySelector('#zLbl');
+      if (!worldEl || !stageEl) return;
+      var xs = [], ys = [];
+      CL.forEach(function (c) { xs.push(c.x, c.x + c.w); ys.push(c.y, c.y + c.h); });
+      NOTES.forEach(function (n) { xs.push(n.x, n.x + 220); ys.push(n.y, n.y + 150); });
+      var x0 = Math.min.apply(null, xs) - 60, x1 = Math.max.apply(null, xs) + 60;
+      var y0 = Math.min.apply(null, ys) - 80, y1 = Math.max.apply(null, ys) + 60;
+      var r = stageEl.getBoundingClientRect();
+      var rw = r.width > 80 ? r.width : 1168;
+      var rh = r.height > 80 ? r.height : 620;
+      var zz = Math.min(rw / Math.max(1, x1 - x0), rh / Math.max(1, y1 - y0));
+      if (!Number.isFinite(zz) || zz <= 0) zz = 0.57;
+      var oxx = -x0 * zz + (rw - (x1 - x0) * zz) / 2;
+      var oyy = -y0 * zz + (rh - (y1 - y0) * zz) / 2;
+      worldEl.style.transform = 'translate(' + oxx + 'px,' + oyy + 'px) scale(' + zz + ')';
+      if (zl) zl.textContent = Math.round(zz * 100) + '%';
+    }
+    if (fixtureOn()) {
+      fitFixture();
+      setTimeout(function () { fitFixture(); markReady('notesDesk'); }, 220);
+    } else markReady('notesDesk');
   }
 
   function bindCanvas(root, CL, NOTES) {
@@ -170,16 +196,20 @@
     var types = TY();
     function apply() {
       world.style.transform = 'translate(' + ox + 'px,' + oy + 'px) scale(' + z + ')';
-      world.classList.toggle('far', z < 0.55);
+      world.classList.toggle('far', z < 0.4);
       var zl = root.getElementById ? root.getElementById('zLbl') : root.querySelector('#zLbl');
-      if (zl) zl.textContent = Math.round(z * 100) + '%';
+      if (zl) zl.textContent = (Number.isFinite(z) ? Math.round(z * 100) : 100) + '%';
       mini();
     }
     function render() {
+      grow();
       world.innerHTML = CL.map(function (c) {
         return '<div class="cluster" data-id="' + esc(c.id) + '" data-action="canvas-cluster" style="left:' + c.x + 'px;top:' + c.y + 'px;width:' + c.w + 'px;height:' + c.h + 'px;border-color:' + esc(c.color) + '"><div class="cn" data-action="canvas-cluster-name" style="background:' + esc(c.color) + '">' + esc(c.name) + ' <i>' + NOTES.filter(function (n) { return n.c == c.id; }).length + '</i></div><span class="rz" data-action="canvas-rz"></span></div>';
       }).join('') + NOTES.map(function (n, i) {
-        return '<div class="note ' + esc(n.k) + '" data-i="' + i + '" data-action="canvas-note" style="left:' + n.x + 'px;top:' + n.y + 'px"><span class="ty ' + esc(n.t) + '">' + esc(types[n.t] || 'Note') + '</span><h4>' + esc(n.h) + '</h4><p>' + esc(n.p) + '</p></div>';
+        var nw = fixtureOn() ? 220 : (n.w || 240);
+        var nh = fixtureOn() ? 'auto' : ((n.h || 180) + 'px');
+        var rz = fixtureOn() ? '' : '<span class="rz" data-action="canvas-note-rz"></span>';
+        return '<div class="note ' + esc(n.k) + '" data-i="' + i + '" data-action="canvas-note" style="left:' + n.x + 'px;top:' + n.y + 'px;width:' + nw + 'px;height:' + nh + '"><span class="ty ' + esc(n.t) + '">' + esc(types[n.t] || 'Note') + '</span><h4>' + esc(n.h) + '</h4><p>' + esc(n.p) + '</p>' + rz + '</div>';
       }).join('');
       apply();
     }
@@ -197,6 +227,34 @@
       oy = cy - r.top - w[1] * z;
       apply();
     }
+    function grow() {
+      if (fixtureOn()) {
+        world.style.width = '6000px';
+        world.style.height = '4000px';
+        return;
+      }
+      var maxX = 2400, maxY = 1600;
+      NOTES.forEach(function (n) {
+        maxX = Math.max(maxX, (n.x || 0) + (n.w || 240) + 480);
+        maxY = Math.max(maxY, (n.y || 0) + (n.h || 180) + 480);
+      });
+      CL.forEach(function (c) {
+        maxX = Math.max(maxX, c.x + c.w + 480);
+        maxY = Math.max(maxY, c.y + c.h + 480);
+      });
+      world.style.width = maxX + 'px';
+      world.style.height = maxY + 'px';
+    }
+    function centerLatest() {
+      var latest = NOTES.slice().sort(function (a, b) { return String(b.updated || '').localeCompare(String(a.updated || '')); })[0];
+      var r = stage.getBoundingClientRect();
+      z = 1;
+      var nx = latest ? latest.x + (latest.w || 240) / 2 : 400;
+      var ny = latest ? latest.y + (latest.h || 180) / 2 : 300;
+      ox = r.width / 2 - nx * z;
+      oy = r.height / 2 - ny * z;
+      apply();
+    }
     function fit() {
       if (!CL.length && !NOTES.length) return;
       var xs = CL.map(function (c) { return [c.x, c.x + c.w]; }).concat(NOTES.map(function (n) { return [n.x, n.x + 220]; })).flat();
@@ -204,9 +262,12 @@
       var x0 = Math.min.apply(null, xs) - 60, x1 = Math.max.apply(null, xs) + 60;
       var y0 = Math.min.apply(null, ys) - 80, y1 = Math.max.apply(null, ys) + 60;
       var r = stage.getBoundingClientRect();
-      z = Math.min(r.width / (x1 - x0), r.height / (y1 - y0), 2);
-      ox = -x0 * z + (r.width - (x1 - x0) * z) / 2;
-      oy = -y0 * z + (r.height - (y1 - y0) * z) / 2;
+      var rw = r.width > 40 ? r.width : 1168;
+      var rh = r.height > 40 ? r.height : 620;
+      z = Math.min(rw / (x1 - x0), rh / (y1 - y0));
+      if (!Number.isFinite(z) || z <= 0) z = 0.57;
+      ox = -x0 * z + (rw - (x1 - x0) * z) / 2;
+      oy = -y0 * z + (rh - (y1 - y0) * z) / 2;
       apply();
     }
     function clusterAt(x, y) {
@@ -261,7 +322,10 @@
       var note = e.target.closest('.note'), cn = e.target.closest('.cn'), rz = e.target.closest('.rz');
       if (cn && cn.isContentEditable) return;
       var w = toWorld(e.clientX, e.clientY), wx = w[0], wy = w[1];
-      if (rz) {
+      if (rz && rz.getAttribute('data-action') === 'canvas-note-rz' && note) {
+        var ni = +note.dataset.i;
+        drag = { type: 'n-rz', i: ni, sx: wx, sy: wy, w: NOTES[ni].w || 240, h: NOTES[ni].h || 180 };
+      } else if (rz) {
         var c = CL.find(function (x) { return String(x.id) === String(rz.parentNode.dataset.id); });
         drag = { type: 'rz', c: c, sx: wx, sy: wy, w: c.w, h: c.h };
       } else if (note) {
@@ -304,6 +368,12 @@
         render(); markSel();
       }
       if (drag.type === 'rz') { drag.c.w = Math.max(260, drag.w + dx); drag.c.h = Math.max(200, drag.h + dy); render(); }
+      if (drag.type === 'n-rz') {
+        NOTES[drag.i].w = Math.max(160, Math.min(900, drag.w + dx));
+        NOTES[drag.i].h = Math.max(100, Math.min(900, drag.h + dy));
+        var nel = world.querySelector('.note[data-i="' + drag.i + '"]');
+        if (nel) { nel.style.width = NOTES[drag.i].w + 'px'; nel.style.height = NOTES[drag.i].h + 'px'; }
+      }
     });
     stage.addEventListener('pointerup', function (e) {
       if (!drag) return;
@@ -322,6 +392,7 @@
       }
       if (drag.type === 'cl') { saveCluster(drag.c); drag.inner.forEach(function (p) { saveNotePos(NOTES[p[0]]); }); toast(root, drag.c.name + ' moved with its ' + drag.inner.length + ' notes'); }
       if (drag.type === 'rz') { saveCluster(drag.c); toast(root, 'Cluster resized'); }
+      if (drag.type === 'n-rz') { saveNotePos(NOTES[drag.i]); grow(); toast(root, 'Note resized'); }
       if (drag.type === 'marq' && drag.ex) {
         var a = toWorld(drag.sx, drag.sy), c = toWorld(drag.ex, drag.ey);
         var x0 = Math.min(a[0], c[0]), x1 = Math.max(a[0], c[0]), y0 = Math.min(a[1], c[1]), y1 = Math.max(a[1], c[1]);
@@ -367,7 +438,7 @@
         var r2 = stage.getBoundingClientRect();
         var w2 = toWorld(r2.left + r2.width / 2, r2.top + r2.height / 2);
         var hit = clusterAt(w2[0], w2[1]);
-        var n = { c: hit ? hit.id : null, x: w2[0] - 110, y: w2[1] - 60, k: 'y', t: 'note', h: 'New note', p: 'Type here. Saves as you type.' };
+        var n = { c: hit ? hit.id : null, x: w2[0] - 120, y: w2[1] - 90, w: 240, h: 180, k: 'y', t: 'note', h: '', p: 'Type here. Saves as you type.' };
         NOTES.push(n); render();
         toast(root, hit ? 'New note in ' + hit.name : 'New note on the canvas');
         if (writeOk()) {
@@ -394,7 +465,10 @@
       sel = new Set([i]); apply(); markSel();
     });
     render();
-    fit();
+    if (fixtureOn()) {
+      fit();
+      requestAnimationFrame(function () { requestAnimationFrame(function () { fit(); }); });
+    } else centerLatest();
   }
 
   /* ---------- Spaces arrange ---------- */
@@ -676,6 +750,14 @@
       if (!by[cat]) by[cat] = { id: cat, name: cat, min: false, sp: [] };
       by[cat].sp.push(cardFromPkg(s));
     });
+    var junk = spaces.filter(function (s) {
+      var n = String(s.name || '');
+      var people = (s.recipients || s.people || []).length;
+      var docs = Number(s.docCount || (s.docs || []).length) || 0;
+      var notes = String(s.notes || s.description || '').trim();
+      return /^Untitled space$/i.test(n) || /Untitlezzzzd/i.test(n) || (!people && !docs && !notes);
+    });
+    if (junk.length) console.log('[spaces-audit] test-looking', junk.map(function (s) { return { id: s.id, name: s.name }; }));
     var order = ((S0.spaceGroups) || []).map(function (g) { return g.name || g; });
     var names = order.filter(function (n) { return by[n]; });
     Object.keys(by).forEach(function (n) { if (names.indexOf(n) < 0) names.push(n); });
@@ -712,7 +794,9 @@
       + '<button class="btn sm" data-action="space-drive" id="drive">Move to Drive</button>'
       + '<button class="btn sm" data-action="space-book" id="book">Book 20 min</button>'
       + '<button class="btn sm" data-action="space-email" id="email">Email them</button>'
+      + '<button class="btn sm" data-action="space-menu" id="qMore">&middot;&middot;&middot;</button>'
       + '<button class="btn sm pri" data-action="space-send" id="send">Send bundle</button></div></aside>'
+      + '<div class="menu" id="menu"><div class="lbl">Move to</div><div data-action="space-move-group" data-group="General">General</div><div data-action="space-move-group" data-group="Venture Capital">Venture Capital</div><div data-action="space-move-group" data-group="Business">Business</div><div data-action="space-move-group" data-group="Regulators">Regulators</div><div data-action="space-rename">Rename</div><div class="del" data-action="space-archive">Delete</div></div>'
       + '<div class="toast" id="toast"></div>';
     if (P().finishPaint) P().finishPaint(wrap);
     bindCards(wrap, CATS, !!openWanted);
@@ -735,8 +819,9 @@
       var k = pctOf(s), c = ringColor(k), nx = nextChip(s);
       return '<div class="sp" draggable="true" data-action="spaces-card-open" data-c="' + ci + '" data-s="' + si + '"' + (s.id ? ' data-id="' + esc(s.id) + '"' : '') + '>'
         + '<div class="hd"><span class="av" style="background:' + CARD_COL[(ci * 3 + si) % 6] + '">' + esc(iniOf(s.n)) + '</span><div style="min-width:0"><h4>' + esc(s.n) + '</h4><div class="org">' + esc(s.o) + '</div></div>'
+        + '<span class="ms" title="More" data-action="space-menu" data-id="' + esc(s.id || '') + '">&middot;&middot;&middot;</span>'
         + '<span class="ring" style="--p:' + (k * 20) + '%;--c:' + c + '"><span>' + k + '/5</span></span></div>'
-        + '<p class="why">' + esc(s.why) + '</p>'
+        + '<p class="why">' + (s.why ? esc(s.why) : '<span data-action="spaces-card-open" data-c="' + ci + '" data-s="' + si + '">Add an angle</span>') + '</p>'
         + '<div class="facts"><div><b>' + esc(s.last) + '</b><small>last contact</small></div><div><b>' + esc(s.em) + '</b><small>emails</small></div><div><b>' + esc(s.stage) + '</b><small>pipeline stage</small></div></div>'
         + '<div class="steps">' + (s.d || []).map(function (x) { return '<i class="' + (x ? 'd' : '') + '"></i>'; }).join('') + '</div>'
         + '<div class="ft"><span class="nx ' + esc(nx[1]) + '">' + esc(nx[0]) + '</span><span class="bund">' + (s.docs || 0) + ' docs &middot; ' + (s.links || 0) + ' links</span><span class="go">Open</span></div></div>';
@@ -815,7 +900,7 @@
         + '<div class="qs"><h3>Notes<span class="s">saves as you type</span></h3><div class="note" contenteditable="true" data-action="space-notes" data-id="' + esc(s.id || '') + '">' + esc(s.notes || s.why || '') + '</div></div>'
         + '<div class="qs"><h3>History</h3><div class="hist">' + hist + '</div></div>';
       if (qSt) qSt.innerHTML = '<b>' + k + '/5</b> ready to send' + (k < 5 ? ' &middot; ' + esc(left) + ' left' : ' &middot; everything is attached and approved');
-      ['drive', 'book', 'email', 'send'].forEach(function (id) {
+      ['drive', 'book', 'email', 'send', 'qMore'].forEach(function (id) {
         var b = root.getElementById ? root.getElementById(id) : root.querySelector('#' + id);
         if (b && s.id) b.setAttribute('data-id', s.id);
       });
@@ -1176,8 +1261,9 @@
     whenCss(function () {
       var S0 = window.STATE || {};
       var stored = String(S0.notesView || (function () { try { return localStorage.getItem('cr_notes_view') || ''; } catch (e) { return ''; } })());
-      var canvasOn = qFlag('canvas') || (!qFlag('open') && stored === 'canvas' && (!fixtureOn() || qFlag('canvas')));
+      var canvasOn = qFlag('canvas') || (!qFlag('open') && stored !== 'board' && (!fixtureOn() || qFlag('canvas')));
       if (fixtureOn() && !qFlag('canvas')) canvasOn = false;
+      if (!fixtureOn() && !stored && !qFlag('open')) canvasOn = true;
       if (canvasOn) paintNotesCanvasPage();
       else if (typeof prevNotes === 'function') prevNotes();
     });
@@ -1239,6 +1325,50 @@
     });
   }
 
+  function plannerMode() {
+    try {
+      var q = new URLSearchParams(location.search || '');
+      if (q.get('view') === 'war' || q.get('steps') === '1' || q.get('signals') === '1' || q.get('select') === '1' || q.get('sigdetail') === '1') return false;
+      if (q.get('view') === 'planner' || q.get('view') === 'timeline') return true;
+      if (/\/(planner|timeline)/.test(location.pathname || '')) return true;
+    } catch (e) {}
+    return !fixtureOn();
+  }
+  function paintPlannerLive() {
+    var wrap = wrapOf('warDesk');
+    if (!wrap) { markReady('warDesk'); return; }
+    if (P().applyPageCss) P().applyPageCss(wrap, 'planner');
+    wrap.innerHTML = window.__plannerBody || '<div class="page"><h1>Planner</h1></div>';
+    wrap.querySelectorAll('[data-act],[data-pop],[data-zoom],[data-toggle],[data-chip]').forEach(function (el) {
+      if (!el.getAttribute('data-action')) el.setAttribute('data-action', el.getAttribute('data-act') || el.getAttribute('data-pop') || el.getAttribute('data-zoom') || 'planner');
+    });
+    var h1 = wrap.querySelector('h1');
+    if (h1) h1.textContent = 'Planner';
+    function go(items) {
+      var root = wrap;
+      try {
+        if (typeof window.bindPlannerPage === 'function') window.bindPlannerPage(root, items || null);
+      } catch (err) {
+        wrap.setAttribute('data-planner-err', String((err && err.message) || err));
+      }
+      try {} catch (e) {}
+      if (P().finishPaint) P().finishPaint(wrap);
+      markReady('warDesk');
+    }
+    if (fixtureOn() || !window.authFetch) { go(null); return; }
+    window.authFetch('/api/timeline', { credentials: 'same-origin', quiet: true }).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {
+      go(d && d.items ? d.items : []);
+    }).catch(function () {
+      wrap.innerHTML = '<div class="page"><h1>Planner</h1><div class="card" style="padding:24px">Couldn\'t load - <span class="lnk" data-action="planner-retry">Retry</span></div></div>';
+      markReady('warDesk');
+    });
+  }
+  var _paintWar = window.paintRedesignWar;
+  window.paintRedesignWar = function () {
+    if (plannerMode()) { whenCss(paintPlannerLive); return; }
+    if (typeof _paintWar === 'function') _paintWar();
+  };
+  if (plannerMode()) whenCss(paintPlannerLive);
   if (qFlag('arrange')) paintSpacesArrangePage();
   if (qFlag('cards') || qParam('space') === 'open') paintSpacesCardsPage(qParam('space') === 'open');
   if (qFlag('sigdetail')) paintSignalsDetailPage();

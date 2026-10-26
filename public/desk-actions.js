@@ -1546,6 +1546,7 @@
         if (inputs[0]) inputs[0].value = '';
         if (inputs[1]) inputs[1].value = '';
         refresh('links');
+        if (row && row.id) fetch('/api/links/preview?id=' + encodeURIComponent(row.id), { credentials: 'include' }).then(function () { refresh('links'); }).catch(function () {});
         toast(root, 'Link saved', function () {
           if (row && row.id) {
             S().links = (S().links || []).filter(function (l) { return String(l.id) !== String(row.id); });
@@ -1925,6 +1926,10 @@
     },
     'pipe-need-chip': function (el) {
       S().pipeNeedChip = attr(el, 'data-chip') || 'all';
+      refresh('pipe');
+    },
+    'pipe-need-more': function () {
+      S().pipeNeedAll = !S().pipeNeedAll;
       refresh('pipe');
     },
     'pipe-pill': function (el) {
@@ -2465,18 +2470,19 @@
         undone = true;
         S().packages = prior;
         refresh('spaces');
+        if (writeOk() && UUID_RE.test(String(id))) {
+          api('/api/spaces/' + encodeURIComponent(id), { method: 'POST', body: { action: 'restore' } }).catch(function () {});
+        }
       });
       if (!writeOk() || !UUID_RE.test(String(id))) return;
-      setTimeout(function () {
+      api('/api/spaces/' + encodeURIComponent(id), { method: 'DELETE' }).then(ok).then(json).then(function (d) {
+        if (d && d.ok === false) throw new Error('not deleted');
+      }).catch(function () {
         if (undone) return;
-        api('/api/spaces/' + encodeURIComponent(id), { method: 'DELETE' }).then(ok).then(json).then(function (d) {
-          if (d && d.ok === false) throw new Error('not deleted');
-        }).catch(function () {
-          S().packages = prior;
-          refresh('spaces');
-          toast(root, 'Could not delete that Space - it is back');
-        });
-      }, 4600);
+        S().packages = prior;
+        refresh('spaces');
+        toast(root, 'Could not delete that Space - it is back');
+      });
     },
     'space-collapse': function (el) {
       var gh = el.closest('.gh') || el;
@@ -2491,6 +2497,10 @@
     },
     'docs-view': function (el) {
       S().docsView = attr(el, 'data-view') || 'grid';
+      refresh('docs');
+    },
+    'docs-source': function (el) {
+      S().docSource = attr(el, 'data-source') === 'drive' ? 'drive' : 'local';
       refresh('docs');
     },
     'docs-folder': function (el) {

@@ -52,7 +52,7 @@ function serve() {
       const url = new URL(req.url, 'http://127.0.0.1');
       let pathName = decodeURIComponent(url.pathname);
       if (pathName === '/') pathName = '/index.html';
-      if (/^\/(control-room|war-room|notes|links|pipeline|spaces|documents|email|playbook|calendar|zoom|completed|people|recordings)$/.test(pathName)) pathName = '/control-room.html';
+      if (/^\/(control-room|war-room|planner|timeline|notes|links|pipeline|spaces|documents|email|playbook|calendar|zoom|completed|people|recordings)$/.test(pathName)) pathName = '/control-room.html';
       const tries = [join(ROOT, 'public', pathName), join(ROOT, 'design-reference', pathName)];
       let body = null;
       let used = '';
@@ -153,7 +153,7 @@ async function productionStep1(browser) {
   let failed = false;
 
   async function readyWar() {
-    await live.goto('https://www.4ormop.com/war-room', { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await live.goto('https://www.4ormop.com/planner?view=war', { waitUntil: 'domcontentloaded', timeout: 45000 });
     await live.waitForSelector('#warDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
   }
   async function readyView(path, host) {
@@ -348,7 +348,7 @@ async function productionStep1(browser) {
 
   const menu = await live.evaluate(() => {
     const labels = Array.from(document.querySelectorAll('nav.side .nav .nl, nav.side .nav')).map((n) => (n.querySelector && n.querySelector('.nl') ? n.querySelector('.nl').textContent : n.textContent) || '').map((s) => s.trim()).filter(Boolean);
-    const want = ['Playbook', 'War Room', 'Calendar', 'Email', 'Contacts', 'Spaces', 'Pipeline', 'Notes', 'Documents', 'Drive', 'Links', 'Zoom', 'Completed', 'News', 'Financials', 'Integrations'];
+    const want = ['News', 'Playbook', 'Planner', 'Calendar', 'Email', 'Contacts', 'Spaces', 'Pipeline', 'Links', 'Notes', 'Documents', 'Recordings', 'Zoom', 'Completed', 'Financials', 'Integrations'];
     const idx = want.map((w) => labels.findIndex((l) => l.indexOf(w) >= 0));
     const ordered = idx.every((n, i) => n >= 0 && (i === 0 || n > idx[i - 1]));
     const grp = document.querySelector('nav.side .grp');
@@ -646,6 +646,29 @@ async function productionStep2(browser) {
     return !!(root.querySelector('.pipe-board') || root.querySelector('[data-action="pipe-view"][data-view="board"]'));
   });
   if (!pushLive(rows, 'Pipeline', 'Board', { dom: board, net: true, persist: !isolated.leak })) failed = true;
+
+  const pipes = await live.evaluate(async () => {
+    const root = document.getElementById('pipeDesk').shadowRoot;
+    const pills = [...root.querySelectorAll('[data-action="pipe-pill"]')].slice(0, 3);
+    const shots = [];
+    for (const pill of pills) {
+      pill.click();
+      await new Promise((r) => setTimeout(r, 120));
+      const boardTxt = (root.querySelector('.pipe-board') || {}).innerText || '';
+      root.querySelector('[data-action="pipe-view"][data-view="list"]')?.click();
+      await new Promise((r) => setTimeout(r, 80));
+      const listTxt = (root.querySelector('table') || root.querySelector('.tbl') || {}).innerText || '';
+      root.querySelector('[data-action="pipe-view"][data-view="funnel"]')?.click();
+      await new Promise((r) => setTimeout(r, 80));
+      const funnelTxt = (root.querySelector('.funnel') || root.querySelector('.st') || {}).innerText || '';
+      const needs = root.querySelectorAll('.nd').length;
+      shots.push({ name: pill.textContent, board: boardTxt.slice(0, 200), list: listTxt.slice(0, 200), funnel: funnelTxt.slice(0, 200), needs });
+      root.querySelector('[data-action="pipe-view"][data-view="board"]')?.click();
+    }
+    const unique = (key) => new Set(shots.map((s) => s[key])).size >= Math.min(2, shots.length);
+    return { n: shots.length, board: unique('board'), list: unique('list'), funnel: unique('funnel'), needs: unique('needs'), needsCap: shots.every((s) => s.needs <= 9), shots };
+  });
+  if (!pushLive(rows, 'Pipeline', 'List/Funnel/Needs per pipe', { dom: pipes.n >= 3 && pipes.board && pipes.list && pipes.funnel && pipes.needs && pipes.needsCap, net: true, persist: true, extra: 'needsCap=' + pipes.needsCap })) failed = true;
 
   const stamp = Date.now();
   const spaceName = 'TEST space ' + stamp;

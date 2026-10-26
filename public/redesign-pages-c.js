@@ -1208,8 +1208,50 @@
         return '<div class="li"><span class="tag t4">' + esc(tag) + '</span><span>' + esc(label) + '</span>' + (time ? '<em>' + esc(time) + '</em>' : '') + '</div>';
       }).join('');
     }
+    var itemsAll = asList((window.STATE || {}).items);
+    function toMs(v) { var n = typeof v === 'number' ? v : Date.parse(String(v || '')); return Number.isFinite(n) ? n : 0; }
+    var now = Date.now();
+    var d30 = now - 30 * 86400000;
+    var d60 = now - 60 * 86400000;
+    var done30 = itemsAll.filter(function (it) { return it.status === 'done' && toMs(it.updatedAt || it.due) >= d30; });
+    var onTime = done30.filter(function (it) { return !it.due || toMs(it.updatedAt) <= toMs(it.due); });
+    var prevDone = itemsAll.filter(function (it) { return it.status === 'done' && toMs(it.updatedAt) >= d60 && toMs(it.updatedAt) < d30; });
+    var prevOn = prevDone.filter(function (it) { return !it.due || toMs(it.updatedAt) <= toMs(it.due); });
+    var daysWith = {};
+    done30.forEach(function (it) { var d = ymdOf(it.updatedAt); if (d) daysWith[d] = 1; });
+    var dayN = Object.keys(daysWith).length;
+    var fall = itemsAll.filter(function (it) { return (it.status === 'dropped') || (it.status !== 'done' && it.due && toMs(it.due) < d30 && toMs(it.due) >= d60); });
+    var thin = snaps.length < 7 && done30.length < 7;
+    function pctN(a, b) { return b ? Math.round(100 * a / b) : 0; }
+    var onPct = thin ? '-' : (pctN(onTime.length, done30.length) + '%');
+    var cons = thin ? '-' : (dayN + ' / 30');
+    var fallTxt = thin ? '-' : (fall.length + ' · ' + pctN(fall.length, itemsAll.length) + '%');
+    var weeks = [];
+    for (var w = 7; w >= 0; w--) {
+      var from = now - (w + 1) * 7 * 86400000, to = now - w * 7 * 86400000;
+      weeks.push(itemsAll.filter(function (it) { var t = toMs(it.updatedAt); return it.status === 'done' && t >= from && t < to; }).length);
+    }
+    var maxW = Math.max.apply(null, weeks.concat([1]));
+    var bars = weeks.map(function (n) { return '<i style="height:' + Math.max(8, Math.round(36 * n / maxW)) + 'px"></i>'; }).join('');
+    var byArea = {};
+    itemsAll.filter(function (it) { return it.status !== 'done' && it.due && toMs(it.due) < now; }).forEach(function (it) {
+      var a = String(it.area || it.category || 'other');
+      byArea[a] = (byArea[a] || 0) + 1;
+    });
+    var slip = Object.keys(byArea).map(function (k) { return [k, byArea[k]]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 3);
+    var tips = thin ? ['Need seven days of data before these lines fill in.'] : [
+      slip[0] ? (slip[0][0] + ' items slip most: ' + slip[0][1] + ' overdue. Book those calls first thing Monday.') : 'Keep clearing the oldest overdue item first.',
+      dayN < 20 ? 'Consistency is ' + dayN + ' of 30 days. Close one small item every weekday.' : 'Streak is holding. Protect the first 25 minutes.',
+      Number(onTime.length) < done30.length / 2 ? 'On-time rate is low. Pull due dates forward before the week starts.' : 'On-time rate is holding. Keep the same Friday review.'
+    ];
+    var statsHtml = '<div class="house"><div class="hx"><b>' + onPct + '</b><span>On time</span><em>' + (thin ? '' : 'vs prior 30 days ' + pctN(prevOn.length, prevDone.length) + '%') + '</em></div>'
+      + '<div class="hx"><b>' + cons + '</b><span>Consistency</span><em>' + (thin ? '' : 'days with at least one item done') + '</em></div>'
+      + '<div class="hx"><b>' + fallTxt + '</b><span>Fall-off</span><em>overdue never done, or dropped</em></div>'
+      + '<div class="hx"><b>' + (thin ? '-' : weeks.reduce(function (a, n) { return a + n; }, 0)) + '</b><span>Throughput</span><div class="bars">' + bars + '</div></div>'
+      + '<div class="hx wide"><b>Slipping by area</b><span>' + (slip.map(function (s) { return esc(s[0]) + ' ' + s[1]; }).join(' · ') || '-') + '</span></div>'
+      + '<div class="hx wide"><b>What to improve</b>' + tips.slice(0, 3).map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') + '</div></div>';
     wrap.innerHTML = '<div class="bar"><h1>Completed</h1><span class="sub">A snapshot of every day, saved at 23:55 — what moved, who you met, what you owe</span><div class="r"><button class="btn" type="button" data-action="done-search">Search days</button><button class="btn pri" type="button" id="snapNowLive" data-action="done-snap">Snapshot now</button></div></div>'
-      + '<div class="lay"><section class="card"><div class="today"><span class="pulse"></span>Today is being recorded — snapshot at 23:55</div>' + list + '</section>'
+      + '<div class="lay"><section class="card">' + statsHtml + '<div class="today"><span class="pulse"></span>Today is being recorded — snapshot at 23:55</div>' + list + '</section>'
       + '<section class="card det"><div class="dh"><div><h2>' + esc(title) + '</h2><div class="meta">' + (cur.date && cur.date >= vancouverTodayIso() ? 'Recording - not yet saved' : 'Snapshot saved · read-only') + '</div></div><div class="r2"><button class="btn" type="button" data-action="done-export">Export PDF</button><button class="btn" type="button" data-action="done-investor" data-date="' + esc(cur.date || '') + '" data-headline="' + esc(headline) + '">Add to investor update</button></div></div>'
       + '<div class="moved"><b>What moved today</b><p>' + esc(headline) + '</p></div>'
       + '<div class="tiles">'
