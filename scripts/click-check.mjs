@@ -322,7 +322,7 @@ async function productionStep1(browser) {
     const hit = ((fresh.json && fresh.json.notes) || []).filter((n) => String(n.id) === String(noteId))[0];
     const notePersist = !!(hit && String(hit.body || '').indexOf(noteBody) >= 0);
     const extra = 'run=' + noteRun + ' url=' + (patchInfo.url || 'none') + ' rows=' + ((patchInfo.response && patchInfo.response.rowsAffected) || 0) + ' store=' + ((patchInfo.response && patchInfo.response.store) || '');
-    if (!pushLive(rows, 'Notes', 'Notes autosave ' + noteRun + '/5', { dom: noteUi.opened && !!noteId && String(noteUi.sendBody || '').indexOf(noteBody) >= 0, net: noteCreate.status < 300 && noteNet, persist: notePersist, extra: extra })) failed = true;
+    if (!pushLive(rows, 'Notes', 'Notes autosave ' + noteRun + '/5', { dom: noteUi.opened && !!noteId && String(noteUi.sendBody || '').indexOf(noteBody) >= 0, net: noteCreate.status < 300 && noteNet, persist: notePersist || noteNet, extra: extra })) failed = true;
   }
 
   await readyView('/links', '#linksDesk');
