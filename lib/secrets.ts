@@ -1,5 +1,5 @@
 import { env } from './env.mjs';
-import { cronSecret as bakedCron, ingestToken as bakedIngest } from './generated-secrets.mjs';
+import { ingestToken as bakedIngest } from './generated-secrets.mjs';
 
 /** Env wins. A deploy with neither set uses the value generated at build, still server-side. */
 export function ingestToken() {
@@ -16,12 +16,13 @@ export function ceoKey() {
   return env('CEO_INGEST_KEY');
 }
 
+/** Env only. Vercel Cron sends this as a bearer token, so a build-time value would never match. */
 export function cronSecret() {
-  return env('CRON_SECRET') || bakedCron || '';
+  return env('CRON_SECRET');
 }
 
 function hookFallback() {
-  return env('HOOK_TOKEN') || env('CRON_SECRET') || bakedCron || '';
+  return env('HOOK_TOKEN') || env('CRON_SECRET');
 }
 
 export function gmailHookToken() {

@@ -100,3 +100,16 @@ export async function savedDatabaseUrl() {
     return '';
   }
 }
+
+/** Where each credential comes from: saved in this user's sealed Clerk metadata, a Vercel env var, or nowhere. No secrets returned. */
+export async function credSources(userId: string) {
+  let bag: Bag = {};
+  try {
+    bag = await readBag(userId);
+  } catch {
+    bag = {};
+  }
+  const google = bag.googleRefresh ? 'saved' : process.env.GOOGLE_REFRESH_TOKEN ? 'env' : 'none';
+  const ghl = bag.ghlKey ? 'saved' : env('GHL_API_KEY') || env('GOHIGHLEVEL_API_KEY') ? 'env' : 'none';
+  return { google, ghl, database: bag.databaseUrl ? 'saved' : process.env.DATABASE_URL ? 'env' : 'none' } as const;
+}

@@ -8,7 +8,7 @@ type Sql = NeonQueryFunction<false, false>;
 let ready: Promise<Sql> | null = null;
 
 /** Bump when migrate() gains a new step so cold starts skip the full IF NOT EXISTS pass. */
-const SCHEMA_VERSION = '2026-10-26-dedupe';
+const SCHEMA_VERSION = '2026-10-28-round2-docs';
 
 export async function databaseUrl() {
   const envUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
@@ -649,6 +649,7 @@ async function migrateWar(sql: Sql) {
     ['db_spaces_stage', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS stage text`],
     ['db_spaces_sent', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS sent_at timestamptz`],
     ['db_spaces_ghl', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS ghl_opportunity_id text`],
+    ['db_spaces_angle', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS angle text`],
     ['db_space_recipients_send', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS send_status text`],
     ['db_email_columns', () => sql`CREATE TABLE IF NOT EXISTS email_columns (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -754,6 +755,8 @@ async function migrateWar(sql: Sql) {
     ['db_link_cat_pos', () => sql`ALTER TABLE link_categories ADD COLUMN IF NOT EXISTS position int NOT NULL DEFAULT 0`],
     ['db_deleted_at_notes', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
     ['db_deleted_at_links', () => sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    // Links archived by the old client carry note '__archived__' and no deleted_at: turn them into real soft deletes.
+    ['db_links_archived_sentinel', () => sql`UPDATE links SET deleted_at = coalesce(deleted_at, now()), note = '' WHERE note = '__archived__'`],
     ['db_deleted_at_contacts', () => sql`ALTER TABLE contacts ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
     ['db_deleted_at_packages', () => sql`ALTER TABLE packages ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
     ['db_deleted_at_documents', () => sql`ALTER TABLE documents ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
@@ -784,6 +787,63 @@ async function migrateWar(sql: Sql) {
       status text NOT NULL DEFAULT 'booked',
       created_at timestamptz NOT NULL DEFAULT now()
     )`],
+    // 2026-10-27: soft delete everywhere a user can delete. Additive, safe to run twice.
+    ['db_deleted_at_items', () => sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_deleted_at_sticky', () => sql`ALTER TABLE sticky_notes ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_deleted_at_zoom_notes', () => sql`ALTER TABLE zoom_notes ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_deleted_at_note_cats', () => sql`ALTER TABLE note_cats ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_deleted_at_spaces', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_deleted_at_space_items', () => sql`ALTER TABLE space_items ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_deleted_at_space_recipients', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_deleted_at_package_docs', () => sql`ALTER TABLE package_docs ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_deleted_at_package_recipients', () => sql`ALTER TABLE package_recipients ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_deleted_at_space_folders', () => sql`ALTER TABLE space_folders ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_deleted_at_email_rules', () => sql`ALTER TABLE email_rules ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_deleted_at_email_columns', () => sql`ALTER TABLE email_columns ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    // From-Zoom War Room cards can be moved between Today / Week / Later.
+    ['db_meeting_board_column', () => sql`ALTER TABLE meeting_actions ADD COLUMN IF NOT EXISTS board_column text`],
+    // Fixed-window rate limits (lib/rate-limit.ts). Keys are sha256 hashes, never raw IPs.
+    ['db_rate_limits', () => sql`CREATE TABLE IF NOT EXISTS rate_limits (
+      key_hash text NOT NULL,
+      window_start timestamptz NOT NULL,
+      hits int NOT NULL DEFAULT 0,
+      PRIMARY KEY (key_hash, window_start)
+    )`],
+    // The dedupe sweep's items_owner_title_live_uq also covered done rows, so a new task could not reuse a
+    // finished task's title. Replace it with an index over live rows only.
+    ['db_items_title_live_uq_drop', () => sql`DROP INDEX IF EXISTS items_owner_title_live_uq`],
+    ['db_items_title_open_uq', () => sql`CREATE UNIQUE INDEX IF NOT EXISTS items_owner_title_open_uq
+      ON items (owner_id, lower(trim(title)))
+      WHERE status IN ('new', 'doing', 'waiting', 'open') AND deleted_at IS NULL AND trim(title) <> ''`],
+    // Round 2 (documents): soft delete for library files, sets of documents, and chunked Drive upload sessions.
+    ['db_r2_staged_deleted', () => sql`ALTER TABLE staged_docs ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_r2_doc_sets', () => sql`CREATE TABLE IF NOT EXISTS doc_sets (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      name text NOT NULL,
+      doc_ids jsonb NOT NULL DEFAULT '[]'::jsonb,
+      position int NOT NULL DEFAULT 0,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      deleted_at timestamptz
+    )`],
+    ['db_r2_doc_uploads', () => sql`CREATE TABLE IF NOT EXISTS doc_uploads (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      session_url text NOT NULL,
+      name text NOT NULL,
+      mime text,
+      size bigint NOT NULL DEFAULT 0,
+      category text,
+      done boolean NOT NULL DEFAULT false,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
+    // Round 2 (links, spaces): soft-deleted link categories keep an undo snapshot; Space next steps are saved on the server.
+    ['db_r2_link_cat_deleted', () => sql`ALTER TABLE link_categories ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_r2_link_cat_undo', () => sql`ALTER TABLE link_categories ADD COLUMN IF NOT EXISTS undo jsonb`],
+    ['db_r2_spaces_steps', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS steps jsonb`],
+    // Round 2 (War Room): W39 Today drag order, W25 undo for a dismissed move (snooze marker kept, marked cleared).
+    ['db_r2_items_position', () => sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS position int`],
+    ['db_r2_move_snooze_cleared', () => sql`ALTER TABLE move_snooze ADD COLUMN IF NOT EXISTS cleared_at timestamptz`],
   ];
   for (const [code, run] of steps) {
     try {
@@ -828,6 +888,12 @@ export async function claimBudget(sql: Sql, ownerId: string, vendor: keyof typeo
     RETURNING calls
   `;
   return rows.length > 0;
+}
+
+/** Postgres unique_violation (23505), optionally on one named index or constraint. */
+export function isUniqueViolation(err: unknown, constraint?: string) {
+  const e = err as { code?: string; constraint?: string } | null;
+  return e?.code === '23505' && (!constraint || e.constraint === constraint);
 }
 
 export async function rememberOwner(sql: Sql, email: string, ownerId: string) {

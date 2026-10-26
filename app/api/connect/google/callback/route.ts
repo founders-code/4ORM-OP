@@ -5,7 +5,7 @@ import { ensureWatches } from '@/lib/live';
 import { fail } from '@/lib/log';
 import { readState } from '@/lib/oauth-state.mjs';
 import { requestOrigin } from '@/lib/public-origin';
-import { openBoard, roomOwner } from '@/lib/session';
+import { openBoard, roomOwner, sessionOwner } from '@/lib/session';
 import { loadCredsFor, saveGoogleRefresh } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
@@ -23,6 +23,8 @@ export async function GET(req: Request) {
     if (!session || !stateUser || stateUser !== session.userId || !code) {
       return NextResponse.redirect(back);
     }
+    // Only an allowlisted user may store Google access for the room.
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const clientId = env('GOOGLE_CLIENT_ID');
     const clientSecret = env('GOOGLE_CLIENT_SECRET');
     if (!clientId || !clientSecret) return NextResponse.redirect(back);

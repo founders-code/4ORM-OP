@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
 import { createSpace, listSpaces } from '@/lib/spaces';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -14,6 +14,7 @@ export async function GET() {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ spaces: [], packages: [] });
     const listed = await listSpaces(session.sql, session.userId);
     return NextResponse.json(listed);
@@ -29,6 +30,7 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) {
       fail('spaces_create', 'no database');
       return NextResponse.json({ name, saved: false });

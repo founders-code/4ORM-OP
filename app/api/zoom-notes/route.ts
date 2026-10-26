@@ -3,7 +3,7 @@ import { withCreds } from '@/lib/creds';
 import { claimBudget } from '@/lib/db';
 import { zoomMail } from '@/lib/google';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { loadCredsFor } from '@/lib/vault';
 import { filledZoomIds, lastZoomSync, saveMailNotes, syncZoomApi, zoomConfigured } from '@/lib/zoom';
 import { listZoomNotes, seedZoomNotes } from '@/lib/zoom-notes';
@@ -15,14 +15,16 @@ export async function GET() {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ notes: [], error: 'Unavailable' });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!session.sql) return NextResponse.json({ notes: [], error: 'Unavailable' }, { status: 503 });
     await seedZoomNotes(session.sql, session.userId);
     const notes = await listZoomNotes(session.sql, session.userId);
     const syncedAt = await lastZoomSync(session.sql, session.userId);
     return NextResponse.json({ notes, syncedAt, zoom: zoomConfigured() ? 'connected' : 'not_connected' });
   } catch {
     fail('zoom_notes_failed');
-    return NextResponse.json({ notes: [], error: 'Unavailable' });
+    // A real error code, so the Zoom page shows "Couldn't load - Retry" instead of an empty list.
+    return NextResponse.json({ notes: [], error: 'Unavailable' }, { status: 500 });
   }
 }
 
@@ -31,6 +33,7 @@ export async function POST() {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ ok: false, notes: [], error: 'Unavailable' });
     const sql = session.sql;
     await seedZoomNotes(sql, session.userId);

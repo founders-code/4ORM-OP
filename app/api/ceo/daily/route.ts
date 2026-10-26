@@ -4,7 +4,7 @@ import { tokenOk } from '@/lib/guard.mjs';
 import { fail } from '@/lib/log';
 import { ceoKey } from '@/lib/secrets';
 import { getSql } from '@/lib/db';
-import { openBoard, roomOwner } from '@/lib/session';
+import { openBoard, roomOwner, sessionOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -20,8 +20,12 @@ async function target(req: Request) {
     return ownerId ? { sql, userId: ownerId } : null;
   }
   const session = await openBoard();
-  if (!session || !session.sql) return session ? { sql: null, userId: session.userId } : null;
-  return { sql: session.sql, userId: session.userId };
+  if (!session) return null;
+  // Signed-in callers must be allowlisted (see sessionOwner); everyone else is refused.
+  const ownerId = await sessionOwner(session);
+  if (!ownerId) return null;
+  if (!session.sql) return { sql: null, userId: ownerId };
+  return { sql: session.sql, userId: ownerId };
 }
 
 export async function POST(req: Request) {
@@ -36,7 +40,8 @@ export async function POST(req: Request) {
     fail('ceo_daily', err);
     try {
       const session = await openBoard();
-      if (session?.sql) return NextResponse.json(await refreshCeo(session.sql, session.userId));
+      const fallbackOwner = session ? await sessionOwner(session) : null;
+      if (session?.sql && fallbackOwner) return NextResponse.json(await refreshCeo(session.sql, fallbackOwner));
     } catch {
       /* fail soft */
     }

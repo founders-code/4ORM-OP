@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { refreshCeo } from '@/lib/ceo';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +9,7 @@ export async function POST() {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     return NextResponse.json(await refreshCeo(session.sql, session.userId));
   } catch {

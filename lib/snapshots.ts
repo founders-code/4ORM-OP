@@ -156,7 +156,7 @@ export async function buildSnapshot(sql: Sql, ownerId: string, day = pacificDay(
     const rows = await sql`
       SELECT stage, count(*)::int AS n
       FROM contacts
-      WHERE owner_id = ${ownerId}
+      WHERE owner_id = ${ownerId} AND deleted_at IS NULL
       GROUP BY stage
     `;
     return (rows as Array<{ stage?: string; n?: number }>).map((row) => ({

@@ -16,6 +16,7 @@ export async function GET() {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!session.sql) return NextResponse.json({ messages: [], linkedin: [], hidden: [] });
     const ownerId = await sessionOwner(session);
+    if (!ownerId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     let cached = await readMailCache(session.sql, ownerId);
     if (!cached) {
       const creds = await loadCredsFor(session.userId);
@@ -62,6 +63,7 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     if (!session.sql || !body) return NextResponse.json({ saved: false });
     const hide = String(body.hide || body.hideEmail || '').trim().toLowerCase().slice(0, 180);

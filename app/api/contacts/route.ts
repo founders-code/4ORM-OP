@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { allowArea, allowContactCategory, allowContactType, allowStage, allowTier, inferContactCategory, parseDue } from '@/lib/guard.mjs';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { contactSpaceLinks, setContactStar, starredContactIds } from '@/lib/contacts-extra';
+import { openBoard, sessionOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,11 +42,30 @@ function shape(row: Record<string, unknown>) {
   };
 }
 
+/** GET → { starred: [contact ids], spaces: [{ contactId, email, spaceId, spaceName }] } for the Contacts page. */
+export async function GET() {
+  try {
+    const session = await openBoard();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
+    const [starred, spaces] = await Promise.all([
+      starredContactIds(session.sql, session.userId).catch(() => [] as string[]),
+      contactSpaceLinks(session.sql, session.userId),
+    ]);
+    return NextResponse.json({ starred, spaces });
+  } catch {
+    fail('contacts_failed');
+    return NextResponse.json({ error: 'Unavailable' }, { status: 500 });
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
     const body = await req.json().catch(() => null);
     const name = text(body?.name, 120);
     const area = allowArea(String(body?.area || 'other')) || 'other';
@@ -81,7 +101,7 @@ export async function POST(req: Request) {
     return NextResponse.json(shape(rows[0] as Record<string, unknown>));
   } catch {
     fail('contacts_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 500 });
   }
 }
 
@@ -89,7 +109,8 @@ export async function PATCH(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     const id = String(body?.id || '');
     if (!ID.test(id)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
@@ -114,6 +135,12 @@ export async function PATCH(req: Request) {
     const setTouch = present(body, 'lastTouch');
     const lastTouch = setTouch ? when(body?.lastTouch) : null;
     if (setTouch && lastTouch === undefined) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    if (present(body, 'starred')) {
+      if (typeof body?.starred !== 'boolean') return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+      const star = await setContactStar(session.sql, session.userId, id, body.starred);
+      if (!star) return NextResponse.json({ error: 'Unavailable' }, { status: 404 });
+      if (Object.keys(body || {}).every((key) => key === 'id' || key === 'starred')) return NextResponse.json(star);
+    }
     const flags = ['name', 'company', 'role', 'email', 'phone', 'area', 'notes', 'type', 'category', 'tier', 'stage', 'nextAction', 'next_action', 'nextDate', 'next_date', 'lastTouch'];
     if (!flags.some((key) => present(body, key))) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const rows = await session.sql`
@@ -132,13 +159,13 @@ export async function PATCH(req: Request) {
         next_action = CASE WHEN ${present(body, 'nextAction') || present(body, 'next_action')} THEN ${nextAction} ELSE next_action END,
         next_date = CASE WHEN ${setNext} THEN ${nextDate}::timestamptz ELSE next_date END,
         last_touch = CASE WHEN ${setTouch} THEN ${lastTouch}::timestamptz ELSE last_touch END
-      WHERE id = ${id} AND owner_id = ${session.userId}
+      WHERE id = ${id} AND owner_id = ${session.userId} AND deleted_at IS NULL
       RETURNING id, name, company, role, email, phone, area, notes, type, tier, stage, next_action, next_date, last_touch, category
     `;
     if (!rows.length) return NextResponse.json({ error: 'Unavailable' }, { status: 404 });
     return NextResponse.json(shape(rows[0] as Record<string, unknown>));
   } catch {
     fail('contacts_failed');
-    return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    return NextResponse.json({ error: 'Unavailable' }, { status: 500 });
   }
 }

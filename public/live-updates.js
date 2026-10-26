@@ -1,5 +1,6 @@
 (function () {
   var cursor = '';
+  var fp = '';
   var timer = null;
   var inflight = false;
   var stopped = false;
@@ -58,6 +59,13 @@
     showSignedOut();
   }
 
+  /* 403 = signed in but not on the room allowlist. Stop polling quietly: no banner, no retry. */
+  function stopForbidden() {
+    stopped = true;
+    inflight = false;
+    if (timer) { clearTimeout(timer); timer = null; }
+  }
+
   function filterMail(rows) {
     return (rows || []).filter(function (m) {
       var subject = String((m && m.subject) || '');
@@ -69,13 +77,29 @@
     });
   }
 
+  /* The War Room repaint keeps capture text, the Plan editor and the coach pop
+     (redesign-pages.js warEditState/warRestore). Other pages are skipped while
+     an editor or drawer is open so a 15 s poll never wipes what Chad is typing. */
   function paintRoom() {
     if (typeof window.paintRedesignWar === 'function' && (!desk() || desk() === 'war' || desk() === 'room')) window.paintRedesignWar();
+  }
+  function shadowOf(id) {
+    var host = document.getElementById(id);
+    return host && host.shadowRoot ? host.shadowRoot : null;
+  }
+  function busy(hostId, sel) {
+    var root = shadowOf(hostId);
+    if (!root) return false;
+    var open = root.querySelector(sel);
+    if (open) return true;
+    var a = root.activeElement;
+    return !!(a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable));
   }
 
   function apply(d) {
     if (!d || !window.STATE) return;
     if (d.cursor) cursor = String(d.cursor);
+    if (d.fp) fp = String(d.fp);
     var kinds = d.kinds || [];
     if (!kinds.length) return;
     if (d.mail) {
@@ -86,26 +110,42 @@
     if (d.linkedin) {
       window.STATE.linkedin = d.linkedin;
       paintRoom();
-      if (desk() === 'people' && typeof renderPeople === 'function') renderPeople(document.getElementById('pSearch') ? document.getElementById('pSearch').value : '');
+      if (desk() === 'people' && typeof window.paintRedesignContacts === 'function') window.paintRedesignContacts();
+      else if (desk() === 'people' && typeof renderPeople === 'function') renderPeople(document.getElementById('pSearch') ? document.getElementById('pSearch').value : '');
     }
     if (d.calendar) {
       window.STATE.events = d.calendar;
       paintRoom();
-      if (desk() === 'calendar' && typeof window.paintRedesignCalendar === 'function') window.paintRedesignCalendar();
+      if (desk() === 'calendar' && typeof window.paintRedesignCalendar === 'function' && !busy('calDesk', '.pop.open, .ghost, .ev.dragging')) window.paintRedesignCalendar();
     }
     if (d.pipeline) {
       window.STATE.ghlPipes = d.pipeline;
       paintRoom();
-      if (typeof window.paintRedesignPipeline === 'function') window.paintRedesignPipeline();
+      if (desk() === 'contacts' && typeof window.paintRedesignPipeline === 'function') window.paintRedesignPipeline();
       if (desk() === 'contacts' && typeof renderContacts === 'function') renderContacts(document.getElementById('cSearch') ? document.getElementById('cSearch').value : '');
     }
     if (d.zoom) {
       window.STATE.zoomNotes = d.zoom;
-      if (typeof window.paintRedesignZoom === 'function') window.paintRedesignZoom();
+      if (desk() === 'znotes' && typeof window.paintRedesignZoom === 'function' && !busy('zoomDesk', '#drawer.open')) window.paintRedesignZoom();
     }
+    if (d.meetingActions) {
+      window.STATE.meetingActions = d.meetingActions;
+      paintRoom();
+    }
+    if (d.items) {
+      window.STATE.items = d.items;
+      paintRoom();
+    }
+    if (d.reach) {
+      window.STATE.reachOut = d.reach;
+      paintRoom();
+    }
+    if (typeof window.paintShellNav === 'function' && !document.body.classList.contains('arranging')) window.paintShellNav();
     if (d.people) {
       window.STATE.contacts = d.people;
-      if (desk() === 'people' && typeof renderPeople === 'function') renderPeople(document.getElementById('pSearch') ? document.getElementById('pSearch').value : '');
+      paintRoom();
+      if (desk() === 'people' && typeof window.paintRedesignContacts === 'function') window.paintRedesignContacts();
+      else if (desk() === 'people' && typeof renderPeople === 'function') renderPeople(document.getElementById('pSearch') ? document.getElementById('pSearch').value : '');
       if (desk() === 'contacts' && typeof renderContacts === 'function') renderContacts(document.getElementById('cSearch') ? document.getElementById('cSearch').value : '');
     }
   }
@@ -121,8 +161,13 @@
     if (!canPoll()) return;
     inflight = true;
     var url = '/api/changes' + (cursor ? '?since=' + encodeURIComponent(cursor) : '');
+    if (fp) url += (url.indexOf('?') >= 0 ? '&' : '?') + 'fp=' + encodeURIComponent(fp);
     auth(url, { credentials: 'same-origin', quiet: true }).then(function (r) {
       if (!r) return null;
+      if (r.status === 403) {
+        stopForbidden();
+        return null;
+      }
       if (r.status === 401) {
         if (!retried401) {
           retried401 = true;
@@ -132,6 +177,10 @@
               return null;
             }
             return auth(url, { credentials: 'same-origin', quiet: true }).then(function (again) {
+              if (again && again.status === 403) {
+                stopForbidden();
+                return null;
+              }
               if (!again || again.status === 401) {
                 stopSignedOut();
                 return null;
@@ -145,6 +194,7 @@
         return null;
       }
       retried401 = false;
+      if (!r.ok) return null;
       return r.json();
     }).then(apply).catch(function () {}).then(function () {
       inflight = false;

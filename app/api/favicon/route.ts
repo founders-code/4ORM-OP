@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +10,7 @@ const HOST = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i;
 export async function GET(req: Request) {
   const session = await openBoard();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const url = new URL(req.url);
   const raw = String(url.searchParams.get('d') || '').trim().toLowerCase().replace(/^www\./, '');
   if (!HOST.test(raw)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });

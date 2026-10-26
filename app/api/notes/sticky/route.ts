@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { allowNoteColor } from '@/lib/guard.mjs';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,9 +22,10 @@ export async function GET() {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ notes: [] });
     const rows = await session.sql`
-      SELECT id, body, color, x, y, w, h, meta FROM sticky_notes WHERE owner_id = ${session.userId} ORDER BY created_at
+      SELECT id, body, color, x, y, w, h, meta FROM sticky_notes WHERE owner_id = ${session.userId} AND deleted_at IS NULL ORDER BY created_at
     `;
     return NextResponse.json({ notes: (rows as Record<string, unknown>[]).map(shape) });
   } catch (err) {
@@ -37,6 +38,7 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ saved: false });
     const body = await req.json().catch(() => null);
     const text = String(body?.body || '').slice(0, 2000);

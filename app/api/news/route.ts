@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { NEWS_CHIPS, ensureNewsTables, lastSweptAt } from '@/lib/news-sweep';
 import { listNews, newsCategories } from '@/lib/war';
 import { NEWS_CATEGORIES } from '@/lib/war-core.mjs';
@@ -12,6 +12,7 @@ export async function GET(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ items: [], chips: NEWS_CHIPS, categories: NEWS_CATEGORIES });
     await ensureNewsTables(session.sql).catch(() => {});
     const asked = new URL(req.url).searchParams.get('span');

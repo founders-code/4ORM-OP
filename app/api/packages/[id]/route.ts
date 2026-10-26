@@ -16,7 +16,7 @@ import {
   removeRecipient,
   removeSpaceFolder,
 } from '@/lib/packages';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +24,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql || !packageIdOk(params.id)) return NextResponse.json({ package: null });
     const pkg = await readPackage(session.sql, session.userId, params.id);
     return NextResponse.json({ package: pkg });
@@ -37,6 +38,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql || !packageIdOk(params.id)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     const pkg = await patchPackage(session.sql, session.userId, params.id, body || {});
@@ -52,6 +54,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql || !packageIdOk(params.id)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     const action = String(body?.action || '');
@@ -90,6 +93,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql || !packageIdOk(params.id)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const ok = await deletePackage(session.sql, session.userId, params.id);
     return NextResponse.json({ ok });

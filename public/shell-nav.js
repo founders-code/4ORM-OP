@@ -6,21 +6,21 @@
     ['Calendar', 'M4 6h16v14H4zM4 10h16M9 3v4M15 3v4', '', 'calendar', '/calendar'],
     ['Email', 'M3 6h18v12H3zM3 7l9 6 9-6', '', 'mail', '/email'],
     ['People'],
-    ['Contacts', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0', '', 'people', '/control-room?view=people'],
+    ['Contacts', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0', '', 'people', '/contacts'],
     ['Spaces', 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', '', 'work', '/spaces'],
     ['Pipeline', 'M3 5h18l-7 8v6l-4 2v-8z', '', 'contacts', '/pipeline'],
     ['Library'],
     ['Notes', 'M5 3h14v18l-4-3H5z', '', 'notes', '/notes'],
     ['Documents', 'M7 3h7l5 5v13H7zM14 3v5h5', '', 'docs', '/documents'],
-    ['Drive', 'M8 3h8l6 10-4 7H6l-4-7z', '', 'drive', '/control-room?view=drive'],
+    ['Drive', 'M8 3h8l6 10-4 7H6l-4-7z', '', 'drive', '/drive'],
     ['Links', 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1', '', 'links', '/links'],
     ['Record'],
     ['Zoom', 'M3 7h12v10H3zM15 10l6-3v10l-6-3', '', 'znotes', '/zoom'],
     ['Completed', 'M4 12l5 5L20 6', '', 'done', '/completed'],
     ['Signals'],
     ['News', 'M4 5h13v14H6a2 2 0 0 1-2-2zM17 9h3v8a2 2 0 0 1-2 2M8 9h5M8 13h5', '', 'news', '/news'],
-    ['Financials', 'M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6', '', 'finance', '/control-room?view=finance'],
-    ['Integrations', 'M9 7V3M15 7V3M6 7h12v5a6 6 0 0 1-12 0zM12 18v3', '', 'int', '/control-room?view=int']
+    ['Financials', 'M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6', '', 'finance', '/financials'],
+    ['Integrations', 'M9 7V3M15 7V3M6 7h12v5a6 6 0 0 1-12 0zM12 18v3', '', 'int', '/integrations']
   ];
   var PAGE = {
     room: 'War Room', war: 'War Room', contacts: 'Pipeline', work: 'Spaces', docs: 'Documents',
@@ -75,10 +75,11 @@
       return !due || String(due).slice(0, 10) <= new Date().toISOString().slice(0, 10);
     }).length;
     var mailNeed = (S.mail || []).filter(function (m) { return m && (m.unread || m.needsReply || m.needReply); }).length;
-    var owed = (S.meetingActions || []).filter(function (a) { return a && a.status !== 'done' && a.status !== 'handled' && a.status !== 'tasked'; }).length;
+    var gone = S.zoomDismissed || {};
+    var owed = (S.meetingActions || []).filter(function (a) { return a && !gone[String(a.id)] && a.status !== 'done' && a.status !== 'handled' && a.status !== 'tasked' && a.status !== 'dismissed'; }).length;
     var cold = (S.contacts || []).filter(function (c) {
       var last = c.lastTouch || c.last_touch || c.lastContact || '';
-      if (!last) return true;
+      if (!last) return false;
       var days = (Date.now() - new Date(last).getTime()) / 86400000;
       return days >= 14;
     }).length;
@@ -121,6 +122,7 @@
     var seen = {};
     var grouped = groups();
     var names = applied();
+    var drag = document.body.classList.contains('arranging') ? 'true' : 'false';
     grouped.forEach(function (g) {
       html += '<div class="grp" data-grp="' + g.title + '">' + g.title + '</div>';
       names.forEach(function (name) {
@@ -131,14 +133,14 @@
         seen[name] = 1;
         var badge = bag[name];
         if (badge === '' || badge == null) badge = it[2] || '';
-        html += '<div class="nav' + (it[0] === active ? ' on' : '') + '" data-action="nav-go" data-v="' + it[3] + '" data-name="' + it[0] + '" draggable="false"><span class="grip" aria-hidden="true"></span><span class="nl">' + it[0] + '</span>' + (badge ? '<span class="n" id="' + (name === 'Pipeline' ? 'cCount' : name === 'Integrations' ? 'iCount' : '') + '">' + badge + '</span>' : '') + '</div>';
+        html += '<div class="nav' + (it[0] === active ? ' on' : '') + '" data-action="nav-go" data-v="' + it[3] + '" data-path="' + it[4] + '" data-name="' + it[0] + '" draggable="' + drag + '" tabindex="0"><span class="grip" aria-hidden="true"></span><span class="nl">' + it[0] + '</span>' + (badge ? '<span class="n" id="' + (name === 'Pipeline' ? 'cCount' : name === 'Integrations' ? 'iCount' : '') + '">' + badge + '</span>' : '') + '</div>';
       });
     });
     names.forEach(function (name) {
       if (seen[name]) return;
       var it = itemByName(name);
       if (!it) return;
-      html += '<div class="nav' + (it[0] === active ? ' on' : '') + '" data-action="nav-go" data-v="' + it[3] + '" data-name="' + it[0] + '"><span class="grip" aria-hidden="true"></span><span class="nl">' + it[0] + '</span></div>';
+      html += '<div class="nav' + (it[0] === active ? ' on' : '') + '" data-action="nav-go" data-v="' + it[3] + '" data-path="' + it[4] + '" data-name="' + it[0] + '" draggable="' + drag + '" tabindex="0"><span class="grip" aria-hidden="true"></span><span class="nl">' + it[0] + '</span></div>';
     });
     var arranging = document.body.classList.contains('arranging');
     html += '<div class="arr-row"><button type="button" class="arr" id="navArrange" data-action="nav-arrange">' + (arranging ? 'Done' : 'Arrange') + '</button><button type="button" class="arr-reset" id="navReset" data-action="nav-reset">Reset to default</button></div>';
@@ -152,19 +154,13 @@
   function bind() {
     var side = document.getElementById('side');
     if (!side) return;
+    /* Clicks are handled once by desk-actions.js 'nav-go' (switchView + URL).
+       Only the Arrange drag lives here. */
     side.querySelectorAll('.nav').forEach(function (el) {
-      el.onclick = function (e) {
-        if (document.body.classList.contains('arranging')) return;
-        var v = el.getAttribute('data-v');
-        if (v && typeof switchView === 'function') switchView(v);
-        var it = itemByName(el.getAttribute('data-name'));
-        if (it && it[4] && history && history.replaceState) {
-          try { history.replaceState({}, '', it[4]); } catch (err) {}
-        }
-      };
       el.addEventListener('dragstart', function (e) {
         if (!document.body.classList.contains('arranging')) { e.preventDefault(); return; }
         e.dataTransfer.setData('text/nav', el.getAttribute('data-name') || '');
+        e.dataTransfer.effectAllowed = 'move';
         el.classList.add('dragging');
       });
       el.addEventListener('dragend', function () { el.classList.remove('dragging'); });
@@ -175,6 +171,7 @@
       });
       el.addEventListener('dragleave', function () { el.classList.remove('insert'); });
       el.addEventListener('drop', function (e) {
+        if (!document.body.classList.contains('arranging')) return;
         e.preventDefault();
         el.classList.remove('insert');
         var from = e.dataTransfer.getData('text/nav');
@@ -189,10 +186,6 @@
         saveOrder(names);
       });
     });
-    var arr = document.getElementById('navArrange');
-    if (arr) arr.onclick = null;
-    var reset = document.getElementById('navReset');
-    if (reset) reset.onclick = null;
   }
   function clock() {
     var el = document.getElementById('clock');

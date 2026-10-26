@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readPipelineCache } from '@/lib/changes';
 import { withCreds } from '@/lib/creds';
-import { ensureGhlContact, type GhlPipeline, pushOpportunity } from '@/lib/ghl';
+import { ensureGhlContact, type GhlPipeline, moveOpportunityStage, pushOpportunity } from '@/lib/ghl';
 import { cachePipelines } from '@/lib/live';
 import { fail } from '@/lib/log';
 import { openBoard, sessionOwner } from '@/lib/session';
@@ -16,6 +16,7 @@ export async function GET() {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!session.sql) return NextResponse.json({ stages: [], pipelines: [], error: '' });
     const ownerId = await sessionOwner(session);
+    if (!ownerId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     let cached = await readPipelineCache(session.sql, ownerId);
     if (!cached) {
       const creds = await loadCredsFor(session.userId);
@@ -38,9 +39,23 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const id = String(body.id || '').trim();
     const stage = String(body.stage || body.pipelineStage || '').trim();
+    const opportunityId = String(body.opportunityId || '').trim();
+    if (opportunityId) {
+      // Stage move of an existing opportunity: move it or report why not. Never create a new opportunity.
+      const credsMove = await loadCredsFor(session.userId);
+      const moved = await withCreds(credsMove, () => moveOpportunityStage({
+        opportunityId,
+        pipelineId: String(body.pipelineId || ''),
+        stageId: String(body.stageId || ''),
+        stage,
+      }));
+      if (moved.ok) return NextResponse.json({ ok: true, opportunityId: moved.opportunityId });
+      return NextResponse.json({ ok: false, note: moved.note }, { status: moved.status });
+    }
     let name = String(body.name || '').trim().slice(0, 120);
     let email = String(body.email || '').trim().slice(0, 180);
     if (!stage) return NextResponse.json({ ok: false, note: 'Pick a stage' }, { status: 400 });
@@ -67,7 +82,6 @@ export async function POST(req: Request) {
         name: name || 'Contact',
         contactId,
         stage,
-        opportunityId: String(body.opportunityId || ''),
       });
     });
     return NextResponse.json({ ok: !!ghlId, opportunityId: ghlId || '' });

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'fs';
+import { readdirSync, readFileSync } from 'fs';
 import { tokenOk, allowArea, allowPriority, allowStage, allowStatus, allowContactType, allowTier, allowNoteColor, isBriefHour, windowKey, CEILINGS, parseDue, visibleCalendarWindow, inferContactCategory } from '../lib/guard.mjs';
 import { ROADMAP, ROAD_CATEGORIES } from '../lib/roadmap.mjs';
 import { STARTERS, assembleMail, fillToken, orderSpaceFolders } from '../lib/packages-core.mjs';
@@ -119,7 +119,11 @@ test('the calendar window starts on Sunday and covers six weeks', () => {
   const fromSunday = visibleCalendarWindow(sunday);
   const fromWednesday = visibleCalendarWindow(wednesday);
   assert.equal(fromSunday.start.toISOString(), '2026-10-11T06:00:00.000Z');
-  assert.equal(fromSunday.end.toISOString(), '2026-11-22T07:00:00.000Z');
+  // The end is midnight in America/Edmonton six weeks later. Its UTC offset depends on the installed tz
+  // database (2026 tzdata releases change Alberta's rules for November 2026), so check the local wall time.
+  const local = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Edmonton', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(fromSunday.end);
+  assert.equal(local.replace(',', ''), '2026-11-22 00:00');
+  assert.ok(fromSunday.end - fromSunday.start >= 42 * 86400000 - 3600000 && fromSunday.end - fromSunday.start <= 42 * 86400000 + 3600000);
   assert.equal(fromWednesday.start.toISOString(), fromSunday.start.toISOString());
 });
 
@@ -221,7 +225,11 @@ test('the control room page does not carry secrets', () => {
   assert.equal(page.includes('Connect GoHighLevel'), true);
   assert.equal(/DATABASE_URL|INGEST_TOKEN|CRON_SECRET|GOOGLE_|GHL_|refresh_token|client_secret/.test(page), false);
   assert.equal(page.includes('4orm Intelligence'), true);
-  assert.equal(page.includes('CEO - ranked moves'), true);
+  // UI copy that moved out of the page into the scripts it loads (2026-10 redesign) is checked where it lives now.
+  const pub = (name) => readFileSync(new URL('../public/' + name, import.meta.url), 'utf8');
+  const warjs = pub('control-room-war.js');
+  const shellNav = pub('shell-nav.js');
+  assert.equal(pub('redesign-pages.js').includes('CEO ranked moves'), true);
   assert.equal(page.includes('wait-scroll'), true);
   assert.equal(page.includes('Form Intelligence'), false);
   assert.equal(page.includes('Do all steps'), true);
@@ -232,17 +240,18 @@ test('the control room page does not carry secrets', () => {
   assert.equal(page.includes("ids.length+' deleted'"), true);
   assert.equal(/Atherton/.test(page), false);
   assert.equal(/\/api\/(ingest|mcp|cron)/.test(page), false);
-  assert.equal(page.includes('Daily sweep - news'), true);
-  assert.equal(page.includes('Raise - Friends &amp; Family - survival track'), true);
+  assert.equal(warjs.includes('Daily sweep - news'), true);
+  // The legacy War Room fallback no longer paints hard-coded money (Cash $100, $80K of $250K).
+  assert.equal(/Cash \$100|\$80K of \$250K/.test(warjs), false);
   assert.equal(page.includes('Ask 4orm Intelligence to build the plan'), true);
-  assert.equal(page.includes('Waiting on us'), true);
-  assert.equal(page.includes("You said you'd do it"), true);
-  assert.equal(page.includes('Waiting on others'), true);
+  assert.equal(warjs.includes('Waiting on us'), true);
+  assert.equal(warjs.includes("You said you\\'d do it"), true);
+  assert.equal(warjs.includes('Waiting on others'), true);
   assert.equal(page.includes('Nothing urgent on the desk'), true);
   assert.equal(page.includes('data-v="cal"'), false);
   assert.equal(page.includes('id="navToggle"'), true);
   assert.equal(page.includes('id="peopleFilter"'), true);
-  assert.equal(page.includes('data-v="work"'), true);
+  assert.equal(shellNav.includes("'work', '/spaces'"), true);
   assert.equal(page.includes('id="pkgGrid"'), true);
   assert.equal(page.includes('Prepare send'), true);
   assert.equal(page.includes('Stages from GoHighLevel'), true);
@@ -251,19 +260,31 @@ test('the control room page does not carry secrets', () => {
   assert.equal(page.includes('id="v-znotes"'), true);
   assert.equal(page.includes('#v-znotes{background:linear-gradient(180deg,#1a2f70'), true);
   assert.equal(page.includes('data-doc-url'), true);
-  assert.equal(page.includes('data-v="drive"'), true);
-  assert.equal(page.includes('>Spaces</span>'), true);
+  assert.equal(shellNav.includes("'drive', '/drive'"), true);
+  assert.equal(page.includes('<div class="t">Spaces</div>'), true);
   assert.equal(page.includes('Pinned / Key docs'), true);
   assert.equal(page.includes('Move to Drive'), true);
   assert.equal(page.includes('cr_docs_open'), true);
   assert.equal(page.includes('Thumbnails'), true);
   assert.equal(page.includes('control-room-war.js'), true);
   assert.equal(page.includes('live-updates.js'), true);
-  const warjs = readFileSync(new URL('../public/control-room-war.js', import.meta.url), 'utf8');
   assert.equal(/Atherton|example\.com/.test(warjs), false);
   assert.equal(warjs.includes('/api/ceo/plan'), true);
   assert.equal(warjs.includes('/api/plans'), true);
   assert.equal(/\/api\/(ingest|mcp|cron)/.test(warjs), false);
+  // Every live script the page loads (fixture files excluded) is held to the same rules as the page,
+  // and the finance code is checked on the server only: no code, no client-side compare.
+  const live = readdirSync(new URL('../public/', import.meta.url))
+    .filter((name) => name.endsWith('.js') && !/^redesign-fixture/.test(name))
+    .map((name) => [name, pub(name)]);
+  assert.ok(live.length > 5);
+  for (const [name, src] of live) {
+    assert.equal(/DATABASE_URL|INGEST_TOKEN|CRON_SECRET|GOOGLE_|GHL_|refresh_token|client_secret/.test(src), false, name);
+    assert.equal(/\/api\/(ingest|mcp|cron)/.test(src), false, name);
+    assert.equal(/Atherton|example\.com/.test(src), false, name);
+    assert.equal(/finCode\s*[:=]|STATE\.finCode|\b1313\b/.test(src), false, name);
+  }
+  assert.equal(/finCode\s*[:=]|STATE\.finCode|'1313'/.test(page), false);
 });
 
 test('war room helpers extract commitments and fill a plan', () => {
@@ -321,4 +342,40 @@ test('the open page polls /api/changes only while visible', () => {
   assert.equal(live.includes('15000'), true);
   assert.equal(live.includes("document.visibilityState !== 'visible'"), true);
   assert.equal(live.includes('visibilitychange'), true);
+});
+
+test('every signed-in API route is allowlisted (sessionOwner) and fails closed', () => {
+  const apiRoot = new URL('../app/api/', import.meta.url);
+  const files = [];
+  const walk = (dir, rel) => {
+    for (const ent of readdirSync(dir, { withFileTypes: true })) {
+      if (ent.isDirectory()) walk(new URL(ent.name + '/', dir), rel + ent.name + '/');
+      else if (ent.name === 'route.ts') files.push(rel.replace(/\/$/, ''));
+    }
+  };
+  walk(apiRoot, '');
+  assert.ok(files.length > 80);
+  // Token-authenticated (webhooks, cron, ingest), deliberately public, or checked by email directly.
+  const exempt = /^(book|clerk-publishable-key|news\/(image|thumb)\/\[id\]|hooks\/.*|cron\/.*|ingest|mcp|ops\/dedupe|private-doc)$/;
+  const missing = [];
+  for (const rel of files) {
+    const src = readFileSync(new URL(rel + '/route.ts', apiRoot), 'utf8');
+    if (/^export \{[^}]*\} from '\.\.\//m.test(src)) continue; // re-export of a gated route
+    if (exempt.test(rel)) continue;
+    if (!src.includes('openBoard()')) continue;
+    const opens = (src.match(/await openBoard\(\)/g) || []).length;
+    const gates = (src.match(/sessionOwner\(/g) || []).length;
+    if (gates < opens) missing.push(rel);
+  }
+  assert.deepEqual(missing, []);
+  // The public booking page only talks to the public booking route.
+  const book = readFileSync(new URL('../public/book.html', import.meta.url), 'utf8');
+  assert.deepEqual([...new Set(book.match(/\/api\/[a-z-/]+/g) || [])], ['/api/book']);
+  const bookRoute = readFileSync(new URL('book/route.ts', apiRoot), 'utf8');
+  assert.equal(bookRoute.includes('openBoard'), false);
+  // Signed person-specific documents are not served from public/.
+  assert.equal(readdirSync(new URL('../public/documents/', import.meta.url)).includes('private'), false);
+  const privateDoc = readFileSync(new URL('private-doc/route.ts', apiRoot), 'utf8');
+  assert.match(privateDoc, /isRoomEmail\(email\)/);
+  assert.match(privateDoc, /status: 403/);
 });

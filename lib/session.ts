@@ -4,7 +4,9 @@ import { ROOM_EMAIL } from './room';
 
 export { ROOM_EMAIL };
 
-export async function openBoard() {
+export type BoardSession = { userId: string; sql: Awaited<ReturnType<typeof getSql>> };
+
+export async function openBoard(): Promise<BoardSession | null> {
   const { userId } = await auth();
   if (!userId) return null;
   const sql = await getSql();
@@ -25,14 +27,39 @@ export async function roomOwner(sql: NonNullable<Awaited<ReturnType<typeof getSq
   return ownerForEmail(sql, ROOM_EMAIL);
 }
 
-/** Signed-in page owner. Test users stay on their own id and never read Chad's room. */
-export async function sessionOwner(session: { userId: string; sql: Awaited<ReturnType<typeof getSql>> }) {
+/** True only for Chad's sign-in email (case-insensitive). */
+export function isRoomEmail(email: string | null | undefined) {
+  return String(email || '').trim().toLowerCase() === ROOM_EMAIL;
+}
+
+/** Primary email of the signed-in Clerk user, or '' when the lookup fails or does not match the session. */
+export async function sessionEmail(session: BoardSession) {
   try {
     const user = await currentUser();
-    if (user?.publicMetadata?.test === true) return session.userId;
+    if (!user || user.id !== session.userId) return '';
+    return String(user.primaryEmailAddress?.emailAddress || '').toLowerCase();
   } catch {
-    /* fall through to the room owner */
+    return '';
   }
+}
+
+/**
+ * Whose room this signed-in session may read. Explicit allowlist, fails closed:
+ * - ROOM_EMAIL (Chad) reads the room owner's rows;
+ * - Clerk users with publicMetadata.test === true (strict boolean) read their own isolated rows;
+ * - everyone else, and any Clerk lookup failure, gets null. Callers answer 403.
+ */
+export async function sessionOwner(session: BoardSession): Promise<string | null> {
+  let user: Awaited<ReturnType<typeof currentUser>>;
+  try {
+    user = await currentUser();
+  } catch {
+    return null;
+  }
+  if (!user || user.id !== session.userId) return null;
+  if (user.publicMetadata?.test === true) return session.userId;
+  if (!isRoomEmail(user.primaryEmailAddress?.emailAddress)) return null;
   if (!session.sql) return session.userId;
-  return (await roomOwner(session.sql)) || session.userId;
+  const owner = await roomOwner(session.sql).catch(() => null);
+  return owner || session.userId;
 }

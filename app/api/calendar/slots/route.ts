@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { withCreds } from '@/lib/creds';
 import { createEvent, listEvents } from '@/lib/google';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { openSlots } from '@/lib/slots.mjs';
 import { loadCredsFor } from '@/lib/vault';
 
@@ -12,6 +12,7 @@ export async function GET() {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const now = Date.now();
     if (!session.sql) return NextResponse.json({ slots: openSlots(now, []) });
     const start = new Date(now - 12 * 60 * 60 * 1000).toISOString();
@@ -36,6 +37,7 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = await req.json().catch(() => null);
     const start = Number(body?.start);
     if (!session.sql || !Number.isFinite(start)) {

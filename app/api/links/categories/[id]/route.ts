@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
+import { softDeleteCategory } from '@/lib/link-cats';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +45,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ ok: false, error: 'Unavailable' });
     const sql = session.sql;
     const ownerId = session.userId;
@@ -110,33 +112,14 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
         `;
       }
     } else {
-      if (row) {
-        const home = await sql`
-          SELECT subs, nest FROM link_categories
-          WHERE owner_id = ${ownerId} AND name = ${UNCAT}
-          LIMIT 1
-        `;
-        const subs = addAll(asList(home[0]?.subs), asList(row.subs));
-        const merged = asNest(home[0]?.nest);
-        Object.entries(nest).forEach(([kid, leaves]) => {
-          merged[kid] = addAll(merged[kid] || [], leaves).slice(0, 40);
-        });
-        await sql`
-          UPDATE link_categories SET subs = ${subs}::text[], nest = ${JSON.stringify(merged)}::jsonb
-          WHERE owner_id = ${ownerId} AND name = ${UNCAT}
-        `;
-      }
-      await sql`
-        UPDATE links SET category = ${UNCAT}
-        WHERE owner_id = ${ownerId} AND category = ${name}
-      `;
-      await sql`
-        DELETE FROM link_categories
-        WHERE owner_id = ${ownerId} AND name = ${name} AND name <> ${UNCAT}
-      `;
+      // Soft delete with an undo snapshot (POST /api/links {kind:'restore-category'} puts it back).
+      const removed = await softDeleteCategory(sql, ownerId, name);
+      if (!removed.ok) return NextResponse.json({ ok: false, error: removed.error }, { status: removed.status });
     }
     const fresh = await sql`
-      SELECT id, name, subs, nest FROM link_categories WHERE owner_id = ${ownerId} ORDER BY name
+      SELECT id, name, subs, nest FROM link_categories
+      WHERE owner_id = ${ownerId} AND COALESCE(to_jsonb(link_categories) ->> 'deleted_at', '') = ''
+      ORDER BY name
     `;
     return NextResponse.json({
       ok: true,

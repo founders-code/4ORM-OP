@@ -94,6 +94,7 @@
     if (which === 'zoom' && typeof window.paintRedesignZoom === 'function') window.paintRedesignZoom();
     if (which === 'done' && typeof window.paintRedesignCompleted === 'function') window.paintRedesignCompleted();
     if (which === 'news' && typeof window.renderNews === 'function') window.renderNews((window.STATE && window.STATE.news) || []);
+    if (window.__deskRefreshExt && typeof window.__deskRefreshExt[which] === 'function') { try { window.__deskRefreshExt[which](); } catch (err) {} }
     if (typeof window.paintShellNav === 'function') window.paintShellNav();
   }
   function go(view) {
@@ -174,18 +175,28 @@
     }
     return S().emailBoxes || [];
   }
-  function findPeopleBox(id) {
+  /* Stored box by id. With promote, a box built from live mail is copied into the stored list so edits persist. */
+  function findPeopleBox(id, promote) {
     var list = peopleBoxList();
     var i;
     for (i = 0; i < list.length; i++) if (String(list[i].id) === String(id)) return list[i];
-    return null;
+    if (!promote || typeof window.__peopleState !== 'function') return null;
+    var live = (window.__peopleState().boxes || []).filter(function (b) { return String(b.id) === String(id); })[0];
+    if (!live) return null;
+    var copy = { id: live.id, n: live.n, o: live.o, c: live.c, tags: (live.tags || []).slice(), addrs: (live.addrs || []).slice(), closed: !!live.closed };
+    list.push(copy);
+    return copy;
   }
+  /* Only durable fields are stored; messages, files and counts always come from live mail. */
   function persistPeopleBoxes() {
     var list = peopleBoxList();
     if (fixtureOn()) return;
+    var clean = list.map(function (b) {
+      return { id: b.id, n: b.n, o: b.o || '', c: b.c || '#2e6bf2', tags: b.tags || [], addrs: b.addrs || [], closed: !!b.closed };
+    });
     S().emailBoxes = list;
-    try { localStorage.setItem('cr_email_boxes', JSON.stringify(list)); } catch (e) {}
-    if (writeOk()) api('/api/mail/boxes', { method: 'POST', body: { action: 'save', boxes: list } }).catch(function () {});
+    try { localStorage.setItem('cr_email_boxes', JSON.stringify(clean)); } catch (e) {}
+    if (writeOk()) api('/api/mail/boxes', { method: 'POST', body: { action: 'save', boxes: clean } }).catch(function () {});
   }
 
   /* ---------- focus timer ---------- */
@@ -224,15 +235,20 @@
     var stop = root.querySelector('[data-action="focus-stop"]');
     if (stop) stop.hidden = !(f.running || f.paused);
   }
-  function logFocusBlock(root) {
+  function logFocusBlock(root, mins) {
     if (!writeOk()) return Promise.resolve();
-    var title = 'Focus block 25 min';
+    var stamp = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Vancouver', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
+    var title = 'Focus block ' + (mins || 25) + ' min · ' + stamp;
+    /* logged straight into Done today (status done), never as an open Today task */
     return api('/api/items', { method: 'POST', body: { title: title, area: 'other', priority: 'normal', due: new Date().toISOString() } })
       .then(ok).then(json).then(function (row) {
         if (row && row.id) {
           S().items = S().items || [];
-          S().items.unshift(row);
+          S().items.unshift(Object.assign({}, row, { status: 'done', updatedAt: Date.now() }));
+          return patchItem(row.id, { status: 'done' }).catch(function () {}).then(function () { refresh('war'); return row; });
         }
+        return row;
+      }).then(function (row) {
         toast(root, 'Focus block logged', function () {
           if (!row || !row.id) return;
           api('/api/items', { method: 'PATCH', body: { id: row.id, status: 'dropped' } }).then(function () { refresh('war'); });
@@ -275,10 +291,11 @@
   function stopFocus(root, log) {
     var f = focusState();
     var ran = f.running || f.paused;
+    var usedMs = FOCUS_MS - (f.running && !f.paused ? Math.max(0, f.end - Date.now()) : (f.remain || FOCUS_MS));
     f.running = false; f.paused = false; f.remain = FOCUS_MS; f.end = 0;
     clearInterval(f.tick); f.tick = null;
     paintFocus();
-    if (ran && log) logFocusBlock(root);
+    if (ran && log && usedMs >= 5 * 60000) logFocusBlock(root, Math.round(usedMs / 60000));
     else if (ran) toast(root, 'Focus stopped');
   }
 
@@ -324,8 +341,9 @@
       extra.column = body.column || body.bucket;
     }
     var next = Object.assign({}, body, extra);
+    var localStamp = next.status ? { updatedAt: Date.now() } : {};
     S().items = (S().items || []).map(function (it) {
-      return String(it.id) === String(id) ? Object.assign({}, it, next) : it;
+      return String(it.id) === String(id) ? Object.assign({}, it, next, localStamp) : it;
     });
     var fx = window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.war;
     if (fx && next.column) {
@@ -356,6 +374,323 @@
   function softDrop(id) {
     return patchItem(id, { status: 'dropped' });
   }
+  /* ---------- War Room: "from Zoom" cards live in meeting_actions, not items ---------- */
+  function isZoomCard(el, root, id) {
+    var task = el && el.closest ? el.closest('.task') : null;
+    if (!task && root && root.querySelector && id) task = root.querySelector('.task[data-id="' + String(id).replace(/"/g, '') + '"]');
+    if (task && task.getAttribute('data-zoom') === '1') return true;
+    return (S().meetingActions || []).some(function (a) { return a && String(a.id) === String(id); }) &&
+      !(S().items || []).some(function (it) { return String(it.id) === String(id); });
+  }
+  function zoomCardTitle(id) {
+    var hit = (S().meetingActions || []).filter(function (a) { return a && String(a.id) === String(id); })[0];
+    return hit ? String(hit.text || hit.body || 'Meeting follow-up') : 'Meeting follow-up';
+  }
+  /* PATCH /api/meeting-actions/:id {status, column}. Falls back to the older
+     POST /api/meeting-actions {id,status} (+ a client-side addTask for moves)
+     only while the PATCH route is not deployed (404/405). */
+  function zoomPatch(id, body) {
+    S().zoomDismissed = S().zoomDismissed || {};
+    if (!writeOk()) { S().zoomDismissed[id] = true; return Promise.resolve({}); }
+    var title = zoomCardTitle(id);
+    return api('/api/meeting-actions/' + encodeURIComponent(id), { method: 'PATCH', body: body }).then(function (r) {
+      if (r && (r.status === 404 || r.status === 405)) {
+        var legacy = body.status === 'dismissed' ? 'done' : (body.status || 'tasked');
+        return api('/api/meeting-actions', { method: 'POST', body: { id: id, status: legacy } }).then(ok).then(json).then(function (d) {
+          if (body.column) return addTask(title, body.column).then(function () { return d; });
+          return d;
+        });
+      }
+      return json(ok(r)).then(function (d) {
+        if (d && d.item && d.item.id) { S().items = S().items || []; S().items.unshift(d.item); }
+        else if (body.column && typeof window.loadBoard === 'function') setTimeout(window.loadBoard, 300);
+        return d;
+      });
+    }).then(function (d) {
+      S().zoomDismissed[id] = true;
+      if (d && Array.isArray(d.actions)) S().meetingActions = d.actions;
+      else S().meetingActions = (S().meetingActions || []).filter(function (a) { return String(a.id) !== String(id); });
+      return d;
+    });
+  }
+  function zoomRestore(id) {
+    if (S().zoomDismissed) delete S().zoomDismissed[id];
+    if (!writeOk()) return Promise.resolve();
+    return api('/api/meeting-actions/' + encodeURIComponent(id), { method: 'PATCH', body: { status: 'open' } }).then(function (r) {
+      if (r && (r.status === 404 || r.status === 405)) return api('/api/meeting-actions', { method: 'POST', body: { id: id, status: 'open' } });
+      return r;
+    }).then(function () {
+      return api('/api/meeting-actions', { method: 'GET' }).then(ok).then(json).then(function (d) { if (d && d.actions) S().meetingActions = d.actions; });
+    }).catch(function () {});
+  }
+  function fourmSound(kind) {
+    try { if (window.FourmSound && typeof window.FourmSound[kind] === 'function') window.FourmSound[kind](); } catch (e) {}
+  }
+  /* Save a move's steps to item_plans (POST /api/plans, push:false keeps them off the deck). */
+  function saveMoveSteps(id, steps) {
+    var plans = S().plans || (S().plans = []);
+    var prev = plans.filter(function (p) { return String(p.itemId) === String(id); })[0] || {};
+    var next = { itemId: String(id), steps: steps, needs: prev.needs || [], draft: prev.draft || '' };
+    S().plans = plans.filter(function (p) { return String(p.itemId) !== String(id); }).concat([next]);
+    if (!writeOk()) return Promise.resolve(next);
+    return api('/api/plans', { method: 'POST', body: { itemId: String(id), steps: steps.map(function (s) { return { text: s.text, done: !!s.done }; }), needs: next.needs, draft: next.draft, push: false } })
+      .then(ok).then(json).then(function (d) {
+        if (d && d.itemId) {
+          S().plans = (S().plans || []).filter(function (p) { return String(p.itemId) !== String(id); }).concat([{ itemId: d.itemId, steps: d.steps || next.steps, needs: d.needs || next.needs, draft: d.draft != null ? d.draft : next.draft }]);
+        }
+        return d;
+      });
+  }
+  function currentMoveSteps(id) {
+    var moves = (S().ceo && S().ceo.moves) || [];
+    var hit = moves.filter(function (m) { return String(m.id) === String(id); })[0];
+    if (typeof window.__warMoveSteps === 'function') return window.__warMoveSteps(id, hit).map(function (s) { return { text: s.text, done: !!s.done }; });
+    return [];
+  }
+
+  /* ---------- Notes: sticky meta is merged client-side too, so a PATCH never
+     drops title/kind/checks even before the server-side merge ships ---------- */
+  function stickyRow(id) {
+    return (S().stickies || []).filter(function (n) { return String(n.id) === String(id); })[0] || null;
+  }
+  function boardNote(id) {
+    return (S().notes || []).filter(function (n) { return String(n.id) === String(id); })[0] || null;
+  }
+  function patchStickyMeta(id, patch) {
+    var row = stickyRow(id);
+    var meta = Object.assign({}, (row && row.meta && typeof row.meta === 'object') ? row.meta : {}, patch);
+    if (row) row.meta = meta;
+    if (!writeOk()) return Promise.resolve();
+    /* The server merges meta (coalesce(meta,'{}') || $meta), so only the changed keys are sent. */
+    return api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { meta: Object.assign({}, patch) } }).then(ok);
+  }
+  function createNoteCat(name) {
+    var have = (S().noteCats || []).filter(function (c) { return c && typeof c === 'object' && String(c.name).toLowerCase() === String(name).toLowerCase(); })[0];
+    if (have) return Promise.resolve(have);
+    return api('/api/notes', { method: 'POST', body: { kind: 'category', name: name } }).then(ok).then(json).then(function (c) {
+      if (!c || !c.id) throw new Error('cat');
+      S().noteCats = (S().noteCats || []).concat([{ id: c.id, name: c.name || name, parentId: c.parentId || null, depth: c.depth || 0 }]);
+      return c;
+    });
+  }
+  function setNoteCategory(id, source, name) {
+    if (source === 'sticky') return patchStickyMeta(id, { category: name || '' });
+    var n = boardNote(id);
+    var cat = (S().noteCats || []).filter(function (c) { return c && typeof c === 'object' && String(c.name).toLowerCase() === String(name || 'inbox').toLowerCase(); })[0];
+    var catId = cat ? cat.id : null;
+    if (n) n.catId = catId;
+    if (!writeOk()) return Promise.resolve();
+    return api('/api/notes', { method: 'PATCH', body: { id: id, catId: catId } }).then(ok);
+  }
+  /* ---------- Documents (rendering lives in redesign-pages-b.js; these run after its paint) ---------- */
+  function docsRoot() {
+    var host = document.getElementById('docsDesk');
+    return host && host.shadowRoot ? host.shadowRoot : null;
+  }
+  function zoomDocFrame() {
+    var root = docsRoot();
+    var f = root && root.querySelector('.vstage iframe.docframe');
+    if (!f) return;
+    var z = S().docZoom || 1;
+    f.style.transform = 'scale(' + z + ')';
+    f.style.transformOrigin = 'top center';
+  }
+  function stepDoc(root, dir) {
+    var r = docsRoot() || root;
+    var cards = Array.prototype.slice.call(r.querySelectorAll('[data-action="doc-open"]')).filter(function (c) { return c.style.display !== 'none'; });
+    if (!cards.length || !S().docOpen) return;
+    var i = cards.map(function (c) { return attr(c, 'data-id'); }).indexOf(String(S().docOpen.id || ''));
+    var next = cards[(i + dir + cards.length) % cards.length];
+    if (next) actions['doc-open'](next, r);
+  }
+  /* Page arrows page through a stored PDF; when the page count is unknown they step to the next file. */
+  function stepDocPage(root, dir) {
+    var o = S().docOpen;
+    var pages = Number(o && o.meta && o.meta.pages) || 0;
+    if (!o || pages < 2) { stepDoc(root, dir); return; }
+    o.page = Math.max(1, Math.min(pages, (Number(o.page) || 1) + dir));
+    refresh('docs');
+  }
+  /* Undo for a dismissed / cancelled ranked move: DELETE the snooze, then repaint from the fresh CEO payload. */
+  function unsnoozeMove(root, id) {
+    if (!id || !writeOk()) return;
+    api('/api/ceo/moves/' + encodeURIComponent(id) + '/snooze', { method: 'DELETE' }).then(ok).then(json).then(function (d) {
+      if (d && typeof window.applyCeo === 'function') window.applyCeo(d);
+      else if (typeof window.refreshCeo === 'function') window.refreshCeo();
+      refresh('war');
+      toast(root, 'Move is back');
+    }).catch(function () {
+      if (typeof window.refreshCeo === 'function') window.refreshCeo();
+      toast(root, 'Could not bring that move back');
+    });
+  }
+  function bulkMove(root, bucket) {
+    var ids = Object.keys(S().execPicked || {});
+    if (!ids.length) return;
+    Promise.all(ids.map(function (id) {
+      return isZoomCard(null, root, id) ? zoomPatch(id, { status: 'tasked', column: bucket }) : patchItem(id, { column: bucket });
+    })).then(function () {
+      S().execSelect = false; S().execPicked = {}; refresh('war'); toast(root, 'Moved to ' + (bucket === 'week' ? 'Week' : 'Later'));
+    }).catch(function () { refresh('war'); toast(root, 'Could not move all of those tasks'); });
+  }
+
+  /* ---------- Documents: selection, Spaces, sets, Drive pull, large uploads ---------- */
+  var DOC_SMALL = 3 * 1024 * 1024;
+  function docRow(id) {
+    return (S().staged || []).filter(function (d) { return String(d.id) === String(id); })[0] || null;
+  }
+  function docPicked() {
+    var pick = S().docPick || {};
+    return Object.keys(pick).filter(function (id) { return pick[id] && docRow(id); });
+  }
+  function reloadDocs() {
+    if (typeof window.__portLoadB === 'function') window.__portLoadB('docs');
+    else refresh('docs');
+  }
+  function docFolderNow() {
+    var f = String(S().docFolder || '');
+    return f && f !== 'All documents' ? f : 'Uncategorized';
+  }
+  function jsonOrThrow(r) {
+    return r.json().catch(function () { return {}; }).then(function (d) {
+      if (!r.ok || (d && d.saved === false)) throw new Error((d && d.error) || 'fail');
+      return d;
+    });
+  }
+  function errText(err, fallback) {
+    return err && err.message && err.message !== 'fail' ? err.message : fallback;
+  }
+  /* A library card attaches as itself: a Drive file by its Drive id, a stored file by its library id (the server copies the bytes). */
+  function docPayload(d) {
+    var drive = String(d.driveFileId || d.drive || '');
+    var isDrive = /^[\w-]{8,}$/.test(drive) && !UUID_RE.test(drive);
+    var staged = UUID_RE.test(String(d.id || '')) ? String(d.id) : '';
+    return { action: 'add-doc', name: d.name || 'File', url: isDrive ? (d.url || '') : '', mime: d.mime || '', driveFileId: isDrive ? drive : '', stagedId: staged };
+  }
+  function attachDocsToSpace(root, spaceId, docs, label) {
+    docs = (docs || []).filter(Boolean);
+    if (!docs.length) { toast(root, 'Pick a file first'); return Promise.resolve(false); }
+    if (!writeOk()) { toast(root, 'Added to a Space (fixture)'); return Promise.resolve(false); }
+    if (!UUID_RE.test(String(spaceId || ''))) { toast(root, 'Save the Space first, then add files'); return Promise.resolve(false); }
+    var failed = 0;
+    return docs.reduce(function (p, d) {
+      return p.then(function () {
+        return api('/api/spaces/' + encodeURIComponent(spaceId), { method: 'POST', body: docPayload(d) }).then(jsonOrThrow).catch(function () { failed += 1; });
+      });
+    }, Promise.resolve()).then(function () {
+      reloadDocs();
+      refresh('spaces');
+      var n = docs.length - failed;
+      var where = label || 'the Space';
+      if (failed) toast(root, 'Added ' + n + ' of ' + docs.length + ' to ' + where);
+      else toast(root, (docs.length === 1 ? 'Added to ' : 'Added ' + docs.length + ' files to ') + where);
+      return !failed;
+    });
+  }
+  function createSpaceNamed(name) {
+    return api('/api/spaces', { method: 'POST', body: { name: name } }).then(jsonOrThrow).then(function (d) {
+      var id = d && (d.id || (d.space && d.space.id) || (d.package && d.package.id));
+      if (!UUID_RE.test(String(id || ''))) throw new Error('fail');
+      return { id: id, name: d.name || name };
+    });
+  }
+  function docsFor(kind) {
+    if (kind === 'open') {
+      var o = S().docOpen;
+      return o ? [docRow(o.id) || { id: o.id, driveFileId: o.drive, name: o.name, url: o.url, mime: o.mime || '' }] : [];
+    }
+    return docPicked().map(docRow);
+  }
+  function spacePickHtml(kind) {
+    var rows = (S().packages || []).filter(function (p) { return p && UUID_RE.test(String(p.id || '')); });
+    return '<div style="font-weight:600;margin:2px 0 6px">Add to a Space</div>'
+      + '<div style="max-height:280px;overflow:auto">' + (rows.length ? rows.slice(0, 80).map(function (p) {
+        return '<button type="button" data-action="doc-space-pick" data-kind="' + kind + '" data-space="' + esc(p.id) + '" data-name="' + esc(p.name || 'Space') + '">' + esc(p.name || 'Space') + '</button>';
+      }).join('') : '<div style="opacity:.7;padding:4px 0">No Spaces yet.</div>') + '</div>'
+      + '<button type="button" data-action="doc-space-new" data-kind="' + kind + '">+ New Space</button>';
+  }
+  function setPickHtml() {
+    var sets = S().docSets || [];
+    return '<div style="font-weight:600;margin:2px 0 6px">Add to a set</div>'
+      + (sets.length ? sets.map(function (s) {
+        return '<button type="button" data-action="docs-set-pick" data-id="' + esc(s.id) + '" data-name="' + esc(s.name) + '">' + esc(s.name) + '</button>';
+      }).join('') : '<div style="opacity:.7;padding:4px 0">No sets yet.</div>')
+      + '<button type="button" data-action="docs-new-set">+ New set</button>';
+  }
+  function whenLabel(iso) {
+    var t = Date.parse(String(iso || ''));
+    if (!Number.isFinite(t)) return '';
+    try {
+      return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(t)).replace(',', '');
+    } catch (e) { return new Date(t).toISOString().slice(0, 16).replace('T', ' '); }
+  }
+  function searchDrive(root, q) {
+    var list = root.querySelector && root.querySelector('.doc-drive-list');
+    if (!list) return;
+    var ask = ++searchDrive.n;
+    list.textContent = 'Searching Drive…';
+    api('/api/documents/drive?q=' + encodeURIComponent(q || ''), { method: 'GET' }).then(jsonOrThrow).then(function (d) {
+      if (ask !== searchDrive.n) return;
+      var files = (d && d.files) || [];
+      S().docDriveHits = files;
+      list.innerHTML = files.length ? files.map(function (f, i) {
+        return '<button type="button" class="space-link-row" data-action="docs-drive-pick" data-i="' + i + '">' + esc(f.name) + '<small style="display:block;opacity:.6">' + esc(whenLabel(f.modified)) + '</small></button>';
+      }).join('') : '<div style="opacity:.7;padding:4px 0">No Drive files match.</div>';
+    }).catch(function (err) {
+      if (ask === searchDrive.n) list.textContent = errText(err, 'Could not search Drive.');
+    });
+  }
+  searchDrive.n = 0;
+  window.__deskInputExt = window.__deskInputExt || {};
+  window.__deskInputExt['docs-drive-q'] = function (el, root) {
+    clearTimeout(searchDrive.timer);
+    searchDrive.timer = setTimeout(function () { searchDrive(root, el.value || ''); }, 250);
+  };
+  function rawPut(url, blob) {
+    var fn = typeof window.authFetch === 'function' ? window.authFetch : fetch;
+    return fn(url, { method: 'PUT', body: blob, headers: { 'content-type': 'application/octet-stream' }, credentials: 'same-origin' });
+  }
+  /* Files over 3 MB go straight to Drive in 2 MB parts through /api/documents/upload/drive. */
+  function uploadToDrive(root, f, category) {
+    toast(root, 'Sending ' + f.name + ' to Drive');
+    return api('/api/documents/upload/drive', { method: 'POST', body: { name: f.name, mime: f.type || '', size: f.size, category: category } }).then(jsonOrThrow).then(function (start) {
+      var chunk = Number(start.chunk) || 2097152;
+      function send(offset, tries) {
+        var part = f.slice(offset, Math.min(f.size, offset + chunk));
+        return rawPut('/api/documents/upload/drive?id=' + encodeURIComponent(start.id) + '&offset=' + offset, part).then(jsonOrThrow).then(function (d) {
+          if (d.done) return d;
+          var next = Number(d.next) || 0;
+          if (!(next > offset)) {
+            if (tries >= 2) throw new Error('Drive stopped taking parts of ' + f.name + '.');
+            return send(offset, tries + 1);
+          }
+          toast(root, f.name + ': ' + Math.round(next / f.size * 100) + '% sent');
+          return send(next, 0);
+        }, function (err) {
+          if (tries >= 2) throw err;
+          return send(offset, tries + 1);
+        });
+      }
+      return send(0, 0);
+    }).then(function () {
+      reloadDocs();
+      toast(root, f.name + ' uploaded to Drive');
+    }).catch(function (err) { toast(root, errText(err, 'Could not upload ' + f.name)); });
+  }
+  function docMetaLoad(open) {
+    if (!open || !writeOk()) return;
+    var q = [];
+    if (UUID_RE.test(String(open.id || ''))) q.push('id=' + encodeURIComponent(open.id));
+    if (open.drive) q.push('drive=' + encodeURIComponent(open.drive));
+    if (!q.length) return;
+    api('/api/documents/meta?' + q.join('&'), { method: 'GET' }).then(jsonOrThrow).then(function (m) {
+      if (!S().docOpen || S().docOpen !== open) return;
+      open.meta = m;
+      refresh('docs');
+    }).catch(function () {
+      if (S().docOpen === open) { open.meta = { failed: true }; refresh('docs'); }
+    });
+  }
 
   /* ---------- actions ---------- */
   var actions = {
@@ -375,11 +710,16 @@
       var input = root.querySelector('[data-action="capture-input"]') || root.querySelector('.capture input');
       var title = input ? String(input.value || '').trim() : '';
       if (!title) { toast(root, 'Type something to capture'); return; }
+      if (input && input.__adding) return;
+      if (input) { input.__adding = true; input.value = ''; }
       return addTask(title, 'today').then(function () {
-        if (input) input.value = '';
+        if (input) input.__adding = false;
         refresh('war');
         toast(root, 'Added to Today');
-      }).catch(function () { toast(root, 'Could not add that item'); });
+      }).catch(function () {
+        if (input) { input.__adding = false; if (!input.value) input.value = title; }
+        toast(root, 'Could not add that item');
+      });
     },
     'focus-toggle': function (el, root) {
       var f = focusState();
@@ -389,30 +729,34 @@
     'focus-stop': function (el, root) { stopFocus(root, true); },
     'hero-commit': function (el, root) {
       var id = attr(el, 'data-id');
-      var title = attr(el, 'data-title') || (S().ceo && S().ceo.moves && S().ceo.moves[0] && S().ceo.moves[0].text) || 'Today\'s one move';
-      try {
-        var map = {};
-        try { map = JSON.parse(localStorage.getItem('cr_needle') || '{}'); } catch (e) { map = {}; }
-        map.one = id || title;
-        localStorage.setItem('cr_needle', JSON.stringify(map));
-      } catch (e) {}
-      toast(root, 'Committed as your one thing');
+      if (!id) { toast(root, 'No ranked move to commit yet'); return; }
+      var day = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' });
+      var map = {};
+      try { map = JSON.parse(localStorage.getItem('cr_needle') || '{}') || {}; } catch (e) { map = {}; }
+      var undoMap = Object.assign({}, map);
+      var off = map.one === id && map.day === day;
+      if (off) { delete map.one; delete map.day; } else { map.one = id; map.day = day; }
+      try { localStorage.setItem('cr_needle', JSON.stringify(map)); } catch (e) {}
       refresh('war');
+      toast(root, off ? 'Uncommitted' : 'Committed as your one thing for today', function () {
+        try { localStorage.setItem('cr_needle', JSON.stringify(undoMap)); } catch (e) {}
+        refresh('war');
+      });
     },
     'hero-plan': function (el, root) { actions['plan-open'](el, root); },
     'hero-cancel': function (el, root) {
       var id = attr(el, 'data-id');
       if (id && typeof window.ceoSnooze === 'function') {
         window.ceoSnooze(id);
-        toast(root, 'Move cancelled', function () { if (typeof window.refreshCeo === 'function') window.refreshCeo(); });
+        toast(root, 'Move cancelled', function () { unsnoozeMove(root, id); });
         return;
       }
-      soon(root, 'Cancel this move');
+      toast(root, 'No ranked move to cancel');
     },
     'move-do': function (el, root) {
       var id = attr(el, 'data-id');
       if (id && typeof window.ceoDo === 'function') { window.ceoDo(id); toast(root, 'Doing that move'); refresh('war'); return; }
-      soon(root, 'Do move');
+      toast(root, 'No ranked move yet');
     },
     'move-steps': function (el, root) {
       var id = attr(el, 'data-id');
@@ -424,57 +768,62 @@
       var id = attr(el, 'data-id');
       var i = Number(attr(el, 'data-i'));
       if (!id) return;
-      var map = {};
-      try { map = JSON.parse(localStorage.getItem('cr_move_steps') || '{}') || {}; } catch (e) { map = {}; }
-      var steps = map[id];
-      if (!Array.isArray(steps)) {
-        var moves = ((window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.war && window.REDESIGN_FIXTURE.war.moves) || (S().ceo && S().ceo.moves) || []);
-        var hit = moves.filter(function (m) { return String(m.id) === String(id); })[0];
-        steps = (hit && hit.steps) ? hit.steps.slice() : [];
-      }
+      var steps = currentMoveSteps(id);
       if (!steps[i]) return;
-      steps[i] = Object.assign({}, steps[i], { done: !steps[i].done, when: steps[i].done ? '' : 'done just now' });
-      map[id] = steps;
-      try { localStorage.setItem('cr_move_steps', JSON.stringify(map)); } catch (e) {}
+      steps[i].done = !steps[i].done;
+      var allDone = steps.length && steps.every(function (s) { return s.done; });
+      fourmSound(steps[i].done ? (allDone ? 'levelUp' : 'pop') : 'none');
+      var on = steps[i].done;
+      var p = saveMoveSteps(id, steps);
       refresh('war');
-      toast(root, steps[i].done ? 'Step done' : 'Step reopened');
+      p.then(function () { toast(root, on ? 'Step done' : 'Step reopened'); })
+        .catch(function () { toast(root, 'Could not save that step'); });
     },
     'step-act': function (el, root, ev) {
       if (ev) ev.stopPropagation();
-      var act = attr(el, 'data-act') || (el.textContent || '').trim();
-      if (/open/i.test(act)) { go('war'); toast(root, 'Opened'); return; }
-      if (/call/i.test(act)) { toast(root, 'Call from this move'); return; }
-      if (/raise/i.test(act)) { go('war'); toast(root, 'Raise tracker'); return; }
-      toast(root, act || 'Step action');
     },
     'step-add': function (el, root) {
       var id = attr(el, 'data-id');
+      if (!id) return;
       var text = window.prompt('Add a step');
       if (text == null) return;
       text = String(text).trim();
       if (!text) return;
-      var map = {};
-      try { map = JSON.parse(localStorage.getItem('cr_move_steps') || '{}') || {}; } catch (e) { map = {}; }
-      var steps = Array.isArray(map[id]) ? map[id] : [];
+      var steps = currentMoveSteps(id);
       steps.push({ done: false, text: text });
-      map[id] = steps;
-      try { localStorage.setItem('cr_move_steps', JSON.stringify(map)); } catch (e) {}
       S().openSteps = id;
+      var p = saveMoveSteps(id, steps);
       refresh('war');
-      toast(root, 'Step added');
-      if (writeOk()) {
-        api('/api/ceo/plan', { method: 'POST', body: { title: 'Move steps', area: 'other', steps: steps.map(function (s) { return s.text; }), itemId: id } }).catch(function () {});
-      }
+      p.then(function () { toast(root, 'Step added'); })
+        .catch(function () { toast(root, 'Could not save that step'); });
     },
     'move-plan': function (el, root) { actions['plan-open'](el, root); },
     'move-dismiss': function (el, root) {
       var id = attr(el, 'data-id');
       if (id && typeof window.ceoSnooze === 'function') {
         window.ceoSnooze(id);
-        toast(root, 'Move dismissed', function () { if (typeof window.refreshCeo === 'function') window.refreshCeo(); });
+        toast(root, 'Move dismissed', function () { unsnoozeMove(root, id); });
         return;
       }
       soon(root, 'Dismiss move');
+    },
+    /* W53: Brain log = the CEO brain's decision log (ceo_decisions, sent by /api/ceo as decisions[]). */
+    'brain-log': function (el, root, ev) {
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      var rows = ((window.STATE && window.STATE.ceo && window.STATE.ceo.decisions) || []).slice(0, 20);
+      function when(v) {
+        var n = typeof v === 'number' ? v : Date.parse(v || '');
+        if (!Number.isFinite(n)) return '';
+        if (n < 1e12) n *= 1000;
+        return new Date(n).toLocaleString('en-CA', { timeZone: 'America/Vancouver', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+      }
+      var html = '<div style="max-width:380px;max-height:360px;overflow:auto;padding:4px 6px"><b style="display:block;margin:2px 0 6px">Brain log</b>'
+        + (rows.length ? rows.map(function (d) {
+          return '<div style="padding:6px 0;border-top:1px solid #e6eaf2"><small style="opacity:.65">' + esc(when(d.createdAt)) + ' &middot; ' + esc(d.decision || '') + '</small>'
+            + '<div>' + esc(d.context || '') + '</div>' + (d.caseAgainst ? '<small style="opacity:.75">Why: ' + esc(d.caseAgainst) + '</small>' : '') + '</div>';
+        }).join('') : '<div style="opacity:.7">No decisions logged yet. Do or dismiss a ranked move and it shows here.</div>')
+        + '</div>';
+      openPop(root, el, html);
     },
     'moves-rerun': function (el, root) {
       if (typeof window.refreshCeo === 'function') { window.refreshCeo(); toast(root, 'Rebuilding ranked moves'); return; }
@@ -487,13 +836,8 @@
       var id = attr(el, 'data-id');
       var bucket = attr(el, 'data-bucket') || 'today';
       var title = attr(el, 'data-title') || 'Meeting follow-up';
-      return addTask(title, bucket).then(function () {
-        if (id && writeOk()) {
-          return api('/api/meeting-actions', { method: 'POST', body: { id: id, status: 'tasked' } }).then(ok).then(json).then(function (d) {
-            if (d && d.actions) S().meetingActions = d.actions;
-          });
-        }
-      }).then(function () { refresh('war'); toast(root, 'Added to ' + (bucket === 'week' ? 'This week' : 'Today')); })
+      var req = id ? zoomPatch(id, { status: 'tasked', column: bucket }) : addTask(title, bucket);
+      return req.then(function () { refresh('war'); toast(root, 'Added to ' + (bucket === 'week' ? 'This week' : 'Today')); })
         .catch(function () { toast(root, 'Could not create that item'); });
     },
     'review-meetings': function (el, root) {
@@ -568,31 +912,37 @@
     'task-done': function (el, root) {
       var id = attr(el, 'data-id');
       var task = el.closest('.task');
+      if (!id) return;
+      var zoom = isZoomCard(el, root, id);
+      var wasDone = !!(task && task.classList.contains('d'));
       if (task) {
         task.classList.toggle('d');
         task.classList.toggle('done');
         var cb = task.querySelector('.cb');
         if (cb) cb.classList.toggle('on');
       }
-      if (!id) { toast(root, 'Checked off'); return; }
-      var tag = task && task.querySelector('.tg');
-      var fromZoom = tag && /from Zoom/i.test(tag.textContent || '');
-      var req = fromZoom
-        ? api('/api/meeting-actions', { method: 'POST', body: { id: id, status: 'handled' } }).then(ok).then(json).then(function (d) {
-          if (d && d.actions) S().meetingActions = d.actions;
-          return patchItem(id, { status: 'done' }).catch(function () {});
-        })
-        : patchItem(id, { status: 'done' });
-      return req.then(function () {
+      if (!wasDone) {
+        var left = root.querySelectorAll ? root.querySelectorAll('.exec.today .tl .task:not(.d)').length : 1;
+        fourmSound(left ? 'pop' : 'levelUp');
+      }
+      if (zoom) {
+        return zoomPatch(id, { status: 'done' }).then(function () {
+          refresh('war');
+          toast(root, 'Done', function () { zoomRestore(id).then(function () { refresh('war'); }); });
+        }).catch(function () { toast(root, 'Could not complete that task'); refresh('war'); });
+      }
+      var next = wasDone ? 'new' : 'done';
+      return patchItem(id, { status: next }).then(function () {
         refresh('war');
-        toast(root, 'Done today', function () { patchItem(id, { status: 'new' }).then(function () { refresh('war'); }); });
-      }).catch(function () { toast(root, 'Could not complete that task'); });
+        toast(root, next === 'done' ? 'Done today' : 'Reopened', function () { patchItem(id, { status: wasDone ? 'done' : 'new' }).then(function () { refresh('war'); }); });
+      }).catch(function () { toast(root, 'Could not complete that task'); refresh('war'); });
     },
     'task-move': function (el, root) {
       var id = attr(el, 'data-id');
       var bucket = attr(el, 'data-bucket');
       if (!id || !bucket) return;
-      return patchItem(id, { column: bucket }).then(function () {
+      var req = isZoomCard(el, root, id) ? zoomPatch(id, { status: 'tasked', column: bucket }) : patchItem(id, { column: bucket });
+      return req.then(function () {
         refresh('war');
         toast(root, 'Moved to ' + bucket);
       }).catch(function () { toast(root, 'Could not move that task'); });
@@ -600,22 +950,23 @@
     'task-drop': function (el, root) {
       var id = attr(el, 'data-id');
       if (!id) return;
-      var task = el.closest && el.closest('.task');
-      var tag = task && task.querySelector('.tg');
-      var fromZoom = tag && /from Zoom/i.test(tag.textContent || '');
-      var hide = function () {
-        return softDrop(id).then(function () {
+      if (isZoomCard(el, root, id)) {
+        return zoomPatch(id, { status: 'dismissed' }).then(function () {
           refresh('war');
-          toast(root, 'Removed', function () { patchItem(id, { status: 'new' }).then(function () { refresh('war'); }); });
-        });
-      };
-      if (fromZoom) {
-        return api('/api/meeting-actions', { method: 'POST', body: { id: id, status: 'handled' } }).then(ok).then(json).then(function (d) {
-          if (d && d.actions) S().meetingActions = d.actions;
-          return hide();
-        }).catch(function () { toast(root, 'Could not hide that task'); });
+          toast(root, 'Removed', function () { zoomRestore(id).then(function () { refresh('war'); }); });
+        }).catch(function () { toast(root, 'Could not remove that task'); });
       }
-      return hide().catch(function () { toast(root, 'Could not hide that task'); });
+      return softDrop(id).then(function () {
+        refresh('war');
+        toast(root, 'Removed', function () { patchItem(id, { status: 'new' }).then(function () { refresh('war'); }); });
+      }).catch(function () { toast(root, 'Could not remove that task'); });
+    },
+    'exec-more': function (el) {
+      var b = attr(el, 'data-bucket');
+      if (!b) return;
+      S().execMore = S().execMore || {};
+      S().execMore[b] = true;
+      refresh('war');
     },
     'exec-select': function () {
       S().execSelect = !S().execSelect;
@@ -651,33 +1002,21 @@
       var ids = Object.keys(S().execPicked || {});
       if (!ids.length) return;
       var n = ids.length;
-      Promise.all(ids.map(function (id) {
-        var task = root.querySelector('.task[data-id="' + id + '"]');
-        var tag = task && task.querySelector('.tg');
-        var fromZoom = tag && /from Zoom/i.test(tag.textContent || '');
-        var req = fromZoom ? api('/api/meeting-actions', { method: 'POST', body: { id: id, status: 'handled' } }) : Promise.resolve();
-        return req.then(function () { return softDrop(id); });
-      })).then(function () {
+      var zoomIds = ids.filter(function (id) { return isZoomCard(null, root, id); });
+      var itemIds = ids.filter(function (id) { return zoomIds.indexOf(id) < 0; });
+      Promise.all(zoomIds.map(function (id) { return zoomPatch(id, { status: 'dismissed' }); })
+        .concat(itemIds.map(function (id) { return softDrop(id); }))).then(function () {
         S().execSelect = false;
         S().execPicked = {};
         refresh('war');
         toast(root, 'Deleted ' + n, function () {
-          Promise.all(ids.map(function (id) { return patchItem(id, { status: 'new' }); })).then(function () { refresh('war'); });
+          Promise.all(itemIds.map(function (id) { return patchItem(id, { status: 'new' }); })
+            .concat(zoomIds.map(function (id) { return zoomRestore(id); }))).then(function () { refresh('war'); });
         });
-      }).catch(function () { toast(root, 'Could not delete those tasks'); });
+      }).catch(function () { refresh('war'); toast(root, 'Could not delete all of those tasks'); });
     },
-    'exec-bulk-week': function (el, root) {
-      var ids = Object.keys(S().execPicked || {});
-      Promise.all(ids.map(function (id) { return patchItem(id, { column: 'week' }); })).then(function () {
-        S().execSelect = false; S().execPicked = {}; refresh('war'); toast(root, 'Moved to Week');
-      }).catch(function () { toast(root, 'Could not move those tasks'); });
-    },
-    'exec-bulk-later': function (el, root) {
-      var ids = Object.keys(S().execPicked || {});
-      Promise.all(ids.map(function (id) { return patchItem(id, { column: 'later' }); })).then(function () {
-        S().execSelect = false; S().execPicked = {}; refresh('war'); toast(root, 'Moved to Later');
-      }).catch(function () { toast(root, 'Could not move those tasks'); });
-    },
+    'exec-bulk-week': function (el, root) { bulkMove(root, 'week'); },
+    'exec-bulk-later': function (el, root) { bulkMove(root, 'later'); },
     'open-need': function (el) {
       var view = attr(el, 'data-view') || 'war';
       go(view);
@@ -688,27 +1027,19 @@
       if (!/^https?:\/\//i.test(url)) url = 'https://www.linkedin.com/search/results/people/?keywords=' + encodeURIComponent(name);
       window.open(url, '_blank', 'noopener');
     },
-    'mail-reply': function (el, root) {
-      var r = (root.getElementById && root.getElementById('reader')) || el;
-      var row = {
-        email: attr(el, 'data-email') || attr(r, 'data-email'),
-        subject: attr(el, 'data-subject') || attr(r, 'data-subject'),
-        threadId: attr(el, 'data-thread') || attr(r, 'data-thread'),
-        from: attr(el, 'data-from') || attr(r, 'data-from') || '',
-        snippet: attr(el, 'data-preview') || '',
-        messageId: attr(el, 'data-mid') || '',
+    'mail-reply': function (el) {
+      var r = mailRoot() && mailRoot().getElementById('reader');
+      var src = attr(el, 'data-email') ? el : (r || el);
+      var email = attr(src, 'data-email');
+      var subj = attr(src, 'data-subject');
+      openCompose({
+        to: email ? [{ email: email, name: attr(src, 'data-from') }] : [],
+        reply: true,
+        subject: subj && !/^re:/i.test(subj) ? 'Re: ' + subj : subj,
+        threadId: attr(src, 'data-thread'),
+        messageId: attr(src, 'data-mid'),
         body: attr(el, 'data-body') || ''
-      };
-      S().composeDraft = row;
-      S().composeOpen = true;
-      go('mail');
-      refresh('mail');
-      setTimeout(function () {
-        var host = document.getElementById('mailDesk');
-        var mailRoot = host && host.shadowRoot;
-        if (mailRoot) actions['mail-compose'](el, mailRoot);
-      }, 40);
-      toast(root, 'Opening reply');
+      });
     },
     'mail-more': function (el, root, ev) {
       if (ev) ev.stopPropagation();
@@ -760,7 +1091,13 @@
         actions['note-open'](card, root);
       }
       if (!writeOk()) { openBlank('tmp'); toast(root, 'New note (fixture)'); return; }
-      return api('/api/notes/sticky', { method: 'POST', body: { body: '', color: 'yellow', meta: { title: '', kind: 'idea' } } }).then(ok).then(json).then(function (row) {
+      var pinIt = attr(el, 'data-pin') === '1';
+      var catNow = S().noteCatName && S().noteCatName !== 'all' ? S().noteCatName : '';
+      var meta0 = { title: '', kind: 'idea' };
+      if (pinIt) meta0.pin = true;
+      if (catNow) meta0.category = catNow;
+      return api('/api/notes/sticky', { method: 'POST', body: { body: '', color: 'yellow', meta: meta0 } }).then(ok).then(json).then(function (row) {
+        if (row && row.id && !row.meta) row.meta = meta0;
         S().stickies = S().stickies || [];
         if (row && row.id) S().stickies.unshift(row);
         refresh('notes');
@@ -773,29 +1110,51 @@
       var key = attr(el, 'data-c') || 'all';
       if (key === 'new') {
         var name = window.prompt('New category');
+        name = String(name || '').trim();
         if (!name) return;
-        S().noteCats = (S().noteCats || []).concat([String(name).trim()]);
-        refresh('notes');
-        return;
+        if (!writeOk()) { S().noteCats = (S().noteCats || []).concat([{ id: 'tmp-' + Date.now(), name: name }]); refresh('notes'); return; }
+        return createNoteCat(name).then(function () {
+          S().noteCatName = name;
+          refresh('notes');
+          toast(root, 'Category added');
+        }).catch(function () { toast(root, 'Could not add that category'); });
       }
-      S().noteCat = key;
+      S().noteCatName = key;
       refresh('notes');
     },
-    'note-cat-tag': function (el, root) {
+    'note-cat-tag': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
       var id = attr(el, 'data-id');
-      var cats = ['Raise', 'Regulators', 'Product', 'Team', 'Research'].concat(S().noteCats || []);
-      var cur = attr(el, 'data-cat') || '';
-      var i = cats.indexOf(cur);
-      var next = cats[(i + 1) % cats.length] || 'Raise';
-      el.textContent = next;
-      el.setAttribute('data-cat', next);
-      (S().notes || []).forEach(function (n) { if (String(n.id) === String(id)) n.category = next; });
-      if (!writeOk() || !id) return;
-      api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { category: next } }).catch(function () {});
+      var src = attr(el, 'data-source') || 'sticky';
+      var names = typeof window.__noteCategoryNames === 'function' ? window.__noteCategoryNames() : [];
+      var curCat = attr(el, 'data-cat');
+      openPop(root, el, names.map(function (n) {
+        return '<button type="button" data-action="note-cat-pick" data-id="' + esc(id) + '" data-source="' + esc(src) + '" data-cat="' + esc(n) + '">' + (n === curCat ? '&#10003; ' : '') + esc(n) + '</button>';
+      }).join('') + (curCat ? '<button type="button" data-action="note-cat-pick" data-id="' + esc(id) + '" data-source="' + esc(src) + '" data-cat="">No category</button>' : '')
+        + '<button type="button" data-action="note-cat-pick" data-id="' + esc(id) + '" data-source="' + esc(src) + '" data-cat="__new__">+ New category</button>');
+    },
+    'note-cat-pick': function (el, root) {
+      closePop(root);
+      var id = attr(el, 'data-id');
+      var src = attr(el, 'data-source') || 'sticky';
+      var cat = attr(el, 'data-cat');
+      var ready = Promise.resolve();
+      if (cat === '__new__') {
+        cat = String(window.prompt('New category') || '').trim();
+        if (!cat) return;
+        ready = writeOk() ? createNoteCat(cat) : Promise.resolve();
+      }
+      if (!id) return;
+      return ready.then(function () { return setNoteCategory(id, src, cat); }).then(function () {
+        refresh('notes');
+        toast(root, cat ? ('Filed under ' + cat) : 'Category cleared');
+      }).catch(function () { toast(root, 'Could not save that category'); });
     },
     'notes-filter': function (el, root) {
       var key = attr(el, 'data-filter') || 'all';
+      var prev = S().noteFilter || 'all';
       S().noteFilter = key;
+      if (key === 'archive' || prev === 'archive') { refresh('notes'); return; }
       root.querySelectorAll('[data-action="notes-filter"]').forEach(function (c) {
         c.classList.toggle('on', attr(c, 'data-filter') === key);
       });
@@ -804,7 +1163,7 @@
         var type = String(attr(n, 'data-type') || '').toLowerCase();
         var pin = n.getAttribute('data-pin') === '1';
         var text = (n.textContent || '').toLowerCase();
-        var okF = key === 'all' || (key === 'pinned' && pin) || (key === 'archive' ? false : type === key);
+        var okF = key === 'all' || (key === 'pinned' && pin) || type === key;
         var okQ = !q || text.indexOf(q) >= 0;
         n.style.display = okF && okQ ? '' : 'none';
       });
@@ -814,12 +1173,35 @@
       root.querySelectorAll('[data-action="notes-view"]').forEach(function (t) {
         t.classList.toggle('on', attr(t, 'data-view') === view);
       });
-      root.querySelectorAll('.board').forEach(function (board) {
-        board.classList.toggle('canvas', view === 'canvas');
-      });
-      toast(root, view === 'canvas' ? 'Canvas' : 'Board');
+      S().notesView = view === 'canvas' ? 'canvas' : 'board';
+      try { localStorage.setItem('cr_notes_view', S().notesView); } catch (e) {}
+      refresh('notes');
     },
-    'notes-tidy': function (el, root) { soon(root, 'Tidy up notes'); },
+    /* N3: archive empty notes and exact duplicates, tag untyped notes from their text. One Undo reverts it all. */
+    'notes-tidy': function (el, root) {
+      if (!writeOk()) { toast(root, 'Tidied (fixture)'); return; }
+      api('/api/notes/organize', { method: 'POST', body: { action: 'tidy' } }).then(ok).then(json).then(function (d) {
+        var gone = (d && d.archived) || [];
+        var typed = (d && d.typed) || [];
+        gone.forEach(function (g) {
+          if (g.store === 'sticky') { var r = stickyRow(g.id); if (r) r.meta = Object.assign({}, r.meta || {}, { archived: true }); }
+          else { var b = boardNote(g.id); if (b) b.title = '[archived] ' + String(g.title || b.title || ''); }
+        });
+        typed.forEach(function (t) { var r = stickyRow(t.id); if (r) r.meta = Object.assign({}, r.meta || {}, { kind: t.kind }); });
+        refresh('notes');
+        if (!gone.length && !typed.length) { toast(root, 'Already tidy'); return; }
+        var msg = 'Tidied: ' + gone.length + ' archived, ' + typed.length + ' tagged';
+        toast(root, msg, function () {
+          var undo = gone.map(function (g) {
+            if (g.store === 'sticky') return patchStickyMeta(g.id, { archived: false });
+            var b = boardNote(g.id); if (b) b.title = String(g.title || '');
+            return api('/api/notes', { method: 'PATCH', body: { id: g.id, title: String(g.title || 'Note') } }).then(ok);
+          }).concat(typed.map(function (t) { return patchStickyMeta(t.id, { kind: '' }); }));
+          Promise.all(undo).then(function () { refresh('notes'); toast(root, 'Tidy undone'); })
+            .catch(function () { refresh('notes'); toast(root, 'Could not undo every change'); });
+        });
+      }).catch(function () { toast(root, 'Could not tidy notes'); });
+    },
     'notes-full': function (el, root) {
       var host = root.host || document.getElementById('notesDesk');
       if (host) host.classList.toggle('desk-full');
@@ -832,14 +1214,20 @@
       if (!id) return;
       var next = attr(el, 'data-on') !== '1';
       el.setAttribute('data-on', next ? '1' : '0');
+      closePop(root);
       if (!writeOk()) { toast(root, next ? 'Pinned' : 'Unpinned'); return; }
-      try {
-        var map = JSON.parse(localStorage.getItem('cr_note_pin') || '{}');
-        map[id] = next; localStorage.setItem('cr_note_pin', JSON.stringify(map));
-      } catch (e) {}
-      var payload = source === 'sticky' ? { meta: { pin: next } } : { pin: next };
-      return api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: payload }).then(ok).then(function () {
-        refresh('notes'); toast(root, next ? 'Pinned' : 'Unpinned');
+      var req;
+      if (source === 'sticky') req = patchStickyMeta(id, { pin: next });
+      else {
+        var bn = boardNote(id);
+        if (bn) bn.pin = next;
+        req = api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { pin: next } }).then(ok);
+      }
+      var big = root.getElementById && root.getElementById('ovNote');
+      var bigOpen = big && !big.hasAttribute('hidden');
+      if (!bigOpen) refresh('notes');
+      return req.then(function () {
+        toast(root, next ? 'Pinned' : 'Unpinned');
       }).catch(function () { toast(root, 'Could not pin that note'); });
     },
     'note-archive': function (el, root, ev) {
@@ -850,13 +1238,17 @@
       var card = el.closest('.note');
       if (card) card.style.display = 'none';
       if (!writeOk()) { toast(root, 'Archived'); return; }
+      closePop(root);
+      var bnA = source === 'sticky' ? null : boardNote(id);
+      var oldTitle = String((bnA && bnA.title) || attr(el, 'data-title') || 'Note').replace(/^\[archived\]\s*/, '');
+      if (bnA) bnA.title = '[archived] ' + oldTitle;
       var req = source === 'sticky'
-        ? api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { meta: { archived: true } } })
-        : api('/api/notes', { method: 'PATCH', body: { id: id, title: '[archived] ' + (attr(el, 'data-title') || 'Note') } });
-      return req.then(ok).then(function () {
+        ? patchStickyMeta(id, { archived: true })
+        : api('/api/notes', { method: 'PATCH', body: { id: id, title: '[archived] ' + oldTitle } }).then(ok);
+      return req.then(function () {
         toast(root, 'Archived', function () {
-          if (source === 'sticky') api('/api/notes/' + id, { method: 'PATCH', body: { meta: { archived: false } } }).then(function () { refresh('notes'); });
-          else api('/api/notes', { method: 'PATCH', body: { id: id, title: String(attr(el, 'data-title') || 'Note').replace(/^\[archived\]\s*/, '') } }).then(function () { refresh('notes'); });
+          if (source === 'sticky') patchStickyMeta(id, { archived: false }).then(function () { refresh('notes'); });
+          else { if (bnA) bnA.title = oldTitle; api('/api/notes', { method: 'PATCH', body: { id: id, title: oldTitle } }).then(function () { refresh('notes'); }); }
         });
       }).catch(function () { toast(root, 'Could not archive that note'); });
     },
@@ -915,6 +1307,28 @@
       setTimeout(function () { if (ot) ot.focus(); }, 30);
     },
     'note-keep': function () {},
+    'note-check': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      var id = attr(el, 'data-id');
+      var src = attr(el, 'data-source') || 'sticky';
+      var i = Number(attr(el, 'data-i'));
+      if (!id) return;
+      var row = src === 'sticky' ? stickyRow(id) : boardNote(id);
+      var list = row ? ((src === 'sticky' ? (row.meta && row.meta.checks) : row.checks) || []) : [];
+      list = list.map(function (c) { return typeof c === 'string' ? { text: c, done: false } : { text: c.text || c.t || c.title || '', done: !!(c.done || c.checked) }; });
+      if (!list[i]) return;
+      list[i].done = !list[i].done;
+      el.classList.toggle('done', list[i].done);
+      var ic = el.querySelector('i');
+      if (ic) ic.innerHTML = list[i].done ? '&#10003;' : '';
+      if (list[i].done) fourmSound(list.every(function (c) { return c.done; }) ? 'levelUp' : 'pop');
+      if (src === 'sticky') {
+        patchStickyMeta(id, { checks: list }).catch(function () { toast(root, 'Could not save that tick'); });
+      } else {
+        row.checks = list;
+        toast(root, 'Ticked (checklists on board notes are not stored yet)');
+      }
+    },
     'note-close': function (el, root, ev) {
       var t = (ev && ev.composedPath && ev.composedPath()[0]) || el;
       if (t && t.closest && t.closest('.nbig') && attr(el, 'id') === 'nscrim') return;
@@ -941,11 +1355,14 @@
       });
       var names = { y: 'yellow', p: 'pink', g: 'green', b: 'blue', o: 'orange', v: 'violet' };
       if (!id || !writeOk()) { toast(root, 'Colour set'); return; }
-      if (source === 'sticky') {
-        api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { color: names[color] || 'yellow' } }).then(ok).then(function () {
-          toast(root, 'Colour saved');
-        }).catch(function () { toast(root, 'Could not save colour'); });
-      }
+      var colorReq = source === 'sticky'
+        ? api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { color: names[color] || 'yellow' } })
+        : api('/api/notes', { method: 'PATCH', body: { id: id, color: names[color] || 'yellow' } });
+      var rowC = source === 'sticky' ? stickyRow(id) : boardNote(id);
+      if (rowC) rowC.color = names[color] || 'yellow';
+      colorReq.then(ok).then(function () {
+        toast(root, 'Colour saved');
+      }).catch(function () { toast(root, 'Could not save colour'); });
     },
     'note-space': function (el, root) {
       var spaces = (S().packages || []).map(function (p) {
@@ -960,7 +1377,10 @@
       var title = attr(el, 'data-title') || 'Note';
       if (!sid) return;
       if (!writeOk()) { toast(root, 'Moved to a Space (fixture)'); return; }
-      api('/api/spaces/' + encodeURIComponent(sid) + '/items', { method: 'POST', body: { kind: 'note', name: title } }).then(ok).then(function () {
+      var ob = root.getElementById && root.getElementById('ob');
+      var noteBody = ob ? String(ob.innerText || '') : '';
+      api('/api/spaces/' + encodeURIComponent(sid) + '/items', { method: 'POST', body: { kind: 'note', name: title, body: noteBody } }).then(ok).then(json).then(function (d) {
+        if (d && d.saved === false) throw new Error('not saved');
         toast(root, 'Moved to a Space');
       }).catch(function () { toast(root, 'Could not move that note'); });
     },
@@ -1076,12 +1496,24 @@
       var name = attr(el, 'data-name');
       if (!name || name === 'Uncategorized') return;
       if (!writeOk()) { toast(root, 'Category hidden (fixture)'); return; }
+      var keptCats = (S().categories || []).slice();
+      var movedLinks = (S().links || []).filter(function (l) { return (l.cat || l.category) === name; });
       api('/api/links', { method: 'POST', body: { kind: 'delete-category', name: name } }).then(ok).then(function () {
         S().categories = (S().categories || []).filter(function (c) { return c.name !== name; });
+        movedLinks.forEach(function (l) { l.cat = 'Uncategorized'; l.category = 'Uncategorized'; });
         if (S().cat === name) S().cat = '';
         refresh('links');
-        toast(root, 'Category hidden', function () { refresh('links'); });
-      }).catch(function () { toast(root, 'Could not hide that category'); });
+        toast(root, 'Category removed - links moved to Uncategorized', function () {
+          /* Undo: the server revives the soft-deleted row and moves its links back. */
+          api('/api/links', { method: 'POST', body: { kind: 'restore-category', name: name } }).then(ok).then(function () {
+            S().categories = keptCats;
+            movedLinks.forEach(function (l) { l.cat = name; l.category = name; });
+            refresh('links');
+            if (typeof window.loadBoard === 'function') window.loadBoard();
+            toast(root, 'Category restored');
+          }).catch(function () { toast(root, 'Could not restore that category'); });
+        });
+      }).catch(function () { toast(root, 'Could not remove that category'); });
     },
     'link-cat-new': function (el, root) {
       var name = window.prompt('New category name');
@@ -1115,7 +1547,11 @@
         refresh('links');
         toast(root, 'Link saved', function () {
           if (row && row.id) {
-            api('/api/links/' + row.id, { method: 'PATCH', body: { note: '__archived__' } }).then(function () { refresh('links'); });
+            S().links = (S().links || []).filter(function (l) { return String(l.id) !== String(row.id); });
+            refresh('links');
+            api('/api/links/' + encodeURIComponent(row.id), { method: 'PATCH', body: { archived: true } }).then(ok).catch(function () {
+              toast(root, 'Could not undo that link');
+            });
           }
         });
       }).catch(function () { toast(root, 'Could not save that link'); });
@@ -1145,13 +1581,14 @@
       if (next == null || !id) return;
       next = String(next).trim();
       if (!writeOk()) return;
+      if (!next) return;
       var row = (S().links || []).filter(function (l) { return String(l.id) === id; })[0];
-      if (row) row.cat = next;
-      api('/api/links', { method: 'POST', body: { title: (row && row.title) || attr(el, 'data-title'), url: (row && row.url) || attr(el, 'data-url'), category: next } }).then(ok).then(function () {
-        if (row) api('/api/links/' + id, { method: 'PATCH', body: { note: '__archived__' } });
+      var was = row ? { cat: row.cat, category: row.category, sub: row.sub } : null;
+      if (row) { row.cat = next; row.category = next; row.sub = ''; }
+      api('/api/links/' + encodeURIComponent(id), { method: 'PATCH', body: { category: next, sub: '' } }).then(ok).then(function () {
         refresh('links');
         toast(root, 'Moved to ' + next);
-      }).catch(function () { toast(root, 'Could not move that link'); });
+      }).catch(function () { if (row && was) Object.assign(row, was); refresh('links'); toast(root, 'Could not move that link'); });
     },
     'link-archive': function (el, root, ev) {
       if (ev) { ev.preventDefault(); ev.stopPropagation(); }
@@ -1160,12 +1597,21 @@
       if (tile) tile.style.display = 'none';
       if (!id) { toast(root, 'Hidden'); return; }
       if (!writeOk()) return;
-      var prev = attr(el, 'data-note') || '';
-      api('/api/links/' + encodeURIComponent(id), { method: 'PATCH', body: { note: '__archived__' } }).then(ok).then(function () {
-        toast(root, 'Link hidden', function () {
-          api('/api/links/' + id, { method: 'PATCH', body: { note: prev } }).then(function () { refresh('links'); });
+      var gone = (S().links || []).filter(function (l) { return String(l.id) === String(id); })[0];
+      S().links = (S().links || []).filter(function (l) { return String(l.id) !== String(id); });
+      refresh('links');
+      api('/api/links/' + encodeURIComponent(id), { method: 'PATCH', body: { archived: true } }).then(ok).then(function () {
+        toast(root, 'Link deleted', function () {
+          api('/api/links/' + encodeURIComponent(id), { method: 'PATCH', body: { archived: false } }).then(ok).then(function () {
+            if (gone) S().links = [gone].concat(S().links || []);
+            refresh('links');
+          }).catch(function () { toast(root, 'Could not restore that link'); });
         });
-      }).catch(function () { toast(root, 'Could not hide that link'); });
+      }).catch(function () {
+        if (gone) S().links = [gone].concat(S().links || []);
+        refresh('links');
+        toast(root, 'Could not delete that link');
+      });
     },
     'link-expand': function (el, root) {
       var collapsing = !!(S().linkAllOpen);
@@ -1215,11 +1661,18 @@
           toast(root, 'Could not save that note');
         });
       }
-      el.addEventListener('blur', save, { once: true });
-      el.addEventListener('keydown', function onKeyNote(e) {
+      var cancelled = false;
+      function onKeyNote(e) {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); el.blur(); }
-        if (e.key === 'Escape') { el.textContent = prev; el.blur(); }
-      }, { once: true });
+        if (e.key === 'Escape') { e.preventDefault(); cancelled = true; el.blur(); }
+      }
+      el.addEventListener('keydown', onKeyNote);
+      el.addEventListener('blur', function onBlurNote() {
+        el.removeEventListener('keydown', onKeyNote);
+        el.removeEventListener('blur', onBlurNote);
+        if (cancelled) { el.removeAttribute('contenteditable'); el.textContent = prev; return; }
+        save();
+      });
     },
     'plan-open': function (el, root) {
       var ov = root.getElementById && root.getElementById('planOv');
@@ -1238,7 +1691,12 @@
       ov.setAttribute('data-id', id);
       ov.setAttribute('data-title', title);
       if (hd) hd.textContent = title;
-      if (body) body.value = '';
+      if (body) {
+        var plan = (S().plans || []).filter(function (p) { return String(p.itemId) === String(id); })[0];
+        var lines = plan && plan.steps && plan.steps.length ? plan.steps.map(function (s2) { return typeof s2 === 'string' ? s2 : (s2 && s2.text) || ''; }).filter(Boolean) : [];
+        if (!lines.length && !plan) lines = currentMoveSteps(id).map(function (s2) { return s2.text; });
+        body.value = lines.length ? lines.join('\n') : ((plan && plan.draft) || '');
+      }
       showOv(ov, true);
       if (body) body.focus();
     },
@@ -1267,7 +1725,12 @@
       var id = ov ? attr(ov, 'data-id') : '';
       var steps = body ? String(body.value || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean).map(function (text) { return { text: text, done: false }; }) : [];
       if (!writeOk()) { showOv(ov, false); toast(root, 'Plan saved (fixture)'); return; }
-      api('/api/plans', { method: 'POST', body: { itemId: id, title: title, area: 'other', steps: steps, needs: [], draft: body ? body.value : '', push: true } }).then(ok).then(json).then(function (data) {
+      var prevPlan = (S().plans || []).filter(function (p) { return String(p.itemId) === String(id); })[0] || {};
+      var doneMap = {};
+      (prevPlan.steps || []).forEach(function (s2) { if (s2 && s2.done) doneMap[String(s2.text)] = true; });
+      steps.forEach(function (s2) { if (doneMap[s2.text]) s2.done = true; });
+      api('/api/plans', { method: 'POST', body: { itemId: id, title: title, area: 'other', steps: steps, needs: prevPlan.needs || [], draft: body ? body.value : '', push: true, due: new Date().toISOString() } }).then(ok).then(json).then(function (data) {
+        S().plans = (S().plans || []).filter(function (p) { return String(p.itemId) !== String(id); }).concat([{ itemId: id, steps: data.steps || steps, needs: data.needs || prevPlan.needs || [], draft: data.draft != null ? data.draft : (body ? body.value : '') }]);
         (data.created || []).forEach(function (row) { S().items = S().items || []; S().items.push(row); });
         showOv(ov, false);
         refresh('war');
@@ -1314,10 +1777,6 @@
     'nav-arrange': function (el, root, ev) {
       if (ev) ev.stopPropagation();
       document.body.classList.toggle('arranging');
-      var side = document.getElementById('side');
-      if (side) side.querySelectorAll('.nav').forEach(function (n) {
-        n.setAttribute('draggable', document.body.classList.contains('arranging') ? 'true' : 'false');
-      });
       if (typeof window.paintShellNav === 'function') window.paintShellNav();
       toast(root, document.body.classList.contains('arranging') ? 'Drag the menu to reorder' : 'Menu order saved');
     },
@@ -1328,9 +1787,19 @@
       if (pop) pop.classList.toggle('open');
     },
     'top-cal': function () { go('calendar'); },
+    'sound-toggle': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      if (!window.FourmSound) return;
+      window.FourmSound.toggle();
+      el.textContent = window.FourmSound.isOn() ? 'Sound on' : 'Sound off';
+      if (window.FourmSound.isOn()) window.FourmSound.pop();
+    },
     'nav-go': function (el) {
+      if (document.body.classList.contains('arranging')) return;
       var view = attr(el, 'data-v');
       if (view) go(view);
+      var path = attr(el, 'data-path');
+      if (path && window.history && history.replaceState) { try { history.replaceState({}, '', path); } catch (err) {} }
     },
     'top-signals': function (el, root, ev) {
       if (ev) ev.stopPropagation();
@@ -1346,7 +1815,7 @@
         host.setAttribute('hidden', '');
         return;
       }
-      var data = (window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.war) || {};
+      var data = (fixtureOn() && window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.war) || (window.__port && window.__port.liveWar ? window.__port.liveWar() : {});
       var html = window.__port && window.__port.signalsHtml
         ? window.__port.signalsHtml(data, true)
         : '<div class="sh"><b>Signals</b><span class="x" data-action="signals-close">&times;</span></div>';
@@ -1354,7 +1823,6 @@
       if (!host.querySelector('.sh')) host.innerHTML = html;
       host.classList.add('on');
       host.removeAttribute('hidden');
-      if (typeof window.bindShadowActions === 'function') window.bindShadowActions(document);
     },
     'signals-open': function (el, root, ev) {
       if (ev) ev.stopPropagation();
@@ -1365,6 +1833,9 @@
     'signals-close': function (el, root, ev) {
       if (ev) ev.stopPropagation();
       S().signalsOpen = false;
+      try { localStorage.setItem('cr_sig_seen', String(Date.now())); } catch (err) {}
+      var sh = document.getElementById('sigHost');
+      if (sh) { sh.classList.remove('on'); sh.setAttribute('hidden', ''); }
       refresh('war');
       if (typeof window.closeSignalsPanel === 'function') window.closeSignalsPanel();
     },
@@ -1373,31 +1844,27 @@
       S().signalsOpen = false;
       if (dest === 'mail' || dest === 'email') go('mail');
       else if (dest === 'review' || dest === 'owed') {
-        go('war');
-        S().reviewMeetings = true;
-        refresh('war');
-      } else if (dest === 'pipe' || dest === 'pipeline' || dest === 'reach') go('contacts');
+        S().zoomFilter = 'owed';
+        go('znotes');
+      } else if (dest === 'news') go('news');
+      else if (dest === 'pipe' || dest === 'pipeline' || dest === 'reach') go('contacts');
       else if (dest === 'people' || dest === 'contacts') go('people');
       else if (dest === 'zoom') go('znotes');
       else if (dest === 'finance' || dest === 'financials') go('finance');
       else if (dest === 'int' || dest === 'fix') go('int');
-      else if (dest === 'brain') soon(el, 'Brain log');
-    },
-    'meet-join': function (el) {
-      var url = attr(el, 'data-url');
-      if (url) window.open(url, '_blank', 'noopener');
-      else soon(el, 'Join meeting');
+      var sh2 = document.getElementById('sigHost');
+      if (sh2) { sh2.classList.remove('on'); sh2.setAttribute('hidden', ''); }
     },
     'owed-review': function () {
-      S().reviewMeetings = true;
-      refresh('war');
-      toast(document.body, 'Review meeting commitments');
+      S().zoomFilter = 'owed';
+      go('znotes');
     },
     'reach-pipe': function () { go('contacts'); },
     'nav-reset': function (el, root, ev) {
       if (ev) ev.stopPropagation();
       document.body.classList.remove('arranging');
       try { localStorage.removeItem('cr_nav_order'); } catch (err) {}
+      if (writeOk()) api('/api/nav-prefs', { method: 'PUT', body: { order: [] } }).catch(function () {});
       if (typeof window.paintShellNav === 'function') window.paintShellNav();
       toast(root, 'Menu reset to default');
     },
@@ -1406,8 +1873,6 @@
     'capture-input': function () {},
     'link-title': function () {},
     'link-url': function () {},
-    'note-edit': function () {},
-    'notes-search': function () {},
     'pipe-search': function () {},
     'mail-search': function () {},
     'docs-search': function () {},
@@ -1415,6 +1880,19 @@
     'mail-card': function (el, root) { actions['mail-open'](el, root); },
     'contact-drag': function (el, root) {
       if (onDragStart.moved) return;
+      if (attr(el, 'data-kind') === 'opp') {
+        /* Board cards are GHL opportunities: open the matching local contact (by email, then name). */
+        var em = attr(el, 'data-email').toLowerCase();
+        var nm = attr(el, 'data-name').toLowerCase();
+        var c = (S().contacts || []).filter(function (x) { return em && String(x.email || '').toLowerCase() === em; })[0]
+          || (S().contacts || []).filter(function (x) { return nm && String(x.name || '').toLowerCase() === nm; })[0];
+        var probe = document.createElement('span');
+        probe.setAttribute('data-id', c ? c.id : '');
+        probe.setAttribute('data-name', attr(el, 'data-name'));
+        probe.setAttribute('data-email', attr(el, 'data-email'));
+        actions['pipe-open'](probe, root);
+        return;
+      }
       actions['pipe-open'](el, root);
     },
     'doc-drag': function (el, root) { actions['doc-open'](el, root); },
@@ -1468,17 +1946,85 @@
       S().pipeMatrix = { cat: attr(el, 'data-cat'), cell: attr(el, 'data-cell') };
       refresh('pipe');
     },
-    'pipe-need-tick': function (el) {
-      el.classList.toggle('on');
-      if (el.classList.contains('on')) { el.style.background = 'var(--green)'; el.style.borderColor = 'var(--green)'; }
-      else { el.style.background = ''; el.style.borderColor = ''; }
+    'pipe-need-tick': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      var key = attr(el, 'data-key');
+      var kind = attr(el, 'data-kind');
+      var id = attr(el, 'data-id');
+      var name = attr(el, 'data-name') || 'Them';
+      if (!key || !id) return;
+      el.classList.add('on');
+      el.style.background = 'var(--green)';
+      el.style.borderColor = 'var(--green)';
+      var done = S().pipeNeedDone = S().pipeNeedDone || {};
+      var c = (S().contacts || []).filter(function (x) { return String(x.id) === String(id); })[0];
+      var prior = c ? { lastTouch: c.lastTouch, nextDate: c.nextDate } : null;
+      function undo() {
+        delete done[key];
+        if (c && prior) { c.lastTouch = prior.lastTouch; c.nextDate = prior.nextDate; }
+        refresh('pipe');
+        if (!writeOk()) return;
+        if (kind === 'reach') api('/api/reach-out/' + encodeURIComponent(id), { method: 'PATCH', body: { done: false } }).catch(function () {});
+        else if (prior) api('/api/contacts', { method: 'PATCH', body: { id: id, lastTouch: prior.lastTouch ? new Date(prior.lastTouch).toISOString() : null, nextDate: prior.nextDate ? new Date(prior.nextDate).toISOString() : null } }).catch(function () {});
+      }
+      setTimeout(function () {
+        done[key] = 1;
+        if (c) { c.lastTouch = Date.now(); if (kind === 'follow') c.nextDate = null; }
+        (S().reachOut || []).forEach(function (r) { if (kind === 'reach' && String(r.id) === String(id)) r.done = true; });
+        refresh('pipe');
+        toast(root, name + ' handled', undo);
+      }, 220);
+      if (!writeOk()) return;
+      var write = kind === 'reach'
+        ? api('/api/reach-out/' + encodeURIComponent(id), { method: 'PATCH', body: { done: true } })
+        : api('/api/contacts', { method: 'PATCH', body: kind === 'follow' ? { id: id, lastTouch: new Date().toISOString(), nextDate: null } : { id: id, lastTouch: new Date().toISOString() } });
+      write.then(ok).catch(function () { undo(); toast(root, 'Could not save that - ' + name + ' is back on the list'); });
     },
-    'pipe-add': function () { go('contacts'); },
+    'pipe-add': function (el, root) {
+      openPop(root, el, '<div style="font-weight:800;margin:2px 4px 6px">Add a person</div>'
+        + '<input data-action="pipe-add-name" id="pipeAddName" placeholder="Name" style="display:block;width:100%;margin:4px 0;padding:6px 8px">'
+        + '<input data-action="pipe-add-email" id="pipeAddEmail" placeholder="Email (optional)" style="display:block;width:100%;margin:4px 0;padding:6px 8px">'
+        + '<button type="button" data-action="pipe-add-save">Add to Contacts</button>');
+      setTimeout(function () { var n = root.getElementById && root.getElementById('pipeAddName'); if (n) n.focus(); }, 30);
+    },
+    'pipe-add-name': function () {},
+    'pipe-add-email': function () {},
+    'pipe-add-save': function (el, root) {
+      var nEl = root.getElementById && root.getElementById('pipeAddName');
+      var eEl = root.getElementById && root.getElementById('pipeAddEmail');
+      var name = String((nEl && nEl.value) || '').trim();
+      var email = String((eEl && eEl.value) || '').trim().toLowerCase();
+      if (!name) { toast(root, 'Add a name'); return; }
+      if (email && !EMAIL_RE.test(email)) { toast(root, 'That email address is not valid'); return; }
+      closePop(root);
+      if (!writeOk()) { toast(root, name + ' added (fixture)'); return; }
+      api('/api/contacts', { method: 'POST', body: { name: name, email: email, stage: 'new' } }).then(ok).then(json).then(function (row) {
+        if (row && row.id) S().contacts = [row].concat(S().contacts || []);
+        refresh('pipe');
+        toast(root, name + ' added to Contacts');
+      }).catch(function () { toast(root, 'Could not add ' + name); });
+    },
+    'pipe-col-more': function (el) {
+      S().pipeColAll = S().pipeColAll || {};
+      S().pipeColAll[attr(el, 'data-stage-id')] = true;
+      refresh('pipe');
+    },
     'pipe-follow': function (el, root) {
       var name = attr(el, 'data-name') || 'there';
       var email = attr(el, 'data-email') || '';
       var first = name.split(' ')[0] || 'there';
       var draft = 'Hi ' + first + ',\n\nChecking in on where we left things. Still a good moment to talk 4orm — the record every recommendation was understood and right for the person.\n\nWould 15 minutes this week work?\n\nChad';
+      if (!email) {
+        var probe = document.createElement('span');
+        probe.setAttribute('data-id', attr(el, 'data-contact') || (attr(el, 'data-kind') === 'reach' ? '' : attr(el, 'data-id')));
+        probe.setAttribute('data-name', name);
+        actions['pipe-open'](probe, root);
+        return;
+      }
+      if (typeof window.openReply !== 'function') {
+        openCompose({ to: [{ email: email, name: name }], subject: 'Following up', body: draft });
+        return;
+      }
       if (typeof window.openReply === 'function') {
         window.openReply({ email: email, from: name, subject: 'Following up', snippet: '', body: draft, threadId: '', messageId: '' });
         setTimeout(function () {
@@ -1545,14 +2091,18 @@
       S().spaceFocusId = temp.id;
       refresh('spaces');
       if (!writeOk()) { toast(root, 'New space (fixture)'); return; }
+      var tempId = temp.id;
       api('/api/spaces', { method: 'POST', body: { name: name, kind: 'data_room', spaceType: 'project' } }).then(ok).then(json).then(function (row) {
-        if (row && row.id) {
-          temp.id = row.id;
-          S().spaceFocusId = row.id;
-        }
-        refresh('spaces');
+        if (!row || !row.id || row.saved === false) throw new Error('not saved');
+        temp.id = row.id;
+        /* Swap the temp id in place so a name being typed is not lost to a repaint. */
+        if (root.querySelectorAll) root.querySelectorAll('[data-id="' + tempId + '"]').forEach(function (n) { n.setAttribute('data-id', row.id); });
+        var edits = {};
+        if (temp.name !== name) edits.name = temp.name;
+        if (temp.notes) edits.notes = temp.notes;
+        if (Object.keys(edits).length) api('/api/spaces/' + encodeURIComponent(row.id), { method: 'PATCH', body: edits }).catch(function () {});
         toast(root, 'Space created');
-      }).catch(function () { toast(root, 'Space is on the desk — not saved yet'); });
+      }).catch(function () { toast(root, 'Space is on the desk - not saved yet'); });
     },
     'space-card-name': function () {},
     'space-card-desc': function () {},
@@ -1576,17 +2126,20 @@
       S().pkg = null;
       refresh('spaces');
     },
-    'space-email': function () { S().composeOpen = true; go('mail'); },
-    'space-book': function () {
-      go('calendar');
-      setTimeout(function () {
-        var cal = window.__redesignCal;
-        if (!cal || typeof cal.openPop !== 'function') return;
-        var now = new Date();
-        var d = cal.ymd(now);
-        var s = now.getHours() + (now.getMinutes() >= 30 ? 0.5 : 0);
-        cal.openPop({ d: d, s: s, e: s + 20 / 60, t: '20 min', c: 'meet', isNew: true, ppl: [], loc: [], links: [], docs: [] }, 620, 220);
-      }, 500);
+    'space-email': function (el, root) {
+      var pkg = spaceById(attr(el, 'data-id')) || S().pkg;
+      if (!pkg) { toast(root, 'Open a Space first'); return; }
+      var d = spaceDraft(pkg);
+      openCompose({ to: d.to });
+    },
+    'space-compose': function (el, root) {
+      var pkg = spaceById(attr(el, 'data-id')) || S().pkg;
+      if (!pkg) { toast(root, 'Open a Space first'); return; }
+      openCompose(spaceDraft(pkg));
+    },
+    'space-book': function (el) {
+      var pkg = spaceById(attr(el, 'data-id')) || S().pkg || {};
+      openBook((pkg.recipients || pkg.people || []).map(function (r) { return r.name || r.email; }));
     },
     'space-send-test': function (el, root) {
       var id = attr(el, 'data-id') || (S().pkg && S().pkg.id);
@@ -1613,7 +2166,6 @@
         } else toast(root, (d && d.note) || 'Test did not send');
       }).catch(function () { toast(root, 'Could not send the test'); });
     },
-    'space-rewrite': function (el, root) { toast(root, '4orm Intelligence will rewrite the angle'); },
     'space-prev': function () {
       var packs = S().packages || [];
       var id = S().pkg && S().pkg.id;
@@ -1638,9 +2190,63 @@
       Array.prototype.forEach.call(rows, function (row) {
         steps.push({ d: row.classList.contains('d'), t: (row.querySelector('span') && row.querySelector('span').textContent) || '' });
       });
-      try { localStorage.setItem('cr_space_steps_' + id, JSON.stringify(steps)); } catch (e) {}
+      var tdc = root && root.getElementById ? root.getElementById('tdc') : null;
+      if (tdc) tdc.textContent = steps.filter(function (s) { return s.d; }).length + ' of ' + steps.length + ' done';
+      if (S().pkg && String(S().pkg.id) === String(id)) S().pkg.steps = steps;
+      if (!writeOk() || !UUID_RE.test(String(id))) return;
+      /* Saved on the Space (spaces.steps); the old browser copy is dropped once the server has it. */
+      api('/api/spaces/' + encodeURIComponent(id), { method: 'PATCH', body: { steps: steps } }).then(ok).then(json).then(function (d) {
+        if (d && d.saved === false) throw new Error('not saved');
+        try { localStorage.removeItem('cr_space_steps_' + id); } catch (e) {}
+      }).catch(function () {
+        try { localStorage.setItem('cr_space_steps_' + id, JSON.stringify(steps)); } catch (e) {}
+        toast(root, 'Could not save that step - kept in this browser for now');
+      });
     },
-    'space-hook': function (el, root) { toast(root, (el.textContent || '').trim() || 'Hook'); },
+    'space-rewrite': function (el, root) {
+      /* 4orm Intelligence rewrites the angle and suggests three hooks (POST /api/spaces/:id/angle), then the
+         angle saves like a typed one (PATCH {angle}) with Undo back to the old text. */
+      var sid = attr(el, 'data-id') || (S().pkg && S().pkg.id);
+      if (!writeOk()) { toast(root, 'Rewrite (fixture)'); return; }
+      if (!UUID_RE.test(String(sid || ''))) { toast(root, 'Save the Space first'); return; }
+      var box = root.querySelector && root.querySelector('.angle[data-action="space-angle"]');
+      var before = box ? String(box.innerText || '').trim() : String((S().pkg && S().pkg.angle) || '');
+      toast(root, 'Rewriting the angle');
+      api('/api/spaces/' + encodeURIComponent(sid) + '/angle', { method: 'POST', body: {} }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (d) {
+          if (!r.ok || !d || !d.angle) throw new Error((d && d.error) || 'fail');
+          return d;
+        });
+      }).then(function (d) {
+        S().spaceHooks = S().spaceHooks || {};
+        S().spaceHooks[sid] = d.hooks || [];
+        var el2 = root.querySelector && root.querySelector('.angle[data-action="space-angle"]');
+        if (!el2) { if (S().pkg) S().pkg.angle = d.angle; refresh('spaces'); return; }
+        el2.innerText = d.angle;
+        saveSpaceText(root, el2, 'space-angle');
+        refresh('spaces');
+        toast(root, 'Angle rewritten', function () {
+          var el3 = root.querySelector && root.querySelector('.angle[data-action="space-angle"]');
+          if (!el3) return;
+          el3.innerText = before;
+          saveSpaceText(root, el3, 'space-angle');
+          refresh('spaces');
+        });
+      }).catch(function (err) {
+        toast(root, err && err.message && err.message !== 'fail' ? err.message : 'Could not rewrite the angle');
+      });
+    },
+    'space-hook': function (el, root) {
+      /* Puts the hook at the top of the intro email and saves it (spaces email body). */
+      var hookText = (el.textContent || '').trim();
+      var intro = root.querySelector && root.querySelector('[data-action="space-intro"]');
+      if (!hookText || !intro) { toast(root, hookText || 'Hook'); return; }
+      var cur = String(intro.innerText || '').trim();
+      if (cur.indexOf(hookText) === 0) { toast(root, 'That hook already opens the intro'); return; }
+      intro.innerText = hookText + (cur ? '\n\n' + cur : '');
+      saveSpaceText(root, intro, 'space-intro');
+      toast(root, 'Hook added to the intro');
+    },
     'space-angle': function () {},
     'space-subject': function () {},
     'space-intro': function () {},
@@ -1670,38 +2276,35 @@
       input.multiple = true;
       input.onchange = function () {
         if (!input.files || !input.files.length) return;
-        toast(root, input.files.length + ' file' + (input.files.length === 1 ? '' : 's') + ' staged');
-        if (!id || !writeOk() || !/^[0-9a-f-]{36}$/i.test(String(id))) return;
-        Array.prototype.forEach.call(input.files, function (f) {
-          var fd = new FormData();
-          fd.append('file', f);
-          fd.append('name', f.name);
-          fd.append('mime', f.type || '');
-          api('/api/spaces/' + encodeURIComponent(id) + '/upload', { method: 'POST', body: fd }).then(ok).then(json).then(function (d) {
-            S().pkg = d.package || d || S().pkg;
-            refresh('spaces');
-          }).catch(function () { toast(root, 'Could not attach ' + f.name); });
-        });
+        if (!id || !writeOk() || !UUID_RE.test(String(id))) { toast(root, 'Save the Space first, then attach files'); return; }
+        toast(root, 'Attaching ' + input.files.length + ' file' + (input.files.length === 1 ? '' : 's') + '…');
+        Array.prototype.forEach.call(input.files, function (f) { uploadToSpace(root, id, f); });
       };
       input.click();
     },
     'space-link': function (el, root) {
       var id = attr(el, 'data-id') || (S().pkg && S().pkg.id);
-      var links = (S().links || []);
-      var pick = links.slice(0, 40).map(function (l) {
-        return (l.title || l.url || '') + ' — ' + (l.url || '');
-      });
-      var choice = window.prompt('Pick a saved link (paste URL, or type part of the title)\n\n' + pick.slice(0, 12).join('\n'));
-      if (!choice || !id) return;
-      var hit = links.filter(function (l) {
-        var hay = ((l.title || '') + ' ' + (l.url || '')).toLowerCase();
-        return hay.indexOf(String(choice).toLowerCase()) >= 0;
-      })[0];
-      var url = (hit && hit.url) || choice;
-      if (!/^https?:\/\//i.test(url) && hit) url = hit.url;
-      if (!writeOk()) { toast(root, 'Link added (fixture)'); return; }
-      api('/api/spaces/' + encodeURIComponent(id), { method: 'POST', body: { action: 'add-link', url: url, name: (hit && hit.title) || url } }).then(ok).then(json).then(function (d) {
-        S().pkg = d.package || d || S().pkg;
+      if (!id) return;
+      var links = S().links || [];
+      if (!links.length) { toast(root, 'No saved links yet - add some in Links'); return; }
+      openPop(root, el, '<input data-action="space-link-q" placeholder="Search saved links" style="display:block;width:100%;margin:2px 0 6px;padding:6px 8px">'
+        + '<div class="space-link-list" style="max-height:280px;overflow:auto">' + links.slice(0, 300).map(function (l) {
+          return '<button type="button" class="space-link-row" data-action="space-link-pick" data-id="' + esc(id) + '" data-url="' + esc(l.url || '') + '" data-title="' + esc(l.title || l.url || 'Link') + '">' + esc(l.title || l.url || 'Link') + '<small style="display:block;opacity:.6">' + esc(String(l.url || '').replace(/^https?:\/\//, '').slice(0, 60)) + '</small></button>';
+        }).join('') + '</div>');
+      setTimeout(function () { var q = root.querySelector && root.querySelector('[data-action="space-link-q"]'); if (q) q.focus(); }, 30);
+    },
+    'space-link-q': function () {},
+    'space-link-pick': function (el, root) {
+      closePop(root);
+      var id = attr(el, 'data-id');
+      var url = attr(el, 'data-url');
+      var title = attr(el, 'data-title') || url;
+      if (!id || !url) return;
+      if (!writeOk() || !UUID_RE.test(String(id))) { toast(root, 'Link added (fixture)'); return; }
+      api('/api/spaces/' + encodeURIComponent(id), { method: 'POST', body: { action: 'add-link', url: url, name: title } }).then(ok).then(json).then(function (d) {
+        if (d && d.saved === false) throw new Error('not saved');
+        var pack = (d && d.package) || d;
+        if (pack && pack.id) S().pkg = pack;
         refresh('spaces');
         toast(root, 'Link added');
       }).catch(function () { toast(root, 'Could not add that link'); });
@@ -1774,19 +2377,34 @@
         toast(root, 'Renamed');
       }).catch(function () { toast(root, 'Could not rename that space'); });
     },
+    /* Delete with Undo: the Space is hidden at once; the server delete only runs after the Undo window closes. */
     'space-archive': function (el, root) {
       var menu = root.getElementById && root.getElementById('menu');
       var id = (menu && attr(menu, 'data-id')) || attr(el, 'data-id');
       if (menu) menu.style.display = 'none';
       if (!id) return;
       var prior = (S().packages || []).slice();
-      S().packages = (S().packages || []).filter(function (p) { return String(p.id) !== String(id); });
+      var hit = spaceById(id);
+      S().packages = prior.filter(function (p) { return String(p.id) !== String(id); });
       if (S().pkg && String(S().pkg.id) === String(id)) S().pkg = null;
       refresh('spaces');
-      toast(root, 'Space hidden', function () {
+      var undone = false;
+      toast(root, 'Deleted ' + ((hit && hit.name) || 'Space'), function () {
+        undone = true;
         S().packages = prior;
         refresh('spaces');
       });
+      if (!writeOk() || !UUID_RE.test(String(id))) return;
+      setTimeout(function () {
+        if (undone) return;
+        api('/api/spaces/' + encodeURIComponent(id), { method: 'DELETE' }).then(ok).then(json).then(function (d) {
+          if (d && d.ok === false) throw new Error('not deleted');
+        }).catch(function () {
+          S().packages = prior;
+          refresh('spaces');
+          toast(root, 'Could not delete that Space - it is back');
+        });
+      }, 4600);
     },
     'space-collapse': function (el) {
       var gh = el.closest('.gh') || el;
@@ -1805,6 +2423,7 @@
     },
     'docs-folder': function (el) {
       S().docFolder = attr(el, 'data-folder') || '';
+      S().docSet = '';
       refresh('docs');
     },
     'docs-type': function (el) {
@@ -1824,8 +2443,28 @@
       }).catch(function () { toast(root, 'Folder is on the desk — not saved yet'); });
     },
     'docs-drive': function (el, root) {
-      go('drive');
-      toast(root, 'Opening Drive');
+      if (!writeOk()) { toast(root, 'Pull from Drive (fixture)'); return; }
+      openPop(root, el, '<div style="font-weight:600;margin:2px 0 6px">Pull from Drive into ' + esc(docFolderNow()) + '</div>'
+        + '<input data-action="docs-drive-q" placeholder="Search Drive by file name" style="display:block;width:100%;margin:2px 0 6px;padding:6px 8px">'
+        + '<div class="doc-drive-list" style="max-height:300px;overflow:auto;min-width:280px"></div>');
+      searchDrive(root, '');
+      setTimeout(function () { var q = root.querySelector && root.querySelector('[data-action="docs-drive-q"]'); if (q) q.focus(); }, 30);
+    },
+    'docs-drive-q': function () {},
+    'docs-drive-pick': function (el, root) {
+      var f = (S().docDriveHits || [])[Number(attr(el, 'data-i'))];
+      if (!f) return;
+      closePop(root);
+      var category = docFolderNow();
+      api('/api/documents', { method: 'POST', body: { action: 'pull', category: category, name: f.name, driveFileId: f.id, mime: f.mime, url: f.url } }).then(jsonOrThrow).then(function (d) {
+        reloadDocs();
+        toast(root, d && d.existing ? f.name + ' is already in the library' : f.name + ' pulled into ' + category);
+      }).catch(function (err) { toast(root, errText(err, 'Could not pull that file')); });
+    },
+    'docs-retry': function (el, root) {
+      S().docsError = false;
+      refresh('docs');
+      reloadDocs();
     },
     'docs-upload': function (el, root) {
       var input = root.querySelector('#deskUpload') || document.createElement('input');
@@ -1837,7 +2476,9 @@
       input.onchange = function () {
         var files = input.files;
         if (!files || !files.length) return;
-        toast(root, files.length + ' file' + (files.length === 1 ? '' : 's') + ' staged — drop onto a Space');
+        if (!writeOk()) { toast(root, 'Upload (fixture)'); return; }
+        uploadDroppedFiles(root, files, '');
+        input.value = '';
       };
       input.click();
     },
@@ -1847,35 +2488,155 @@
         url: attr(el, 'data-url') || attr(el, 'data-web'),
         drive: attr(el, 'data-drive'),
         type: attr(el, 'data-type') || 'doc',
-        id: attr(el, 'data-id')
+        id: attr(el, 'data-id'),
+        mime: attr(el, 'data-mime'),
+        folder: attr(el, 'data-folder'),
+        page: 1
       };
+      S().docZoom = 1;
       refresh('docs');
+      docMetaLoad(S().docOpen);
     },
     'doc-close': function () {
       S().docOpen = null;
       refresh('docs');
     },
-    'doc-prev': function (el, root) { toast(root, 'Previous file'); },
-    'doc-next': function (el, root) { toast(root, 'Next file'); },
+    'doc-prev': function (el, root) { stepDoc(root, -1); },
+    'doc-next': function (el, root) { stepDoc(root, 1); },
     'doc-download': function (el, root) {
-      var url = (S().docOpen && S().docOpen.url) || '';
-      if (/^https?:\/\//i.test(url)) { window.open(url, '_blank', 'noopener'); return; }
-      toast(root, 'Download starts when the file is on Drive');
+      var d = S().docOpen;
+      if (!d) return;
+      var name = d.name || 'document';
+      var proxy = d.drive ? '/api/drive/file?id=' + encodeURIComponent(d.drive) : (/^[0-9a-f-]{36}$/i.test(String(d.id || '')) ? '/api/documents/file?id=' + encodeURIComponent(d.id) : '');
+      function save(href) {
+        var a = document.createElement('a');
+        a.href = href; a.download = name; a.rel = 'noopener';
+        document.body.appendChild(a); a.click(); a.remove();
+      }
+      if (!proxy) { toast(root, 'This file has no stored copy to download'); return; }
+      toast(root, 'Downloading ' + name);
+      api(proxy, { method: 'GET' }).then(function (r) {
+        var type = (r.headers && r.headers.get && r.headers.get('content-type')) || '';
+        if (!r.ok || /json/i.test(type)) throw new Error('nofile');
+        return r.blob();
+      }).then(function (blob) {
+        var u = URL.createObjectURL(blob);
+        save(u);
+        setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
+      }).catch(function () {
+        if (d.drive) save('https://drive.google.com/uc?export=download&id=' + encodeURIComponent(d.drive));
+        else toast(root, 'Could not download that file');
+      });
     },
     'doc-drive-open': function (el, root) {
       var drive = S().docOpen && S().docOpen.drive;
       if (drive) { window.open('https://drive.google.com/file/d/' + encodeURIComponent(drive) + '/view', '_blank', 'noopener'); return; }
       toast(root, 'Not synced to Drive yet');
     },
-    'doc-thumb': function () {},
-    'doc-slide-prev': function () {},
-    'doc-slide-next': function () {},
-    'doc-zoom-in': function (el, root) { toast(root, 'Zoom in'); },
-    'doc-zoom-out': function (el, root) { toast(root, 'Zoom out'); },
-    'doc-fit': function (el, root) { toast(root, 'Fit'); },
+    'doc-thumb': function (el) {
+      var o = S().docOpen;
+      var pages = Number(o && o.meta && o.meta.pages) || 0;
+      var n = Number(attr(el, 'data-n')) || 1;
+      if (!o || pages < 2) return;
+      o.page = Math.max(1, Math.min(pages, n));
+      refresh('docs');
+    },
+    'doc-slide-prev': function (el, root) { stepDocPage(root, -1); },
+    'doc-slide-next': function (el, root) { stepDocPage(root, 1); },
+    'doc-zoom-in': function () { S().docZoom = Math.min(3, (S().docZoom || 1) + 0.25); zoomDocFrame(); },
+    'doc-zoom-out': function () { S().docZoom = Math.max(0.5, (S().docZoom || 1) - 0.25); zoomDocFrame(); },
+    'doc-fit': function () { S().docZoom = 1; zoomDocFrame(); },
     'docs-build-space': function (el, root) {
-      if (typeof window.addBlankSpace === 'function') { window.addBlankSpace(); toast(root, 'Building a space from the selection'); return; }
-      actions['spaces-new'](el, root);
+      var docs = docsFor('pick');
+      if (!docs.length) { toast(root, 'Tick the files first, then build the Space'); return; }
+      actions['doc-space-new'](el, root);
+    },
+    'doc-add-space': function (el, root) {
+      if (!S().docOpen) return;
+      openPop(root, el, spacePickHtml('open'));
+    },
+    'docs-bulk-space': function (el, root) {
+      if (!docPicked().length) { toast(root, 'Tick the files first'); return; }
+      openPop(root, el, spacePickHtml('pick'));
+    },
+    'doc-space-pick': function (el, root) {
+      closePop(root);
+      var kind = attr(el, 'data-kind') || 'pick';
+      attachDocsToSpace(root, attr(el, 'data-space'), docsFor(kind), attr(el, 'data-name')).then(function (done) {
+        if (done && kind === 'pick') { S().docPick = {}; refresh('docs'); }
+      });
+    },
+    'doc-space-new': function (el, root) {
+      closePop(root);
+      var kind = attr(el, 'data-kind') || 'pick';
+      var docs = docsFor(kind);
+      if (!docs.length) { toast(root, 'Pick a file first'); return; }
+      if (!writeOk()) { toast(root, 'New Space (fixture)'); return; }
+      var name = window.prompt('Name the new Space', docs.length === 1 ? String(docs[0].name || 'New Space').replace(/\.[a-z0-9]{2,5}$/i, '') : 'New Space');
+      if (name == null) return;
+      name = String(name).trim() || 'New Space';
+      createSpaceNamed(name).then(function (sp) {
+        return attachDocsToSpace(root, sp.id, docs, sp.name).then(function (done) {
+          if (done && kind === 'pick') { S().docPick = {}; refresh('docs'); }
+        });
+      }).catch(function (err) { toast(root, errText(err, 'Could not create that Space')); });
+    },
+    'docs-bulk-clear': function () {
+      S().docPick = {};
+      refresh('docs');
+    },
+    'docs-bulk-set': function (el, root) {
+      if (!docPicked().length) { toast(root, 'Tick the files first'); return; }
+      openPop(root, el, setPickHtml());
+    },
+    'docs-set': function (el) {
+      var id = attr(el, 'data-id');
+      S().docSet = S().docSet === id ? '' : id;
+      if (S().docSet) S().docFolder = '';
+      refresh('docs');
+    },
+    'docs-new-set': function (el, root) {
+      closePop(root);
+      var name = window.prompt('Name the set');
+      if (name == null) return;
+      name = String(name).trim();
+      if (!name) return;
+      if (!writeOk()) { toast(root, 'Set added (fixture)'); return; }
+      var ids = docPicked();
+      api('/api/documents', { method: 'POST', body: { action: 'add-set', name: name, docIds: ids } }).then(jsonOrThrow).then(function (d) {
+        if (d && d.set) S().docSets = (S().docSets || []).concat([d.set]);
+        if (ids.length) S().docPick = {};
+        refresh('docs');
+        reloadDocs();
+        toast(root, ids.length ? 'Set ' + name + ' made with ' + ids.length + ' file' + (ids.length === 1 ? '' : 's') : 'Set ' + name + ' added. Tick files and use Add to a set.');
+      }).catch(function (err) { toast(root, errText(err, 'Could not add that set')); });
+    },
+    'docs-set-pick': function (el, root) {
+      closePop(root);
+      var id = attr(el, 'data-id');
+      var ids = docPicked();
+      if (!id || !ids.length) return;
+      if (!writeOk()) { toast(root, 'Added to set (fixture)'); return; }
+      api('/api/documents', { method: 'POST', body: { action: 'set-add', id: id, docIds: ids } }).then(jsonOrThrow).then(function (d) {
+        (S().docSets || []).forEach(function (s) { if (d && d.set && s.id === d.set.id) s.docIds = d.set.docIds; });
+        S().docPick = {};
+        refresh('docs');
+        toast(root, 'Added ' + ids.length + ' to ' + (attr(el, 'data-name') || 'the set'));
+      }).catch(function (err) { toast(root, errText(err, 'Could not add to that set')); });
+    },
+    'docs-set-remove': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      var id = attr(el, 'data-id');
+      var name = attr(el, 'data-name') || 'Set';
+      if (!id || !writeOk()) return;
+      api('/api/documents', { method: 'POST', body: { action: 'remove-set', id: id } }).then(jsonOrThrow).then(function () {
+        S().docSets = (S().docSets || []).filter(function (s) { return s.id !== id; });
+        if (S().docSet === id) S().docSet = '';
+        refresh('docs');
+        toast(root, name + ' removed', function () {
+          api('/api/documents', { method: 'POST', body: { action: 'restore-set', id: id } }).then(jsonOrThrow).then(function () { reloadDocs(); toast(root, name + ' is back'); }).catch(function () { toast(root, 'Could not bring that set back'); });
+        });
+      }).catch(function (err) { toast(root, errText(err, 'Could not remove that set')); });
     },
     'doc-pick': function (el, root, ev) {
       if (ev) ev.stopPropagation();
@@ -1885,140 +2646,320 @@
       if (S().docPick[id]) delete S().docPick[id];
       else S().docPick[id] = 1;
       el.classList.toggle('on', !!S().docPick[id]);
+      refresh('docs');
     },
-    'mail-compose': function (el, root) {
-      var pkg = S().pkg;
-      if (pkg && pkg.id) {
-        S().composeDraft = Object.assign({}, S().composeDraft || {}, {
-          from: pkg.name || '',
-          subject: pkg.subject || '',
-          body: pkg.intro || pkg.notes || '',
-          attachments: pkg.docs || []
-        });
-        S().composeOpen = true;
-      }
-      var cp = root.getElementById && root.getElementById('compose');
-      var sc = root.getElementById && root.getElementById('scrim');
-      if (cp) cp.classList.add('open');
-      if (sc) sc.classList.add('open');
-      if (!cp && pkg && pkg.id) go('mail');
-    },
-    'mail-compose-close': function (el, root) {
-      var cp = root.getElementById && root.getElementById('compose');
-      var sc = root.getElementById && root.getElementById('scrim');
-      if (cp) cp.classList.remove('open');
-      if (sc) sc.classList.remove('open');
+    /* ---------- Email: compose ---------- */
+    'mail-compose': function () { openCompose({ to: [], cc: [], bcc: [] }); },
+    'mail-compose-close': function () {
       S().composeOpen = false;
+      S().composeDraft = null;
+      repaintMail();
     },
-    'mail-open': function (el, root) {
-      var r = root.getElementById && root.getElementById('reader');
-      var sc = root.getElementById && root.getElementById('scrim');
-      if (r) {
-        r.classList.add('open');
-        r.setAttribute('data-id', attr(el, 'data-id') || '');
-        r.setAttribute('data-thread', attr(el, 'data-thread') || '');
-        r.setAttribute('data-email', attr(el, 'data-email') || '');
-        r.setAttribute('data-subject', attr(el, 'data-subject') || '');
-        var h2 = r.querySelector('h2');
-        if (h2) h2.textContent = attr(el, 'data-subject') || 'Thread';
-      }
-      if (sc) sc.classList.add('open');
-      var tid = attr(el, 'data-thread');
-      if (tid && writeOk()) api('/api/mail/thread?id=' + encodeURIComponent(tid), { method: 'GET' }).catch(function () {});
-    },
-    'mail-close': function (el, root) {
-      var r = root.getElementById && root.getElementById('reader');
-      var sc = root.getElementById && root.getElementById('scrim');
-      var cp = root.getElementById && root.getElementById('compose');
-      if (r) r.classList.remove('open');
-      if (cp) cp.classList.remove('open');
-      if (sc) sc.classList.remove('open');
-    },
-    'mail-body': function () {},
     'mail-to': function () {},
     'mail-subject': function () {},
+    'mail-body': function () {},
+    'mail-ask-input': function () {},
+    /* B30: plain-text formatting (mail goes out as plain text, so marks are text: *bold*, _italic_, - list). */
+    'mail-fmt': function (el, root) {
+      var cp = root.getElementById && root.getElementById('compose');
+      var body = cp && cp.querySelector('[data-action="mail-body"]');
+      if (!body) return;
+      var fmt = attr(el, 'data-fmt');
+      var sel = (root.getSelection ? root.getSelection() : null) || window.getSelection();
+      var range = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
+      if (range && !body.contains(range.commonAncestorContainer)) range = null;
+      var picked = range ? String(range.toString()) : '';
+      var text = '';
+      if (fmt === 'b') text = '*' + (picked || 'bold') + '*';
+      else if (fmt === 'i') text = '_' + (picked || 'italic') + '_';
+      else if (fmt === 'ul' || fmt === 'ol') {
+        var lines = (picked || 'item').split(/\n/);
+        text = lines.map(function (l, i) { return (fmt === 'ul' ? '- ' : (i + 1) + '. ') + l.replace(/^\s*(?:[-*]|\d+\.)\s+/, ''); }).join('\n');
+        if (!picked) text = '\n' + text;
+      } else if (fmt === 'link') {
+        var url = window.prompt('Link address', 'https://');
+        if (!url || !/^https?:\/\/\S+$/i.test(String(url).trim())) { if (url) toast(root, 'That is not a web address'); return; }
+        text = (picked ? picked + ' ' : '') + '(' + String(url).trim() + ')';
+      } else if (fmt === 'name') {
+        var first = (composeState().to || [])[0];
+        var nm = first ? String(first.name || '').trim().split(/\s+/)[0] : '';
+        if (!nm) { toast(root, first ? 'No name on that recipient yet' : 'Add a recipient first'); return; }
+        text = nm;
+      } else return;
+      body.focus();
+      if (range) { sel.removeAllRanges(); sel.addRange(range); }
+      else {
+        var end = document.createRange();
+        end.selectNodeContents(body);
+        end.collapse(false);
+        if (sel) { sel.removeAllRanges(); sel.addRange(end); }
+      }
+      var done = false;
+      try { done = document.execCommand('insertText', false, text); } catch (e) { done = false; }
+      if (!done) body.innerText = String(body.innerText || '') + text;
+      composeState().body = String(body.innerText || body.textContent || '');
+    },
+    /* B37: rewrite the draft in a tone. B38: write from an instruction. Draft only; Undo restores the old body. */
+    'mail-tone': function (el, root) { mailAiWrite(root, 'tone', attr(el, 'data-tone')); },
+    'mail-ai-write': function (el, root) { mailAiWrite(root, 'write', ''); },
+    'mail-always': function () {},
+    'mail-to-pick': function (el) {
+      var field = attr(el, 'data-field') || 'to';
+      addRecipient(field, attr(el, 'data-email'), attr(el, 'data-name'));
+      repaintMail();
+      focusComposeField(field);
+    },
+    'mail-rcpt-remove': function (el) {
+      var d = composeState();
+      var field = attr(el, 'data-field') || 'to';
+      (d[field] || []).splice(Number(attr(el, 'data-i')) || 0, 1);
+      repaintMail();
+    },
+    'mail-cc-toggle': function () {
+      var d = composeState();
+      d.showCc = !d.showCc;
+      repaintMail();
+      if (d.showCc) focusComposeField('cc');
+    },
+    'mail-att-remove': function (el) {
+      var d = composeState();
+      d.attachments.splice(Number(attr(el, 'data-i')) || 0, 1);
+      repaintMail();
+    },
+    'mail-tog': function (el) {
+      var d = composeState();
+      var k = attr(el, 'data-k');
+      if (k !== 'nudge' && k !== 'log') return;
+      d[k] = !d[k];
+      var sw = el.querySelector('.sw');
+      if (sw) sw.classList.toggle('off', !d[k]);
+      el.setAttribute('aria-checked', String(d[k]));
+    },
+    'mail-send': function (el, root) {
+      var d = composeState();
+      var bad = syncCompose(root);
+      if (bad.length) { toast(root, 'Not a valid email address: ' + bad.join(', ')); return; }
+      if (!d.to.length) { toast(root, 'Add a valid recipient'); focusComposeField('to'); return; }
+      var to = d.to[0].email;
+      var cc = d.to.slice(1).concat(d.cc).map(function (r) { return r.email; });
+      var bcc = d.bcc.map(function (r) { return r.email; });
+      var text = d.body + bundleLinksText(d.attachments);
+      var who = 'To: ' + d.to.map(function (r) { return r.email; }).join(', ')
+        + (d.cc.length ? '\nCc: ' + d.cc.map(function (r) { return r.email; }).join(', ') : '')
+        + (bcc.length ? '\nBcc: ' + bcc.join(', ') : '');
+      if (!window.confirm('Send this email from Gmail?\n\n' + who + '\nSubject: ' + (d.subject || '(no subject)') + '\n\nNothing goes out until you confirm.')) return;
+      if (!writeOk()) { toast(root, 'Send (fixture)'); return; }
+      var reply = !!(d.reply && d.threadId);
+      var body = { action: reply ? 'reply' : 'compose', to: to, cc: cc.join(', '), bcc: bcc.join(', '), subject: d.subject, text: text, threadId: reply ? d.threadId : '', messageId: reply ? (d.messageId || '') : '' };
+      api('/api/mail/act', { method: 'POST', body: body }).then(ok).then(json).then(function (res) {
+        if (!(res && (res.ok || res.drafted))) { toast(root, 'Gmail did not take it - check the address'); return; }
+        var name = d.to[0].name || to;
+        if (d.nudge) nudgeLater(root, name, to, d.subject);
+        if (d.log) logToPipeline(root, name, to);
+        toast(root, (res.drafted && !res.ok ? 'Saved as a Gmail draft' : 'Sent from Gmail') + (d.nudge ? ' · nudge set for 3 days' : '') + (d.log ? ' · logging to Pipeline' : ''));
+        S().composeOpen = false;
+        S().composeDraft = null;
+        repaintMail();
+      }).catch(function () { toast(root, 'Gmail did not take that send'); });
+    },
     'intel-ask': function () {},
-    'mail-snooze': function (el, root) {
-      var id = attr(el, 'data-id') || attr((root.getElementById && root.getElementById('reader')) || el, 'data-id');
-      if (!id || !writeOk()) { toast(root, 'Snoozed (fixture)'); return; }
-      api('/api/mail/act', { method: 'POST', body: { action: 'snooze', id: id, hours: 24 } }).then(ok).then(function () {
-        toast(root, 'Snoozed 24 hours', function () {
-          api('/api/mail/act', { method: 'POST', body: { action: 'move', id: id, column: 'needs_now' } }).then(function () { refresh('mail'); });
-        });
+
+    /* ---------- Email: reader ---------- */
+    'mail-open': function (el) {
+      var id = attr(el, 'data-id');
+      S().mailOpen = { id: id, threadId: attr(el, 'data-thread'), messageId: attr(el, 'data-mid'), email: attr(el, 'data-email'), from: attr(el, 'data-from'), subject: attr(el, 'data-subject'), preview: attr(el, 'data-preview') };
+      S().mailOpenThread = null;
+      S().mailOpenFailed = false;
+      refresh('mail');
+      if (!GMAIL_ID.test(id) || !writeOk()) return;
+      markMailRead(id);
+      loadThread(id).then(function (th) {
+        if (!S().mailOpen || S().mailOpen.id !== id) return;
+        S().mailOpenThread = th;
         refresh('mail');
-      }).catch(function () { toast(root, 'Could not snooze that thread'); });
+      }).catch(function () {
+        if (!S().mailOpen || S().mailOpen.id !== id) return;
+        S().mailOpenFailed = true;
+        refresh('mail');
+      });
+    },
+    'mail-close': function () {
+      S().mailOpen = null;
+      S().mailOpenThread = null;
+      if (S().composeOpen) { S().composeOpen = false; S().composeDraft = null; }
+      repaintMail();
+    },
+    'mail-forward': function (el) {
+      var th = S().mailOpenThread || {};
+      var o = S().mailOpen || {};
+      var subj = attr(el, 'data-subject') || o.subject || '';
+      var from = attr(el, 'data-from') || o.from || '';
+      var email = attr(el, 'data-email') || o.email || '';
+      openCompose({ to: [], fwd: true, subject: /^fwd?:/i.test(subj) ? subj : 'Fwd: ' + subj, body: forwardBody(from, email, subj, th.text || o.preview || '') });
+    },
+    'mail-snooze': function (el, root) {
+      var id = attr(el, 'data-id') || (S().mailOpen && S().mailOpen.id) || '';
+      if (!id || !writeOk()) { toast(root, 'Snoozed (fixture)'); return; }
+      api('/api/mail/act', { method: 'POST', body: { action: 'snooze', id: id, hours: 24 } }).then(ok).then(json).then(function (d) {
+        if (!d || !d.ok) { toast(root, 'Gmail did not snooze that email'); return; }
+        dropBoardMessage(id);
+        S().mailOpen = null;
+        S().mailOpenThread = null;
+        refresh('mail');
+        toast(root, 'Snoozed 24 hours');
+      }).catch(function () { toast(root, 'Could not snooze that email'); });
     },
     'mail-done': function (el, root) {
-      var id = attr(el, 'data-id') || attr((root.getElementById && root.getElementById('reader')) || el, 'data-id');
+      var id = attr(el, 'data-id') || (S().mailOpen && S().mailOpen.id) || '';
       if (!id || !writeOk()) { toast(root, 'Marked done (fixture)'); return; }
       api('/api/mail/act', { method: 'POST', body: { action: 'done', id: id } }).then(ok).then(function () {
         toast(root, 'Marked done'); refresh('mail');
       }).catch(function () { toast(root, 'Could not mark that done'); });
     },
     'mail-add-space': function (el, root) {
-      soon(root, 'Add to Space');
+      var email = attr(el, 'data-email') || (S().mailOpen && S().mailOpen.email) || '';
+      var name = attr(el, 'data-from') || (S().mailOpen && S().mailOpen.from) || email;
+      withSpaces(function (packs) {
+        if (!packs.length) { toast(root, 'No Spaces yet - make one in Spaces first'); return; }
+        openPop(root, el, '<div style="font-weight:800;margin:2px 4px 6px">Add ' + esc(name) + ' to a Space</div>' + packs.slice(0, 40).map(function (p) {
+          return '<button type="button" data-action="mail-space-pick" data-id="' + esc(p.id) + '" data-space="' + esc(p.name || 'Space') + '" data-email="' + esc(email) + '" data-name="' + esc(name) + '">' + esc(p.name || 'Space') + '</button>';
+        }).join(''));
+      });
     },
-    'mail-move-col': function (el, root) {
-      var id = attr(el, 'data-id') || attr((root.getElementById && root.getElementById('reader')) || el, 'data-id');
-      var next = window.prompt('Move to column key (needs_now, investors, vcs, prospects, design, team, quiet)', 'prospects');
-      if (next == null || !id) return;
-      if (!writeOk()) { toast(root, 'Moved (fixture)'); return; }
-      api('/api/mail/act', { method: 'POST', body: { action: 'move', id: id, column: String(next).trim() } }).then(ok).then(function () {
-        toast(root, 'Filed'); refresh('mail');
-      }).catch(function () { toast(root, 'Could not file that thread'); });
+    'mail-space-pick': function (el, root) {
+      closePop(root);
+      var id = attr(el, 'data-id');
+      if (!id || !writeOk()) { toast(root, 'Added (fixture)'); return; }
+      api('/api/spaces/' + encodeURIComponent(id), { method: 'POST', body: { action: 'add-recipient', name: attr(el, 'data-name'), email: attr(el, 'data-email') } }).then(ok).then(json).then(function (d) {
+        if (d && d.saved === false) throw new Error('not saved');
+        toast(root, attr(el, 'data-name') + ' added to ' + attr(el, 'data-space'));
+      }).catch(function () { toast(root, 'Could not add them to that Space'); });
     },
-    'mail-filters': function (el, root) { soon(root, 'Mail filters'); },
+
+    /* ---------- Email: filters and columns (server email_columns is the source; ids are server keys) ---------- */
+    'mail-filters': function (el, root) {
+      var rules = (S().mailBoard && S().mailBoard.rules) || [];
+      var names = {};
+      userColumns().forEach(function (c) { names[c.id] = c.n; });
+      var rows = rules.map(function (r) {
+        return '<div style="display:flex;gap:8px;align-items:center;padding:4px 6px;font-size:12.5px"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis">' + esc(r.matchType + ' ' + r.matchValue) + ' &rarr; <b>' + esc(names[r.target] || r.target) + '</b></span><button type="button" data-action="mail-rule-remove" data-rule="' + esc(r.id) + '" data-email="' + esc(r.matchValue) + '" title="Delete rule">&times;</button></div>';
+      }).join('');
+      openPop(root, el, '<div style="font-weight:800;margin:2px 4px 6px">Filing rules</div>' + (rows || '<div style="padding:4px 6px;font-size:12.5px;color:#6b7a90">No rules yet. Flag an email and tick "Always".</div>') + '<button type="button" data-action="mail-rule-new">+ New rule</button>');
+    },
     'mail-rule-new': function (el, root) {
-      var match = window.prompt('Rule: sender contains');
+      closePop(root);
+      var cols = userColumns();
+      if (!cols.length) { toast(root, 'Make a column first'); return; }
+      var match = window.prompt('File mail from this sender (email or domain)');
       if (match == null || !String(match).trim()) return;
-      var target = window.prompt('File into column key (needs_now, investors, vcs, prospects, design, team, quiet)', 'prospects');
-      if (target == null) return;
+      var pick = window.prompt('Into which column?\n\n' + cols.map(function (c, i) { return (i + 1) + '. ' + c.n; }).join('\n'), '1');
+      var col = cols[(Number(pick) || 0) - 1] || cols.filter(function (c) { return c.n.toLowerCase() === String(pick || '').trim().toLowerCase(); })[0];
+      if (!col) return;
       if (!writeOk()) { toast(root, 'Rule (fixture)'); return; }
-      api('/api/mail/rules', { method: 'POST', body: { matchType: 'sender', matchValue: String(match).trim(), target: String(target).trim(), sticky: true } }).then(ok).then(function () {
-        toast(root, 'Rule saved'); refresh('mail');
+      api('/api/mail/rules', { method: 'POST', body: { matchType: /@/.test(match) ? 'sender' : 'domain', matchValue: String(match).trim(), target: col.id, sticky: true } }).then(ok).then(json).then(function (d) {
+        if (!d || !d.saved) throw new Error('not saved');
+        setBoardRules(d.rules);
+        refresh('mail');
+        toast(root, 'Rule saved');
       }).catch(function () { toast(root, 'Could not save that rule'); });
     },
-    'mail-auto': function (el, root) {
-      var on = true;
-      try { on = localStorage.getItem('cr_mail_auto') !== '0'; } catch (e) {}
-      try { localStorage.setItem('cr_mail_auto', on ? '0' : '1'); } catch (e) {}
-      var dot = root.querySelector('.rules > span');
-      if (dot) { dot.classList.toggle('on', !on); dot.style.background = !on ? '' : '#ccd6e4'; }
-      toast(root, !on ? 'Auto-filing on' : 'Auto-filing paused');
+    'mail-rule-remove': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      closePop(root);
+      var id = attr(el, 'data-rule');
+      var email = attr(el, 'data-email');
+      if (!id || !writeOk()) { toast(root, 'Rule removed (fixture)'); return; }
+      var before = ((S().mailBoard || {}).rules || []).slice();
+      setBoardRules(before.filter(function (r) { return String(r.id) !== String(id); }));
+      refresh('mail');
+      api('/api/mail/rules', { method: 'POST', body: { delete: id } }).then(ok).then(json).then(function (d) {
+        if (!d || !d.saved) throw new Error('not saved');
+        setBoardRules(d.rules);
+        toast(root, 'Stopped filing ' + email);
+      }).catch(function () { setBoardRules(before); refresh('mail'); toast(root, 'Could not remove that rule'); });
     },
     'mail-col-menu': function (el, root, ev) {
       if (ev) ev.stopPropagation();
       var key = attr(el, 'data-col');
       var name = attr(el, 'data-name') || '';
       openPop(root, el, '<button type="button" data-action="mail-col-rename" data-col="' + esc(key) + '" data-name="' + esc(name) + '">Rename</button>'
+        + '<button type="button" data-action="mail-col-delete" data-col="' + esc(key) + '" data-name="' + esc(name) + '">Delete column</button>'
         + '<button type="button" data-action="mail-col-new">+ New column</button>');
     },
     'mail-col-rename': function (el, root) {
       closePop(root);
-      var key = attr(el, 'data-col');
       var next = window.prompt('Rename this column', attr(el, 'data-name') || '');
       if (next == null || !String(next).trim()) return;
-      if (!writeOk()) { toast(root, 'Renamed (fixture)'); return; }
-      api('/api/mail/columns', { method: 'POST', body: { action: 'rename', key: key, name: String(next).trim() } }).then(ok).then(function () {
-        toast(root, 'Column renamed'); refresh('mail');
-      }).catch(function () { soon(root, 'Column menu'); });
+      renameMailColumn(root, attr(el, 'data-col'), String(next).trim());
+    },
+    'mail-col-title': function () {},
+    'mail-col-delete': function (el, root) {
+      closePop(root);
+      var key = attr(el, 'data-col');
+      if (!key || !window.confirm('Delete the "' + (attr(el, 'data-name') || key) + '" column? The emails stay in your inbox.')) return;
+      if (!writeOk()) { toast(root, 'Column deleted (fixture)'); return; }
+      api('/api/mail/columns', { method: 'POST', body: { action: 'delete', key: key } }).then(ok).then(json).then(function (d) {
+        if (!d || !d.saved) throw new Error('not saved');
+        setBoardColumns(d.columns);
+        ((S().mailBoard || {}).messages || []).forEach(function (m) { if (m.column === key) m.column = ''; });
+        refresh('mail');
+        toast(root, 'Column deleted');
+      }).catch(function () { toast(root, 'Could not delete that column'); });
     },
     'mail-col-new': function (el, root) {
+      closePop(root);
       var name = window.prompt('New column name');
-      if (!name) return;
-      name = String(name).trim();
-      var cols = Array.isArray(S().emailColumns) ? S().emailColumns.slice() : [];
-      if (!cols.length && window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.email && window.REDESIGN_FIXTURE.email.cols) {
-        cols = window.REDESIGN_FIXTURE.email.cols.slice();
-      }
-      cols.push({ id: 'c' + Date.now(), n: name, c: ['#12a36a', '#6b4fd8', '#2e6bf2', '#c98408'][cols.length % 4], from: [], ids: [] });
-      S().emailColumns = cols;
-      refresh('mail');
-      if (!writeOk()) { toast(root, 'Column "' + name + '" created - flag mail to fill it'); return; }
-      api('/api/mail/columns', { method: 'POST', body: { action: 'create', name: name } }).then(ok).then(function () {
-        toast(root, 'Column added'); refresh('mail');
-      }).catch(function () { toast(root, 'Column is on the desk — not saved yet'); });
+      if (!name || !String(name).trim()) return;
+      if (!writeOk()) { toast(root, 'Column created (fixture)'); return; }
+      createMailColumn(String(name).trim()).then(function () {
+        refresh('mail');
+        toast(root, 'Column added - flag mail to fill it');
+      }).catch(function () { toast(root, 'Could not create that column'); });
     },
+    'mail-col-drag': function () {},
+    'mail-flag': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      var id = attr(el, 'data-id');
+      var email = attr(el, 'data-email');
+      var pop = root.getElementById && root.getElementById('pop');
+      if (!pop) return;
+      var who = root.getElementById('popwho');
+      var from = root.getElementById('popfrom');
+      var opts = root.getElementById('popopts');
+      var always = root.getElementById('always');
+      if (who) who.textContent = attr(el, 'data-subject') || '';
+      if (from) from.textContent = email || '';
+      if (always) always.checked = true;
+      var cur = mailColumnOf(id);
+      if (opts) {
+        opts.innerHTML = userColumns().map(function (c) {
+          return '<div class="opt" data-action="mail-flag-into" data-col="' + esc(c.id) + '" data-id="' + esc(id) + '" data-email="' + esc(email) + '"><i style="background:' + esc(c.c) + '"></i>' + esc(c.n) + '<em>' + (cur === c.id ? 'already here' : c.ids.length + ' emails') + '</em></div>';
+        }).join('') + '<div class="opt new" data-action="mail-flag-into" data-col="new" data-id="' + esc(id) + '" data-email="' + esc(email) + '" data-from="' + esc(attr(el, 'data-from')) + '"><i></i>+ New column for this</div>';
+      }
+      var r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+      var host = root.host && root.host.getBoundingClientRect ? root.host.getBoundingClientRect() : { top: 0, left: 0 };
+      if (r) { pop.style.top = Math.max(8, r.bottom - host.top + 6) + 'px'; pop.style.left = Math.max(8, r.right - host.left - 290) + 'px'; }
+      pop.classList.add('on');
+    },
+    'mail-flag-into': function (el, root) {
+      var colId = attr(el, 'data-col');
+      var id = attr(el, 'data-id');
+      var email = attr(el, 'data-email');
+      var always = root.getElementById && root.getElementById('always');
+      var sticky = !always || always.checked;
+      var pop = root.getElementById && root.getElementById('pop');
+      if (pop) pop.classList.remove('on');
+      if (!writeOk()) { toast(root, 'Filed (fixture)'); return; }
+      var keyP;
+      if (colId === 'new') {
+        var n = window.prompt('Name the new column', attr(el, 'data-from') || 'New column');
+        if (!n || !String(n).trim()) return;
+        keyP = createMailColumn(String(n).trim());
+      } else keyP = Promise.resolve(colId);
+      keyP.then(function (key) { fileMail(root, id, key, sticky, email); }).catch(function () { toast(root, 'Could not create that column'); });
+    },
+
+    /* ---------- Email: People grid (08e) and person pop-up (08f) ---------- */
     'mail-view': function (el) {
       S().mailView = attr(el, 'data-view') || 'inbox';
       S().mailSortOpen = false;
@@ -2081,42 +3022,51 @@
       refresh('mail');
     },
     'mail-pp-expand': function (el, root) {
+      if (root.querySelectorAll) root.querySelectorAll('.ppm.open').forEach(function (n) { n.classList.remove('open'); });
       if (el && el.classList) el.classList.add('open');
       var pane = root.querySelector && root.querySelector('#ppread');
-      var sj = attr(el, 'data-sj') || '';
-      var pv = attr(el, 'data-pv') || '';
+      var mid = attr(el, 'data-mid');
+      var sj = attr(el, 'data-sj');
+      var pv = attr(el, 'data-pv');
       var dir = attr(el, 'data-dir') || 'in';
-      var tid = attr(el, 'data-tid') || '';
-      var who = attr(el, 'data-who') || '';
-      function paint(body) {
+      var who = attr(el, 'data-who');
+      var btn = ' data-id="' + esc(attr(el, 'data-id')) + '" data-mid="' + esc(mid) + '" data-hdr="' + esc(attr(el, 'data-hdr')) + '" data-tid="' + esc(attr(el, 'data-tid')) + '" data-sj="' + esc(sj) + '"';
+      function paint(text, note) {
         if (!pane) return;
-        pane.innerHTML = '<div class="rh"><div class="w">' + esc(dir === 'out' ? 'You to ' + who : who + ' to you') + '</div><h3>' + esc(sj) + '</h3></div><div class="rb">' + (body || esc(pv)).replace(/\n/g, '<br>') + '</div><div class="rf"><button class="btn pri" data-action="mail-pp-go" data-go="reply">Reply</button><button class="btn" data-action="mail-pp-go" data-go="fwd">Forward</button><button class="btn" data-action="mail-pp-go" data-go="space">Add to a Space</button></div>';
+        pane.innerHTML = '<div class="rh"><div class="w">' + esc(dir === 'out' ? 'You to ' + who : who + ' to you') + '</div><h3>' + esc(sj) + '</h3></div>'
+          + '<div class="rb" style="white-space:pre-wrap">' + esc(text) + (note ? '<div class="dempty">' + esc(note) + '</div>' : '') + '</div>'
+          + '<div class="rf"><button class="btn pri" data-action="mail-pp-go" data-go="reply"' + btn + '>Reply</button><button class="btn" data-action="mail-pp-go" data-go="fwd"' + btn + '>Forward</button><button class="btn" data-action="mail-pp-go" data-go="addspace"' + btn + '>Add to a Space</button></div>';
       }
-      paint(esc(pv));
-      if (!tid || !writeOk()) return;
-      api('/api/mail/thread?id=' + encodeURIComponent(tid), { method: 'GET' }).then(json).then(function (d) {
-        var th = d && d.thread;
-        var html = (th && (th.html || th.body || th.text || th.snippet)) || pv;
-        paint(String(html));
-      }).catch(function () {});
+      var cached = (S().mailBodies || {})[mid];
+      if (cached != null) { paint(cached); return; }
+      var canLoad = GMAIL_ID.test(mid) && writeOk();
+      paint(pv, canLoad ? 'Loading the full email…' : '');
+      if (!canLoad) return;
+      loadThread(mid).then(function (th) {
+        if (!el.classList.contains('open')) return;
+        paint(th.text || pv);
+      }).catch(function () { paint(pv, 'Could not load the full email.'); });
     },
     'mail-pp-go': function (el, root) {
       var goTo = attr(el, 'data-go');
-      var box = findPeopleBox(attr(el, 'data-id'));
-      var name = box ? box.n : 'this person';
-      if (goTo === 'pipeline') { toast(root, 'Opens ' + name + ' in Pipeline'); go('contacts'); return; }
-      if (goTo === 'space') { toast(root, 'Opens the ' + name + ' Space'); go('work'); return; }
-      if (goTo === 'compose' || goTo === 'reply' || goTo === 'fwd') {
-        S().composeOpen = true;
-        S().mailView = 'inbox';
-        if (box) S().composeTo = (box.addrs && box.addrs[0]) || '';
-        refresh('mail');
+      var box = personBox(attr(el, 'data-id') || S().mailPerson);
+      if (!box) { toast(root, 'That person is no longer in your mail'); return; }
+      if (goTo === 'pipeline') { goPersonPipeline(box); return; }
+      if (goTo === 'space') { goPersonSpace(root, box); return; }
+      if (goTo === 'book') { openBook([box.n]); return; }
+      var addr = (box.addrs || [])[0] || box.o || '';
+      if (goTo === 'addspace') { el.setAttribute('data-email', addr); el.setAttribute('data-from', box.n); actions['mail-add-space'](el, root); return; }
+      var row = pickPersonMail(box, attr(el, 'data-mid'));
+      if (goTo === 'compose' || !row) { openCompose({ to: addr ? [{ email: addr, name: box.n }] : [] }); return; }
+      var sj = row[1] || '';
+      if (goTo === 'fwd') {
+        openCompose({ to: [], fwd: true, subject: /^fwd?:/i.test(sj) ? sj : 'Fwd: ' + sj, body: forwardBody(box.n, addr, sj, (S().mailBodies || {})[row[6]] || row[2] || '') });
         return;
       }
-      if (goTo === 'book') { toast(root, 'Opens the calendar with a 20-min slot for ' + name); go('calendar'); return; }
+      openCompose({ to: addr ? [{ email: addr, name: box.n }] : [], reply: true, subject: /^re:/i.test(sj) ? sj : 'Re: ' + sj, threadId: row[4] || '', messageId: row[5] || '' });
     },
     'mail-box-close': function (el, root) {
-      var box = findPeopleBox(attr(el, 'data-id'));
+      var box = findPeopleBox(attr(el, 'data-id'), true);
       if (!box) return;
       var prev = !!box.closed;
       box.closed = true;
@@ -2130,7 +3080,7 @@
       });
     },
     'mail-box-reopen': function (el, root) {
-      var box = findPeopleBox(attr(el, 'data-id'));
+      var box = findPeopleBox(attr(el, 'data-id'), true);
       if (!box) return;
       box.closed = false;
       persistPeopleBoxes();
@@ -2144,8 +3094,8 @@
       refresh('mail');
       toast(root, 'All boxes reopened');
     },
-    'mail-box-tag-add': function (el, root) {
-      var box = findPeopleBox(attr(el, 'data-id'));
+    'mail-box-tag-add': function (el) {
+      var box = findPeopleBox(attr(el, 'data-id'), true);
       if (!box) return;
       var raw = window.prompt('Add a tag (one word, e.g. investor)');
       if (!raw) return;
@@ -2155,144 +3105,77 @@
       persistPeopleBoxes();
       refresh('mail');
     },
-    'mail-box-file': function (el, root) {
-      var name = attr(el, 'data-file');
-      if (name) toast(root, 'Opens ' + name + ' in the in-site viewer');
-    },
+    'mail-box-file': function (el, root) { downloadMailAttachment(root, attr(el, 'data-mid'), attr(el, 'data-aid'), attr(el, 'data-file')); },
+    'mail-att-open': function (el, root) { downloadMailAttachment(root, attr(el, 'data-mid'), attr(el, 'data-aid'), attr(el, 'data-name')); },
     'mail-box-new': function (el, root) {
-      var n = window.prompt('Who is this box for?');
-      if (!n) return;
-      var box = { id: 'n' + Date.now(), n: n, o: 'New box', c: '#12a36a', tags: [], in: 0, out: 0, files: [], more: 0, st: ['ok', 'Nothing yet'], last: '-', m: [], closed: false };
+      var n = window.prompt('Who is this box for? (a person, a company, or a deal)');
+      if (!n || !String(n).trim()) return;
+      var addrRaw = window.prompt('Their email address(es), comma separated - mail from them lands in this box', '') || '';
+      var addrs = addrRaw.split(/[,\s]+/).map(function (a) { return a.trim().toLowerCase(); }).filter(function (a) { return EMAIL_RE.test(a); });
       var list = peopleBoxList();
-      list.unshift(box);
+      list.unshift({ id: 'n' + Date.now(), n: String(n).trim(), o: addrs[0] || '', c: '#12a36a', tags: [], addrs: addrs, closed: false });
       persistPeopleBoxes();
       refresh('mail');
-      toast(root, 'Box created - drag mail onto it, or it fills as mail arrives');
+      toast(root, 'Box created' + (addrs.length ? ' - mail from ' + addrs[0] + ' lands here' : ' - add an email address from its menu'));
+    },
+    'mail-box-build': function (el, root) {
+      var list = peopleBoxList();
+      var have = {};
+      list.forEach(function (b) { (b.addrs || []).forEach(function (a) { have[String(a).toLowerCase()] = 1; }); });
+      var added = 0;
+      (S().contacts || []).forEach(function (c) {
+        var e = String(c.email || '').toLowerCase();
+        if (!EMAIL_RE.test(e) || have[e]) return;
+        have[e] = 1;
+        added += 1;
+        list.push({ id: 'c' + String(c.id || e).replace(/[^a-z0-9]/gi, '').slice(0, 30), n: c.name || e, o: e, c: '#2e6bf2', tags: c.category ? [String(c.category).toLowerCase().replace(/\s+/g, '-')] : [], addrs: [e], closed: false });
+      });
+      persistPeopleBoxes();
+      refresh('mail');
+      toast(root, added ? added + ' boxes built from your Contacts' : 'Every contact already has a box');
     },
     'mail-box-act': function (el, root) {
-      var box = findPeopleBox(S().mailPeopleMenu);
+      var id = S().mailPeopleMenu;
       var a = attr(el, 'data-a');
       S().mailBoxMenuOpen = false;
-      if (!box) { refresh('mail'); return; }
-      if (a === 'open') { S().mailPerson = box.id; S().mailPpTab = 'all'; refresh('mail'); return; }
-      if (a === 'rename') {
-        var next = window.prompt('Rename box', box.n);
-        if (next) { box.n = next; persistPeopleBoxes(); }
-        refresh('mail');
-        return;
-      }
-      if (a === 'addr') {
-        var v = window.prompt('Add an email address to ' + box.n);
-        if (v) { box.addrs = (box.addrs || []).concat(v); persistPeopleBoxes(); toast(root, 'Mail from ' + v + ' now files under ' + box.n); }
-        refresh('mail');
-        return;
-      }
-      if (a === 'tag') {
-        var t = window.prompt('Add a tag');
-        if (t) { box.tags = box.tags || []; box.tags.push(String(t).toLowerCase().replace(/^#/, '')); persistPeopleBoxes(); }
-        refresh('mail');
-        return;
-      }
-      if (a === 'pipeline') { toast(root, 'Opens ' + box.n + ' in Pipeline'); go('contacts'); return; }
-      if (a === 'space') { toast(root, 'Opens the ' + box.n + ' Space'); go('work'); return; }
-      if (a === 'close') { box.closed = true; S().mailPeopleDrawer = true; persistPeopleBoxes(); refresh('mail'); toast(root, box.n + ' closed'); return; }
+      var view = personBox(id);
+      if (!view) { refresh('mail'); return; }
+      if (a === 'open') { S().mailPerson = view.id; S().mailPpTab = 'all'; refresh('mail'); return; }
+      if (a === 'pipeline') { goPersonPipeline(view); return; }
+      if (a === 'space') { goPersonSpace(root, view); return; }
+      var box = findPeopleBox(id, a !== 'remove');
       if (a === 'remove') {
+        if (!box) { refresh('mail'); toast(root, view.n + ' is built from your mail - close it instead to hide it'); return; }
         if (!window.confirm('Remove the ' + box.n + ' box? Its mail stays in the Inbox.')) { refresh('mail'); return; }
         var list = peopleBoxList();
-        var i = list.indexOf(box);
-        if (i >= 0) list.splice(i, 1);
+        var at = list.indexOf(box);
+        if (at >= 0) list.splice(at, 1);
         persistPeopleBoxes();
         refresh('mail');
-        toast(root, 'Box removed');
+        toast(root, 'Box removed', function () { list.splice(Math.max(0, at), 0, box); persistPeopleBoxes(); refresh('mail'); });
+        return;
       }
+      if (!box) { refresh('mail'); return; }
+      if (a === 'rename') {
+        var next = window.prompt('Rename box', box.n);
+        if (next && String(next).trim()) { box.n = String(next).trim(); persistPeopleBoxes(); }
+      } else if (a === 'addr') {
+        var v = String(window.prompt('Add an email address to ' + box.n) || '').trim().toLowerCase();
+        if (v && !EMAIL_RE.test(v)) toast(root, 'That is not an email address');
+        else if (v) { box.addrs = (box.addrs || []).concat(v); persistPeopleBoxes(); toast(root, 'Mail from ' + v + ' now files under ' + box.n); }
+      } else if (a === 'tag') {
+        var t = window.prompt('Add a tag');
+        if (t) { box.tags = box.tags || []; box.tags.push(String(t).toLowerCase().replace(/^#/, '')); persistPeopleBoxes(); }
+      } else if (a === 'close') {
+        box.closed = true; S().mailPeopleDrawer = true; persistPeopleBoxes(); toast(root, box.n + ' closed');
+      }
+      refresh('mail');
     },
     'mail-box-drag': function () {},
     'mail-loose-drag': function () {},
     'mail-feed-tab': function (el) {
       S().mailFeedTab = attr(el, 'data-tab') || 'everything';
       refresh('mail');
-    },
-    'mail-flag': function (el, root, ev) {
-      if (ev) ev.stopPropagation();
-      var id = attr(el, 'data-id');
-      var email = attr(el, 'data-email');
-      var subject = attr(el, 'data-subject');
-      var pop = root.getElementById && root.getElementById('pop');
-      if (!pop) return;
-      var who = root.getElementById('popwho');
-      var from = root.getElementById('popfrom');
-      var opts = root.getElementById('popopts');
-      var always = root.getElementById('always');
-      if (who) who.textContent = subject || '';
-      if (from) from.textContent = email || '';
-      if (always) always.checked = true;
-      var cols = Array.isArray(S().emailColumns) ? S().emailColumns : ((window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.email && window.REDESIGN_FIXTURE.email.cols) || []);
-      if (opts) {
-        opts.innerHTML = cols.map(function (c) {
-          return '<div class="opt" data-action="mail-flag-into" data-col="' + esc(c.id) + '" data-id="' + esc(id) + '" data-email="' + esc(email) + '"><i style="background:' + esc(c.c) + '"></i>' + esc(c.n) + '<em>' + ((c.ids || []).indexOf(Number(id)) >= 0 || (c.ids || []).indexOf(id) >= 0 ? 'already here' : (c.ids || []).length + ' emails') + '</em></div>';
-        }).join('') + '<div class="opt new" data-action="mail-flag-into" data-col="new" data-id="' + esc(id) + '" data-email="' + esc(email) + '" data-from="' + esc(attr(el, 'data-from')) + '"><i></i>+ New column for this</div>';
-      }
-      pop.classList.add('on');
-      S().mailFlagId = id;
-      S().mailFlagEmail = email;
-    },
-    'mail-flag-into': function (el, root) {
-      var colId = attr(el, 'data-col');
-      var id = attr(el, 'data-id') || S().mailFlagId;
-      var email = attr(el, 'data-email') || S().mailFlagEmail;
-      var always = root.getElementById && root.getElementById('always');
-      var sticky = !always || always.checked;
-      var cols = Array.isArray(S().emailColumns) ? S().emailColumns.slice() : ((window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.email && window.REDESIGN_FIXTURE.email.cols) || []).slice();
-      var c = cols.filter(function (x) { return x.id === colId; })[0];
-      if (colId === 'new') {
-        var n = window.prompt('Name the new column', attr(el, 'data-from') || 'New column');
-        if (!n) return;
-        c = { id: 'c' + Date.now(), n: String(n).trim(), c: '#12a36a', from: [], ids: [] };
-        cols.push(c);
-      }
-      if (!c) return;
-      var nid = isNaN(Number(id)) ? id : Number(id);
-      if ((c.ids || []).indexOf(nid) < 0 && (c.ids || []).indexOf(id) < 0) c.ids = [nid].concat(c.ids || []);
-      if (sticky && email && (c.from || []).indexOf(email) < 0) c.from = (c.from || []).concat([email]);
-      S().emailColumns = cols;
-      var pop = root.getElementById && root.getElementById('pop');
-      if (pop) pop.classList.remove('on');
-      refresh('mail');
-      toast(root, 'Filed in ' + c.n + (sticky && email ? ' · future mail from ' + email + ' goes there too' : ''), function () {
-        c.ids = (c.ids || []).filter(function (x) { return x !== nid && x !== id; });
-        refresh('mail');
-      });
-      if (writeOk()) {
-        api('/api/mail/act', { method: 'POST', body: { action: 'move', id: id, column: c.id, sticky: sticky, email: email, matchType: 'sender' } }).catch(function () {});
-      }
-    },
-    'mail-rule-remove': function (el, root, ev) {
-      if (ev) ev.stopPropagation();
-      var colId = attr(el, 'data-col');
-      var email = attr(el, 'data-email');
-      var cols = Array.isArray(S().emailColumns) ? S().emailColumns : ((window.REDESIGN_FIXTURE && window.REDESIGN_FIXTURE.email && window.REDESIGN_FIXTURE.email.cols) || []);
-      cols.forEach(function (c) {
-        if (c.id === colId) c.from = (c.from || []).filter(function (f) { return f !== email; });
-      });
-      S().emailColumns = cols;
-      refresh('mail');
-      toast(root, 'Stopped filing ' + email);
-    },
-    'mail-col-drag': function () {},
-    'mail-send': function (el, root) {
-      var cp = root.getElementById && root.getElementById('compose');
-      var toEl = cp && cp.querySelector('.fr.sugg input, .fr .val input');
-      var subEl = cp && cp.querySelector('.fr.subj input');
-      var bodyEl = cp && cp.querySelector('.body');
-      var to = toEl ? String(toEl.value || '').trim() : '';
-      var subject = subEl ? String(subEl.value || '').trim() : '';
-      var text = bodyEl ? String(bodyEl.innerText || bodyEl.textContent || '') : '';
-      if (!window.confirm('Send this email from Gmail? Nothing goes out until you confirm.')) return;
-      if (!writeOk()) { toast(root, 'Send (fixture)'); return; }
-      api('/api/mail/act', { method: 'POST', body: { action: 'compose', to: to, subject: subject, text: text } }).then(ok).then(json).then(function (d) {
-        toast(root, d && d.ok ? 'Sent from Gmail' : (d && d.drafted ? 'Saved as a Gmail draft' : 'Gmail did not take it'));
-        if (d && (d.ok || d.drafted)) actions['mail-compose-close'](el, root);
-      }).catch(function () { toast(root, 'Gmail did not take that send'); });
     },
     'mail-task': function (el, root) {
       var title = attr(el, 'data-subject') || 'Email follow-up';
@@ -2305,9 +3188,10 @@
     },
     'play-go': function (el, root) {
       var room = attr(el, 'data-view') || 'war';
-      var map = { war: 'war', studio: 'playbook', li: 'people', pipe: 'contacts', spaces: 'work', msg: 'mail', news: 'news', iq: 'int', done: 'done', contacts: 'contacts', team: 'people', dash: 'room' };
+      var map = { war: 'war', studio: 'war', li: 'people', pipe: 'contacts', spaces: 'work', msg: 'mail', news: 'news', done: 'done', contacts: 'people', team: 'mail', dash: 'war' };
       var M = window.__playMount;
       if (M && M.pop) M.pop.classList.remove('show');
+      if (room === 'iq') { window.open('https://4ormiq.com', '_blank', 'noopener'); return; }
       go(map[room] || 'war');
       toast(root, 'Opening that desk');
     },
@@ -2338,8 +3222,9 @@
       var id = cur.r.id;
       var day = (cur.r.pads && cur.r.pads[cur.i] && cur.r.pads[cur.i].day) || attr(el, 'data-day');
       if (!id || !day || !writeOk()) return;
+      if (next === 'done') fourmSound(M.rows.some(function (r) { return r.d && r.d[M.todayIdx || 0] === 'due'; }) ? 'pop' : 'levelUp');
       api('/api/playbook', { method: 'POST', body: { rhythmId: id, day: day, status: next } }).then(ok).then(json).then(function (d) {
-        if (d && window.STATE) window.STATE.playbook = d;
+        if (d && !d.error && d.rows && window.STATE) window.STATE.playbook = d;
       }).catch(function () { toast(root, 'Could not save that play'); });
     },
     'play-later': function (el, root) {
@@ -2347,6 +3232,11 @@
       if (!M || !M.cur) return;
       var cur = M.cur;
       if (M.pop) M.pop.classList.remove('show');
+      if (cur.r.d[cur.i] === 'due') {
+        cur.r.d[cur.i] = 'next';
+        if (cur.r.pads && cur.r.pads[cur.i]) cur.r.pads[cur.i].state = 'snoozed';
+        if (typeof M.render === 'function') M.render();
+      }
       toast(root, cur.r.n + ' snoozed 2 hours');
       var id = cur.r.id;
       var day = (cur.r.pads && cur.r.pads[cur.i] && cur.r.pads[cur.i].day) || '';
@@ -2360,7 +3250,8 @@
       if (!name) return;
       if (!writeOk()) { toast(root, 'Rhythm (fixture)'); return; }
       api('/api/playbook', { method: 'POST', body: { name: name } }).then(ok).then(json).then(function (d) {
-        if (d && window.STATE) window.STATE.playbook = d;
+        if (!d || d.error || !Array.isArray(d.rows)) throw new Error('rhythm');
+        if (window.STATE) window.STATE.playbook = d;
         refresh('play');
         toast(root, 'Rhythm added');
       }).catch(function () { toast(root, 'Could not add that rhythm'); });
@@ -2399,7 +3290,16 @@
     'cal-zoom': function () {},
     'cal-pick': function () {},
     'cal-toggle': function (el) {
-      el.classList.toggle('off');
+      var cal = window.__redesignCal;
+      var keys = ['meet', 'inv', 'pay', 'mile', 'plays'];
+      var all = el.parentNode ? Array.prototype.slice.call(el.parentNode.querySelectorAll('[data-action="cal-toggle"]')) : [];
+      var key = attr(el, 'data-c') || keys[all.indexOf(el)] || '';
+      if (cal && typeof cal.toggleCal === 'function' && key) {
+        var shown = cal.toggleCal(key);
+        el.classList.toggle('off', !shown);
+        var bx = el.querySelector('.bx');
+        if (bx && key !== 'plays') bx.innerHTML = shown ? '&#10003;' : '';
+      }
     },
     'cal-mini': function () {},
     'cal-title': function () {},
@@ -2410,12 +3310,12 @@
     'cal-people': function () {},
     'cal-accept': function () {
       var cal = window.__redesignCal;
-      if (!cal || !cal.S || !cal.E) return;
-      cal.S.slice().forEach(function (x) { cal.E.push({ d: x.d, s: x.s, e: x.e, t: x.t, c: 'mile' }); });
-      cal.S.length = 0;
-      if (typeof cal.render === 'function') cal.render();
+      if (cal && typeof cal.keepAll === 'function') cal.keepAll();
     },
-    'cal-replan': function (el, root) { soon(root, 'Re-plan plays'); },
+    'cal-replan': function () {
+      var cal = window.__redesignCal;
+      if (cal && typeof cal.replan === 'function') cal.replan();
+    },
     'cal-keep': function (el) {
       var cal = window.__redesignCal;
       var sug = el.closest && el.closest('.ev.sug');
@@ -2449,10 +3349,19 @@
       var inp = root.getElementById && root.getElementById('nlIn');
       if (inp) inp.focus();
     },
-    'cal-allday': function () {},
-    'cal-cell': function () {},
-    'cal-year-day': function () {},
-    'cal-more': function () {},
+    'cal-allday': function (el) {
+      var cal = window.__redesignCal;
+      if (cal && typeof cal.openEvent === 'function') cal.openEvent(attr(el, 'data-i'));
+    },
+    'cal-cell': function (el) { actions['cal-year-day'](el); },
+    'cal-more': function (el) { actions['cal-year-day'](el); },
+    'cal-year-day': function (el) {
+      var cal = window.__redesignCal;
+      var k = attr(el, 'data-d') || attr(el.closest && el.closest('[data-d]'), 'data-d');
+      if (!cal || !k) return;
+      cal.focusTo(k);
+      cal.setView('day');
+    },
     'cal-mini-day': function (el) {
       var cal = window.__redesignCal;
       var k = attr(el, 'data-d');
@@ -2462,7 +3371,20 @@
       var n = el.parentNode;
       if (n) n.remove();
     },
-    'cal-prep': function (el, root) { soon(root, 'Prep notes'); },
+    'cal-prep': function (el) {
+      var title = attr(el, 'data-title');
+      var id = attr(el, 'data-id');
+      if (!title) { go('war'); return; }
+      go('war');
+      setTimeout(function () {
+        var wr = warRoot();
+        if (!wr) return;
+        var fake = document.createElement('span');
+        fake.setAttribute('data-id', 'cal:' + (id || title));
+        fake.setAttribute('data-title', 'Prep: ' + title);
+        actions['plan-open'](fake, wr);
+      }, 120);
+    },
     'cal-war': function () { go('war'); },
     'play-beat': function (el, root) {
       var ov = root.getElementById && root.getElementById('ov');
@@ -2474,6 +3396,18 @@
       if (typeof window.paintRedesignPlaybook === 'function') window.paintRedesignPlaybook();
       if (window.__portLoadC) window.__portLoadC('playbook');
       else refresh('play');
+    },
+    'zoom-retry': function (el, root) {
+      if (window.STATE) window.STATE.zoomError = false;
+      toast(root, 'Loading meetings');
+      if (window.__portLoadC) window.__portLoadC('znotes');
+      else refresh('zoom');
+    },
+    'done-retry': function (el, root) {
+      if (window.STATE) window.STATE.snapsError = false;
+      toast(root, 'Loading snapshots');
+      if (window.__portLoadC) window.__portLoadC('done');
+      else refresh('done');
     },
     'cal-mini-nav': function (el) {
       var cal = window.__redesignCal;
@@ -2504,13 +3438,31 @@
       var id = attr(el, 'data-id');
       var card = el.closest('.mc');
       if (card) card.style.display = 'none';
-      toast(root, 'Meeting hidden', function () { if (card) card.style.display = ''; });
-      if (!id || !writeOk()) return;
-      api('/api/zoom/' + encodeURIComponent(id), { method: 'PATCH', body: { title: '[archived] ' + (attr(el, 'data-title') || 'Meeting') } }).catch(function () {});
+      var live = !!id && writeOk();
+      var prior = (S().zoomNotes || []).slice();
+      if (live) S().zoomNotes = prior.filter(function (n) { return String(n.id) !== String(id); });
+      toast(root, 'Meeting deleted', function () {
+        if (card) card.style.display = '';
+        if (!live) return;
+        S().zoomNotes = prior;
+        api('/api/zoom/' + encodeURIComponent(id), { method: 'PATCH', body: { archived: false } }).then(ok).then(function () { refresh('zoom'); })
+          .catch(function () { toast(root, 'Could not bring that meeting back'); });
+      });
+      if (!live) return;
+      /* Soft delete on the server (deleted_at); Undo restores with archived:false. */
+      api('/api/zoom/' + encodeURIComponent(id), { method: 'PATCH', body: { archived: true } }).then(ok).catch(function () {
+        S().zoomNotes = prior;
+        if (card) card.style.display = '';
+        refresh('zoom');
+        toast(root, 'Could not delete that meeting');
+      });
     },
     'zoom-refresh': function (el, root) {
       if (!writeOk()) { toast(root, 'Refresh (fixture)'); return; }
-      api('/api/zoom-notes', { method: 'GET' }).then(ok).then(json).then(function (d) {
+      toast(root, 'Pulling new Zoom and Granola notes');
+      api('/api/zoom-notes', { method: 'POST', body: {} }).then(ok).then(function () {
+        return api('/api/zoom-notes', { method: 'GET' }).then(ok).then(json);
+      }).then(function (d) {
         if (d && d.notes && window.STATE) window.STATE.zoomNotes = d.notes;
         refresh('zoom');
         toast(root, 'Meetings refreshed');
@@ -2533,23 +3485,17 @@
     'zoom-filter': function (el, root) {
       var key = attr(el, 'data-filter') || 'all';
       S().zoomFilter = key;
-      root.querySelectorAll('[data-action="zoom-filter"]').forEach(function (c) {
-        c.classList.toggle('on', attr(c, 'data-filter') === key);
-      });
-      root.querySelectorAll('.mc').forEach(function (n) {
-        var blob = (n.textContent || '').toLowerCase();
-        n.style.display = (key === 'all' || blob.indexOf(key) >= 0) ? '' : 'none';
-      });
+      refresh('zoom');
     },
     'zoom-src': function (el, root) {
       var src = attr(el, 'data-src') || 'all';
-      root.querySelectorAll('[data-action="zoom-src"]').forEach(function (c) {
-        c.classList.toggle('on', attr(c, 'data-src') === src);
-      });
-      root.querySelectorAll('.mc').forEach(function (n) {
-        var s = (n.querySelector('.src') && n.querySelector('.src').textContent || '').toLowerCase();
-        n.style.display = (src === 'all' || s.indexOf(src) >= 0) ? '' : 'none';
-      });
+      S().zoomSrc = /granola/i.test(src) ? 'granola' : (/^zoom$/i.test(src) ? 'zoom' : 'all');
+      refresh('zoom');
+      setTimeout(function () {
+        var zr = document.getElementById('zoomDesk');
+        zr = zr && zr.shadowRoot;
+        if (zr) zr.querySelectorAll('[data-action="zoom-src"]').forEach(function (c) { c.classList.toggle('on', attr(c, 'data-src') === src); });
+      }, 80);
     },
     'zoom-sort': function (el, root) {
       S().zoomSort = attr(el, 'data-sort') || 'newest';
@@ -2562,18 +3508,113 @@
     'zoom-task': function (el, root) {
       var title = attr(el, 'data-title') || 'Meeting follow-up';
       var bucket = attr(el, 'data-bucket') || 'today';
-      return addTask(title, bucket).then(function () { toast(root, 'Added to War Room'); }).catch(function () { toast(root, 'Could not create that task'); });
+      var aid = attr(el, 'data-aid');
+      var req = aid ? zoomPatch(aid, { status: 'tasked', column: bucket }) : addTask(title, bucket);
+      return req.then(function () {
+        var row = el.closest && el.closest('.owe');
+        if (row) row.style.opacity = '.45';
+        el.disabled = true;
+        toast(root, 'Added to ' + (bucket === 'week' ? 'This week' : 'Today'));
+        refresh('war');
+      }).catch(function () { toast(root, 'Could not create that task'); });
     },
     'zoom-ask-input': function () {},
     'zoom-ask': function (el, root) {
       var box = root.querySelector('.ask input');
       var q = box ? String(box.value || '').trim() : '';
       if (!q) { toast(root, 'Ask about this meeting'); return; }
-      soon(root, 'Ask about this meeting');
+      var Z = window.__zoomMount;
+      var rd = root.getElementById && root.getElementById('rd');
+      var openId = '';
+      if (Z && Z.meetings && rd) {
+        var t = rd.querySelector('[data-action="zoom-edit"]');
+        openId = t ? attr(t, 'data-id') : '';
+      }
+      if (!openId || !writeOk()) { toast(root, 'Open a saved meeting first'); return; }
+      toast(root, 'Asking 4orm Intelligence');
+      api('/api/zoom/' + encodeURIComponent(openId) + '/ask', { method: 'POST', body: { q: q } }).then(ok).then(json).then(function (d) {
+        var ans = String((d && d.answer) || 'No answer from this meeting.');
+        var box2 = root.querySelector('.ai');
+        if (box2) {
+          var p2 = document.createElement('p');
+          p2.className = 'answer';
+          p2.textContent = q + ' — ' + ans;
+          box2.appendChild(p2);
+        }
+      }).catch(function () { toast(root, 'Could not ask about this meeting'); });
     },
-    'zoom-contact': function () { go('contacts'); },
-    'zoom-transcript': function (el, root) { soon(root, 'Open transcript'); },
-    'zoom-play': function (el, root) { soon(root, 'Play recording'); },
+    'zoom-contact': function (el) {
+      var name = attr(el, 'data-name');
+      var ps = document.getElementById('pSearch');
+      if (ps) ps.value = name;
+      S().peopleFocus = name;
+      go('people');
+      var c = (S().contacts || []).filter(function (x) { return String(x.name || '').toLowerCase() === String(name).toLowerCase(); })[0];
+      if (c && typeof window.openContactCard === 'function') window.openContactCard(c.id);
+      else if (typeof window.renderPeople === 'function') window.renderPeople(name);
+      var Z = window.__zoomMount;
+      if (Z && typeof Z.show === 'function') Z.show(false);
+    },
+    'zoom-transcript': function (el, root) {
+      var Z = window.__zoomMount;
+      var x = Z && Z.meetings ? Z.meetings[Number(attr(el, 'data-i'))] : null;
+      var text = x && x.transcript ? String(x.transcript) : '';
+      if (!text) { toast(root, 'No transcript on this meeting'); return; }
+      var rd = root.getElementById && root.getElementById('rd');
+      if (!rd) return;
+      var old = rd.querySelector('.transcript');
+      if (old) { old.remove(); return; }
+      var box = document.createElement('div');
+      box.className = 'sec transcript';
+      box.style.cssText = 'margin:12px 0;white-space:pre-wrap;max-height:50vh;overflow:auto;font-size:13px;line-height:1.5';
+      box.textContent = text;
+      var acts = rd.querySelector('.acts');
+      if (acts && acts.parentNode) acts.parentNode.insertBefore(box, acts.nextSibling);
+      else rd.appendChild(box);
+    },
+    'zoom-play': function (el, root) {
+      var url = attr(el, 'data-url');
+      if (/^https?:\/\//i.test(url)) window.open(url, '_blank', 'noopener');
+      else toast(root, 'No recording on this meeting');
+    },
+    'zoom-space': function (el, root) {
+      /* Pick a Space, then attach this meeting to it as a note (title, date, people, summary, what you owe). */
+      var i = attr(el, 'data-i');
+      function menu(list) {
+        var rows = (list || []).filter(function (p) { return p && UUID_RE.test(String(p.id || '')); }).map(function (p) {
+          return '<button type="button" data-action="zoom-space-pick" data-space="' + esc(p.id) + '" data-name="' + esc(p.name || 'Space') + '" data-i="' + esc(i) + '">' + esc(p.name || 'Space') + '</button>';
+        }).join('');
+        openPop(root, el, rows || '<div style="padding:6px 8px">No Spaces yet. Create one in Spaces first.</div>');
+      }
+      if ((S().packages || []).length || !writeOk()) { menu(S().packages); return; }
+      api('/api/spaces', { method: 'GET' }).then(ok).then(json).then(function (d) {
+        S().packages = (d && (d.spaces || d.packages)) || [];
+        menu(S().packages);
+      }).catch(function () { toast(root, 'Could not load your Spaces'); });
+    },
+    'zoom-space-pick': function (el, root) {
+      closePop(root);
+      var sid = attr(el, 'data-space');
+      var Z = window.__zoomMount;
+      var x = Z && Z.meetings ? Z.meetings[Number(attr(el, 'data-i'))] : null;
+      if (!sid || !x) return;
+      if (!writeOk()) { toast(root, 'Added to ' + attr(el, 'data-name') + ' (fixture)'); return; }
+      var lines = [];
+      if (x.ymd) lines.push('Date: ' + x.ymd);
+      if ((x.p || []).length) lines.push('With: ' + x.p.join(', '));
+      var summary = String(x.aiSummary || x.s || '').trim();
+      if (summary) lines.push('', summary);
+      var owe = (x.actions || []).map(function (a) { return Array.isArray(a) ? a[1] : (a && (a.text || a)); }).filter(Boolean);
+      if (owe.length) {
+        lines.push('', 'You owe:');
+        owe.forEach(function (t) { lines.push('- ' + t); });
+      }
+      api('/api/spaces/' + encodeURIComponent(sid) + '/items', { method: 'POST', body: { kind: 'note', name: 'Meeting: ' + String(x.t || 'Zoom meeting').slice(0, 160), body: lines.join('\n') } }).then(ok).then(json).then(function (d) {
+        if (!d || d.saved === false) throw new Error('not saved');
+        toast(root, 'Added to ' + (attr(el, 'data-name') || 'the Space'));
+        refresh('spaces');
+      }).catch(function () { toast(root, 'Could not add that meeting to the Space'); });
+    },
     'zoom-follow': function (el, root) {
       if (typeof window.openReply === 'function') {
         window.openReply({ email: '', from: attr(el, 'data-name') || '', subject: 'Following up', snippet: '', body: '', threadId: '', messageId: '' });
@@ -2696,8 +3737,8 @@
         req = api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { title: title || 'Note', body: body } });
       } else {
         var row = (S().stickies || []).filter(function (n) { return String(n.id) === String(id); })[0] || {};
-        var meta = Object.assign({}, row.meta && typeof row.meta === 'object' ? row.meta : {}, { title: title });
-        req = api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { body: body, meta: meta } });
+        if (row.meta && typeof row.meta === 'object') row.meta.title = title;
+        req = api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { body: body, meta: { title: title } } });
       }
       window.__noteSave = req;
       return req;
@@ -2734,6 +3775,407 @@
     if (!card || card.hasAttribute('hidden')) return;
     card.__flushNote = true;
     saveNote(root, card);
+  }
+
+  /* ---------- Email / Spaces / Pipeline helpers ---------- */
+  /* Gmail attachment through the same-origin route (always served as a download). */
+  function downloadMailAttachment(root, mid, aid, name) {
+    if (!mid || !aid) { toast(root, 'That file has no stored copy yet'); return; }
+    if (!writeOk()) { toast(root, 'Download (fixture)'); return; }
+    toast(root, 'Downloading ' + (name || 'file'));
+    api('/api/mail/attachment?mid=' + encodeURIComponent(mid) + '&aid=' + encodeURIComponent(aid) + '&name=' + encodeURIComponent(name || 'attachment'), { method: 'GET' }).then(function (r) {
+      var type = (r && r.headers && r.headers.get && r.headers.get('content-type')) || '';
+      if (!r || !r.ok || /json/i.test(type)) throw new Error('nofile');
+      return r.blob();
+    }).then(function (blob) {
+      var u = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = u; a.download = name || 'attachment'; a.rel = 'noopener';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
+    }).catch(function () { toast(root, 'Could not download ' + (name || 'that file')); });
+  }
+  var EMAIL_RE = /^[^\s@,<>]+@[^\s@,<>]+\.[^\s@,<>]+$/;
+  var GMAIL_ID = /^[A-Za-z0-9_-]{6,64}$/;
+  var UUID_RE = /^[0-9a-f-]{36}$/i;
+  function mailRoot() {
+    var host = document.getElementById('mailDesk');
+    return host && host.shadowRoot ? host.shadowRoot : null;
+  }
+  /* Repaint Email even while a compose field has focus (our own action, not a background poll). */
+  function repaintMail() {
+    S().mailPaintForce = true;
+    refresh('mail');
+  }
+  function mailAiWrite(root, mode, tone) {
+    var bad = syncCompose(root);
+    var d = composeState();
+    if (bad.length) { toast(root, 'Not a valid email address: ' + bad.join(', ')); return; }
+    var cp = root.getElementById && root.getElementById('compose');
+    var askEl = cp && cp.querySelector('[data-action="mail-ask-input"]');
+    if (askEl) d.ask = String(askEl.value || '');
+    if (mode === 'tone' && !String(d.body || '').trim()) { toast(root, 'Write something first, then pick a tone'); return; }
+    if (mode === 'write' && !String(d.ask || '').trim()) { toast(root, 'Tell me what to write'); return; }
+    if (!writeOk()) { toast(root, 'Draft (fixture)'); return; }
+    var first = (d.to || [])[0] || {};
+    var before = d.body;
+    toast(root, mode === 'tone' ? 'Rewriting…' : 'Writing…');
+    api('/api/mail/write', { method: 'POST', body: { mode: mode, tone: tone, text: d.body, ask: d.ask, subject: d.subject, toEmail: first.email || '', toName: first.name || '' } }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error((j && j.error) || 'fail'); return j; });
+    }).then(function (j) {
+      if (!j || !j.body) throw new Error('Writing help came back empty');
+      d.body = String(j.body);
+      if (mode === 'tone') d.tone = tone;
+      else d.ask = '';
+      d.aiNote = '';
+      repaintMail();
+      toast(root, 'Draft updated. Read it before you send.', function () { d.body = before; repaintMail(); });
+    }).catch(function (err) {
+      d.aiNote = (err && err.message && err.message !== 'fail') ? err.message : 'Writing help did not answer. Try again.';
+      repaintMail();
+      toast(root, d.aiNote);
+    });
+  }
+  function composeState() {
+    if (window.__mailCompose && window.__mailCompose.draft) return window.__mailCompose.draft();
+    var d = S().composeDraft || (S().composeDraft = {});
+    ['to', 'cc', 'bcc', 'attachments'].forEach(function (k) { if (!Array.isArray(d[k])) d[k] = []; });
+    d.typing = d.typing || {};
+    return d;
+  }
+  function openCompose(draft) {
+    S().composeDraft = Object.assign({ to: [], cc: [], bcc: [], subject: '', body: '', attachments: [], nudge: false, log: false }, draft || {});
+    S().composeOpen = true;
+    S().mailView = 'inbox';
+    S().mailOpen = null;
+    S().mailOpenThread = null;
+    if (S().desk !== 'mail') go('mail');
+    repaintMail();
+    setTimeout(function () { focusComposeField(composeState().to.length ? '' : 'to'); }, 80);
+  }
+  function focusComposeField(field) {
+    var root = mailRoot();
+    if (!root) return;
+    var el = field ? root.getElementById('mail-' + field) : root.querySelector('#compose .body');
+    if (el && el.focus) el.focus();
+  }
+  function addRecipient(field, email, name) {
+    var d = composeState();
+    email = String(email || '').trim().toLowerCase();
+    if (!EMAIL_RE.test(email)) return false;
+    var list = d[field] || (d[field] = []);
+    if (!list.some(function (r) { return r.email === email; })) list.push({ email: email, name: String(name || '').trim() });
+    d.typing[field] = '';
+    return true;
+  }
+  /* Read subject/body and any half-typed address into the draft. Returns the tokens that are not valid addresses. */
+  function syncCompose(root) {
+    var d = composeState();
+    var cp = root.getElementById && root.getElementById('compose');
+    if (!cp) return [];
+    var sub = cp.querySelector('[data-action="mail-subject"]');
+    var body = cp.querySelector('[data-action="mail-body"]');
+    if (sub) d.subject = String(sub.value || '').trim();
+    if (body) d.body = String(body.innerText || body.textContent || '').replace(/ /g, ' ').trim();
+    var bad = [];
+    ['to', 'cc', 'bcc'].forEach(function (field) {
+      var input = root.getElementById('mail-' + field);
+      String((input && input.value) || '').split(/[,;\s]+/).forEach(function (tok) {
+        if (!tok) return;
+        if (!addRecipient(field, tok, '')) bad.push(tok);
+      });
+      if (input && !bad.length) input.value = '';
+    });
+    return bad;
+  }
+  /* To/Cc/Bcc suggestions: contacts plus everyone in the mail feed. */
+  function recipientPool() {
+    var seen = {}, pool = [];
+    function add(name, email, meta) {
+      var e = String(email || '').trim().toLowerCase();
+      if (!EMAIL_RE.test(e) || seen[e]) return;
+      seen[e] = 1;
+      pool.push({ n: String(name || e), e: e, m: meta });
+    }
+    (S().contacts || []).forEach(function (c) { add(c.name, c.email, c.company || c.category || 'Contacts'); });
+    ((S().mailBoard || {}).messages || []).concat(S().mail || []).forEach(function (m) { add(m.from || m.name, m.email, 'Email'); });
+    return pool;
+  }
+  function renderSuggestions(root, field, q) {
+    var dd = root.getElementById && root.getElementById('dd-' + field);
+    if (!dd) return;
+    q = String(q || '').trim().toLowerCase();
+    var hits = q ? recipientPool().filter(function (p) { return (p.n + ' ' + p.e).toLowerCase().indexOf(q) >= 0; }).slice(0, 8) : [];
+    dd.innerHTML = hits.map(function (h, i) {
+      return '<div class="o" data-action="mail-to-pick" data-field="' + esc(field) + '" data-email="' + esc(h.e) + '" data-name="' + esc(h.n) + '"' + (i === 0 ? ' data-first="1"' : '') + '><span class="av" style="background:#2e6bf2;width:28px;height:28px">' + esc(h.n.slice(0, 2).toUpperCase()) + '</span><div><b>' + esc(h.n) + '</b><span>' + esc(h.e) + ' &middot; ' + esc(h.m) + '</span></div><span></span></div>';
+    }).join('');
+    dd.style.display = hits.length ? 'block' : 'none';
+  }
+  function bundleLinksText(atts) {
+    var lines = (atts || []).map(function (a) {
+      var url = a.url || (a.driveFileId || a.drive_file_id ? 'https://drive.google.com/file/d/' + (a.driveFileId || a.drive_file_id) + '/view' : '');
+      return url ? '- ' + (a.name || 'File') + ': ' + url : '';
+    }).filter(Boolean);
+    return lines.length ? '\n\n' + lines.join('\n') : '';
+  }
+  function forwardBody(from, email, subject, text) {
+    return '\n\n---------- Forwarded message ----------\nFrom: ' + from + (email ? ' <' + email + '>' : '') + '\nSubject: ' + subject + '\n\n' + String(text || '');
+  }
+  /* Nudge in 3 days = a War Room item due in 3 days. */
+  function nudgeLater(root, name, email, subject) {
+    var due = new Date(Date.now() + 3 * 86400000);
+    due.setHours(9, 0, 0, 0);
+    addTask('Nudge ' + name + ' if no reply: ' + (subject || 'your email'), 'later', { due: due.toISOString() }).then(function () {
+      refresh('war');
+    }).catch(function () { toast(root, 'Sent, but the 3-day nudge was not saved'); });
+  }
+  /* Log to Pipeline = mark the contact touched (create it if new) and move its cached GHL opportunity to a "contact made" stage when one exists. Never creates a GHL opportunity. */
+  function logToPipeline(root, name, email) {
+    var e = String(email || '').toLowerCase();
+    var c = (S().contacts || []).filter(function (x) { return String(x.email || '').toLowerCase() === e; })[0];
+    var now = Date.now();
+    var write = c && c.id
+      ? api('/api/contacts', { method: 'PATCH', body: { id: c.id, lastTouch: new Date(now).toISOString(), stage: 'contacted' } })
+      : api('/api/contacts', { method: 'POST', body: { name: name || e, email: e, stage: 'contacted' } });
+    write.then(ok).then(json).then(function (row) {
+      if (c) { c.lastTouch = now; c.stage = 'contacted'; }
+      else if (row && row.id) S().contacts = [row].concat(S().contacts || []);
+      var hit = findOpportunity(e);
+      if (!hit) return null;
+      var target = hit.pipe.stages.filter(function (st) { return /contact(ed)?\s*made|contacted/i.test(st.name || ''); })[0];
+      if (!target || target.id === hit.stage.id) return null;
+      return api('/api/pipeline', { method: 'POST', body: { opportunityId: hit.opp.id, pipelineId: hit.pipe.id, stageId: target.id, stage: target.name, contactId: hit.opp.contactId || '', name: hit.opp.contact || name } }).then(json);
+    }).then(function () { refresh('pipe'); }).catch(function () { toast(root, 'Sent, but Pipeline was not updated'); });
+  }
+  function findOpportunity(email) {
+    var e = String(email || '').toLowerCase();
+    var out = null;
+    (S().ghlPipes || []).forEach(function (pipe) {
+      (pipe.stages || []).forEach(function (stage) {
+        (stage.opps || []).forEach(function (opp) {
+          if (!out && e && String(opp.email || '').toLowerCase() === e) out = { pipe: pipe, stage: stage, opp: opp };
+        });
+      });
+    });
+    return out;
+  }
+  function loadThread(id) {
+    return api('/api/mail/thread?id=' + encodeURIComponent(id), { method: 'GET' }).then(ok).then(json).then(function (d) {
+      if (!d || !d.thread) throw new Error('no thread');
+      S().mailBodies = S().mailBodies || {};
+      S().mailBodies[id] = String(d.thread.text || d.thread.snippet || '');
+      return d.thread;
+    });
+  }
+  function markMailRead(id) {
+    ((S().mailBoard || {}).messages || []).forEach(function (m) { if (String(m.id) === String(id)) m.unread = false; });
+    api('/api/mail/act', { method: 'POST', body: { action: 'read', id: id } }).catch(function () {});
+  }
+  function dropBoardMessage(id) {
+    var b = S().mailBoard;
+    if (b && Array.isArray(b.messages)) b.messages = b.messages.filter(function (m) { return String(m.id) !== String(id); });
+  }
+  function userColumns() {
+    return typeof window.__mailUserColumns === 'function' ? window.__mailUserColumns() : [];
+  }
+  function setBoardColumns(cols) {
+    if (!Array.isArray(cols)) return;
+    S().mailBoard = S().mailBoard || { messages: [] };
+    S().mailBoard.columns = cols;
+  }
+  function setBoardRules(rules) {
+    if (!Array.isArray(rules)) return;
+    S().mailBoard = S().mailBoard || { messages: [] };
+    S().mailBoard.rules = rules;
+  }
+  function mailColumnOf(id) {
+    var hit = ((S().mailBoard || {}).messages || []).filter(function (m) { return String(m.id) === String(id); })[0];
+    return hit ? String(hit.column || '') : '';
+  }
+  function setMailColumn(id, key) {
+    ((S().mailBoard || {}).messages || []).forEach(function (m) { if (String(m.id) === String(id)) m.column = key; });
+  }
+  /* Create on the server first, then use the server key. Resolves with the new key. */
+  function createMailColumn(name) {
+    var before = {};
+    ((S().mailBoard || {}).columns || []).forEach(function (c) { before[c.key] = 1; });
+    return api('/api/mail/columns', { method: 'POST', body: { action: 'create', name: name } }).then(ok).then(json).then(function (d) {
+      if (!d || !d.saved || !Array.isArray(d.columns)) throw new Error('not saved');
+      setBoardColumns(d.columns);
+      var fresh = d.columns.filter(function (c) { return !before[c.key]; })[0]
+        || d.columns.filter(function (c) { return c.name === name; }).pop();
+      if (!fresh) throw new Error('no key');
+      return fresh.key;
+    });
+  }
+  function renameMailColumn(root, key, name) {
+    if (!key || !name) return;
+    if (!writeOk()) { toast(root, 'Renamed (fixture)'); return; }
+    var cols = ((S().mailBoard || {}).columns || []);
+    var prev = '';
+    cols.forEach(function (c) { if (c.key === key) { prev = c.name; c.name = name; } });
+    if (prev === name) return;
+    refresh('mail');
+    api('/api/mail/columns', { method: 'POST', body: { action: 'rename', key: key, name: name } }).then(ok).then(json).then(function (d) {
+      if (!d || !d.saved) throw new Error('not saved');
+      setBoardColumns(d.columns);
+      toast(root, 'Column renamed');
+    }).catch(function () {
+      cols.forEach(function (c) { if (c.key === key) c.name = prev; });
+      refresh('mail');
+      toast(root, 'Could not rename that column');
+    });
+  }
+  /* File one email into a user column; a sticky rule files future mail from the sender too. */
+  function fileMail(root, id, key, sticky, email) {
+    if (!id || !key) return;
+    var prev = mailColumnOf(id);
+    setMailColumn(id, key);
+    refresh('mail');
+    var name = (userColumns().filter(function (c) { return c.id === key; })[0] || {}).n || key;
+    api('/api/mail/act', { method: 'POST', body: { action: 'move', id: id, column: key, sticky: !!sticky, email: email, matchType: 'sender' } }).then(ok).then(json).then(function (d) {
+      if (!d || !d.ok) throw new Error('not filed');
+      if (sticky && email) {
+        api('/api/mail/rules', { method: 'GET' }).then(ok).then(json).then(function (r) { setBoardRules(r && r.rules); refresh('mail'); }).catch(function () {});
+      }
+      toast(root, 'Filed in ' + name + (sticky && email ? ' · future mail from ' + email + ' goes there too' : ''), function () {
+        setMailColumn(id, prev);
+        refresh('mail');
+        if (prev) api('/api/mail/act', { method: 'POST', body: { action: 'move', id: id, column: prev } }).catch(function () {});
+      });
+    }).catch(function () {
+      setMailColumn(id, prev);
+      refresh('mail');
+      toast(root, 'Could not file that email');
+    });
+  }
+  function reorderMailColumns(root, movingKey, beforeKey) {
+    var cols = ((S().mailBoard || {}).columns || []).slice();
+    var from = cols.map(function (c) { return c.key; }).indexOf(movingKey);
+    if (from < 0 || movingKey === beforeKey) return;
+    var moved = cols.splice(from, 1)[0];
+    var to = cols.map(function (c) { return c.key; }).indexOf(beforeKey);
+    cols.splice(to < 0 ? cols.length : to, 0, moved);
+    setBoardColumns(cols);
+    refresh('mail');
+    if (!writeOk()) return;
+    api('/api/mail/columns', { method: 'POST', body: { action: 'reorder', keys: cols.map(function (c) { return c.key; }) } }).then(ok).then(json).then(function (d) {
+      if (!d || !d.saved) throw new Error('not saved');
+      toast(root, 'Column order saved');
+    }).catch(function () { toast(root, 'Could not save the column order'); });
+  }
+  function withSpaces(fn) {
+    var packs = S().packages || [];
+    if (packs.length || !writeOk()) { fn(packs); return; }
+    api('/api/spaces', { method: 'GET' }).then(ok).then(json).then(function (d) {
+      S().packages = (d && (d.packages || d.spaces)) || [];
+      fn(S().packages);
+    }).catch(function () { fn([]); });
+  }
+  /* People boxes: the merged view (stored overlay + live mail) comes from redesign-pages-b.js. */
+  function personBox(id) {
+    var st = typeof window.__peopleState === 'function' ? window.__peopleState() : { boxes: peopleBoxList() };
+    return (st.boxes || []).filter(function (b) { return String(b.id) === String(id); })[0] || null;
+  }
+  function pickPersonMail(box, mid) {
+    var rows = box.m || [];
+    if (mid) {
+      var hit = rows.filter(function (r) { return String(r[6]) === String(mid); })[0];
+      if (hit) return hit;
+    }
+    return rows.filter(function (r) { return r[0] === 'in'; })[0] || rows[0] || null;
+  }
+  function goPersonPipeline(box) {
+    S().pipeQ = box.n || (box.addrs || [])[0] || '';
+    S().pipeAllRows = true;
+    S().mailPerson = '';
+    go('contacts');
+    refresh('pipe');
+  }
+  function goPersonSpace(root, box) {
+    var addrs = (box.addrs || []).map(function (a) { return String(a).toLowerCase(); });
+    withSpaces(function (packs) {
+      var hit = packs.filter(function (p) {
+        return (p.recipients || p.people || []).some(function (r) { return addrs.indexOf(String(r.email || '').toLowerCase()) >= 0; })
+          || String(p.name || '').toLowerCase() === String(box.n || '').toLowerCase();
+      })[0];
+      if (!hit) { toast(root, 'No Space for ' + box.n + ' yet - add them to one from the reader'); return; }
+      S().pkg = hit;
+      S().mailPerson = '';
+      go('work');
+      refresh('spaces');
+    });
+  }
+  /* Book 20 min: open the calendar pop-up with a 20-minute slot for these people. */
+  function openBook(people) {
+    go('calendar');
+    setTimeout(function () {
+      var cal = window.__redesignCal;
+      if (!cal || typeof cal.openPop !== 'function') return;
+      var now = new Date();
+      var s = now.getHours() + (now.getMinutes() >= 30 ? 1 : 0.5);
+      cal.openPop({ d: cal.ymd(now), s: s, e: s + 20 / 60, t: '20 min' + (people && people[0] ? ' with ' + people[0] : ''), c: 'meet', isNew: true, ppl: (people || []).filter(Boolean), loc: [], links: [], docs: [] }, 620, 220);
+    }, 500);
+  }
+  /* Spaces */
+  function spaceById(id) {
+    return (S().packages || []).filter(function (p) { return String(p.id) === String(id); })[0] || (S().pkg && String(S().pkg.id) === String(id) ? S().pkg : null);
+  }
+  function spaceDraft(pkg) {
+    var first = (pkg.recipients || pkg.people || [])[0] || {};
+    var mail = pkg.email || {};
+    return {
+      to: first.email ? [{ email: String(first.email).toLowerCase(), name: first.name || '' }] : [],
+      subject: pkg.emailSubject || mail.subject || pkg.subject || '',
+      body: pkg.emailBody || mail.body || pkg.intro || '',
+      attachments: (pkg.docs || pkg.items || []).filter(function (d) { return d && d.kind !== 'link' && d.kind !== 'note' && d.kind !== 'folder'; }),
+      spaceId: pkg.id
+    };
+  }
+  function rememberLocalThumb(file) {
+    if (!file || !/^image\//.test(file.type || '') || !window.URL || !URL.createObjectURL) return;
+    S().spaceLocalThumbs = S().spaceLocalThumbs || {};
+    S().spaceLocalThumbs[file.name] = URL.createObjectURL(file);
+  }
+  function uploadToSpace(root, spaceId, file) {
+    rememberLocalThumb(file);
+    var fd = new FormData();
+    fd.append('file', file);
+    fd.append('name', file.name);
+    fd.append('mime', file.type || '');
+    return api('/api/spaces/' + encodeURIComponent(spaceId) + '/upload', { method: 'POST', body: fd }).then(ok).then(json).then(function (d) {
+      if (!d || d.saved === false) throw new Error((d && d.error) || 'not saved');
+      var pack = d.package || d;
+      if (pack && pack.id && S().pkg && String(S().pkg.id) === String(spaceId)) S().pkg = pack;
+      refresh('spaces');
+      var item = d.item || {};
+      toast(root, file.name + (item.driveFileId || item.drive_file_id ? ' attached and saved to Drive' : ' attached'));
+    }).catch(function () { toast(root, 'Could not attach ' + file.name); });
+  }
+  /* Pipeline */
+  function moveOpportunity(oppId, toStageId) {
+    var moved = null, from = null;
+    (S().ghlPipes || []).forEach(function (pipe) {
+      (pipe.stages || []).forEach(function (st) {
+        (st.opps || []).forEach(function (o, i) {
+          if (String(o.id) === String(oppId) && !moved) { moved = st.opps.splice(i, 1)[0]; from = st; st.count = Math.max(0, (Number(st.count) || 1) - 1); }
+        });
+      });
+    });
+    if (!moved) return null;
+    (S().ghlPipes || []).forEach(function (pipe) {
+      (pipe.stages || []).forEach(function (st) {
+        if (String(st.id) === String(toStageId)) { st.opps = st.opps || []; st.opps.unshift(moved); st.count = (Number(st.count) || 0) + 1; }
+      });
+    });
+    return from;
+  }
+  function pushStage(oppId, pipeId, stageId, stageName, payload) {
+    return api('/api/pipeline', { method: 'POST', body: { opportunityId: oppId, pipelineId: pipeId, stageId: stageId, stage: stageName, contactId: payload.contact || '', name: payload.name || '', email: payload.email || '' } })
+      .then(json).then(function (d) {
+        if (!d || !d.ok) throw new Error((d && d.note) || 'GoHighLevel did not take that stage');
+        return d;
+      });
   }
 
   function onClick(e) {
@@ -2773,6 +4215,7 @@
       var ignore = t.closest('input, textarea, select, [contenteditable="true"]');
       var ignAct = ignore && ignore.getAttribute ? (ignore.getAttribute('data-action') || '') : '';
       if (ignore && /^(capture-input|notes-search|note-edit|link-title|link-url|link-search|link-note|plan-draft|reach-pick-search|pipe-search|mail-search|mail-people-search|mail-closed-search|docs-search|spaces-search|space-notes|space-angle|space-subject|space-intro|mail-body|mail-to|mail-subject|intel-ask|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|play-tx|zoom-search|zoom-ask-input|news-search)$/.test(ignAct)) return;
+      if (ignore && ignore.hasAttribute && ignore.hasAttribute('data-ext-field')) return;
     }
     var rootEarly = rootOf(el || t, e);
     var menu = rootEarly.getElementById && rootEarly.getElementById('menu');
@@ -2821,9 +4264,17 @@
     });
   }
   function onKey(e) {
+    /* bound on document (capture) and on every shadow root: run once per event */
+    if (e.__deskKey) return;
+    e.__deskKey = true;
     var el = actionElFromEvent(e) || (e.target && e.target.closest ? e.target.closest('[data-action]') : null);
     var root = rootOf(el || e.target, e);
     var fieldAct = el && attr(el, 'data-action');
+    if (fieldAct && window.__deskKeyExt && typeof window.__deskKeyExt[fieldAct] === 'function') {
+      var keyDone = false;
+      try { keyDone = window.__deskKeyExt[fieldAct](el, root, e) === true; } catch (err) {}
+      if (keyDone) return;
+    }
     if ((fieldAct === 'space-card-name' || fieldAct === 'space-card-desc') && (e.key === 'Enter' || e.key === 'Escape')) {
       e.preventDefault();
       if (e.key === 'Escape' && el.getAttribute('data-orig') != null) el.textContent = el.getAttribute('data-orig');
@@ -2861,6 +4312,7 @@
       }
       if (S().docOpen) { S().docOpen = null; refresh('docs'); e.preventDefault(); return; }
       if (S().mailPerson) { S().mailPerson = ''; refresh('mail'); e.preventDefault(); return; }
+      if (S().mailOpen && !S().composeOpen) { S().mailOpen = null; S().mailOpenThread = null; refresh('mail'); e.preventDefault(); return; }
       if (S().mailPeopleDrawer) { S().mailPeopleDrawer = false; refresh('mail'); e.preventDefault(); return; }
       if (S().mailPeoplePanel || S().mailSortOpen || S().mailBoxMenuOpen) {
         S().mailPeoplePanel = '';
@@ -2874,6 +4326,41 @@
     }
     if (!el) return;
     var name = attr(el, 'data-action');
+    if (name === 'mail-to' && (e.key === 'Enter' || e.key === ',' || e.key === 'Tab')) {
+      var field = attr(el, 'data-field') || 'to';
+      var dd = root.getElementById && root.getElementById('dd-' + field);
+      var first = dd && dd.style.display !== 'none' ? dd.querySelector('[data-first="1"]') : null;
+      var typed = String(el.value || '').trim();
+      if (first || EMAIL_RE.test(typed)) {
+        e.preventDefault();
+        if (first) addRecipient(field, attr(first, 'data-email'), attr(first, 'data-name'));
+        else addRecipient(field, typed, '');
+        repaintMail();
+        focusComposeField(field);
+      } else if (e.key === 'Enter' && typed) {
+        e.preventDefault();
+        toast(root, 'Not a valid email address: ' + typed);
+      }
+      return;
+    }
+    if (name === 'mail-to' && e.key === 'Backspace' && !el.value) {
+      var d0 = composeState();
+      var f0 = attr(el, 'data-field') || 'to';
+      if (d0[f0] && d0[f0].length) { d0[f0].pop(); repaintMail(); focusComposeField(f0); }
+      return;
+    }
+    if (name === 'mail-col-title' && (e.key === 'Enter' || e.key === 'Escape')) {
+      e.preventDefault();
+      if (e.key === 'Escape') el.textContent = attr(el, 'data-orig');
+      if (el.blur) el.blur();
+      return;
+    }
+    if (name === 'mail-search' && e.key === 'Enter') {
+      e.preventDefault();
+      clearTimeout(mailSearchTimer);
+      runMailSearch(String(el.value || '').trim());
+      return;
+    }
     if (e.key === 'Enter' && name === 'zoom-search') return;
     if (e.key === 'Enter' && name === 'cal-nl') return;
     if (e.key === 'Enter' && (name === 'capture-input' || name === 'link-url' || name === 'link-title')) {
@@ -2886,11 +4373,70 @@
       actions['toast-undo'](el, root, e);
     }
   }
+  var spaceSaveTimers = {};
+  /* Angle, intro and subject each save to their own field. Notes are never overwritten by them. */
+  function saveSpaceText(root, el, name) {
+    var sid = attr(el, 'data-id') || (S().pkg && S().pkg.id);
+    var raw = String(el.value != null ? el.value : (el.innerText || ''));
+    if (name === 'space-notes') raw = raw.replace(/\s*Saved\s*$/, '');
+    var text = raw.trim();
+    var field = { 'space-notes': 'notes', 'space-angle': 'angle', 'space-intro': 'emailBody', 'space-subject': 'emailSubject' }[name];
+    if (S().pkg && String(S().pkg.id) === String(sid)) S().pkg[field] = text;
+    (S().packages || []).forEach(function (p) { if (String(p.id) === String(sid)) p[field] = text; });
+    if (!sid || !writeOk() || !UUID_RE.test(String(sid))) return;
+    clearTimeout(spaceSaveTimers[name]);
+    spaceSaveTimers[name] = setTimeout(function () {
+      var body = {};
+      body[field] = text;
+      api('/api/spaces/' + encodeURIComponent(sid), { method: 'PATCH', body: body }).then(ok).then(json).then(function (d) {
+        if (d && d.saved === false) throw new Error('not saved');
+        /* The angle now lives on the server (spaces.angle); drop the old browser-only copy once saved. */
+        if (name === 'space-angle') { try { localStorage.removeItem('cr_space_angle_' + sid); } catch (err) {} }
+        toast(root, 'Saved');
+      }).catch(function () { toast(root, 'Could not save that'); });
+    }, 500);
+  }
+  var mailSearchTimer = 0;
+  /* Search all mail: the DOM filter is instant; 3+ characters also asks Gmail (last 90 days). */
+  function mailSearchSoon(root, el) {
+    var q = String(el.value || '').trim();
+    clearTimeout(mailSearchTimer);
+    if (q.length && q.length < 3) return;
+    mailSearchTimer = setTimeout(function () { runMailSearch(q); }, 500);
+  }
+  function runMailSearch(q) {
+    if (q === (S().mailQ || '')) return;
+    if (!q) {
+      S().mailQ = '';
+      if (S().mailBoardMain) { S().mailBoard = S().mailBoardMain; S().mailBoardMain = null; }
+      refocusMailSearch();
+      return;
+    }
+    if (!writeOk()) return;
+    api('/api/mail/board?q=' + encodeURIComponent(q), { method: 'GET' }).then(ok).then(json).then(function (d) {
+      if (!d || !Array.isArray(d.messages)) return;
+      if (!S().mailBoardMain) S().mailBoardMain = S().mailBoard;
+      S().mailQ = q;
+      S().mailBoard = d;
+      refocusMailSearch();
+    }).catch(function () {});
+  }
+  function refocusMailSearch() {
+    refresh('mail');
+    var root = mailRoot();
+    var input = root && root.querySelector('[data-action="mail-search"]');
+    if (input && input.focus) { input.focus(); var n = String(input.value || '').length; try { input.setSelectionRange(n, n); } catch (err) {} }
+  }
   function onInput(e) {
     var el = e.target;
     if (!el || !el.getAttribute) return;
     var name = el.getAttribute('data-action');
+    if (!name) return;
+    if (e.__deskInput) return;
+    e.__deskInput = true;
     var root = el.getRootNode ? el.getRootNode() : document;
+    /* Extension pages (redesign-pages-d / -people / news saved) register input handlers by data-action. */
+    if (window.__deskInputExt && typeof window.__deskInputExt[name] === 'function') { try { window.__deskInputExt[name](el, root, e); } catch (err) {} return; }
     if (name === 'notes-search') {
       clearTimeout(searchTimer);
       searchTimer = setTimeout(function () {
@@ -2900,21 +4446,26 @@
     }
     if (name === 'note-edit') saveNote(root, el);
     if (name === 'space-notes' || name === 'space-angle' || name === 'space-intro' || name === 'space-subject') {
-      var sid = attr(el, 'data-id') || (S().pkg && S().pkg.id);
-      var text = String(el.value != null ? el.value : (el.innerText || '')).replace(/\s*Saved.*$/, '').trim();
-      if (S().pkg && name === 'space-notes') S().pkg.notes = text;
-      if (S().pkg && name === 'space-angle') S().pkg.description = text;
-      if (S().pkg && name === 'space-intro') S().pkg.intro = text;
-      if (S().pkg && name === 'space-subject') S().pkg.subject = text;
-      if (!sid || !writeOk() || !/^[0-9a-f-]{36}$/i.test(String(sid))) return;
-      clearTimeout(noteSaveTimer);
-      noteSaveTimer = setTimeout(function () {
-        var body = name === 'space-intro' ? { intro: text } : name === 'space-subject' ? { subject: text } : { notes: text };
-        api('/api/spaces/' + encodeURIComponent(sid), { method: 'PATCH', body: body }).then(ok).then(function () {
-          toast(root, 'Saved');
-        }).catch(function () { toast(root, 'Could not save those notes'); });
-      }, 400);
+      saveSpaceText(root, el, name);
     }
+    if (name === 'mail-to') {
+      var field = attr(el, 'data-field') || 'to';
+      composeState().typing[field] = String(el.value || '');
+      renderSuggestions(root, field, el.value);
+      return;
+    }
+    if (name === 'mail-subject') { composeState().subject = String(el.value || ''); return; }
+    if (name === 'mail-body') { composeState().body = String(el.innerText || el.textContent || ''); return; }
+    if (name === 'mail-ask-input') { composeState().ask = String(el.value || ''); return; }
+    if (name === 'space-link-q') {
+      var lq = String(el.value || '').toLowerCase();
+      root.querySelectorAll('.space-link-row').forEach(function (n) {
+        n.style.display = !lq || (n.textContent || '').toLowerCase().indexOf(lq) >= 0 ? '' : 'none';
+      });
+      return;
+    }
+    if (name === 'pipe-search') S().pipeQ = String(el.value || '');
+    if (name === 'mail-search') mailSearchSoon(root, el);
     if (name === 'news-search') {
       if (e && e.isTrusted === false) return;
       var nextQ = String(el.value || '');
@@ -2948,7 +4499,7 @@
     }
     if (/^(pipe|mail|docs|spaces|zoom)-search$/.test(name || '')) {
       var q = String(el.value || '').toLowerCase();
-      var sel = name === 'pipe-search' ? 'tbody#rows tr, .nd, .pcard' : name === 'mail-search' ? '.em, .ml' : name === 'docs-search' ? '.fl, .ra' : name === 'zoom-search' ? '.mc' : '.sp';
+      var sel = name === 'pipe-search' ? 'tbody#rows tr, .nd, .pcard, .bcard' : name === 'mail-search' ? '.em' : name === 'docs-search' ? '.fl, .ra' : name === 'zoom-search' ? '.mc' : '.sp';
       root.querySelectorAll(sel).forEach(function (n) {
         n.style.display = !q || (n.textContent || '').toLowerCase().indexOf(q) >= 0 ? '' : 'none';
       });
@@ -2970,7 +4521,7 @@
     if (plain.indexOf('4orm-doc:') === 0) return { id: plain.slice(9), kind: 'doc' };
     try {
       var o = JSON.parse(plain);
-      if (o && o.id) return o;
+      if (o && (o.id || (o.kind === 'folder' && o.name))) return o;
     } catch (err) {}
     return { id: plain, kind: 'task' };
   }
@@ -2980,7 +4531,8 @@
     var el = t && t.closest ? t.closest('[draggable="true"]') : null;
     if (!el || !e.dataTransfer) return;
     var action = attr(el, 'data-action');
-    var kind = attr(el, 'data-kind') || (action === 'mail-card' ? 'mail' : action === 'contact-drag' ? 'contact' : action === 'doc-drag' ? 'doc' : action === 'link-cat' ? 'folder' : 'task');
+    /* Link-category rows carry data-kind="cat|sub|leaf" for the tree; as a drag payload they are always folders. */
+    var kind = action === 'link-cat' ? 'folder' : attr(el, 'data-kind') || (action === 'mail-card' ? 'mail' : action === 'contact-drag' ? 'contact' : action === 'doc-drag' ? 'doc' : action === 'link-cat' ? 'folder' : 'task');
     var payload = JSON.stringify({
       id: attr(el, 'data-id'),
       kind: kind,
@@ -2990,7 +4542,12 @@
       url: attr(el, 'data-url') || attr(el, 'data-web') || '',
       drive: attr(el, 'data-drive') || '',
       mime: attr(el, 'data-mime') || '',
-      subject: attr(el, 'data-subject') || ''
+      subject: attr(el, 'data-subject') || '',
+      opp: attr(el, 'data-opp') || '',
+      pipe: attr(el, 'data-pipe') || '',
+      stageId: attr(el, 'data-stage-id') || '',
+      stage: attr(el, 'data-stage') || '',
+      contact: attr(el, 'data-contact') || ''
     });
     e.dataTransfer.setData('text/plain', payload);
     e.dataTransfer.effectAllowed = 'move';
@@ -2998,24 +4555,27 @@
     onDragStart.moved = true;
     setTimeout(function () { onDragStart.moved = false; }, 400);
   }
-  function dropSel() { return '[data-action="col-drop"], [data-action="stage-drop"], [data-action="mail-col-drop"], [data-action="space-drop"], [data-action="space-docs"], [data-action="link-cat"]'; }
+  function dropSel() { return '[data-action="col-drop"], [data-action="stage-drop"], [data-action="mail-col-drop"], [data-action="mail-box-drag"], [data-action="space-drop"], [data-action="space-docs"], [data-action="link-cat"], [data-drop-ext]'; }
   function hasFiles(e) {
     try { return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') >= 0; } catch (err) { return false; }
   }
   function uploadDroppedFiles(root, files, spaceId) {
     Array.prototype.forEach.call(files, function (f) {
+      if (!spaceId && f.size > DOC_SMALL) { uploadToDrive(root, f, docFolderNow()); return; }
       var fd = new FormData();
       fd.append('file', f);
       fd.append('name', f.name);
       fd.append('mime', f.type || '');
+      if (!spaceId) fd.append('category', docFolderNow());
       var url = spaceId && /^[0-9a-f-]{36}$/i.test(String(spaceId))
         ? '/api/spaces/' + encodeURIComponent(spaceId) + '/upload'
         : '/api/documents/upload';
-      api(url, { method: 'POST', body: fd }).then(ok).then(json).then(function (d) {
+      api(url, { method: 'POST', body: fd }).then(jsonOrThrow).then(function (d) {
         if (spaceId) S().pkg = d.package || d || S().pkg;
+        if (!spaceId && typeof window.__portLoadB === 'function') window.__portLoadB('docs');
         refresh('docs'); refresh('spaces'); refresh('drive');
-        toast(root, f.name + ' uploaded to Drive');
-      }).catch(function () { toast(root, 'Could not upload ' + f.name); });
+        toast(root, f.name + ' uploaded');
+      }).catch(function (err) { toast(root, errText(err, 'Could not upload ' + f.name)); });
     });
   }
   function onDragOver(e) {
@@ -3027,6 +4587,8 @@
     col.classList.add('drop-on');
   }
   function onDrop(e) {
+    if (e.__deskDrop) return;
+    e.__deskDrop = true;
     var t = (e.composedPath && e.composedPath()[0]) || e.target;
     var files = e.dataTransfer && e.dataTransfer.files;
     var root = (t && t.getRootNode && t.getRootNode()) || document;
@@ -3034,26 +4596,59 @@
       e.preventDefault();
       e.stopPropagation();
       var zone = t.closest ? t.closest('[data-action="space-docs"], [data-action="space-drop"]') : null;
-      var spaceId = zone ? (attr(zone, 'data-id') || (S().pkg && S().pkg.id) || '') : '';
-      uploadDroppedFiles(root, files, spaceId);
+      if (zone) {
+        var spaceId = attr(zone, 'data-id') || (S().pkg && S().pkg.id) || '';
+        zone.classList.remove('drop-on');
+        if (!writeOk() || !UUID_RE.test(String(spaceId))) { toast(root, 'Save the Space first, then drop files on it'); return; }
+        toast(root, 'Attaching ' + files.length + ' file' + (files.length === 1 ? '' : 's') + '…');
+        Array.prototype.forEach.call(files, function (f) { uploadToSpace(root, spaceId, f); });
+        return;
+      }
+      var host = root && root.host;
+      if (!(host && host.id === 'docsDesk') && !(t.closest && t.closest('[data-action="docs-upload"]'))) {
+        toast(root, 'Drop files onto a Space bundle or onto Documents');
+        return;
+      }
+      uploadDroppedFiles(root, files, '');
       return;
     }
     var col = t && t.closest ? t.closest(dropSel()) : null;
     if (!col) return;
     e.preventDefault();
     col.classList.remove('drop-on');
+    if (col.hasAttribute && col.hasAttribute('data-drop-ext')) {
+      if (typeof window.__deskDropExt === 'function') { try { window.__deskDropExt(col, parseDrag(e), root, e); } catch (err) { toast(root, 'Could not run that drop'); } }
+      return;
+    }
     if (attr(col, 'data-action') === 'link-cat') {
       var payloadF = parseDrag(e);
       if (payloadF.kind !== 'folder' || !payloadF.name) return;
       var names = [];
       (root.querySelectorAll ? root.querySelectorAll('[data-action="link-cat"][data-kind="cat"]') : []).forEach(function (row) {
-        names.push(attr(row, 'data-name'));
+        var nm = attr(row, 'data-name');
+        if (nm && names.indexOf(nm) < 0) names.push(nm);
       });
-      var into = attr(col, 'data-name');
+      var target = attr(col, 'data-name');
       var parent = payloadF.parent || '';
-      if (into === payloadF.name) return;
-      api('/api/links', { method: 'POST', body: { kind: 'reorder', names: names, moving: payloadF.name, into: attr(col, 'data-kind') === 'cat' ? into : '', parent: parent } }).then(ok).then(function () {
-        refresh('links'); toast(root, 'Folder order saved');
+      if (!target || target === payloadF.name || attr(col, 'data-kind') === 'all') return;
+      /* top / bottom quarter of the row = reorder above / below; middle = nest into it */
+      var box = col.getBoundingClientRect ? col.getBoundingClientRect() : null;
+      var rel = box && box.height ? (e.clientY - box.top) / box.height : 0.5;
+      var nest = attr(col, 'data-kind') === 'cat' && rel > 0.25 && rel < 0.75;
+      var order = names.filter(function (n) { return n !== payloadF.name; });
+      if (!nest && !parent) {
+        var at = order.indexOf(target);
+        if (at < 0) at = order.length;
+        order.splice(rel >= 0.5 ? at + 1 : at, 0, payloadF.name);
+      }
+      var cats = S().categories || [];
+      if (!nest && !parent) {
+        S().categories = order.map(function (n) { return cats.filter(function (c) { return c.name === n; })[0]; }).filter(Boolean)
+          .concat(cats.filter(function (c) { return order.indexOf(c.name) < 0; }));
+      }
+      api('/api/links', { method: 'POST', body: { kind: 'reorder', names: nest || parent ? names : order, moving: payloadF.name, into: nest ? target : '', parent: parent } }).then(ok).then(function () {
+        refresh('links'); toast(root, nest ? ('Moved into ' + target) : 'Folder order saved');
+        if ((nest || parent) && typeof window.loadBoard === 'function') window.loadBoard();
       }).catch(function () { toast(root, 'Could not save folder order'); });
       return;
     }
@@ -3064,47 +4659,102 @@
     if (!id) return;
     if (act === 'stage-drop') {
       var stageName = attr(col, 'data-stage');
-      var mapped = mapContactStage(stageName);
-      (S().contacts || []).forEach(function (c) {
-        if (String(c.id) === String(id)) { c.stage = mapped; c.ghlStage = stageName; }
-      });
+      var stageId = attr(col, 'data-stage-id');
+      var pipeId = attr(col, 'data-pipe') || payload.pipe;
+      if (payload.kind !== 'opp' || !payload.opp) { toast(root, 'Only GoHighLevel cards can move between stages'); return; }
+      if (!stageId || stageId === payload.stageId) return;
+      var fromStage = moveOpportunity(payload.opp, stageId);
       refresh('pipe');
       if (!writeOk()) { toast(root, 'Moved to ' + stageName + ' (fixture)'); return; }
-      api('/api/contacts', { method: 'PATCH', body: { id: id, stage: mapped } }).then(ok).then(function () {
-        return api('/api/pipeline', { method: 'POST', body: { id: id, stage: stageName, name: payload.name, email: payload.email } }).catch(function () { return { ok: false }; });
-      }).then(function () {
-        toast(root, 'Stage saved to GoHighLevel', function () {
-          api('/api/contacts', { method: 'PATCH', body: { id: id, stage: 'new' } }).then(function () { refresh('pipe'); });
+      pushStage(payload.opp, pipeId, stageId, stageName, payload).then(function () {
+        toast(root, 'Moved to ' + stageName + ' in GoHighLevel', function () {
+          if (!fromStage) return;
+          moveOpportunity(payload.opp, fromStage.id);
+          refresh('pipe');
+          pushStage(payload.opp, pipeId, fromStage.id, fromStage.name, payload).then(function () {
+            toast(root, 'Back in ' + fromStage.name);
+          }).catch(function () { toast(root, 'Could not move it back in GoHighLevel'); });
         });
-      }).catch(function () { toast(root, 'Could not write that stage'); });
+      }).catch(function (err) {
+        if (fromStage) moveOpportunity(payload.opp, fromStage.id);
+        refresh('pipe');
+        toast(root, 'GoHighLevel did not take that move' + (err && err.message && !/^fail$/.test(err.message) ? ' - ' + err.message : ''));
+      });
       return;
     }
     if (act === 'mail-col-drop') {
       var column = attr(col, 'data-column');
-      var sticky = window.confirm('File this email into ' + (attr(col, 'data-name') || column) + '?\n\nOK = file it and save a sticky rule for this sender.');
-      if (!writeOk()) { toast(root, 'Filed (fixture)'); refresh('mail'); return; }
-      api('/api/mail/act', { method: 'POST', body: { action: 'move', id: id, column: column, sticky: !!sticky, email: payload.email, matchType: 'sender' } }).then(ok).then(function () {
-        toast(root, sticky ? 'Filed + rule saved' : 'Filed');
-        refresh('mail');
-      }).catch(function () { toast(root, 'Could not file that email'); });
+      if (!column) return;
+      if (payload.kind === 'mailcol') { reorderMailColumns(root, id, column); return; }
+      if (payload.kind !== 'mail') return;
+      if (!writeOk()) { toast(root, 'Filed (fixture)'); return; }
+      fileMail(root, id, column, false, payload.email);
+      return;
+    }
+    if (act === 'mail-box-drag') {
+      if (payload.kind !== 'box' || String(payload.id) === attr(col, 'data-id')) return;
+      var mover = findPeopleBox(payload.id, true);
+      var target = findPeopleBox(attr(col, 'data-id'), true);
+      var boxes = peopleBoxList();
+      if (!mover || !target) return;
+      boxes.splice(boxes.indexOf(mover), 1);
+      boxes.splice(boxes.indexOf(target), 0, mover);
+      S().mailPeopleSort = 'my order';
+      persistPeopleBoxes();
+      refresh('mail');
+      toast(root, 'Box order saved');
       return;
     }
     if (act === 'space-drop') {
       var spaceId = attr(col, 'data-id');
       if (!spaceId) return;
-      if (!writeOk()) { toast(root, 'Dropped on Space (fixture)'); return; }
-      api('/api/spaces/' + encodeURIComponent(spaceId), { method: 'POST', body: { action: 'add-doc', name: payload.name || 'File', url: payload.url || '', mime: payload.mime || '', driveFileId: payload.drive || id } }).then(ok).then(function () {
-        toast(root, 'Added to Space');
-        refresh('docs'); refresh('spaces');
-      }).catch(function () { toast(root, 'Could not add that file to the Space'); });
+      /* A dragged card that is part of the selection carries the whole selection. */
+      var dropped = (S().docPick || {})[id] ? docsFor('pick') : [docRow(id) || { id: id, driveFileId: payload.drive, name: payload.name, url: payload.url, mime: payload.mime }];
+      var spaceName = (col.querySelector && col.querySelector('b') && col.querySelector('b').textContent) || 'the Space';
+      attachDocsToSpace(root, spaceId, dropped, spaceName).then(function (done) {
+        if (done && dropped.length > 1) { S().docPick = {}; refresh('docs'); }
+      });
       return;
     }
     var bucket = attr(col, 'data-bucket');
-    if (!bucket) return;
-    patchItem(id, { column: bucket }).then(function () {
+    if (!bucket || bucket === 'done') return;
+    var srcCard = root.querySelector ? root.querySelector('.task[data-id="' + String(id).replace(/"/g, '') + '"]') : null;
+    if (srcCard && srcCard.closest && srcCard.closest('[data-action="col-drop"]') === col) {
+      if (bucket === 'today') reorderToday(root, col, id, t, e);
+      return;
+    }
+    var moveReq = isZoomCard(null, root, id) ? zoomPatch(id, { status: 'tasked', column: bucket }) : patchItem(id, { column: bucket });
+    moveReq.then(function () {
       refresh('war');
       toast(root, 'Moved to ' + bucket);
     }).catch(function () { toast(root, 'Could not move that task'); });
+  }
+  /* W39: drop a Today card above / below another Today card; the order saves as items.position. */
+  function reorderToday(root, col, id, t, e) {
+    if (isZoomCard(null, root, id)) { toast(root, 'Meeting follow-ups stay at the end of Today'); return; }
+    var ids = Array.prototype.slice.call(col.querySelectorAll('.task[data-id]')).filter(function (c) {
+      return attr(c, 'data-zoom') !== '1';
+    }).map(function (c) { return attr(c, 'data-id'); }).filter(function (x) { return x && x !== String(id); });
+    var over = t && t.closest ? t.closest('.task[data-id]') : null;
+    var at = ids.length;
+    if (over && attr(over, 'data-id') !== String(id) && attr(over, 'data-zoom') !== '1') {
+      at = ids.indexOf(attr(over, 'data-id'));
+      var box = over.getBoundingClientRect ? over.getBoundingClientRect() : null;
+      if (box && box.height && e && (e.clientY - box.top) > box.height / 2) at += 1;
+      if (at < 0) at = ids.length;
+    }
+    ids.splice(at, 0, String(id));
+    var byId = {};
+    (S().items || []).forEach(function (it) { byId[String(it.id)] = it; });
+    var changed = ids.filter(function (x, i) { var it = byId[x]; return it && Number(it.position) !== i; });
+    ids.forEach(function (x, i) { if (byId[x]) byId[x].position = i; });
+    refresh('war');
+    if (!changed.length) return;
+    if (!writeOk()) { toast(root, 'Order saved (fixture)'); return; }
+    Promise.all(changed.map(function (x) {
+      return api('/api/items/' + encodeURIComponent(x), { method: 'PATCH', body: { position: ids.indexOf(x) } }).then(ok);
+    })).then(function () { toast(root, 'Today order saved'); })
+      .catch(function () { toast(root, 'Could not save the new order'); if (typeof window.loadBoard === 'function') window.loadBoard(); });
   }
   function onDragLeave(e) {
     var t = (e.composedPath && e.composedPath()[0]) || e.target;
@@ -3146,8 +4796,14 @@
         var t = e.target;
         if (!t || !t.getAttribute) return;
         var act = t.getAttribute('data-action');
+        if (act && window.__deskBlurExt && typeof window.__deskBlurExt[act] === 'function') { try { window.__deskBlurExt[act](t, root, e); } catch (err) {} return; }
         if (act === 'note-edit') saveNote(root, t);
         if (act === 'space-card-name' || act === 'space-card-desc') saveSpaceField(t, root);
+        if (act === 'mail-col-title') {
+          var colName = String(t.textContent || '').replace(/\s+/g, ' ').trim();
+          if (!colName) { t.textContent = attr(t, 'data-orig'); return; }
+          if (colName !== attr(t, 'data-orig')) renameMailColumn(root, attr(t, 'data-col'), colName);
+        }
       }, true);
       root.addEventListener('dragstart', onDragStart);
       root.addEventListener('dragover', onDragOver);

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
 import { DELETE as packageDelete, GET as packageGet, PATCH as packagePatch, POST as packagePost } from '../../packages/[id]/route';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import {
   addSpaceFolder,
   addSpaceItem,
@@ -30,6 +30,7 @@ export async function GET(req: Request, ctx: { params: { id: string } }) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ space: null, items: [], recipients: [], email: { subject: '', body: '' }, package: null });
     const view = await spaceOrNull(session.userId, ctx.params.id, session.sql);
     if (view) {
@@ -54,6 +55,7 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     if (!session.sql) return NextResponse.json({ id: ctx.params.id, saved: false });
     const existing = await spaceOrNull(session.userId, ctx.params.id, session.sql);
@@ -71,6 +73,7 @@ export async function DELETE(req: Request, ctx: { params: { id: string } }) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ ok: false });
     const existing = await spaceOrNull(session.userId, ctx.params.id, session.sql);
     if (!existing) return packageDelete(req, ctx);
@@ -86,6 +89,7 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     if (!session.sql) return NextResponse.json({ saved: false });
     const existing = await spaceOrNull(session.userId, ctx.params.id, session.sql);
@@ -100,6 +104,29 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
       return NextResponse.json(added?.package || added || existing);
     }
     if (action === 'add-doc') {
+      /* A library file attaches as itself: its stored bytes are copied, and its Drive id is kept when it has one. */
+      const stagedId = String(body.stagedId || '');
+      if (/^[0-9a-f-]{36}$/i.test(stagedId)) {
+        const staged = await sql`
+          SELECT name, mime, url, drive_file_id, body_b64 FROM staged_docs
+          WHERE id = ${stagedId} AND owner_id = ${session.userId}
+          LIMIT 1
+        `;
+        const doc = staged[0] as { name?: string; mime?: string; url?: string; drive_file_id?: string; body_b64?: string } | undefined;
+        if (!doc) return NextResponse.json({ saved: false, error: 'That file is not in the library.' }, { status: 404 });
+        const bytes = doc.body_b64 ? Buffer.from(String(doc.body_b64), 'base64') : undefined;
+        const mime = String(doc.mime || '');
+        const added = await addSpaceItem(sql, session.userId, id, {
+          kind: mime.startsWith('image/') ? 'image' : 'file',
+          name: String(doc.name || body.name || 'File'),
+          mime,
+          url: String(doc.url || ''),
+          driveFileId: String(doc.drive_file_id || ''),
+          parentId: body.folderId || body.parentId,
+        }, bytes && bytes.length ? bytes : undefined);
+        if (!added) return NextResponse.json({ saved: false, error: 'Could not add that file to the Space.' }, { status: 400 });
+        return NextResponse.json(added.package || added);
+      }
       const added = await addSpaceItem(sql, session.userId, id, { kind: 'file', ...body, parentId: body.folderId || body.parentId });
       return NextResponse.json(added?.package || added || existing);
     }

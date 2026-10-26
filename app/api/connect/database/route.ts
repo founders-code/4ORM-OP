@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSql, resetSql } from '@/lib/db';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { rememberDatabaseUrl, saveDatabaseUrl } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
@@ -23,6 +23,7 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = await req.json().catch(() => null);
     const connection = connectionString(body?.connection);
     if (!connection) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });

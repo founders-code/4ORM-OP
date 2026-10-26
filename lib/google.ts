@@ -88,6 +88,86 @@ function eventJoin(ev: Record<string, unknown>) {
   return match ? match[0].slice(0, 500) : '';
 }
 
+/** Editor fields the calendar keeps per event so the editor can reopen them. */
+export type CalendarReminder = { method: 'popup' | 'email'; minutes: number };
+export type CalendarAttachment = { fileUrl: string; fileId: string; title: string; mimeType: string };
+export type CalendarEventDetails = {
+  attendees: string[];
+  location: string;
+  description: string;
+  reminders: { useDefault: boolean; overrides: CalendarReminder[] } | null;
+  attachments: CalendarAttachment[];
+  privateProps: Record<string, string>;
+  /** Read-only: who organised the event (the editor offers Decline only when it is someone else). */
+  organizer?: string;
+  organizerSelf?: boolean;
+};
+/** What the app may write on create/patch. Absent keys are left alone on patch. */
+export type CalendarEventInput = Partial<CalendarEventDetails>;
+
+export const CALENDAR_TIME_ZONE = 'America/Vancouver';
+
+function eventDetails(ev: Record<string, unknown>): CalendarEventDetails {
+  const attendees = (Array.isArray(ev.attendees) ? (ev.attendees as Array<{ email?: string }>) : [])
+    .map((a) => String(a.email || '').trim())
+    .filter(Boolean)
+    .slice(0, 50);
+  const rawReminders = ev.reminders as { useDefault?: boolean; overrides?: Array<{ method?: string; minutes?: number }> } | undefined;
+  const reminders = rawReminders
+    ? {
+      useDefault: !!rawReminders.useDefault,
+      overrides: (rawReminders.overrides || [])
+        .map((o) => ({ method: o.method === 'email' ? ('email' as const) : ('popup' as const), minutes: Number(o.minutes) || 0 }))
+        .slice(0, 5),
+    }
+    : null;
+  const attachments = (Array.isArray(ev.attachments) ? (ev.attachments as Array<Record<string, unknown>>) : [])
+    .map((a) => ({
+      fileUrl: String(a.fileUrl || ''),
+      fileId: String(a.fileId || ''),
+      title: String(a.title || ''),
+      mimeType: String(a.mimeType || ''),
+    }))
+    .filter((a) => a.fileUrl)
+    .slice(0, 25);
+  const priv = ((ev.extendedProperties as { private?: Record<string, unknown> } | undefined)?.private) || {};
+  const privateProps: Record<string, string> = {};
+  for (const [key, value] of Object.entries(priv)) privateProps[key] = String(value ?? '');
+  const org = (ev.organizer || {}) as { email?: string; self?: boolean };
+  return {
+    organizer: String(org.email || '').slice(0, 200),
+    organizerSelf: org.self === true || !org.email,
+    attendees,
+    location: String(ev.location || '').slice(0, 500),
+    description: String(ev.description || '').slice(0, 4000),
+    reminders,
+    attachments,
+    privateProps,
+  };
+}
+
+/** Google event body fields for the editor inputs that are present. */
+function eventFields(input: CalendarEventInput) {
+  const body: Record<string, unknown> = {};
+  if (input.location !== undefined) body.location = input.location.slice(0, 500);
+  if (input.description !== undefined) body.description = input.description.slice(0, 4000);
+  if (input.attendees !== undefined) body.attendees = input.attendees.map((email) => ({ email }));
+  if (input.reminders !== undefined && input.reminders) body.reminders = input.reminders;
+  if (input.attachments !== undefined) {
+    body.attachments = input.attachments.map((a) => ({ fileUrl: a.fileUrl, title: a.title || undefined, mimeType: a.mimeType || undefined }));
+  }
+  if (input.privateProps !== undefined) body.extendedProperties = { private: input.privateProps };
+  return body;
+}
+
+/** Query string for event writes: guests are emailed only when the event has guests. */
+function writeQuery(opts: { notify: boolean; attachments: boolean; conference?: boolean }) {
+  const q = new URLSearchParams({ sendUpdates: opts.notify ? 'all' : 'none' });
+  if (opts.attachments) q.set('supportsAttachments', 'true');
+  if (opts.conference) q.set('conferenceDataVersion', '1');
+  return q.toString();
+}
+
 async function pullCalendar(calendarId: string, timeMin: string, timeMax: string, pageToken: string) {
   const q = new URLSearchParams({
     timeMin,
@@ -126,6 +206,7 @@ export async function listEvents(timeMin: string, timeMax: string, pageToken = '
         title: String(ev.summary || 'Busy'),
         color: '#2E6BF2',
         join: eventJoin(ev),
+        ...eventDetails(ev),
       };
     })
     .filter(Boolean);
@@ -136,27 +217,24 @@ export async function listEvents(timeMin: string, timeMax: string, pageToken = '
   };
 }
 
-async function postEvent(calendarId: string, startMs: number, durMin: number, title: string, extra?: { location?: string; description?: string; attendees?: string[] }) {
+async function postEvent(calendarId: string, startMs: number, durMin: number, title: string, extra: CalendarEventInput = {}) {
   const start = new Date(startMs);
   const end = new Date(startMs + durMin * 60 * 1000);
   const body: Record<string, unknown> = {
     summary: String(title || 'Focus').slice(0, 180),
-    start: { dateTime: start.toISOString(), timeZone: 'America/Vancouver' },
-    end: { dateTime: end.toISOString(), timeZone: 'America/Vancouver' },
+    start: { dateTime: start.toISOString(), timeZone: CALENDAR_TIME_ZONE },
+    end: { dateTime: end.toISOString(), timeZone: CALENDAR_TIME_ZONE },
+    ...eventFields(extra),
   };
-  if (extra?.location) body.location = String(extra.location).slice(0, 500);
-  if (extra?.description) body.description = String(extra.description).slice(0, 4000);
-  if (extra?.attendees && extra.attendees.length) {
-    body.attendees = extra.attendees.map((email) => ({ email }));
-  }
-  const json = (await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?sendUpdates=all`, {
+  const query = writeQuery({ notify: !!extra.attendees?.length, attachments: !!extra.attachments?.length });
+  const json = (await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${query}`, {
     method: 'POST',
     body: JSON.stringify(body),
   })) as { id?: string } | null;
   return json?.id ? String(json.id) : null;
 }
 
-export async function createEvent(startMs: number, durMin: number, title: string, extra?: { location?: string; description?: string; attendees?: string[] }) {
+export async function createEvent(startMs: number, durMin: number, title: string, extra: CalendarEventInput = {}) {
   if (!configured()) return null;
   const named = process.env.GOOGLE_CALENDAR_ID || 'primary';
   const id = await postEvent(named, startMs, durMin, title, extra);
@@ -274,17 +352,18 @@ export async function exportDriveFile(fileId: string) {
   return { name, type: googleType, bytes: Buffer.from(await res.arrayBuffer()) };
 }
 
-export async function moveEvent(id: string, startMs: number, durMin: number) {
+/** notify: email guests (true when the event has attendees, or when unknown). */
+export async function moveEvent(id: string, startMs: number, durMin: number, notify = true) {
   if (!configured()) return false;
   if (!/^[\w.=@-]+$/.test(id)) return false;
   const cal = encodeURIComponent(process.env.GOOGLE_CALENDAR_ID || 'chad@4ormfinance.com');
   const start = new Date(startMs);
   const end = new Date(startMs + durMin * 60 * 1000);
-  const json = await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${cal}/events/${encodeURIComponent(id)}?sendUpdates=all`, {
+  const json = await gfetch(`https://www.googleapis.com/calendar/v3/calendars/${cal}/events/${encodeURIComponent(id)}?${writeQuery({ notify, attachments: false })}`, {
     method: 'PATCH',
     body: JSON.stringify({
-      start: { dateTime: start.toISOString(), timeZone: 'America/Vancouver' },
-      end: { dateTime: end.toISOString(), timeZone: 'America/Vancouver' },
+      start: { dateTime: start.toISOString(), timeZone: CALENDAR_TIME_ZONE },
+      end: { dateTime: end.toISOString(), timeZone: CALENDAR_TIME_ZONE },
     }),
   });
   return !!json;
@@ -324,18 +403,29 @@ export async function declineCalendarEvent(id: string, email = 'chad@4ormfinance
   return patchCalendarEvent(id, { attendees });
 }
 
-export async function patchCalendarEvent(id: string, fields: Record<string, unknown>) {
+/**
+ * PATCH an event. `fields` is a raw Google body (summary/start/end, attendees for decline); `input` adds
+ * the editor fields that are present. Guests are emailed only when `notify` is true.
+ */
+export async function patchCalendarEvent(
+  id: string,
+  fields: Record<string, unknown>,
+  input: CalendarEventInput = {},
+  notify = true,
+) {
   if (!configured()) return null;
   if (!/^[\w.=@-]+$/.test(id)) return null;
   const named = process.env.GOOGLE_CALENDAR_ID || 'primary';
+  const body = JSON.stringify({ ...fields, ...eventFields(input) });
+  const query = writeQuery({ notify, attachments: input.attachments !== undefined });
   const json = await gfetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(named)}/events/${encodeURIComponent(id)}?sendUpdates=all`,
-    { method: 'PATCH', body: JSON.stringify(fields), timeoutMs: 12000 },
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(named)}/events/${encodeURIComponent(id)}?${query}`,
+    { method: 'PATCH', body, timeoutMs: 12000 },
   );
   if (json || named === 'primary') return json;
   return gfetch(
-    `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(id)}?sendUpdates=all`,
-    { method: 'PATCH', body: JSON.stringify(fields), timeoutMs: 12000 },
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(id)}?${query}`,
+    { method: 'PATCH', body, timeoutMs: 12000 },
   );
 }
 
@@ -929,17 +1019,10 @@ export async function linkedinMail() {
   return { status: items.length ? ('connected' as const) : ('reached_empty' as const), items: items.slice(0, 12) };
 }
 
-export async function createReplyDraft(input: { to: string; subject: string; text: string; threadId?: string; messageId?: string }) {
+export async function createReplyDraft(input: { to: string; cc?: unknown; bcc?: unknown; subject: string; text: string; threadId?: string; messageId?: string; reply?: boolean }) {
   if (!configured()) return null;
-  const cleanTo = String(input.to || '').trim();
-  if (!/^[^\s@,<>]+@[^\s@,<>]+\.[^\s@,<>]+$/.test(cleanTo)) return null;
-  const base = String(input.subject || '').replace(/[\r\n]/g, ' ').slice(0, 200);
-  const subject = /^re:/i.test(base) ? base : `Re: ${base}`;
-  const ref = String(input.messageId || '').replace(/[\r\n]/g, '').slice(0, 300);
-  const lines = [`To: ${cleanTo}`, `Subject: ${subject}`];
-  if (/^<[^<>\s]+>$/.test(ref)) lines.push(`In-Reply-To: ${ref}`, `References: ${ref}`);
-  lines.push('MIME-Version: 1.0', 'Content-Type: text/plain; charset=utf-8', '', String(input.text || '').slice(0, 20000));
-  const raw = Buffer.from(lines.join('\r\n')).toString('base64url');
+  const raw = mimeRaw({ ...input, reply: input.reply !== false });
+  if (!raw) return null;
   const threadId = /^[A-Za-z0-9]{6,40}$/.test(String(input.threadId || '')) ? String(input.threadId) : undefined;
   try {
     const json = (await gfetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
@@ -995,7 +1078,34 @@ export async function zoomMail(known: Set<string>, max = 20) {
   return out;
 }
 
-export type BoardMail = InboxRow & { labels: string[]; preview: string };
+export type BoardMail = InboxRow & { labels: string[]; preview: string; attachments?: MailAttachment[] };
+
+/** Attachment metadata only; bytes are fetched on demand through /api/mail/attachment. */
+export type MailAttachment = {
+  filename: string;
+  mimeType: string;
+  size: number;
+  attachmentId: string;
+  /** Short aliases the client already reads. */
+  name: string;
+  mime: string;
+};
+
+type GmailBodyPart = GmailPart & { body?: { data?: string; size?: number; attachmentId?: string } };
+
+function collectAttachments(part: GmailBodyPart | undefined, out: MailAttachment[] = [], depth = 0): MailAttachment[] {
+  if (!part || depth > 8 || out.length >= 25) return out;
+  const filename = String(part.filename || '').replace(/[\r\n"]/g, ' ').trim().slice(0, 200);
+  const attachmentId = String(part.body?.attachmentId || '');
+  if (filename && attachmentId) {
+    const mimeType = String(part.mimeType || 'application/octet-stream').slice(0, 120);
+    out.push({ filename, mimeType, size: Number(part.body?.size) || 0, attachmentId, name: filename, mime: mimeType });
+  }
+  for (const child of (part.parts || []) as GmailBodyPart[]) collectAttachments(child, out, depth + 1);
+  return out;
+}
+
+const ATTACHMENT_FIELDS = 'id,payload(filename,mimeType,body(size,attachmentId),parts(filename,mimeType,body(size,attachmentId),parts(filename,mimeType,body(size,attachmentId),parts(filename,mimeType,body(size,attachmentId)))))';
 
 async function gmailPages(q: string, max: number) {
   const ids: string[] = [];
@@ -1100,6 +1210,20 @@ export async function boardMail(query = '', max = 80) {
       labels: msg.labelIds || [],
     });
   }
+  // Attachment names for the People "Files" tab: only messages whose top-level type says they carry files,
+  // fetched with a narrow fields mask, at most 30 per board load.
+  const withFiles = metas.filter((msg) => /^multipart\/mixed/i.test(headerOf(msg)('content-type'))).slice(0, 30);
+  const found = new Map<string, MailAttachment[]>();
+  for (const group of chunk(withFiles, 10)) {
+    const rows = await Promise.all(group.map((msg) =>
+      (gfetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(String(msg.id))}?format=full&fields=${encodeURIComponent(ATTACHMENT_FIELDS)}`, { timeoutMs: 8000 }) as Promise<{ id?: string; payload?: GmailBodyPart } | null>).catch(() => null),
+    ));
+    for (const row of rows) if (row?.id) found.set(String(row.id), collectAttachments(row.payload));
+  }
+  for (const message of messages) {
+    const files = found.get(message.id);
+    if (files && files.length) message.attachments = files;
+  }
   messages.sort((a, b) => b.at - a.at);
   return { status: messages.length ? ('connected' as const) : ('reached_empty' as const), messages };
 }
@@ -1123,22 +1247,62 @@ export async function gmailThread(id: string) {
     labels: msg.labelIds || [],
     text: plainBody(msg.payload).slice(0, 40000),
     snippet: decodeSnippet(String(msg.snippet || '')),
+    messageId: pick('message-id').slice(0, 300),
+    cc: pick('cc').slice(0, 600),
+    attachments: collectAttachments(msg.payload as GmailBodyPart | undefined),
   };
 }
 
-function mimeRaw(input: { to: string; subject: string; text: string; messageId?: string; reply?: boolean }) {
+/** Bytes of one Gmail attachment (base64url from the API). Null when Gmail refuses or the ids are bad. */
+export async function gmailAttachment(messageId: string, attachmentId: string) {
+  if (!configured() || !/^[A-Za-z0-9_-]{6,64}$/.test(messageId) || !/^[A-Za-z0-9_-]{8,4096}$/.test(attachmentId)) return null;
+  const json = (await gfetch(
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}`,
+    { timeoutMs: 20000 },
+  )) as { data?: string; size?: number } | null;
+  if (!json?.data) return null;
+  return Buffer.from(String(json.data), 'base64url');
+}
+
+/** Comma/semicolon list → valid, de-duplicated addresses ("Name <a@b.c>" keeps only a@b.c). */
+export function addressList(value: unknown, max = 50) {
+  const raw = Array.isArray(value) ? value.map((v) => String(v || '')) : String(value || '').split(/[,;]/);
+  const out: string[] = [];
+  for (const bit of raw) {
+    const m = bit.match(/<([^<>\s]+)>/);
+    const email = (m ? m[1] : bit).trim().toLowerCase();
+    if (/^[^\s@,<>]+@[^\s@,<>]+\.[^\s@,<>]+$/.test(email) && !out.includes(email)) out.push(email);
+  }
+  return out.slice(0, max);
+}
+
+/** RFC 2047 encode a header value when it is not plain ASCII. */
+function headerText(value: string) {
+  const clean = String(value || '').replace(/[\r\n]/g, ' ');
+  return /^[\x20-\x7e]*$/.test(clean) ? clean : `=?UTF-8?B?${Buffer.from(clean, 'utf8').toString('base64')}?=`;
+}
+
+type MailInput = { to: string; cc?: unknown; bcc?: unknown; subject: string; text: string; threadId?: string; messageId?: string; reply?: boolean };
+
+function mimeRaw(input: MailInput) {
   const cleanTo = String(input.to || '').trim();
   if (!/^[^\s@,<>]+@[^\s@,<>]+\.[^\s@,<>]+$/.test(cleanTo)) return null;
+  const cc = addressList(input.cc).filter((e) => e !== cleanTo.toLowerCase());
+  const bcc = addressList(input.bcc).filter((e) => e !== cleanTo.toLowerCase() && !cc.includes(e));
   const base = String(input.subject || '').replace(/[\r\n]/g, ' ').slice(0, 200);
   const subject = input.reply && !/^re:/i.test(base) ? `Re: ${base}` : base;
   const ref = String(input.messageId || '').replace(/[\r\n]/g, '').slice(0, 300);
-  const lines = [`To: ${cleanTo}`, `Subject: ${subject}`];
+  const lines = [`To: ${cleanTo}`];
+  if (cc.length) lines.push(`Cc: ${cc.join(', ')}`);
+  // Gmail delivers to Bcc addresses and strips the header before sending.
+  if (bcc.length) lines.push(`Bcc: ${bcc.join(', ')}`);
+  lines.push(`Subject: ${headerText(subject)}`);
   if (/^<[^<>\s]+>$/.test(ref)) lines.push(`In-Reply-To: ${ref}`, `References: ${ref}`);
   lines.push('MIME-Version: 1.0', 'Content-Type: text/plain; charset=utf-8', '', String(input.text || '').slice(0, 20000));
   return Buffer.from(lines.join('\r\n')).toString('base64url');
 }
 
-export async function gmailSend(input: { to: string; subject: string; text: string; threadId?: string; messageId?: string; reply?: boolean }) {
+export async function gmailSend(input: MailInput) {
   const raw = mimeRaw(input);
   if (!raw) return { ok: false, status: 0, drafted: false };
   const threadId = /^[A-Za-z0-9_-]{6,64}$/.test(String(input.threadId || '')) ? String(input.threadId) : undefined;
@@ -1310,4 +1474,9 @@ export async function classifyGmailIds(ids: string[]) {
     });
   }
   return { messages, linkedin };
+}
+
+/** Access token for the current creds (lib/drive-docs.ts uses it for thumbnails and resumable uploads). */
+export async function googleAccessToken() {
+  return accessToken();
 }

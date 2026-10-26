@@ -3,7 +3,7 @@ import { env } from '@/lib/env.mjs';
 import { signState } from '@/lib/oauth-state.mjs';
 import { fail } from '@/lib/log';
 import { requestOrigin } from '@/lib/public-origin';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +21,7 @@ export async function GET(req: Request) {
     const session = await openBoard();
     const origin = requestOrigin(req);
     if (!session || !origin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const clientId = env('GOOGLE_CLIENT_ID');
     const secret = process.env.CLERK_SECRET_KEY || '';
     if (!clientId || !env('GOOGLE_CLIENT_SECRET') || !secret) {

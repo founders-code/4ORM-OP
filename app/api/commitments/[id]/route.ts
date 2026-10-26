@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { listCommitments, setCommitment } from '@/lib/war';
 
 export const dynamic = 'force-dynamic';
@@ -9,6 +9,7 @@ export async function PATCH(_req: Request, { params }: { params: { id: string } 
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ commitments: [] });
     const updated = await setCommitment(session.sql, session.userId, params.id, 'done');
     if (!updated) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });

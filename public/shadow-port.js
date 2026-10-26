@@ -43,7 +43,7 @@
   };
 
   window.bootPorts = function () {
-    window.attachPort('v-news', '/port-css/news.css?v=2');
+    window.attachPort('v-news', '/port-css/news.css?v=4');
   };
   window.paintMockupFixture = function (hostId, html, cssHref) {
     var host = document.getElementById(hostId);

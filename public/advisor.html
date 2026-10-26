@@ -523,7 +523,7 @@ const PORTALS={
 
 const BADGE={notlive:['b-nl','Not live'],live:['b-live','Live'],private:['b-private','Private'],dynamic:['b-dyn','Live'],room:['b-room','Data room'],inroom:['b-room','In room'],towrite:['b-soon','To write'],soon:['b-soon','Soon']};
 const FICO={private:'priv',dynamic:'dyn',room:'room',inroom:'room'};
-const PRIVATE_DOCS={'dean@4ormfinance.com':{'Mutual Non-Disclosure Agreement':'documents/private/dean-mnda.pdf','Signed Engagement Letter':'documents/private/dean-engagement-letter.pdf','Compensation & Term Schedule':'documents/private/dean-comp-schedule.pdf'}};
+const PRIVATE_DOCS={'dean@4ormfinance.com':{'Mutual Non-Disclosure Agreement':'/api/private-doc?f=dean-mnda.pdf','Signed Engagement Letter':'/api/private-doc?f=dean-engagement-letter.pdf','Compensation & Term Schedule':'/api/private-doc?f=dean-comp-schedule.pdf'}};
 var CURRENT_EMAIL='';
 function hasPrivateDoc(name){return CURRENT_EMAIL&&PRIVATE_DOCS[CURRENT_EMAIL]&&PRIVATE_DOCS[CURRENT_EMAIL][name];}
 
@@ -1776,6 +1776,6 @@ renderCal();
       document.head.appendChild(s); } }
 })();
 </script>
-<script src="/live-updates.js"></script>
+<script src="/live-updates.js?v=6"></script>
 </body>
 </html>

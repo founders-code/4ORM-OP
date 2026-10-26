@@ -2,9 +2,13 @@ import { NextResponse } from 'next/server';
 import { bookSlots, takeBooking } from '@/lib/book';
 import { getSql } from '@/lib/db';
 import { fail } from '@/lib/log';
+import { clientIp, takeRateLimit } from '@/lib/rate-limit';
 import { roomOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
+
+/** Public booking page: at most 5 booking attempts per IP per hour. */
+const BOOKINGS_PER_HOUR = 5;
 
 export async function GET(req: Request) {
   try {
@@ -27,6 +31,9 @@ export async function POST(req: Request) {
     if (!sql) return NextResponse.json({ error: 'Booking is not available.' }, { status: 400 });
     const ownerId = await roomOwner(sql);
     if (!ownerId) return NextResponse.json({ error: 'Booking is not available.' }, { status: 400 });
+    if (!(await takeRateLimit(sql, 'book', clientIp(req), BOOKINGS_PER_HOUR, 3600))) {
+      return NextResponse.json({ error: 'Too many booking attempts. Please try again in an hour.' }, { status: 429 });
+    }
     const body = await req.json().catch(() => null) as Record<string, unknown> | null;
     const result = await takeBooking(sql, ownerId, {
       name: String(body?.name || ''),

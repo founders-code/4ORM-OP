@@ -3,7 +3,7 @@ import { withCreds } from '@/lib/creds';
 import { gmailModify, gmailSend } from '@/lib/google';
 import { fail } from '@/lib/log';
 import { ensureMailBoard, fileMessage, saveRule } from '@/lib/mail-board';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { loadCredsFor } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
@@ -13,6 +13,8 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Gmail is read with the room's Google credentials: only the allowlisted owner (see sessionOwner) may use it.
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     if (!session.sql || !body) return NextResponse.json({ ok: false });
     await ensureMailBoard(session.sql);
@@ -35,6 +37,8 @@ export async function POST(req: Request) {
     if (action === 'reply' || action === 'compose') {
       const sent = await withCreds(creds, () => gmailSend({
         to: String(body.to || ''),
+        cc: body.cc,
+        bcc: body.bcc,
         subject: String(body.subject || ''),
         text: String(body.text || ''),
         threadId: String(body.threadId || ''),

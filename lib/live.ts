@@ -12,6 +12,7 @@ import {
   shapePipelineStages,
   type GhlPipeline,
 } from './ghl';
+import { isUniqueViolation } from './db';
 import { inferContactCategory } from './guard.mjs';
 import {
   classifyGmailIds,
@@ -75,13 +76,19 @@ async function upsertMailItems(sql: Sql, ownerId: string, messages: Array<{ id: 
   for (const message of messages) {
     const title = String(message.subject || message.title || '').slice(0, 180);
     if (!title || !message.id) continue;
-    const rows = await sql`
-      INSERT INTO items (owner_id, title, area, status, priority, source, source_id)
-      VALUES (${ownerId}, ${title}, 'outreach', 'new', 'normal', 'gmail', ${message.id})
-      ON CONFLICT (owner_id, source, source_id) WHERE source_id IS NOT NULL
-      DO UPDATE SET title = EXCLUDED.title, updated_at = now()
-      RETURNING (created_at = updated_at) AS inserted, title
-    `;
+    let rows: Record<string, unknown>[] = [];
+    try {
+      rows = await sql`
+        INSERT INTO items (owner_id, title, area, status, priority, source, source_id)
+        VALUES (${ownerId}, ${title}, 'outreach', 'new', 'normal', 'gmail', ${message.id})
+        ON CONFLICT (owner_id, source, source_id) WHERE source_id IS NOT NULL
+        DO UPDATE SET title = EXCLUDED.title, updated_at = now()
+        RETURNING (created_at = updated_at) AS inserted, title
+      `;
+    } catch (err) {
+      // A live task with this subject already exists (items_owner_title_open_uq): skip, keep syncing.
+      if (!isUniqueViolation(err)) throw err;
+    }
     if (rows[0]?.inserted) titles.push(String(rows[0].title));
     const email = String(message.email || '').trim();
     const at = Number(message.at);
@@ -359,7 +366,7 @@ export async function changePayload(sql: Sql, ownerId: string, kinds: Array<'mai
   if (kinds.includes('people')) {
     const rows = await sql`
       SELECT id, name, company, role, email, phone, area, notes, type, tier, stage, next_action, next_date, last_touch, category
-      FROM contacts WHERE owner_id = ${ownerId} ORDER BY name LIMIT 400
+      FROM contacts WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY name LIMIT 400
     `;
     out.people = rows;
   }

@@ -93,6 +93,7 @@ export async function ensureZoomExtra(sql: Sql) {
     sql`ALTER TABLE zoom_notes ADD COLUMN IF NOT EXISTS recording_url text`,
     sql`ALTER TABLE zoom_notes ADD COLUMN IF NOT EXISTS duration_min integer`,
     sql`ALTER TABLE zoom_notes ADD COLUMN IF NOT EXISTS raw_notes text`,
+    sql`ALTER TABLE zoom_notes ADD COLUMN IF NOT EXISTS deleted_at timestamptz`,
   ];
   for (const stmt of stmts) {
     try { await stmt; } catch { /* column already there */ }
@@ -165,7 +166,7 @@ export async function listZoomNotes(sql: Sql, ownerId: string) {
       SELECT id, note_id, note_date::text AS note_date, title, attendees, solo, others, intel, improve, sources,
              ai_summary, quotes, decided, origin, transcript, recording_url, duration_min, raw_notes
       FROM zoom_notes
-      WHERE owner_id = ${ownerId}
+      WHERE owner_id = ${ownerId} AND deleted_at IS NULL
       ORDER BY note_date DESC, title ASC
       LIMIT 200
     ` as Array<Record<string, unknown>>;
@@ -173,7 +174,7 @@ export async function listZoomNotes(sql: Sql, ownerId: string) {
     rows = await sql`
       SELECT id, note_id, note_date::text AS note_date, title, attendees, solo, others, intel, improve, sources
       FROM zoom_notes
-      WHERE owner_id = ${ownerId}
+      WHERE owner_id = ${ownerId} AND deleted_at IS NULL
       ORDER BY note_date DESC, title ASC
       LIMIT 200
     ` as Array<Record<string, unknown>>;

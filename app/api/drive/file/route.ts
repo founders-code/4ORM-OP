@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { withCreds } from '@/lib/creds';
 import { exportDriveFile } from '@/lib/google';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { loadCredsFor } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +11,7 @@ export async function GET(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const id = new URL(req.url).searchParams.get('id') || '';
     if (!session.sql || !/^[\w-]{8,}$/.test(id)) {
       return NextResponse.json({ error: 'This file cannot be previewed here.' }, { status: 400 });

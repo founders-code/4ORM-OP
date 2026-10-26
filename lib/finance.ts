@@ -1,126 +1,119 @@
+import { createHmac } from 'crypto';
 import type { NeonQueryFunction } from '@neondatabase/serverless';
-import { loadCeoFiles } from './ceo';
-import { readProfileFacts, SEED_FACTS } from './ceo-score.mjs';
+import { env } from './env.mjs';
+import { tokenOk } from './guard.mjs';
 import { fail } from './log';
 
 type Sql = NeonQueryFunction<false, false>;
 
+/** Used only when owner_settings.finance_code and FINANCE_CODE are both unset. Never sent to the browser. */
 const DEFAULT_CODE = '1313';
 
-const EXPENSES = [
-  { name: 'Speer build', amount: 40000 },
-  { name: 'Team and contractors', amount: 22862 },
-  { name: 'Legal / regulatory / security / audit', amount: 15900 },
-  { name: 'Running the company', amount: 11288 },
-];
+export const FINANCE_COOKIE = 'fin_ok';
+export const FINANCE_UNLOCK_SECONDS = 15 * 60;
 
-const CHEQUES = [
-  { label: 'In', state: 'in' },
-  { label: 'In', state: 'in' },
-  { label: '$80K', state: 'in' },
-  { label: 'Pend', state: 'pend' },
-  { label: '5', state: 'open' },
-  { label: '6', state: 'open' },
-  { label: '7', state: 'open' },
-];
-
-function dollars(n: number) {
-  return `$${Math.round(Number(n)).toLocaleString('en-US')}`;
-}
-
-function burnBreakdown(text: string) {
-  const chunk = String(text || '').match(/Breakdown:\s*([^\n]+)/);
-  if (!chunk) return EXPENSES.slice();
-  const rows: Array<{ name: string; amount: number }> = [];
-  for (const part of chunk[1].split(';')) {
-    const m = part.trim().match(/^(.*?)\s*\$([0-9,]+)/);
-    if (!m) continue;
-    const amount = Number(m[2].replace(/,/g, ''));
-    if (!Number.isFinite(amount)) continue;
-    rows.push({ name: m[1].replace(/\(.*$/, '').trim(), amount });
-  }
-  return rows.length ? rows : EXPENSES.slice();
-}
-
-function janBurn(text: string) {
-  const m = String(text || '').match(/Burn steps up to\s*~?\$([0-9,]+)\/month from Jan 2027/i);
-  const n = m ? Number(m[1].replace(/,/g, '')) : NaN;
-  return Number.isFinite(n) ? n : 228016;
-}
-
-function trough(text: string) {
-  const m = String(text || '').match(/low of \$([0-9,]+) in Aug 2027/i);
-  const n = m ? Number(m[1].replace(/,/g, '')) : NaN;
-  return Number.isFinite(n) ? n : 15622;
-}
-
-function openingAssumed(text: string) {
-  const m = String(text || '').match(/model's \$([0-9,]+) opening assumption/i);
-  const n = m ? Number(m[1].replace(/,/g, '')) : NaN;
-  return Number.isFinite(n) ? n : 25000;
-}
-
-export async function financeDesk(sql: Sql | null, ownerId: string) {
-  let code = DEFAULT_CODE;
+/** The owner's gate code: owner_settings.finance_code, else FINANCE_CODE, else the default. Server-side only. */
+async function financeCode(sql: Sql | null, ownerId: string) {
   if (sql) {
     try {
       const rows = await sql`SELECT finance_code FROM owner_settings WHERE owner_id = ${ownerId} LIMIT 1`;
       const stored = String(rows[0]?.finance_code || '').replace(/\D/g, '');
-      if (stored) code = stored;
+      if (stored) return stored;
     } catch (err) {
       fail('finance_code', err);
     }
   }
-  let profile = '';
+  return env('FINANCE_CODE').replace(/\D/g, '') || DEFAULT_CODE;
+}
+
+export async function financeCodeOk(sql: Sql | null, ownerId: string, presented: unknown) {
+  const code = String(presented ?? '').replace(/\D/g, '');
+  if (!code) return false;
+  return tokenOk(code, await financeCode(sql, ownerId));
+}
+
+function cookieKey() {
+  return env('FINANCE_COOKIE_SECRET') || env('CLERK_SECRET_KEY');
+}
+
+function sign(userId: string, expires: number) {
+  const key = cookieKey();
+  if (!key) return '';
+  return createHmac('sha256', key).update(`fin:${userId}:${expires}`).digest('base64url');
+}
+
+/** Short-lived signed unlock value bound to the Clerk user id: `<expiresMs>.<hmac>`. '' when no key is configured. */
+export function financeUnlockValue(userId: string, now = Date.now()) {
+  const expires = now + FINANCE_UNLOCK_SECONDS * 1000;
+  const mac = sign(userId, expires);
+  return mac ? `${expires}.${mac}` : '';
+}
+
+export function financeUnlocked(value: string | undefined, userId: string, now = Date.now()) {
+  const [rawExpires, mac] = String(value || '').split('.');
+  const expires = Number(rawExpires);
+  if (!mac || !Number.isFinite(expires) || expires <= now) return false;
+  const expected = sign(userId, expires);
+  return !!expected && tokenOk(mac, expected);
+}
+
+/**
+ * Finance desk numbers. The master finance sheet is not connected yet, so every figure is null and every
+ * list is empty; the client shows "Fills in from the master finance sheet once it's connected".
+ * No sample or fallback numbers are ever served.
+ */
+/** Link to the master finance sheet: env FINANCE_SHEET_URL, https only. '' when not configured. */
+export function financeSheetUrl() {
+  const raw = env('FINANCE_SHEET_URL').trim();
   try {
-    const files = loadCeoFiles();
-    profile = files.profile || '';
-  } catch (err) {
-    fail('finance_profile', err);
+    const url = new URL(raw);
+    return url.protocol === 'https:' ? url.toString() : '';
+  } catch {
+    return '';
   }
-  const parsed = profile ? readProfileFacts(profile) : null;
-  const cash = Number(parsed?.cash ?? SEED_FACTS.cash) || 100;
-  const burn = Number(parsed?.burnMonthly ?? SEED_FACTS.burnMonthly) || 90050;
-  const runwayDays = burn > 0 ? Math.max(0, Math.round((cash / burn) * 30)) : 1;
-  const expenses = burnBreakdown(profile);
-  const assumed = openingAssumed(profile);
-  const jan = janBurn(profile);
-  const floor = trough(profile);
+}
+
+/**
+ * The approved financial model (28 Sep 2026), BUILD_RULES section 4: 2031 revenue projections, not results.
+ * These are model outputs, separate from the master finance sheet numbers above.
+ */
+export const FINANCE_MODEL = {
+  date: '28 Sep 2026',
+  metric: '2031 revenue',
+  scenarios: [
+    { name: 'Ground Floor', value: 'C$10.5M', locked: false },
+    { name: 'Base', value: 'C$94.7M', locked: true },
+    { name: 'Blue Sky', value: 'C$260.6M', locked: false },
+  ],
+};
+
+export function financeDesk() {
   return {
-    code,
-    asOf: '12 Oct 2026',
-    cash,
-    cashLabel: dollars(cash),
-    burnMonthly: burn,
-    burnLabel: `~${dollars(burn)}/mo`,
-    runwayDays,
-    runwayLabel: runwayDays <= 1 ? '~1 day' : `~${runwayDays} days`,
+    sheetUrl: financeSheetUrl(),
+    model: FINANCE_MODEL,
+    connected: false,
+    note: 'Fills in from the master finance sheet once it is connected.',
+    asOf: null,
+    cash: null,
+    cashLabel: null,
+    burnMonthly: null,
+    burnLabel: null,
+    runwayDays: null,
+    runwayLabel: null,
     raise: {
-      in: 80000,
-      pending: 0,
-      open: 170000,
-      target: 250000,
-      pace: 'behind',
-      inLabel: '$80K',
-      targetLabel: '$250K',
-      toGoLabel: '$170K',
-      chunks: '3/7',
+      in: null,
+      pending: null,
+      open: null,
+      target: null,
+      pace: null,
+      inLabel: null,
+      targetLabel: null,
+      toGoLabel: null,
+      chunks: null,
+      closeDate: null,
     },
-    cheques: CHEQUES,
-    expenses,
-    scenarios: [
-      {
-        name: 'Ground Floor',
-        line: `Desk now. Cash ${dollars(cash)}. Burn ~${dollars(burn)}/mo. Runway ~1 day. Friends & family ${dollars(80000)} of ${dollars(250000)}.`,
-      },
-      {
-        name: 'Base',
-        line: `Model Oct-Dec path. Opening assumed ${dollars(assumed)}. Burn ~${dollars(burn)}/mo through Dec. Trough ${dollars(floor)} in Aug 2027 if every tranche lands.`,
-      },
-      {
-        name: 'Blue Sky',
-        line: `Jan 2027 go-to-market ramp. Burn steps to ~${dollars(jan)}/mo when GTM and the full team begin. Pre-seed model is $3M at $10M pre-money.`,
-      },
-    ],
+    cheques: [] as Array<{ label: string; state: string }>,
+    expenses: [] as Array<{ name: string; amount: number }>,
+    scenarios: [] as Array<{ name: string; line: string }>,
   };
 }

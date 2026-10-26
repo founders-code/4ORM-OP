@@ -218,11 +218,12 @@ export async function pushOpportunity(input: { name: string; contactId: string; 
   }
   if (!pipelineId || !stageId) return '';
   if (input.opportunityId) {
+    // An existing opportunity is only ever moved. A failed move never falls through to creating a second one.
     const updated = await ghl(`/opportunities/${encodeURIComponent(input.opportunityId)}`, {
       method: 'PUT',
       body: JSON.stringify({ pipelineId, pipelineStageId: stageId }),
     });
-    if (updated) return input.opportunityId;
+    return updated ? input.opportunityId : '';
   }
   const created = (await ghl('/opportunities/', {
     method: 'POST',
@@ -236,6 +237,69 @@ export async function pushOpportunity(input: { name: string; contactId: string; 
     }),
   })) as { opportunity?: { id?: string } } | null;
   return created?.opportunity?.id ? String(created.opportunity.id) : '';
+}
+
+export type OpportunityMove = { ok: true; opportunityId: string } | { ok: false; status: 400 | 404 | 409 | 502 | 503; note: string };
+
+/**
+ * Move an existing opportunity to a stage. Never creates one.
+ * pipelineId + stageId are used when they name a real stage; otherwise the stage name is resolved.
+ * 404 = GoHighLevel no longer has that opportunity; 409 = the stage is not in that pipeline / GHL refused it.
+ */
+export async function moveOpportunityStage(input: { opportunityId: string; pipelineId?: string; stageId?: string; stage?: string }): Promise<OpportunityMove> {
+  if (!configured() || !locationId()) return { ok: false, status: 503, note: 'GoHighLevel is not connected.' };
+  const oppId = String(input.opportunityId || '').trim();
+  if (!/^[A-Za-z0-9_-]{4,64}$/.test(oppId)) return { ok: false, status: 400, note: 'That opportunity id is not valid.' };
+  const pipes = (await ghl(`/opportunities/pipelines?locationId=${encodeURIComponent(locationId())}`)) as {
+    pipelines?: Array<{ id?: string; stages?: Array<{ id?: string; name?: string }> }>;
+  } | null;
+  if (!pipes) return { ok: false, status: 502, note: 'GoHighLevel did not answer.' };
+  let pipelineId = '';
+  let stageId = '';
+  const wantPipe = String(input.pipelineId || '');
+  const wantStage = String(input.stageId || '');
+  const wantName = String(input.stage || '').toLowerCase();
+  for (const pipe of pipes.pipelines || []) {
+    for (const stage of pipe.stages || []) {
+      if (!pipe.id || !stage.id) continue;
+      if (wantStage && String(stage.id) === wantStage && (!wantPipe || String(pipe.id) === wantPipe)) {
+        pipelineId = String(pipe.id);
+        stageId = String(stage.id);
+      }
+    }
+  }
+  if (!stageId && !wantStage && wantName) {
+    for (const pipe of pipes.pipelines || []) {
+      if (wantPipe && String(pipe.id) !== wantPipe) continue;
+      for (const stage of pipe.stages || []) {
+        const name = String(stage.name || '');
+        if (pipe.id && stage.id && (name.toLowerCase() === wantName || localStageName(name) === wantName)) {
+          pipelineId = String(pipe.id);
+          stageId = String(stage.id);
+        }
+      }
+    }
+  }
+  if (!pipelineId || !stageId) return { ok: false, status: 409, note: 'That stage is not in this pipeline in GoHighLevel.' };
+  try {
+    const res = await fetch(`${BASE}/opportunities/${encodeURIComponent(oppId)}`, {
+      method: 'PUT',
+      headers: {
+        authorization: `Bearer ${key()}`,
+        version: '2021-07-28',
+        accept: 'application/json',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ pipelineId, pipelineStageId: stageId }),
+      signal: AbortSignal.timeout(9000),
+    });
+    if (res.ok) return { ok: true, opportunityId: oppId };
+    if (res.status === 404) return { ok: false, status: 404, note: 'That opportunity is no longer in GoHighLevel.' };
+    if (res.status === 400 || res.status === 409 || res.status === 422) return { ok: false, status: 409, note: 'GoHighLevel did not take that stage.' };
+    return { ok: false, status: 502, note: 'GoHighLevel did not take that stage.' };
+  } catch {
+    return { ok: false, status: 502, note: 'GoHighLevel did not answer.' };
+  }
 }
 
 export async function opportunityStages() {

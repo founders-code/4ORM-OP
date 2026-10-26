@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { allowNoteColor } from '@/lib/guard.mjs';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +27,7 @@ function noteShape(row: Record<string, unknown>) {
 async function inbox(sql: NeonQueryFunction<false, false>, userId: string) {
   const found = await sql!`
     SELECT id FROM note_cats
-    WHERE owner_id = ${userId} AND parent_id IS NULL AND name = 'Inbox'
+    WHERE owner_id = ${userId} AND parent_id IS NULL AND name = 'Inbox' AND deleted_at IS NULL
     LIMIT 1
   `;
   if (found[0]?.id) return String(found[0].id);
@@ -43,6 +43,7 @@ export async function GET() {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ notes: [] });
     const rows = await session.sql`
       SELECT id, cat_id, title, body, color, pinned, updated_at
@@ -63,6 +64,7 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ saved: false });
     const body = await req.json().catch(() => null);
     if (String(body?.kind || '') === 'category') {
@@ -74,7 +76,7 @@ export async function POST(req: Request) {
       if (parentId) {
         if (!ID.test(parentId)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
         const rows = await session.sql`
-          SELECT depth FROM note_cats WHERE id = ${parentId} AND owner_id = ${session.userId} LIMIT 1
+          SELECT depth FROM note_cats WHERE id = ${parentId} AND owner_id = ${session.userId} AND deleted_at IS NULL LIMIT 1
         `;
         if (!rows.length) return NextResponse.json({ error: 'Unavailable' }, { status: 404 });
         depth = Number(rows[0].depth) + 1;
@@ -118,7 +120,7 @@ export async function POST(req: Request) {
     if (catId) {
       if (!ID.test(catId)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
       const cats = await session.sql`
-        SELECT id FROM note_cats WHERE id = ${catId} AND owner_id = ${session.userId} LIMIT 1
+        SELECT id FROM note_cats WHERE id = ${catId} AND owner_id = ${session.userId} AND deleted_at IS NULL LIMIT 1
       `;
       if (!cats.length) return NextResponse.json({ error: 'Unavailable' }, { status: 404 });
     } else {
@@ -150,6 +152,7 @@ export async function PATCH(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = await req.json().catch(() => null);
     const id = String(body?.id || '');
@@ -165,7 +168,7 @@ export async function PATCH(req: Request) {
       catId = String(body.catId);
       if (!ID.test(catId)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
       const cats = await session.sql`
-        SELECT id FROM note_cats WHERE id = ${catId} AND owner_id = ${session.userId} LIMIT 1
+        SELECT id FROM note_cats WHERE id = ${catId} AND owner_id = ${session.userId} AND deleted_at IS NULL LIMIT 1
       `;
       if (!cats.length) return NextResponse.json({ error: 'Unavailable' }, { status: 404 });
     }
@@ -191,6 +194,7 @@ export async function DELETE(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = await req.json().catch(() => null);
     const id = String(body?.id || '');
@@ -200,16 +204,34 @@ export async function DELETE(req: Request) {
     }
     if (kind === 'note') {
       const rows = await session.sql`
-        DELETE FROM notes WHERE id = ${id} AND owner_id = ${session.userId} RETURNING id
+        UPDATE notes SET deleted_at = now()
+        WHERE id = ${id} AND owner_id = ${session.userId} AND deleted_at IS NULL
+        RETURNING id
       `;
       if (!rows.length) return NextResponse.json({ error: 'Unavailable' }, { status: 404 });
       return NextResponse.json({ id });
     }
+    // Soft-delete the category and its sub-categories; their notes move to Inbox (never deleted).
+    const inboxId = await inbox(session.sql, session.userId);
+    if (id === inboxId) return NextResponse.json({ error: 'Inbox cannot be deleted.' }, { status: 400 });
     const rows = await session.sql`
-      DELETE FROM note_cats WHERE id = ${id} AND owner_id = ${session.userId} RETURNING id
+      WITH RECURSIVE tree AS (
+        SELECT id FROM note_cats WHERE id = ${id} AND owner_id = ${session.userId} AND deleted_at IS NULL
+        UNION ALL
+        SELECT c.id FROM note_cats c JOIN tree t ON c.parent_id = t.id
+        WHERE c.owner_id = ${session.userId} AND c.deleted_at IS NULL
+      ),
+      moved AS (
+        UPDATE notes SET cat_id = ${inboxId}, updated_at = now()
+        WHERE owner_id = ${session.userId} AND cat_id IN (SELECT id FROM tree)
+        RETURNING id
+      )
+      UPDATE note_cats SET deleted_at = now()
+      WHERE owner_id = ${session.userId} AND id IN (SELECT id FROM tree)
+      RETURNING id
     `;
     if (!rows.length) return NextResponse.json({ error: 'Unavailable' }, { status: 404 });
-    return NextResponse.json({ id });
+    return NextResponse.json({ id, movedTo: inboxId });
   } catch {
     fail('notes_failed');
     return NextResponse.json({ error: 'Unavailable' }, { status: 400 });

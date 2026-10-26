@@ -230,7 +230,7 @@ export async function refreshCeo(sql: Sql, ownerId: string, now = new Date()) {
   const contacts = await sql`
     SELECT id, name, type, stage, next_date, last_touch
     FROM contacts
-    WHERE owner_id = ${ownerId}
+    WHERE owner_id = ${ownerId} AND deleted_at IS NULL
     ORDER BY name
     LIMIT 200
   `;
@@ -310,6 +310,7 @@ export async function refreshCeo(sql: Sql, ownerId: string, now = new Date()) {
     const snoozed = await sql`
       SELECT move_key FROM move_snooze
       WHERE owner_id = ${ownerId} AND snoozed_on = ${today}::date
+        AND (to_jsonb(move_snooze) ->> 'cleared_at') IS NULL
     `;
     for (const row of snoozed as Array<{ move_key?: string }>) {
       if (row.move_key) quietKeys.push(String(row.move_key));
@@ -648,6 +649,15 @@ export async function snoozeMove(sql: Sql, ownerId: string, id: string, reason: 
     fail('ceo_snooze', err);
     return null;
   }
+  try {
+    // A snooze undone earlier today is marked cleared; snoozing again re-arms it.
+    await sql`
+      UPDATE move_snooze SET cleared_at = NULL
+      WHERE owner_id = ${ownerId} AND move_key = ${key} AND snoozed_on = ${today}::date
+    `;
+  } catch (err) {
+    fail('ceo_snooze_rearm', err);
+  }
   const why = reason.trim().slice(0, 500);
   await sql`
     UPDATE ceo_moves
@@ -663,6 +673,34 @@ export async function snoozeMove(sql: Sql, ownerId: string, id: string, reason: 
     decision: 'Not now',
     reviewDate: `${today}T23:59:00`,
   });
+  return readCeo(sql, ownerId);
+}
+
+/** Undo a snooze: the move comes back as open and the snooze marker is kept but marked cleared (soft). */
+export async function unsnoozeMove(sql: Sql, ownerId: string, id: string) {
+  const move = await loadMove(sql, ownerId, id);
+  if (!move) return null;
+  if (move.status === 'open') return readCeo(sql, ownerId);
+  if (move.status !== 'snoozed') return null;
+  const key = String(move.source_key || move.text || '').trim().slice(0, 180);
+  const today = edmontonDay();
+  if (key) {
+    try {
+      await sql`
+        UPDATE move_snooze SET cleared_at = now()
+        WHERE owner_id = ${ownerId} AND move_key = ${key} AND snoozed_on = ${today}::date
+      `;
+    } catch (err) {
+      fail('ceo_unsnooze', err);
+      return null;
+    }
+  }
+  await sql`
+    UPDATE ceo_moves
+    SET status = 'open', snooze_until = NULL, updated_at = now()
+    WHERE id = ${move.id} AND owner_id = ${ownerId}
+  `;
+  await rerankOpenMoves(sql, ownerId);
   return readCeo(sql, ownerId);
 }
 
@@ -738,7 +776,7 @@ async function applyTool(sql: Sql, ownerId: string, name: string, raw: Record<st
     `;
     const contacts = await sql`
       SELECT name, type, stage, next_action
-      FROM contacts WHERE owner_id = ${ownerId}
+      FROM contacts WHERE owner_id = ${ownerId} AND deleted_at IS NULL
       ORDER BY name LIMIT 40
     `;
     return boardSnapshot(items as Array<Record<string, unknown>>, contacts as Array<Record<string, unknown>>);
@@ -927,7 +965,7 @@ export async function chatCeo(sql: Sql, ownerId: string, message: string) {
   `;
   const contacts = await sql`
     SELECT name, type, stage, next_action
-    FROM contacts WHERE owner_id = ${ownerId}
+    FROM contacts WHERE owner_id = ${ownerId} AND deleted_at IS NULL
     ORDER BY name LIMIT 40
   `;
   const snapshot = boardSnapshot(items as Array<Record<string, unknown>>, contacts as Array<Record<string, unknown>>);

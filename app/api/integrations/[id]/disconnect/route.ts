@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { clearIntegration } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +11,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const which = WHICH[String(params.id || '')];
     if (!which) return NextResponse.json({ error: 'Could not disconnect that integration.' }, { status: 400 });
     const ok = await clearIntegration(session.userId, which);

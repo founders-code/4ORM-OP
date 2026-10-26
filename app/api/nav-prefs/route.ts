@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +20,7 @@ export async function GET() {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ order: null });
     await ensureTable(session.sql);
     const rows = await session.sql`SELECT order_json FROM nav_prefs WHERE owner_id = ${session.userId} LIMIT 1`;
@@ -34,6 +35,7 @@ export async function PUT(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ saved: false });
     const body = await req.json().catch(() => null);
     const order = Array.isArray(body?.order) ? body.order.map((x: unknown) => String(x || '')).filter(Boolean) : null;

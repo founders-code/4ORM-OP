@@ -123,3 +123,79 @@ export function asJsonArray(value: unknown): unknown[] {
   }
   return [];
 }
+
+/**
+ * W56: Signals counts (owed from meetings, reach out, going cold) and the Today/Week/Later items change
+ * without a change_log row. The poll compares a short fingerprint per panel with the one the client sent
+ * back, and ships only the panels that moved.
+ */
+export type PanelKey = 'items' | 'owed' | 'reach' | 'people';
+export const PANEL_KEYS: PanelKey[] = ['items', 'owed', 'reach', 'people'];
+
+export async function panelFingerprints(sql: Sql, ownerId: string) {
+  const out: Record<PanelKey, string> = { items: '', owed: '', reach: '', people: '' };
+  const one = async (key: PanelKey, run: () => Promise<Array<Record<string, unknown>>>) => {
+    try {
+      const rows = await run();
+      out[key] = String(rows[0]?.fp || '').slice(0, 32);
+    } catch (err) {
+      fail(`change_fp_${key}`, err);
+    }
+  };
+  await Promise.all([
+    one('items', () => sql`
+      SELECT md5(count(*)::text || '|' || coalesce(max(updated_at)::text, '') || '|' || coalesce(sum(coalesce((to_jsonb(items) ->> 'position')::int, 0)), 0)::text) AS fp
+      FROM items WHERE owner_id = ${ownerId} AND status <> 'dropped'
+    ` as Promise<Array<Record<string, unknown>>>),
+    one('owed', () => sql`
+      SELECT md5(coalesce(string_agg(id::text || status || coalesce(board_column, ''), ',' ORDER BY id), '')) AS fp
+      FROM meeting_actions WHERE owner_id = ${ownerId} AND status = 'open' AND deleted_at IS NULL
+    ` as Promise<Array<Record<string, unknown>>>),
+    one('reach', () => sql`
+      SELECT md5(coalesce(string_agg(id::text || done::text || coalesce(next_action, ''), ',' ORDER BY id), '')) AS fp
+      FROM reach_out WHERE owner_id = ${ownerId}
+    ` as Promise<Array<Record<string, unknown>>>),
+    one('people', () => sql`
+      SELECT md5(count(*)::text || '|' || coalesce(max(last_touch)::text, '')) AS fp
+      FROM contacts WHERE owner_id = ${ownerId} AND deleted_at IS NULL
+    ` as Promise<Array<Record<string, unknown>>>),
+  ]);
+  return out;
+}
+
+/** "items.owed.reach.people" fingerprints, as the client echoes them back in ?fp=. */
+export function parseFingerprints(raw: string): Partial<Record<PanelKey, string>> {
+  const parts = String(raw || '').slice(0, 200).split('.');
+  const out: Partial<Record<PanelKey, string>> = {};
+  PANEL_KEYS.forEach((key, i) => {
+    if (/^[0-9a-f]{32}$/.test(parts[i] || '')) out[key] = parts[i];
+  });
+  return out;
+}
+
+/** Board-shaped items (same read as lib/board.ts) so the client can replace STATE.items in place. */
+export async function readBoardItems(sql: Sql, ownerId: string) {
+  const rows = await sql`
+    SELECT id, title, area, status, priority, due, owner, source, category, to_jsonb(items) ->> 'position' AS position
+    FROM items
+    WHERE owner_id = ${ownerId}
+      AND status <> 'dropped'
+      AND (snooze_until IS NULL OR snooze_until <= now())
+    ORDER BY updated_at DESC
+    LIMIT 200
+  `;
+  return (rows as Array<Record<string, unknown>>).map((row) => ({
+    id: String(row.id),
+    title: String(row.title),
+    area: String(row.area),
+    status: String(row.status),
+    priority: String(row.priority),
+    due: row.due ? new Date(String(row.due)).getTime() : null,
+    owner: String(row.owner || ''),
+    source: String(row.source || 'manual'),
+    category: row.category ? String(row.category) : '',
+    waitingOn: '',
+    planOf: '',
+    position: row.position == null || row.position === '' ? null : Number(row.position),
+  }));
+}

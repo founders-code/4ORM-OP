@@ -1,19 +1,8 @@
 (function () {
   var C = ['#2E6BF2', '#0E8A5F', '#C9962B', '#6B4FD8', '#D6334E', '#0f9fb5', '#e2702b'];
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  var FIXTURE = [
-    { id: 'fx-1', wk: 'This week', date: '2026-10-10', title: 'Pitch-deck edits and the suitability thesis', attendees: [], solo: true, others: ['tighten slides 6-9 around suitability; move the RPAA timeline earlier.'], origin: 'granola', owe: 0 },
-    { id: 'fx-2', wk: 'This week', date: '2026-10-09', title: 'Investor feedback - Jeff Tindale walks the deck', attendees: ['Jeff Tindale', 'Bruce Fair'], others: ['Veteran of ~1,000 pitch calls. 34 slides is far too heavy - condense "Why now", move the ask up.'], origin: 'zoom', owe: 3, on: true, improve: ['You spent 9 minutes on architecture before the ask came up. Lead with the person, the decision and the ask; keep architecture for questions.', 'When Jeff pushed on traction you answered with the regulation. Answer with the pilot (Century 21 / Remax desks) first, then the rule.', 'You did not ask for a next step. Close with a dated one: "Can I send the 15-slide version Monday and get 20 minutes Thursday?"'], aiSummary: 'Jeff liked the thesis but lost the thread in a 34-slide deck. The fix is length and order, not substance: 15 slides, the ask on slide 3, one "Why now" slide tied to the RPAA review. He will look again after the F&F close if there is one paying design partner.', quotes: [['Jeff', 'Nobody reads slide 20. If the ask isn\'t on three, it doesn\'t exist.'], ['Bruce', 'Lead with the person and the decision, the regulation is the proof.']], decided: ['Cut the deck to 15 slides; ask moves to slide 3.', '"Why now" becomes one slide on the RPAA review timeline.'], roles: { 'Jeff Tindale': 'angel, ex-founder', 'Bruce Fair': 'advisor' }, said: { 'Jeff Tindale': ['34 slides is far too heavy. Condense "Why now" to one slide and move the ask to slide 3.', 'Built a software company in Brazil replacing the broker/notary arrangement with blockchain deeds - not deep in fintech himself.', 'Would look again after the F&F close; wants to see one paying design partner.'], 'Bruce Fair': ['Agrees on length; keep the suitability thesis but lead with the person and the decision.', 'Offered to dry-run the new version Friday.'] }, actions: [['you', 'Send Jeff the 15-slide version by Monday'], ['you', 'Book the Friday dry-run with Bruce'], ['fu', 'Ask Jeff for two angel intros once the deck is tight']] },
-    { id: 'fx-3', wk: 'This week', date: '2026-10-08', title: 'Speer Technologies review - direction, MSA, AI specialist', attendees: ['Keegan Poulton', 'Mathew Mozaffari', 'Zed'], others: ['Keegan backed the pivot; wants a named design partner before build starts.'], origin: 'zoom', owe: 2 },
-    { id: 'fx-4', wk: 'This week', date: '2026-10-07', title: 'Consumer / institutional / partnership life cycles with Zed', attendees: ['Zed'], others: ['Chasing introductions to UBC, Vancity and WorkSafeBC legal; user stories to visuals is slow.'], origin: 'zoom', owe: 1 },
-    { id: 'fx-5', wk: 'This week', date: '2026-10-06', title: 'Don Hickling weekly catch-up - framing market and crypto macro', attendees: ['Don Hickling'], others: ['Framing slowed, lots of spec inventory; open to a second cheque once F&F closes.'], origin: 'zoom', owe: 1 },
-    { id: 'fx-6', wk: 'This week', date: '2026-10-06', title: 'File-based orchestration and Spear design spec with Zed', attendees: ['Zed'], others: ['Pull logic out of the agent into folders/files; each stage output feeds the next.'], origin: 'granola' },
-    { id: 'fx-7', wk: 'Last week', date: '2026-10-05', title: 'Internal working session - deck, marketing, architecture, IP', attendees: ['Bruce Fair', 'Kevin Wong', 'Zed'], others: ['Bruce: simplify like the US reference decks; Kevin wants the GTM deck before Tuesday.'], origin: 'zoom', owe: 4 },
-    { id: 'fx-8', wk: 'Last week', date: '2026-10-01', title: 'Dean Hesse - wallet setup and investor-intro offer', attendees: ['Dean Hesse'], others: ['Offered intro to "Neil", ex-advisor who knows investors looking to park money.'], origin: 'zoom', owe: 1 },
-    { id: 'fx-9', wk: 'Sep 28 - Oct 4', date: '2026-09-30', title: 'Dean Hesse beta-tests FormIQ on the Newton exchange', attendees: ['Dean Hesse'], others: ['Flagged a withdrawal-refusal pattern but noted it is an allegation, not a finding.'], origin: 'zoom' },
-    { id: 'fx-10', wk: 'Sep 28 - Oct 4', date: '2026-09-29', title: 'Carmen - FormIQ demo feedback and a referral idea', attendees: ['Carmen R'], others: ['"Basically a credit check on the company you are dealing with." Has a BD referral.'], origin: 'zoom', owe: 1 },
-    { id: 'fx-11', wk: 'Sep 28 - Oct 4', date: '2026-09-28', title: 'Deck rework and investor-outreach planning with Bruce and Kevin', attendees: ['Bruce Fair', 'Kevin Wong'], others: ['Align page one with the prior deck; "major financial decisions" lands best.'], origin: 'zoom', owe: 2 }
-  ];
+  /* Sample meetings for ?fixture=mockup live in redesign-fixture-c.js (loaded only with that flag). */
+  function fixtureRows() { return ((window.REDESIGN_FIXTURE_C || {}).ZOOM_FIXTURE) || []; }
 
   function ini(n) { return String(n || '').split(' ').map(function (x) { return x[0] || ''; }).join('').slice(0, 2).toUpperCase(); }
   function col(n) { return C[String(n || '').split('').reduce(function (a, c) { return a + c.charCodeAt(0); }, 0) % C.length]; }
@@ -104,7 +93,7 @@
   }
   function zRows() {
     if (window.fixtureMockup) {
-      var rows = FIXTURE.slice();
+      var rows = fixtureRows().slice();
       if (STATE.zSort === 'old') rows.reverse();
       return rows;
     }
@@ -304,7 +293,7 @@
     var host = zEl('zoomDesk') || document.getElementById('zoomDesk');
     if (!host) return;
     var rows = zRows();
-    var all = window.fixtureMockup ? FIXTURE : (STATE.zoomNotes || []);
+    var all = window.fixtureMockup ? fixtureRows() : (STATE.zoomNotes || []);
     var chip = STATE.zChip || 'All';
     var src = STATE.zSrc || 'both';
     var sort = STATE.zSort || 'new';
@@ -361,7 +350,7 @@
       var del = e.target.closest('[data-zdel]');
       if (del) { e.stopPropagation(); delNote(del.getAttribute('data-zdel')); return; }
       var ed = e.target.closest('[data-zedit]');
-      if (ed) { e.stopPropagation(); var note = (window.fixtureMockup ? FIXTURE : STATE.zoomNotes || []).filter(function (n) { return n.id === ed.getAttribute('data-zedit'); })[0]; showAdd(note); return; }
+      if (ed) { e.stopPropagation(); var note = (window.fixtureMockup ? fixtureRows() : STATE.zoomNotes || []).filter(function (n) { return n.id === ed.getAttribute('data-zedit'); })[0]; showAdd(note); return; }
       var card = e.target.closest('.mc');
       if (card) openZoom(card.getAttribute('data-z'));
     };

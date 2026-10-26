@@ -3,7 +3,7 @@ import { withCreds } from '@/lib/creds';
 import { gmailThread } from '@/lib/google';
 import { fail } from '@/lib/log';
 import { assistFor, listContactHits } from '@/lib/mail-board';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { loadCredsFor } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
@@ -13,6 +13,8 @@ export async function GET(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Gmail is read with the room's Google credentials: only the allowlisted owner (see sessionOwner) may use it.
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const id = String(new URL(req.url).searchParams.get('id') || '');
     if (!session.sql) return NextResponse.json({ thread: null });
     const creds = await loadCredsFor(session.userId);

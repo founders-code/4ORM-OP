@@ -1,0 +1,38 @@
+/* ===== FINANCIALS ===== */
+.bar{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.bar h1{margin:0;font-size:24px;font-weight:850;color:#fff;letter-spacing:-.02em}
+.bar .sub{font-size:13px;color:#9fb0d0;font-weight:500}
+.bar .r{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:13px;font-weight:700;padding:0 13px;white-space:nowrap}.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.lock{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#9ff0c5;background:rgba(47,224,139,.12);border:1px solid rgba(47,224,139,.25);border-radius:999px;padding:5px 11px}
+.k4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:16px}
+.kp{background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 10px 30px rgba(3,10,30,.22)}
+.kp span{font-size:12.5px;color:var(--ink3);font-weight:650}.kp b{display:block;font-size:28px;font-weight:850;margin:2px 0}.kp small{font-size:12px;color:var(--ink3)}
+.kp.red b{color:var(--red)}
+.g2{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;margin-bottom:16px}
+.chq{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;padding:4px 16px 12px}
+.cq{border-radius:10px;padding:10px 6px;text-align:center;font-size:12px;font-weight:800}
+.cq small{display:block;font-size:11px;font-weight:650;margin-top:3px}
+.in{background:var(--green);color:#fff}.pd{background:#dbe5fb;color:#36508e}.op{background:var(--soft);color:#a9b3c7;border:1.5px dashed #d3dbea}
+.rs{display:flex;gap:20px;padding:0 16px 14px;font-size:13px;color:var(--ink2)}.rs b{color:var(--ink);font-size:15px}
+.pace{margin:0 16px 16px;background:var(--red50);color:var(--red);border-radius:10px;padding:9px 12px;font-size:13px;font-weight:650}
+.bline{display:grid;grid-template-columns:140px minmax(0,1fr) 80px;gap:10px;align-items:center;padding:7px 16px;font-size:13px;color:var(--ink2)}
+.bline .t{height:8px;background:var(--soft);border-radius:6px;overflow:hidden}.bline .t i{display:block;height:100%;background:#c9d4ea;border-radius:6px}
+.bline b{text-align:right;color:var(--ink3);font-weight:700}
+.empty{margin:4px 16px 16px;border:1.5px dashed #ccd6e8;border-radius:10px;padding:12px;font-size:12.5px;color:var(--ink3);text-align:center}
+.sc{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:4px 16px 12px}
+.sv{border:1px solid var(--line);border-radius:14px;padding:14px}
+.sv.base{border:2px solid var(--blue);background:#f6f9ff}
+.sv h4{margin:0;font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px}.sv h4 em{font-style:normal;font-size:10.5px;font-weight:800;color:#fff;background:var(--blue);border-radius:6px;padding:2px 7px}
+.sv b{display:block;font-size:26px;font-weight:850;margin:8px 0 2px}.sv span{font-size:12.5px;color:var(--ink3)}
+.disc{padding:0 16px 14px;font-size:12px;color:var(--ink3)}
+/* gate */
+.gate{position:fixed;inset:0;background:rgba(6,12,32,.72);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:90}
+.gate.on{display:flex}
+.gbox{width:340px;background:#fff;border-radius:20px;padding:26px 24px;text-align:center;box-shadow:0 30px 70px rgba(0,0,0,.5)}
+.gbox .ic{width:48px;height:48px;border-radius:14px;background:var(--blue50);display:grid;place-items:center;margin:0 auto 12px;font-size:22px}
+.gbox h3{margin:0;font-size:18px;font-weight:850}.gbox p{margin:6px 0 16px;font-size:13px;color:var(--ink2)}
+.gbox input{width:100%;height:46px;border:2px solid var(--blue);border-radius:12px;text-align:center;font-size:22px;letter-spacing:.5em;font-weight:800;outline:none}
+.gbox .er{color:var(--red);font-size:12.5px;font-weight:700;margin-top:8px;min-height:16px}
+.shake{animation:sh .35s}@keyframes sh{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.eyeT,.bellT{font-size:11px;font-weight:800;color:#4a5672;background:#f5f7fb;border-radius:6px;padding:2px 7px;cursor:pointer;white-space:nowrap}.eye{border:none;background:none;padding:0}

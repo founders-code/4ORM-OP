@@ -3,7 +3,7 @@ import { claimBudget } from '@/lib/db';
 import { withCreds } from '@/lib/creds';
 import { driveWrite } from '@/lib/google';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { loadCredsFor } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
@@ -58,6 +58,7 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ ok: false, error: 'Unavailable' });
     const body = await req.json().catch(() => null);
     const action = String(body?.action || '');

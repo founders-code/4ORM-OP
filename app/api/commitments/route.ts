@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { allowArea } from '@/lib/guard.mjs';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { listCommitments, setCommitment } from '@/lib/war';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +10,7 @@ export async function GET() {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ commitments: [] });
     return NextResponse.json({ commitments: await listCommitments(session.sql, session.userId) });
   } catch (err) {
@@ -22,6 +23,7 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ commitments: [] });
     const body = await req.json().catch(() => null);
     const id = String(body?.id || '');

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
+import { nestCategory, restoreCategory, softDeleteCategory } from '@/lib/link-cats';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,7 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = await req.json().catch(() => null);
     const kind = String(body?.kind || '');
@@ -46,27 +48,21 @@ export async function POST(req: Request) {
       const moving = cleanName(body?.moving);
       const parent = cleanName(body?.parent);
       if (nestInto && moving && nestInto !== moving) {
-        await sql`
-          UPDATE link_categories
-          SET subs = CASE WHEN ${moving} = ANY(subs) THEN subs ELSE array_append(subs, ${moving}) END
-          WHERE owner_id = ${ownerId} AND name = ${nestInto}
-        `;
-        if (parent) {
-          await sql`
-            UPDATE link_categories
-            SET subs = array_remove(subs, ${moving})
-            WHERE owner_id = ${ownerId} AND name = ${parent}
-          `;
-        }
+        // Links move with their folder, and a nested top-level folder's old row is soft deleted (lib/link-cats.ts).
+        const nested = await nestCategory(sql, ownerId, moving, nestInto, parent);
+        if (!nested.ok) return NextResponse.json({ error: nested.error }, { status: nested.status });
+        return NextResponse.json({ ok: true, n: names.length, nested: true, moving: nested.moving, into: nested.into });
       }
       return NextResponse.json({ ok: true, n: names.length });
     }
     if (kind === 'category') {
       const name = cleanName(body?.name) || 'New category';
+      // A soft-deleted category with the same name is revived empty rather than left hidden by the unique key.
       const inserted = await sql`
         INSERT INTO link_categories (owner_id, name, subs)
         VALUES (${ownerId}, ${name}, '{}')
-        ON CONFLICT (owner_id, name) DO NOTHING
+        ON CONFLICT (owner_id, name) DO UPDATE SET deleted_at = NULL, undo = NULL, subs = '{}', nest = NULL
+          WHERE link_categories.deleted_at IS NOT NULL
         RETURNING id
       `;
       const found = inserted[0]?.id
@@ -75,23 +71,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ name, id: found[0]?.id || '' });
     }
     if (kind === 'delete-category') {
-      const name = cleanName(body?.name);
-      if (!name || name === 'Uncategorized') return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
-      await sql`
-        UPDATE links
-        SET category = 'Uncategorized', sub = '', leaf = ''
-        WHERE owner_id = ${ownerId} AND category = ${name}
-      `;
-      await sql`
-        INSERT INTO link_categories (owner_id, name, subs)
-        VALUES (${ownerId}, 'Uncategorized', '{}')
-        ON CONFLICT (owner_id, name) DO NOTHING
-      `;
-      await sql`
-        DELETE FROM link_categories
-        WHERE owner_id = ${ownerId} AND name = ${name} AND name <> 'Uncategorized'
-      `;
-      return NextResponse.json({ name, moved: 'Uncategorized' });
+      const removed = await softDeleteCategory(sql, ownerId, cleanName(body?.name));
+      if (!removed.ok) return NextResponse.json({ error: removed.error }, { status: removed.status });
+      return NextResponse.json({ ok: true, name: removed.name, moved: 'Uncategorized', links: removed.moved });
+    }
+    if (kind === 'restore-category') {
+      const restored = await restoreCategory(sql, ownerId, cleanName(body?.name));
+      if (!restored.ok) return NextResponse.json({ error: restored.error }, { status: restored.status });
+      return NextResponse.json({ ok: true, name: restored.name, links: restored.restored });
     }
     if (kind === 'subcategory') {
       const name = cleanName(body?.name);

@@ -1,4 +1,5 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
+import { isUniqueViolation } from './db';
 import { fail } from './log';
 import { extractCommitments } from './war-core.mjs';
 import { listZoomNotes } from './zoom-notes';
@@ -22,9 +23,30 @@ export async function ensureMeetingActions(sql: Sql) {
       created_at timestamptz NOT NULL DEFAULT now(),
       UNIQUE (owner_id, meeting_id, text)
     )`;
+    await sql`ALTER TABLE meeting_actions ADD COLUMN IF NOT EXISTS deleted_at timestamptz`;
+    await sql`ALTER TABLE meeting_actions ADD COLUMN IF NOT EXISTS board_column text`;
   } catch (err) {
     fail('meeting_actions_table', err);
   }
+}
+
+/** Statuses a meeting action can hold. Only 'open' shows on the board; the rest are terminal until reopened. */
+export const MEETING_ACTION_STATUSES = ['open', 'done', 'tasked', 'dismissed'] as const;
+export type MeetingActionStatus = (typeof MEETING_ACTION_STATUSES)[number];
+/** War Room columns a from-Zoom card can sit in. */
+export const MEETING_ACTION_COLUMNS = ['today', 'week', 'later'] as const;
+export type MeetingActionColumn = (typeof MEETING_ACTION_COLUMNS)[number];
+
+/** 'handled' is the legacy client word for dismissed. Anything unrecognised is rejected (null), never reopened. */
+export function readMeetingActionStatus(value: unknown): MeetingActionStatus | null {
+  const raw = String(value ?? '').trim().toLowerCase();
+  const status = raw === 'handled' ? 'dismissed' : raw;
+  return (MEETING_ACTION_STATUSES as readonly string[]).includes(status) ? (status as MeetingActionStatus) : null;
+}
+
+export function readMeetingActionColumn(value: unknown): MeetingActionColumn | null {
+  const raw = String(value ?? '').trim().toLowerCase();
+  return (MEETING_ACTION_COLUMNS as readonly string[]).includes(raw) ? (raw as MeetingActionColumn) : null;
 }
 
 function sourceOf(note: { sources?: Array<{ name?: string }> }) {
@@ -98,6 +120,7 @@ function shape(row: Record<string, unknown>) {
     text: String(row.text || ''),
     kind: String(row.kind || 'you_said') === 'follow_up' ? 'follow_up' : 'you_said',
     status: String(row.status || 'open'),
+    column: row.board_column ? String(row.board_column) : '',
   };
 }
 
@@ -107,18 +130,23 @@ export async function listMeetingActions(sql: Sql, ownerId: string) {
     const notes = await listZoomNotes(sql, ownerId);
     const extracted = extractMeetingActions(notes as unknown as Array<Record<string, unknown>>);
     for (const row of extracted.slice(0, 80)) {
-      await sql`
-        INSERT INTO meeting_actions (owner_id, source, meeting_id, meeting_title, meeting_date, text, kind)
-        VALUES (${ownerId}, ${row.source}, ${row.meetingId}, ${row.meetingTitle}, ${row.meetingDate}, ${row.text}, ${row.kind})
-        ON CONFLICT (owner_id, meeting_id, text) DO NOTHING
-      `;
+      try {
+        await sql`
+          INSERT INTO meeting_actions (owner_id, source, meeting_id, meeting_title, meeting_date, text, kind)
+          VALUES (${ownerId}, ${row.source}, ${row.meetingId}, ${row.meetingTitle}, ${row.meetingDate}, ${row.text}, ${row.kind})
+          ON CONFLICT (owner_id, meeting_id, text) DO NOTHING
+        `;
+      } catch (err) {
+        // Same text already open from another meeting (live-text unique index): keep the one we have.
+        if (!isUniqueViolation(err)) throw err;
+      }
     }
   } catch (err) {
     fail('meeting_actions_extract', err);
   }
   try {
     const rows = await sql`
-      SELECT id, source, meeting_id, meeting_title, meeting_date, text, kind, status, created_at
+      SELECT id, source, meeting_id, meeting_title, meeting_date, text, kind, status, board_column, created_at
       FROM meeting_actions
       WHERE owner_id = ${ownerId} AND status = 'open' AND deleted_at IS NULL
       ORDER BY meeting_date DESC, created_at DESC
@@ -131,15 +159,38 @@ export async function listMeetingActions(sql: Sql, ownerId: string) {
   }
 }
 
+/**
+ * Partial update of one meeting action by id. Returns the updated action, or null when it is not the
+ * owner's (or no longer exists). Terminal statuses (done/tasked/dismissed) stay terminal unless 'open' is sent.
+ */
+export async function updateMeetingAction(
+  sql: Sql,
+  ownerId: string,
+  id: string,
+  change: { status?: MeetingActionStatus | null; column?: MeetingActionColumn | null },
+) {
+  await ensureMeetingActions(sql);
+  const setStatus = !!change.status;
+  const setColumn = !!change.column;
+  const rows = await sql`
+    UPDATE meeting_actions
+    SET status = CASE WHEN ${setStatus} THEN ${change.status || 'open'} ELSE status END,
+        board_column = CASE WHEN ${setColumn} THEN ${change.column || null} ELSE board_column END
+    WHERE id = ${id}::uuid AND owner_id = ${ownerId} AND deleted_at IS NULL
+    RETURNING id, source, meeting_id, meeting_title, meeting_date, text, kind, status, board_column
+  `;
+  return rows[0] ? shape(rows[0] as Record<string, unknown>) : null;
+}
+
+/** Legacy POST /api/meeting-actions {id, status}. Unknown statuses are ignored rather than reopening the card. */
 export async function markMeetingAction(sql: Sql, ownerId: string, id: string, status: string) {
-  const next = status === 'done' || status === 'tasked' ? status : 'open';
-  try {
-    await sql`
-      UPDATE meeting_actions SET status = ${next}
-      WHERE id = ${id}::uuid AND owner_id = ${ownerId}
-    `;
-  } catch (err) {
-    fail('meeting_actions_mark', err);
+  const next = readMeetingActionStatus(status);
+  if (next) {
+    try {
+      await updateMeetingAction(sql, ownerId, id, { status: next });
+    } catch (err) {
+      fail('meeting_actions_mark', err);
+    }
   }
   return listMeetingActions(sql, ownerId);
 }

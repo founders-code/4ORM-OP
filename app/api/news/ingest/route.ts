@@ -4,7 +4,7 @@ import { tokenOk } from '@/lib/guard.mjs';
 import { fail } from '@/lib/log';
 import { NEWS_CHIPS, ensureNewsTables, markSwept, saveStories } from '@/lib/news-sweep';
 import { ingestToken, newsKey } from '@/lib/secrets';
-import { openBoard, roomOwner } from '@/lib/session';
+import { openBoard, roomOwner, sessionOwner } from '@/lib/session';
 import { listNews } from '@/lib/war';
 
 export const dynamic = 'force-dynamic';
@@ -22,8 +22,12 @@ async function target(req: Request) {
     return ownerId ? { sql, userId: ownerId } : null;
   }
   const session = await openBoard();
-  if (!session || !session.sql) return session ? { sql: null, userId: session.userId } : null;
-  return { sql: session.sql, userId: session.userId };
+  if (!session) return null;
+  // Signed-in callers must be allowlisted (see sessionOwner); everyone else is refused.
+  const ownerId = await sessionOwner(session);
+  if (!ownerId) return null;
+  if (!session.sql) return { sql: null, userId: ownerId };
+  return { sql: session.sql, userId: ownerId };
 }
 
 export async function POST(req: Request) {

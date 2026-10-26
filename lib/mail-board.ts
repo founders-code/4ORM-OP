@@ -40,6 +40,8 @@ export async function ensureMailBoard(sql: Sql) {
       sticky boolean NOT NULL DEFAULT true,
       created_at timestamptz NOT NULL DEFAULT now()
     )`;
+    await sql`ALTER TABLE email_columns ADD COLUMN IF NOT EXISTS deleted_at timestamptz`;
+    await sql`ALTER TABLE email_rules ADD COLUMN IF NOT EXISTS deleted_at timestamptz`;
     await sql`CREATE TABLE IF NOT EXISTS email_file (
       owner_id text NOT NULL,
       message_id text NOT NULL,
@@ -85,7 +87,7 @@ export async function listColumns(sql: Sql, ownerId: string) {
     const rows = await sql`
       SELECT id, key, name, position, width, collapsed
       FROM email_columns
-      WHERE owner_id = ${ownerId}
+      WHERE owner_id = ${ownerId} AND deleted_at IS NULL
       ORDER BY position, created_at
     `;
     return (rows as Array<Record<string, unknown>>).map((row) => ({
@@ -107,7 +109,7 @@ export async function listRules(sql: Sql, ownerId: string) {
     const rows = await sql`
       SELECT id, match_type, match_value, target_column, sticky, created_at
       FROM email_rules
-      WHERE owner_id = ${ownerId}
+      WHERE owner_id = ${ownerId} AND deleted_at IS NULL
       ORDER BY created_at
     `;
     return (rows as Array<Record<string, unknown>>).map((row) => ({
@@ -130,7 +132,7 @@ export async function listContactHits(sql: Sql, ownerId: string) {
     const rows = await sql`
       SELECT name, email, category, type, company, role
       FROM contacts
-      WHERE owner_id = ${ownerId}
+      WHERE owner_id = ${ownerId} AND deleted_at IS NULL
     `;
     return (rows as Array<Record<string, unknown>>).map((row) => {
       const email = String(row.email || '').toLowerCase();

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { ensureZoomExtra } from '@/lib/zoom-notes';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +15,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql || !ID.test(params.id)) return NextResponse.json({ answer: '' });
     await ensureZoomExtra(session.sql);
     const body = await req.json().catch(() => null) as { q?: string } | null;
@@ -22,7 +23,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!q) return NextResponse.json({ answer: '' });
     const rows = await session.sql`
       SELECT title, others, improve, intel, ai_summary, transcript, raw_notes
-      FROM zoom_notes WHERE id = ${params.id} AND owner_id = ${session.userId} LIMIT 1
+      FROM zoom_notes WHERE id = ${params.id} AND owner_id = ${session.userId} AND deleted_at IS NULL LIMIT 1
     `;
     const row = rows[0] as Record<string, unknown> | undefined;
     if (!row) return NextResponse.json({ answer: 'That meeting is not on the desk.' });

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { deleteSpaceItem, patchSpaceItem, spaceIdOk } from '@/lib/spaces';
 
 export const dynamic = 'force-dynamic';
@@ -9,12 +9,13 @@ export async function GET(_req: Request, { params }: { params: { id: string; ite
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql || !spaceIdOk(params.id) || !spaceIdOk(params.itemId)) {
       return NextResponse.json({ error: 'This file cannot be previewed here.' }, { status: 400 });
     }
     const rows = await session.sql`
       SELECT mime, body FROM space_items
-      WHERE id = ${params.itemId} AND space_id = ${params.id} AND owner_id = ${session.userId}
+      WHERE id = ${params.itemId} AND space_id = ${params.id} AND owner_id = ${session.userId} AND deleted_at IS NULL
       LIMIT 1
     `;
     const row = rows[0] as { mime?: string; body?: string } | undefined;
@@ -35,6 +36,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string; it
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     if (!session.sql || !spaceIdOk(params.id)) return NextResponse.json({ saved: false });
     const saved = await patchSpaceItem(session.sql, session.userId, params.id, params.itemId, body);
@@ -50,6 +52,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string; 
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql || !spaceIdOk(params.id)) return NextResponse.json({ ok: false });
     const saved = await deleteSpaceItem(session.sql, session.userId, params.id, params.itemId);
     return NextResponse.json({ ok: !!saved, package: saved });

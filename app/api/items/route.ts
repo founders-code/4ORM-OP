@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
+import { isUniqueViolation } from '@/lib/db';
 import { allowArea, allowPriority, allowStatus, parseDue } from '@/lib/guard.mjs';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,25 +55,37 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     const write = readWrite(body);
     const category = String(body?.category || '').trim().slice(0, 80);
-    const dup = await session.sql`
+    // Only a LIVE task with the same title counts as a duplicate; done/dropped history never blocks a new task.
+    const findLive = () => session.sql!`
       SELECT id, title, area, status, priority, due, owner, source, category FROM items
       WHERE owner_id = ${session.userId}
-        AND status <> 'dropped'
+        AND status IN ('new', 'doing', 'waiting', 'open')
+        AND deleted_at IS NULL
         AND lower(trim(title)) = ${write.title.toLowerCase()}
       ORDER BY created_at ASC
       LIMIT 1
     `;
+    const dup = await findLive();
     if (dup.length) return NextResponse.json(shapeItem(dup[0] as Record<string, unknown>));
-    const rows = await session.sql`
-      INSERT INTO items (owner_id, title, area, status, priority, due, source, category)
-      VALUES (${session.userId}, ${write.title}, ${write.area}, ${write.status}, ${write.priority}, ${write.dueIso}, 'manual', ${category})
-      RETURNING id, title, area, status, priority, due, owner, source, category
-    `;
-    return NextResponse.json(shapeItem(rows[0] as Record<string, unknown>));
+    try {
+      const rows = await session.sql`
+        INSERT INTO items (owner_id, title, area, status, priority, due, source, category)
+        VALUES (${session.userId}, ${write.title}, ${write.area}, ${write.status}, ${write.priority}, ${write.dueIso}, 'manual', ${category})
+        RETURNING id, title, area, status, priority, due, owner, source, category
+      `;
+      return NextResponse.json(shapeItem(rows[0] as Record<string, unknown>));
+    } catch (err) {
+      // A concurrent add of the same title won the live-title unique index: return that row.
+      if (!isUniqueViolation(err)) throw err;
+      const again = await findLive();
+      if (!again.length) throw err;
+      return NextResponse.json(shapeItem(again[0] as Record<string, unknown>));
+    }
   } catch (err) {
     fail('items_failed', err);
     return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
@@ -83,6 +96,7 @@ export async function PATCH(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = await req.json().catch(() => null);
     const id = String(body?.id || '');

@@ -42,9 +42,10 @@ type Item = {
   body: string;
   parentId: string;
   position: number;
+  createdAt?: string;
 };
 
-type Person = { id: string; contactId: string; name: string; email: string; role: string; company: string; stage: string; listed: boolean; sendStatus: string };
+type Person = { id: string; contactId: string; name: string; email: string; role: string; company: string; stage: string; listed: boolean; sendStatus: string; addedAt?: string };
 
 function asItem(row: Record<string, unknown>): Item {
   return {
@@ -59,7 +60,14 @@ function asItem(row: Record<string, unknown>): Item {
     body: String(row.body || ''),
     parentId: row.parent_id ? String(row.parent_id) : '',
     position: Number(row.position || 0),
+    createdAt: isoOf(row.created_at),
   };
+}
+
+function isoOf(value: unknown) {
+  if (!value) return '';
+  const at = new Date(String(value));
+  return Number.isNaN(at.getTime()) ? '' : at.toISOString();
 }
 
 export async function ensureSpaceTables(sql: Sql) {
@@ -114,6 +122,11 @@ export async function ensureSpaceTables(sql: Sql) {
     ['db_space_recipients_role', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS role text`],
     ['db_space_recipients_listed', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS listed boolean NOT NULL DEFAULT true`],
     ['db_space_recipients_send', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS send_status text`],
+    ['db_spaces_deleted', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_space_items_deleted', () => sql`ALTER TABLE space_items ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_space_recipients_deleted', () => sql`ALTER TABLE space_recipients ADD COLUMN IF NOT EXISTS deleted_at timestamptz`],
+    ['db_spaces_angle', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS angle text`],
+    ['db_r2_spaces_steps', () => sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS steps jsonb`],
   ];
   for (const [code, run] of steps) {
     try {
@@ -127,9 +140,12 @@ export async function ensureSpaceTables(sql: Sql) {
 async function owned(sql: Sql, ownerId: string, id: string) {
   if (!spaceIdOk(id)) return null;
   const rows = await sql`
-    SELECT id, name, kind, notes, category, stage, drive_folder_id, drive_folder_url, pushed_to_drive_at, created_at
+    SELECT id, name, kind, notes, category, stage, drive_folder_id, drive_folder_url, pushed_to_drive_at, created_at,
+      to_jsonb(spaces) ->> 'angle' AS angle,
+      to_jsonb(spaces) -> 'steps' AS steps,
+      to_jsonb(spaces) ->> 'sent_at' AS sent_at
     FROM spaces
-    WHERE id = ${id} AND owner_id = ${ownerId}
+    WHERE id = ${id} AND owner_id = ${ownerId} AND deleted_at IS NULL
     LIMIT 1
   `;
   return (rows[0] as Record<string, unknown> | undefined) || null;
@@ -138,9 +154,9 @@ async function owned(sql: Sql, ownerId: string, id: string) {
 async function readItems(sql: Sql, ownerId: string, spaceId: string): Promise<Item[]> {
   try {
     const rows = await sql`
-      SELECT id, space_id, kind, name, url, mime, drive_file_id, thumb_url, body, parent_id, position
+      SELECT id, space_id, kind, name, url, mime, drive_file_id, thumb_url, body, parent_id, position, created_at
       FROM space_items
-      WHERE space_id = ${spaceId} AND owner_id = ${ownerId}
+      WHERE space_id = ${spaceId} AND owner_id = ${ownerId} AND deleted_at IS NULL
       ORDER BY position, created_at
     `;
     return (rows as Record<string, unknown>[]).map(asItem);
@@ -153,10 +169,10 @@ async function readItems(sql: Sql, ownerId: string, spaceId: string): Promise<It
 async function readPeople(sql: Sql, ownerId: string, spaceId: string): Promise<Person[]> {
   try {
     const rows = await sql`
-      SELECT r.id, r.contact_id, r.name, r.email, r.role, r.listed, r.send_status, c.company, c.stage
+      SELECT r.id, r.contact_id, r.name, r.email, r.role, r.listed, r.send_status, r.created_at, c.company, c.stage
       FROM space_recipients r
       LEFT JOIN contacts c ON c.id::text = r.contact_id AND c.owner_id = ${ownerId}
-      WHERE r.space_id = ${spaceId} AND r.owner_id = ${ownerId}
+      WHERE r.space_id = ${spaceId} AND r.owner_id = ${ownerId} AND r.deleted_at IS NULL
       ORDER BY r.name
     `;
     return (rows as Record<string, unknown>[]).map((row) => ({
@@ -169,6 +185,7 @@ async function readPeople(sql: Sql, ownerId: string, spaceId: string): Promise<P
       stage: String(row.stage || ''),
       listed: row.listed !== false,
       sendStatus: String(row.send_status || ''),
+      addedAt: isoOf(row.created_at),
     }));
   } catch (err) {
     fail('spaces_people', err);
@@ -177,7 +194,7 @@ async function readPeople(sql: Sql, ownerId: string, spaceId: string): Promise<P
         SELECT r.id, r.contact_id, r.name, r.email, r.role, c.company, c.stage
         FROM space_recipients r
         LEFT JOIN contacts c ON c.id::text = r.contact_id AND c.owner_id = ${ownerId}
-        WHERE r.space_id = ${spaceId} AND r.owner_id = ${ownerId}
+        WHERE r.space_id = ${spaceId} AND r.owner_id = ${ownerId} AND r.deleted_at IS NULL
         ORDER BY r.name
       `;
       return (rows as Record<string, unknown>[]).map((row) => ({
@@ -249,6 +266,7 @@ function toView(row: Record<string, unknown>, items: Item[], people: Person[], m
     subjectContactId: '',
     subjectLabel: name,
     description: String(row.notes || ''),
+    angle: String(row.angle || ''),
     spaceCategory: String(row.category || ''),
     pushedToDriveAt: pushed && !Number.isNaN(pushed.getTime()) ? pushed.toISOString() : '',
     docCount: docs.length,
@@ -261,6 +279,86 @@ function toView(row: Record<string, unknown>, items: Item[], people: Person[], m
   };
 }
 
+type Step = { t: string; d: boolean };
+
+/** Next steps saved on the Space (spaces.steps jsonb): [{ t: text, d: done }]. */
+function stepsOf(value: unknown): Step[] {
+  let raw = value;
+  if (typeof raw === 'string') {
+    try { raw = JSON.parse(raw); } catch { return []; }
+  }
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((step) => {
+      const rec = (step && typeof step === 'object' ? step : {}) as Record<string, unknown>;
+      return { t: clip(rec.t ?? rec.text, 200), d: rec.d === true || rec.done === true };
+    })
+    .filter((step) => step.t)
+    .slice(0, 30);
+}
+
+type HistoryRow = { kind: 'created' | 'file' | 'link' | 'note' | 'person' | 'sent' | 'meeting' | 'email'; text: string; at: string };
+
+/**
+ * The Space's history from data already on the server: when it was made, what was attached, who was added,
+ * when it was sent, meetings whose attendees include one of its people (zoom_notes), and cached inbox mail
+ * from their addresses (inbox_cache). Newest first, at most 40 rows. Never calls Google or GHL.
+ */
+async function readHistory(sql: Sql, ownerId: string, row: Record<string, unknown>, items: Item[], people: Person[]): Promise<HistoryRow[]> {
+  const out: HistoryRow[] = [];
+  const created = isoOf(row.created_at);
+  if (created) out.push({ kind: 'created', text: 'Space created', at: created });
+  items.forEach((item) => {
+    if (!item.createdAt || item.mime === 'text/x-folder') return;
+    const kind = item.kind === 'link' ? 'link' : item.kind === 'note' ? 'note' : 'file';
+    const verb = kind === 'link' ? 'Link added' : kind === 'note' ? 'Note added' : 'File attached';
+    out.push({ kind, text: `${verb}: ${item.name || 'Untitled'}`, at: item.createdAt });
+  });
+  people.forEach((person) => {
+    if (person.addedAt) out.push({ kind: 'person', text: `Added ${person.name || person.email || 'a person'}`, at: person.addedAt });
+  });
+  const sent = isoOf(row.sent_at);
+  if (sent) out.push({ kind: 'sent', text: 'Bundle sent', at: sent });
+  const names = people.map((person) => person.name.trim().toLowerCase()).filter((name) => name.length >= 3);
+  const emails = people.map((person) => person.email.trim().toLowerCase()).filter((email) => email.includes('@'));
+  if (names.length) {
+    try {
+      const patterns = names.map((name) => `%${name.replace(/[%_\\]/g, '')}%`);
+      const meetings = await sql`
+        SELECT title, note_date, created_at FROM zoom_notes
+        WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND lower(attendees::text) LIKE ANY(${patterns}::text[])
+        ORDER BY note_date DESC NULLS LAST
+        LIMIT 10
+      `;
+      (meetings as Record<string, unknown>[]).forEach((m) => {
+        const at = isoOf(m.note_date ? `${String(m.note_date).slice(0, 10)}T12:00:00Z` : m.created_at);
+        if (at) out.push({ kind: 'meeting', text: `Meeting: ${String(m.title || 'Meeting')}`, at });
+      });
+    } catch (err) {
+      fail('spaces_history_meetings', err);
+    }
+  }
+  if (emails.length) {
+    try {
+      const cached = await sql`SELECT messages FROM inbox_cache WHERE owner_id = ${ownerId} LIMIT 1`;
+      let messages: unknown = cached[0]?.messages;
+      if (typeof messages === 'string') {
+        try { messages = JSON.parse(messages); } catch { messages = []; }
+      }
+      (Array.isArray(messages) ? messages : []).forEach((msg) => {
+        const rec = (msg && typeof msg === 'object' ? msg : {}) as Record<string, unknown>;
+        const from = String(rec.email || '').trim().toLowerCase();
+        if (!from || !emails.includes(from)) return;
+        const at = isoOf(typeof rec.at === 'number' ? new Date(rec.at as number).toISOString() : rec.at);
+        if (at) out.push({ kind: 'email', text: `Email from ${String(rec.from || from)}: ${String(rec.subject || '(no subject)').slice(0, 140)}`, at });
+      });
+    } catch (err) {
+      fail('spaces_history_mail', err);
+    }
+  }
+  return out.sort((a, b) => b.at.localeCompare(a.at)).slice(0, 40);
+}
+
 export async function readSpace(sql: Sql, ownerId: string, id: string) {
   try {
     const row = await owned(sql, ownerId, id);
@@ -271,8 +369,12 @@ export async function readSpace(sql: Sql, ownerId: string, id: string) {
       readMail(sql, ownerId, id),
     ]);
     const view = toView(row, items, people, mail);
+    const history = await readHistory(sql, ownerId, row, items, people);
     return {
       ...view,
+      steps: stepsOf(row.steps),
+      history,
+      sentAt: isoOf(row.sent_at),
       space: { id: view.id, name: view.name, driveFolderId: view.driveFolderId, pushedToDriveAt: view.pushedToDriveAt },
       email: { subject: view.emailSubject, body: view.emailBody },
     };
@@ -415,7 +517,7 @@ async function pullGhlStages(sql: Sql, ownerId: string) {
     const rows = await sql`
       SELECT id, ghl_opportunity_id
       FROM spaces
-      WHERE owner_id = ${ownerId} AND coalesce(ghl_opportunity_id, '') <> ''
+      WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND coalesce(ghl_opportunity_id, '') <> ''
     `;
     const byId = new Map(board.map((row) => [row.id, row.stage]));
     for (const row of rows as Array<{ id: string; ghl_opportunity_id?: string }>) {
@@ -537,7 +639,7 @@ async function spaceCardMeta(sql: Sql, ownerId: string) {
     const items = await sql`
       SELECT space_id, kind, name, thumb_url, mime
       FROM space_items
-      WHERE owner_id = ${ownerId}
+      WHERE owner_id = ${ownerId} AND deleted_at IS NULL
       ORDER BY position, created_at
     `;
     for (const row of items as Array<Record<string, unknown>>) {
@@ -563,7 +665,7 @@ async function spaceCardMeta(sql: Sql, ownerId: string) {
   }
   try {
     const people = await sql`
-      SELECT space_id FROM space_recipients WHERE owner_id = ${ownerId}
+      SELECT space_id FROM space_recipients WHERE owner_id = ${ownerId} AND deleted_at IS NULL
     `;
     for (const row of people as Array<{ space_id?: string }>) {
       const id = String(row.space_id || '');
@@ -612,9 +714,10 @@ export async function listSpaces(sql: Sql, ownerId: string) {
     let rows: Record<string, unknown>[] = [];
     try {
       rows = await sql`
-        SELECT id, name, kind, notes, category, stage, sent_at, drive_folder_id, drive_folder_url, pushed_to_drive_at, created_at
+        SELECT id, name, kind, notes, category, stage, sent_at, drive_folder_id, drive_folder_url, pushed_to_drive_at, created_at,
+          to_jsonb(spaces) ->> 'angle' AS angle
         FROM spaces
-        WHERE owner_id = ${ownerId}
+        WHERE owner_id = ${ownerId} AND deleted_at IS NULL
         ORDER BY created_at
       ` as Record<string, unknown>[];
     } catch (err) {
@@ -623,7 +726,7 @@ export async function listSpaces(sql: Sql, ownerId: string) {
         rows = await sql`
           SELECT id, name, kind, notes, created_at
           FROM spaces
-          WHERE owner_id = ${ownerId}
+          WHERE owner_id = ${ownerId} AND deleted_at IS NULL
           ORDER BY created_at
         ` as Record<string, unknown>[];
       } catch (inner) {
@@ -647,6 +750,7 @@ export async function listSpaces(sql: Sql, ownerId: string) {
         spaceType: 'project',
         subjectLabel: String(row.name || ''),
         description: String(row.notes || ''),
+        angle: String(row.angle || ''),
         spaceCategory: String(row.category || ''),
         preview: bits.preview,
         emailSubject: bits.emailSubject,
@@ -765,6 +869,29 @@ export async function patchSpace(sql: Sql, ownerId: string, id: string, body: Re
       : current.body;
     await saveEmail(sql, ownerId, id, subject, emailBody);
   }
+  if (Object.prototype.hasOwnProperty.call(body, 'angle')) {
+    // The angle is its own field; it never touches notes.
+    const angle = clip(body.angle, 4000);
+    try {
+      await sql`UPDATE spaces SET angle = ${angle}, updated_at = now() WHERE id = ${id} AND owner_id = ${ownerId}`;
+    } catch (err) {
+      // Column not there yet on this database: add it (additive) and try once more.
+      fail('spaces_angle', err);
+      await sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS angle text`;
+      await sql`UPDATE spaces SET angle = ${angle}, updated_at = now() WHERE id = ${id} AND owner_id = ${ownerId}`;
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'steps')) {
+    // Next steps live on the Space (spaces.steps jsonb), not in this browser.
+    const steps = JSON.stringify(stepsOf(body.steps));
+    try {
+      await sql`UPDATE spaces SET steps = ${steps}::jsonb, updated_at = now() WHERE id = ${id} AND owner_id = ${ownerId}`;
+    } catch (err) {
+      fail('spaces_steps', err);
+      await sql`ALTER TABLE spaces ADD COLUMN IF NOT EXISTS steps jsonb`;
+      await sql`UPDATE spaces SET steps = ${steps}::jsonb, updated_at = now() WHERE id = ${id} AND owner_id = ${ownerId}`;
+    }
+  }
   if (stage) await rememberOpportunity(sql, ownerId, id, stage);
   return readSpace(sql, ownerId, id);
 }
@@ -772,10 +899,8 @@ export async function patchSpace(sql: Sql, ownerId: string, id: string, body: Re
 export async function deleteSpace(sql: Sql, ownerId: string, id: string) {
   const row = await owned(sql, ownerId, id);
   if (!row) return false;
-  try { await sql`DELETE FROM space_items WHERE space_id = ${id} AND owner_id = ${ownerId}`; } catch (err) { fail('spaces_delete_items', err); }
-  try { await sql`DELETE FROM space_recipients WHERE space_id = ${id} AND owner_id = ${ownerId}`; } catch (err) { fail('spaces_delete_people', err); }
-  try { await sql`DELETE FROM space_email WHERE space_id = ${id} AND owner_id = ${ownerId}`; } catch (err) { fail('spaces_delete_email', err); }
-  await sql`DELETE FROM spaces WHERE id = ${id} AND owner_id = ${ownerId}`;
+  // Soft delete: the space disappears from every read; its items, people and email stay for a restore.
+  await sql`UPDATE spaces SET deleted_at = now() WHERE id = ${id} AND owner_id = ${ownerId} AND deleted_at IS NULL`;
   return true;
 }
 
@@ -868,7 +993,7 @@ export async function addSpaceItem(
   }
   const siblings = await sql`
     SELECT position FROM space_items
-    WHERE space_id = ${spaceId} AND owner_id = ${ownerId} AND parent_id IS NOT DISTINCT FROM ${parent || null}
+    WHERE space_id = ${spaceId} AND owner_id = ${ownerId} AND deleted_at IS NULL AND parent_id IS NOT DISTINCT FROM ${parent || null}
     ORDER BY position DESC
     LIMIT 1
   `;
@@ -890,7 +1015,7 @@ export async function patchSpaceItem(sql: Sql, ownerId: string, spaceId: string,
   if (!row) return null;
   const current = await sql`
     SELECT id, parent_id FROM space_items
-    WHERE id = ${itemId} AND space_id = ${spaceId} AND owner_id = ${ownerId}
+    WHERE id = ${itemId} AND space_id = ${spaceId} AND owner_id = ${ownerId} AND deleted_at IS NULL
     LIMIT 1
   `;
   if (!current.length) return null;
@@ -923,11 +1048,11 @@ export async function deleteSpaceItem(sql: Sql, ownerId: string, spaceId: string
   if (!spaceIdOk(itemId)) return null;
   const row = await owned(sql, ownerId, spaceId);
   if (!row) return null;
-  const current = await sql`SELECT parent_id FROM space_items WHERE id = ${itemId} AND space_id = ${spaceId} AND owner_id = ${ownerId} LIMIT 1`;
+  const current = await sql`SELECT parent_id FROM space_items WHERE id = ${itemId} AND space_id = ${spaceId} AND owner_id = ${ownerId} AND deleted_at IS NULL LIMIT 1`;
   if (!current.length) return readSpace(sql, ownerId, spaceId);
   const parent = current[0]?.parent_id ? String(current[0].parent_id) : null;
-  await sql`UPDATE space_items SET parent_id = ${parent} WHERE space_id = ${spaceId} AND parent_id = ${itemId}`;
-  await sql`DELETE FROM space_items WHERE id = ${itemId} AND space_id = ${spaceId} AND owner_id = ${ownerId}`;
+  await sql`UPDATE space_items SET parent_id = ${parent} WHERE space_id = ${spaceId} AND parent_id = ${itemId} AND deleted_at IS NULL`;
+  await sql`UPDATE space_items SET deleted_at = now() WHERE id = ${itemId} AND space_id = ${spaceId} AND owner_id = ${ownerId} AND deleted_at IS NULL`;
   return readSpace(sql, ownerId, spaceId);
 }
 
@@ -981,7 +1106,7 @@ export async function deleteSpaceRecipient(sql: Sql, ownerId: string, spaceId: s
   if (!spaceIdOk(recipientId)) return null;
   const row = await owned(sql, ownerId, spaceId);
   if (!row) return null;
-  await sql`DELETE FROM space_recipients WHERE id = ${recipientId} AND space_id = ${spaceId} AND owner_id = ${ownerId}`;
+  await sql`UPDATE space_recipients SET deleted_at = now() WHERE id = ${recipientId} AND space_id = ${spaceId} AND owner_id = ${ownerId} AND deleted_at IS NULL`;
   return readSpace(sql, ownerId, spaceId);
 }
 

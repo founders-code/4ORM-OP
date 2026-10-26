@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { idleBoard, loadBoard } from '@/lib/board';
 import { withCreds, type SessionCreds } from '@/lib/creds';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { loadCredsFor } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
@@ -13,6 +13,7 @@ export async function GET() {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) {
       fail('board_database', 'no database connection');
       return NextResponse.json(idleBoard(true));

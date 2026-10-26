@@ -214,7 +214,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
 
   const items = await read(reads, 'items', async () => {
     const rows = await sql`
-      SELECT id, title, area, status, priority, due, owner, source, category, notes, updated_at
+      SELECT id, title, area, status, priority, due, owner, source, category, notes, updated_at, to_jsonb(items) ->> 'position' AS position
       FROM items
       WHERE owner_id = ${ownerId}
         AND status <> 'dropped'
@@ -267,7 +267,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
     }) as Row[];
   }, []);
   const categories = await read(reads, 'categories', async () => {
-    const rows = await sql`SELECT id, name, subs, nest, position FROM link_categories WHERE owner_id = ${ownerId} ORDER BY position ASC, name`;
+    const rows = await sql`SELECT id, name, subs, nest, position FROM link_categories WHERE owner_id = ${ownerId} AND COALESCE(to_jsonb(link_categories) ->> 'deleted_at', '') = '' ORDER BY position ASC, name`;
     return rows as Row[];
   }, []);
   const links = await read(reads, 'links', async () => {
@@ -303,7 +303,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
     return rows as Row[];
   }, []);
   const noteCats = await read(reads, 'noteCats', async () => {
-    const rows = await sql`SELECT id, name, parent_id, depth FROM note_cats WHERE owner_id = ${ownerId} ORDER BY name`;
+    const rows = await sql`SELECT id, name, parent_id, depth FROM note_cats WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY name`;
     return rows as Row[];
   }, []);
   const notes = await read(reads, 'notes', async () => {
@@ -417,6 +417,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
       category: row.category ? String(row.category) : '',
       waitingOn: '',
       planOf: '',
+      position: row.position == null || row.position === '' ? null : Number(row.position),
     })),
     zoomNotes,
     contacts: contacts.map((row) => ({

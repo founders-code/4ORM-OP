@@ -1,11 +1,10 @@
-import { currentUser } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
-import { applyDedupe, listDupeGroups } from '@/lib/dedupe';
+import { applyDedupe, listDupeGroups, listRestorable } from '@/lib/dedupe';
 import { getSql } from '@/lib/db';
 import { tokenOk } from '@/lib/guard.mjs';
 import { fail } from '@/lib/log';
 import { cronSecret } from '@/lib/secrets';
-import { openBoard, roomOwner } from '@/lib/session';
+import { isRoomEmail, openBoard, roomOwner, sessionEmail } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -17,15 +16,20 @@ async function chadOwner() {
   return { sql, ownerId };
 }
 
-async function allowed(req: Request) {
+/** Operator bearer (CRON_SECRET) or Chad himself. Colleagues and test users are refused. */
+async function allowed(req: Request): Promise<'ok' | 'unauthorized' | 'forbidden'> {
   const header = req.headers.get('authorization') || '';
   const presented = header.slice(0, 7).toLowerCase() === 'bearer ' ? header.slice(7).trim() : '';
-  if (tokenOk(presented, cronSecret())) return true;
+  if (presented) return tokenOk(presented, cronSecret()) ? 'ok' : 'unauthorized';
   const session = await openBoard();
-  if (!session) return false;
-  const user = await currentUser();
-  const email = (user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || '').toLowerCase();
-  return email.endsWith('@4ormfinance.com');
+  if (!session) return 'unauthorized';
+  return isRoomEmail(await sessionEmail(session)) ? 'ok' : 'forbidden';
+}
+
+function denied(result: 'unauthorized' | 'forbidden') {
+  return result === 'forbidden'
+    ? NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    : NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 }
 
 function preview(tables: Awaited<ReturnType<typeof listDupeGroups>>['tables']) {
@@ -47,9 +51,14 @@ function preview(tables: Awaited<ReturnType<typeof listDupeGroups>>['tables']) {
 
 export async function GET(req: Request) {
   try {
-    if (!(await allowed(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const access = await allowed(req);
+    if (access !== 'ok') return denied(access);
     const { sql, ownerId } = await chadOwner();
     if (!sql || !ownerId) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
+    if (new URL(req.url).searchParams.get('restorable') === '1') {
+      const restorable = await listRestorable(sql, ownerId);
+      return NextResponse.json({ ok: true, readOnly: true, owner: 'chad', ...restorable });
+    }
     const listed = await listDupeGroups(sql, ownerId);
     const warItems = await sql`
       SELECT title AS t, status, count(*)::int AS n
@@ -98,7 +107,8 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    if (!(await allowed(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const access = await allowed(req);
+    if (access !== 'ok') return denied(access);
     const { sql, ownerId } = await chadOwner();
     if (!sql || !ownerId) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = await req.json().catch(() => null);
@@ -118,6 +128,7 @@ export async function POST(req: Request) {
         const logged = await sql`
           SELECT kept_id FROM dedupe_log
           WHERE owner_id = ${ownerId} AND table_name = 'items' AND lower(dup_key) = ${key}
+          ORDER BY created_at DESC
           LIMIT 1
         `;
         let id = logged[0] ? String(logged[0].kept_id) : '';

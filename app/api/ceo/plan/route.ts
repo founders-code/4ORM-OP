@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { fallbackPlan } from '@/lib/war-core.mjs';
 import { advisePlan } from '@/lib/war';
 
@@ -15,22 +15,23 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json(fallbackPlan({ title, area, steps }));
     let record = '';
     try {
       const items = await session.sql`
         SELECT title, area, status, owner
-        FROM items WHERE owner_id = ${session.userId}
+        FROM items WHERE owner_id = ${session.userId} AND deleted_at IS NULL
         ORDER BY updated_at DESC LIMIT 30
       `;
       const contacts = await session.sql`
         SELECT name, company, stage, next_action
-        FROM contacts WHERE owner_id = ${session.userId}
+        FROM contacts WHERE owner_id = ${session.userId} AND deleted_at IS NULL
         ORDER BY name LIMIT 20
       `;
       const notes = await session.sql`
         SELECT title, others, improve
-        FROM zoom_notes WHERE owner_id = ${session.userId}
+        FROM zoom_notes WHERE owner_id = ${session.userId} AND deleted_at IS NULL
         ORDER BY note_date DESC LIMIT 8
       `;
       record = JSON.stringify({ items, contacts, notes, linked: body?.record || null }).slice(0, 6000);

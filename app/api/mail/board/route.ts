@@ -15,7 +15,7 @@ import {
   tagsFor,
   writeCache,
 } from '@/lib/mail-board';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { loadCredsFor } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
@@ -25,6 +25,8 @@ export async function GET(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Gmail is read with the room's Google credentials: only the allowlisted owner (see sessionOwner) may use it.
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ messages: [], columns: [], rules: [], counts: { unread: 0, needs: 0, total: 0 } });
     await ensureMailBoard(session.sql);
     const url = new URL(req.url);

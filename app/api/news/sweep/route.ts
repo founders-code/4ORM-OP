@@ -4,37 +4,47 @@ import { tokenOk } from '@/lib/guard.mjs';
 import { fail } from '@/lib/log';
 import { NEWS_CHIPS, ensureNewsTables, runNewsSweep } from '@/lib/news-sweep';
 import { cronSecret, newsKey } from '@/lib/secrets';
-import { openBoard, roomOwner } from '@/lib/session';
+import { openBoard, roomOwner, sessionOwner } from '@/lib/session';
 import { listNews, newsCategories } from '@/lib/war';
 import { NEWS_CATEGORIES } from '@/lib/war-core.mjs';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-async function who(req: Request) {
-  const vercelCron = req.headers.get('x-vercel-cron');
+type SweepCaller = { sql: Awaited<ReturnType<typeof getSql>>; userId: string };
+
+/**
+ * Who may run a sweep. Vercel Cron sends `Authorization: Bearer $CRON_SECRET`; the x-vercel-cron
+ * header alone proves nothing (any client can set it) and is ignored. Otherwise the caller must be
+ * a signed-in, allowlisted user (see sessionOwner).
+ */
+async function who(req: Request): Promise<SweepCaller | 'unauthorized' | 'forbidden'> {
   const key = req.headers.get('x-news-key');
   const header = req.headers.get('authorization') || '';
   const bearer = header.slice(0, 7).toLowerCase() === 'bearer ' ? header.slice(7).trim() : '';
-  if (key || bearer || vercelCron) {
-    const keyed = key && newsKey() && tokenOk(key, newsKey());
-    const cron = (bearer && cronSecret() && tokenOk(bearer, cronSecret())) || !!vercelCron;
-    if (!keyed && !cron) return null;
+  if (key || bearer) {
+    const keyed = !!key && tokenOk(key, newsKey());
+    const cron = !!bearer && tokenOk(bearer, cronSecret());
+    if (!keyed && !cron) return 'unauthorized';
     const sql = await getSql();
-    if (!sql) return null;
+    if (!sql) return 'unauthorized';
     const ownerId = await roomOwner(sql);
-    return ownerId ? { sql, userId: ownerId } : null;
+    return ownerId ? { sql, userId: ownerId } : 'unauthorized';
   }
   const session = await openBoard();
-  if (!session) return null;
-  return { sql: session.sql, userId: session.userId };
+  if (!session) return 'unauthorized';
+  const ownerId = await sessionOwner(session);
+  if (!ownerId) return 'forbidden';
+  return { sql: session.sql, userId: ownerId };
 }
 
 async function run(req: Request) {
-  let session: { sql: Awaited<ReturnType<typeof getSql>>; userId: string } | null = null;
+  let session: SweepCaller | null = null;
   try {
-    session = await who(req);
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const caller = await who(req);
+    if (caller === 'unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (caller === 'forbidden') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    session = caller;
     if (!session.sql) return NextResponse.json({ items: [], saved: 0, thumbs: 0, chips: NEWS_CHIPS, categories: NEWS_CATEGORIES, swept: false });
     await ensureNewsTables(session.sql).catch(() => {});
     const capSec = Number(process.env.AWS_LAMBDA_FUNCTION_TIMEOUT || 60);

@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     }
     if (tool === 'list_links') {
       const rows = await sql`
-        SELECT title, url, category, sub FROM links WHERE owner_id = ${ownerId} ORDER BY created_at DESC LIMIT 100
+        SELECT title, url, category, sub FROM links WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 100
       `;
       return NextResponse.json({
         links: rows.map((row) => ({

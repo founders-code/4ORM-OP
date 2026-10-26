@@ -2,44 +2,38 @@ import { randomBytes } from 'crypto';
 import { writeFileSync, existsSync, readFileSync } from 'fs';
 import { env } from '../lib/env.mjs';
 
+/**
+ * Writes lib/generated-secrets.mjs before `next build`. Never fails the build and makes no network calls.
+ *
+ * - CRON_SECRET is never invented here: Vercel Cron only sends `Authorization: Bearer $CRON_SECRET`
+ *   when that env var is set in the Vercel project, so a value baked at build would never match.
+ *   If it is missing we warn, and every cron and hook that depends on it answers 401 (fail closed).
+ * - INGEST_TOKEN falls back to a per-build value so the brief cron's self-call to /api/ingest
+ *   still works inside one deployment. External callers need INGEST_TOKEN set in Vercel.
+ */
 const path = new URL('../lib/generated-secrets.mjs', import.meta.url);
 
-function readBaked() {
-  if (!existsSync(path)) return { ingestToken: '', cronSecret: '' };
-  const text = readFileSync(path, 'utf8');
-  const ingest = text.match(/ingestToken = "([^"]*)"/);
-  const cron = text.match(/cronSecret = "([^"]*)"/);
-  return { ingestToken: ingest?.[1] || '', cronSecret: cron?.[1] || '' };
+function readBakedIngest() {
+  try {
+    if (!existsSync(path)) return '';
+    const match = readFileSync(path, 'utf8').match(/ingestToken = "([^"]*)"/);
+    return match?.[1] || '';
+  } catch {
+    return '';
+  }
 }
 
-const baked = readBaked();
-const ingestToken = env('INGEST_TOKEN') || baked.ingestToken || randomBytes(32).toString('base64url');
-const cronSecret = env('CRON_SECRET') || baked.cronSecret || randomBytes(32).toString('base64url');
-
-const body = process.env.INGEST_TOKEN && process.env.CRON_SECRET
-  ? 'export const ingestToken = "";\nexport const cronSecret = "";\n'
-  : `export const ingestToken = ${JSON.stringify(ingestToken)};\nexport const cronSecret = ${JSON.stringify(cronSecret)};\n`;
-writeFileSync(path, body);
-
-async function publish(key, value) {
-  if (process.env[key]) return;
-  const token = process.env.VERCEL_OIDC_TOKEN || process.env.VERCEL_TOKEN || '';
-  const project = process.env.VERCEL_PROJECT_ID || '';
-  if (!token || !project || !value) return;
-  const url = new URL(`https://api.vercel.com/v10/projects/${project}/env`);
-  if (process.env.VERCEL_ORG_ID) url.searchParams.set('teamId', process.env.VERCEL_ORG_ID);
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      key,
-      value,
-      type: 'encrypted',
-      target: ['production', 'preview', 'development'],
-    }),
-  });
-  if (!res.ok && res.status !== 409) console.error('secret_publish_failed');
+if (!env('CRON_SECRET')) {
+  console.warn('[ensure-secrets] CRON_SECRET is not set. Set it in Vercel; cron routes will answer 401 until then.');
+}
+if (!env('INGEST_TOKEN')) {
+  console.warn('[ensure-secrets] INGEST_TOKEN is not set. Using a per-build token; external ingest callers will be refused.');
 }
 
-await publish('INGEST_TOKEN', ingestToken);
-await publish('CRON_SECRET', cronSecret);
+const ingestToken = env('INGEST_TOKEN') ? '' : readBakedIngest() || randomBytes(32).toString('base64url');
+
+try {
+  writeFileSync(path, `export const ingestToken = ${JSON.stringify(ingestToken)};\n`);
+} catch (err) {
+  console.warn('[ensure-secrets] could not write lib/generated-secrets.mjs:', err?.message || err);
+}

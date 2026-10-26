@@ -20,8 +20,9 @@
     o.start(c.currentTime + t0); o.stop(c.currentTime + t0 + d + .02);
   }
   const S = {
-    pop() { if (!on()) return; tone(300, 0, .12, 'sine', .35, 900); },
+    pop() { window.__snd = Date.now(); if (!on()) return; tone(300, 0, .12, 'sine', .35, 900); },
     levelUp() {
+      window.__snd = window.__lvl = Date.now();
       if (!on()) return;
       [523, 659, 784, 1047].forEach((f, i) => tone(f, i * .09, .16, 'square', .14));
       tone(1319, .38, .45, 'square', .14); tone(1047, .38, .45, 'triangle', .1);
@@ -32,54 +33,26 @@
   window.FourmSound = S;
 })();
 
-/* Auto-wiring: pop when anything gets ticked on; level up when a whole group is finished.
-   Groups: move steps (.stp), Today list (.exec.today), Space next steps (#todo),
-   note checklists (.note), Playbook pads for today (.pad.due -> none left). */
+/* Sound on / off toggle in the top bar. Clicks go through desk-actions.js
+   'sound-toggle' (data-action), so it is never stamped "coming soon". */
 (function () {
   const S = window.FourmSound;
-  const DONE = '.task.d, .cb.on, .stp .s.d, .td.d, .pad.done, .ck.done, .ck.on';
-  const GROUPS = [
-    ['.stp', '.s', '.s.d'],
-    ['.exec.today .tl', '.task', '.task.d, .task:has(.cb.on)'],
-    ['#todo', '.td', '.td.d'],
-    ['.note', '.ck', '.ck.done, .ck.on']
-  ];
-  const full = () => {
-    const r = [];
-    GROUPS.forEach(([g, all, done]) => document.querySelectorAll(g).forEach(el => {
-      const a = el.querySelectorAll(all).length, d = el.querySelectorAll(done).length;
-      r.push(a > 0 && a === d);
-    }));
-    r.push(document.querySelectorAll('.pad.due').length === 0 && document.querySelectorAll('.pad').length > 0);
-    return r;
-  };
-  document.addEventListener('click', e => {
-    if (e.target.closest('.sndtog')) return;
-    const b = document.querySelectorAll(DONE).length, f0 = full(), due0 = document.querySelectorAll('.pad.due').length;
-    setTimeout(() => {
-      const a = document.querySelectorAll(DONE).length, f1 = full(), due1 = document.querySelectorAll('.pad.due').length;
-      const ticked = a > b || due1 < due0;
-      if (!ticked) return;
-      const finished = f1.some((v, i) => v && !f0[i]);
-      const now = Date.now();
-      if (finished) { if (now - (window.__lvl || 0) < 600) return; window.__lvl = now; window.__snd = now; S.levelUp(); }
-      else { if (now - (window.__snd || 0) < 250) return; window.__snd = now; S.pop(); }
-    }, 60);
-  }, true);
   const addToggle = () => {
     const r = document.querySelector('.top .r');
     if (!r || r.querySelector('.sndtog')) return;
     const b = document.createElement('button');
+    b.type = 'button';
     b.className = 'tb sndtog';
-    const paint = () => { b.textContent = S.isOn() ? 'Sound on' : 'Sound off'; };
-    paint();
-    b.onclick = () => { S.toggle(); paint(); if (S.isOn()) S.pop(); };
+    b.setAttribute('data-action', 'sound-toggle');
+    b.textContent = S.isOn() ? 'Sound on' : 'Sound off';
     r.insertBefore(b, r.querySelector('.clock'));
   };
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', addToggle) : addToggle();
 })();
 
-/* Shadow-root walk so pop/level-up hear desks inside attachShadow. */
+/* The one click watcher (walks shadow roots). Real handlers also call
+   FourmSound.pop()/levelUp() directly; those stamp window.__snd so this
+   fallback stays quiet instead of playing a second sound. */
 (function () {
   const S = window.FourmSound;
   if (!S) return;
@@ -111,7 +84,9 @@
   document.addEventListener('click', e => {
     if (e.target.closest && e.target.closest('.sndtog')) return;
     const b = all(DONE).length, f0 = full(), due0 = all('.pad.due').length;
+    const t0 = Date.now();
     setTimeout(() => {
+      if ((window.__snd || 0) >= t0) return;
       const a = all(DONE).length, f1 = full(), due1 = all('.pad.due').length;
       const ticked = a > b || due1 < due0;
       if (!ticked) return;

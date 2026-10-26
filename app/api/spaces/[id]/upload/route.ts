@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
 import { packageIdOk, uploadSpaceFile } from '@/lib/packages';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 import { addSpaceItem, readSpace } from '@/lib/spaces';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +10,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql || !packageIdOk(params.id)) {
       return NextResponse.json({ saved: false, error: 'Could not stage that file. The Space is unchanged.' });
     }

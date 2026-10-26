@@ -68,17 +68,8 @@ function renderCeo(){
 }
 function renderWar(){
   if(typeof window.paintRedesignWar==='function'&&document.getElementById('warDesk')){window.paintRedesignWar();return;}
-  var metrics=document.getElementById('warMetrics');
-  if(metrics){
-    var next=openItems().filter(function(it){return it.due!=null;}).sort(function(a,b){return a.due-b.due;})[0];
-    var openPipe=(STATE.contacts||[]).filter(function(c){return c.stage!=='committed'&&c.stage!=='lost';}).length;
-    metrics.innerHTML='<div class="bb-cell"><div class="k">One metric</div><div class="v">Cash $100</div></div><div class="bb-cell bad"><div class="k">Runway</div><div class="v">~1 day</div></div><div class="bb-cell"><div class="k">Next due</div><div class="v">'+esc(next?fmtDay(next.due):'None')+'</div></div><div class="bb-cell"><div class="k">Pipeline</div><div class="v">'+openPipe+'</div></div>';
-  }
-  var bar=document.getElementById('raiseBar');
-  if(bar){
-    var left=Math.max(0,Math.round((Date.parse('2026-10-30T18:00:00Z')-Date.now())/86400000));
-    bar.innerHTML='<span class="rn">Raise - Friends &amp; Family - survival track</span><div class="bar" aria-hidden="true"><span></span></div><span class="rs">$80K of $250K</span><span class="rs">$170K to go - 3/7 chunks - '+left+' days to Oct 30 - <b>~1 day runway</b></span>';
-  }
+  /* Legacy fallback only (the redesigned War Room is always mounted). The hard-coded cash, runway and raise
+     figures that lived here were removed: money comes from /api/finance on the redesigned page. */
   renderWaiting();
   renderSweep();
 }
@@ -225,24 +216,8 @@ document.getElementById('v-war').addEventListener('click',function(e){
   var chip=e.target.closest('[data-news]');
   if(chip){STATE.newsCat=chip.getAttribute('data-news');renderSweep();return;}
   if(e.target.id==='nowRoad'){openRoadmap();return;}
-  if(e.target.id==='editCats'){STATE.catEdit=!STATE.catEdit;renderSweep();return;}
-  if(e.target.id==='saveCats'){
-    var box=document.getElementById('catBox');
-    var categories=String(box?box.value:'').split('\n').map(function(line){return line.trim();}).filter(Boolean);
-    authFetch('/api/news/categories',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({categories:categories})}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(data){STATE.newsCategories=data.categories||categories;STATE.catEdit=false;renderSweep();}).catch(function(){deskFail('Could not save the categories.');});
-    return;
-  }
-  if(e.target.id==='flagWait'){STATE.flagOpen=!STATE.flagOpen;renderWaiting();return;}
-  if(e.target.id==='flagSave'){
-    var q=String((document.getElementById('flagItem')||{}).value||'').trim();
-    var who=String((document.getElementById('flagWho')||{}).value||'').trim();
-    if(!q||!who){deskFail('Name the item and who you are waiting on.');return;}
-    var hit=openItems().filter(function(it){return it.title.toLowerCase().indexOf(q.toLowerCase())>=0;})[0];
-    if(!hit){deskFail('Could not find that item.');return;}
-    hit.waitingOn=who;
-    STATE.flagOpen=false;
-    authFetch('/api/items',{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({id:hit.id,waitingOn:who})}).then(function(r){if(!r.ok)throw 0;renderWar();}).catch(function(){deskFail('Could not flag that item.');});
-  }
+  /* editCats/saveCats (#catBox) and flagWait/flagSave (#flagItem/#flagWho) removed:
+     those legacy controls are no longer in the page (War Room is the #warDesk shadow host). */
 });
 function resolveItem(id){
   var hit=(STATE.items||[]).filter(function(it){return it.id===id;})[0];

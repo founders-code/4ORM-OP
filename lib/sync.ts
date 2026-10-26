@@ -1,7 +1,7 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { allowArea, allowPriority, allowStatus, inferContactCategory, visibleCalendarWindow } from './guard.mjs';
-import { claimBudget } from './db';
-import { listEvents, listDriveTree, recentMail, googleConfigured, DRIVE_CALLS } from './google';
+import { claimBudget, isUniqueViolation } from './db';
+import { listEvents, listDriveTree, recentMail, googleConfigured, DRIVE_CALLS, type CalendarEventDetails } from './google';
 import { writePipelineCache } from './changes';
 import { listContacts, listPipelines, listReminders, shapePipelineStages, ghlConfigured } from './ghl';
 import { fail } from './log';
@@ -11,7 +11,22 @@ type Sql = NeonQueryFunction<false, false>;
 const FRESH_MS = 10 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-type CalEvent = { id: string; start: number; dur: number; title: string; color: string; join: string };
+/** Cached calendar event. Editor details are absent on rows cached before they were kept. */
+export type CalEvent = { id: string; start: number; dur: number; title: string; color: string; join: string } & Partial<CalendarEventDetails>;
+
+/** Copies editor details from a cached row, keeping "absent" distinct from "empty". */
+function cachedDetails(row: Record<string, unknown>): Partial<CalendarEventDetails> {
+  const out: Partial<CalendarEventDetails> = {};
+  if (Array.isArray(row.attendees)) out.attendees = (row.attendees as unknown[]).map((x) => String(x || '')).filter(Boolean);
+  if (typeof row.location === 'string') out.location = row.location;
+  if (typeof row.description === 'string') out.description = row.description;
+  if (row.reminders && typeof row.reminders === 'object') out.reminders = row.reminders as CalendarEventDetails['reminders'];
+  if (Array.isArray(row.attachments)) out.attachments = row.attachments as CalendarEventDetails['attachments'];
+  if (row.privateProps && typeof row.privateProps === 'object') out.privateProps = row.privateProps as Record<string, string>;
+  if (typeof row.organizer === 'string') out.organizer = row.organizer;
+  if (typeof row.organizerSelf === 'boolean') out.organizerSelf = row.organizerSelf;
+  return out;
+}
 
 function asEvents(value: unknown): CalEvent[] {
   const parsed = typeof value === 'string' ? JSON.parse(value) : value;
@@ -29,6 +44,7 @@ function asEvents(value: unknown): CalEvent[] {
       title: String(row.title || ''),
       color: '#2E6BF2',
       join: /^https?:\/\//i.test(join) ? join.slice(0, 500) : '',
+      ...cachedDetails(row),
     });
   }
   return rows;
@@ -251,12 +267,17 @@ export async function syncGhl(sql: Sql, ownerId: string, force = false) {
     const reminders = await listReminders();
     await mark(sql, ownerId, 'ghl_tasks', reminders.status, reminders.status === 'unavailable' ? 'Reminders could not be read.' : `${reminders.tasks.length} reminders`);
     for (const task of reminders.tasks) {
-      await sql`
-        INSERT INTO items (owner_id, title, area, status, priority, due, source, source_id)
-        VALUES (${ownerId}, ${task.title}, 'follow_up', 'new', 'normal', ${task.due}, 'ghl', ${task.id})
-        ON CONFLICT (owner_id, source, source_id) WHERE source_id IS NOT NULL
-        DO UPDATE SET title = EXCLUDED.title, due = EXCLUDED.due, updated_at = now()
-      `;
+      try {
+        await sql`
+          INSERT INTO items (owner_id, title, area, status, priority, due, source, source_id)
+          VALUES (${ownerId}, ${task.title}, 'follow_up', 'new', 'normal', ${task.due}, 'ghl', ${task.id})
+          ON CONFLICT (owner_id, source, source_id) WHERE source_id IS NOT NULL
+          DO UPDATE SET title = EXCLUDED.title, due = EXCLUDED.due, updated_at = now()
+        `;
+      } catch (err) {
+        // A live task with this title already exists (items_owner_title_open_uq): skip, keep syncing.
+        if (!isUniqueViolation(err)) throw err;
+      }
     }
   } catch (err) {
     fail('ghl_sync', err);
@@ -305,13 +326,19 @@ export async function ingestMail(sql: Sql, ownerId: string, force = false) {
       `;
     }
     items.push({ title: message.title, area, status, priority, source: 'gmail', source_id: message.id });
-    const rows = await sql`
-      INSERT INTO items (owner_id, title, area, status, priority, source, source_id)
-      VALUES (${ownerId}, ${message.title}, ${area}, ${status}, ${priority}, 'gmail', ${message.id})
-      ON CONFLICT (owner_id, source, source_id) WHERE source_id IS NOT NULL
-      DO UPDATE SET title = EXCLUDED.title, updated_at = now()
-      RETURNING (created_at = updated_at) AS inserted, title
-    `;
+    let rows: Record<string, unknown>[] = [];
+    try {
+      rows = await sql`
+        INSERT INTO items (owner_id, title, area, status, priority, source, source_id)
+        VALUES (${ownerId}, ${message.title}, ${area}, ${status}, ${priority}, 'gmail', ${message.id})
+        ON CONFLICT (owner_id, source, source_id) WHERE source_id IS NOT NULL
+        DO UPDATE SET title = EXCLUDED.title, updated_at = now()
+        RETURNING (created_at = updated_at) AS inserted, title
+      `;
+    } catch (err) {
+      // A live task with this subject already exists (items_owner_title_open_uq): skip, keep syncing.
+      if (!isUniqueViolation(err)) throw err;
+    }
     if (rows[0]?.inserted) titles.push(String(rows[0].title));
   }
   return { titles, items };

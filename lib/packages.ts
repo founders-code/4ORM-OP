@@ -77,7 +77,7 @@ async function readDocs(sql: Sql, packageId: string): Promise<Doc[]> {
     const rows = await sql`
       SELECT id, drive_file_id, name, url, mime, uploaded, thumb_url, folder_id
       FROM package_docs
-      WHERE package_id = ${packageId}
+      WHERE package_id = ${packageId} AND deleted_at IS NULL
       ORDER BY name
     `;
     return (rows as Record<string, unknown>[]).map(asDoc);
@@ -86,7 +86,7 @@ async function readDocs(sql: Sql, packageId: string): Promise<Doc[]> {
     const rows = await sql`
       SELECT id, drive_file_id, name, url, mime
       FROM package_docs
-      WHERE package_id = ${packageId}
+      WHERE package_id = ${packageId} AND deleted_at IS NULL
       ORDER BY name
     `;
     return (rows as Record<string, unknown>[]).map(asDoc);
@@ -98,7 +98,7 @@ async function readFolders(sql: Sql, packageId: string): Promise<SpaceFolder[]> 
     const rows = await sql`
       SELECT id, parent_id, name
       FROM space_folders
-      WHERE package_id = ${packageId}
+      WHERE package_id = ${packageId} AND deleted_at IS NULL
       ORDER BY name
     `;
     return (rows as Record<string, unknown>[]).map((row) => ({
@@ -117,7 +117,7 @@ async function readRecipients(sql: Sql, ownerId: string, packageId: string): Pro
     SELECT r.id, r.contact_id, r.name, r.email, r.role, c.company, c.stage
     FROM package_recipients r
     LEFT JOIN contacts c ON c.id::text = r.contact_id AND c.owner_id = ${ownerId}
-    WHERE r.package_id = ${packageId}
+    WHERE r.package_id = ${packageId} AND r.deleted_at IS NULL
     ORDER BY r.name
   `;
   return (rows as Record<string, unknown>[]).map((row) => ({
@@ -157,8 +157,8 @@ export async function listPackages(sql: Sql, ownerId: string) {
       let docCount = 0;
       let recipientCount = 0;
       try {
-        const docs = await sql`SELECT id FROM package_docs WHERE package_id = ${id}`;
-        const people = await sql`SELECT id FROM package_recipients WHERE package_id = ${id}`;
+        const docs = await sql`SELECT id FROM package_docs WHERE package_id = ${id} AND deleted_at IS NULL`;
+        const people = await sql`SELECT id FROM package_recipients WHERE package_id = ${id} AND deleted_at IS NULL`;
         docCount = docs.length;
         recipientCount = people.length;
       } catch (err) {
@@ -214,7 +214,7 @@ async function owned(sql: Sql, ownerId: string, id: string) {
       SELECT id, name, kind, drive_folder_id, drive_folder_url, email_subject, email_body, research, status,
         space_type, subject_contact_id, subject_label, pushed_to_drive_at, description, space_category
       FROM packages
-      WHERE id = ${id} AND owner_id = ${ownerId}
+      WHERE id = ${id} AND owner_id = ${ownerId} AND deleted_at IS NULL
     `;
     return (rows[0] as Record<string, unknown> | undefined) || null;
   } catch (err) {
@@ -222,7 +222,7 @@ async function owned(sql: Sql, ownerId: string, id: string) {
     const rows = await sql`
       SELECT id, name, kind, drive_folder_id, drive_folder_url, email_subject, email_body, research, status
       FROM packages
-      WHERE id = ${id} AND owner_id = ${ownerId}
+      WHERE id = ${id} AND owner_id = ${ownerId} AND deleted_at IS NULL
     `;
     return (rows[0] as Record<string, unknown> | undefined) || null;
   }
@@ -406,7 +406,7 @@ export async function createFolder(sql: Sql, ownerId: string, id: string, name: 
 async function folderOnSpace(sql: Sql, packageId: string, folderId: string) {
   if (!folderId) return true;
   if (!packageIdOk(folderId)) return false;
-  const rows = await sql`SELECT id FROM space_folders WHERE id = ${folderId} AND package_id = ${packageId} LIMIT 1`;
+  const rows = await sql`SELECT id FROM space_folders WHERE id = ${folderId} AND package_id = ${packageId} AND deleted_at IS NULL LIMIT 1`;
   return rows.length > 0;
 }
 
@@ -428,7 +428,7 @@ export async function addDoc(
   if (folderId && !(await folderOnSpace(sql, id, folderId))) return null;
   if (fileId) {
     const existing = await sql`
-      SELECT id FROM package_docs WHERE package_id = ${id} AND drive_file_id = ${fileId} LIMIT 1
+      SELECT id FROM package_docs WHERE package_id = ${id} AND drive_file_id = ${fileId} AND deleted_at IS NULL LIMIT 1
     `;
     if (existing.length) return readPackage(sql, ownerId, id);
   }
@@ -452,7 +452,7 @@ export async function removeDoc(sql: Sql, ownerId: string, id: string, docId: st
   if (!packageIdOk(docId)) return null;
   const row = await owned(sql, ownerId, id);
   if (!row) return null;
-  await sql`DELETE FROM package_docs WHERE id = ${docId} AND package_id = ${id}`;
+  await sql`UPDATE package_docs SET deleted_at = now() WHERE id = ${docId} AND package_id = ${id} AND deleted_at IS NULL`;
   return readPackage(sql, ownerId, id);
 }
 
@@ -487,7 +487,7 @@ export async function removeRecipient(sql: Sql, ownerId: string, id: string, rec
   if (!packageIdOk(recipientId)) return null;
   const row = await owned(sql, ownerId, id);
   if (!row) return null;
-  await sql`DELETE FROM package_recipients WHERE id = ${recipientId} AND package_id = ${id}`;
+  await sql`UPDATE package_recipients SET deleted_at = now() WHERE id = ${recipientId} AND package_id = ${id} AND deleted_at IS NULL`;
   return readPackage(sql, ownerId, id);
 }
 
@@ -559,9 +559,9 @@ export async function removeSpaceFolder(sql: Sql, ownerId: string, id: string, f
   const target = folders.find((folder) => folder.id === folderId);
   if (!target) return null;
   const parent = target.parentId || null;
-  await sql`UPDATE space_folders SET parent_id = ${parent} WHERE package_id = ${id} AND parent_id = ${folderId}`;
-  await sql`UPDATE package_docs SET folder_id = ${parent} WHERE package_id = ${id} AND folder_id = ${folderId}`;
-  await sql`DELETE FROM space_folders WHERE id = ${folderId} AND package_id = ${id}`;
+  await sql`UPDATE space_folders SET parent_id = ${parent} WHERE package_id = ${id} AND parent_id = ${folderId} AND deleted_at IS NULL`;
+  await sql`UPDATE package_docs SET folder_id = ${parent} WHERE package_id = ${id} AND folder_id = ${folderId} AND deleted_at IS NULL`;
+  await sql`UPDATE space_folders SET deleted_at = now() WHERE id = ${folderId} AND package_id = ${id} AND deleted_at IS NULL`;
   return readPackage(sql, ownerId, id);
 }
 
@@ -681,36 +681,11 @@ export async function pushSpace(sql: Sql, ownerId: string, id: string) {
   return { ok: true, error: '', package: next || current };
 }
 
+/** Soft delete: the package leaves every read; its docs, folders and recipients stay attached for a restore. */
 export async function deletePackage(sql: Sql, ownerId: string, id: string) {
   const row = await owned(sql, ownerId, id);
   if (!row) return false;
   if (String(row.name || '') === 'Uncategorized') return false;
-  let hold = '';
-  try {
-    const found = await sql`SELECT id FROM packages WHERE owner_id = ${ownerId} AND name = 'Uncategorized' LIMIT 1`;
-    hold = String(found[0]?.id || '');
-    if (!hold) {
-      const made = await sql`
-        INSERT INTO packages (owner_id, name, kind, status)
-        VALUES (${ownerId}, 'Uncategorized', 'data_room', 'draft')
-        RETURNING id
-      `;
-      hold = String(made[0]?.id || '');
-    }
-    if (hold && hold !== id) {
-      await sql`UPDATE package_docs SET package_id = ${hold} WHERE package_id = ${id}`;
-      await sql`UPDATE space_folders SET package_id = ${hold} WHERE package_id = ${id}`;
-      await sql`UPDATE package_recipients SET package_id = ${hold} WHERE package_id = ${id}`;
-      try {
-        await sql`UPDATE space_files SET space_id = ${hold} WHERE space_id = ${id}`;
-        await sql`UPDATE space_recipients SET space_id = ${hold} WHERE space_id = ${id}`;
-      } catch (err) {
-        fail('space_move', err);
-      }
-    }
-  } catch (err) {
-    fail('packages_delete', err);
-  }
-  await sql`DELETE FROM packages WHERE id = ${id} AND owner_id = ${ownerId}`;
+  await sql`UPDATE packages SET deleted_at = now(), updated_at = now() WHERE id = ${id} AND owner_id = ${ownerId} AND deleted_at IS NULL`;
   return true;
 }

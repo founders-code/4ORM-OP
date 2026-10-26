@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
+import { isUniqueViolation } from '@/lib/db';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,7 @@ async function ensureBoxes(sql: NonNullable<Awaited<ReturnType<typeof openBoard>
     created_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE (owner_id, key)
   )`;
+  await sql`ALTER TABLE email_boxes ADD COLUMN IF NOT EXISTS deleted_at timestamptz`;
   await sql`CREATE TABLE IF NOT EXISTS email_box_addresses (
     owner_id text NOT NULL,
     box_key text NOT NULL,
@@ -42,6 +44,7 @@ export async function GET() {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ boxes: [] });
     await ensureBoxes(session.sql);
     const rows = await session.sql`
@@ -89,46 +92,97 @@ export async function GET() {
   }
 }
 
+type BoxRow = { key: string; name: string; org: string; color: string; closed: boolean; position: number; extra: string; tags: string[]; addrs: string[] };
+
+/** Client boxes → rows. Duplicate keys collapse to the last one sent. */
+function readBoxes(raw: unknown): BoxRow[] {
+  const byKey = new Map<string, BoxRow>();
+  asBoxes(raw).forEach((b, i) => {
+    const key = String(b.id || b.key || `b${i}`).slice(0, 40);
+    const tags = (Array.isArray(b.tags) ? b.tags : [])
+      .map((tag: unknown) => String(tag || '').trim().toLowerCase().replace(/^#/, '').slice(0, 40))
+      .filter(Boolean);
+    const addrs = (Array.isArray(b.addrs) ? b.addrs : [])
+      .map((email: unknown) => String(email || '').trim().toLowerCase().slice(0, 120))
+      .filter(Boolean);
+    byKey.set(key, {
+      key,
+      name: String(b.n || b.name || 'Box').slice(0, 80),
+      org: String(b.o || b.org || '').slice(0, 120),
+      color: String(b.c || b.color || '#2e6bf2').slice(0, 16),
+      closed: !!b.closed,
+      position: i,
+      extra: JSON.stringify(b),
+      tags: [...new Set(tags)],
+      addrs: [...new Set(addrs)],
+    });
+  });
+  return [...byKey.values()];
+}
+
+/**
+ * Saves the full box list in one transaction: each box is upserted by key (a previously removed box
+ * with the same key comes back), its tags/addresses are reconciled, and boxes the client no longer
+ * sends are soft-deleted (deleted_at), never hard-deleted. An empty list is refused unless the body
+ * says { confirmEmpty: true }, so a failed client load can never wipe every box.
+ */
 export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
-    if (!session.sql || !body) return NextResponse.json({ saved: false });
-    await ensureBoxes(session.sql);
-    const action = String(body.action || 'save');
-    if (action !== 'save') return NextResponse.json({ saved: false });
-    const boxes = asBoxes(body.boxes);
-    await session.sql`DELETE FROM email_box_tags WHERE owner_id = ${session.userId}`;
-    await session.sql`DELETE FROM email_box_addresses WHERE owner_id = ${session.userId}`;
-    await session.sql`DELETE FROM email_boxes WHERE owner_id = ${session.userId}`;
-    for (let i = 0; i < boxes.length; i++) {
-      const b = boxes[i];
-      const key = String(b.id || b.key || `b${i}`).slice(0, 40);
-      const name = String(b.n || b.name || 'Box').slice(0, 80);
-      const org = String(b.o || b.org || '').slice(0, 120);
-      const color = String(b.c || b.color || '#2e6bf2').slice(0, 16);
-      const closed = !!b.closed;
-      await session.sql`
-        INSERT INTO email_boxes (owner_id, key, name, org, color, closed, position, extra)
-        VALUES (${session.userId}, ${key}, ${name}, ${org}, ${color}, ${closed}, ${i}, ${b})
-      `;
-      const tags = Array.isArray(b.tags) ? b.tags : [];
-      for (const tag of tags) {
-        const t = String(tag || '').trim().toLowerCase().replace(/^#/, '').slice(0, 40);
-        if (!t) continue;
-        await session.sql`INSERT INTO email_box_tags (owner_id, box_key, tag) VALUES (${session.userId}, ${key}, ${t}) ON CONFLICT DO NOTHING`;
-      }
-      const addrs = Array.isArray(b.addrs) ? b.addrs : [];
-      for (const email of addrs) {
-        const e = String(email || '').trim().toLowerCase().slice(0, 120);
-        if (!e) continue;
-        await session.sql`INSERT INTO email_box_addresses (owner_id, box_key, email) VALUES (${session.userId}, ${key}, ${e}) ON CONFLICT DO NOTHING`;
-      }
+    if (!session.sql) return NextResponse.json({ saved: false, error: 'Unavailable' }, { status: 503 });
+    if (!body || String(body.action || 'save') !== 'save') {
+      return NextResponse.json({ saved: false, error: 'Unknown action.' }, { status: 400 });
     }
+    const sql = session.sql;
+    const ownerId = session.userId;
+    await ensureBoxes(sql);
+    const boxes = readBoxes(body.boxes);
+    if (!boxes.length && body.confirmEmpty !== true) {
+      return NextResponse.json({ saved: false, error: 'Refusing to remove every box. Send confirmEmpty: true to do that.' }, { status: 400 });
+    }
+    const keys = boxes.map((b) => b.key);
+    // Soft-delete removed boxes first so a new box may reuse a removed box's name (live-name unique index).
+    const queries = [sql`
+      UPDATE email_boxes SET deleted_at = now()
+      WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND NOT (key = ANY(${keys}::text[]))
+    `];
+    for (const b of boxes) {
+      queries.push(sql`
+        INSERT INTO email_boxes (owner_id, key, name, org, color, closed, position, extra)
+        VALUES (${ownerId}, ${b.key}, ${b.name}, ${b.org}, ${b.color}, ${b.closed}, ${b.position}, ${b.extra}::jsonb)
+        ON CONFLICT (owner_id, key) DO UPDATE SET
+          name = EXCLUDED.name, org = EXCLUDED.org, color = EXCLUDED.color, closed = EXCLUDED.closed,
+          position = EXCLUDED.position, extra = EXCLUDED.extra, deleted_at = NULL
+      `);
+      queries.push(sql`
+        DELETE FROM email_box_tags
+        WHERE owner_id = ${ownerId} AND box_key = ${b.key} AND NOT (tag = ANY(${b.tags}::text[]))
+      `);
+      queries.push(sql`
+        INSERT INTO email_box_tags (owner_id, box_key, tag)
+        SELECT ${ownerId}, ${b.key}, t FROM unnest(${b.tags}::text[]) AS t
+        ON CONFLICT DO NOTHING
+      `);
+      queries.push(sql`
+        DELETE FROM email_box_addresses
+        WHERE owner_id = ${ownerId} AND box_key = ${b.key} AND NOT (email = ANY(${b.addrs}::text[]))
+      `);
+      queries.push(sql`
+        INSERT INTO email_box_addresses (owner_id, box_key, email)
+        SELECT ${ownerId}, ${b.key}, e FROM unnest(${b.addrs}::text[]) AS e
+        ON CONFLICT DO NOTHING
+      `);
+    }
+    await sql.transaction(queries);
     return NextResponse.json({ saved: true, n: boxes.length });
   } catch (err) {
+    if (isUniqueViolation(err)) {
+      return NextResponse.json({ saved: false, error: 'Two boxes share a name. Rename one and save again.' }, { status: 409 });
+    }
     fail('mail_boxes_save', err);
-    return NextResponse.json({ saved: false });
+    return NextResponse.json({ saved: false, error: 'Could not save boxes.' }, { status: 500 });
   }
 }

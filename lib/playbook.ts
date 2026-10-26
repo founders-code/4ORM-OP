@@ -131,7 +131,8 @@ export async function listPlaybook(sql: Sql, ownerId: string, weekStart?: string
   const today = pacificDay();
   const start = weekStart && /^\d{4}-\d{2}-\d{2}$/.test(weekStart) ? weekStart : mondayOf(today);
   const days = [0, 1, 2, 3, 4, 5, 6].map((n) => addDays(start, n));
-  const monthFrom = firstOfMonth(today, 0);
+  // Month view (P11) shows last month, this month and next month, so history reaches back one month.
+  const monthFrom = firstOfMonth(today, -1);
   const monthTo = lastOfMonth(today, 2);
   const rhythms = await sql`
     SELECT id, name, color, route, schedule, target, sort, active, created_at::text AS created_at, sub, grp
@@ -173,6 +174,12 @@ export async function listPlaybook(sql: Sql, ownerId: string, weekStart?: string
       if (pad.day === today && (pad.state === 'due' || pad.state === 'next')) todayLit += 1;
     }
   }
+  const streaks = await rhythmStreaks(sql, ownerId, today, rows);
+  for (const row of rows as Array<Record<string, unknown>>) {
+    const hit = streaks.byId.get(String(row.id));
+    row.streak = hit?.current || 0;
+    row.bestStreak = hit?.best || 0;
+  }
   const monthLogs = (logs as Array<{ rhythm_id?: string; day?: string; status?: string; value?: string }>).map((row) => ({
     rhythmId: String(row.rhythm_id || ''),
     day: String(row.day || '').match(/(\d{4}-\d{2}-\d{2})/)?.[1] || String(row.day || '').slice(0, 10),
@@ -190,7 +197,48 @@ export async function listPlaybook(sql: Sql, ownerId: string, weekStart?: string
     monthFrom,
     monthTo,
     monthLogs,
+    bestStreak: streaks.best,
   };
+}
+
+/**
+ * P14: streaks from playbook_log. A streak counts consecutive scheduled days a rhythm was done (days it is not
+ * scheduled are skipped, today counts only once it is done). Looks back 180 days.
+ */
+async function rhythmStreaks(sql: Sql, ownerId: string, today: string, rows: Array<{ id: string; name: string; schedule: string[]; created_at: string }>) {
+  const byId = new Map<string, { current: number; best: number }>();
+  let best = { days: 0, name: '' };
+  let done: Array<{ rhythm_id?: string; day?: string }> = [];
+  try {
+    done = await sql`
+      SELECT rhythm_id::text AS rhythm_id, day::text AS day
+      FROM playbook_log
+      WHERE owner_id = ${ownerId} AND status = 'done' AND day >= (${today}::date - 180) AND day <= ${today}::date
+    ` as Array<{ rhythm_id?: string; day?: string }>;
+  } catch (err) {
+    fail('playbook_streaks', err);
+    return { byId, best };
+  }
+  const hits = new Set(done.map((row) => `${row.rhythm_id}|${String(row.day || '').slice(0, 10)}`));
+  const from = addDays(today, -180);
+  for (const row of rows) {
+    if (!row.schedule.length) continue;
+    let run = 0;
+    let top = 0;
+    let current = 0;
+    for (let day = from; day <= today; day = addDays(day, 1)) {
+      if (row.created_at && day < row.created_at) continue;
+      if (!row.schedule.includes(weekdayOf(day))) continue;
+      const ok = hits.has(`${row.id}|${day}`);
+      if (ok) run += 1;
+      else if (day !== today) run = 0;
+      if (run > top) top = run;
+    }
+    current = run;
+    byId.set(row.id, { current, best: top });
+    if (top > best.days) best = { days: top, name: row.name };
+  }
+  return { byId, best };
 }
 
 function isoWeek(day: string) {

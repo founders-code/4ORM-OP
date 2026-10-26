@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ensureCeo, snoozeMove } from '@/lib/ceo';
 import { fail } from '@/lib/log';
-import { openBoard } from '@/lib/session';
+import { openBoard, sessionOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +9,7 @@ export async function GET() {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ moves: [] });
     const desk = await ensureCeo(session.sql, session.userId);
     return NextResponse.json({ moves: desk?.moves || [] });
@@ -22,6 +23,7 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = await req.json().catch(() => ({})) as Record<string, unknown>;
     const id = String(body.id || '');
     if (!session.sql || !id) return NextResponse.json({ ok: false });
