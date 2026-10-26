@@ -34,8 +34,8 @@ Legend: **[D]** = has a design file to copy exactly.
 - [ ] Menu counts on Email (need a reply), Zoom (owed), Contacts (going cold), Integrations (attention), Pipeline (needs you today).
 
 ## 0d. Menu order (Oct 26)
-- [ ] Left menu groups and order exactly as _nav.js: Today (Playbook, War Room, Calendar, Email) · People (Contacts, Spaces, Pipeline) · Library (Notes, Documents, Drive, Links) · Record (Zoom, Completed) · Signals (News, Financials, Integrations). Landing page stays War Room. Arrange (drag to reorder) still works and the user's own order overrides this default.
-- [ ] Moving menu items changes ONLY the menu. Every page, route, control, data-action, count pill and the active highlight stay exactly as they are.
+- [x] Left menu groups and order exactly as _nav.js: Today (Playbook, War Room, Calendar, Email) · People (Contacts, Spaces, Pipeline) · Library (Notes, Documents, Drive, Links) · Record (Zoom, Completed) · Signals (News, Financials, Integrations). Landing page stays War Room. Arrange (drag to reorder) still works and the user's own order overrides this default.
+- [x] Moving menu items changes ONLY the menu. Every page, route, control, data-action, count pill and the active highlight stay exactly as they are.
 
 ## 1. Site-wide
 - [ ] 1.1 Wire every control on pages 01-17 (Claude's click audit found ~250 dead controls).
