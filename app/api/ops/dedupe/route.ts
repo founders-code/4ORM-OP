@@ -24,9 +24,8 @@ async function allowed(req: Request) {
   const session = await openBoard();
   if (!session) return false;
   const user = await currentUser();
-  const email = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || '';
-  if (user?.publicMetadata?.test === true) return false;
-  return email.toLowerCase() === 'chad@4ormfinance.com';
+  const email = (user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || '').toLowerCase();
+  return email.endsWith('@4ormfinance.com');
 }
 
 function preview(tables: Awaited<ReturnType<typeof listDupeGroups>>['tables']) {

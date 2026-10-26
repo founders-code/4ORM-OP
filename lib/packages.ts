@@ -286,7 +286,11 @@ export async function createPackage(
     WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND lower(trim(name)) = ${clean.toLowerCase()}
     ORDER BY created_at ASC LIMIT 1
   `;
-  if (existing[0]?.id) return String(existing[0].id);
+  if (existing[0]?.id) {
+    const kept = await readPackage(sql, ownerId, String(existing[0].id));
+    if (kept) return kept;
+    return { id: String(existing[0].id), name: clean, kind: allowed, status: 'draft' };
+  }
   const description = clip(meta.description, 240);
   const spaceCategory = clip(meta.spaceCategory, 80);
   let rows;
