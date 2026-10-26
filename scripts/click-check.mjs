@@ -367,6 +367,10 @@ async function productionStep1(browser) {
 
   const pb = await liveApi(live, '/api/playbook', 'GET');
   await readyView('/playbook', '#playDesk');
+  await live.waitForFunction(() => {
+    const root = document.getElementById('playDesk') && document.getElementById('playDesk').shadowRoot;
+    return !!(root && (root.querySelectorAll('.track').length > 0 || /Couldn.t load/i.test(root.textContent || '')));
+  }, null, { timeout: 20000 }).catch(() => {});
   const playUi = await live.evaluate((apiToday) => {
     const root = document.getElementById('playDesk').shadowRoot;
     const todayCol = root.querySelector('.dh.today small') || root.querySelector('#fri small');

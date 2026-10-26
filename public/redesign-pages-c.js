@@ -447,7 +447,6 @@
     if (!wrap) { markReady('playDesk'); return; }
     if (!fixtureOn() && !(window.STATE || {}).playbook && !(window.STATE || {}).playbookError) {
       if (window.__portLoadC) window.__portLoadC('playbook');
-      return;
     }
     var data = playbookData();
     if (!fixtureOn() && ((window.STATE || {}).playbookError || data.error)) {
