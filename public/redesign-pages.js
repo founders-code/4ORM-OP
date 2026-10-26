@@ -43,7 +43,7 @@
     + '.pick-row:first-child{border-top:0}';
   var CSS = {
     room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=4', notes: '/port-css/notes.css?v=2',
-    contacts: '/port-css/pipeline.css', work: '/port-css/spaces.css?v=4', spaceOpen: '/port-css/space-open.css?v=1', spacePanel: '/port-css/space-panel.css?v=1', docs: '/port-css/documents.css',
+    contacts: '/port-css/pipeline.css', work: '/port-css/spaces.css?v=5', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css',
     links: '/port-css/links.css?v=2', mail: '/port-css/email.css?v=2', mailPeople: '/port-css/email-people.css?v=1',
     playbook: '/port-css/playbook.css?v=2', calendar: '/port-css/calendar.css?v=3', zoom: '/port-css/zoom.css',
     completed: '/port-css/completed.css'
@@ -113,7 +113,7 @@
     var style = root && root.querySelector ? root.querySelector('style') : null;
     if (!style) return;
     if (key === 'work+spaceOpen') {
-      style.textContent = TOKEN + (cssText.work || '') + '\n' + (cssText.spacePanel || '');
+      style.textContent = TOKEN + (cssText.work || '');
       return;
     }
     if (cssText[key] != null) style.textContent = TOKEN + cssText[key];
