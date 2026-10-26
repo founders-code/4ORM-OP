@@ -90,7 +90,17 @@
 
   function paint() {
     var wrap = wrapOf('recDesk');
-    if (!wrap) return;
+    if (!wrap) {
+      var host = document.getElementById('recDesk');
+      if (!host) return;
+      var root = host.shadowRoot || host.attachShadow({ mode: 'open' });
+      wrap = root.querySelector && root.querySelector('.port-body');
+      if (!wrap) {
+        wrap = document.createElement('div');
+        wrap.className = 'port-body';
+        root.appendChild(wrap);
+      }
+    }
     if (P().applyPageCss) P().applyPageCss(wrap, 'rec');
     var REC = list();
     var owed = REC.reduce(function (n, r) { return n + (r.acts || []).filter(function (a) { return a[1] !== 'done'; }).length; }, 0);
@@ -261,11 +271,17 @@
   }
 
   window.paintRedesignRecordings = function () {
+    try { paint(); } catch (e) {}
     whenCss(function () {
       paint();
       if (!fixtureOn()) loadLive(true);
     });
   };
+  setTimeout(function () {
+    if ((window.STATE && window.STATE.desk === 'rec') || /recording/.test(location.pathname || '')) {
+      window.paintRedesignRecordings();
+    }
+  }, 300);
 
   window.__deskRefreshExt = window.__deskRefreshExt || {};
   window.__deskRefreshExt.rec = function () { if (S().desk === 'rec') loadLive(true); };

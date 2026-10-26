@@ -604,6 +604,13 @@ export async function testOpportunityRail(step: 'ensure' | 'move' | 'archive', i
       opportunityId = String(opp?.opportunity?.id || '');
       stageId = String(opp?.opportunity?.pipelineStageId || stages[0].id);
     }
+    if (!opportunityId) {
+      const fallback = await ghlAny(`/opportunities/search?location_id=${encodeURIComponent(loc)}&q=${encodeURIComponent('TEST 4ormop drag')}`);
+      const hits = (fallback.json as { opportunities?: Array<{ id?: string; pipelineStageId?: string; status?: string; name?: string }> } | null)?.opportunities || [];
+      const hit = hits.find((o) => /^TEST 4ormop drag/i.test(String(o.name || '')) && String(o.status || '') !== 'lost');
+      opportunityId = String(hit?.id || '');
+      stageId = String(hit?.pipelineStageId || stageId || stages[0].id);
+    }
     if (!opportunityId) return { ok: false as const, note: 'GoHighLevel did not create the TEST opportunity.' };
     return {
       ok: true as const,

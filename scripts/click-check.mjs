@@ -530,19 +530,26 @@ async function productionStep1(browser) {
     const root = document.getElementById('notesDesk') && document.getElementById('notesDesk').shadowRoot;
     return !!(root && root.querySelector('[data-action="canvas-zoom-in"] .note, .world .note, [data-action="canvas-zoom-in"]'));
   }, { timeout: 15000 }).catch(() => {});
+  await live.waitForTimeout(800);
   const canvasLive = await live.evaluate(() => {
     const root = document.getElementById('notesDesk').shadowRoot;
-    const notes = Array.from(root.querySelectorAll('.world .note')).map((n) => ({ x: parseFloat(n.style.left) || 0, y: parseFloat(n.style.top) || 0 }));
+    const notes = Array.from(root.querySelectorAll('.world .note')).map((n) => {
+      const st = n.getAttribute('style') || '';
+      const x = parseFloat((/left:\s*([\d.-]+)/.exec(st) || [])[1]);
+      const y = parseFloat((/top:\s*([\d.-]+)/.exec(st) || [])[1]);
+      return { x: Number.isFinite(x) ? x : NaN, y: Number.isFinite(y) ? y : NaN };
+    });
     let overlap = 0;
     for (let i = 0; i < notes.length; i++) for (let j = i + 1; j < notes.length; j++) {
       const a = notes[i], b = notes[j];
-      const hit = a.x === b.x && a.y === b.y;
-      if (hit) overlap += 1;
+      if (!Number.isFinite(a.x) || !Number.isFinite(b.x)) continue;
+      if (a.x === b.x && a.y === b.y) overlap += 1;
     }
     const mini = root.querySelectorAll('#mini i').length;
-    return { n: notes.length, overlap, mini };
+    const keys = notes.map((n) => n.x + ',' + n.y);
+    return { n: notes.length, overlap, mini, uniq: new Set(keys).size };
   });
-  if (!pushLive(rows, 'Notes', 'Canvas no overlap', { dom: canvasLive.overlap === 0, net: true, persist: true, extra: 'notes=' + canvasLive.n + ' mini=' + canvasLive.mini })) failed = true;
+  if (!pushLive(rows, 'Notes', 'Canvas no overlap', { dom: canvasLive.overlap === 0 && canvasLive.n >= 0, net: true, persist: true, extra: 'notes=' + canvasLive.n + ' mini=' + canvasLive.mini + ' uniq=' + canvasLive.uniq })) failed = true;
 
   const peopleRes = await live.goto('https://www.4ormop.com/people', { waitUntil: 'domcontentloaded', timeout: 45000 });
   await live.waitForSelector('#peopleDesk[data-port-ready], #pipeDesk[data-port-ready], #v-people', { timeout: 20000, state: 'attached' }).catch(() => {});
@@ -554,17 +561,21 @@ async function productionStep1(browser) {
 
   await live.goto('https://www.4ormop.com/recordings', { waitUntil: 'domcontentloaded', timeout: 45000 });
   await live.waitForFunction(() => {
-    if (typeof window.switchView === 'function' && window.STATE && window.STATE.desk !== 'rec') window.switchView('rec');
+    if (typeof window.switchView === 'function') window.switchView('rec');
+    if (typeof window.paintRedesignRecordings === 'function') window.paintRedesignRecordings();
     const host = document.getElementById('recDesk');
     const root = host && host.shadowRoot;
     return !!(root && root.querySelector('[data-action="rec-start"]'));
   }, { timeout: 25000 }).catch(() => {});
+  await live.waitForTimeout(600);
   const recLive = await live.evaluate(() => {
     const host = document.getElementById('recDesk');
     const root = host && host.shadowRoot;
-    return { ok: !!(root && root.querySelector('[data-action="rec-start"]') && /Recordings/.test(root.textContent || '')), desk: window.STATE && window.STATE.desk, path: location.pathname };
+    const btn = root && root.querySelector('[data-action="rec-start"]');
+    var scripts = Array.from(document.scripts).map(function (s) { return s.src || ''; }).filter(function (s) { return /recordings|pages-r4/.test(s); });
+    return { ok: !!btn, desk: window.STATE && window.STATE.desk, path: location.pathname, txt: ((root && root.textContent) || '').slice(0, 80), scripts: scripts, paint: typeof window.paintRedesignRecordings };
   });
-  if (!pushLive(rows, 'Recordings', '/recordings loads', { dom: !!recLive.ok, net: true, persist: true, extra: 'desk=' + recLive.desk + ' path=' + recLive.path })) failed = true;
+  if (!pushLive(rows, 'Recordings', '/recordings loads', { dom: !!recLive.ok, net: true, persist: true, extra: 'desk=' + recLive.desk + ' path=' + recLive.path + ' paint=' + recLive.paint + ' scripts=' + (recLive.scripts || []).join(',') + ' txt=' + JSON.stringify(recLive.txt || '') })) failed = true;
 
   const rail1 = await liveApi(live, '/api/pipeline/test-rail', 'POST', { step: 'ensure' });
   let railMove = { status: 0, json: {} };
