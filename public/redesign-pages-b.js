@@ -849,8 +849,8 @@
           : colHtml({ id: '', name: 'empty', pipe: '', count: 0, opps: [] }, true)) : '');
       if (!stages.length) boardCols = '<div class="emptyb">No GoHighLevel pipeline loaded yet.</div>';
       var pipeName = ((data.pills || []).filter(function (p) { return p.on; })[0] || { name: 'Pipeline' }).name;
-      wrap.innerHTML = bar + needHtml
-        + '<section class="card board" id="boardCard"><div class="ch"><h3>' + esc(pipeName) + ' &middot; Board</h3><span class="s">drag a card to move it &middot; writes the stage to GoHighLevel</span>'
+        wrap.innerHTML = bar + needHtml
+        + '<section class="card board pipe-board" id="boardCard"><div class="ch"><h3>' + esc(pipeName) + ' &middot; Board</h3><span class="s">drag a card to move it &middot; writes the stage to GoHighLevel</span>'
         + (empty.length ? '<span class="lnk" style="margin-left:auto" data-action="pipe-empty">' + (S.pipeShowEmpty ? 'Hide empty stages' : '+ ' + empty.length + ' empty stages') + '</span>' : '')
         + '</div><div class="bcols" id="bcols">' + boardCols + '</div></section>';
     } else if (view === 'table') {

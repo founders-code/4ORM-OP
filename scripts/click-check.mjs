@@ -686,13 +686,13 @@ async function productionStep2(browser) {
   const spaceName = 'TEST space ' + stamp;
   const spaceCreate = await liveApi(live, '/api/spaces', 'POST', { name: spaceName, kind: 'project' });
   const spaceId = spaceCreate.json && (spaceCreate.json.id || spaceCreate.json.spaceId);
-  await readyView('/spaces', '#spacesDesk');
+  await readyView('/spaces?cards=1', '#spacesDesk');
   const spaceOpen = await live.evaluate(async (id) => {
     const root = document.getElementById('spacesDesk').shadowRoot;
-    const btn = root.querySelector('[data-action="space-open"][data-id="' + id + '"]') || root.querySelector('[data-action="space-open"]');
+    const btn = root.querySelector('[data-action="spaces-card-open"][data-id="' + id + '"]') || root.querySelector('[data-action="space-open"][data-id="' + id + '"]') || root.querySelector('[data-action="spaces-card-open"]') || root.querySelector('[data-action="space-open"]');
     if (btn) btn.click();
     await new Promise(function (r) { setTimeout(r, 120); });
-    return !!(root.querySelector('.space-detail') || root.querySelector('.hero') || root.getElementById('spaceOv'));
+    return !!(root.querySelector('.space-detail') || root.querySelector('.hero') || root.getElementById('spaceOv') || (root.getElementById('qw') && root.getElementById('qw').classList.contains('on')));
   }, spaceId);
   if (!pushLive(rows, 'Spaces', 'Open', { dom: spaceOpen && spaceCreate.status < 300, net: spaceCreate.status < 300, persist: !!spaceId })) failed = true;
 
@@ -812,7 +812,7 @@ async function main() {
         const root = document.getElementById('pipeDesk').shadowRoot;
         const btn = root.querySelector('[data-action="pipe-follow"]');
         if (btn) btn.click();
-        return !!document.getElementById('rpBody');
+        return !!(root.getElementById('contactOv') || root.getElementById('contactBody') || document.getElementById('rpBody'));
       });
       clicks.push({ page: 'Pipeline', control: 'Follow up', dom: follow, net: true, persist: true, pass: follow });
 
