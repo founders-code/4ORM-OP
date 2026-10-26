@@ -769,6 +769,30 @@
       }).catch(function () { toast(root, 'Could not create a note'); });
     },
     'notes-search': function () { /* input handler */ },
+    'notes-cat': function (el, root) {
+      var key = attr(el, 'data-c') || 'all';
+      if (key === 'new') {
+        var name = window.prompt('New category');
+        if (!name) return;
+        S().noteCats = (S().noteCats || []).concat([String(name).trim()]);
+        refresh('notes');
+        return;
+      }
+      S().noteCat = key;
+      refresh('notes');
+    },
+    'note-cat-tag': function (el, root) {
+      var id = attr(el, 'data-id');
+      var cats = ['Raise', 'Regulators', 'Product', 'Team', 'Research'].concat(S().noteCats || []);
+      var cur = attr(el, 'data-cat') || '';
+      var i = cats.indexOf(cur);
+      var next = cats[(i + 1) % cats.length] || 'Raise';
+      el.textContent = next;
+      el.setAttribute('data-cat', next);
+      (S().notes || []).forEach(function (n) { if (String(n.id) === String(id)) n.category = next; });
+      if (!writeOk() || !id) return;
+      api('/api/notes/' + encodeURIComponent(id), { method: 'PATCH', body: { category: next } }).catch(function () {});
+    },
     'notes-filter': function (el, root) {
       var key = attr(el, 'data-filter') || 'all';
       S().noteFilter = key;

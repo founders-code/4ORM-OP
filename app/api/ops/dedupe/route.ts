@@ -52,15 +52,16 @@ export async function GET(req: Request) {
     if (!sql || !ownerId) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const listed = await listDupeGroups(sql, ownerId);
     const warItems = await sql`
-      SELECT title AS t, count(*)::int AS n
+      SELECT title AS t, status, count(*)::int AS n
       FROM items
-      WHERE owner_id = ${ownerId} AND status <> 'dropped'
+      WHERE owner_id = ${ownerId}
         AND (
-          lower(title) LIKE 'open the next private-network conversation with kevin%'
-          OR lower(title) LIKE 'write who, the chunk%'
-          OR lower(title) LIKE 'then open zahar, bj, and daryl%'
+          (lower(title) LIKE '%kevin%' AND (lower(title) LIKE '%private-network%' OR lower(title) LIKE '%private network%'))
+          OR lower(title) LIKE '%write who%'
+          OR lower(title) LIKE '%the chunk%'
+          OR lower(title) LIKE '%zahar%'
         )
-      GROUP BY title ORDER BY n DESC
+      GROUP BY title, status ORDER BY n DESC
     `;
     let warActions: Record<string, unknown>[] = [];
     try {

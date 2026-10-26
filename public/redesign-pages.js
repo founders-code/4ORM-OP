@@ -42,7 +42,7 @@
     + '.pick-row{display:flex;gap:10px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);font-size:13.5px}'
     + '.pick-row:first-child{border-top:0}';
   var CSS = {
-    room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=5', notes: '/port-css/notes.css?v=2',
+    room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=5', notes: '/port-css/notes.css?v=3',
     contacts: '/port-css/pipeline.css?v=2', work: '/port-css/spaces.css?v=7', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css',
     links: '/port-css/links.css?v=2', mail: '/port-css/email.css?v=2', mailPeople: '/port-css/email-people.css?v=2',
     playbook: '/port-css/playbook.css?v=2', calendar: '/port-css/calendar.css?v=3', zoom: '/port-css/zoom.css',
@@ -893,7 +893,7 @@
     var id = esc(n.id || '');
     var src = esc(n.source || 'sticky');
     var ttl = esc(n.title || '');
-    var pin = '<span class="pin" data-action="note-pin" data-id="' + id + '" data-source="' + src + '" data-on="' + (n.pin ? '1' : '0') + '" title="Pin"></span><span class="nx x" data-action="note-archive" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '">&times;</span>';
+    var pin = '<span class="catg" data-action="note-cat-tag" data-id="' + id + '" data-cat="' + esc(n.category || n.cat || 'Raise') + '">' + esc(n.category || n.cat || 'Raise') + '</span><span class="pin" data-action="note-pin" data-id="' + id + '" data-source="' + src + '" data-on="' + (n.pin ? '1' : '0') + '" title="Pin"></span><span class="nx x" data-action="note-archive" data-id="' + id + '" data-source="' + src + '" data-title="' + ttl + '">&times;</span>';
     var title = n.title ? '<h4>' + esc(n.title) + '</h4>' : '';
     var body = n.body ? '<p>' + esc(n.body) + '</p>' : '';
     var checks = (n.checks || []).map(function (c) {
@@ -920,6 +920,11 @@
       return;
     }
     var data = notesData();
+    var catOn = String((window.STATE && window.STATE.noteCat) || 'all').toLowerCase();
+    if (catOn && catOn !== 'all') {
+      data.notes = (data.notes || []).filter(function (n) { return String(n.category || n.cat || 'Raise').toLowerCase() === catOn; });
+      data.pinned = (data.pinned || []).filter(function (n) { return String(n.category || n.cat || 'Raise').toLowerCase() === catOn; });
+    }
     var c = data.counts || {};
     wrap.innerHTML =
       '<div class="bar"><h1>Notes</h1><span class="sub">Capture fast, sort later &mdash; every note can become a task, content or a Space</span>'
@@ -931,6 +936,15 @@
       + '<button class="chip" data-action="notes-filter" data-filter="archive">Archive</button>'
       + '<div class="cols" title="Filter by colour"><span class="cdot y" data-action="notes-color" data-color="y" style="background:#fff6c9"></span><span class="cdot" data-action="notes-color" data-color="p" style="background:#ffe1ea"></span><span class="cdot" data-action="notes-color" data-color="g" style="background:#ddf5e6"></span><span class="cdot" data-action="notes-color" data-color="b" style="background:#e1ecff"></span><span class="cdot" data-action="notes-color" data-color="o" style="background:#ffe6cf"></span><span class="cdot" data-action="notes-color" data-color="v" style="background:#ece4ff"></span></div>'
       + '<div class="seg"><span class="on" data-action="notes-view" data-view="board">Board</span><span data-action="notes-view" data-view="canvas">Canvas</span></div></div>'
+      + (function () {
+        var S = window.STATE || {};
+        var cats = ['All', 'Raise', 'Regulators', 'Product', 'Team', 'Research'].concat(S.noteCats || []);
+        var on = S.noteCat || 'all';
+        return '<div class="cats" id="cats"><span class="cl">Categories</span>' + cats.map(function (name) {
+          var key = name === 'All' ? 'all' : name;
+          return '<span class="ct' + (String(on).toLowerCase() === String(key).toLowerCase() ? ' on' : '') + '" data-action="notes-cat" data-c="' + esc(key) + '">' + esc(name) + '</span>';
+        }).join('') + '<span class="ct add" data-action="notes-cat" data-c="new">+ New category</span></div>';
+      })()
       + '<div class="sec">Pinned</div><div class="board" style="margin-bottom:6px">'
       + (data.pinned || []).map(noteCard).join('') + '<div class="newcard" data-action="note-new">+ Pin a note here</div></div>'
       + '<div class="sec">All notes</div><div class="board">'

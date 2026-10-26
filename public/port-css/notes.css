@@ -16,6 +16,13 @@ button{font:inherit;cursor:pointer}
 .cdot{width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer}
 .seg{display:flex;background:var(--soft);border:1px solid var(--line);border-radius:9px;padding:2px}.seg span{font-size:12px;font-weight:700;padding:5px 10px;border-radius:7px;color:var(--ink3);cursor:pointer;white-space:nowrap}.seg span.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .sec{font-size:13px;font-weight:700;color:#b9c6e6;margin:4px 2px 10px;display:flex;align-items:center;gap:8px}
+.cats{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-4px 0 14px}
+.cats .cl{font-size:12px;font-weight:800;color:#9fb0d0;margin-right:4px}
+.cats .ct{font-size:12.5px;font-weight:750;color:#dbe4fb;background:rgba(255,255,255,.08);border-radius:999px;padding:5px 12px;cursor:pointer}
+.cats .ct i{font-style:normal;opacity:.6;margin-left:3px}
+.cats .ct.on{background:#fff;color:#101a33}
+.cats .ct.add{background:transparent;border:1.5px dashed rgba(255,255,255,.25);color:#9fb0d0}
+.note .catg{font-size:10.5px;font-weight:800;color:rgba(16,26,51,.6);border:1px solid rgba(16,26,51,.18);border-radius:6px;padding:1px 6px;cursor:pointer}
 .board{columns:4 260px;column-gap:14px}
 .board.canvas{columns:unset;display:flex;flex-wrap:wrap;gap:14px}
 .board.canvas .note{width:min(280px,100%)}
