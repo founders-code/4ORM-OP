@@ -1325,7 +1325,7 @@
   var prevWar = window.paintRedesignWar;
   window.paintRedesignWar = function () {
     whenCss(function () {
-      if (fixtureOn() && qFlag('sigdetail')) paintSignalsDetailPage();
+      if (qFlag('sigdetail')) paintSignalsDetailPage();
       else if (typeof prevWar === 'function') prevWar();
     });
   };

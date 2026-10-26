@@ -95,15 +95,15 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     if (!session.sql) return NextResponse.json({ saved: false }, { status: 503 });
     const existing = await spaceOrNull(session.userId, ctx.params.id, session.sql);
-    if (!existing) {
-      return packagePost(new Request(req.url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }), ctx);
-    }
     const sql = session.sql;
     const id = ctx.params.id;
     const action = String(body.action || '');
     if (action === 'restore') {
       const ok = await restoreSpace(sql, session.userId, id);
       return NextResponse.json({ ok });
+    }
+    if (!existing) {
+      return packagePost(new Request(req.url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }), ctx);
     }
     if (action === 'add-link') {
       const added = await addSpaceItem(sql, session.userId, id, { kind: 'link', name: body.name || body.url || 'Link', url: body.url, mime: 'text/uri-list', parentId: body.parentId || body.folderId });
