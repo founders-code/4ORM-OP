@@ -853,6 +853,8 @@
       function go(events) {
         try {
           wrap.innerHTML = html || '<div class="calwrap"></div>';
+          var calEl = wrap.querySelector('.calwrap');
+          if (live && calEl) calEl.classList.add('live-align');
           var root = wrap.getRootNode();
           if (typeof window.mountRedesignCalendar === 'function') {
             window.mountRedesignCalendar(root, {

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signals - detail - 4orm Ops</title>
+<style>
+/* ===== SHELL (shared by every page) ===== */
+:root{--ground:#0b1430;--ground2:#13224a;--side:#08102a;--card:#fff;--ink:#101a33;--ink2:#4a5672;--ink3:#7a86a0;--line:#e8ecf3;--soft:#f5f7fb;
+--blue:#2e6bf2;--blue50:#eaf1fe;--green:#12a36a;--green50:#e4f6ee;--amber:#c98408;--amber50:#fff4e0;--red:#e0364f;--red50:#fde9ec;--violet:#6b4fd8;
+font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}html,body{margin:0}html{background:#0d1838}
+body{background:linear-gradient(165deg,var(--ground),var(--ground2)) fixed;color:var(--ink);min-height:100vh;display:grid;grid-template-columns:224px minmax(0,1fr);grid-template-rows:56px auto}
+button{font:inherit;cursor:pointer}
+.top{grid-column:1/-1;height:56px;background:#fff;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid var(--line);position:relative;z-index:60}
+.logo img{height:30px;display:block}
+.crumb{font-size:14px;font-weight:700;color:var(--ink);padding-left:12px;border-left:1px solid var(--line)}
+.top .r{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tb{height:32px;border:1px solid var(--line);background:#fff;border-radius:9px;padding:0 12px;font-size:12.5px;font-weight:650;color:var(--ink);display:inline-flex;align-items:center;gap:7px;white-space:nowrap;cursor:pointer}
+.tb.on{border-color:var(--blue);box-shadow:0 0 0 3px rgba(46,107,242,.18)}
+.tb .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.tb .ct{font-size:11px;font-weight:800;background:var(--red);color:#fff;border-radius:999px;padding:1px 7px}
+.clock{font-size:12.5px;color:var(--ink3);font-weight:600;white-space:nowrap;margin-left:6px}
+.side{background:var(--side);padding:14px 10px;display:flex;flex-direction:column;gap:2px;min-height:calc(100vh - 56px)}
+.grp{font-size:13.5px;font-weight:850;color:#5b8cff;padding:16px 12px 6px;margin-top:6px;border-top:1px solid rgba(255,255,255,.08);letter-spacing:-.01em}.side .grp:first-child{border-top:none;margin-top:0;padding-top:4px}.side .nav{padding-left:16px}
+.nav{display:flex;align-items:center;gap:11px;padding:8px 12px;border-radius:9px;color:#cfd8ee;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.nav.on{background:rgba(46,107,242,.22);color:#fff}
+.nav .n{margin-left:auto;font-size:11px;font-weight:700;color:#b9c6e6;background:rgba(255,255,255,.08);border-radius:999px;padding:1px 8px}
+.main{padding:20px 24px 40px;min-width:0}
+.bar h1{margin:0 0 14px;font-size:24px;font-weight:850;color:#fff}
+.ghostcard{background:#fff;border-radius:16px;height:150px;margin-bottom:14px;opacity:.9}
+.scrim{position:fixed;inset:56px 0 0 0;background:rgba(5,10,28,.35);z-index:40;display:none}.scrim.on{display:block}
+
+/* ===== SIGNALS DETAIL ===== */
+.sig{position:fixed;top:64px;right:16px;bottom:16px;width:560px;background:#fff;border-radius:18px;box-shadow:0 30px 80px rgba(3,10,30,.55);z-index:50;display:none;flex-direction:column;overflow:hidden}
+.sig.on{display:flex}
+.sh{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
+.sh b{font-size:17px;font-weight:850;letter-spacing:-.01em}.sh .s{font-size:12px;color:var(--ink3);font-weight:600}
+.sh .x{margin-left:auto;height:30px;border-radius:9px;border:1px solid var(--line);background:#fff;font-size:12.5px;font-weight:750;padding:0 11px}
+.tabs{display:flex;gap:6px;padding:0 16px 10px;border-bottom:1px solid var(--line)}
+.tabs span{font-size:12.5px;font-weight:750;padding:6px 11px;border-radius:999px;color:var(--ink2);background:var(--soft);cursor:pointer;white-space:nowrap}
+.tabs span.on{background:var(--ink);color:#fff}
+.tabs span i{font-style:normal;opacity:.7;margin-left:4px}
+.body{overflow:auto;flex:1;padding:4px 0 14px}
+.now{margin:12px 16px 4px;border-radius:14px;background:linear-gradient(180deg,#f3f7ff,#fff);border:1px solid #dbe6fd;padding:12px 14px}
+.now h3{margin:0 0 8px;font-size:12px;font-weight:850;color:var(--blue);letter-spacing:.04em;text-transform:uppercase}
+.nowi{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:start;padding:7px 0;border-top:1px solid #e3ebfb}
+.nowi:first-of-type{border-top:0}
+.nowi .k{width:22px;height:22px;border-radius:7px;background:var(--blue);color:#fff;font-size:12px;font-weight:850;display:grid;place-items:center}
+.nowi b{font-size:13.5px;font-weight:800;display:block}
+.nowi span{font-size:12.5px;color:var(--ink2);line-height:1.45}
+.act{height:30px;border-radius:9px;border:1px solid var(--line);background:#fff;font-size:12.5px;font-weight:750;color:var(--blue);padding:0 11px;white-space:nowrap}
+.act.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.sec{display:flex;align-items:center;gap:8px;padding:16px 16px 6px}
+.sec h3{margin:0;font-size:13px;font-weight:850}
+.sec .s{font-size:12px;color:var(--ink3);font-weight:600}
+.sec .go{margin-left:auto;font-size:12.5px;font-weight:750;color:var(--blue);cursor:pointer}
+.grpx{margin:0 16px 6px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.gh{display:grid;grid-template-columns:8px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:10px 12px;cursor:pointer;background:#fff}
+.gh:hover{background:#f8faff}
+.gh i{width:8px;height:8px;border-radius:50%}
+.gh b{font-size:13.5px;font-weight:800}.gh span{font-size:13px;color:var(--ink2)}
+.gh em{font-style:normal;font-size:12px;font-weight:750;color:var(--ink3)}
+.gh .ar{font-size:12px;font-weight:800;color:var(--ink3);width:56px;text-align:right}
+.items{display:none;border-top:1px solid var(--line);background:var(--soft)}
+.grpx.open .items{display:block}
+.it{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 12px 9px 30px;border-top:1px solid #edf1f7}
+.it:first-child{border-top:0}
+.it b{font-size:13px;font-weight:800}.it .m{font-size:12px;color:var(--ink3)}
+.it p{margin:2px 0 0;font-size:12.5px;color:var(--ink2);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.it .r{display:flex;gap:6px}
+.age{font-size:11px;font-weight:800;border-radius:6px;padding:1px 6px;margin-left:6px}
+.age.red{background:var(--red50);color:var(--red)}.age.amb{background:var(--amber50);color:var(--amber)}
+.news{margin:0 16px 8px;border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+.news .tg{display:flex;gap:6px;align-items:center;margin-bottom:5px}
+.news .tg span{font-size:11px;font-weight:800;border-radius:6px;padding:2px 7px;background:var(--blue50);color:var(--blue)}
+.news .tg span.reg{background:#efe9ff;color:var(--violet)}.news .tg span.opp{background:var(--green50);color:var(--green)}
+.news .tg small{margin-left:auto;font-size:11.5px;color:var(--ink3);font-weight:650}
+.news h4{margin:0;font-size:14px;font-weight:800;line-height:1.35}
+.news .why{margin:6px 0 0;font-size:12.5px;line-height:1.5;color:var(--ink2);background:var(--soft);border-radius:8px;padding:7px 9px}
+.news .why b{color:var(--ink)}
+.news .r{display:flex;gap:6px;margin-top:8px}
+.watch{margin:0 16px 8px;border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+.watch .row{display:flex;align-items:center;gap:8px;font-size:13px}
+.watch .row b{font-weight:800}.watch .row span{color:var(--ink2)}
+.watch .row .act{margin-left:auto}
+.pbar{height:8px;border-radius:999px;background:#e8ecf3;margin:8px 0 4px;overflow:hidden}.pbar i{display:block;height:100%;background:var(--blue);border-radius:999px}
+.watch small{font-size:11.5px;color:var(--ink3)}
+.sf{display:flex;gap:10px;align-items:center;padding:10px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--ink3)}
+.sf .act{margin-left:auto}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;display:none;z-index:90}.toast.show{display:block}
+</style></head>
+<body>
+<header class="top">
+  <div class="logo"><img src="../assets/logo-finance.png" alt="4orm Finance"></div><span class="crumb">War Room</span>
+  <div class="r"><span class="tb">Today</span><span class="tb">Calendar</span><span class="tb on" id="sigbtn"><span class="dot"></span>Signals <span class="ct">6</span></span><span class="tb">Sound on</span><span class="clock">Mon, Oct 26 &middot; 14:05 Pacific</span></div>
+</header>
+<nav class="side" id="side"></nav>
+<main class="main"><div class="bar"><h1>War Room</h1></div><div class="ghostcard"></div><div class="ghostcard"></div><div class="ghostcard"></div></main>
+<div class="scrim on" id="scrim"></div>
+
+<aside class="sig on" id="sig" role="dialog" aria-label="Signals">
+  <div class="sh"><b>Signals</b><span class="s">6 need you &middot; checked 14:05 &middot; every 15 s</span><button class="x" id="close">Close</button></div>
+  <div class="tabs" id="tabs"><span class="on" data-f="all">All</span><span data-f="need">Needs you<i>6</i></span><span data-f="new">New since 08:00<i>3</i></span><span data-f="news">News<i>3</i></span><span data-f="watch">Watch<i>2</i></span></div>
+  <div class="body">
+    <div class="now" data-sec="need">
+      <h3>Do these first</h3>
+      <div class="nowi"><span class="k">1</span><div><b>Reply to Bow Valley Credit Union</b><span>They asked for the compliance requirements before Thursday 10:00. Meeting is booked, so a late reply costs the meeting.</span></div><button class="act pri" data-t="Opens the reply to Bow Valley CU with the requirements PDF attached">Reply</button></div>
+      <div class="nowi"><span class="k">2</span><div><b>Kevin Wong: confirm the $25K wire</b><span>He said "wiring Thursday". Send the subscription docs today so Thursday holds.</span></div><button class="act pri" data-t="Opens Compose to Kevin with the subscription docs">Send docs</button></div>
+      <div class="nowi"><span class="k">3</span><div><b>Mench Capital is going cold</b><span>9 days since their questions on capture rate. One line plus the one-pager answers it.</span></div><button class="act" data-t="Drafts a nudge to Mike at Mench Capital">Nudge</button></div>
+    </div>
+
+    <div class="sec" data-sec="need"><h3>Needs you</h3><span class="s">open a row to see the actual items</span><span class="go" data-t="Opens Email">All in Email</span></div>
+    <div class="grpx open" data-sec="need">
+      <div class="gh"><i style="background:#e0364f"></i><div><b>Inbox</b> <span>5 need a reply</span></div><em>oldest 2d</em><span class="ar">Hide</span></div>
+      <div class="items">
+        <div class="it"><div><b>Bow Valley Credit Union</b><span class="age red">1d</span><p>Follow-up from Thursday's call - compliance requirements</p></div><div class="r"><button class="act" data-t="Opens the thread">Open</button><button class="act pri" data-t="Opens the reply">Reply</button></div></div>
+        <div class="it"><div><b>Bruce Fair</b><span class="age red">1h</span><p>RE: Pitch Deck - I cannot open in PPT</p></div><div class="r"><button class="act" data-t="Opens the thread">Open</button><button class="act pri" data-t="Opens the reply with the PDF version attached">Reply</button></div></div>
+        <div class="it"><div><b>CLHIA Affiliates</b><span class="age amb">9h</span><p>Wants the insurer list</p></div><div class="r"><button class="act" data-t="Opens the thread">Open</button><button class="act pri" data-t="Opens the reply">Reply</button></div></div>
+        <div class="it"><div><b>Mike Gardner</b><span class="age amb">2d</span><p>Re: 4orm Finance - Overview for Investors</p></div><div class="r"><button class="act" data-t="Opens the thread">Open</button><button class="act pri" data-t="Opens the reply">Reply</button></div></div>
+        <div class="it"><div><b>Ashish Dhir</b><span class="age amb">2d</span><p>Settlement finality - next step?</p></div><div class="r"><button class="act" data-t="Opens the thread">Open</button><button class="act pri" data-t="Opens the reply">Reply</button></div></div>
+      </div>
+    </div>
+    <div class="grpx" data-sec="need">
+      <div class="gh"><i style="background:#e0364f"></i><div><b>Owed from meetings</b> <span>8 open</span></div><em>3 due today</em><span class="ar">Show</span></div>
+      <div class="items">
+        <div class="it"><div><b>Send Dean the wallet setup steps</b><span class="age red">due today</span><p>Dean and Chad weekly call &middot; Oct 23</p></div><div class="r"><button class="act" data-t="Added to Today in the War Room">+ Today</button><button class="act" data-t="Marked done">Done</button></div></div>
+        <div class="it"><div><b>Share the insurer list with CLHIA</b><span class="age red">due today</span><p>CLHIA intro &middot; Oct 22</p></div><div class="r"><button class="act" data-t="Added to Today in the War Room">+ Today</button><button class="act" data-t="Marked done">Done</button></div></div>
+        <div class="it"><div><b>Book the Enrich discovery call</b><span class="age amb">3d</span><p>Pipeline review &middot; Oct 21</p></div><div class="r"><button class="act" data-t="Opens the calendar with + 4orm Zoom">Book</button><button class="act" data-t="Marked done">Done</button></div></div>
+      </div>
+    </div>
+    <div class="grpx" data-sec="need">
+      <div class="gh"><i style="background:#c98408"></i><div><b>Reach out</b> <span>4 today</span></div><em>from Pipeline</em><span class="ar">Show</span></div>
+      <div class="items">
+        <div class="it"><div><b>Kevin Wong</b><p>VC &middot; call about the $25K</p></div><div class="r"><button class="act pri" data-t="Opens the call note for Kevin">Call</button></div></div>
+        <div class="it"><div><b>Joe Canavan</b><p>VC &middot; angel &middot; email</p></div><div class="r"><button class="act pri" data-t="Opens Compose to Joe">Email</button></div></div>
+        <div class="it"><div><b>Enrich Mortgage Group</b><p>Design partner &middot; discovery call to book</p></div><div class="r"><button class="act pri" data-t="Opens the calendar">Book</button></div></div>
+        <div class="it"><div><b>BCFSA</b><p>Regulator &middot; intro meeting requested Oct 1</p></div><div class="r"><button class="act pri" data-t="Drafts a nudge to BCFSA">Nudge</button></div></div>
+      </div>
+    </div>
+    <div class="grpx" data-sec="need">
+      <div class="gh"><i style="background:#c98408"></i><div><b>Going cold</b> <span>3 people</span></div><em>no touch 9 to 21 days</em><span class="ar">Show</span></div>
+      <div class="items">
+        <div class="it"><div><b>BCFSA</b><span class="age red">21d</span><p>Regulator &middot; last: intro request</p></div><div class="r"><button class="act" data-t="Drafts a nudge">Nudge</button></div></div>
+        <div class="it"><div><b>Dean Hesse</b><span class="age amb">16d</span><p>Advisor &middot; offered investor intros</p></div><div class="r"><button class="act" data-t="Opens Compose to Dean">Email</button></div></div>
+        <div class="it"><div><b>Mench Capital</b><span class="age amb">9d</span><p>Investor &middot; questions on capture rate</p></div><div class="r"><button class="act" data-t="Opens the reply">Reply</button></div></div>
+      </div>
+    </div>
+
+    <div class="sec" data-sec="new"><h3>New since 08:00</h3><span class="s">what changed while you worked</span></div>
+    <div class="grpx" data-sec="new">
+      <div class="gh"><i style="background:#2e6bf2"></i><div><b>Pipeline</b> <span>2 moved</span></div><em>11:40</em><span class="ar">Show</span></div>
+      <div class="items">
+        <div class="it"><div><b>Bow Valley CU</b><p>Contact made &rarr; Meeting booked &middot; Thu 10:00</p></div><div class="r"><button class="act" data-t="Opens the card in Pipeline">Open</button></div></div>
+        <div class="it"><div><b>Enrich Mortgage Group</b><p>Cold &rarr; Contact made</p></div><div class="r"><button class="act" data-t="Opens the card in Pipeline">Open</button></div></div>
+      </div>
+    </div>
+    <div class="grpx" data-sec="new">
+      <div class="gh"><i style="background:#12a36a"></i><div><b>Zoom</b> <span>notes ready</span></div><em>12:15</em><span class="ar">Show</span></div>
+      <div class="items"><div class="it"><div><b>Don and Chad 1on1</b><p>2 actions owed &middot; summary ready</p></div><div class="r"><button class="act" data-t="Opens the meeting in Zoom">Read</button></div></div></div>
+    </div>
+    <div class="grpx" data-sec="new">
+      <div class="gh"><i style="background:#2e6bf2"></i><div><b>LinkedIn</b> <span>7 new messages</span></div><em>people only</em><span class="ar">Show</span></div>
+      <div class="items"><div class="it"><div><b>John Peter Blanco</b><p>Sr. Marketing Specialist, Acadium &middot; wants to connect</p></div><div class="r"><button class="act" data-t="Opens the message">Open</button></div></div></div>
+    </div>
+
+    <div class="sec" data-sec="news"><h3>News that touches 4orm</h3><span class="s">Canada only &middot; 3 of 41 today</span><span class="go" data-t="Opens News">All news</span></div>
+    <div class="news" data-sec="news"><div class="tg"><span class="reg">Regulator</span><small>FINTRAC &middot; 09:12</small></div><h4>FINTRAC fines four credit unions $816,750 for record-keeping failures</h4><p class="why"><b>Why it matters:</b> the gap is missing records of what was advised. That is the 4orm record. Use it in the BCFSA and Bow Valley conversations.</p><div class="r"><button class="act pri" data-t="Added to the Bow Valley CU Space as a hook">Add to a Space</button><button class="act" data-t="Saved to News">Save</button><button class="act" data-t="Opens the source">Source</button></div></div>
+    <div class="news" data-sec="news"><div class="tg"><span class="opp">Opportunity</span><small>CMT &middot; 07:40</small></div><h4>AI is making mortgage fraud harder to spot, brokers say</h4><p class="why"><b>Why it matters:</b> brokers want proof of what the client was told. A hook for Enrich and the Remax desk.</p><div class="r"><button class="act pri" data-t="Added to the Enrich Space as a hook">Add to a Space</button><button class="act" data-t="Saved to News">Save</button><button class="act" data-t="Opens the source">Source</button></div></div>
+    <div class="news" data-sec="news"><div class="tg"><span>Market</span><small>OSFI &middot; 06:05</small></div><h4>OSFI sets expectations for model risk in advice tools</h4><p class="why"><b>Why it matters:</b> a reviewable record is what OSFI is asking for. Good line for the investor update.</p><div class="r"><button class="act pri" data-t="Added to the investor update draft">Add to investor update</button><button class="act" data-t="Saved to News">Save</button><button class="act" data-t="Opens the source">Source</button></div></div>
+
+    <div class="sec" data-sec="watch"><h3>Watch</h3><span class="s">numbers that should move this week</span></div>
+    <div class="watch" data-sec="watch"><div class="row"><b>Raise</b><span>$80K of $250K &middot; $0 booked this week</span><button class="act" data-t="Opens Financials">Financials</button></div><div class="pbar"><i style="width:32%"></i></div><small>$170K to go &middot; 11 days to the close date &middot; 1 wire pending (Kevin, $25K)</small></div>
+    <div class="watch" data-sec="watch"><div class="row"><b>Integrations</b><span>1 needs attention</span><button class="act" data-t="Opens Integrations">Fix</button></div><small>Perplexity key not set, so Research in News and Spaces is off.</small></div>
+  </div>
+  <div class="sf">Every row opens the page it came from. Nothing here sends on its own.<button class="act" data-t="Every row marked seen; the count resets">Mark all seen</button></div>
+</aside>
+<div class="toast" id="toast"></div>
+<script>
+const NAV=[["Today"],["Playbook"],["War Room"],["Calendar"],["Email"],["People"],["Contacts"],["Spaces"],["Pipeline",0,"246"],["Library"],["Notes"],["Documents"],["Drive"],["Links"],["Record"],["Zoom"],["Completed"],["Signals"],["News"],["Financials"],["Integrations",0,"6"]];
+const GROUPS=["Today","People","Library","Record","Signals"];
+document.getElementById('side').innerHTML=NAV.map(n=>GROUPS.includes(n[0])?`<div class="grp">${n[0]}</div>`:`<div class="nav${n[0]=='War Room'?' on':''}">${n[0]}${n[2]?`<span class="n">${n[2]}</span>`:''}</div>`).join('');
+const T=t=>{const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1800)};
+const sig=document.getElementById('sig'),scrim=document.getElementById('scrim'),btn=document.getElementById('sigbtn');
+const open=o=>{sig.classList.toggle('on',o);scrim.classList.toggle('on',o);btn.classList.toggle('on',o);};
+btn.onclick=()=>open(!sig.classList.contains('on'));
+document.getElementById('close').onclick=()=>open(false);scrim.onclick=()=>open(false);
+document.addEventListener('keydown',e=>{if(e.key=='Escape')open(false);});
+document.querySelectorAll('.gh').forEach(h=>h.onclick=()=>{const g=h.parentNode;g.classList.toggle('open');h.querySelector('.ar').textContent=g.classList.contains('open')?'Hide':'Show';});
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=e=>{e.stopPropagation();T(b.dataset.t);});
+document.getElementById('tabs').onclick=e=>{const f=e.target.closest('span')?.dataset.f;if(!f)return;document.querySelectorAll('#tabs span').forEach(s=>s.classList.toggle('on',s.dataset.f==f));document.querySelectorAll('[data-sec]').forEach(x=>x.style.display=(f=='all'||x.dataset.sec==f)?'':'none');};
+</script>
+</body></html>

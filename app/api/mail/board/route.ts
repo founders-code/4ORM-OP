@@ -3,6 +3,8 @@ import { withCreds } from '@/lib/creds';
 import { boardMail } from '@/lib/google';
 import { fail } from '@/lib/log';
 import {
+  autoJunk,
+  isJunk,
   classifyMail,
   ensureMailBoard,
   listColumns,
@@ -40,7 +42,8 @@ export async function GET(req: Request) {
     if (!refresh && !q) {
       const cached = await readCache(session.sql, session.userId);
       if (cached && !cached.stale && cached.payload && typeof cached.payload === 'object') {
-        return NextResponse.json(cached.payload);
+        // Columns and rules are always fresh (a junk / filing rule saved a minute ago must show now).
+        return NextResponse.json({ ...(cached.payload as Record<string, unknown>), columns, rules });
       }
     }
     const creds = await loadCredsFor(session.userId);
@@ -55,6 +58,8 @@ export async function GET(req: Request) {
         ...row,
         column,
         needsNow: needsNow(row, column),
+        junkAuto: autoJunk(row),
+        junk: isJunk(row, rules),
         tags: tagsFor(row, column, contacts),
       };
     });

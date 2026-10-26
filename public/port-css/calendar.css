@@ -19,6 +19,7 @@
 .mini .d{position:relative;height:30px;display:grid;place-items:center;border-radius:9px;cursor:pointer;font-weight:600}
 .mini .d.o{color:var(--dim)}
 .mini .d.wk{background:#16213c}
+.calwrap.live-align .mini .d.wk{padding:0;margin:0;left:auto;transform:none}
 .mini .d.td span{background:var(--blue);color:#fff;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:800}
 .mini .d i{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);display:flex;gap:2px}
 .mini .d i b{width:3px;height:3px;border-radius:50%;display:block}
@@ -71,6 +72,8 @@
 .ai button{border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:750;cursor:pointer}
 /* WEEK/DAY grid */
 .wk{padding:10px 20px 30px}
+.calwrap.live-align .wk{padding:0}
+.calwrap.live-align .wk:not(.d){padding:10px 20px 30px}
 .whead{display:grid;padding-left:52px}
 .whead .dh{padding:6px 8px 8px;border-left:1px solid transparent}
 .whead .dn{font-size:10.5px;font-weight:800;color:var(--mut);letter-spacing:.08em}

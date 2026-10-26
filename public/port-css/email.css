@@ -96,3 +96,61 @@
 @media (max-width:1240px){.lay{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:1100px){.search{width:200px}}
 .tog{cursor:pointer;user-select:none}
+/* Oct 26: the feed is about 10 emails tall and scrolls inside its card; header and chips stay put. */
+.feed{display:flex;flex-direction:column}
+.fh{flex-wrap:wrap;row-gap:6px}
+.fh .tabs{flex-wrap:wrap}
+.fh .tabs span em{font-style:normal;font-weight:800;color:var(--ink3);margin-left:2px}
+.fh .tabs span.on em{color:var(--blue)}
+#feed{max-height:760px;overflow-y:auto;overscroll-behavior:contain}
+:host-context(html.fixture-mockup) #feed{max-height:none;overflow:visible}
+:host-context(html.fixture-mockup) .feed{display:block}
+:host-context(html.fixture-mockup) .fh{flex-wrap:nowrap;row-gap:unset}
+:host-context(html.fixture-mockup) .fh .tabs{flex-wrap:nowrap}
+:host-context(html.fixture-mockup) .newcol{cursor:pointer;display:grid;place-items:center;flex-direction:unset;align-items:unset;justify-content:unset;gap:unset;text-align:center}
+:host-context(html.fixture-mockup) .newcol b{font-weight:750;color:#b9c6e6}
+.feed .foot{flex:none}
+/* Row actions: Junk / Not junk and Delete (shown on hover, like Flag). */
+.em .racts{position:absolute;right:14px;bottom:8px;display:none;gap:4px;background:#f8faff;padding-left:6px}
+.em:hover .racts{display:flex}
+.em .rowact{font-size:10.5px;font-weight:800;color:var(--ink3);border:1px solid var(--line);border-radius:7px;padding:2px 6px;background:#fff;cursor:pointer;white-space:nowrap}
+.em .rowact:hover{color:var(--ink);border-color:#c9d6f3}
+.em .rowact.del:hover{color:var(--red);border-color:#f3c2c2}
+/* "+ New column" box: an inline name field. */
+.newcol{cursor:text;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:8px}
+.newcol b{font-weight:800;color:#dbe4fb}
+.newcol input{height:34px;border:1px solid rgba(157,185,255,.35);border-radius:9px;background:rgba(255,255,255,.08);color:#fff;font:inherit;font-size:12.5px;padding:0 10px;outline:none;text-align:left}
+.newcol input::placeholder{color:#9fb0d0}
+.newcol input:focus{border-color:#9db9ff;background:rgba(255,255,255,.12)}
+.newcol .ncrow{display:flex;align-items:center;gap:8px}
+.newcol .ncadd{height:30px;border:none;border-radius:8px;background:var(--blue);color:#fff;font-weight:800;font-size:12.5px;padding:0 14px;cursor:pointer}
+.newcol .nchint{font-size:11px;color:#9fb0d0;font-weight:600}
+/* Compose: attachments, document picker, inline link field, signature block. */
+.tbar .tx{width:auto;padding:0 8px;font-size:12px}
+.compose .body a{color:var(--blue);text-decoration:underline}
+.compose .att .sz{color:var(--ink3);font-weight:600;font-size:11.5px}
+.compose .att.busy{opacity:.6}
+.compose .drop{margin:0 18px 10px;border:1.5px dashed #ccd6e8;border-radius:10px;padding:8px 10px;font-size:12px;color:var(--ink3);text-align:center}
+.compose .drop.over{border-color:var(--blue);background:var(--blue50);color:var(--blue)}
+.compose .lnkin{display:flex;gap:6px;align-items:center;padding:6px 18px;border-bottom:1px solid var(--line);background:#f7f9fd}
+.compose .lnkin input{flex:1;height:30px;border:1px solid var(--line);border-radius:8px;padding:0 8px;font:inherit;font-size:12.5px;outline:none;min-width:0}
+.compose .lnkin button{height:30px;border-radius:8px;border:1px solid var(--line);background:#fff;font-weight:750;font-size:12px;padding:0 10px;cursor:pointer}
+.compose .lnkin button.p{background:var(--blue);border-color:var(--blue);color:#fff}
+.compose .sig{margin:0 18px 10px;border:1px solid var(--line);border-radius:10px;background:#fafbfd}
+.compose .sig .sh{display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:11.5px;font-weight:800;color:var(--ink3);border-bottom:1px solid var(--line)}
+.compose .sig .sh .r{margin-left:auto;display:flex;gap:10px}
+.compose .sig .sh .r span{cursor:pointer;color:var(--blue);font-weight:750}
+.compose .sig .sb{padding:8px 10px;font-size:13px;line-height:1.5;outline:none;max-height:180px;overflow:auto}
+.compose .sig .sn{padding:8px 10px;font-size:12px;color:var(--ink2);line-height:1.5}
+.compose .sig.off .sb{display:none}
+.compose .pick{position:absolute;left:18px;right:18px;bottom:64px;max-height:380px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 40px rgba(16,32,64,.22);z-index:6;display:flex;flex-direction:column;overflow:hidden}
+.compose .pick .ph{display:flex;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line)}
+.compose .pick .ph span{font-size:12px;font-weight:750;color:var(--ink2);padding:4px 9px;border-radius:7px;cursor:pointer}
+.compose .pick .ph span.on{background:var(--soft);color:var(--ink)}
+.compose .pick .ph input{flex:1;height:28px;border:1px solid var(--line);border-radius:8px;padding:0 8px;font:inherit;font-size:12px;outline:none;min-width:0}
+.compose .pick .plist{overflow:auto;padding:4px}
+.compose .pick .pr{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;font-size:12.5px;cursor:pointer}
+.compose .pick .pr:hover{background:var(--soft)}
+.compose .pick .pr em{margin-left:auto;font-style:normal;font-size:11px;color:var(--ink3)}
+.compose .pick .pe{padding:12px;font-size:12px;color:var(--ink3);text-align:center}
+.compose .cw{position:relative}

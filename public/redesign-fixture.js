@@ -438,19 +438,19 @@
     email: {
       unread: 58, need: 5, colN: 2, feedTab: 'everything',
       messages: [
-        { id: 1, day: 'Today', f: 'Bruce Fair', e: 'teammate@4orm.example', c: '#2e6bf2', sj: 'Revised - This version may be better', pv: 'Let me know your thoughts. B', t: '47m', un: 1, att: ['2-pager v3.pdf'], tag: 'Needs reply' },
-        { id: 2, day: 'Today', f: 'CLHIA Affiliates Program', e: 'affiliates@ins.test', c: '#0f6e8a', sj: 'RE: Are we a bad fit for the Affiliates Program?', pv: 'Hi Chad, thank you for your email. Can you provide a list of Canadian life and health insurers that you\u2026', t: '9h', un: 1, att: [], tag: 'Needs reply' },
-        { id: 3, day: 'Today', f: 'Simen Ruud', e: 'sam@fundraisetool.test', c: '#4a5672', sj: 'Chad\u2019s Foundersuite account', pv: 'Hi Chad, Simen here from Foundersuite\u2026', t: '10h', un: 0, att: [], tag: '' },
+        { id: 1, day: 'Today', f: 'Bruce Fair', e: 'bruce@4ormfinance.com', c: '#2e6bf2', sj: 'Revised - This version may be better', pv: 'Let me know your thoughts. B', t: '47m', un: 1, att: ['2-pager v3.pdf'], tag: 'Needs reply' },
+        { id: 2, day: 'Today', f: 'CLHIA Affiliates Program', e: 'affiliates@clhia.ca', c: '#0f6e8a', sj: 'RE: Are we a bad fit for the Affiliates Program?', pv: 'Hi Chad, thank you for your email. Can you provide a list of Canadian life and health insurers that you\u2026', t: '9h', un: 1, att: [], tag: 'Needs reply' },
+        { id: 3, day: 'Today', f: 'Simen Ruud', e: 'simen@foundersuite.com', c: '#4a5672', sj: 'Chad\u2019s Foundersuite account', pv: 'Hi Chad, Simen here from Foundersuite\u2026', t: '10h', un: 0, att: [], tag: '' },
         { id: 4, day: 'Today', f: 'Michael Stevens', e: 'michael@example.ca', c: '#6b4fd8', sj: 'NMDA with James - next steps', pv: 'Chad, James sent over the markup. Two points I\u2019d push back on\u2026', t: '11h', un: 1, att: ['NMDA-markup.docx'], tag: '' },
-        { id: 5, day: 'Yesterday', f: 'Kevin Wong', e: 'engineer@4orm.example', c: '#0f8a8a', sj: 'Re: GTM outline', pv: 'Looked at it. Two edits on the broker section, then it\u2019s good.', t: '1d', un: 0, att: [], tag: '' },
-        { id: 6, day: 'Yesterday', f: 'Bow Valley Credit Union', e: 'partnerships@example-cu.test', c: '#c2560c', sj: 'Follow-up from Thursday\u2019s call', pv: 'Thanks for walking us through the suitability record. Our compliance lead would like to see\u2026', t: '1d', un: 1, att: ['BVCU-requirements.pdf'], tag: 'Needs reply' },
-        { id: 7, day: 'Yesterday', f: 'Mike (Mench Capital)', e: 'ridgecapital@mail.test', c: '#c98408', sj: 'Re: 4orm Finance - Overview for Investors', pv: 'Had a look over the weekend. A couple of questions on the capture rate\u2026', t: '1d', un: 0, att: [], tag: '' },
-        { id: 8, day: 'Yesterday', f: 'TekSavvy', e: 'billing@ispcorp.test', c: '#7a86a0', sj: 'TekSavvy invoice for account 4421', pv: 'Your invoice is ready.', t: '1d', un: 0, att: ['invoice.pdf'], tag: 'Bulk' },
-        { id: 9, day: 'Yesterday', f: 'Don Hickling', e: 'angel.investor@mail.test', c: '#6b4fd8', sj: 'Friday 1on1 - agenda', pv: 'Three things: the raise, Kevin\u2019s path, and the regulator note.', t: '1d', un: 0, att: [], tag: '' }
+        { id: 5, day: 'Yesterday', f: 'Kevin Wong', e: 'kevin@4ormfinance.com', c: '#0f8a8a', sj: 'Re: GTM outline', pv: 'Looked at it. Two edits on the broker section, then it\u2019s good.', t: '1d', un: 0, att: [], tag: '' },
+        { id: 6, day: 'Yesterday', f: 'Bow Valley Credit Union', e: 'partnerships@bowvalleycu.com', c: '#c2560c', sj: 'Follow-up from Thursday\u2019s call', pv: 'Thanks for walking us through the suitability record. Our compliance lead would like to see\u2026', t: '1d', un: 1, att: ['BVCU-requirements.pdf'], tag: 'Needs reply' },
+        { id: 7, day: 'Yesterday', f: 'Mike (Mench Capital)', e: 'menchcapital@telus.net', c: '#c98408', sj: 'Re: 4orm Finance - Overview for Investors', pv: 'Had a look over the weekend. A couple of questions on the capture rate\u2026', t: '1d', un: 0, att: [], tag: '' },
+        { id: 8, day: 'Yesterday', f: 'TekSavvy', e: 'billing@teksavvy.com', c: '#7a86a0', sj: 'TekSavvy invoice for account 4421', pv: 'Your invoice is ready.', t: '1d', un: 0, att: ['invoice.pdf'], tag: 'Bulk' },
+        { id: 9, day: 'Yesterday', f: 'Don Hickling', e: 'donhickling.dh@gmail.com', c: '#6b4fd8', sj: 'Friday 1on1 - agenda', pv: 'Three things: the raise, Kevin\u2019s path, and the regulator note.', t: '1d', un: 0, att: [], tag: '' }
       ],
       cols: [
-        { id: 'c1', n: 'Raise', c: '#c2560c', from: ['teammate@4orm.example', 'ridgecapital@mail.test'], ids: [1, 7] },
-        { id: 'c2', n: 'Regulators & associations', c: '#e0364f', from: ['affiliates@ins.test'], ids: [2] }
+        { id: 'c1', n: 'Raise', c: '#c2560c', from: ['bruce@4ormfinance.com', 'menchcapital@telus.net'], ids: [1, 7] },
+        { id: 'c2', n: 'Regulators & associations', c: '#e0364f', from: ['affiliates@clhia.ca'], ids: [2] }
       ],
       people: {
         looseMore: 10,

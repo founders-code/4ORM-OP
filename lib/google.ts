@@ -1282,11 +1282,153 @@ function headerText(value: string) {
   return /^[\x20-\x7e]*$/.test(clean) ? clean : `=?UTF-8?B?${Buffer.from(clean, 'utf8').toString('base64')}?=`;
 }
 
-type MailInput = { to: string; cc?: unknown; bcc?: unknown; subject: string; text: string; threadId?: string; messageId?: string; reply?: boolean };
+export type MailFile = { name: string; type: string; bytes: Buffer };
+type MailInput = {
+  to: string; cc?: unknown; bcc?: unknown; subject: string; text: string; threadId?: string; messageId?: string; reply?: boolean;
+  /** Optional HTML body (sent as multipart/alternative with the text part). */
+  html?: string;
+  /** Optional real attachments (multipart/mixed). */
+  files?: MailFile[];
+};
+
+/** Strip active content from an outgoing HTML body. The sender is the owner; this only keeps scripts and handlers out. */
+export function cleanMailHtml(raw: string) {
+  return String(raw || '')
+    .slice(0, 200000)
+    .replace(/<\s*(script|style|iframe|object|embed|form|input|button|textarea|select|meta|link|base)\b[\s\S]*?(<\s*\/\s*\1\s*>|$)/gi, '')
+    .replace(/<\s*(script|style|iframe|object|embed|form|input|button|textarea|select|meta|link|base)\b[^>]*>/gi, '')
+    .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/(href|src)\s*=\s*("|')\s*(javascript|vbscript|data):[^"']*\2/gi, '$1="#"');
+}
+
+function b64Lines(buf: Buffer) {
+  return (buf.toString('base64').match(/.{1,76}/g) || []).join('\r\n');
+}
+
+function fileNameHeader(name: string) {
+  const clean = String(name || 'file').replace(/[\r\n"\\]/g, ' ').slice(0, 180) || 'file';
+  return /^[\x20-\x7e]*$/.test(clean) ? `"${clean}"` : `"=?UTF-8?B?${Buffer.from(clean, 'utf8').toString('base64')}?="`;
+}
+
+/** The body part(s): text only, or multipart/alternative text + html. Returns [headerLines, bodyText]. */
+function bodyPart(text: string, html: string) {
+  const plain = b64Lines(Buffer.from(String(text || '').slice(0, 20000), 'utf8'));
+  if (!html) return { head: ['Content-Type: text/plain; charset=utf-8', 'Content-Transfer-Encoding: base64'], body: plain };
+  const alt = `alt_${createHash('sha1').update(text + html + Date.now()).digest('hex').slice(0, 24)}`;
+  const htmlB64 = b64Lines(Buffer.from(html, 'utf8'));
+  const body = [
+    `--${alt}`, 'Content-Type: text/plain; charset=utf-8', 'Content-Transfer-Encoding: base64', '', plain,
+    `--${alt}`, 'Content-Type: text/html; charset=utf-8', 'Content-Transfer-Encoding: base64', '', htmlB64,
+    `--${alt}--`, '',
+  ].join('\r\n');
+  return { head: [`Content-Type: multipart/alternative; boundary="${alt}"`], body };
+}
+
+/** Full RFC 822 message text (not encoded). Null when the To address is bad. */
+function mimeText(input: MailInput) {
+  const cleanTo = String(input.to || '').trim();
+  if (!/^[^\s@,<>]+@[^\s@,<>]+\.[^\s@,<>]+$/.test(cleanTo)) return null;
+  const cc = addressList(input.cc).filter((e) => e !== cleanTo.toLowerCase());
+  const bcc = addressList(input.bcc).filter((e) => e !== cleanTo.toLowerCase() && !cc.includes(e));
+  const base = String(input.subject || '').replace(/[\r\n]/g, ' ').slice(0, 200);
+  const subject = input.reply && !/^re:/i.test(base) ? `Re: ${base}` : base;
+  const ref = String(input.messageId || '').replace(/[\r\n]/g, '').slice(0, 300);
+  const lines = [`To: ${cleanTo}`];
+  if (cc.length) lines.push(`Cc: ${cc.join(', ')}`);
+  if (bcc.length) lines.push(`Bcc: ${bcc.join(', ')}`);
+  lines.push(`Subject: ${headerText(subject)}`);
+  if (/^<[^<>\s]+>$/.test(ref)) lines.push(`In-Reply-To: ${ref}`, `References: ${ref}`);
+  lines.push('MIME-Version: 1.0');
+  const html = input.html ? cleanMailHtml(input.html) : '';
+  const part = bodyPart(String(input.text || ''), html);
+  const files = (input.files || []).filter((f) => f && f.bytes && f.bytes.length).slice(0, 20);
+  if (!files.length) {
+    lines.push(...part.head, '', part.body);
+    return lines.join('\r\n');
+  }
+  const mix = `mix_${createHash('sha1').update(subject + Date.now() + files.length).digest('hex').slice(0, 24)}`;
+  lines.push(`Content-Type: multipart/mixed; boundary="${mix}"`, '', `--${mix}`, ...part.head, '', part.body);
+  for (const f of files) {
+    const type = /^[\w.+-]+\/[\w.+-]+$/.test(String(f.type || '')) ? f.type : 'application/octet-stream';
+    lines.push(
+      `--${mix}`,
+      `Content-Type: ${type}; name=${fileNameHeader(f.name)}`,
+      `Content-Disposition: attachment; filename=${fileNameHeader(f.name)}`,
+      'Content-Transfer-Encoding: base64',
+      '',
+      b64Lines(f.bytes),
+    );
+  }
+  lines.push(`--${mix}--`, '');
+  return lines.join('\r\n');
+}
+
+/** Media upload (message/rfc822) for messages with attachments: avoids the JSON raw size ceiling. */
+async function gmailUpload(url: string, meta: Record<string, unknown>, mime: string) {
+  const access = await accessToken();
+  if (!access) return { ok: false, status: 0, json: null as unknown };
+  const boundary = `up_${createHash('sha1').update(mime.slice(0, 2000) + Date.now()).digest('hex').slice(0, 24)}`;
+  const body = Buffer.concat([
+    Buffer.from(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${boundary}\r\nContent-Type: message/rfc822\r\n\r\n`, 'utf8'),
+    Buffer.from(mime, 'utf8'),
+    Buffer.from(`\r\n--${boundary}--`, 'utf8'),
+  ]);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${access}`, 'content-type': `multipart/related; boundary=${boundary}` },
+    body,
+    signal: AbortSignal.timeout(45000),
+  });
+  const json = await res.json().catch(() => null);
+  return { ok: res.ok, status: res.status, json };
+}
+
+/** Bytes of a Drive file to attach: Google Docs/Sheets/Slides as PDF, everything else as stored. Capped at 20 MB. */
+export async function driveFileBytes(fileId: string): Promise<MailFile | null> {
+  if (!configured() || !/^[\w-]{8,200}$/.test(fileId)) return null;
+  const access = await accessToken();
+  if (!access) return null;
+  const meta = (await gfetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,mimeType,size&supportsAllDrives=true`,
+  )) as { name?: string; mimeType?: string; size?: string } | null;
+  if (!meta) return null;
+  const name = String(meta.name || 'Document');
+  const type = String(meta.mimeType || 'application/octet-stream');
+  if (type === 'application/vnd.google-apps.folder') return null;
+  if (type.startsWith('application/vnd.google-apps.')) {
+    const bytes = await pdfBytes(access, fileId);
+    return bytes ? { name: /\.pdf$/i.test(name) ? name : `${name}.pdf`, type: 'application/pdf', bytes } : null;
+  }
+  if (Number(meta.size || 0) > 20 * 1024 * 1024) return null;
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`, {
+    headers: { authorization: `Bearer ${access}` },
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!res.ok) return null;
+  const bytes = Buffer.from(await res.arrayBuffer());
+  if (bytes.length > 20 * 1024 * 1024) return null;
+  return { name, type, bytes };
+}
+
+/** The Gmail signature (HTML) for the send-as address. needsScope when Gmail refuses the settings read. */
+export async function gmailSignature(fromAddress = '') {
+  if (!configured()) return { ok: false, needsScope: false, signature: '', address: '' };
+  const res = await gcall('https://gmail.googleapis.com/gmail/v1/users/me/settings/sendAs');
+  if (!res.ok) return { ok: false, needsScope: res.status === 403 || res.status === 401, signature: '', address: '' };
+  const rows = ((res.json as { sendAs?: Array<{ sendAsEmail?: string; signature?: string; isDefault?: boolean; isPrimary?: boolean }> } | null)?.sendAs) || [];
+  const want = String(fromAddress || '').toLowerCase();
+  const pick = rows.find((r) => want && String(r.sendAsEmail || '').toLowerCase() === want)
+    || rows.find((r) => r.isDefault) || rows.find((r) => r.isPrimary) || rows[0];
+  return { ok: true, needsScope: false, signature: cleanMailHtml(String(pick?.signature || '')), address: String(pick?.sendAsEmail || '') };
+}
 
 function mimeRaw(input: MailInput) {
   const cleanTo = String(input.to || '').trim();
   if (!/^[^\s@,<>]+@[^\s@,<>]+\.[^\s@,<>]+$/.test(cleanTo)) return null;
+  if (input.html || (input.files && input.files.length)) {
+    const full = mimeText(input);
+    return full ? Buffer.from(full, 'utf8').toString('base64url') : null;
+  }
   const cc = addressList(input.cc).filter((e) => e !== cleanTo.toLowerCase());
   const bcc = addressList(input.bcc).filter((e) => e !== cleanTo.toLowerCase() && !cc.includes(e));
   const base = String(input.subject || '').replace(/[\r\n]/g, ' ').slice(0, 200);
@@ -1303,9 +1445,19 @@ function mimeRaw(input: MailInput) {
 }
 
 export async function gmailSend(input: MailInput) {
+  const threadId = /^[A-Za-z0-9_-]{6,64}$/.test(String(input.threadId || '')) ? String(input.threadId) : undefined;
+  if (input.files && input.files.length) {
+    // Attachments: one media upload of the full message (no JSON raw size ceiling). Fallback is a Gmail draft, same way.
+    const full = mimeText(input);
+    if (!full) return { ok: false, status: 0, drafted: false };
+    const meta = threadId ? { threadId } : {};
+    const sent = await gmailUpload('https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=multipart', meta, full);
+    if (sent.ok) return { ok: true, status: sent.status, drafted: false };
+    const draft = await gmailUpload('https://gmail.googleapis.com/upload/gmail/v1/users/me/drafts?uploadType=multipart', { message: meta }, full);
+    return { ok: draft.ok, status: sent.status, drafted: draft.ok };
+  }
   const raw = mimeRaw(input);
   if (!raw) return { ok: false, status: 0, drafted: false };
-  const threadId = /^[A-Za-z0-9_-]{6,64}$/.test(String(input.threadId || '')) ? String(input.threadId) : undefined;
   const sent = await gcall('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
     method: 'POST',
     body: JSON.stringify({ raw, ...(threadId ? { threadId } : {}) }),
@@ -1322,6 +1474,13 @@ export async function gmailModify(id: string, add: string[] = [], remove: string
     method: 'POST',
     body: JSON.stringify({ addLabelIds: add.slice(0, 8), removeLabelIds: remove.slice(0, 8) }),
   });
+  return { ok: sent.ok, status: sent.status };
+}
+
+/** Move a message to Gmail Trash (undo = untrash). Gmail keeps Trash for 30 days. */
+export async function gmailTrash(id: string, undo = false) {
+  if (!configured() || !/^[A-Za-z0-9_-]{6,64}$/.test(id)) return { ok: false, status: 0 };
+  const sent = await gcall(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(id)}/${undo ? 'untrash' : 'trash'}`, { method: 'POST' });
   return { ok: sent.ok, status: sent.status };
 }
 

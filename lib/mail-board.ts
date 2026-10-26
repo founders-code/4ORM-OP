@@ -64,6 +64,40 @@ export async function ensureMailBoard(sql: Sql) {
   } catch (err) {
     fail('mail_board_tables', err);
   }
+  // Compose signature: a pasted one (fallback) and a short cache of the Gmail one. Additive, idempotent.
+  try {
+    await sql`ALTER TABLE owner_settings ADD COLUMN IF NOT EXISTS mail_signature text`;
+    await sql`ALTER TABLE owner_settings ADD COLUMN IF NOT EXISTS mail_signature_gmail text`;
+    await sql`ALTER TABLE owner_settings ADD COLUMN IF NOT EXISTS mail_signature_at timestamptz`;
+  } catch (err) {
+    fail('mail_signature_cols', err);
+  }
+}
+
+/* ---------- Junk: system / marketing mail, plus per-sender rules (email_rules target 'junk' / 'notjunk') ---------- */
+const JUNK_LOCAL = /^(no-?reply|do-?not-?reply|donotreply|noreply-[\w.-]+|[\w.-]*-noreply|notifications?|notification-[\w.-]+|notify|alerts?|digest|news(letter)?s?|marketing|mailer-daemon|bounces?|receipts?|messages-noreply|invitations?|system)$/i;
+const JUNK_HOST = /(^|\.)(linkedin\.com|vercel\.com|mailchimp\.com|mcsv\.net|sendgrid\.net|hubspotemail\.net|substack\.com|beehiiv\.com|convertkit\.com|klaviyo(mail)?\.com|facebookmail\.com|medium\.com|quora\.com)$/i;
+const JUNK_SUBJECT = /\b(your receipt|receipt for|payment receipt|order confirmation|your order|newsletter|unsubscribe|weekly digest|daily digest)\b/i;
+
+/** True when the mail looks like a system notice, receipt or newsletter. Outbound and same-domain people mail never count. */
+export function autoJunk(mail: BoardMail) {
+  if (mail.outbound) return false;
+  const email = String(mail.email || '').toLowerCase();
+  const local = email.split('@')[0] || '';
+  const host = email.split('@')[1] || '';
+  if (JUNK_LOCAL.test(local)) return true;
+  if (JUNK_HOST.test(host)) return true;
+  if (JUNK_SUBJECT.test(String(mail.subject || ''))) return true;
+  if (mail.internal) return false;
+  return !!mail.bulk;
+}
+
+/** Final junk call with the owner's sender rules: 'notjunk' wins, then 'junk', then the automatic rules. */
+export function isJunk(mail: BoardMail, rules: Array<{ matchType: string; matchValue: string; target: string }>) {
+  const mine = rules.filter((r) => r.target === 'junk' || r.target === 'notjunk');
+  if (mine.some((r) => r.target === 'notjunk' && ruleHit(r, mail))) return false;
+  if (mine.some((r) => r.target === 'junk' && ruleHit(r, mail))) return true;
+  return autoJunk(mail);
 }
 
 export async function seedColumns(sql: Sql, ownerId: string) {
@@ -210,6 +244,7 @@ export function classifyMail(
 ) {
   if (files[mail.id]) return files[mail.id];
   for (const rule of rules) {
+    if (rule.target === 'junk' || rule.target === 'notjunk') continue;
     if (ruleHit(rule, mail) && KEY_RE.test(rule.target)) return rule.target;
   }
   if (mail.bulk) return 'quiet';

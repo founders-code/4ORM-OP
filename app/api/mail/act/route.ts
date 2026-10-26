@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { withCreds } from '@/lib/creds';
-import { gmailModify, gmailSend } from '@/lib/google';
+import { driveFileBytes, gmailModify, gmailSend, gmailTrash, type MailFile } from '@/lib/google';
 import { fail } from '@/lib/log';
 import { ensureMailBoard, fileMessage, saveRule } from '@/lib/mail-board';
 import { openBoard, sessionOwner } from '@/lib/session';
 import { loadCredsFor } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
@@ -34,8 +34,48 @@ export async function POST(req: Request) {
       }
       return NextResponse.json({ ok }, ok ? undefined : { status: 404 });
     }
+    if (action === 'trash' || action === 'untrash') {
+      const sent = await withCreds(creds, () => gmailTrash(id, action === 'untrash'));
+      return NextResponse.json({ ok: sent.ok, status: sent.status }, sent.ok ? undefined : { status: 502 });
+    }
     if (action === 'reply' || action === 'compose') {
+      // Real attachments: Drive files are fetched here with the room's Google credentials; uploaded files arrive as base64.
+      const list = Array.isArray(body.attachments) ? (body.attachments as Array<Record<string, unknown>>).slice(0, 12) : [];
+      const files: MailFile[] = [];
+      const missed: string[] = [];
+      let total = 0;
+      for (const a of list) {
+        const name = String(a.name || 'File').slice(0, 180);
+        const driveId = String(a.driveFileId || '');
+        const stagedId = String(a.stagedId || '');
+        let file: MailFile | null = null;
+        if (/^[0-9a-f-]{36}$/i.test(stagedId)) {
+          // A file stored in the Documents library (bytes in staged_docs), owner-scoped.
+          try {
+            const rows = await session.sql`SELECT name, mime, body_b64 FROM staged_docs WHERE id = ${stagedId} AND owner_id = ${session.userId} LIMIT 1`;
+            const row = rows[0] as { name?: string; mime?: string; body_b64?: string } | undefined;
+            const bytes = row?.body_b64 ? Buffer.from(String(row.body_b64), 'base64') : null;
+            if (bytes && bytes.length) file = { name: String(row?.name || name), type: String(row?.mime || 'application/octet-stream'), bytes };
+          } catch (err) {
+            fail('mail_att_staged', err);
+          }
+        } else if (/^[\w-]{8,200}$/.test(driveId)) {
+          file = await withCreds(creds, () => driveFileBytes(driveId)).catch(() => null);
+        } else if (typeof a.data === 'string' && a.data.length) {
+          const bytes = Buffer.from(String(a.data).replace(/^data:[^,]*,/, ''), 'base64');
+          if (bytes.length) file = { name, type: String(a.type || 'application/octet-stream'), bytes };
+        }
+        if (!file || total + file.bytes.length > 24 * 1024 * 1024) { missed.push(name); continue; }
+        total += file.bytes.length;
+        files.push(file);
+      }
+      if (missed.length && body.strictAttachments !== false) {
+        return NextResponse.json({ ok: false, error: `Could not attach: ${missed.join(', ')}`, missed }, { status: 422 });
+      }
+      const html = typeof body.html === 'string' ? String(body.html) : '';
       const sent = await withCreds(creds, () => gmailSend({
+        html,
+        files,
         to: String(body.to || ''),
         cc: body.cc,
         bcc: body.bcc,

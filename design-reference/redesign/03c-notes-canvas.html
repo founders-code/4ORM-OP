@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notes canvas - 4orm Ops</title>
+<style>
+/* ===== SHELL (shared by every page) ===== */
+:root{--ground:#0b1430;--ground2:#13224a;--side:#08102a;--card:#fff;--ink:#101a33;--ink2:#4a5672;--ink3:#7a86a0;--line:#e8ecf3;--soft:#f5f7fb;
+--blue:#2e6bf2;--blue50:#eaf1fe;--green:#12a36a;--green50:#e4f6ee;--amber:#c98408;--amber50:#fff4e0;--red:#e0364f;--red50:#fde9ec;--violet:#6b4fd8;
+font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}html,body{margin:0}html{background:#0d1838}
+body{background:linear-gradient(165deg,var(--ground),var(--ground2)) fixed;color:var(--ink);height:100vh;display:grid;grid-template-columns:224px minmax(0,1fr);grid-template-rows:56px minmax(0,1fr);overflow:hidden}
+button{font:inherit;cursor:pointer}
+.top{grid-column:1/-1;height:56px;background:#fff;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:10px}.logo img{height:30px;display:block}
+.crumb{font-size:14px;font-weight:700;color:var(--ink);padding-left:12px;border-left:1px solid var(--line)}
+.top .r{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tb{height:32px;border:1px solid var(--line);background:#fff;border-radius:9px;padding:0 12px;font-size:12.5px;font-weight:650;color:var(--ink);display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.tb .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.clock{font-size:12.5px;color:var(--ink3);font-weight:600;white-space:nowrap;margin-left:6px}
+.side{background:var(--side);padding:14px 10px;display:flex;flex-direction:column;gap:2px;overflow:auto}
+.grp{font-size:13.5px;font-weight:850;color:#5b8cff;padding:16px 12px 6px;margin-top:6px;border-top:1px solid rgba(255,255,255,.08);letter-spacing:-.01em}.side .grp:first-child{border-top:none;margin-top:0;padding-top:4px}.side .nav{padding-left:16px}
+.nav{display:flex;align-items:center;gap:11px;padding:8px 12px;border-radius:9px;color:#cfd8ee;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.nav:hover{background:rgba(255,255,255,.05)}.nav.on{background:rgba(46,107,242,.22);color:#fff}
+.nav .n{margin-left:auto;font-size:11px;font-weight:700;color:#b9c6e6;background:rgba(255,255,255,.08);border-radius:999px;padding:1px 8px}
+.main{padding:20px 24px 20px;min-width:0;display:flex;flex-direction:column;min-height:0}
+
+/* ===== NOTES CANVAS ===== */
+.bar{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.bar h1{margin:0;font-size:24px;font-weight:850;color:#fff;letter-spacing:-.02em}
+.bar .sub{font-size:13px;color:#9fb0d0;font-weight:500}
+.bar .r{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:13px;font-weight:700;padding:0 13px;white-space:nowrap}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.seg{display:flex;background:var(--soft);border:1px solid var(--line);border-radius:9px;padding:2px}.seg span{font-size:12px;font-weight:700;padding:5px 10px;border-radius:7px;color:var(--ink3);cursor:pointer;white-space:nowrap}.seg span.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.tools{display:flex;align-items:center;gap:10px;background:#fff;border-radius:14px;padding:9px 10px;box-shadow:0 10px 30px rgba(3,10,30,.22);margin-bottom:12px;flex-wrap:wrap}
+.search{flex:1;min-width:200px;height:34px;border:1px solid var(--line);border-radius:9px;padding:0 12px;font:inherit;font-size:13px;background:var(--soft);outline:none}
+.zoom{display:flex;align-items:center;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.zoom button{height:32px;min-width:34px;border:0;background:#fff;font-size:15px;font-weight:800;color:var(--ink)}
+.zoom button:hover{background:var(--soft)}
+.zoom b{min-width:56px;text-align:center;font-size:12.5px;font-weight:800;color:var(--ink2);border-left:1px solid var(--line);border-right:1px solid var(--line);line-height:32px}
+.hint{font-size:12px;color:var(--ink3);font-weight:600}
+
+.stage{position:relative;flex:1;min-height:0;border-radius:16px;overflow:hidden;background:#0e1a3d;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);cursor:grab}
+.stage.pan{cursor:grabbing}
+.world{position:absolute;left:0;top:0;width:6000px;height:4000px;transform-origin:0 0;
+  background-image:radial-gradient(rgba(157,185,255,.22) 1.2px,transparent 1.2px);background-size:40px 40px}
+.cluster{position:absolute;border-radius:22px;border:2px solid;background:rgba(255,255,255,.04)}
+.cluster.drop{box-shadow:0 0 0 4px rgba(46,107,242,.45)}
+.cluster .cn{position:absolute;left:14px;top:-17px;display:flex;align-items:center;gap:8px;padding:5px 12px;border-radius:999px;font-size:13px;font-weight:850;color:#fff;cursor:move;white-space:nowrap;box-shadow:0 6px 16px rgba(3,10,30,.35)}
+.cluster .cn i{font-style:normal;font-weight:700;opacity:.8;font-size:12px}
+.cluster .cn[contenteditable=true]{outline:2px solid #fff;cursor:text}
+.cluster .rz{position:absolute;right:-7px;bottom:-7px;width:16px;height:16px;border-radius:5px;background:#fff;cursor:nwse-resize;opacity:.0;transition:opacity .15s}
+.cluster:hover .rz{opacity:.9}
+.note{position:absolute;width:220px;border-radius:14px;padding:12px 13px 10px;box-shadow:0 8px 22px rgba(3,10,30,.35);cursor:move;user-select:none}
+.note.sel{outline:3px solid #2e6bf2;outline-offset:2px}
+.y{background:#fff6c9}.p{background:#ffe1ea}.g{background:#ddf5e6}.b{background:#e1ecff}.o{background:#ffe6cf}.v{background:#ece4ff}.w{background:#fff}
+.ty{display:inline-block;font-size:10.5px;font-weight:800;border-radius:6px;padding:2px 8px;background:rgba(16,26,51,.08);color:var(--ink2);margin-bottom:7px}
+.ty.todo{background:#2e6bf2;color:#fff}.ty.idea{background:#c98408;color:#fff}.ty.person{background:#12a36a;color:#fff}.ty.dec{background:#6b4fd8;color:#fff}
+.note h4{margin:0 0 4px;font-size:14px;font-weight:800;line-height:1.3;color:var(--ink)}
+.note p{margin:0;font-size:12.5px;line-height:1.5;color:#33405a}
+/* zoomed out: notes collapse to titles, cluster names grow */
+.far .note p,.far .note .ty{display:none}
+.far .note{padding:10px 12px}.far .note h4{font-size:18px}
+.far .cluster .cn{font-size:30px;padding:10px 22px;top:-34px}
+.marq{position:absolute;border:1.5px dashed #9db9ff;background:rgba(46,107,242,.12);border-radius:6px;pointer-events:none;display:none}
+.mini{position:absolute;right:14px;bottom:14px;width:180px;height:120px;background:rgba(8,16,42,.85);border:1px solid rgba(255,255,255,.12);border-radius:10px;overflow:hidden;cursor:pointer}
+.mini i{position:absolute;border-radius:3px;opacity:.85}
+.mini .vp{position:absolute;border:1.5px solid #fff;border-radius:3px}
+.mklbl{position:absolute;left:14px;bottom:14px;background:rgba(8,16,42,.85);color:#cfd8ee;font-size:12px;font-weight:650;border-radius:10px;padding:8px 12px;border:1px solid rgba(255,255,255,.12)}
+.selbar{position:absolute;left:50%;top:14px;transform:translateX(-50%);background:#fff;border-radius:12px;box-shadow:0 18px 40px rgba(3,10,30,.45);padding:6px;display:none;gap:6px;align-items:center;z-index:5}
+.selbar.on{display:flex}.selbar b{font-size:12.5px;padding:0 8px;color:var(--ink2)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;display:none;z-index:20}.toast.show{display:block}
+</style></head>
+<body>
+<header class="top">
+  <div class="logo"><img src="../assets/logo-finance.png" alt="4orm Finance"></div><span class="crumb">Notes</span>
+  <div class="r"><span class="tb">Today</span><span class="tb">Calendar</span><span class="tb"><span class="dot"></span>Signals</span><span class="tb">Sound on</span><span class="clock">Mon, Oct 26 &middot; 14:05 Pacific</span></div>
+</header>
+<nav class="side" id="side"></nav>
+<main class="main">
+  <div class="bar"><h1>Notes</h1><span class="sub">Lay notes out on a grid, group them into named clusters</span>
+    <div class="r"><div class="seg"><span>Board</span><span class="on">Canvas</span></div><button class="btn" id="addCluster">+ Cluster</button><button class="btn pri" id="addNote">+ Note</button></div></div>
+  <div class="tools">
+    <input class="search" id="q" placeholder="Search notes - the canvas flies to the match">
+    <div class="zoom"><button id="zOut" aria-label="Zoom out">&minus;</button><b id="zLbl">100%</b><button id="zIn" aria-label="Zoom in">+</button></div>
+    <button class="btn" id="fit">Fit all</button>
+    <span class="hint">Drag empty space to pan &middot; pinch or &#8984; scroll to zoom &middot; Shift-drag to select</span>
+  </div>
+  <div class="stage" id="stage">
+    <div class="world" id="world"></div>
+    <div class="marq" id="marq"></div>
+    <div class="selbar" id="selbar"><b id="selN">3 selected</b><button class="btn pri" id="mkCluster">Make a cluster</button><button class="btn" id="selClear">Clear</button></div>
+    <div class="mklbl">Double-click a cluster name to rename it &middot; drag a note into a cluster to file it</div>
+    <div class="mini" id="mini"></div>
+  </div>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const NAV=[["Today"],["Playbook"],["War Room"],["Calendar"],["Email"],["People"],["Contacts"],["Spaces"],["Pipeline",0,"246"],["Library"],["Notes"],["Documents"],["Drive"],["Links"],["Record"],["Zoom"],["Completed"],["Signals"],["News"],["Financials"],["Integrations",0,"6"]];
+const GROUPS=["Today","People","Library","Record","Signals"];
+document.getElementById('side').innerHTML=NAV.map(n=>GROUPS.includes(n[0])?`<div class="grp">${n[0]}</div>`:`<div class="nav${n[0]=='Notes'?' on':''}">${n[0]}${n[2]?`<span class="n">${n[2]}</span>`:''}</div>`).join('');
+const T=t=>{const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1700)};
+
+const CL=[
+ {id:'raise',name:'Raise - pre-seed',color:'#2e6bf2',x:120,y:120,w:760,h:520},
+ {id:'dp',name:'Design partners',color:'#12a36a',x:960,y:120,w:760,h:520},
+ {id:'reg',name:'Regulators',color:'#6b4fd8',x:120,y:740,w:520,h:420},
+ {id:'prod',name:'Product ideas',color:'#c98408',x:720,y:740,w:1000,h:420}];
+const NOTES=[
+ {c:'raise',x:150,y:160,k:'b',t:'todo',h:'Kevin - wire the $25K',p:'He said Thursday. Send the subscription docs today.'},
+ {c:'raise',x:400,y:160,k:'y',t:'idea',h:'Second close date',p:'Hold Nov 6 as the soft close; tell Mike the same.'},
+ {c:'raise',x:150,y:340,k:'g',t:'person',h:'Mench Capital',p:'Questions on capture rate. Send the one-pager with the base case.'},
+ {c:'raise',x:400,y:340,k:'w',t:'note',h:'$170K to go',p:'11 days. Three warm, two cold.'},
+ {c:'dp',x:990,y:160,k:'g',t:'person',h:'Bow Valley CU',p:'Wants the compliance requirements before Thursday 10:00.'},
+ {c:'dp',x:1240,y:160,k:'b',t:'todo',h:'Enrich - discovery call',p:'Book 30 min. Bring the suitability record demo.'},
+ {c:'dp',x:990,y:340,k:'o',t:'idea',h:'Credit union pack',p:'One page for CU boards: what changes, what it costs.'},
+ {c:'reg',x:150,y:780,k:'v',t:'dec',h:'BCFSA intro',p:'Lead with conduct risk, not technology.'},
+ {c:'reg',x:400,y:780,k:'p',t:'todo',h:'FINTRAC fines note',p:'Pull the four credit union cases for the deck.'},
+ {c:'prod',x:750,y:780,k:'y',t:'idea',h:'Voice log to tasks',p:'Every voice note becomes a War Room task with a due date.'},
+ {c:'prod',x:1000,y:780,k:'w',t:'note',h:'Advisor read-back',p:'Read the advice back to the client in plain words.'},
+ {c:'prod',x:1250,y:780,k:'b',t:'todo',h:'Readiness check link',p:'Add the free check to every Space bundle.'},
+ {c:null,x:1840,y:200,k:'y',t:'note',h:'Unfiled - Thanksgiving list',p:'Drag me into a cluster.'}];
+
+const world=document.getElementById('world'),stage=document.getElementById('stage');
+let z=1,ox=-60,oy=-40;
+function apply(){world.style.transform=`translate(${ox}px,${oy}px) scale(${z})`;world.classList.toggle('far',z<.55);document.getElementById('zLbl').textContent=Math.round(z*100)+'%';mini();}
+function render(){
+ world.innerHTML=CL.map(c=>`<div class="cluster" data-id="${c.id}" style="left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px;border-color:${c.color}"><div class="cn" style="background:${c.color}">${c.name} <i>${NOTES.filter(n=>n.c==c.id).length}</i></div><span class="rz"></span></div>`).join('')
+ +NOTES.map((n,i)=>`<div class="note ${n.k}" data-i="${i}" style="left:${n.x}px;top:${n.y}px"><span class="ty ${n.t}">${{todo:'To do',idea:'Idea',person:'Person',dec:'Decision',note:'Note'}[n.t]}</span><h4>${n.h}</h4><p>${n.p}</p></div>`).join('');
+ apply();
+}
+function toWorld(cx,cy){const r=stage.getBoundingClientRect();return [(cx-r.left-ox)/z,(cy-r.top-oy)/z];}
+function zoomAt(f,cx,cy){const r=stage.getBoundingClientRect();cx=cx??r.left+r.width/2;cy=cy??r.top+r.height/2;const [wx,wy]=toWorld(cx,cy);z=Math.min(2,Math.max(.15,z*f));ox=cx-r.left-wx*z;oy=cy-r.top-wy*z;apply();}
+stage.addEventListener('wheel',e=>{e.preventDefault();if(e.ctrlKey||e.metaKey)zoomAt(Math.exp(-e.deltaY*.0025),e.clientX,e.clientY);else{ox-=e.deltaX;oy-=e.deltaY;apply();}},{passive:false});
+document.getElementById('zIn').onclick=()=>zoomAt(1.25);document.getElementById('zOut').onclick=()=>zoomAt(.8);
+function fit(){const xs=[...CL.map(c=>[c.x,c.x+c.w]),...NOTES.map(n=>[n.x,n.x+220])].flat(),ys=[...CL.map(c=>[c.y,c.y+c.h]),...NOTES.map(n=>[n.y,n.y+150])].flat();const x0=Math.min(...xs)-60,x1=Math.max(...xs)+60,y0=Math.min(...ys)-80,y1=Math.max(...ys)+60;const r=stage.getBoundingClientRect();z=Math.min(r.width/(x1-x0),r.height/(y1-y0));ox=-x0*z+(r.width-(x1-x0)*z)/2;oy=-y0*z+(r.height-(y1-y0)*z)/2;apply();}
+document.getElementById('fit').onclick=fit;
+
+let drag=null,sel=new Set();
+stage.addEventListener('pointerdown',e=>{
+ const note=e.target.closest('.note'),cn=e.target.closest('.cn'),rz=e.target.closest('.rz');
+ if(cn&&cn.isContentEditable)return;
+ const [wx,wy]=toWorld(e.clientX,e.clientY);
+ if(rz){const c=CL.find(c=>c.id==rz.parentNode.dataset.id);drag={type:'rz',c,sx:wx,sy:wy,w:c.w,h:c.h};}
+ else if(note){const i=+note.dataset.i;if(!sel.has(i)){if(!e.shiftKey)sel.clear();sel.add(i);}drag={type:'note',sx:wx,sy:wy,start:[...sel].map(i=>[i,NOTES[i].x,NOTES[i].y])};markSel();}
+ else if(cn){const c=CL.find(c=>c.id==cn.parentNode.dataset.id);drag={type:'cl',c,sx:wx,sy:wy,x:c.x,y:c.y,inner:NOTES.map((n,i)=>[i,n.x,n.y]).filter(([i])=>NOTES[i].c==c.id)};}
+ else if(e.shiftKey){drag={type:'marq',sx:e.clientX,sy:e.clientY};}
+ else{drag={type:'pan',sx:e.clientX,sy:e.clientY,ox,oy};stage.classList.add('pan');sel.clear();markSel();}
+ stage.setPointerCapture(e.pointerId);
+});
+stage.addEventListener('pointermove',e=>{
+ if(!drag)return;const [wx,wy]=toWorld(e.clientX,e.clientY);
+ if(drag.type=='pan'){ox=drag.ox+e.clientX-drag.sx;oy=drag.oy+e.clientY-drag.sy;apply();return;}
+ if(drag.type=='marq'){const m=document.getElementById('marq'),r=stage.getBoundingClientRect();const x=Math.min(drag.sx,e.clientX)-r.left,y=Math.min(drag.sy,e.clientY)-r.top;Object.assign(m.style,{display:'block',left:x+'px',top:y+'px',width:Math.abs(e.clientX-drag.sx)+'px',height:Math.abs(e.clientY-drag.sy)+'px'});drag.ex=e.clientX;drag.ey=e.clientY;return;}
+ const dx=wx-drag.sx,dy=wy-drag.sy;
+ if(drag.type=='note'){drag.start.forEach(([i,x,y])=>{NOTES[i].x=x+dx;NOTES[i].y=y+dy;const el=world.querySelector(`.note[data-i="${i}"]`);el.style.left=NOTES[i].x+'px';el.style.top=NOTES[i].y+'px';});const hit=clusterAt(wx,wy);world.querySelectorAll('.cluster').forEach(c=>c.classList.toggle('drop',hit&&c.dataset.id==hit.id));}
+ if(drag.type=='cl'){drag.c.x=drag.x+dx;drag.c.y=drag.y+dy;drag.inner.forEach(([i,x,y])=>{NOTES[i].x=x+dx;NOTES[i].y=y+dy;});render();markSel();}
+ if(drag.type=='rz'){drag.c.w=Math.max(260,drag.w+dx);drag.c.h=Math.max(200,drag.h+dy);render();}
+});
+stage.addEventListener('pointerup',e=>{
+ if(!drag)return;stage.classList.remove('pan');
+ if(drag.type=='note'){const [wx,wy]=toWorld(e.clientX,e.clientY);const hit=clusterAt(wx,wy);let moved=0;drag.start.forEach(([i])=>{const nc=hit?hit.id:null;if(NOTES[i].c!==nc){NOTES[i].c=nc;moved++;}});render();markSel();if(moved)T(hit?`Filed in ${hit.name}`:'Taken out of the cluster');else T('Position saved');}
+ if(drag.type=='cl')T(`${drag.c.name} moved with its ${drag.inner.length} notes`);
+ if(drag.type=='rz')T('Cluster resized');
+ if(drag.type=='marq'&&drag.ex){const [a,b]=toWorld(drag.sx,drag.sy),[c,d]=toWorld(drag.ex,drag.ey);const x0=Math.min(a,c),x1=Math.max(a,c),y0=Math.min(b,d),y1=Math.max(b,d);sel=new Set(NOTES.map((n,i)=>i).filter(i=>NOTES[i].x<x1&&NOTES[i].x+220>x0&&NOTES[i].y<y1&&NOTES[i].y+120>y0));document.getElementById('marq').style.display='none';markSel();}
+ document.getElementById('marq').style.display='none';drag=null;
+});
+function clusterAt(x,y){return CL.slice().reverse().find(c=>x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h);}
+function markSel(){world.querySelectorAll('.note').forEach(n=>n.classList.toggle('sel',sel.has(+n.dataset.i)));const sb=document.getElementById('selbar');sb.classList.toggle('on',sel.size>1);document.getElementById('selN').textContent=sel.size+' selected';}
+document.getElementById('selClear').onclick=()=>{sel.clear();markSel();};
+document.getElementById('mkCluster').onclick=()=>{const ids=[...sel],xs=ids.map(i=>NOTES[i].x),ys=ids.map(i=>NOTES[i].y);const c={id:'c'+Date.now(),name:'New cluster',color:'#e0364f',x:Math.min(...xs)-30,y:Math.min(...ys)-40,w:Math.max(...xs)-Math.min(...xs)+280,h:Math.max(...ys)-Math.min(...ys)+210};CL.push(c);ids.forEach(i=>NOTES[i].c=c.id);sel.clear();render();markSel();rename(c.id);};
+world.addEventListener('dblclick',e=>{const cn=e.target.closest('.cn');if(cn)rename(cn.parentNode.dataset.id);});
+function rename(id){const cn=world.querySelector(`.cluster[data-id="${id}"] .cn`);const c=CL.find(c=>c.id==id);cn.textContent=c.name;cn.contentEditable=true;cn.focus();document.getSelection().selectAllChildren(cn);const done=()=>{cn.contentEditable=false;c.name=cn.textContent.trim()||'Untitled cluster';render();T('Cluster name saved');};cn.addEventListener('blur',done,{once:true});cn.addEventListener('keydown',e=>{if(e.key=='Enter'){e.preventDefault();cn.blur();}});}
+document.getElementById('addCluster').onclick=()=>{const r=stage.getBoundingClientRect();const [wx,wy]=toWorld(r.left+r.width/2,r.top+r.height/2);const c={id:'c'+Date.now(),name:'New cluster',color:'#0f8a8a',x:wx-250,y:wy-150,w:500,h:300};CL.push(c);render();rename(c.id);};
+document.getElementById('addNote').onclick=()=>{const r=stage.getBoundingClientRect();const [wx,wy]=toWorld(r.left+r.width/2,r.top+r.height/2);const hit=clusterAt(wx,wy);NOTES.push({c:hit?hit.id:null,x:wx-110,y:wy-60,k:'y',t:'note',h:'New note',p:'Type here. Saves as you type.'});render();T(hit?`New note in ${hit.name}`:'New note on the canvas');};
+document.getElementById('q').addEventListener('keydown',e=>{if(e.key!='Enter')return;const q=e.target.value.toLowerCase();const i=NOTES.findIndex(n=>(n.h+' '+n.p).toLowerCase().includes(q));if(i<0){T('No note matches');return;}const r=stage.getBoundingClientRect();z=1.1;ox=r.width/2-(NOTES[i].x+110)*z;oy=r.height/2-(NOTES[i].y+60)*z;sel=new Set([i]);apply();markSel();});
+function mini(){const m=document.getElementById('mini'),s=180/2200;let h=CL.map(c=>`<i style="left:${c.x*s}px;top:${c.y*s}px;width:${c.w*s}px;height:${c.h*s}px;background:${c.color}"></i>`).join('');const r=stage.getBoundingClientRect();h+=`<span class="vp" style="left:${-ox/z*s}px;top:${-oy/z*s}px;width:${r.width/z*s}px;height:${r.height/z*s}px"></span>`;m.innerHTML=h;}
+document.getElementById('mini').onclick=e=>{const r=e.currentTarget.getBoundingClientRect(),s=180/2200,sr=stage.getBoundingClientRect();ox=sr.width/2-((e.clientX-r.left)/s)*z;oy=sr.height/2-((e.clientY-r.top)/s)*z;apply();};
+document.querySelector('.seg').onclick=e=>{if(e.target.textContent=='Board')T('Board shows the same notes as the column view; positions on the canvas are kept');};
+render();fit();
+</script>
+</body></html>

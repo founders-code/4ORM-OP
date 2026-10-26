@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spaces - arrange - 4orm Ops</title>
+<style>
+/* ===== SHELL (shared by every page) ===== */
+:root{--ground:#0b1430;--ground2:#13224a;--side:#08102a;--card:#fff;--ink:#101a33;--ink2:#4a5672;--ink3:#7a86a0;--line:#e8ecf3;--soft:#f5f7fb;
+--blue:#2e6bf2;--blue50:#eaf1fe;--green:#12a36a;--green50:#e4f6ee;--amber:#c98408;--amber50:#fff4e0;--red:#e0364f;--red50:#fde9ec;--violet:#6b4fd8;
+font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}html,body{margin:0}html{background:#0d1838}
+body{background:linear-gradient(165deg,var(--ground),var(--ground2)) fixed;color:var(--ink);min-height:100vh;display:grid;grid-template-columns:224px minmax(0,1fr);grid-template-rows:56px auto}
+button{font:inherit;cursor:pointer}
+.top{grid-column:1/-1;height:56px;background:#fff;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid var(--line)}
+.logo img{height:30px;display:block}
+.crumb{font-size:14px;font-weight:700;color:var(--ink);padding-left:12px;border-left:1px solid var(--line)}
+.top .r{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tb{height:32px;border:1px solid var(--line);background:#fff;border-radius:9px;padding:0 12px;font-size:12.5px;font-weight:650;color:var(--ink);display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.tb .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.clock{font-size:12.5px;color:var(--ink3);font-weight:600;white-space:nowrap;margin-left:6px}
+.side{background:var(--side);padding:14px 10px;display:flex;flex-direction:column;gap:2px;min-height:calc(100vh - 56px)}
+.grp{font-size:13.5px;font-weight:850;color:#5b8cff;padding:16px 12px 6px;margin-top:6px;border-top:1px solid rgba(255,255,255,.08);letter-spacing:-.01em}.side .grp:first-child{border-top:none;margin-top:0;padding-top:4px}.side .nav{padding-left:16px}
+.nav{display:flex;align-items:center;gap:11px;padding:8px 12px;border-radius:9px;color:#cfd8ee;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.nav:hover{background:rgba(255,255,255,.05)}.nav.on{background:rgba(46,107,242,.22);color:#fff}
+.nav .n{margin-left:auto;font-size:11px;font-weight:700;color:#b9c6e6;background:rgba(255,255,255,.08);border-radius:999px;padding:1px 8px}
+.main{padding:20px 24px 40px;min-width:0}
+
+/* ===== SPACES ARRANGE ===== */
+.bar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.bar h1{margin:0;font-size:24px;font-weight:850;color:#fff;letter-spacing:-.02em}
+.bar .sub{font-size:13px;color:#9fb0d0;font-weight:500}
+.bar .r{margin-left:auto;display:flex;gap:8px;align-items:center}
+.seg{display:flex;background:var(--soft);border:1px solid var(--line);border-radius:9px;padding:2px}.seg span{font-size:12px;font-weight:700;padding:5px 12px;border-radius:7px;color:var(--ink3);cursor:pointer;white-space:nowrap}.seg span.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.btn{height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:13px;font-weight:700;padding:0 13px;white-space:nowrap}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.ghost{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:#dbe4fb}
+.tip{font-size:12.5px;color:#9fb0d0;margin:0 2px 14px}
+.tip b{color:#dbe4fb}
+
+/* groups view */
+.cat{margin-bottom:14px;border-radius:16px;transition:background .15s}
+.cat.dragging{opacity:.4}
+.cat.over-top{box-shadow:0 -3px 0 #5b8cff}.cat.over-bot{box-shadow:0 3px 0 #5b8cff}
+.cat.into .ch{background:rgba(46,107,242,.28)}
+.ch{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;cursor:grab;user-select:none;background:rgba(255,255,255,.04)}
+.ch:active{cursor:grabbing}
+.ch .grab{font-size:11px;font-weight:800;color:#7f90b8;letter-spacing:.06em}
+.ch h2{margin:0;font-size:16px;font-weight:850;color:#fff;letter-spacing:-.01em}
+.ch .n{font-size:12px;font-weight:800;color:#b9c6e6;background:rgba(255,255,255,.1);border-radius:999px;padding:1px 9px}
+.ch .tg{margin-left:auto;font-size:12.5px;font-weight:750;color:#9db9ff;cursor:pointer}
+.ch .pos{font-size:12px;color:#7f90b8;font-weight:650}
+.cat.min .grid{display:none}
+.cat.min .ch{background:rgba(255,255,255,.07)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;padding:10px 2px 2px;min-height:60px}
+.grid.empty-over{outline:2px dashed #5b8cff;outline-offset:2px;border-radius:12px}
+.sp{background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 10px 26px rgba(3,10,30,.25);cursor:grab;user-select:none;position:relative}
+.sp:active{cursor:grabbing}
+.sp.dragging{opacity:.35}
+.sp.ins-l::before,.sp.ins-r::after{content:"";position:absolute;top:6px;bottom:6px;width:4px;border-radius:2px;background:#2e6bf2}
+.sp.ins-l::before{left:-7px}.sp.ins-r::after{right:-7px}
+.sp .t{display:flex;align-items:center;gap:8px}
+.sp .rg{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:10.5px;font-weight:850;color:var(--ink2);background:conic-gradient(var(--green) var(--p),#e3e9f4 0);position:relative}
+.sp .rg::after{content:"";position:absolute;inset:4px;border-radius:50%;background:#fff}
+.sp .rg span{position:relative;z-index:1}
+.sp h4{margin:0;font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp p{margin:6px 0 0;font-size:12.5px;color:var(--ink3);line-height:1.45}
+.sp .nx{display:inline-block;margin-top:8px;font-size:11.5px;font-weight:750;color:var(--blue);background:var(--blue50);border-radius:999px;padding:2px 9px}
+.addsp{border:2px dashed rgba(157,185,255,.3);border-radius:14px;display:grid;place-items:center;color:#9fb0d0;font-size:13px;font-weight:650;min-height:84px;cursor:pointer}
+
+/* board view */
+.board{display:flex;gap:12px;overflow-x:auto;padding-bottom:10px;align-items:flex-start}
+.col{flex:0 0 270px;background:rgba(255,255,255,.06);border-radius:16px;padding:8px}
+.col.dragging{opacity:.4}
+.col.ins-l{box-shadow:-4px 0 0 #5b8cff}.col.ins-r{box-shadow:4px 0 0 #5b8cff}
+.col .ch{background:none;padding:6px 6px 8px}
+.col .list{display:flex;flex-direction:column;gap:8px;min-height:50px;border-radius:12px}
+.col .list.empty-over{outline:2px dashed #5b8cff;outline-offset:2px}
+.col .sp.ins-t::before,.col .sp.ins-b::after{content:"";position:absolute;left:8px;right:8px;height:4px;border-radius:2px;background:#2e6bf2}
+.col .sp.ins-t::before{top:-7px}.col .sp.ins-b::after{bottom:-7px}
+.col.min{flex-basis:56px}.col.min .list,.col.min .ch .n,.col.min .ch .tg{display:none}
+.col.min .ch{writing-mode:vertical-rl;transform:rotate(180deg);padding:10px 6px;align-items:center}
+.view{display:none}.view.on{display:block}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;display:none;z-index:9}.toast.show{display:block}
+</style></head>
+<body>
+<header class="top">
+  <div class="logo"><img src="../assets/logo-finance.png" alt="4orm Finance"></div><span class="crumb">Spaces</span>
+  <div class="r"><span class="tb">Today</span><span class="tb">Calendar</span><span class="tb"><span class="dot"></span>Signals</span><span class="tb">Sound on</span><span class="clock">Mon, Oct 26 &middot; 14:05 Pacific</span></div>
+</header>
+<nav class="side" id="side"></nav>
+<main class="main">
+  <div class="bar"><h1>Spaces</h1><span class="sub">Every send-bundle, grouped by who it's for</span>
+    <div class="r"><div class="seg" id="seg"><span class="on" data-v="groups">Groups</span><span data-v="board">Board</span></div><button class="btn ghost" id="minAll">Collapse all</button><button class="btn pri">+ New space</button></div></div>
+  <p class="tip" id="tip"><b>Drag a space</b> to reorder it or drop it in another category. <b>Drag a category header</b> to move the whole category up or down. Collapse them to arrange the order quickly.</p>
+  <section class="view on" id="groups"></section>
+  <section class="view" id="board"></section>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const NAV=[["Today"],["Playbook"],["War Room"],["Calendar"],["Email"],["People"],["Contacts"],["Spaces"],["Pipeline",0,"246"],["Library"],["Notes"],["Documents"],["Drive"],["Links"],["Record"],["Zoom"],["Completed"],["Signals"],["News"],["Financials"],["Integrations",0,"6"]];
+const GROUPS=["Today","People","Library","Record","Signals"];
+document.getElementById('side').innerHTML=NAV.map(n=>GROUPS.includes(n[0])?`<div class="grp">${n[0]}</div>`:`<div class="nav${n[0]=='Spaces'?' on':''}">${n[0]}${n[2]?`<span class="n">${n[2]}</span>`:''}</div>`).join('');
+const T=t=>{const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1700)};
+
+let CATS=[
+ {id:'gen',name:'General',min:false,sp:[['Regulator intro',2,'Add docs'],['Friends & Family email',2,'Add docs'],['Design partners',2,'Add docs']]},
+ {id:'vc',name:'Venture Capital',min:false,sp:[['Joe Canavan',4,'Send today'],['Neil Mitchell',4,'Add docs'],['Norm Cappell',3,'Write intro'],['Mench Capital',5,'Ready to send']]},
+ {id:'biz',name:'Business',min:false,sp:[['Bow Valley Credit Union',3,'Attach the 2-pager'],['Enrich Mortgage Group',2,'Book discovery'],['Remax desk',1,'Add person']]},
+ {id:'reg',name:'Regulators',min:false,sp:[['BCFSA',2,'Write intro'],['FINTRAC note',1,'Add docs']]}];
+
+const card=(s,ci,si)=>`<div class="sp" draggable="true" data-c="${ci}" data-s="${si}"><div class="t"><span class="rg" style="--p:${s[1]*20}%"><span>${s[1]}/5</span></span><h4>${s[0]}</h4></div><span class="nx">${s[2]}</span></div>`;
+function renderGroups(){
+ document.getElementById('groups').innerHTML=CATS.map((c,ci)=>`<div class="cat${c.min?' min':''}" draggable="true" data-c="${ci}"><div class="ch"><span class="grab">MOVE</span><h2>${c.name}</h2><span class="n">${c.sp.length}</span><span class="pos">${ci+1} of ${CATS.length}</span><span class="tg" data-tg="${ci}">${c.min?'Expand':'Collapse'}</span></div><div class="grid" data-c="${ci}">${c.sp.map((s,si)=>card(s,ci,si)).join('')}<div class="addsp">+ New space</div></div></div>`).join('');
+}
+function renderBoard(){
+ document.getElementById('board').innerHTML='<div class="board">'+CATS.map((c,ci)=>`<div class="col${c.min?' min':''}" draggable="true" data-c="${ci}"><div class="ch"><span class="grab">MOVE</span><h2>${c.name}</h2><span class="n">${c.sp.length}</span><span class="tg" data-tg="${ci}">${c.min?'Open':'Fold'}</span></div><div class="list" data-c="${ci}">${c.sp.map((s,si)=>card(s,ci,si)).join('')}</div></div>`).join('')+'</div>';
+}
+function render(){renderGroups();renderBoard();}
+render();
+
+document.getElementById('seg').onclick=e=>{const v=e.target.dataset.v;if(!v)return;document.querySelectorAll('#seg span').forEach(s=>s.classList.toggle('on',s.dataset.v==v));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('on',x.id==v));document.getElementById('tip').innerHTML=v=='board'?'<b>Drag a card</b> up or down, or into another column. <b>Drag a column header</b> left or right to put that group first or second. Fold a column to make room.':'<b>Drag a space</b> to reorder it or drop it in another category. <b>Drag a category header</b> to move the whole category up or down. Collapse them to arrange the order quickly.';};
+document.getElementById('minAll').onclick=e=>{const anyOpen=CATS.some(c=>!c.min);CATS.forEach(c=>c.min=anyOpen);e.target.textContent=anyOpen?'Expand all':'Collapse all';render();};
+document.addEventListener('click',e=>{const t=e.target.closest('[data-tg]');if(!t)return;const c=CATS[+t.dataset.tg];c.min=!c.min;render();});
+
+let drag=null;
+const clear=()=>document.querySelectorAll('.ins-l,.ins-r,.ins-t,.ins-b,.over-top,.over-bot,.into,.empty-over').forEach(x=>x.classList.remove('ins-l','ins-r','ins-t','ins-b','over-top','over-bot','into','empty-over'));
+document.addEventListener('dragstart',e=>{
+ const sp=e.target.closest('.sp');
+ if(sp){drag={kind:'sp',c:+sp.dataset.c,s:+sp.dataset.s};sp.classList.add('dragging');e.stopPropagation();}
+ else{const cat=e.target.closest('.cat,.col');if(!cat)return;drag={kind:'cat',c:+cat.dataset.c,board:cat.classList.contains('col')};cat.classList.add('dragging');}
+ e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','x');
+});
+document.addEventListener('dragend',()=>{document.querySelectorAll('.dragging').forEach(x=>x.classList.remove('dragging'));clear();drag=null;});
+document.addEventListener('dragover',e=>{
+ if(!drag)return;e.preventDefault();clear();
+ if(drag.kind=='sp'){
+  const sp=e.target.closest('.sp');
+  if(sp){const r=sp.getBoundingClientRect();const inBoard=!!sp.closest('.col');if(inBoard)sp.classList.add(e.clientY<r.top+r.height/2?'ins-t':'ins-b');else sp.classList.add(e.clientX<r.left+r.width/2?'ins-l':'ins-r');drag.to={c:+sp.dataset.c,s:+sp.dataset.s+((inBoard?e.clientY>r.top+r.height/2:e.clientX>r.left+r.width/2)?1:0)};return;}
+  const cat=e.target.closest('.cat,.col');
+  if(cat){const ci=+cat.dataset.c;cat.classList.add('into');const box=cat.querySelector('.grid,.list');if(box)box.classList.add('empty-over');drag.to={c:ci,s:CATS[ci].sp.length};}
+ }else{
+  const cat=e.target.closest(drag.board?'.col':'.cat');if(!cat)return;const r=cat.getBoundingClientRect();
+  const after=drag.board?e.clientX>r.left+r.width/2:e.clientY>r.top+Math.min(r.height/2,24);
+  cat.classList.add(drag.board?(after?'ins-r':'ins-l'):(after?'over-bot':'over-top'));drag.to=+cat.dataset.c+(after?1:0);
+ }
+});
+document.addEventListener('drop',e=>{
+ if(!drag||drag.to==null)return;e.preventDefault();
+ if(drag.kind=='sp'){const from=CATS[drag.c],item=from.sp.splice(drag.s,1)[0];let {c,s}=drag.to;if(c==drag.c&&s>drag.s)s--;CATS[c].sp.splice(s,0,item);CATS[c].min=false;render();T(c==drag.c?`${item[0]} moved to position ${s+1} in ${CATS[c].name}`:`${item[0]} moved to ${CATS[c].name}, position ${s+1}`);}
+ else{let to=drag.to;const cat=CATS.splice(drag.c,1)[0];if(to>drag.c)to--;CATS.splice(to,0,cat);render();T(`${cat.name} is now ${['first','second','third','fourth','fifth'][to]||'#'+(to+1)}`);}
+ drag=null;
+});
+</script>
+</body></html>

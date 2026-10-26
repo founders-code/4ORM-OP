@@ -370,7 +370,12 @@ export async function listReminders() {
   return { status: tasks.length ? ('connected' as const) : ('reached_empty' as const), tasks };
 }
 
-export type GhlOpp = { id: string; name: string; contactId: string; contact: string; company: string; email: string; value: number; status: string; updatedAt: string };
+export type GhlOpp = { id: string; name: string; contactId: string; contact: string; company: string; email: string; value: number; status: string; updatedAt: string; stageChangedAt?: string };
+
+/** When the opportunity last moved stage (GHL lastStageChangeAt), else its last status change / update. */
+function stageChangedOf(row: Record<string, unknown>) {
+  return String(row.lastStageChangeAt || row.lastStatusChangeAt || row.updatedAt || row.createdAt || '').slice(0, 40);
+}
 export type GhlStage = { id: string; name: string; count: number; value: number; opps: GhlOpp[] };
 export type GhlPipeline = { id: string; name: string; total: number; value: number; stages: GhlStage[] };
 
@@ -430,6 +435,7 @@ export async function getOpportunity(id: string) {
     value: Number(row.monetaryValue) || 0,
     status: String(row.status || 'open').slice(0, 20),
     updatedAt: String(row.updatedAt || row.lastStatusChangeAt || row.createdAt || '').slice(0, 40),
+    stageChangedAt: stageChangedOf(row),
   };
 }
 
@@ -466,6 +472,7 @@ export function patchPipelines(pipelines: GhlPipeline[], opp: NonNullable<Awaite
     value: opp.value,
     status: opp.status,
     updatedAt: opp.updatedAt,
+    stageChangedAt: opp.stageChangedAt || opp.updatedAt,
   });
   for (const row of next) {
     for (const item of row.stages) {
@@ -512,6 +519,7 @@ export async function listPipelines() {
           value,
           status: String(row.status || 'open').slice(0, 20),
           updatedAt: String(row.updatedAt || row.lastStatusChangeAt || row.createdAt || '').slice(0, 40),
+          stageChangedAt: stageChangedOf(row),
         });
       }
     }

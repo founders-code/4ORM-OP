@@ -289,6 +289,43 @@
       var late = Math.max(0, Math.round((Date.now() - due) / 86400000));
       push({ kind: 'follow', why: 'Follow up' + (late ? ' · ' + late + 'd' : ''), act: c.email ? 'Reply' : 'Follow up', id: c.id || '', name: c.name || 'Person', email: c.email || '', meta: [normCat(c.category || c.type || 'Contact'), c.nextAction || c.next_action || ''].filter(Boolean).join(' · ') });
     });
+    /* GoHighLevel: people sitting in a follow-up stage (sent / follow / check back / call back / info pack /
+       package / proposal / waiting) with no stage change or touch for N days (default 3; per stage via
+       STATE.pipeFollowDays[stageName] or localStorage cr_pipe_follow_days = {"Stage name": days}). */
+    /* \bsent\b so "Presentation" does not count as "sent". */
+    var FOLLOW_STAGE = /\bsent\b|follow|check back|call back|info pack|package|proposal|waiting/i;
+    var perStage = S.pipeFollowDays || null;
+    if (!perStage) { try { perStage = JSON.parse(localStorage.getItem('cr_pipe_follow_days') || 'null'); } catch (e) { perStage = null; } }
+    perStage = perStage && typeof perStage === 'object' ? perStage : {};
+    var byEmail = {};
+    contacts.forEach(function (c) { var e = String(c.email || '').toLowerCase(); if (e) byEmail[e] = c; });
+    var oppDone = {};
+    try { oppDone = JSON.parse(localStorage.getItem('cr_pipe_opp_done') || '{}') || {}; } catch (e) { oppDone = {}; }
+    var oppRows = [];
+    asList(S.ghlPipes).forEach(function (pipe) {
+      asList(pipe.stages).forEach(function (st) {
+        var stName = String(st.name || '');
+        if (!FOLLOW_STAGE.test(stName)) return;
+        var limit = Number(perStage[stName]);
+        if (!(limit >= 0)) limit = 3;
+        asList(st.opps).forEach(function (o) {
+          if (!o || /^(won|lost|abandon)/i.test(String(o.status || ''))) return;
+          var email = String(o.email || '').toLowerCase();
+          var c = email ? byEmail[email] : null;
+          var last = Math.max(toMs(o.stageChangedAt || o.updatedAt), c ? toMs(c.lastTouch || c.last_touch) : 0, Number(oppDone[o.id]) || 0);
+          if (!last) return;
+          var days = Math.floor((Date.now() - last) / 86400000);
+          if (days < limit) return;
+          oppRows.push({ days: days, row: {
+            kind: 'follow', why: 'Follow up · ' + days + 'd', act: 'Follow up', opp: 1,
+            id: c && c.id ? String(c.id) : 'opp:' + String(o.id || ''), contactId: c && c.id ? String(c.id) : '', ghlContactId: o.contactId || '', oppId: o.id || '',
+            name: o.contact || o.name || 'Person', email: o.email || (c && c.email) || '',
+            meta: [stName, pipe.name || '', o.company || ''].filter(Boolean).join(' · ')
+          } });
+        });
+      });
+    });
+    oppRows.sort(function (a, b) { return b.days - a.days; }).forEach(function (x) { push(x.row); });
     contacts.forEach(function (c) {
       var d = daysAgo(c.lastTouch || c.last_touch);
       if (d < 14) return;
@@ -597,6 +634,30 @@
     var S = window.STATE || {};
     return userColumnsFrom(S.mailBoard || {}, mailRows(S));
   };
+  /* Junk: same order as the server (lib/mail-board isJunk): a 'notjunk' sender rule wins, then 'junk', then the automatic call. */
+  function junkRuleHit(r, row) {
+    var v = String(r.matchValue || '').toLowerCase().trim();
+    var e = String(row.email || '').toLowerCase();
+    if (!v || !e) return false;
+    if (r.matchType === 'domain') {
+      var h = e.split('@')[1] || '';
+      v = v.replace(/^@/, '');
+      return h === v || h.slice(-(v.length + 1)) === '.' + v;
+    }
+    if (r.matchType !== 'sender') return false;
+    if (e === v) return true;
+    if (v.slice(-1) === '@') return e.indexOf(v) === 0;
+    return e.indexOf(v) >= 0;
+  }
+  function junkOf(row, rules) {
+    var mine = asList(rules).filter(function (r) { return r && (r.target === 'junk' || r.target === 'notjunk'); });
+    if (mine.some(function (r) { return r.target === 'notjunk' && junkRuleHit(r, row); })) return false;
+    if (mine.some(function (r) { return r.target === 'junk' && junkRuleHit(r, row); })) return true;
+    if (row.junkAuto != null) return !!row.junkAuto;
+    if (row.junk != null) return !!row.junk;
+    return !!row.bulk && !row.outbound;
+  }
+  window.__mailJunkOf = junkOf;
   function liveEmailState() {
     var S = window.STATE || {};
     var board = S.mailBoard || {};
@@ -620,7 +681,8 @@
         out: !!row.outbound,
         att: attNames(row),
         tag: tagLabel(asList(row.tags)[0]),
-        needsNow: !!row.needsNow
+        needsNow: !!row.needsNow,
+        junk: junkOf(row, board.rules)
       };
     });
     var need = shaped.filter(function (m) { return m.needsNow && !m.bulk; }).length;
@@ -683,8 +745,9 @@
       }).join('') + '</span><span class="lnk" style="margin-left:auto" data-action="pipe-add">+ Add a person</span></div><div class="ndg">'
       + (needsFiltered.length ? needsFiltered.map(function (n, i) {
         var whyCls = n.kind === 'cold' ? ' amb' : n.kind === 'reach' ? '' : ' red';
-        var rowAttrs = ' data-id="' + esc(n.id || '') + '" data-kind="' + esc(n.kind) + '" data-key="' + esc(n.key || '') + '" data-contact="' + esc(n.contactId || '') + '" data-name="' + esc(n.name) + '" data-email="' + esc(n.email || '') + '"';
-        return '<div class="nd"' + rowAttrs + '><span class="cb" data-action="pipe-need-tick"' + rowAttrs + ' title="Mark handled"></span><span class="av" style="background:' + (n.color || C6[i % 6]) + '">' + esc(initials(n.name)) + '</span><div style="min-width:0"><b>' + esc(n.name) + '</b><span>' + esc(n.meta || '') + '</span></div><span class="why2' + whyCls + '">' + esc(n.why || 'Follow up') + '</span><button class="act" data-action="pipe-follow"' + rowAttrs + '>' + esc(n.act || 'Follow up') + '</button></div>';
+        var rowAttrs = ' data-id="' + esc(n.id || '') + '" data-kind="' + esc(n.kind) + '" data-key="' + esc(n.key || '') + '" data-contact="' + esc(n.contactId || '') + '" data-name="' + esc(n.name) + '" data-email="' + esc(n.email || '') + '"'
+          + (n.opp ? ' data-opp="' + esc(n.oppId || '') + '" data-ghl-contact="' + esc(n.ghlContactId || '') + '"' : '');
+        return '<div class="nd"' + rowAttrs + '><span class="cb" data-action="pipe-need-tick"' + rowAttrs + ' title="Mark handled"></span><span class="av" style="background:' + (n.color || C6[i % 6]) + '">' + esc(initials(n.name)) + '</span><div style="min-width:0"><b>' + esc(n.name) + '</b><span>' + esc(n.meta || '') + '</span></div><span class="why2' + whyCls + '">' + esc(n.why || 'Follow up') + '</span><button class="act" data-action="' + (n.opp ? 'pipe-opp-follow' : 'pipe-follow') + '"' + rowAttrs + '>' + esc(n.act || 'Follow up') + '</button></div>';
       }).join('') : '<div class="nd"><div style="min-width:0"><b>Nobody waiting</b><span>Follow-ups due, people going cold and your reach-outs land here.</span></div></div>')
       + '</div></section>';
     if (view === 'board') {
@@ -1276,17 +1339,53 @@
       out += '<div class="box"><h4>' + esc(first.name || first.email) + '</h4><div class="kv2"><span>Contacts</span><b>not in Contacts yet</b></div></div>';
     }
     if (d.attachments.length) {
-      out += '<div class="box"><h4>From the Space</h4><div class="kv2"><span>Files</span><b>' + d.attachments.length + '</b></div><div class="kv2"><span>How they go</span><b>as links in the email</b></div></div>';
+      var real = d.attachments.filter(attIsReal).length;
+      out += '<div class="box"><h4>Attachments</h4><div class="kv2"><span>Files</span><b>' + d.attachments.length + '</b></div><div class="kv2"><span>How they go</span><b>' + (real === d.attachments.length ? 'attached to the email' : real ? real + ' attached, ' + (d.attachments.length - real) + ' as links' : 'as links in the email') + '</b></div></div>';
     }
     return out;
+  }
+  /* A compose attachment goes as a real file when it has a Drive id, a library id, or uploaded bytes. */
+  function attDrive(a) {
+    var v = String((a && (a.driveFileId || a.drive_file_id || a.drive)) || '');
+    return /^[\w-]{8,200}$/.test(v) && !/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(v) ? v : '';
+  }
+  function attStaged(a) {
+    var v = String((a && (a.stagedId || (a.fromLibrary ? a.id : ''))) || '');
+    return /^[0-9a-f-]{36}$/i.test(v) ? v : '';
+  }
+  function attIsReal(a) { return !!(a && (a.data || attDrive(a) || attStaged(a))); }
+  function sizeLabel(n) {
+    n = Number(n) || 0;
+    if (!n) return '';
+    return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+  }
+  /* Signature block under the body: editable, can be switched off. Loaded from /api/mail/signature. */
+  function sigBlockHtml(d) {
+    var S = window.STATE || {};
+    var sig = S.mailSig || null;
+    var html = d.sigHtml && String(d.sigHtml).replace(/<br\s*\/?>|\s|&nbsp;/gi, '') ? d.sigHtml : (sig && sig.html) || '';
+    var off = !!d.sigOff;
+    var head = '<div class="sh">Signature' + (sig && sig.source === 'gmail' ? ' &middot; from Gmail' : sig && sig.source === 'saved' ? ' &middot; saved' : '') + '<span class="r">'
+      + (html ? '<span data-action="mail-sig-toggle">' + (off ? 'Add it back' : 'Remove') + '</span>' : '')
+      + (sig && sig.needsScope ? '<span data-action="mail-sig-save">Save as my signature</span>' : '')
+      + '</span></div>';
+    var note = '';
+    if (!sig) note = '<div class="sn">Loading your Gmail signature&hellip;</div>';
+    else if (sig.needsScope && !html) note = '<div class="sn">Signature needs Gmail settings access - reconnect Google in Integrations. Or paste your signature below and click Save as my signature.</div>';
+    else if (sig.needsScope) note = '<div class="sn">Signature needs Gmail settings access - reconnect Google in Integrations. Using your saved one.</div>';
+    else if (!html) note = '<div class="sn">No Gmail signature found. Type one below if you want it on this email.</div>';
+    return '<div class="sig' + (off ? ' off' : '') + '" id="composeSig">' + head + note
+      + '<div class="sb" contenteditable="true" data-action="mail-sig" data-placeholder="Signature">' + html + '</div></div>';
   }
   function composeHtml(open) {
     var d = composeDraft();
     var title = d.reply ? 'Reply' : d.fwd ? 'Forward' : 'New email';
-    var body = esc(d.body).replace(/\n/g, '<br>');
+    /* The live HTML (links) is kept only while it still matches the text; an AI rewrite or a new draft falls back to the text. */
+    var body = d.bodyHtml != null && d.bodyHtmlFor === d.body ? d.bodyHtml : esc(d.body).replace(/\n/g, '<br>');
     var atts = d.attachments.map(function (a, i) {
       var kind = docKind(a);
-      return '<span class="att"><span class="ty" style="background:#2e6bf2">' + esc(kind === 'img' ? 'IMG' : kind.toUpperCase()) + '</span>' + esc(a.name || 'File') + '<span class="x2" data-action="mail-att-remove" data-i="' + i + '" title="Remove">&times;</span></span>';
+      var how = attIsReal(a) ? '' : ' <span class="sz">link</span>';
+      return '<span class="att' + (a.busy ? ' busy' : '') + '"><span class="ty" style="background:#2e6bf2">' + esc(kind === 'img' ? 'IMG' : String(kind || 'file').toUpperCase()) + '</span>' + esc(a.name || 'File') + (a.size ? ' <span class="sz">' + esc(sizeLabel(a.size)) + '</span>' : '') + how + '<span class="x2" data-action="mail-att-remove" data-i="' + i + '" title="Remove">&times;</span></span>';
     }).join('');
     return '<aside class="compose' + (open ? ' open' : '') + '" id="compose">'
       + '<div class="cw"><div class="ctop"><h2>' + title + '</h2><button class="btn x" id="cclose" data-action="mail-compose-close">Close &times;</button></div>'
@@ -1294,15 +1393,18 @@
       + rcptRow(d, 'to', 'To', '<span class="sm" data-action="mail-cc-toggle">' + (d.showCc ? 'Hide Cc' : 'Cc &nbsp; Bcc') + '</span>')
       + (d.showCc ? rcptRow(d, 'cc', 'Cc') + rcptRow(d, 'bcc', 'Bcc') : '')
       + '<div class="fr subj"><label>Subject</label><div class="val"><input data-action="mail-subject" placeholder="Subject" value="' + esc(d.subject) + '"></div><span></span></div>'
-      + '<div class="tbar"><span data-action="mail-fmt" data-fmt="b" title="Bold (*text*)">B</span><span data-action="mail-fmt" data-fmt="i" title="Italic (_text_)"><i>I</i></span><span data-action="mail-fmt" data-fmt="ul" title="Bullet list">&#8226;</span><span data-action="mail-fmt" data-fmt="ol" title="Numbered list">1.</span><span class="sep"></span><span data-action="mail-fmt" data-fmt="link" title="Insert link">Link</span><span class="sep"></span><span data-action="mail-fmt" data-fmt="name" title="Insert first name">{ }</span></div>'
+      + '<div class="tbar"><span data-action="mail-fmt" data-fmt="b" title="Bold (*text*)">B</span><span data-action="mail-fmt" data-fmt="i" title="Italic (_text_)"><i>I</i></span><span data-action="mail-fmt" data-fmt="ul" title="Bullet list">&#8226;</span><span data-action="mail-fmt" data-fmt="ol" title="Numbered list">1.</span><span class="sep"></span><span class="tx" data-action="mail-link" title="Select text, then add a link">Link</span><span class="sep"></span><span data-action="mail-fmt" data-fmt="name" title="Insert first name">{ }</span><span class="sep"></span><span class="tx" data-action="mail-attach-file" title="Attach a file from this computer">Attach file</span><span class="tx" data-action="mail-attach-pick" title="Attach from Documents, Spaces or Drive">From Documents</span></div>'
       + '<div class="body" contenteditable="true" data-action="mail-body" data-placeholder="Write your email">' + body + '</div>'
+      + sigBlockHtml(d)
       + (atts ? '<div class="atts">' + atts + '</div>' : '')
+      + '<div class="drop" id="composeDrop">Drop files here to attach them</div>'
+      + '<input type="file" id="composeFile" multiple hidden style="display:none">'
       + '<div class="cfoot"><button class="send" data-action="mail-send">Send</button><button class="send2" data-action="mail-schedule">' + (d.schedEditId ? 'Update schedule' : 'Schedule') + ' &#9662;</button>'
       + '<span class="tog" data-action="mail-tog" data-k="nudge" role="switch" aria-checked="' + d.nudge + '"><span class="sw' + (d.nudge ? '' : ' off') + '"></span>Nudge in 3 days</span>'
       + '<span class="tog" data-action="mail-tog" data-k="log" role="switch" aria-checked="' + d.log + '"><span class="sw' + (d.log ? '' : ' off') + '"></span>Log to Pipeline</span></div></div>'
       + '<div class="side2" id="composeSide">' + composeSide(d) + '</div></aside>';
   }
-  window.__mailCompose = { draft: composeDraft, chips: chipsHtml, side: composeSide };
+  window.__mailCompose = { draft: composeDraft, chips: chipsHtml, side: composeSide, sig: sigBlockHtml, isReal: attIsReal, drive: attDrive, staged: attStaged };
 
   function iniOf(n) {
     return String(n || '').replace(/\(.*\)/, '').trim().split(' ').map(function (x) { return x[0] || ''; }).join('').slice(0, 2).toUpperCase() || '?';
@@ -1591,7 +1693,10 @@
         + filed.map(function (c) { return '<span style="background:' + esc(c.c) + '1a;color:' + esc(c.c) + '">Flag ' + esc(c.n) + '</span>'; }).join('')
         + '</div>';
     }
-    return '<div class="em" draggable="true" data-kind="mail" data-action="mail-open"' + mailRowAttrs(m) + '><span class="un' + (m.un ? '' : ' r') + '"></span><span class="av" style="background:' + esc(m.c) + '">' + esc(iniOf(m.f)) + '</span><div style="min-width:0"><div class="l1"><b>' + esc(m.f) + '</b><span>' + esc(m.e) + '</span></div><div class="sj">' + esc(m.sj) + '</div><div class="pv">' + esc(m.pv) + '</div>' + fl + '</div><div class="rt"><span class="t">' + esc(m.t) + '</span><span class="flag' + (filed.length ? ' on' : '') + '" data-action="mail-flag"' + mailRowAttrs(m) + '>Flag</span></div></div>';
+    var racts = fixtureOn() ? '' : ('<span class="racts"><span class="rowact" data-action="mail-junk" data-junk="' + (m.junk ? '0' : '1') + '"' + mailRowAttrs(m) + ' title="' + (m.junk ? 'Not junk: show mail from this sender again' : 'Junk: hide mail from this sender') + '">' + (m.junk ? 'Not junk' : 'Junk') + '</span>'
+      + '<span class="rowact del" data-action="mail-trash"' + mailRowAttrs(m) + ' title="Move to Gmail Trash (undo for 30 days)">Delete</span></span>');
+    return '<div class="em" draggable="true" data-kind="mail" data-action="mail-open"' + mailRowAttrs(m) + '><span class="un' + (m.un ? '' : ' r') + '"></span><span class="av" style="background:' + esc(m.c) + '">' + esc(iniOf(m.f)) + '</span><div style="min-width:0"><div class="l1"><b>' + esc(m.f) + '</b><span>' + esc(m.e) + '</span></div><div class="sj">' + esc(m.sj) + '</div><div class="pv">' + esc(m.pv) + '</div>' + fl + '</div><div class="rt"><span class="t">' + esc(m.t) + '</span><span class="flag' + (filed.length ? ' on' : '') + '" data-action="mail-flag"' + mailRowAttrs(m) + '>Flag</span>'
+      + '</div>' + racts + '</div>';
   }
   function columnHtml(c, msgs) {
     var cards = asList(c.ids).map(function (id) {
@@ -1626,7 +1731,7 @@
     return '<aside class="reader open" id="reader"' + attrs + '><span class="grab"></span>'
       + '<div class="rh"><span class="av" style="background:' + colorFor(o.email || from) + ';width:36px;height:36px">' + esc(iniOf(from)) + '</span><div><h2>' + esc(o.subject || '(no subject)') + '</h2></div><button class="btn x" id="close" data-action="mail-close">Close &times;</button></div>'
       + '<div class="rmeta">' + esc(from) + (o.email ? ' &lt;' + esc(o.email) + '&gt;' : '') + (th && th.to ? ' &middot; to ' + esc(th.to) : '') + (when ? ' &middot; ' + esc(when) : '') + '</div>'
-      + '<div class="acts"><button class="p" data-action="mail-reply"' + attrs + '>Reply</button><button data-action="mail-forward"' + attrs + '>Forward</button><button data-action="mail-add-space"' + attrs + '>Add to Space</button><button data-action="mail-snooze"' + attrs + '>Snooze</button></div>'
+      + '<div class="acts"><button class="p" data-action="mail-reply"' + attrs + '>Reply</button><button data-action="mail-forward"' + attrs + '>Forward</button><button data-action="mail-add-space"' + attrs + '>Add to Space</button><button data-action="mail-snooze"' + attrs + '>Snooze</button><button data-action="mail-trash"' + attrs + ' title="Move to Gmail Trash (undo for 30 days)">Delete</button></div>'
       + (atts ? '<div class="atts">' + atts + '</div>' : '')
       + '<div class="bd" style="white-space:pre-wrap">' + (body ? esc(body) : (S.mailOpenFailed ? esc(o.preview || '') + '\n\n(Could not load the full email.)' : esc(o.preview || '') + '\n\nLoading the full email…')) + '</div></aside>';
   }
@@ -1654,35 +1759,76 @@
     var openCompose = /(?:^|[?&])compose=1(?:&|$)/.test(String(location.search || '')) || !!(S.composeOpen);
     var msgs = asList(data.messages);
     var cols = asList(data.cols);
+    var isFix = fixtureOn();
     function inCol(id) { return cols.filter(function (c) { return asList(c.ids).map(String).indexOf(String(id)) >= 0; }); }
     var feedHtml = '';
     var last = '';
+    /* Live chips: Junk mail shows only under Junk. Fixture matches 08d (Everything / People / Unread). */
+    var TAB_TEST = isFix ? {
+      everything: function () { return true; },
+      people: function (m) { return !(m.bulk || /bulk/i.test(m.tag || '')); },
+      unread: function (m) { return !!m.un; }
+    } : {
+      everything: function (m) { return !m.junk; },
+      notmoved: function (m) { return !m.junk && !inCol(m.id).length; },
+      people: function (m) { return !m.junk && !(m.bulk || /bulk/i.test(m.tag || '')); },
+      unread: function (m) { return !m.junk && !!m.un; },
+      junk: function (m) { return !!m.junk; }
+    };
+    if (!TAB_TEST[tab]) tab = 'everything';
+    var tabN = {};
+    Object.keys(TAB_TEST).forEach(function (k) { tabN[k] = msgs.filter(TAB_TEST[k]).length; });
+    var shown = 0;
     msgs.forEach(function (m) {
-      if (tab === 'unread' && !m.un) return;
-      if (tab === 'people' && (m.bulk || /bulk/i.test(m.tag || ''))) return;
+      if (!TAB_TEST[tab](m)) return;
+      shown += 1;
       if (m.day && m.day !== last) { feedHtml += '<div class="day">' + esc(m.day) + '</div>'; last = m.day; }
       feedHtml += feedRowHtml(m, inCol);
     });
     if (!msgs.length) feedHtml = '<div class="cempty" style="padding:18px">' + (S.mailBoard ? 'No mail in the last 45 days.' : 'Loading your mail…') + '</div>';
+    else if (!shown) feedHtml = '<div class="cempty" style="padding:18px">' + (tab === 'junk' ? 'No junk. System mail, receipts and newsletters land here.' : tab === 'notmoved' ? 'Everything is filed into a column.' : 'Nothing here.') + '</div>';
+    function tabChip(key, label) {
+      return '<span class="' + (tab === key ? 'on' : '') + '" data-action="mail-feed-tab" data-tab="' + key + '">' + label + (isFix ? '' : ' <em>' + (tabN[key] || 0) + '</em>') + '</span>';
+    }
+    /* A half-typed column name survives a background repaint. */
+    var nc0 = wrap.querySelector && wrap.querySelector('#newcolIn');
+    var ncVal = nc0 ? String(nc0.value || '') : '';
+    var ncFocus = !!(nc0 && wrap.getRootNode && wrap.getRootNode().activeElement === nc0);
+    var feed0 = wrap.querySelector && wrap.querySelector('#feed');
+    var feedTop = feed0 && S.mailFeedTabShown === tab ? feed0.scrollTop : 0;
+    S.mailFeedTabShown = tab;
     var colsHtml = cols.map(function (c) { return columnHtml(c, msgs); }).join('');
+    var schedSeg = isFix ? '' : '<span data-action="mail-sched-list">Scheduled' + ((S.mailSchedCount | 0) > 0 ? ' <em>' + (S.mailSchedCount | 0) + '</em>' : '') + '</span>';
+    var tabsHtml = isFix
+      ? tabChip('everything', 'Everything') + tabChip('people', 'People') + tabChip('unread', 'Unread')
+      : tabChip('everything', 'Everything') + tabChip('notmoved', 'Not moved') + tabChip('people', 'People') + tabChip('unread', 'Unread') + tabChip('junk', 'Junk');
+    var newColHtml = isFix
+      ? '<div class="newcol" id="newcol" data-action="mail-col-new">+ New column<small>Name it anything: a deal, a person, a topic</small></div>'
+      : '<div class="newcol" id="newcol" data-action="mail-col-focus"><b>+ New column</b>'
+        + '<input id="newcolIn" data-action="mail-col-name" maxlength="60" autocomplete="off" placeholder="Name it anything: a deal, a person, a topic" value="' + esc(ncVal) + '">'
+        + '<span class="ncrow"><button type="button" class="ncadd" data-action="mail-col-add">Add</button><span class="nchint">Enter adds &middot; Esc cancels</span></span></div>';
     wrap.innerHTML =
       '<div class="bar"><h1>Email</h1>'
-      + '<div class="seg"><span class="' + (view === 'inbox' ? 'on' : '') + '" data-action="mail-view" data-view="inbox">Inbox</span><span class="' + (view === 'people' ? 'on' : '') + '" data-action="mail-view" data-view="people">People</span><span data-action="mail-sched-list">Scheduled' + ((S.mailSchedCount | 0) > 0 ? ' <em>' + (S.mailSchedCount | 0) + '</em>' : '') + '</span></div>'
+      + '<div class="seg"><span class="' + (view === 'inbox' ? 'on' : '') + '" data-action="mail-view" data-view="inbox">Inbox</span><span class="' + (view === 'people' ? 'on' : '') + '" data-action="mail-view" data-view="people">People</span>' + schedSeg + '</div>'
       + '<div class="cnt"><span><b>' + esc(data.unread != null ? data.unread : msgs.filter(function (m) { return m.un; }).length) + '</b> unread</span><span><b>' + esc(data.need != null ? data.need : 0) + '</b> need a reply</span><span><b>' + esc(cols.length) + '</b> columns</span></div>'
       + '<div class="r"><input class="search" data-action="mail-search" placeholder="Search all mail" value="' + esc(S.mailQ || '') + '"><button class="btn" data-action="mail-filters">Filters</button><button class="btn pri" id="composeBtn" data-action="mail-compose">Compose</button></div></div>'
       + '<div class="lay"><section class="feed"><div class="fh"><h3>' + (S.mailQ ? 'Search: ' + esc(S.mailQ) : 'All mail') + '</h3><span class="s">one feed, newest first</span><div class="tabs">'
-      + '<span class="' + (tab === 'everything' ? 'on' : '') + '" data-action="mail-feed-tab" data-tab="everything">Everything</span>'
-      + '<span class="' + (tab === 'people' ? 'on' : '') + '" data-action="mail-feed-tab" data-tab="people">People</span>'
-      + '<span class="' + (tab === 'unread' ? 'on' : '') + '" data-action="mail-feed-tab" data-tab="unread">Unread</span>'
-      + '</div></div><div id="feed">' + feedHtml + '</div><div class="foot">' + msgs.length + ' emails &middot; ' + (S.mailQ ? 'last 90 days' : 'last 45 days in your inbox') + '</div></section>'
+      + tabsHtml
+      + '</div></div><div id="feed">' + feedHtml + '</div><div class="foot">' + (isFix ? 'Showing today and yesterday &middot; scroll for more' : (shown + ' of ' + msgs.length + ' emails &middot; ' + (S.mailQ ? 'last 90 days' : 'last 45 days in your inbox'))) + '</div></section>'
       + '<section><div class="colsh"><h3>Your columns</h3><span class="s">you make these &middot; flag any email to file it &middot; drag a column to reorder</span><span class="lnk" data-action="mail-col-new">+ New column</span></div>'
-      + '<div class="cols" id="cols">' + colsHtml + '<div class="newcol" id="newcol" data-action="mail-col-new">+ New column<small>Name it anything: a deal, a person, a topic</small></div></div></section></div>'
+      + '<div class="cols" id="cols">' + colsHtml + newColHtml + '</div></section></div>'
       + '<div class="pop" id="pop"><h6>Add to a column</h6><p id="popwho"></p><div id="popopts"></div><label class="always"><input type="checkbox" id="always" data-action="mail-always" checked><span>Always put mail from <b id="popfrom"></b> here</span></label></div>'
       + '<div class="scrim' + (S.mailOpen || openCompose ? ' open' : '') + '" id="scrim" data-action="mail-close"></div>'
       + readerHtml(S)
       + composeHtml(openCompose);
     if (P().finishPaint) P().finishPaint(wrap);
     else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
+    if (feedTop) { var feed1 = wrap.querySelector('#feed'); if (feed1) feed1.scrollTop = feedTop; }
+    if (ncFocus) {
+      var nc1 = wrap.querySelector('#newcolIn');
+      if (nc1 && nc1.focus) { nc1.focus(); try { nc1.setSelectionRange(ncVal.length, ncVal.length); } catch (e) {} }
+    }
+    if (typeof window.__mailComposeAfterPaint === 'function') { try { window.__mailComposeAfterPaint(wrap); } catch (e) {} }
     markReady('mailDesk');
   }
   window.paintRedesignPipeline = function () { whenCss(paintPipelineLive); };

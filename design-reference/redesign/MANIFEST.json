@@ -28,6 +28,13 @@
     "sha256": "1676cc3fa98583e8"
   },
   {
+    "file": "redesign/02e-signals-detail.html",
+    "page": "Signals panel opened from the top bar on any page",
+    "route": "Signals panel opened from the top bar on any page",
+    "bytes": 21491,
+    "sha256": "14c59249b9165a45"
+  },
+  {
     "file": "redesign/03-notes.html",
     "page": "Notes",
     "route": "/notes",
@@ -49,6 +56,13 @@
     "sha256": "82e1daa88b5d68e5"
   },
   {
+    "file": "redesign/03c-notes-canvas.html",
+    "page": "Notes - Canvas view",
+    "route": "/notes (Canvas view)",
+    "bytes": 20117,
+    "sha256": "aa5f7a46f631bf0e"
+  },
+  {
     "file": "redesign/04-pipeline.html",
     "page": "Pipeline",
     "route": "/pipeline",
@@ -68,6 +82,13 @@
     "route": "/spaces (card clicked)",
     "bytes": 80112,
     "sha256": "31881f89f136b98d"
+  },
+  {
+    "file": "redesign/05d-spaces-arrange.html",
+    "page": "Spaces - Groups and Board",
+    "route": "/spaces (Groups and Board)",
+    "bytes": 14310,
+    "sha256": "2906d6c8b4103d5b"
   },
   {
     "file": "redesign/06-documents.html",

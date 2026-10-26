@@ -1960,11 +1960,20 @@
       var done = S().pipeNeedDone = S().pipeNeedDone || {};
       var c = (S().contacts || []).filter(function (x) { return String(x.id) === String(id); })[0];
       var prior = c ? { lastTouch: c.lastTouch, nextDate: c.nextDate } : null;
+      /* A GoHighLevel follow-up with no matching contact: "handled" restarts its clock in this browser. */
+      var oppOnly = /^opp:/.test(id) ? id.slice(4) : '';
+      function oppDone(on) {
+        var map = {};
+        try { map = JSON.parse(localStorage.getItem('cr_pipe_opp_done') || '{}') || {}; } catch (e) { map = {}; }
+        if (on) map[oppOnly] = Date.now(); else delete map[oppOnly];
+        try { localStorage.setItem('cr_pipe_opp_done', JSON.stringify(map)); } catch (e) {}
+      }
       function undo() {
         delete done[key];
         if (c && prior) { c.lastTouch = prior.lastTouch; c.nextDate = prior.nextDate; }
+        if (oppOnly) oppDone(false);
         refresh('pipe');
-        if (!writeOk()) return;
+        if (!writeOk() || oppOnly) return;
         if (kind === 'reach') api('/api/reach-out/' + encodeURIComponent(id), { method: 'PATCH', body: { done: false } }).catch(function () {});
         else if (prior) api('/api/contacts', { method: 'PATCH', body: { id: id, lastTouch: prior.lastTouch ? new Date(prior.lastTouch).toISOString() : null, nextDate: prior.nextDate ? new Date(prior.nextDate).toISOString() : null } }).catch(function () {});
       }
@@ -1975,6 +1984,7 @@
         refresh('pipe');
         toast(root, name + ' handled', undo);
       }, 220);
+      if (oppOnly) { oppDone(true); return; }
       if (!writeOk()) return;
       var write = kind === 'reach'
         ? api('/api/reach-out/' + encodeURIComponent(id), { method: 'PATCH', body: { done: true } })
@@ -2009,6 +2019,28 @@
       S().pipeColAll = S().pipeColAll || {};
       S().pipeColAll[attr(el, 'data-stage-id')] = true;
       refresh('pipe');
+    },
+    /* GoHighLevel follow-up row: open Compose to that person, prefilled. Tick the row handled after sending to restart its clock. */
+    'pipe-opp-follow': function (el, root) {
+      var name = attr(el, 'data-name') || 'there';
+      var email = attr(el, 'data-email') || '';
+      if (!email) {
+        var probe = document.createElement('span');
+        probe.setAttribute('data-id', attr(el, 'data-contact') || '');
+        probe.setAttribute('data-name', name);
+        if (attr(el, 'data-contact')) { actions['pipe-open'](probe, root); return; }
+        toast(root, 'No email on ' + name + ' in GoHighLevel yet');
+        return;
+      }
+      var first = name.split(' ')[0] || 'there';
+      openCompose({
+        to: [{ email: email, name: name }],
+        subject: 'Following up',
+        body: 'Hi ' + first + ',\n\nFollowing up on what I sent over. Did you get a chance to look at it? Happy to walk you through it - would 15 minutes this week work?\n\nChad',
+        /* Log to Pipeline stays off here: it would move the opportunity to a "contacted" stage, backwards from "sent". */
+        log: false
+      });
+      toast(root, 'Follow-up draft - nothing sends until you confirm');
     },
     'pipe-follow': function (el, root) {
       var name = attr(el, 'data-name') || 'there';
@@ -2748,20 +2780,40 @@
     'mail-send': function (el, root) {
       var d = composeState();
       var bad = syncCompose(root);
+      d = composeState();
       if (bad.length) { toast(root, 'Not a valid email address: ' + bad.join(', ')); return; }
       if (!d.to.length) { toast(root, 'Add a valid recipient'); focusComposeField('to'); return; }
       var to = d.to[0].email;
       var cc = d.to.slice(1).concat(d.cc).map(function (r) { return r.email; });
       var bcc = d.bcc.map(function (r) { return r.email; });
-      var text = d.body + bundleLinksText(d.attachments);
+      if (d.attachments.some(function (a) { return a.busy; })) { toast(root, 'Still reading a file - try again in a moment'); return; }
+      var MC = window.__mailCompose || {};
+      var isReal = MC.isReal || function () { return false; };
+      var realAtts = d.attachments.filter(isReal);
+      var linkAtts = d.attachments.filter(function (a) { return !isReal(a); });
+      var sig = composeSigOut(root, d);
+      var text = d.body + bundleLinksText(linkAtts) + (sig.text ? '\n\n-- \n' + sig.text : '');
+      var html = composeHtmlOut(root, d, linkAtts, sig.html);
       var who = 'To: ' + d.to.map(function (r) { return r.email; }).join(', ')
         + (d.cc.length ? '\nCc: ' + d.cc.map(function (r) { return r.email; }).join(', ') : '')
         + (bcc.length ? '\nBcc: ' + bcc.join(', ') : '');
-      if (!window.confirm('Send this email from Gmail?\n\n' + who + '\nSubject: ' + (d.subject || '(no subject)') + '\n\nNothing goes out until you confirm.')) return;
+      var attLine = realAtts.length ? '\nAttachments: ' + realAtts.map(function (a) { return a.name || 'File'; }).join(', ') : '';
+      if (!window.confirm('Send this email from Gmail?\n\n' + who + '\nSubject: ' + (d.subject || '(no subject)') + attLine + '\n\nNothing goes out until you confirm.')) return;
       if (!writeOk()) { toast(root, 'Send (fixture)'); return; }
       var reply = !!(d.reply && d.threadId);
-      var body = { action: reply ? 'reply' : 'compose', to: to, cc: cc.join(', '), bcc: bcc.join(', '), subject: d.subject, text: text, threadId: reply ? d.threadId : '', messageId: reply ? (d.messageId || '') : '' };
-      api('/api/mail/act', { method: 'POST', body: body }).then(ok).then(json).then(function (res) {
+      var attPayload = realAtts.map(function (a) {
+        if (a.data) return { name: a.name || 'File', type: a.type || a.mime || 'application/octet-stream', data: a.data };
+        var st = MC.staged ? MC.staged(a) : '';
+        if (st) return { name: a.name || 'File', stagedId: st };
+        return { name: a.name || 'File', driveFileId: MC.drive ? MC.drive(a) : (a.driveFileId || '') };
+      });
+      var body = { action: reply ? 'reply' : 'compose', to: to, cc: cc.join(', '), bcc: bcc.join(', '), subject: d.subject, text: text, html: html, attachments: attPayload, threadId: reply ? d.threadId : '', messageId: reply ? (d.messageId || '') : '' };
+      if (realAtts.length) toast(root, 'Attaching ' + realAtts.length + ' file' + (realAtts.length === 1 ? '' : 's') + ' and sending…');
+      api('/api/mail/act', { method: 'POST', body: body }).then(function (r) {
+        if (r && r.status === 413) throw new Error('Those files are too big to send from here. Attach them from Documents or Drive instead.');
+        if (r && r.status === 422) return r.json().catch(function () { return {}; }).then(function (j) { throw new Error((j && j.error) || 'Could not attach a file'); });
+        return ok(r);
+      }).then(json).then(function (res) {
         if (!(res && (res.ok || res.drafted))) { toast(root, 'Gmail did not take it - check the address'); return; }
         var name = d.to[0].name || to;
         if (d.nudge) nudgeLater(root, name, to, d.subject);
@@ -2770,9 +2822,252 @@
         S().composeOpen = false;
         S().composeDraft = null;
         repaintMail();
-      }).catch(function () { toast(root, 'Gmail did not take that send'); });
+      }).catch(function (err) { toast(root, errText(err, 'Gmail did not take that send')); });
     },
     'intel-ask': function () {},
+
+    /* ---------- Email: inline "+ New column" box (same server path as the button: POST /api/mail/columns) ---------- */
+    'mail-col-focus': function (el, root) {
+      var input = root.getElementById && root.getElementById('newcolIn');
+      if (input && input.focus) input.focus();
+    },
+    'mail-col-name': function () {},
+    'mail-col-add': function (el, root) {
+      var input = root.getElementById && root.getElementById('newcolIn');
+      var name = String((input && input.value) || '').trim();
+      if (!name) { if (input && input.focus) input.focus(); toast(root, 'Type a name for the column first'); return; }
+      if (!writeOk()) { toast(root, 'Column created (fixture)'); return; }
+      if (mailColAdding) return;
+      mailColAdding = true;
+      createMailColumn(name).then(function () {
+        mailColAdding = false;
+        if (input) { input.value = ''; if (input.blur) input.blur(); }
+        refresh('mail');
+        toast(root, 'Column ' + name + ' added - flag mail to fill it');
+      }).catch(function () { mailColAdding = false; toast(root, 'Could not create that column'); });
+    },
+
+    /* ---------- Email: Junk / Not junk (a per-sender rule in email_rules, target 'junk' or 'notjunk') ---------- */
+    'mail-junk': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      var email = String(attr(el, 'data-email') || '').toLowerCase();
+      var toJunk = attr(el, 'data-junk') !== '0';
+      if (!email) { toast(root, 'No sender address on that email'); return; }
+      if (!writeOk()) { toast(root, (toJunk ? 'Junk' : 'Not junk') + ' (fixture)'); return; }
+      var target = toJunk ? 'junk' : 'notjunk';
+      var before = ((S().mailBoard || {}).rules || []).slice();
+      var stale = before.filter(function (r) { return r.matchType === 'sender' && String(r.matchValue || '').toLowerCase() === email && (r.target === 'junk' || r.target === 'notjunk'); });
+      /* Optimistic: drop this sender's old junk rules and add the new one locally, then save. */
+      var temp = { id: 'tmp-' + Date.now(), matchType: 'sender', matchValue: email, target: target, sticky: true };
+      setBoardRules(before.filter(function (r) { return stale.indexOf(r) < 0; }).concat([temp]));
+      S().mailRulesLive = S().mailBoard.rules;
+      refresh('mail');
+      var drops = stale.filter(function (r) { return UUID_RE.test(String(r.id || '')); }).map(function (r) {
+        return api('/api/mail/rules', { method: 'POST', body: { delete: r.id } }).then(ok);
+      });
+      Promise.all(drops).then(function () {
+        return api('/api/mail/rules', { method: 'POST', body: { matchType: 'sender', matchValue: email, target: target, sticky: true } }).then(ok).then(json);
+      }).then(function (d) {
+        if (!d || !d.saved) throw new Error('not saved');
+        setBoardRules(d.rules);
+        S().mailRulesLive = d.rules;
+        refresh('mail');
+        var made = d.rule && d.rule.id;
+        toast(root, toJunk ? 'Mail from ' + email + ' goes to Junk' : 'Mail from ' + email + ' is back in your feed', function () {
+          if (!made) return;
+          api('/api/mail/rules', { method: 'POST', body: { delete: made } }).then(ok).then(json).then(function (r2) {
+            if (r2 && r2.rules) { setBoardRules(r2.rules); S().mailRulesLive = r2.rules; }
+            refresh('mail');
+          }).catch(function () { toast(root, 'Could not undo that'); });
+        });
+      }).catch(function () {
+        setBoardRules(before);
+        S().mailRulesLive = before;
+        refresh('mail');
+        toast(root, 'Could not save that junk rule');
+      });
+    },
+
+    /* ---------- Email: Delete = move to Gmail Trash (undo brings it back) ---------- */
+    'mail-trash': function (el, root, ev) {
+      if (ev) ev.stopPropagation();
+      var id = attr(el, 'data-id') || (S().mailOpen && S().mailOpen.id) || '';
+      if (!id) return;
+      if (!GMAIL_ID.test(id) || !writeOk()) { toast(root, 'Deleted (fixture)'); return; }
+      var board = S().mailBoard || {};
+      var kept = (board.messages || []).filter(function (m) { return String(m.id) === String(id); })[0] || null;
+      dropBoardMessage(id);
+      if (S().mailOpen && S().mailOpen.id === id) { S().mailOpen = null; S().mailOpenThread = null; }
+      refresh('mail');
+      api('/api/mail/act', { method: 'POST', body: { action: 'trash', id: id } }).then(ok).then(json).then(function (d) {
+        if (!d || !d.ok) throw new Error('not trashed');
+        toast(root, 'Moved to Gmail Trash', function () {
+          api('/api/mail/act', { method: 'POST', body: { action: 'untrash', id: id } }).then(ok).then(json).then(function (u) {
+            if (!u || !u.ok) throw new Error('no');
+            var b2 = S().mailBoard;
+            if (kept && b2 && Array.isArray(b2.messages)) {
+              b2.messages = b2.messages.concat([kept]).sort(function (a, b) { return (Number(b.at) || 0) - (Number(a.at) || 0); });
+            }
+            refresh('mail');
+            toast(root, 'Back in your inbox');
+          }).catch(function () { toast(root, 'Could not bring it back - it is in Gmail Trash for 30 days'); });
+        });
+      }).catch(function () {
+        var b3 = S().mailBoard;
+        if (kept && b3 && Array.isArray(b3.messages)) b3.messages = b3.messages.concat([kept]).sort(function (a, b) { return (Number(b.at) || 0) - (Number(a.at) || 0); });
+        refresh('mail');
+        toast(root, 'Gmail did not delete that email');
+      });
+    },
+
+    /* ---------- Compose: inline link (select text, Link, paste the address) ---------- */
+    'mail-link': function (el, root) {
+      var cp = root.getElementById && root.getElementById('compose');
+      var body = cp && cp.querySelector('[data-action="mail-body"]');
+      if (!body) return;
+      var sel = (root.getSelection ? root.getSelection() : null) || window.getSelection();
+      var range = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
+      if (range && !body.contains(range.commonAncestorContainer)) range = null;
+      if (!range && lastBodyRange && body.contains(lastBodyRange.commonAncestorContainer)) range = lastBodyRange;
+      if (!range) {
+        range = document.createRange();
+        range.selectNodeContents(body);
+        range.collapse(false);
+      }
+      linkRange = range.cloneRange();
+      var row = cp.querySelector('.lnkin');
+      if (!row) {
+        row = document.createElement('div');
+        row.className = 'lnkin';
+        row.innerHTML = '<input data-action="mail-link-url" placeholder="Paste the link address (https://...)" autocomplete="off"><button type="button" class="p" data-action="mail-link-apply">Add link</button><button type="button" data-action="mail-link-cancel">Cancel</button>';
+        var bar = cp.querySelector('.tbar');
+        if (bar && bar.parentNode) bar.parentNode.insertBefore(row, bar.nextSibling);
+      }
+      var input = row.querySelector('input');
+      var picked = String(linkRange.toString() || '').trim();
+      if (input) {
+        input.value = /^https?:\/\/\S+$/i.test(picked) ? picked : '';
+        input.focus();
+      }
+    },
+    'mail-link-url': function () {},
+    'mail-link-cancel': function (el, root) {
+      var cp = root.getElementById && root.getElementById('compose');
+      var row = cp && cp.querySelector('.lnkin');
+      if (row && row.parentNode) row.parentNode.removeChild(row);
+      linkRange = null;
+    },
+    'mail-link-apply': function (el, root) {
+      var cp = root.getElementById && root.getElementById('compose');
+      var row = cp && cp.querySelector('.lnkin');
+      var body = cp && cp.querySelector('[data-action="mail-body"]');
+      var input = row && row.querySelector('input');
+      var url = String((input && input.value) || '').trim();
+      if (url && !/^[a-z][a-z0-9+.-]*:/i.test(url)) url = (/@/.test(url) && !/\//.test(url) ? 'mailto:' : 'https://') + url;
+      if (!/^(https?:\/\/\S+|mailto:\S+@\S+)$/i.test(url)) { toast(root, 'That is not a web address'); if (input) input.focus(); return; }
+      if (!body) return;
+      var range = linkRange && body.contains(linkRange.commonAncestorContainer) ? linkRange : null;
+      if (!range) { range = document.createRange(); range.selectNodeContents(body); range.collapse(false); }
+      var a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('target', '_blank');
+      a.setAttribute('rel', 'noopener');
+      if (range.collapsed) a.textContent = url.replace(/^mailto:/i, '');
+      else a.appendChild(range.extractContents());
+      range.insertNode(a);
+      var after = document.createRange();
+      after.setStartAfter(a);
+      after.collapse(true);
+      var sel = (root.getSelection ? root.getSelection() : null) || window.getSelection();
+      if (sel) { sel.removeAllRanges(); sel.addRange(after); }
+      var d = composeState();
+      d.body = String(body.innerText || body.textContent || '');
+      d.bodyHtml = String(body.innerHTML || '');
+      d.bodyHtmlFor = d.body;
+      if (row && row.parentNode) row.parentNode.removeChild(row);
+      linkRange = null;
+      body.focus();
+    },
+
+    /* ---------- Compose: attachments (computer, Documents, Spaces, Drive) ---------- */
+    'mail-attach-file': function (el, root) {
+      var input = root.getElementById && root.getElementById('composeFile');
+      if (!input) return;
+      if (!input.__wired) {
+        input.__wired = true;
+        input.addEventListener('change', function () {
+          if (input.files && input.files.length) addComposeFiles(root, input.files);
+          input.value = '';
+        });
+      }
+      input.click();
+    },
+    'mail-attach-pick': function (el, root) {
+      var cp = root.getElementById && root.getElementById('compose');
+      var w = cp && cp.querySelector('.cw');
+      if (!w) return;
+      var pick = w.querySelector('.pick');
+      if (pick) { pick.parentNode.removeChild(pick); return; }
+      pick = document.createElement('div');
+      pick.className = 'pick';
+      pick.id = 'composePick';
+      w.appendChild(pick);
+      pickerState.tab = pickerState.tab || 'docs';
+      pickerState.q = '';
+      paintPicker(root);
+      pickerLoad(root, pickerState.tab);
+    },
+    'mail-pick-tab': function (el, root) {
+      pickerState.tab = attr(el, 'data-tab') || 'docs';
+      paintPicker(root);
+      pickerLoad(root, pickerState.tab);
+    },
+    'mail-pick-q': function () {},
+    'mail-pick-close': function (el, root) {
+      var pick = root.getElementById && root.getElementById('composePick');
+      if (pick && pick.parentNode) pick.parentNode.removeChild(pick);
+    },
+    'mail-pick-add': function (el, root) {
+      var d = composeState();
+      var item = {
+        name: attr(el, 'data-name') || 'File',
+        mime: attr(el, 'data-mime'),
+        url: attr(el, 'data-url'),
+        driveFileId: attr(el, 'data-drive'),
+        stagedId: attr(el, 'data-staged')
+      };
+      var key = item.driveFileId || item.stagedId || item.url || item.name;
+      if (d.attachments.some(function (a) { return (a.driveFileId || a.stagedId || a.url || a.name) === key; })) { toast(root, item.name + ' is already attached'); return; }
+      d.attachments.push(item);
+      el.classList.add('on');
+      var em = el.querySelector('em');
+      if (em) em.textContent = 'Attached';
+      paintComposeAtts(root);
+      toast(root, item.name + ' attached');
+    },
+
+    /* ---------- Compose: signature ---------- */
+    'mail-sig': function () {},
+    'mail-sig-toggle': function (el, root) {
+      var d = composeState();
+      d.sigOff = !d.sigOff;
+      var box = root.getElementById && root.getElementById('composeSig');
+      if (box) box.classList.toggle('off', !!d.sigOff);
+      el.textContent = d.sigOff ? 'Add it back' : 'Remove';
+    },
+    'mail-sig-save': function (el, root) {
+      var box = root.getElementById && root.getElementById('composeSig');
+      var sb = box && box.querySelector('[data-action="mail-sig"]');
+      var html = String((sb && sb.innerHTML) || '').trim();
+      if (!html) { toast(root, 'Paste your signature into the box first'); return; }
+      if (!writeOk()) { toast(root, 'Signature saved (fixture)'); return; }
+      api('/api/mail/signature', { method: 'POST', body: { signature: html } }).then(ok).then(json).then(function (d) {
+        if (!d || !d.saved) throw new Error('not saved');
+        var cur = S().mailSig || {};
+        S().mailSig = { html: String(d.signature || html), source: 'saved', needsScope: !!cur.needsScope };
+        toast(root, 'Signature saved - it goes on every new email');
+      }).catch(function () { toast(root, 'Could not save that signature'); });
+    },
 
     /* ---------- Email: reader ---------- */
     'mail-open': function (el) {
@@ -3887,6 +4182,12 @@
     var body = cp.querySelector('[data-action="mail-body"]');
     if (sub) d.subject = String(sub.value || '').trim();
     if (body) d.body = String(body.innerText || body.textContent || '').replace(/ /g, ' ').trim();
+    if (body) {
+      d.bodyHtml = String(body.innerHTML || '');
+      d.bodyHtmlFor = d.body;
+    }
+    var sigEl = cp.querySelector('[data-action="mail-sig"]');
+    if (sigEl) d.sigHtml = String(sigEl.innerHTML || '');
     var bad = [];
     ['to', 'cc', 'bcc'].forEach(function (field) {
       var input = root.getElementById('mail-' + field);
@@ -3928,6 +4229,244 @@
     }).filter(Boolean);
     return lines.length ? '\n\n' + lines.join('\n') : '';
   }
+  /* ---------- Compose helpers (Oct 26): inline link, attachments, document picker, signature ---------- */
+  var mailColAdding = false;
+  var linkRange = null;
+  var lastBodyRange = null;
+  var pickerState = { tab: 'docs', q: '', drive: null, driveQ: null, loading: false };
+  var UPLOAD_CAP = 3 * 1024 * 1024;
+  function escText(v) { return esc(v).replace(/>/g, '&gt;'); }
+  function uploadedBytes(d) {
+    return (d.attachments || []).reduce(function (n, a) { return n + (a.data ? (Number(a.size) || 0) : 0); }, 0);
+  }
+  /* Uploaded files go as real attachments (base64 in the send request; the serverless body limit caps them at about 3 MB in total). */
+  function addComposeFiles(root, files) {
+    var d = composeState();
+    var list = Array.prototype.slice.call(files || []);
+    list.forEach(function (f) {
+      if (!f) return;
+      if (uploadedBytes(d) + (f.size || 0) > UPLOAD_CAP) {
+        toast(root, (f.name || 'That file') + ' is too big to upload from here (3 MB total). Put it in Documents or Drive and use From Documents.');
+        return;
+      }
+      var item = { name: f.name || 'File', type: f.type || 'application/octet-stream', mime: f.type || '', size: f.size || 0, data: '', busy: true, upload: true };
+      d.attachments.push(item);
+      var reader = new FileReader();
+      reader.onload = function () {
+        var raw = String(reader.result || '');
+        item.data = raw.indexOf(',') >= 0 ? raw.slice(raw.indexOf(',') + 1) : raw;
+        item.busy = false;
+        paintComposeAtts(root);
+      };
+      reader.onerror = function () {
+        var at = d.attachments.indexOf(item);
+        if (at >= 0) d.attachments.splice(at, 1);
+        paintComposeAtts(root);
+        toast(root, 'Could not read ' + item.name);
+      };
+      reader.readAsDataURL(f);
+    });
+    paintComposeAtts(root);
+  }
+  /* Repaint only the attachment chips and the side box, so the body, the picker and the caret stay put. */
+  function paintComposeAtts(root) {
+    var cp = root && root.getElementById && root.getElementById('compose');
+    if (!cp) return;
+    var d = composeState();
+    var MC = window.__mailCompose || {};
+    var isReal = MC.isReal || function () { return false; };
+    var html = d.attachments.map(function (a, i) {
+      var nm = String(a.name || 'File');
+      var ext = (nm.match(/\.([a-z0-9]{2,5})$/i) || [])[1] || (a.mime && /pdf/i.test(a.mime) ? 'pdf' : 'file');
+      var size = Number(a.size) || 0;
+      var sz = size ? (size >= 1048576 ? (size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(size / 1024)) + ' KB') : '';
+      return '<span class="att' + (a.busy ? ' busy' : '') + '"><span class="ty" style="background:#2e6bf2">' + escText(String(ext).toUpperCase()) + '</span>' + escText(nm)
+        + (sz ? ' <span class="sz">' + escText(sz) + '</span>' : '') + (isReal(a) || a.busy ? '' : ' <span class="sz">link</span>')
+        + '<span class="x2" data-action="mail-att-remove" data-i="' + i + '" title="Remove">&times;</span></span>';
+    }).join('');
+    var box = cp.querySelector('.atts');
+    if (!html) { if (box && box.parentNode) box.parentNode.removeChild(box); }
+    else {
+      if (!box) {
+        box = document.createElement('div');
+        box.className = 'atts';
+        var drop = cp.querySelector('#composeDrop');
+        if (drop && drop.parentNode) drop.parentNode.insertBefore(box, drop);
+      }
+      box.innerHTML = html;
+    }
+    var side = cp.querySelector('#composeSide');
+    if (side && MC.side) side.innerHTML = MC.side(d);
+  }
+  function pickerRows(root) {
+    var tab = pickerState.tab;
+    var q = String(pickerState.q || '').toLowerCase();
+    var rows = [];
+    if (tab === 'docs') {
+      (S().staged || []).forEach(function (doc) {
+        if (!doc || doc.kind === 'folder') return;
+        var drive = String(doc.driveFileId || doc.drive || '');
+        var dr = /^[\w-]{8,}$/.test(drive) && !UUID_RE.test(drive) ? drive : '';
+        rows.push({ name: doc.name || 'File', mime: doc.mime || '', url: doc.url || '', drive: dr, staged: !dr && UUID_RE.test(String(doc.id || '')) ? String(doc.id) : '', meta: doc.category || 'Documents' });
+      });
+    } else if (tab === 'spaces') {
+      (S().packages || []).forEach(function (p) {
+        (p.docs || p.items || []).forEach(function (doc) {
+          if (!doc || doc.kind === 'link' || doc.kind === 'note' || doc.kind === 'folder') return;
+          var drive = String(doc.driveFileId || doc.drive_file_id || doc.drive || '');
+          var st = String(doc.stagedId || doc.staged_id || '');
+          rows.push({ name: doc.name || doc.title || 'File', mime: doc.mime || '', url: doc.url || '', drive: /^[\w-]{8,}$/.test(drive) && !UUID_RE.test(drive) ? drive : '', staged: UUID_RE.test(st) ? st : '', meta: p.name || 'Space' });
+        });
+      });
+    } else {
+      (pickerState.drive || []).forEach(function (f) {
+        rows.push({ name: f.name || 'File', mime: f.mime || '', url: f.url || '', drive: f.id || '', staged: '', meta: 'Drive' });
+      });
+    }
+    if (q && tab !== 'drive') rows = rows.filter(function (r) { return (r.name + ' ' + r.meta).toLowerCase().indexOf(q) >= 0; });
+    return rows.slice(0, 80);
+  }
+  function paintPicker(root) {
+    var pick = root.getElementById && root.getElementById('composePick');
+    if (!pick) return;
+    var tab = pickerState.tab;
+    var d = composeState();
+    var have = {};
+    (d.attachments || []).forEach(function (a) { have[a.driveFileId || a.stagedId || a.url || a.name] = 1; });
+    var head = '<div class="ph">'
+      + [['docs', 'Documents'], ['spaces', 'Spaces'], ['drive', 'Drive']].map(function (t) { return '<span class="' + (tab === t[0] ? 'on' : '') + '" data-action="mail-pick-tab" data-tab="' + t[0] + '">' + t[1] + '</span>'; }).join('')
+      + '<input data-action="mail-pick-q" placeholder="' + (tab === 'drive' ? 'Search Drive, then Enter' : 'Filter by name') + '" value="' + esc(pickerState.q || '') + '" autocomplete="off">'
+      + '<span data-action="mail-pick-close">Close</span></div>';
+    var rows = pickerRows(root);
+    var body = pickerState.loading ? '<div class="pe">Loading&hellip;</div>'
+      : rows.length ? rows.map(function (r) {
+        var key = r.drive || r.staged || r.url || r.name;
+        var how = r.drive || r.staged ? 'Attach' : 'Link';
+        return '<div class="pr" data-action="mail-pick-add" data-name="' + esc(r.name) + '" data-mime="' + esc(r.mime) + '" data-url="' + esc(r.url) + '" data-drive="' + esc(r.drive) + '" data-staged="' + esc(r.staged) + '"><b>' + escText(r.name) + '</b><span style="color:#6b7a90">' + escText(r.meta) + '</span><em>' + (have[key] ? 'Attached' : how) + '</em></div>';
+      }).join('')
+      : '<div class="pe">' + (tab === 'drive' ? 'No Drive files found.' : tab === 'spaces' ? 'No files in your Spaces yet.' : 'No documents yet.') + '</div>';
+    var list = pick.querySelector('.plist');
+    if (!pick.querySelector('.ph')) pick.innerHTML = head + '<div class="plist">' + body + '</div>';
+    else {
+      pick.querySelector('.ph').outerHTML = head;
+      if (list) list.innerHTML = body;
+    }
+  }
+  function pickerLoad(root, tab) {
+    if (!writeOk()) return;
+    if (tab === 'docs' && !(S().staged || []).length) {
+      pickerState.loading = true;
+      paintPicker(root);
+      api('/api/documents', { method: 'GET' }).then(ok).then(json).then(function (d) {
+        if (d && Array.isArray(d.docs)) S().staged = d.docs;
+      }).catch(function () {}).then(function () { pickerState.loading = false; paintPicker(root); });
+    } else if (tab === 'spaces' && !(S().packages || []).length) {
+      pickerState.loading = true;
+      paintPicker(root);
+      withSpaces(function () { pickerState.loading = false; paintPicker(root); });
+    } else if (tab === 'drive' && pickerState.drive == null) {
+      pickerSearch(root, '', true);
+    }
+  }
+  function pickerSearch(root, q, now) {
+    pickerState.q = q;
+    if (pickerState.tab !== 'drive') {
+      var pick = root.getElementById && root.getElementById('composePick');
+      var list = pick && pick.querySelector('.plist');
+      if (list) {
+        var keep = pick.querySelector('[data-action="mail-pick-q"]');
+        paintPicker(root);
+        keep = pick.querySelector('[data-action="mail-pick-q"]');
+        if (keep) { keep.focus(); try { keep.setSelectionRange(q.length, q.length); } catch (e) {} }
+      }
+      return;
+    }
+    if (!now || !writeOk()) return;
+    pickerState.loading = true;
+    paintPicker(root);
+    api('/api/documents/drive?q=' + encodeURIComponent(q || ''), { method: 'GET' }).then(ok).then(json).then(function (d) {
+      pickerState.drive = (d && Array.isArray(d.files)) ? d.files : [];
+    }).catch(function () { pickerState.drive = []; toast(root, 'Drive did not answer - is Google connected?'); }).then(function () {
+      pickerState.loading = false;
+      paintPicker(root);
+    });
+  }
+  /* Signature for sending: the block on screen (edited or not), unless switched off. */
+  function composeSigOut(root, d) {
+    if (d.sigOff) return { html: '', text: '' };
+    var cp = root.getElementById && root.getElementById('compose');
+    var sb = cp && cp.querySelector('[data-action="mail-sig"]');
+    var html = sb ? String(sb.innerHTML || '').trim() : String(d.sigHtml || '').trim();
+    var text = sb ? String(sb.innerText || sb.textContent || '').trim() : '';
+    if (!text && !/<img/i.test(html)) return { html: '', text: '' };
+    return { html: html, text: text };
+  }
+  /* HTML body for sending: the editor's HTML (links kept), link-only files as anchors, then the signature. */
+  function composeHtmlOut(root, d, linkAtts, sigHtml) {
+    var cp = root.getElementById && root.getElementById('compose');
+    var body = cp && cp.querySelector('[data-action="mail-body"]');
+    var main = body ? String(body.innerHTML || '') : escText(d.body).replace(/\n/g, '<br>');
+    var links = (linkAtts || []).map(function (a) {
+      var url = a.url || (a.driveFileId || a.drive_file_id ? 'https://drive.google.com/file/d/' + (a.driveFileId || a.drive_file_id) + '/view' : '');
+      return url ? '<li><a href="' + esc(url) + '">' + escText(a.name || 'File') + '</a></li>' : '';
+    }).filter(Boolean).join('');
+    return '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#1b2333">' + main
+      + (links ? '<ul>' + links + '</ul>' : '')
+      + (sigHtml ? '<br><div class="gmail_signature">' + sigHtml + '</div>' : '')
+      + '</div>';
+  }
+  function loadMailSig(root) {
+    if (S().mailSig || loadMailSig.busy || !writeOk()) return;
+    loadMailSig.busy = true;
+    api('/api/mail/signature', { method: 'GET' }).then(ok).then(json).then(function (d) {
+      S().mailSig = { html: String((d && d.signature) || ''), source: String((d && d.source) || 'none'), needsScope: !!(d && d.needsScope) };
+    }).catch(function () {
+      S().mailSig = { html: '', source: 'none', needsScope: false, failed: true };
+    }).then(function () {
+      loadMailSig.busy = false;
+      var r = mailRoot() || root;
+      var box = r && r.getElementById && r.getElementById('composeSig');
+      var MC = window.__mailCompose || {};
+      if (box && MC.sig) {
+        var d = composeState();
+        var typed = box.querySelector('[data-action="mail-sig"]');
+        if (typed && String(typed.innerText || '').trim()) d.sigHtml = String(typed.innerHTML || '');
+        box.outerHTML = MC.sig(d);
+      }
+    });
+  }
+  /* After every Email paint: keep the editor selection for Link, wire the file input, load the signature once. */
+  window.__mailComposeAfterPaint = function (wrap) {
+    var root = wrap && wrap.getRootNode ? wrap.getRootNode() : null;
+    var cp = root && root.getElementById ? root.getElementById('compose') : null;
+    if (!cp || !cp.classList.contains('open')) return;
+    var bar = cp.querySelector('.tbar');
+    if (bar && !bar.__keepSel) {
+      bar.__keepSel = true;
+      bar.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    }
+    var body = cp.querySelector('[data-action="mail-body"]');
+    if (body && !body.__keepSel) {
+      body.__keepSel = true;
+      var stash = function () {
+        var sel = (root.getSelection ? root.getSelection() : null) || window.getSelection();
+        var r = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
+        if (r && body.contains(r.commonAncestorContainer)) lastBodyRange = r.cloneRange();
+      };
+      body.addEventListener('mouseup', stash);
+      body.addEventListener('keyup', stash);
+      body.addEventListener('blur', stash);
+    }
+    var file = cp.querySelector('#composeFile');
+    if (file && !file.__wired) {
+      file.__wired = true;
+      file.addEventListener('change', function () {
+        if (file.files && file.files.length) addComposeFiles(root, file.files);
+        file.value = '';
+      });
+    }
+    loadMailSig(root);
+  };
   function forwardBody(from, email, subject, text) {
     return '\n\n---------- Forwarded message ----------\nFrom: ' + from + (email ? ' <' + email + '>' : '') + '\nSubject: ' + subject + '\n\n' + String(text || '');
   }
@@ -4224,7 +4763,7 @@
     if (t && t.closest) {
       var ignore = t.closest('input, textarea, select, [contenteditable="true"]');
       var ignAct = ignore && ignore.getAttribute ? (ignore.getAttribute('data-action') || '') : '';
-      if (ignore && /^(capture-input|notes-search|note-edit|link-title|link-url|link-search|link-note|plan-draft|reach-pick-search|pipe-search|mail-search|mail-people-search|mail-closed-search|docs-search|spaces-search|space-notes|space-angle|space-subject|space-intro|mail-body|mail-to|mail-subject|intel-ask|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|play-tx|zoom-search|zoom-ask-input|news-search)$/.test(ignAct)) return;
+      if (ignore && /^(capture-input|notes-search|note-edit|link-title|link-url|link-search|link-note|plan-draft|reach-pick-search|pipe-search|mail-search|mail-people-search|mail-closed-search|docs-search|spaces-search|space-notes|space-angle|space-subject|space-intro|mail-body|mail-to|mail-subject|mail-col-name|mail-sig|mail-link-url|mail-pick-q|intel-ask|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|play-tx|zoom-search|zoom-ask-input|news-search)$/.test(ignAct)) return;
       if (ignore && ignore.hasAttribute && ignore.hasAttribute('data-ext-field')) return;
     }
     var rootEarly = rootOf(el || t, e);
@@ -4284,6 +4823,24 @@
       var keyDone = false;
       try { keyDone = window.__deskKeyExt[fieldAct](el, root, e) === true; } catch (err) {}
       if (keyDone) return;
+    }
+    /* Inline fields on Email: new column name, link address, document picker search. Enter acts, Esc cancels. */
+    if (fieldAct === 'mail-col-name' && (e.key === 'Enter' || e.key === 'Escape')) {
+      e.preventDefault();
+      if (e.key === 'Escape') { el.value = ''; if (el.blur) el.blur(); return; }
+      actions['mail-col-add'](el, root, e);
+      return;
+    }
+    if (fieldAct === 'mail-link-url' && (e.key === 'Enter' || e.key === 'Escape')) {
+      e.preventDefault();
+      actions[e.key === 'Escape' ? 'mail-link-cancel' : 'mail-link-apply'](el, root, e);
+      return;
+    }
+    if (fieldAct === 'mail-pick-q' && (e.key === 'Enter' || e.key === 'Escape')) {
+      e.preventDefault();
+      if (e.key === 'Escape') actions['mail-pick-close'](el, root, e);
+      else pickerSearch(root, String(el.value || ''), true);
+      return;
     }
     if ((fieldAct === 'space-card-name' || fieldAct === 'space-card-desc') && (e.key === 'Enter' || e.key === 'Escape')) {
       e.preventDefault();
@@ -4465,7 +5022,15 @@
       return;
     }
     if (name === 'mail-subject') { composeState().subject = String(el.value || ''); return; }
-    if (name === 'mail-body') { composeState().body = String(el.innerText || el.textContent || ''); return; }
+    if (name === 'mail-body') {
+      var dB = composeState();
+      dB.body = String(el.innerText || el.textContent || '');
+      dB.bodyHtml = String(el.innerHTML || '');
+      dB.bodyHtmlFor = dB.body;
+      return;
+    }
+    if (name === 'mail-sig') { composeState().sigHtml = String(el.innerHTML || ''); return; }
+    if (name === 'mail-pick-q') { pickerSearch(root, String(el.value || ''), false); return; }
     if (name === 'mail-ask-input') { composeState().ask = String(el.value || ''); return; }
     if (name === 'space-link-q') {
       var lq = String(el.value || '').toLowerCase();
@@ -4591,6 +5156,12 @@
   function onDragOver(e) {
     if (hasFiles(e)) e.preventDefault();
     var t = (e.composedPath && e.composedPath()[0]) || e.target;
+    if (hasFiles(e) && t && t.closest && t.closest('#compose')) {
+      var cr = t.getRootNode ? t.getRootNode() : null;
+      var dz = cr && cr.getElementById ? cr.getElementById('composeDrop') : null;
+      if (dz) dz.classList.add('over');
+      return;
+    }
     var col = t && t.closest ? t.closest(dropSel()) : null;
     if (!col) return;
     e.preventDefault();
@@ -4605,6 +5176,12 @@
     if (files && files.length) {
       e.preventDefault();
       e.stopPropagation();
+      if (t.closest && t.closest('#compose')) {
+        var dz = root.getElementById && root.getElementById('composeDrop');
+        if (dz) dz.classList.remove('over');
+        addComposeFiles(root, files);
+        return;
+      }
       var zone = t.closest ? t.closest('[data-action="space-docs"], [data-action="space-drop"]') : null;
       if (zone) {
         var spaceId = attr(zone, 'data-id') || (S().pkg && S().pkg.id) || '';
@@ -4865,7 +5442,7 @@
   window.__deskMail = { sync: syncCompose, state: composeState, open: openCompose, repaint: repaintMail, bundle: bundleLinksText, toast: toast, root: mailRoot };
   if (!window.__r3Loaded && !document.querySelector('script[data-r3]')) {
     var r3 = document.createElement('script');
-    r3.src = '/redesign-pages-r3.js?v=1';
+    r3.src = '/redesign-pages-r3.js?v=2';
     r3.setAttribute('data-r3', '1');
     document.head.appendChild(r3);
   }
