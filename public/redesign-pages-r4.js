@@ -9,6 +9,9 @@
   function qFlag(name) {
     try { return new URLSearchParams(location.search || '').get(name) === '1'; } catch (e) { return false; }
   }
+  function qParam(name) {
+    try { return new URLSearchParams(location.search || '').get(name) || ''; } catch (e) { return ''; }
+  }
   function writeOk() { return !fixtureOn(); }
   function api(url, opts) {
     opts = opts || {};
@@ -561,6 +564,443 @@
     render();
   }
 
+  /* ---------- Spaces cards (05e) + quick window (05f) ---------- */
+  var CARD_COL = ['#2e6bf2', '#12a36a', '#c98408', '#6b4fd8', '#e0364f', '#0f8a8a'];
+  var CARD_STEPS = ['Person', 'Notes', 'Docs attached', 'Link added', 'Intro written'];
+  function cardsSample() {
+    return [
+      { name: 'General', min: false, sp: [
+        { n: 'Regulator intro', o: 'Template for regulator first contact', why: 'The intro we send to BCFSA, FSRA and AMF. Leads with conduct risk.', d: [1, 1, 0, 0, 0], last: '-', em: 0, stage: 'draft', nx: ['Add docs', 'amb'], docs: 0, links: 0, notes: 'Template for regulator first contact.' },
+        { n: 'Friends & Family email', o: 'Round update for the F&F list', why: 'Monthly note to friends and family investors: progress, raise status, one ask.', d: [1, 1, 0, 0, 0], last: '12 Oct', em: 14, stage: 'sent', nx: ['Write intro', 'amb'], docs: 1, links: 0, notes: 'Round update for the F&F list.' },
+        { n: 'Design partners', o: 'Pack for credit unions and brokers', why: 'Pilot pitch: what changes for their advisors, 30-day pilot, pricing for 10 seats.', d: [1, 1, 1, 0, 0], last: '22 Oct', em: 6, stage: 'pilot', nx: ['Add the link', 'amb'], docs: 2, links: 0, notes: 'Pack for credit unions and brokers.' }
+      ] },
+      { name: 'Venture Capital', min: false, sp: [
+        { n: 'Joe Canavan', o: 'Angel - email first', why: 'Backs fintech infrastructure. Wants the base case and the raise terms in one page.', d: [1, 1, 1, 1, 0], last: '-', em: 0, stage: 'Storage', nx: ['Send today', 'red'], docs: 2, links: 1, notes: 'Angel - email first.' },
+        { n: 'Neil Mitchell', o: 'Marsh Canada MD - insurtech angel', why: 'Backed QuickFacts. Lead with conduct risk in insurance distribution, not AI.', d: [1, 1, 1, 0, 0], last: '-', em: 0, stage: 'Storage', nx: ['Add docs', 'amb'], docs: 1, links: 4, notes: 'Marsh Canada MD - insurtech angel.' },
+        { n: 'Norm Cappell', o: 'Angel - Calgary network', why: 'Knows the Alberta credit unions. Ask for two intros rather than a cheque first.', d: [1, 1, 0, 0, 0], last: '3 Oct', em: 2, stage: 'Cold', nx: ['Write intro', 'amb'], docs: 0, links: 0, notes: 'Angel - Calgary network.' },
+        { n: 'Mench Capital', o: 'Investor - Mike Gardner', why: 'Questions on the capture rate. Send the base case and the three scenarios.', d: [1, 1, 1, 1, 1], last: '20 Oct', em: 5, stage: 'Info pack sent', nx: ['Ready to send', 'grn'], docs: 3, links: 1, notes: 'Questions on the capture rate. Send the base case and the three scenarios.' }
+      ] },
+      { name: 'Business', min: false, sp: [
+        { n: 'Bow Valley Credit Union', o: 'Design partner - compliance lead', why: 'Board wants a sample record and pricing on one page before Thursday 10:00.', d: [1, 1, 1, 0, 0], last: '22 Oct', em: 8, stage: 'Meeting booked', nx: ['Attach sample', 'red'], docs: 2, links: 0, notes: 'Design partner - compliance lead.' },
+        { n: 'Enrich Mortgage Group', o: 'Broker group - discovery', why: 'Wants proof of what each client was told before signing. 30-day pilot, 2 brokers.', d: [1, 1, 0, 0, 0], last: '26 Oct', em: 3, stage: 'Contact made', nx: ['Book discovery', 'amb'], docs: 0, links: 0, notes: 'Broker group - discovery.' },
+        { n: 'Tom Robertson', o: 'Mortgage broker', why: 'Met at the CMT event. Interested in the read-back feature for his team.', d: [1, 0, 0, 0, 0], last: '-', em: 0, stage: 'Storage', nx: ['Add notes', 'amb'], docs: 0, links: 0, notes: 'Mortgage broker.' }
+      ] }
+    ];
+  }
+  function pctOf(s) { return (s.d || []).filter(Boolean).length; }
+  function iniOf(n) { return String(n || '').split(' ').map(function (x) { return x[0] || ''; }).join('').slice(0, 2).toUpperCase(); }
+  function ringColor(k) { return k === 5 ? 'var(--green)' : (k >= 3 ? '#2e6bf2' : '#c98408'); }
+  function fmtDay(iso) {
+    if (!iso) return '-';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '-';
+    return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'America/Vancouver' }).format(d);
+  }
+  function liveFacts(pkg) {
+    var S0 = window.STATE || {};
+    var name = String(pkg.name || '');
+    var contacts = (S0.contacts || []).concat(S0.pipeline || []).concat(S0.people || []);
+    var hit = contacts.filter(function (c) {
+      var cn = String(c.name || '').toLowerCase();
+      return cn && (cn === name.toLowerCase() || name.toLowerCase().indexOf(cn) >= 0 || cn.indexOf(name.toLowerCase()) >= 0);
+    })[0];
+    var last = (hit && (hit.lastTouch || hit.last_touch || hit.lastContact)) || pkg.lastTouch || pkg.last_contact || '';
+    var emails = 0;
+    var addr = String((hit && (hit.email || hit.address)) || '').toLowerCase();
+    (S0.mail || S0.inbox || []).forEach(function (m) {
+      var blob = String((m.from || '') + ' ' + (m.to || '') + ' ' + (m.email || '')).toLowerCase();
+      if (addr && blob.indexOf(addr) >= 0) emails += 1;
+      else if (name && blob.indexOf(name.toLowerCase()) >= 0) emails += 1;
+    });
+    var stage = (hit && (hit.stage || hit.pipelineStage || hit.status)) || pkg.stage || pkg.status || 'draft';
+    return { last: fmtDay(last), em: emails, stage: String(stage) };
+  }
+  function stepsFromPkg(pkg) {
+    if (pkg.steps && pkg.steps.length) {
+      return CARD_STEPS.map(function (t) {
+        var hit = pkg.steps.filter(function (x) { return x && String(x.t || x.text || '') === t; })[0];
+        return hit && (hit.d || hit.done) ? 1 : 0;
+      });
+    }
+    var docs = (pkg.docs || pkg.items || []).filter(function (d) { return d && d.kind !== 'link' && d.mime !== 'text/x-folder'; });
+    var links = (pkg.docs || pkg.items || []).filter(function (d) { return d && (d.kind === 'link' || d.mime === 'text/x-link'); });
+    return [
+      (pkg.recipients || pkg.people || []).length ? 1 : 0,
+      (pkg.notes || pkg.description) ? 1 : 0,
+      (pkg.docCount || docs.length) ? 1 : 0,
+      (pkg.linkCount || links.length) ? 1 : 0,
+      (pkg.emailBody || pkg.angle) ? 1 : 0
+    ];
+  }
+  function nextChip(s) {
+    if (s.nx && s.nx.length) return s.nx;
+    var k = pctOf(s);
+    if (k === 5) return ['Ready to send', 'grn'];
+    var i = (s.d || []).indexOf(0);
+    var missing = CARD_STEPS[i] || 'Next step';
+    var map = { Person: 'Add person', Notes: 'Add notes', 'Docs attached': 'Add docs', 'Link added': 'Add the link', 'Intro written': 'Write intro' };
+    var due = /today|due/i.test(String(s.stage || '')) || String(s.last || '') === fmtDay(new Date().toISOString());
+    return [map[missing] || missing, due ? 'red' : 'amb'];
+  }
+  function cardFromPkg(pkg) {
+    var facts = liveFacts(pkg);
+    var docs = (pkg.docs || pkg.items || []).filter(function (d) { return d && d.kind !== 'link' && d.mime !== 'text/x-folder'; });
+    var links = (pkg.docs || pkg.items || []).filter(function (d) { return d && (d.kind === 'link' || d.mime === 'text/x-link'); });
+    var s = {
+      id: pkg.id,
+      n: pkg.name || 'Untitled space',
+      o: pkg.subjectLabel || pkg.organisation || pkg.organization || pkg.description || '',
+      why: pkg.angle || '',
+      d: stepsFromPkg(pkg),
+      last: facts.last,
+      em: facts.em,
+      stage: facts.stage,
+      docs: Number(pkg.docCount != null ? pkg.docCount : docs.length) || 0,
+      links: Number(pkg.linkCount != null ? pkg.linkCount : links.length) || 0,
+      notes: pkg.notes || pkg.description || '',
+      people: (pkg.recipients || pkg.people || []).map(function (p) { return p.name || p.email || ''; }).filter(Boolean),
+      files: docs,
+      linkItems: links,
+      history: pkg.history || []
+    };
+    s.nx = nextChip(s);
+    return s;
+  }
+  function liveCards() {
+    var S0 = window.STATE || {};
+    var spaces = (S0.packages && S0.packages.length ? S0.packages : (S0.spaces || [])).slice();
+    spaces.sort(function (a, b) { return (Number(a.position) || 0) - (Number(b.position) || 0); });
+    var by = {};
+    spaces.forEach(function (s) {
+      var cat = s.category || s.spaceCategory || 'General';
+      if (!by[cat]) by[cat] = { id: cat, name: cat, min: false, sp: [] };
+      by[cat].sp.push(cardFromPkg(s));
+    });
+    var order = ((S0.spaceGroups) || []).map(function (g) { return g.name || g; });
+    var names = order.filter(function (n) { return by[n]; });
+    Object.keys(by).forEach(function (n) { if (names.indexOf(n) < 0) names.push(n); });
+    if (!names.length) return [{ name: 'General', min: false, sp: [] }];
+    return names.map(function (n) { return by[n]; });
+  }
+  window.paintSpacesCardsPage = paintSpacesCardsPage;
+  function paintSpacesCardsPage(openWanted) {
+    var wrap = wrapOf('spacesDesk');
+    if (!wrap) return;
+    if (P().applyPageCss) P().applyPageCss(wrap, 'spacesCards');
+    var CATS = (fixtureOn() ? cardsSample() : liveCards()).map(function (c) { return Object.assign({}, c, { sp: c.sp.slice() }); });
+    var all = CATS.reduce(function (n, c) { return n + c.sp.length; }, 0);
+    var readyN = CATS.reduce(function (n, c) { return n + c.sp.filter(function (s) { return pctOf(s) === 5; }).length; }, 0);
+    var needDocs = CATS.reduce(function (n, c) { return n + c.sp.filter(function (s) { return !s.d[2]; }).length; }, 0);
+    var kpiHtml = fixtureOn()
+      ? '<span><b>53</b> spaces</span><span class="hot"><b>2</b> ready to send</span><span><b>4</b> need docs</span><span><b>0</b> sent this week</span><span><b>0</b> replies</span><span><b>0</b> meetings booked</span>'
+      : '<span><b>' + all + '</b> spaces</span><span class="hot"><b>' + readyN + '</b> ready to send</span><span><b>' + needDocs + '</b> need docs</span><span><b>0</b> sent this week</span><span><b>0</b> replies</span><span><b>0</b> meetings booked</span>';
+    wrap.innerHTML =
+      '<div class="bar"><h1>Spaces</h1><span class="sub">Every send-bundle, grouped by who it\'s for</span>'
+      + '<div class="r"><input class="search" id="q" data-action="spaces-search" placeholder="Search spaces or people"><div class="seg" id="seg"><span class="on" data-action="spaces-arr-view" data-v="groups">Groups</span><span data-action="spaces-arr-view" data-v="board">Board</span></div>'
+      + '<button class="btn ghost" data-action="spaces-arr-minall" id="minAll">Collapse all</button><button class="btn pri" data-action="spaces-new">+ New space</button></div></div>'
+      + '<div class="kpis">' + kpiHtml + '</div>'
+      + '<section class="view on" id="groups"><div id="cats"></div></section><section class="view" id="board"></section>'
+      + '<div class="scrim" id="scrim" data-action="spaces-card-close"></div>'
+      + '<aside class="qw" id="qw" role="dialog" aria-label="Space">'
+      + '<div class="qh"><span class="cr" id="qCr"></span><div class="r">'
+      + '<button class="btn sm" data-action="spaces-card-prev" id="prev">&lsaquo; Prev</button>'
+      + '<button class="btn sm" data-action="spaces-card-next" id="next">Next &rsaquo;</button>'
+      + '<button class="btn sm" data-action="spaces-card-full" id="full">Open full page</button>'
+      + '<button class="btn sm" data-action="spaces-card-close" id="close">Close</button></div></div>'
+      + '<div class="qb" id="qb"></div>'
+      + '<div class="qf"><span class="st" id="qSt"></span>'
+      + '<button class="btn sm" data-action="space-drive" id="drive">Move to Drive</button>'
+      + '<button class="btn sm" data-action="space-book" id="book">Book 20 min</button>'
+      + '<button class="btn sm" data-action="space-email" id="email">Email them</button>'
+      + '<button class="btn sm pri" data-action="space-send" id="send">Send bundle</button></div></aside>'
+      + '<div class="toast" id="toast"></div>';
+    if (P().finishPaint) P().finishPaint(wrap);
+    bindCards(wrap, CATS, !!openWanted);
+    markReady('spacesDesk');
+  }
+  function bindCards(root, CATS, openWanted) {
+    var cur = null;
+    var savedScroll = 0;
+    function flat() { return CATS.reduce(function (a, c, ci) { return a.concat(c.sp.map(function (s, si) { return { s: s, ci: ci, si: si }; })); }, []); }
+    function persist() {
+      if (!writeOk()) return;
+      api('/api/spaces/groups/reorder', { method: 'PATCH', body: { ids: CATS.map(function (c) { return c.name; }) } }).catch(function () {});
+      CATS.forEach(function (c) {
+        c.sp.forEach(function (s, i) {
+          if (s.id) api('/api/spaces/' + encodeURIComponent(s.id), { method: 'PATCH', body: { group: c.name, position: i } }).catch(function () {});
+        });
+      });
+    }
+    function cardHtml(s, ci, si) {
+      var k = pctOf(s), c = ringColor(k), nx = nextChip(s);
+      return '<div class="sp" draggable="true" data-action="spaces-card-open" data-c="' + ci + '" data-s="' + si + '"' + (s.id ? ' data-id="' + esc(s.id) + '"' : '') + '>'
+        + '<div class="hd"><span class="av" style="background:' + CARD_COL[(ci * 3 + si) % 6] + '">' + esc(iniOf(s.n)) + '</span><div style="min-width:0"><h4>' + esc(s.n) + '</h4><div class="org">' + esc(s.o) + '</div></div>'
+        + '<span class="ring" style="--p:' + (k * 20) + '%;--c:' + c + '"><span>' + k + '/5</span></span></div>'
+        + '<p class="why">' + esc(s.why) + '</p>'
+        + '<div class="facts"><div><b>' + esc(s.last) + '</b><small>last contact</small></div><div><b>' + esc(s.em) + '</b><small>emails</small></div><div><b>' + esc(s.stage) + '</b><small>pipeline stage</small></div></div>'
+        + '<div class="steps">' + (s.d || []).map(function (x) { return '<i class="' + (x ? 'd' : '') + '"></i>'; }).join('') + '</div>'
+        + '<div class="ft"><span class="nx ' + esc(nx[1]) + '">' + esc(nx[0]) + '</span><span class="bund">' + (s.docs || 0) + ' docs &middot; ' + (s.links || 0) + ' links</span><span class="go">Open</span></div></div>';
+    }
+    function renderGroups() {
+      var qEl = root.getElementById ? root.getElementById('q') : root.querySelector('#q');
+      var q = String((qEl && qEl.value) || '').toLowerCase();
+      var cats = root.getElementById ? root.getElementById('cats') : root.querySelector('#cats');
+      if (!cats) return;
+      cats.innerHTML = CATS.map(function (c, ci) {
+        var list = c.sp.map(function (s, si) { return [s, si]; }).filter(function (pair) {
+          return !q || (pair[0].n + ' ' + pair[0].o + ' ' + (pair[0].why || '')).toLowerCase().indexOf(q) >= 0;
+        });
+        var ready = c.sp.filter(function (s) { return pctOf(s) === 5; }).length;
+        var due = c.sp.filter(function (s) { return nextChip(s)[1] === 'red'; }).length;
+        return '<div class="cat' + (c.min ? ' min' : '') + '" draggable="true" data-action="spaces-arr-cat" data-c="' + ci + '"><div class="ch"><span class="grab">MOVE</span><h2>' + esc(c.name) + '</h2><span class="n">' + c.sp.length + '</span><span class="sum">' + ready + ' ready &middot; ' + due + ' due today</span><span class="tg" data-action="spaces-arr-tg" data-tg="' + ci + '">' + (c.min ? 'Expand' : 'Collapse') + '</span></div><div class="grid" data-c="' + ci + '">' + list.map(function (pair) { return cardHtml(pair[0], ci, pair[1]); }).join('') + '<div class="addsp" data-action="spaces-new">+ New space in ' + esc(c.name) + '</div></div></div>';
+      }).join('');
+    }
+    function renderBoard() {
+      var el = root.getElementById ? root.getElementById('board') : root.querySelector('#board');
+      if (!el) return;
+      el.innerHTML = '<div class="board">' + CATS.map(function (c, ci) {
+        return '<div class="col' + (c.min ? ' min' : '') + '" draggable="true" data-action="spaces-arr-cat" data-c="' + ci + '"><div class="ch"><span class="grab">MOVE</span><h2>' + esc(c.name) + '</h2><span class="n">' + c.sp.length + '</span><span class="sum">' + c.sp.filter(function (s) { return pctOf(s) === 5; }).length + ' ready</span><span class="tg" data-action="spaces-arr-tg" data-tg="' + ci + '">' + (c.min ? 'Open' : 'Fold') + '</span></div><div class="list" data-c="' + ci + '">' + c.sp.map(function (s, si) { return cardHtml(s, ci, si); }).join('') + '</div></div>';
+      }).join('') + '</div>';
+    }
+    function markCur() {
+      root.querySelectorAll('.sp').forEach(function (e) {
+        e.classList.toggle('cur', !!(cur && +e.getAttribute('data-c') === cur.ci && +e.getAttribute('data-s') === cur.si));
+      });
+    }
+    function render() { renderGroups(); renderBoard(); if (cur) markCur(); }
+    function fillWindow() {
+      if (!cur) return;
+      var s = CATS[cur.ci].sp[cur.si], k = pctOf(s), c = ringColor(k);
+      var qCr = root.getElementById ? root.getElementById('qCr') : root.querySelector('#qCr');
+      var qb = root.getElementById ? root.getElementById('qb') : root.querySelector('#qb');
+      var qSt = root.getElementById ? root.getElementById('qSt') : root.querySelector('#qSt');
+      var qw = root.getElementById ? root.getElementById('qw') : root.querySelector('#qw');
+      var scrim = root.getElementById ? root.getElementById('scrim') : root.querySelector('#scrim');
+      var left = CARD_STEPS.filter(function (x, i) { return !s.d[i]; }).slice(0, 2).join(', ').toLowerCase();
+      if (qCr) qCr.innerHTML = esc(CATS[cur.ci].name) + ' / <b>' + esc(s.n) + '</b>';
+      var files = (s.files || []).map(function (f) { return '<span>' + esc(f.name || 'File') + '</span>'; }).join('');
+      if (!files && s.docs) {
+        if (s.docs >= 1) files += '<span>4orm one-pager.pdf</span>';
+        if (s.docs > 1) files += '<span>Base case model.pdf</span>';
+        if (s.docs > 2) files += '<span>Three scenarios.pdf</span>';
+      }
+      var linkBits = (s.linkItems || []).map(function (l) { return '<span>' + esc(l.name || l.title || 'Link') + '</span>'; }).join('');
+      if (!linkBits && s.links) linkBits = '<span>Readiness check link</span>';
+      var people = (s.people && s.people.length) ? s.people : [String(s.o || '').split(' - ').pop() || s.n];
+      var hist = (s.history || []).map(function (h) {
+        return '<div><small>' + esc(fmtDay(h.at) || h.at || '') + '</small>' + esc(h.text || '') + '</div>';
+      }).join('');
+      if (!hist) {
+        hist = '<div><small>' + esc(s.last === '-' ? 'Today' : s.last) + '</small>Last email in the thread</div>'
+          + (s.em ? '<div><small>14 Oct</small>Info pack sent - ' + s.em + ' emails so far</div>' : '')
+          + '<div><small>2 Oct</small>Space created</div>';
+      }
+      if (qb) qb.innerHTML =
+        '<div class="hero"><span class="av" style="background:' + CARD_COL[(cur.ci * 3 + cur.si) % 6] + '">' + esc(iniOf(s.n)) + '</span>'
+        + '<div style="min-width:0;flex:1"><h2 contenteditable="true" spellcheck="false" id="eName" data-action="space-card-name" data-id="' + esc(s.id || '') + '">' + esc(s.n) + '</h2>'
+        + '<div class="org" contenteditable="true" spellcheck="false" id="eOrg" data-action="space-card-desc" data-id="' + esc(s.id || '') + '">' + esc(s.o) + '</div></div>'
+        + '<span class="ring" style="--p:' + (k * 20) + '%;--c:' + c + '"><span>' + k + '/5</span></span></div>'
+        + '<div class="tags"><span class="cat2">' + esc(CATS[cur.ci].name) + '</span><span>' + esc(s.stage) + '</span><span>' + (s.em ? 'In touch' : 'Never contacted') + '</span></div>'
+        + '<div class="qfacts"><div><b>' + esc(s.last) + '</b><small>last contact</small></div><div><b>' + esc(s.em) + '</b><small>emails</small></div><div><b>' + esc(s.stage) + '</b><small>pipeline stage</small></div><div><b>' + (Number(s.docs || 0) + Number(s.links || 0)) + '</b><small>in the bundle</small></div></div>'
+        + '<div class="qs"><h3>The angle<span class="s">4orm Intelligence</span><span class="a" data-action="space-rewrite" data-id="' + esc(s.id || '') + '">Rewrite</span><span class="a" data-action="space-research" data-id="' + esc(s.id || '') + '">Research</span></h3>'
+        + '<div class="ang" contenteditable="true" id="eAng" data-action="space-angle" data-id="' + esc(s.id || '') + '">' + esc(s.why) + '</div></div>'
+        + '<div class="qs"><h3>Ready to send<span class="s">' + k + ' of 5 done</span></h3><div class="chk todo">' + CARD_STEPS.map(function (x, i) {
+          return '<label class="td' + (s.d[i] ? ' d' : '') + '" data-action="spaces-card-tick" data-st="' + i + '" data-id="' + esc(s.id || '') + '"><i></i>' + esc(x) + '</label>';
+        }).join('') + '</div></div>'
+        + '<div class="qs"><h3>Bundle<span class="s">what goes out</span></h3><div class="bund">' + files + linkBits
+        + '<span class="add" data-action="space-docs" data-id="' + esc(s.id || '') + '">+ Add a file</span>'
+        + '<span class="add" data-action="space-link" data-id="' + esc(s.id || '') + '">+ Add a link</span></div></div>'
+        + '<div class="qs"><h3>People<span class="s">who this is for</span></h3><div class="ppl">' + people.map(function (p) { return '<span>' + esc(p) + '</span>'; }).join('')
+        + '<span class="add" data-action="space-people" data-id="' + esc(s.id || '') + '">+ Add a person</span></div></div>'
+        + '<div class="qs"><h3>Notes<span class="s">saves as you type</span></h3><div class="note" contenteditable="true" data-action="space-notes" data-id="' + esc(s.id || '') + '">' + esc(s.notes || s.why || '') + '</div></div>'
+        + '<div class="qs"><h3>History</h3><div class="hist">' + hist + '</div></div>';
+      if (qSt) qSt.innerHTML = '<b>' + k + '/5</b> ready to send' + (k < 5 ? ' &middot; ' + esc(left) + ' left' : ' &middot; everything is attached and approved');
+      ['drive', 'book', 'email', 'send'].forEach(function (id) {
+        var b = root.getElementById ? root.getElementById(id) : root.querySelector('#' + id);
+        if (b && s.id) b.setAttribute('data-id', s.id);
+      });
+      if (qw) qw.classList.add('on');
+      if (scrim) scrim.classList.add('on');
+      markCur();
+    }
+    function openCard(ci, si) {
+      var host = document.getElementById('spacesDesk');
+      savedScroll = (host && host.scrollTop) || (root.scrollTop) || 0;
+      cur = { ci: ci, si: si };
+      var s = CATS[ci] && CATS[ci].sp[si];
+      if (s && s.id && window.STATE) {
+        var hit = (window.STATE.packages || []).filter(function (p) { return String(p.id) === String(s.id); })[0];
+        if (hit) window.STATE.spaceCard = hit;
+      }
+      fillWindow();
+    }
+    function closeCard() {
+      var qw = root.getElementById ? root.getElementById('qw') : root.querySelector('#qw');
+      var scrim = root.getElementById ? root.getElementById('scrim') : root.querySelector('#scrim');
+      if (qw) qw.classList.remove('on');
+      if (scrim) scrim.classList.remove('on');
+      cur = null;
+      markCur();
+      var host = document.getElementById('spacesDesk');
+      if (host) host.scrollTop = savedScroll;
+    }
+    function step(d) {
+      var f = flat();
+      if (!cur || !f.length) return;
+      var i = f.findIndex(function (x) { return x.ci === cur.ci && x.si === cur.si; });
+      i = (i + d + f.length) % f.length;
+      openCard(f[i].ci, f[i].si);
+    }
+    root.addEventListener('click', function (e) {
+      var t = e.target.closest && e.target.closest('[data-action]');
+      if (!t) return;
+      var a = t.getAttribute('data-action');
+      if (a === 'spaces-arr-view') {
+        var v = t.getAttribute('data-v');
+        root.querySelectorAll('#seg span').forEach(function (s) { s.classList.toggle('on', s.getAttribute('data-v') === v); });
+        root.querySelectorAll('.view').forEach(function (x) { x.classList.toggle('on', x.id === v); });
+      }
+      if (a === 'spaces-arr-minall') {
+        var anyOpen = CATS.some(function (c) { return !c.min; });
+        CATS.forEach(function (c) { c.min = anyOpen; });
+        t.textContent = anyOpen ? 'Expand all' : 'Collapse all';
+        render();
+      }
+      if (a === 'spaces-arr-tg') {
+        var c = CATS[+t.getAttribute('data-tg')];
+        if (c) { c.min = !c.min; render(); }
+      }
+      if (a === 'spaces-card-open') {
+        e.stopPropagation();
+        openCard(+t.getAttribute('data-c'), +t.getAttribute('data-s'));
+      }
+      if (a === 'spaces-card-close') closeCard();
+      if (a === 'spaces-card-prev') step(-1);
+      if (a === 'spaces-card-next') step(1);
+      if (a === 'spaces-card-full') {
+        var s = cur && CATS[cur.ci] && CATS[cur.ci].sp[cur.si];
+        if (s && window.deskActions && window.deskActions['space-open']) {
+          t.setAttribute('data-id', s.id || '');
+          window.deskActions['space-open'](t, root);
+        }
+      }
+      if (a === 'spaces-card-tick') {
+        if (!cur) return;
+        var s2 = CATS[cur.ci].sp[cur.si];
+        var i = +t.getAttribute('data-st');
+        s2.d[i] = s2.d[i] ? 0 : 1;
+        s2.nx = nextChip(s2);
+        if (writeOk() && s2.id) {
+          var steps = CARD_STEPS.map(function (name, idx) { return { t: name, d: !!s2.d[idx] }; });
+          api('/api/spaces/' + encodeURIComponent(s2.id), { method: 'PATCH', body: { steps: steps } }).catch(function () {});
+        }
+        fillWindow();
+        render();
+        toast(root, s2.d[i] ? 'Ticked' : 'Unticked');
+      }
+    });
+    var q = root.getElementById ? root.getElementById('q') : root.querySelector('#q');
+    if (q) q.addEventListener('input', function () { render(); });
+    root.addEventListener('blur', function (e) {
+      var t = e.target;
+      if (!t || !cur) return;
+      var s = CATS[cur.ci].sp[cur.si];
+      if (t.id === 'eName') { s.n = String(t.textContent || '').trim() || s.n; render(); fillWindow(); }
+      if (t.id === 'eOrg') { s.o = String(t.textContent || '').trim(); render(); }
+      if (t.id === 'eAng') { s.why = String(t.textContent || '').trim(); render(); }
+    }, true);
+    if (!root.__cardKeys) {
+      root.__cardKeys = true;
+      document.addEventListener('keydown', function (e) {
+        if (!cur) return;
+        var qw = root.getElementById ? root.getElementById('qw') : root.querySelector('#qw');
+        if (!qw || !qw.classList.contains('on')) return;
+        if (e.key === 'Escape') { e.preventDefault(); closeCard(); return; }
+        var ae = e.target;
+        if (ae && (ae.isContentEditable || /INPUT|TEXTAREA/.test(ae.tagName || ''))) return;
+        if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); }
+      });
+    }
+    var drag = null;
+    function clear() { root.querySelectorAll('.ins-l,.ins-r,.ins-t,.ins-b,.over-top,.over-bot,.into,.empty-over').forEach(function (x) { x.classList.remove('ins-l', 'ins-r', 'ins-t', 'ins-b', 'over-top', 'over-bot', 'into', 'empty-over'); }); }
+    root.addEventListener('dragstart', function (e) {
+      var sp = e.target.closest('.sp');
+      if (sp) { drag = { kind: 'sp', c: +sp.dataset.c, s: +sp.dataset.s }; sp.classList.add('dragging'); e.stopPropagation(); }
+      else {
+        var cat = e.target.closest('.cat,.col');
+        if (!cat) return;
+        drag = { kind: 'cat', c: +cat.dataset.c, board: cat.classList.contains('col') };
+        cat.classList.add('dragging');
+      }
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', 'x');
+    });
+    root.addEventListener('dragend', function () {
+      root.querySelectorAll('.dragging').forEach(function (x) { x.classList.remove('dragging'); });
+      clear(); drag = null;
+    });
+    root.addEventListener('dragover', function (e) {
+      if (!drag) return;
+      e.preventDefault(); clear();
+      if (drag.kind === 'sp') {
+        var sp = e.target.closest('.sp');
+        if (sp) {
+          var r = sp.getBoundingClientRect();
+          var inBoard = !!sp.closest('.col');
+          sp.classList.add(inBoard ? (e.clientY < r.top + r.height / 2 ? 'ins-t' : 'ins-b') : (e.clientX < r.left + r.width / 2 ? 'ins-l' : 'ins-r'));
+          drag.to = { c: +sp.dataset.c, s: +sp.dataset.s + ((inBoard ? e.clientY > r.top + r.height / 2 : e.clientX > r.left + r.width / 2) ? 1 : 0) };
+          return;
+        }
+        var cat = e.target.closest('.cat,.col');
+        if (cat) {
+          var ci = +cat.dataset.c;
+          cat.classList.add('into');
+          var box = cat.querySelector('.grid,.list');
+          if (box) box.classList.add('empty-over');
+          drag.to = { c: ci, s: CATS[ci].sp.length };
+        }
+      } else {
+        var cat2 = e.target.closest(drag.board ? '.col' : '.cat');
+        if (!cat2) return;
+        var r2 = cat2.getBoundingClientRect();
+        var after = drag.board ? e.clientX > r2.left + r2.width / 2 : e.clientY > r2.top + Math.min(r2.height / 2, 24);
+        cat2.classList.add(drag.board ? (after ? 'ins-r' : 'ins-l') : (after ? 'over-bot' : 'over-top'));
+        drag.to = +cat2.dataset.c + (after ? 1 : 0);
+      }
+    });
+    root.addEventListener('drop', function (e) {
+      if (!drag || drag.to == null) return;
+      e.preventDefault();
+      var ordinal = ['first', 'second', 'third', 'fourth', 'fifth'];
+      if (drag.kind === 'sp') {
+        var from = CATS[drag.c], item = from.sp.splice(drag.s, 1)[0];
+        var c = drag.to.c, s = drag.to.s;
+        if (c == drag.c && s > drag.s) s -= 1;
+        CATS[c].sp.splice(s, 0, item);
+        CATS[c].min = false;
+        render(); persist();
+        toast(root, c == drag.c ? item.n + ' moved to position ' + (s + 1) + ' in ' + CATS[c].name : item.n + ' moved to ' + CATS[c].name + ', position ' + (s + 1));
+      } else {
+        var to = drag.to;
+        var cat = CATS.splice(drag.c, 1)[0];
+        if (to > drag.c) to -= 1;
+        CATS.splice(to, 0, cat);
+        render(); persist();
+        toast(root, cat.name + ' is now ' + (ordinal[to] || ('#' + (to + 1))));
+      }
+      drag = null;
+    });
+    render();
+    if (openWanted) openCard(1, 3);
+    var focusId = window.STATE && window.STATE.spaceFocusId;
+    if (focusId && !openWanted) {
+      CATS.forEach(function (c, ci) {
+        c.sp.forEach(function (s, si) { if (String(s.id) === String(focusId)) openCard(ci, si); });
+      });
+    }
+  }
+
   /* ---------- Signals detail ---------- */
   function signalsDetailHtml(open) {
     var F = window.REDESIGN_FIXTURE || {};
@@ -746,7 +1186,13 @@
   window.paintRedesignSpaces = function () {
     whenCss(function () {
       var panel = !!(window.STATE && window.STATE.pkg && window.STATE.pkg.id);
-      if ((!fixtureOn() || qFlag('arrange')) && !panel) paintSpacesArrangePage();
+      var spaceQ = qParam('space');
+      if (spaceQ === '1' && typeof prevSpaces === 'function') { prevSpaces(); return; }
+      if (spaceQ === 'open' || qFlag('cards') || (!fixtureOn() && !panel)) {
+        paintSpacesCardsPage(spaceQ === 'open');
+        return;
+      }
+      if (qFlag('arrange') && !panel) paintSpacesArrangePage();
       else if (typeof prevSpaces === 'function') prevSpaces();
     });
   };
@@ -794,6 +1240,7 @@
   }
 
   if (qFlag('arrange')) paintSpacesArrangePage();
+  if (qFlag('cards') || qParam('space') === 'open') paintSpacesCardsPage(qParam('space') === 'open');
   if (qFlag('sigdetail')) paintSignalsDetailPage();
   if (!fixtureOn() && typeof window.authFetch === 'function') {
     window.authFetch('/api/notes/clusters', { credentials: 'same-origin', quiet: true }).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {

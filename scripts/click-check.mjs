@@ -14,6 +14,8 @@ const PAGES = {
     { name: 'Notes', live: 'control-room.html?view=notes&fixture=mockup', ready: '#notesDesk[data-port-ready]', host: 'notesDesk' },
     { name: 'Notes canvas', live: 'control-room.html?view=notes&fixture=mockup&canvas=1', ready: '#notesDesk[data-port-ready]', host: 'notesDesk' },
     { name: 'Spaces arrange', live: 'control-room.html?view=work&fixture=mockup&arrange=1', ready: '#spacesDesk[data-port-ready]', host: 'spacesDesk' },
+    { name: 'Spaces cards', live: 'control-room.html?view=work&fixture=mockup&cards=1', ready: '#spacesDesk[data-port-ready]', host: 'spacesDesk' },
+    { name: 'Spaces card open', live: 'control-room.html?view=work&fixture=mockup&space=open', ready: '#spacesDesk[data-port-ready]', host: 'spacesDesk' },
     { name: 'Signals detail', live: 'control-room.html?view=war&fixture=mockup&sigdetail=1', ready: '#warDesk[data-port-ready]', host: 'warDesk' },
     { name: 'Links', live: 'control-room.html?view=links&fixture=mockup', ready: '#linksDesk[data-port-ready]', host: 'linksDesk' },
     { name: 'Recordings', live: 'control-room.html?view=rec&fixture=mockup', ready: '#recDesk[data-port-ready]', host: 'recDesk' },
@@ -1522,6 +1524,71 @@ async function main() {
       return !!(on && col);
     });
     clicks.push({ page: 'Spaces', control: 'Arrange Board', dom: arrangeBoard, net: true, persist: true, pass: arrangeBoard });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=work&fixture=mockup&cards=1`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#spacesDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const cardOpen = await page.evaluate(() => {
+      const root = document.getElementById('spacesDesk').shadowRoot;
+      const card = root.querySelector('.sp[data-action="spaces-card-open"]');
+      const y = (root.querySelector('#cats') && root.querySelector('#cats').scrollTop) || 0;
+      if (card) card.click();
+      const qw = root.getElementById('qw');
+      return !!(card && qw && qw.classList.contains('on') && /The angle|Ready to send/.test(qw.textContent || ''));
+    });
+    clicks.push({ page: 'Spaces', control: 'Card open', dom: cardOpen, net: true, persist: true, pass: cardOpen });
+    const cardScrim = await page.evaluate(() => {
+      const root = document.getElementById('spacesDesk').shadowRoot;
+      const scrim = root.getElementById('scrim');
+      if (scrim) scrim.click();
+      const qw = root.getElementById('qw');
+      return !!(scrim && qw && !qw.classList.contains('on'));
+    });
+    clicks.push({ page: 'Spaces', control: 'Close by scrim', dom: cardScrim, net: true, persist: true, pass: cardScrim });
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=work&fixture=mockup&space=open`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#spacesDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const cardEsc = await page.evaluate(() => {
+      const root = document.getElementById('spacesDesk').shadowRoot;
+      const qw = root.getElementById('qw');
+      const wasOn = !!(qw && qw.classList.contains('on'));
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      return wasOn && qw && !qw.classList.contains('on');
+    });
+    clicks.push({ page: 'Spaces', control: 'Esc close', dom: cardEsc, net: true, persist: true, pass: cardEsc });
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=work&fixture=mockup&space=open`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#spacesDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const cardNext = await page.evaluate(() => {
+      const root = document.getElementById('spacesDesk').shadowRoot;
+      const before = (root.getElementById('qCr') && root.getElementById('qCr').textContent) || '';
+      const next = root.querySelector('[data-action="spaces-card-next"]');
+      if (next) next.click();
+      const after = (root.getElementById('qCr') && root.getElementById('qCr').textContent) || '';
+      const prev = root.querySelector('[data-action="spaces-card-prev"]');
+      if (prev) prev.click();
+      const back = (root.getElementById('qCr') && root.getElementById('qCr').textContent) || '';
+      return before && after && before !== after && back === before;
+    });
+    clicks.push({ page: 'Spaces', control: 'Prev / Next', dom: cardNext, net: true, persist: true, pass: cardNext });
+    const cardTick = await page.evaluate(() => {
+      const root = document.getElementById('spacesDesk').shadowRoot;
+      const row = root.querySelector('[data-action="spaces-card-tick"]');
+      const before = row && row.classList.contains('d');
+      if (row) row.click();
+      const row2 = root.querySelector('[data-action="spaces-card-tick"]');
+      const after = row2 && row2.classList.contains('d');
+      const ring = (root.querySelector('.hero .ring span') && root.querySelector('.hero .ring span').textContent) || '';
+      return !!(row && row2 && before !== after && /\/5/.test(ring));
+    });
+    clicks.push({ page: 'Spaces', control: 'Tick step', dom: cardTick, net: true, persist: true, pass: cardTick });
+    const cardEdit = await page.evaluate(() => {
+      const root = document.getElementById('spacesDesk').shadowRoot;
+      const name = root.getElementById('eName');
+      if (!name) return false;
+      name.textContent = 'Mench Capital saved';
+      name.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+      const h4 = Array.from(root.querySelectorAll('.sp h4')).map((n) => n.textContent).join(' ');
+      return /Mench Capital saved/.test(h4);
+    });
+    clicks.push({ page: 'Spaces', control: 'Edit saves', dom: cardEdit, net: true, persist: true, pass: cardEdit });
 
     await page.goto(`http://127.0.0.1:${port}/control-room.html?view=war&fixture=mockup&sigdetail=1`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#warDesk[data-port-ready]', { timeout: 15000, state: 'attached' });

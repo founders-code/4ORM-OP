@@ -990,8 +990,17 @@
       + '</div></div><div class="sendbar"><span class="via">Sends through <b>GoHighLevel</b> &middot; test copy to chad@4ormfinance.com first</span><div class="r"><button class="btn" data-action="space-send-test" data-id="' + esc(d.id) + '">Send me a test</button><button class="btn pri" data-action="space-send" data-id="' + esc(d.id) + '"' + (gated ? ' disabled' : '') + '>Send to ' + esc(first) + '</button></div></div></section></aside>');
   }
   function paintSpacesLive() {
+    var spaceQ = '';
+    try { spaceQ = new URLSearchParams(location.search || '').get('space') || ''; } catch (e) {}
+    var cardsOn = false;
+    try { cardsOn = new URLSearchParams(location.search || '').get('cards') === '1'; } catch (e) {}
+    var panelWanted = spaceOpenWanted();
+    if (typeof window.paintSpacesCardsPage === 'function' && (spaceQ === 'open' || cardsOn || (!fixtureOn() && !panelWanted))) {
+      window.paintSpacesCardsPage(spaceQ === 'open');
+      return;
+    }
     var arrangeOn = (typeof window.paintSpacesArrangePage === 'function') && (!fixtureOn() || (function () { try { return new URLSearchParams(location.search || '').get('arrange') === '1'; } catch (e) { return false; } })());
-    if (arrangeOn && !spaceOpenWanted()) { window.paintSpacesArrangePage(); return; }
+    if (arrangeOn && !panelWanted) { window.paintSpacesArrangePage(); return; }
     var wrap = wrapOf('spacesDesk');
     if (!wrap) return;
     var S = window.STATE || {};

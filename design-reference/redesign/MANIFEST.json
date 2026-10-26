@@ -91,6 +91,20 @@
     "sha256": "2906d6c8b4103d5b"
   },
   {
+    "file": "redesign/05e-spaces-cards.html",
+    "page": "Spaces cards",
+    "route": "/spaces",
+    "bytes": 24863,
+    "sha256": "cebddd6ec86324a0"
+  },
+  {
+    "file": "redesign/05f-spaces-card-open.html",
+    "page": "Spaces card open",
+    "route": "/spaces (card clicked)",
+    "bytes": 23794,
+    "sha256": "a8989a6f191470c2"
+  },
+  {
     "file": "redesign/06-documents.html",
     "page": "Documents",
     "route": "/documents",

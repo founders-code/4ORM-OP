@@ -109,9 +109,13 @@
     if (fixtureOn()) {
       NAV.forEach(function (n) {
         if (n.length === 1) { html += '<div class="grp">' + n[0] + '</div>'; return; }
-        if (n[0] === 'Recordings' && active !== 'Recordings') return;
+        if (n[0] === 'Recordings' && active !== 'Recordings') {
+          var showRec = false;
+          try { showRec = /(?:cards=1|space=open)/.test(location.search || ''); } catch (e) {}
+          if (!showRec) return;
+        }
         var badge = bag[n[0]] || '';
-        var chip = n[0] === 'Recordings' ? '<span class="new">new</span>' : (badge ? '<span class="n">' + badge + '</span>' : '');
+        var chip = (n[0] === 'Recordings' && active === 'Recordings') ? '<span class="new">new</span>' : (badge ? '<span class="n">' + badge + '</span>' : '');
         html += '<div class="nav' + (n[0] === active ? ' on' : '') + '" data-action="nav-go" data-v="' + n[3] + '" data-name="' + n[0] + '">' + n[0] + chip + '</div>';
       });
       side.innerHTML = html;

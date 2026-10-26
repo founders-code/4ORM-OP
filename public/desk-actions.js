@@ -2320,7 +2320,7 @@
     'space-subject': function () {},
     'space-intro': function () {},
     'space-people': function (el, root) {
-      if (!S().pkg) actions['space-open'](el, root);
+      if (!S().pkg && !attr(el, 'data-id')) actions['space-open'](el, root);
       var id = attr(el, 'data-id') || (S().pkg && S().pkg.id);
       var name = window.prompt('Person to add (name or email)');
       if (name == null || !String(name).trim()) return;
@@ -2338,7 +2338,7 @@
       }).catch(function () { toast(root, 'Could not add that person'); });
     },
     'space-docs': function (el, root) {
-      if (!S().pkg) actions['space-open'](el, root);
+      if (!S().pkg && !attr(el, 'data-id')) actions['space-open'](el, root);
       var id = attr(el, 'data-id') || (S().pkg && S().pkg.id);
       var input = document.createElement('input');
       input.type = 'file';
@@ -4807,7 +4807,7 @@
     if (t && t.closest) {
       var ignore = t.closest('input, textarea, select, [contenteditable="true"]');
       var ignAct = ignore && ignore.getAttribute ? (ignore.getAttribute('data-action') || '') : '';
-      if (ignore && /^(capture-input|notes-search|note-edit|link-title|link-url|link-search|link-note|plan-draft|reach-pick-search|pipe-search|mail-search|mail-people-search|mail-closed-search|docs-search|spaces-search|space-notes|space-angle|space-subject|space-intro|mail-body|mail-to|mail-subject|mail-col-name|mail-sig|mail-link-url|mail-pick-q|intel-ask|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|play-tx|zoom-search|zoom-ask-input|news-search)$/.test(ignAct)) return;
+      if (ignore && /^(capture-input|notes-search|note-edit|link-title|link-url|link-search|link-note|plan-draft|reach-pick-search|pipe-search|mail-search|mail-people-search|mail-closed-search|docs-search|spaces-search|space-notes|space-angle|space-subject|space-intro|space-card-name|space-card-desc|mail-body|mail-to|mail-subject|mail-col-name|mail-sig|mail-link-url|mail-pick-q|intel-ask|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|play-tx|zoom-search|zoom-ask-input|news-search)$/.test(ignAct)) return;
       if (ignore && ignore.hasAttribute && ignore.hasAttribute('data-ext-field')) return;
     }
     var rootEarly = rootOf(el || t, e);
