@@ -2025,6 +2025,100 @@ async function main() {
     clicks.push({ page: 'Notes', control: 'Cluster keeps notes', dom: clusterKeep, net: true, persist: true, pass: clusterKeep });
     }
 
+    const CONTRAST_ROUTES = [
+      { name: 'War Room', live: 'control-room.html?view=war&fixture=mockup', ready: '#warDesk[data-port-ready]' },
+      { name: 'Notes', live: 'control-room.html?view=notes&fixture=mockup', ready: '#notesDesk[data-port-ready]' },
+      { name: 'Pipeline', live: 'control-room.html?view=contacts&fixture=mockup', ready: '#pipeDesk[data-port-ready]' },
+      { name: 'Spaces', live: 'control-room.html?view=work&fixture=mockup&cards=1', ready: '#spacesDesk[data-port-ready]' },
+      { name: 'Documents', live: 'control-room.html?view=docs&fixture=mockup', ready: '#docsDesk[data-port-ready]' },
+      { name: 'Email', live: 'control-room.html?view=mail&fixture=mockup', ready: '#mailDesk[data-port-ready]' },
+      { name: 'Playbook', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]' },
+      { name: 'Calendar', live: 'control-room.html?view=calendar&fixture=mockup', ready: '#calDesk[data-port-ready]' },
+      { name: 'Zoom', live: 'control-room.html?view=znotes&fixture=mockup', ready: '#zoomDesk[data-port-ready]' },
+      { name: 'Completed', live: 'control-room.html?view=done&fixture=mockup', ready: '#doneDesk[data-port-ready]' },
+      { name: 'News', live: 'control-room.html?view=news&fixture=mockup', ready: '#v-news' },
+      { name: 'Links', live: 'control-room.html?view=links&fixture=mockup', ready: '#linksDesk[data-port-ready]' },
+      { name: 'Recordings', live: 'control-room.html?view=rec&fixture=mockup', ready: '#recDesk[data-port-ready]' },
+      { name: 'Planner', live: 'planner?fixture=mockup', ready: '#plannerDesk[data-port-ready]' },
+      { name: 'People', live: 'control-room.html?view=people&fixture=mockup', ready: '#peopleDesk[data-port-ready]' },
+      { name: 'Vault', live: 'control-room.html?view=vault&fixture=mockup', ready: '#vaultDesk[data-port-ready], #v-vault' },
+      { name: 'Ops', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready], #v-ops' },
+      { name: 'Financials', live: 'control-room.html?view=finance', ready: '#v-finance' },
+    ];
+    console.log('\ncontrast walker (WCAG 4.5:1, visible text nodes)');
+    console.log('page         fails  worst');
+    for (const spec of CONTRAST_ROUTES) {
+      await page.goto(`http://127.0.0.1:${port}/${spec.live}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForSelector(spec.ready.split(',')[0].trim(), { timeout: 15000, state: 'attached' }).catch(() => {});
+      await page.waitForTimeout(500);
+      const report = await page.evaluate(() => {
+        function lum(c) {
+          const m = String(c).match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+          if (!m) return 0;
+          const s = [m[1], m[2], m[3]].map((n) => {
+            const v = Number(n) / 255;
+            return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+          });
+          return 0.2126 * s[0] + 0.7152 * s[1] + 0.0722 * s[2];
+        }
+        function ratio(fg, bg) {
+          const a = lum(fg), b = lum(bg);
+          const hi = Math.max(a, b), lo = Math.min(a, b);
+          return (hi + 0.05) / (lo + 0.05);
+        }
+        function bgOf(el, stop) {
+          let n = el;
+          while (n && n !== stop) {
+            const cs = getComputedStyle(n);
+            const bg = cs.backgroundColor;
+            if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
+              const mm = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9.]+))?/);
+              if (!mm || mm[4] == null || Number(mm[4]) > 0.08) return bg;
+            }
+            n = n.parentElement;
+          }
+          return 'rgb(11, 20, 48)';
+        }
+        const fails = [];
+        function walk(root) {
+          const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+          let node;
+          while ((node = tw.nextNode())) {
+            const t = String(node.textContent || '').trim();
+            if (!t || t.length < 2) continue;
+            if (/^[×x+·.·\-|:/]+$/i.test(t)) continue;
+            const el = node.parentElement;
+            if (!el) continue;
+            if (el.closest && el.closest('.side, .top, nav, .tabs, .clock, .crumb')) continue;
+            const cs = getComputedStyle(el);
+            if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) < 0.15) continue;
+            if (parseFloat(cs.fontSize) < 9) continue;
+            const r = el.getBoundingClientRect();
+            if (r.width < 2 || r.height < 2) continue;
+            const rat = ratio(cs.color, bgOf(el, root));
+            if (rat < 4.5) fails.push({ t: t.slice(0, 40), fg: cs.color, bg: bgOf(el, root), r: rat, cls: String(el.className || '') });
+          }
+        }
+        document.querySelectorAll('[id$="Desk"], #v-news, #v-finance, #v-vault, #v-ops').forEach((el) => {
+          walk(el.shadowRoot || el);
+        });
+        const seen = {};
+        const uniq = [];
+        fails.forEach((f) => {
+          const k = f.t + '|' + f.fg + '|' + f.bg;
+          if (seen[k]) return;
+          seen[k] = 1;
+          uniq.push(f);
+        });
+        uniq.sort((a, b) => a.r - b.r);
+        return { n: uniq.length, worst: uniq[0] ? uniq[0].r.toFixed(2) + ' "' + uniq[0].t + '"' : '-' };
+      });
+      const ok = report.n === 0;
+      if (!ok) failed = true;
+      clicks.push({ page: spec.name, control: 'contrast 4.5:1', dom: ok, net: true, persist: true, pass: ok });
+      console.log(`${spec.name.padEnd(12)} ${String(report.n).padEnd(6)} ${report.worst}`);
+    }
+
     console.log('\nB  click-check (fixture DOM)');
     console.log('page         control                      DOM  net  persist  result');
     clicks.forEach((c) => {

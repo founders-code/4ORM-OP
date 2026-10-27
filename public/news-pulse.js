@@ -68,7 +68,12 @@ window.bindNewsPulse = function(root, pulse){
   const PULSE = pulse || window.__NEWS_PULSE || window.__NEWS_PULSE_FIXTURE;
   if(!PULSE || !q(root,'#pz')) return;
   const reduce = (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-  let VIEW='market', FOCUS=null;
+  let VIEW='market', FOCUS=window.__newsFocus || null;
+  try {
+    const t = new URLSearchParams(location.search).get('topic');
+    if (t) FOCUS = t;
+  } catch (e) {}
+  window.__newsFocus = FOCUS;
   const GA=()=>VIEW==='market'?PULSE.gauges:PULSE.consumer;
   function drawGauges(anim){const g=q(root,'#gg'); if(!g) return;
    g.innerHTML=GA().map(x=>{const L=LEV(x.v);const mx=Math.max.apply(null,x.w);
@@ -85,9 +90,10 @@ window.bindNewsPulse = function(root, pulse){
    if(anim&&!reduce){GA().forEach((x,gi)=>{if(x.building||x.v==null)return;const el=g.children[gi];if(!el)return;const t0=performance.now();const D=1100+gi*120;
     (function step(t){const p=Math.min(1,(t-t0)/D);const e=1-Math.pow(1-p,3);const v=x.v*e;const svg=el.querySelector('svg'); if(svg) svg.outerHTML=gaugeSVG(v);const b=el.querySelector('.gv b'); if(b) b.textContent=Math.round(v);if(p<1)requestAnimationFrame(step)})(t0)})}
   }
-  function drawRadar(){const g=q(root,'#rrg'); if(!g) return; const lv=n=>n>=4?4:n;
+  function drawRadar(){const g=q(root,'#rrg'); if(!g) return;
+   const ramp=window.heatRampD||function(n){return {bg:n?('#3b82ff'):'rgba(255,255,255,.04)',text:n?String(n):'',n:n||0};};
    let h='<span></span>'+PULSE.weeks.map(w=>`<span class="wk">${w}</span>`).join('')+'<span class="wk" style="text-align:left;padding-left:6px">Latest</span>';
-   PULSE.regs.forEach(r=>{h+=`<span class="rn">${r.n}</span>`+r.c.map((n,i)=>`<span class="c h${lv(n)}" data-action="news-reg-week" data-tip="<b>${r.n}</b> &middot; week of ${PULSE.weeks[i]}<br>${n} ${n===1?'item':'items'}"></span>`).join('')+`<span class="la"><b>${r.c[7]?'This week':'Earlier'}:</b> ${r.last}</span>`});
+   PULSE.regs.forEach(r=>{h+=`<span class="rn">${r.n}</span>`+r.c.map((n,i)=>{const c=ramp(n);return `<span class="c" style="background:${c.bg};color:rgba(255,255,255,.85)" data-action="news-reg-week" data-tip="<b>${r.n}</b> &middot; week of ${PULSE.weeks[i]}<br>${n} ${n===1?'item':'items'}">${c.text}</span>`;}).join('')+`<span class="la"><b>${r.c[7]?'This week':'Earlier'}:</b> ${r.last}</span>`});
    g.innerHTML=h}
   function tiles(list){return (list||[]).map(m=>{const mn=Math.min.apply(null,m.s||[0]),mx=Math.max.apply(null,m.s||[0]),rg=(mx-mn)||1;
     const pts=(m.s||[]).map((v,i)=>`${(i/Math.max(1,m.s.length-1)*100).toFixed(1)},${(18-((v-mn)/rg)*14).toFixed(1)}`).join(' ');
@@ -107,14 +113,38 @@ window.bindNewsPulse = function(root, pulse){
     const im=q(root,'.hero img, #hImg'); if(im && s && s.img){ im.style.visibility=''; im.src=s.img; }
     const chip=q(root,'.hero .chipc, .hero .cat, #hChip'); if(chip && s && s.chip) chip.textContent=s.chip;
   }
-  function focus(k){FOCUS=FOCUS===k?null:k;const g=GA().find(x=>x.k===FOCUS);
+  function applyTopic(){
+    const g=GA().find(x=>x.k===FOCUS);
     const pz=q(root,'#pz'); if(pz) pz.classList.toggle('focus',!!FOCUS);
     const clr=q(root,'#pzClr'); if(clr) clr.classList.toggle('on',!!FOCUS);
     qa(root,'.gc').forEach(b=>{b.classList.toggle('on',b.getAttribute('data-g')===FOCUS);b.setAttribute('aria-pressed',String(b.getAttribute('data-g')===FOCUS))});
-    qa(root,'.chips .chip').forEach(c=>c.classList.toggle('on', g ? c.textContent.trim()===g.chip.replace('&','&') : /^(All)$/.test(c.textContent.trim())));
-    qa(root,'.grid .card, .grid .story').forEach(c=>{const ch=((c.querySelector('.chipc, .cat')||{}).textContent||''); c.classList.toggle('dim',!!g && ch.trim()!==((g.story&&g.story.chip)||g.chip));});
+    qa(root,'.chips .chip').forEach(c=>c.classList.toggle('on', g ? c.textContent.trim()===g.chip.replace('&','&') : /^(All|Show everything)$/.test(c.textContent.trim())));
+    const cards=qa(root,'.grid .card, .grid .story');
+    const keep=[];
+    cards.forEach(c=>{
+      const ch=((c.querySelector('.chipc, .cat')||{}).textContent||'').trim();
+      const hit=!g || ch===((g.story&&g.story.chip)||g.chip);
+      c.hidden=!!g && !hit;
+      c.classList.remove('dim');
+      if(hit) keep.push(c);
+    });
+    if(g && keep.length){
+      keep.sort(function(a,b){ return String(b.getAttribute('data-at')||'').localeCompare(String(a.getAttribute('data-at')||'')); });
+      const parent=keep[0].parentNode;
+      keep.forEach(function(c){ parent.appendChild(c); });
+    }
     if(g) setHero(g.story,'Top release in '+g.t.replace(' heat','').toLowerCase());
     else setHero({h:q(root,'.hero h2')&&q(root,'.hero h2').textContent},'Top release today');
+  }
+  function focus(k){
+    FOCUS = (FOCUS===k) ? null : k;
+    window.__newsFocus = FOCUS;
+    try {
+      const u=new URL(location.href);
+      if(FOCUS) u.searchParams.set('topic', FOCUS); else u.searchParams.delete('topic');
+      history.replaceState(null, '', u.pathname + u.search + u.hash);
+    } catch(e) {}
+    applyTopic();
   }
   const gg=q(root,'#gg'); if(gg && !gg._pz){ gg._pz=1; gg.addEventListener('click',e=>{const b=e.target.closest('.gc'); if(b){ e.preventDefault(); focus(b.getAttribute('data-g')); }}); }
   const clr=q(root,'#pzClr'); if(clr && !clr._pz){ clr._pz=1; clr.addEventListener('click',()=>{ if(FOCUS) focus(FOCUS); }); }
@@ -138,6 +168,7 @@ window.bindNewsPulse = function(root, pulse){
   const upd = q(root,'#pzUpd');
   if (upd) upd.textContent = PULSE.updated ? ('Updated '+PULSE.updated) : '';
   drawGauges(!(window.fixtureMockup) && first); drawRadar(); drawMkt(); drawConsumer();
+  applyTopic();
 };
 window.newsPulseBandHtml = function(sample){
   return `<section class="pz" id="pz" aria-label="Market pulse">

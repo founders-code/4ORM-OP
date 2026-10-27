@@ -169,10 +169,10 @@ svg.links{position:absolute;top:0;z-index:1;pointer-events:none;overflow:visible
 .trackrow .lab small{font:500 11px var(--mono);color:var(--faint)}
 .trackrow{animation:rise .38s cubic-bezier(.2,.7,.2,1) both}
 @keyframes rise{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
-.bar{position:absolute;height:28px;border-radius:8px;border:0;padding:0 10px;font-weight:600;font-size:13px;line-height:28px;text-align:left;cursor:pointer;white-space:nowrap;color:var(--fg);transition:opacity .15s,transform .15s}
+.bar{position:absolute;height:28px;border-radius:8px;border:0;padding:0 10px;font-weight:600;font-size:13px;line-height:28px;text-align:left;cursor:pointer;white-space:nowrap;color:var(--fg);transition:opacity .15s,filter .15s}
 .bar span{display:block;overflow:hidden;text-overflow:ellipsis}
 .bar:not(.narrow) span{position:sticky;left:calc(var(--lw) + 8px);display:inline-block;max-width:100%;vertical-align:top}
-.bar:hover{transform:translateY(-1px)}
+.bar:hover{z-index:4;filter:brightness(1.08)}
 .bar.active{background:linear-gradient(90deg,var(--c) var(--p),color-mix(in srgb,var(--c) 58%,#fff) var(--p));color:var(--on-c)}
 .bar.planned{background-color:color-mix(in srgb,var(--c) 10%,#fff);background-image:repeating-linear-gradient(135deg,color-mix(in srgb,var(--c) 24%,transparent) 0 2px,transparent 2px 7px);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c) 55%,transparent)}
 .bar.done{background:color-mix(in srgb,var(--c) 22%,#fff);color:var(--muted)}

@@ -146,9 +146,20 @@
     if (!wrap) return;
     if (P().applyPageCss) P().applyPageCss(wrap, 'notesCanvas');
     var data = fixtureOn() ? canvasSample() : liveCanvasData();
-    var kept = !fixtureOn() && wrap.__canvasWorld;
-    var CL = kept ? wrap.__canvasWorld.CL : data.clusters.slice();
-    var NOTES = kept ? wrap.__canvasWorld.NOTES : data.notes.slice();
+    var prev = wrap.__canvasWorld || window.__notesCanvasWorld;
+    if (!fixtureOn() && prev && wrap.querySelector && wrap.querySelector('#world') && wrap.querySelectorAll('.note').length) {
+      if (data.notes.length >= prev.NOTES.length) {
+        prev.NOTES = data.notes.slice();
+        if (data.clusters.length) prev.CL = data.clusters.slice();
+      }
+      wrap.__canvasWorld = prev;
+      window.__notesCanvasWorld = prev;
+      markReady('notesDesk');
+      return;
+    }
+    var kept = !fixtureOn() && prev && prev.NOTES && prev.NOTES.length;
+    var CL = (kept && prev.CL && (prev.CL.length >= data.clusters.length)) ? prev.CL : data.clusters.slice();
+    var NOTES = (kept && prev.NOTES.length >= data.notes.length) ? prev.NOTES : data.notes.slice();
     wrap.innerHTML =
       '<div class="bar"><h1>Notes</h1><span class="sub">Lay notes out on a grid, group them into named clusters</span>'
       + '<div class="r"><div class="seg"><span data-action="notes-view" data-view="board">Board</span><span class="on" data-action="notes-view" data-view="canvas">Canvas</span></div>'
@@ -166,6 +177,7 @@
     if (P().finishPaint) P().finishPaint(wrap);
     bindCanvas(wrap, CL, NOTES);
     wrap.__canvasWorld = { CL: CL, NOTES: NOTES };
+    window.__notesCanvasWorld = wrap.__canvasWorld;
     if (fixtureOn()) setTimeout(function () { markReady('notesDesk'); }, 220);
     else markReady('notesDesk');
   }
@@ -599,6 +611,9 @@
       el.innerHTML = CATS.map(function (c, ci) {
         return '<div class="cat' + (c.min ? ' min' : '') + '" draggable="true" data-action="spaces-arr-cat" data-c="' + ci + '"><div class="ch"><span class="grab">MOVE</span><h2>' + esc(c.name) + '</h2><span class="n">' + c.sp.length + '</span><span class="pos">' + (ci + 1) + ' of ' + CATS.length + '</span><span class="tg" data-action="spaces-arr-tg" data-tg="' + ci + '">' + (c.min ? 'Expand' : 'Collapse') + '</span></div><div class="grid" data-c="' + ci + '">' + c.sp.map(function (s, si) { return card(s, ci, si); }).join('') + '<div class="addsp" data-action="spaces-new">+ New space</div></div></div>';
       }).join('');
+      if (typeof window.bindGridZoom === 'function') {
+        root.querySelectorAll('.grid').forEach(function (g) { window.bindGridZoom(root, g, 'spaces', 4); });
+      }
     }
     function renderBoard() {
       var el = root.getElementById ? root.getElementById('board') : root.querySelector('#board');
@@ -892,6 +907,9 @@
         }, 80);
       }
     } catch (e) {}
+    if (typeof window.bindGridZoom === 'function') {
+      wrap.querySelectorAll('.grid').forEach(function (g) { window.bindGridZoom(wrap, g, 'spaces', 4); });
+    }
     markReady('spacesDesk');
   }
   function bindCards(root, CATS, openWanted) {
@@ -1283,7 +1301,7 @@
       + '<div class="watch" data-sec="watch"><div class="row"><b>Integrations</b><span>check connected services</span><button class="act" data-action="signals-go" data-dest="int">Fix</button></div></div>';
     return '<div class="sig' + (open ? ' on' : '') + '" id="sig" role="dialog" aria-label="Signals">'
       + '<div class="sh"><b>Signals</b><span class="s">' + nNeed + ' need you &middot; checked ' + hh + ' &middot; every 15 s</span><button class="x" data-action="signals-close">Close</button></div>'
-      + '<div class="tabs" id="tabs"><span class="on" data-action="sig-tab" data-f="all">All</span><span data-action="sig-tab" data-f="need">Needs you<i>' + nNeed + '</i></span><span data-action="sig-tab" data-f="new">New since ' + since + '</span><span data-action="sig-tab" data-f="news">News<i>' + news.length + '</i></span><span data-action="sig-tab" data-f="watch">Watch</span></div>'
+      + '<div class="sgtabs" id="sgtabs"><span class="on" data-action="sig-tab" data-f="all">All</span><span data-action="sig-tab" data-f="need">Needs you<i>' + nNeed + '</i></span><span data-action="sig-tab" data-f="new">New since ' + since + '</span><span data-action="sig-tab" data-f="news">News<i>' + news.length + '</i></span><span data-action="sig-tab" data-f="watch">Watch</span></div>'
       + '<div class="body">' + body + '</div>'
       + '<div class="sf">Every row opens the page it came from. Nothing here sends on its own.<button class="act" data-action="sig-seen">Mark all seen</button></div></div>'
       + '<div class="scrim' + (open ? ' on' : '') + '" id="scrim" data-action="signals-close"></div>';
@@ -1295,7 +1313,7 @@
       + '<div class="scrim on" id="scrim" data-action="signals-close"></div>'
       + '<aside class="sig on" id="sig" role="dialog" aria-label="Signals">'
       + '<div class="sh"><b>Signals</b><span class="s">6 need you &middot; checked 14:05 &middot; every 15 s</span><button class="x" data-action="signals-close">Close</button></div>'
-      + '<div class="tabs" id="tabs"><span class="on" data-action="sig-tab" data-f="all">All</span><span data-action="sig-tab" data-f="need">Needs you<i>6</i></span><span data-action="sig-tab" data-f="new">New since 08:00<i>3</i></span><span data-action="sig-tab" data-f="news">News<i>3</i></span><span data-action="sig-tab" data-f="watch">Watch<i>2</i></span></div>'
+      + '<div class="sgtabs" id="sgtabs"><span class="on" data-action="sig-tab" data-f="all">All</span><span data-action="sig-tab" data-f="need">Needs you<i>6</i></span><span data-action="sig-tab" data-f="new">New since 08:00<i>3</i></span><span data-action="sig-tab" data-f="news">News<i>3</i></span><span data-action="sig-tab" data-f="watch">Watch<i>2</i></span></div>'
       + '<div class="body">'
       + '<div class="now" data-sec="need"><h3>Do these first</h3>'
       + '<div class="nowi"><span class="k">1</span><div><b>Reply to Bow Valley Credit Union</b><span>They asked for the compliance requirements before Thursday 10:00. Meeting is booked, so a late reply costs the meeting.</span></div><button class="act pri" data-action="mail-reply">Reply</button></div>'
@@ -1471,7 +1489,7 @@
       if (tab) {
         var f = tab.getAttribute('data-f');
         var scope = tab.getRootNode();
-        scope.querySelectorAll('#tabs span').forEach(function (s) { s.classList.toggle('on', s === tab); });
+        scope.querySelectorAll('.sgtabs span, #sgtabs span').forEach(function (s) { s.classList.toggle('on', s === tab); });
         scope.querySelectorAll('[data-sec]').forEach(function (x) { x.style.display = (f === 'all' || x.getAttribute('data-sec') === f) ? '' : 'none'; });
       }
       if (e.target.closest && e.target.closest('[data-action="sig-seen"]')) {

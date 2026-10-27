@@ -54,6 +54,14 @@ export async function PATCH(req: Request) {
         patch.docs_prefs = Object.assign({}, (cur.docs_prefs as object) || {}, { size: Math.max(120, Math.min(280, size)) });
       }
     }
+    if (body.grid_zoom && typeof body.grid_zoom === 'object') {
+      const zoom: Record<string, number> = Object.assign({}, (cur.grid_zoom as object) || {}) as Record<string, number>;
+      for (const [k, v] of Object.entries(body.grid_zoom as Record<string, unknown>)) {
+        const n = Math.round(Number(v));
+        if (Number.isFinite(n)) zoom[String(k).slice(0, 40)] = Math.max(3, Math.min(9, n));
+      }
+      patch.grid_zoom = zoom;
+    }
     const next = Object.assign({}, cur, patch);
     await session.sql`
       INSERT INTO owner_settings (owner_id, prefs)

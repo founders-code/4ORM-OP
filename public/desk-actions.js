@@ -2264,7 +2264,11 @@
     'ops-lamp': function (el, root) { toast(root, (el.textContent || '').replace(/\s+/g, ' ').trim()); },
     'ops-dial': function (el, root) { toast(root, (el.textContent || '').replace(/\s+/g, ' ').trim()); },
     'ops-sweep': function (el, root) { if (typeof window.paintRedesignOps === 'function') window.paintRedesignOps(); toast(root, 'Sweep stamped'); },
-    'vault-open': function (el, root) { toast(root, 'Vault row ' + attr(el, 'data-id')); },
+    'vault-open': function (el) {
+      var id = attr(el, 'data-id');
+      if (typeof window.openVaultDoc === 'function') window.openVaultDoc(id);
+    },
+    'ops-cover': function () {},
     'nav-hide': function () {
       document.body.classList.toggle('navshut');
       var on = document.body.classList.contains('navshut');
@@ -2756,9 +2760,13 @@
       refresh('docs');
     },
     'docs-folder': function (el) {
+      var id = S().docOpen && S().docOpen.id;
+      S().docOpen = null;
+      if (id) S().docHighlight = id;
       S().docFolder = attr(el, 'data-folder') || '';
       S().docSet = '';
       refresh('docs');
+      setTimeout(function () { S().docHighlight = ''; }, 1400);
     },
     'docs-type': function (el) {
       S().docType = attr(el, 'data-type') || 'all';
@@ -2832,8 +2840,11 @@
       docMetaLoad(S().docOpen);
     },
     'doc-close': function () {
+      var id = S().docOpen && S().docOpen.id;
       S().docOpen = null;
+      S().docHighlight = id || '';
       refresh('docs');
+      setTimeout(function () { S().docHighlight = ''; }, 1400);
     },
     'doc-prev': function (el, root) { stepDoc(root, -1); },
     'doc-next': function (el, root) { stepDoc(root, 1); },
@@ -3579,6 +3590,31 @@
       var host = root.host && root.host.getBoundingClientRect ? root.host.getBoundingClientRect() : { top: 0, left: 0 };
       if (r) { pop.style.top = Math.max(8, r.bottom - host.top + 6) + 'px'; pop.style.left = Math.max(8, r.right - host.left - 290) + 'px'; }
       pop.classList.add('on');
+    },
+    'mail-pill': function (el, root) {
+      var colId = attr(el, 'data-col');
+      var id = attr(el, 'data-id');
+      var email = attr(el, 'data-email');
+      if (!colId || !id) return;
+      var feed = root.querySelectorAll ? Array.from(root.querySelectorAll('.em[data-action="mail-open"]')) : [];
+      var idx = feed.map(function (n) { return attr(n, 'data-id'); }).indexOf(id);
+      var next = feed[idx + 1];
+      if (!writeOk()) { toast(root, 'Filed (fixture)'); return; }
+      fileMail(root, id, colId, false, email);
+      if (next) {
+        S().mailOpen = { id: attr(next, 'data-id'), email: attr(next, 'data-email'), from: attr(next, 'data-from'), subject: attr(next, 'data-subject'), threadId: attr(next, 'data-thread'), messageId: attr(next, 'data-mid') };
+      } else S().mailOpen = null;
+      refresh('mail');
+    },
+    'mail-pill-new': function (el, root) {
+      var n = window.prompt('Name the new folder');
+      if (!n || !String(n).trim()) return;
+      var name = String(n).trim();
+      createMailColumn(name).then(function (key) {
+        el.setAttribute('data-col', key);
+        el.setAttribute('data-name', name);
+        if (window.deskActions && window.deskActions['mail-pill']) window.deskActions['mail-pill'](el, root);
+      });
     },
     'mail-flag-into': function (el, root) {
       var colId = attr(el, 'data-col');

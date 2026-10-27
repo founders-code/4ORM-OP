@@ -50,15 +50,16 @@ export async function sampleOpsDials(sql: Sql) {
       pool = 1;
     }
 
+    /* Jobs waiting is a send/job queue, not open War Room items. Counting items (new/doing/open) was the 310. */
     let waiting = 0;
     try {
       const mail = await sql`SELECT count(*)::int AS n FROM scheduled_mail WHERE status IN ('queued', 'pending')`;
       waiting += num(mail[0]?.n);
     } catch { /* table may not exist */ }
     try {
-      const items = await sql`SELECT count(*)::int AS n FROM items WHERE status IN ('new', 'doing', 'open')`;
-      waiting += num(items[0]?.n);
-    } catch { /* ignore */ }
+      const jobs = await sql`SELECT count(*)::int AS n FROM cron_jobs WHERE status IN ('queued', 'running', 'pending')`;
+      waiting += num(jobs[0]?.n);
+    } catch { /* no cron_jobs table */ }
 
     let sends = 0;
     try {
@@ -67,6 +68,36 @@ export async function sampleOpsDials(sql: Sql) {
         WHERE status = 'sent' AND updated_at >= (timezone('America/Vancouver', now()))::date
       `;
       sends = num(rows[0]?.n);
+    } catch { /* ignore */ }
+    try {
+      const ghl = await sql`
+        SELECT count(*)::int AS n FROM api_calls
+        WHERE api = 'ghl' AND path ILIKE '%message%' AND at >= (timezone('America/Vancouver', now()))::date
+      `;
+      sends += num(ghl[0]?.n);
+    } catch { /* ignore */ }
+
+    let aiSpend = 0;
+    try {
+      const calls = await sql`
+        SELECT count(*)::int AS n FROM api_calls
+        WHERE api IN ('openai', 'anthropic') AND at >= (timezone('America/Vancouver', now()))::date
+      `;
+      /* cents to dollars, ~2c per logged call until usage tokens are stored */
+      aiSpend = Math.round(num(calls[0]?.n) * 0.02 * 100) / 100;
+    } catch { /* ignore */ }
+    try {
+      const budget = await sql`
+        SELECT sum(calls)::int AS n FROM vendor_budget
+        WHERE vendor IN ('openai', 'anthropic') AND window_start >= (timezone('America/Vancouver', now()))::date
+      `;
+      if (num(budget[0]?.n) > 0) aiSpend = Math.round(num(budget[0]?.n) * 0.02 * 100) / 100;
+    } catch { /* ignore */ }
+
+    let drift = 0;
+    try {
+      const rows = await sql`SELECT count(*)::int AS n FROM vault_docs WHERE status IN ('Draft', 'due', 'Scheduled') OR status ILIKE '%out of date%'`;
+      drift = num(rows[0]?.n);
     } catch { /* ignore */ }
 
     const elapsed = Date.now() - t0;
@@ -77,9 +108,9 @@ export async function sampleOpsDials(sql: Sql) {
       db_pool: pool,
       jobs_waiting: waiting,
       sends_today: sends,
-      ai_spend: 0,
+      ai_spend: aiSpend,
       fn_load: Math.round(fnLoad * 100) / 100,
-      fact_drift: 0,
+      fact_drift: drift,
     };
     for (const key of DIAL_KEYS) {
       await sql`INSERT INTO ops_metrics (key, value) VALUES (${key}, ${values[key]})`;

@@ -19,7 +19,14 @@ window.mountRedesignCalendar = function (root, opts) {
   function escH(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
 let TODAY=opts.today||new Date();
-const C={meet:'var(--meet)',inv:'var(--inv)',pay:'var(--pay)',mile:'var(--mile)',hol:'var(--hol)'};
+const C={meet:'#1a4aa8',inv:'#8a6a08',pay:'#5a3ea0',mile:'#3a6a14',hol:'#0e6e66'};
+function darkenCal(c){
+  var m=String(c||'').match(/#([0-9a-f]{6})/i);
+  if(!m) return C.meet;
+  var n=parseInt(m[1],16),r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+  r=Math.round(r*0.42);g=Math.round(g*0.42);b=Math.round(b*0.42);
+  return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+}
 const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const add=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
 const same=(a,b)=>ymd(a)==ymd(b);
@@ -132,12 +139,12 @@ function timeGrid(days,showSug){
  let h=`<div class="whead" style="grid-template-columns:repeat(${days.length},1fr)">`;
  days.forEach(d=>h+=`<div class="dh${same(d,TODAY)?' td':''}"><div class="dn">${DOW[d.getDay()]}</div><div class="dd"><span>${d.getDate()}</span></div></div>`);
  h+=`</div><div class="allday" style="grid-template-columns:repeat(${days.length},1fr)"><span class="lab">all-day</span>`;
- days.forEach(d=>{h+=`<div class="c">`+E.filter(x=>x.d==ymd(d)&&x.all&&visible(x)).map(x=>`<div class="pill" data-action="cal-allday" data-i="${E.indexOf(x)}" style="background:${C[x.c]}">${escH(x.t)}</div>`).join('')+`</div>`});
+ days.forEach(d=>{h+=`<div class="c">`+E.filter(x=>x.d==ymd(d)&&x.all&&visible(x)).map(x=>`<div class="pill" data-action="cal-allday" data-i="${E.indexOf(x)}" style="background:${C[x.c]||darkenCal(x.c)};color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.35)">${escH(x.t)}</div>`).join('')+`</div>`});
  h+=`</div><div class="tgrid" style="grid-template-columns:52px repeat(${days.length},1fr)"><div class="hours">`;
  for(let i=H0;i<H1;i++)h+=`<div class="hl" style="height:${PX}px">${i==H0?'':fmt(i)}</div>`;h+=`</div>`;
  days.forEach(d=>{const k=ymd(d);h+=`<div class="col${same(d,TODAY)?' today':''}" data-k="${k}" style="height:${(H1-H0)*PX}px">`;for(let i=H0;i<H1;i++)h+=`<div class="line" style="height:${PX}px"></div>`;
-  E.filter(x=>x.d==k&&!x.all&&visible(x)).forEach(x=>h+=`<div class="ev real${(x.e-x.s)*PX-3<26?' short':''}${SEL===x?' sel':''}" data-action="cal-event" data-id="${escH(x.id||'')}" data-i="${E.indexOf(x)}" data-d="${x.d}" style="top:${(x.s-H0)*PX+1}px;height:${Math.max(10,(x.e-x.s)*PX-3)}px;background:${C[x.c]}"><div class="tt">${escH(x.t)}</div><div class="tm">${fmt(x.s)} - ${fmt(x.e)}</div>${x.ppl&&x.ppl.length?`<div class="tm">${x.ppl.length} invited</div>`:''}<span class="rz"></span></div>`);
-  if(showSug&&!HIDE.plays)S.filter(x=>x.d==k).forEach(x=>{const ht=(x.e-x.s)*PX-3;h+=`<div class="ev sug${ht<26?' short':''}${SELSUG===x?' sel':''}" data-action="cal-sug" data-si="${S.indexOf(x)}" style="top:${(x.s-H0)*PX+1}px;height:${Math.max(10,ht)}px;border-color:${x.c};background:${x.c};opacity:.5"><div class="tt" style="color:${x.c}">${escH(x.t)}</div>${ht>22?`<div class="tm">${fmt(x.s)} - ${fmt(x.e)}</div>`:''}<span class="ok"><b class="k" data-action="cal-keep">Keep</b><b class="l" data-action="cal-later">Later</b><b class="x" data-action="cal-drop">Drop</b></span><span class="rz"></span></div>`});
+  E.filter(x=>x.d==k&&!x.all&&visible(x)).forEach(x=>h+=`<div class="ev real${(x.e-x.s)*PX-3<26?' short':''}${SEL===x?' sel':''}" data-action="cal-event" data-id="${escH(x.id||'')}" data-i="${E.indexOf(x)}" data-d="${x.d}" style="top:${(x.s-H0)*PX+1}px;height:${Math.max(10,(x.e-x.s)*PX-3)}px;background:${C[x.c]||darkenCal(x.c)}"><div class="tt">${escH(x.t)}</div><div class="tm">${fmt(x.s)} - ${fmt(x.e)}</div>${x.ppl&&x.ppl.length?`<div class="tm">${x.ppl.length} invited</div>`:''}<span class="rz"></span></div>`);
+  if(showSug&&!HIDE.plays)S.filter(x=>x.d==k).forEach(x=>{const ht=(x.e-x.s)*PX-3;const bg=darkenCal(x.c);h+=`<div class="ev sug${ht<26?' short':''}${SELSUG===x?' sel':''}" data-action="cal-sug" data-si="${S.indexOf(x)}" style="top:${(x.s-H0)*PX+1}px;height:${Math.max(10,ht)}px;border-color:${bg};background:${bg}"><div class="tt">${escH(x.t)}</div>${ht>22?`<div class="tm">${fmt(x.s)} - ${fmt(x.e)}</div>`:''}<span class="ok"><b class="k" data-action="cal-keep">Keep</b><b class="l" data-action="cal-later">Later</b><b class="x" data-action="cal-drop">Drop</b></span><span class="rz"></span></div>`});
   h+=`</div>`;});
  return h+`</div>`;
 }

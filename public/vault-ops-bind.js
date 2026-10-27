@@ -176,6 +176,7 @@
         fn('/api/vault/' + encodeURIComponent(key), { method: 'POST', credentials: 'same-origin', body: fd }).then(function (r) { return r && r.ok ? r.json() : null; }).then(function () { openDoc(id); toast(root, 'Version stored; the previous copy is kept as superseded'); });
       };
     }
+    window.openVaultDoc = openDoc;
     var vq = $(root, '#vq');
     if (vq) vq.oninput = function (e) { q = String(e.target.value || '').toLowerCase(); render(); };
     var dc = $(root, '#dclose'); if (dc) dc.onclick = function () { closeDrawer(root); };
@@ -279,20 +280,48 @@
         var sm = $(root, '#msub'); if (sm) sm.textContent = 'since ' + (board.master.since || '-');
       }
     }
+    function arc(cx, cy, r, a0, a1) {
+      function p(a) { return [cx + r * Math.cos(a * Math.PI / 180), cy + r * Math.sin(a * Math.PI / 180)]; }
+      var s = p(a0), e = p(a1);
+      return 'M' + s[0].toFixed(1) + ' ' + s[1].toFixed(1) + ' A' + r + ' ' + r + ' 0 ' + ((a1 - a0) > 180 ? 1 : 0) + ' 1 ' + e[0].toFixed(1) + ' ' + e[1].toFixed(1);
+    }
     function dialHTML(d) {
+      var BASE = { api_latency: 'b', error_rate: 'g', db_pool: 'g', jobs_waiting: 'b', sends_today: 'v', ai_spend: 'a', fn_load: 'g', fact_drift: 'a' };
+      var PAL = { b: '#3b82ff', g: '#19d38a', a: '#ffb547', r: '#ff4d6d', v: '#a173ff' };
       var v = d.value;
-      var max = d.red ? d.red * 1.3 : 100;
+      var max = d.red != null ? Number(d.red) * 1.3 : 100;
+      if (!max) max = 100;
       var has = v != null && isFinite(Number(v));
       var num = has ? Number(v) : 0;
-      var f = Math.max(0, Math.min(1, num / (max || 1)));
+      var f = Math.max(0, Math.min(1, num / max));
       var a = 180 + f * 180;
+      var ambT = d.amber != null ? Number(d.amber) : max * 0.7;
+      var redT = d.red != null ? Number(d.red) : max * 0.88;
+      var amb = 180 + (ambT / max) * 180;
+      var red = 180 + (redT / max) * 180;
       var nx = 80 + 40 * Math.cos(a * Math.PI / 180), ny = 84 + 40 * Math.sin(a * Math.PI / 180);
+      var col = BASE[d.key] || 'b';
+      if (has && num >= redT) col = 'r';
+      else if (has && num >= ambT) col = 'a';
+      var C = PAL[col] || '#3b82ff';
+      var ticks = '';
+      var i;
+      for (i = 0; i <= 10; i++) {
+        var t = 180 + i * 18;
+        var r1 = 58, r2 = i % 5 === 0 ? 48 : 53;
+        ticks += '<line x1="' + (80 + r1 * Math.cos(t * Math.PI / 180)).toFixed(1) + '" y1="' + (84 + r1 * Math.sin(t * Math.PI / 180)).toFixed(1) + '" x2="' + (80 + r2 * Math.cos(t * Math.PI / 180)).toFixed(1) + '" y2="' + (84 + r2 * Math.sin(t * Math.PI / 180)).toFixed(1) + '" stroke="#2a3a72" stroke-width="' + (i % 5 === 0 ? 1.6 : 1) + '"/>';
+      }
       var shown = has ? (num % 1 ? num.toFixed(2) : String(num)) : '-';
       var note = d.note || (has ? '' : 'no sample yet');
-      return '<div class="dial" data-k="' + d.key + '" data-note="' + String(note).replace(/"/g, '') + '" title="' + note + '"><span class="rl">0–' + (d.red || '-') + '</span><svg viewBox="0 0 160 100">'
-        + '<path d="M22 84 A58 58 0 0 1 138 84" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/>'
+      return '<div class="dial ' + col + '" data-k="' + d.key + '" data-note="' + String(note).replace(/"/g, '') + '" title="' + note + '"><span class="rl">0–' + (d.red != null ? d.red : '-') + '</span><svg viewBox="0 0 160 100">'
+        + '<path d="' + arc(80, 84, 58, 180, 360) + '" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/>'
+        + '<path d="' + arc(80, 84, 58, amb, red) + '" stroke="#3a2a12" stroke-width="9" fill="none"/>'
+        + '<path d="' + arc(80, 84, 58, red, 360) + '" stroke="#3a1420" stroke-width="9" fill="none" stroke-linecap="round"/>'
+        + '<path class="fill" d="' + arc(80, 84, 58, 180, a) + '" stroke="' + C + '" stroke-width="9" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 8px ' + C + 'aa)"/>'
+        + ticks
         + '<line class="ndl" x1="80" y1="84" x2="' + nx.toFixed(1) + '" y2="' + ny.toFixed(1) + '" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/>'
-        + '</svg><div class="val">' + shown + '<span>' + (d.unit || '') + '</span></div><div class="lab">' + (d.label || d.key) + '</div></div>';
+        + '<circle cx="80" cy="84" r="4" fill="#0b1026" stroke="' + C + '" stroke-width="2"/></svg>'
+        + '<div class="val" style="color:' + C + ';text-shadow:0 0 12px ' + C + '">' + shown + '<span>' + (d.unit || '') + '</span></div><div class="lab">' + (d.label || d.key) + '</div></div>';
     }
     function paintDials(dials) {
       var box = $(root, '#dials'); if (!box) return;
@@ -404,22 +433,61 @@
       $$(root, '#pg-ledger .led .ch').forEach(function (c) { if (!c.classList.contains('h')) c.textContent = '-'; });
       $$(root, '#pg-ledger .led .hash').forEach(function (c) { c.textContent = '-'; });
     }
+    function dropCovers() {
+      $$(root, '.sw.lifted').forEach(function (x) { x.classList.remove('lifted'); });
+    }
     function paintSwitches(sw) {
       var box = $(root, '#engs'); if (!box) return;
       box.innerHTML = (sw || []).map(function (s) {
-        return '<div class="sw' + (s.on ? ' on' : '') + '" data-s="' + s.key + '"><div><b>' + s.label + '</b><small>' + (s.sub || '') + '</small></div>'
-          + '<button class="tog" type="button" aria-pressed="' + (s.on ? 'true' : 'false') + '" data-action="ops-flip"><i></i></button><span class="swst">' + (s.on ? 'ON' : 'OFF') + '</span></div>';
+        var danger = s.key === 'readonly' || s.key === 'test_mode';
+        var word = danger ? 'GUARDED' : 'LIFT';
+        var armed = s.key === 'send_rail' ? (s.on ? 'ARMED' : 'SAFE') : (s.on ? 'ON' : 'OFF');
+        return '<div class="sw' + (s.on ? ' on' : '') + (danger ? ' danger' : '') + '" data-s="' + s.key + '"><div><b>' + s.label + '</b><small>' + (s.sub || '') + '</small></div>'
+          + '<div class="bay"><button class="tog" type="button" tabindex="-1" aria-pressed="' + (s.on ? 'true' : 'false') + '" data-action="ops-flip"><i></i></button>'
+          + '<button class="cover" type="button" data-action="ops-cover"><span>' + word + '</span></button></div>'
+          + '<span class="swst">' + armed + '</span></div>';
       }).join('');
+      var dropTimer = null;
+      function scheduleDrop(row) {
+        clearTimeout(dropTimer);
+        dropTimer = setTimeout(function () { if (row) row.classList.remove('lifted'); }, 3000);
+      }
+      $$(root, '.sw .cover').forEach(function (c) {
+        c.onclick = function (ev) {
+          ev.preventDefault();
+          var row = c.closest('.sw');
+          $$(root, '.sw').forEach(function (x) { if (x !== row) x.classList.remove('lifted'); });
+          row.classList.toggle('lifted');
+          if (row.classList.contains('lifted')) {
+            var tog = row.querySelector('.tog');
+            if (tog) tog.removeAttribute('tabindex');
+          }
+        };
+      });
       $$(root, '.sw .tog').forEach(function (b) {
-        b.onclick = function () {
-          var id = b.closest('.sw').getAttribute('data-s');
+        b.onclick = function (ev) {
+          var row = b.closest('.sw');
+          if (!row.classList.contains('lifted')) { ev.preventDefault(); return; }
+          var id = row.getAttribute('data-s');
           var on = b.getAttribute('aria-pressed') !== 'true';
+          var danger = row.classList.contains('danger');
+          if (danger && !window.confirm('Turn ' + (row.querySelector('b') ? row.querySelector('b').textContent : id) + ' ' + (on ? 'on' : 'off') + '?')) return;
           api('/api/ops/switches', { method: 'POST', body: JSON.stringify({ key: id, on: on }) }).then(function (r) { return r && r.json ? r.json() : {}; }).then(function (d) {
-            if (d && d.saved) loadAll();
+            if (d && d.saved) { scheduleDrop(row); loadAll(); }
             else toast(root, (d && d.error) || 'Not saved');
           });
         };
       });
+      if (!root._coverEsc) {
+        root._coverEsc = 1;
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') dropCovers();
+        });
+        document.addEventListener('pointerdown', function (e) {
+          if (e.target && e.target.closest && e.target.closest('.sw')) return;
+          dropCovers();
+        });
+      }
     }
     function loadAll() {
       if (frozen) return;

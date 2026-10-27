@@ -99,3 +99,16 @@
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);opacity:0;background:#0f1a3a;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:650;transition:.25s;box-shadow:0 12px 30px rgba(0,0,0,.35)}
 .toast.show{opacity:1;transform:translateX(-50%)}
 .eyeT,.bellT{font-size:11px;font-weight:800;color:#4a5672;background:#f5f7fb;border-radius:6px;padding:2px 7px;cursor:pointer;white-space:nowrap}.eye{border:none;background:none;padding:0}
+/* 21-fixes tab 3 / 22-ops tab 4: open panel in Neon black. Fields stay put. */
+.card{background:#0b1026;border:1px solid #141c3d;box-shadow:0 14px 40px rgba(0,0,0,.45);color:#e9eefa}
+.ch h3{color:#e9eefa}.ch .s{color:#7f8db5}.ch .lnk{color:#9db9ff}
+.angle{background:#070b1c;border:1px solid #141c3d;color:#e9eefa}
+.mail,.ft,.lk,.pp,.td{border-color:#141c3d}
+.mail .row label,.lk span,.pp span,.td em{color:#7f8db5}
+.mail .row b,.lk b,.pp b,.td span{color:#e9eefa}
+.mail .bodyt{color:#e9eefa}
+.sendbar{background:#070b1c;border-color:#141c3d}
+.btn{background:#0e1430;border-color:#243266;color:#cfd8ee}
+.btn.pri{background:#13204a;border-color:#3b82ff;color:#cfe0ff}
+.todo,.hooks span{color:#aebbe0}
+.firsttouch{background:#13204a;color:#cfe0ff}

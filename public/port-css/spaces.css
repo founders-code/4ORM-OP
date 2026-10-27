@@ -33,7 +33,7 @@
 .sp .ft .op{background:var(--blue);border-color:var(--blue);color:#fff}
 .sp .ft .dr{margin-left:auto}
 .addcard{border:2px dashed rgba(157,185,255,.35);border-radius:14px;display:grid;place-items:center;color:#b9c6e6;font-size:13px;font-weight:700;min-height:180px;cursor:pointer}
-.pipe-board{display:flex;gap:12px;overflow-x:auto;padding:4px 0 16px;align-items:flex-start}
+.pipe-board{display:block;padding:4px 0 16px}
 .pipe-col{flex:0 0 260px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:14px;min-height:200px;padding:0 8px 10px}
 .pipe-col .colh{display:flex;justify-content:space-between;align-items:center;padding:12px 6px;color:#fff}
 .pipe-col .sp{margin-bottom:10px}

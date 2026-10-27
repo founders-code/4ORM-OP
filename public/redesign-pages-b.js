@@ -683,6 +683,24 @@
     if (Array.isArray(t)) return String(t[1] || '');
     return String(t || '');
   }
+  function mailFolderPills(S, o, attrs) {
+    var cols = asList((S.mailBoard || {}).columns).filter(function (c) { return c && c.key && !SEEDED_COLS.test(c.key); });
+    var names = cols.map(function (c) { return String(c.name || c.key); });
+    function ensure(n) {
+      if (names.some(function (x) { return x.toLowerCase() === n.toLowerCase(); })) return;
+      names.push(n);
+      cols.push({ key: n.toLowerCase(), name: n });
+    }
+    ensure('Invites');
+    ensure('Invoices');
+    var pills = '<button class="fp red" data-action="mail-trash"' + attrs + '>Delete</button>'
+      + '<button class="fp amber" data-action="mail-junk" data-junk="1"' + attrs + '>Junk</button>';
+    cols.forEach(function (c) {
+      pills += '<button class="fp" data-action="mail-pill" data-col="' + esc(c.key) + '" data-name="' + esc(c.name || c.key) + '"' + attrs + '>' + esc(c.name || c.key) + '</button>';
+    });
+    pills += '<button class="fp new" data-action="mail-pill-new"' + attrs + '>+ New folder</button>';
+    return '<div class="emf">' + pills + '</div>';
+  }
   /* User columns: server email_columns minus the seeded classifier keys. Ids are server keys. */
   function userColumnsFrom(board, rows) {
     var rules = asList(board.rules);
@@ -866,6 +884,27 @@
     if (wrap.classList) wrap.classList.add('neon');
     if (P().finishPaint) P().finishPaint(wrap);
     else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
+    var bcols = wrap.querySelector('#bcols');
+    if (bcols && !bcols._pan) {
+      bcols._pan = 1;
+      var pan = { on: false, x: 0, sl: 0 };
+      bcols.addEventListener('pointerdown', function (e) {
+        if (e.target.closest && e.target.closest('.bcard, .more3, a, button, [data-action="contact-drag"]')) return;
+        pan.on = true; pan.x = e.clientX; pan.sl = bcols.scrollLeft;
+        bcols.classList.add('panning');
+        try { bcols.setPointerCapture(e.pointerId); } catch (err) {}
+      });
+      bcols.addEventListener('pointermove', function (e) {
+        if (!pan.on) return;
+        bcols.scrollLeft = pan.sl - (e.clientX - pan.x);
+      });
+      function panUp() { pan.on = false; bcols.classList.remove('panning'); }
+      bcols.addEventListener('pointerup', panUp);
+      bcols.addEventListener('pointercancel', panUp);
+      bcols.addEventListener('wheel', function (e) {
+        if (e.shiftKey) { e.preventDefault(); bcols.scrollLeft += e.deltaY || e.deltaX; }
+      }, { passive: false });
+    }
     markReady('pipeDesk');
   }
 
@@ -1315,7 +1354,8 @@
       var rawId = String(f[6] || '');
       var id = esc(rawId);
       var on = !!pick[rawId];
-      return '<div class="fl' + (on ? ' picked' : '') + '" draggable="true" data-action="doc-open" data-kind="doc" data-id="' + id + '" data-url="' + esc(href) + '" data-web="' + esc(href) + '" data-drive="' + esc(f[7] || '') + '" data-name="' + esc(f[1] || '') + '" data-type="' + esc(f[0] || '') + '" data-folder="' + esc(f[8] || '') + '" data-mime="' + esc(f[9] || '') + '"' + (on ? ' style="box-shadow:0 0 0 2px var(--blue)"' : '') + '><div class="th" style="background:' + f[4] + '">' + inner + '<span class="ty ' + L[f[0]][0] + '">' + L[f[0]][1] + '</span><span class="sync s-' + f[3] + '"></span></div><span class="sel' + (on ? ' on' : '') + '" data-action="doc-pick" data-id="' + id + '" title="Select"></span><div class="nm">' + esc(f[1]) + '</div><div class="mt">' + esc(f[2]) + '</div></div>';
+      var hi = S.docHighlight && String(S.docHighlight) === rawId;
+      return '<div class="fl' + (on ? ' picked' : '') + (hi ? ' hi' : '') + '" draggable="true" data-action="doc-open" data-kind="doc" data-id="' + id + '" data-url="' + esc(href) + '" data-web="' + esc(href) + '" data-drive="' + esc(f[7] || '') + '" data-name="' + esc(f[1] || '') + '" data-type="' + esc(f[0] || '') + '" data-folder="' + esc(f[8] || '') + '" data-mime="' + esc(f[9] || '') + '"' + (on || hi ? ' style="box-shadow:0 0 0 2px var(--blue)"' : '') + '><div class="th" style="background:' + f[4] + '">' + inner + '<span class="ty ' + L[f[0]][0] + '">' + L[f[0]][1] + '</span><span class="sync s-' + f[3] + '"></span></div><span class="sel' + (on ? ' on' : '') + '" data-action="doc-pick" data-id="' + id + '" title="Select"></span><div class="nm">' + esc(f[1]) + '</div><div class="mt">' + esc(f[2]) + '</div></div>';
     }).join('');
     var empty = data.error
       ? '<div class="drop">Couldn\'t load - <span class="lnk" data-action="docs-retry">Retry</span></div>'
@@ -1443,7 +1483,8 @@
       wrap.innerHTML +=
         '<div class="vscrim" data-action="doc-close"></div>'
         + '<div class="vwin" id="docView">'
-        + '<div class="vtop"><span class="vty">' + esc(dv.type) + '</span><b>' + esc(dv.name) + '</b><small>' + esc(dv.sub) + '</small>'
+        + '<div class="vtop"><div class="crumbs" style="width:100%;margin:0 0 8px"><span class="lnk" data-action="doc-close">Documents</span> / <span class="lnk" data-action="docs-folder" data-folder="' + esc(dv.folder || '') + '">' + esc(dv.folder || 'All') + '</span> / <span>' + esc(dv.name) + '</span></div>'
+        + '<span class="vty">' + esc(dv.type) + '</span><b>' + esc(dv.name) + '</b><small>' + esc(dv.sub) + '</small>'
         + '<div class="r"><button class="vb" data-action="doc-prev">Prev file</button><button class="vb" data-action="doc-next">Next file</button><button class="vb" data-action="doc-download">Download</button><button class="vb" data-action="doc-drive-open">Open in Drive</button><button class="vb pri" data-action="doc-add-space">+ Add to a Space</button><button class="vb" data-action="doc-close" title="Close (Esc)">Close</button></div></div>'
         + '<div class="vbody"><div class="vthumbs">' + thumbs + '</div>'
         + '<div class="vstage">' + stageInner
@@ -1456,6 +1497,24 @@
     armThumbs(wrap);
     if (P().finishPaint) P().finishPaint(wrap);
     else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
+    if (!wantDoc) {
+      var hit = wrap.querySelector('.fl.hi');
+      if (hit && hit.scrollIntoView) setTimeout(function () { hit.scrollIntoView({ block: 'center', inline: 'nearest' }); }, 40);
+    }
+    if (!wrap._docKeys) {
+      wrap._docKeys = 1;
+      document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+        if (!(window.STATE && window.STATE.docOpen)) return;
+        if (window.deskActions && window.deskActions['doc-close']) window.deskActions['doc-close']();
+      });
+      window.addEventListener('popstate', function () {
+        if (window.STATE && window.STATE.docOpen && window.deskActions && window.deskActions['doc-close']) window.deskActions['doc-close']();
+      });
+    }
+    if (wantDoc) {
+      try { history.pushState({ doc: 1 }, ''); } catch (e) {}
+    }
     markReady('docsDesk');
   }
 
@@ -2107,6 +2166,7 @@
       + '<div class="scrim' + (person ? ' on' : '') + '" id="scrim" data-action="mail-pp-close"></div>'
       + '<aside class="pp' + (person ? ' on' : '') + '" id="pp">' + ppHtml + '</aside>';
     if (P().finishPaint) P().finishPaint(wrap);
+    if (typeof window.bindGridZoom === 'function') window.bindGridZoom(wrap, wrap.querySelector('#grid'), 'people', 4);
     markReady('mailDesk');
   }
   function mailRowAttrs(m) {
@@ -2175,7 +2235,8 @@
     return '<aside class="reader open" id="reader"' + attrs + '><span class="grab"></span>'
       + '<div class="rh"><span class="av" style="background:' + colorFor(o.email || from) + ';width:36px;height:36px">' + esc(iniOf(from)) + '</span><div><h2>' + esc(o.subject || '(no subject)') + '</h2></div><button class="btn x" id="close" data-action="mail-close">Close</button></div>'
       + '<div class="rmeta">' + esc(from) + (o.email ? ' &lt;' + esc(o.email) + '&gt;' : '') + (th && th.to ? ' &middot; to ' + esc(th.to) : '') + (when ? ' &middot; ' + esc(when) : '') + '</div>'
-      + '<div class="acts"><button class="p" data-action="mail-reply"' + attrs + '>Reply</button><button data-action="mail-forward"' + attrs + '>Forward</button><button data-action="mail-add-space"' + attrs + '>Add to Space</button><button data-action="mail-snooze"' + attrs + '>Snooze</button><button data-action="mail-trash"' + attrs + ' title="Move to Gmail Trash (undo for 30 days)">Delete</button></div>'
+      + '<div class="acts"><button class="p" data-action="mail-reply"' + attrs + '>Reply</button><button data-action="mail-forward"' + attrs + '>Forward</button><button data-action="mail-add-space"' + attrs + '>Add to Space</button><button data-action="mail-snooze"' + attrs + '>Snooze</button></div>'
+      + mailFolderPills(S, o, attrs)
       + (atts ? '<div class="atts">' + atts + '</div>' : '')
       + '<div class="bd" style="white-space:pre-wrap">' + (body ? esc(body) : (S.mailOpenFailed ? esc(o.preview || '') + '\n\n(Could not load the full email.)' : esc(o.preview || '') + '\n\nLoading the full email…')) + '</div></aside>';
   }

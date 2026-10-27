@@ -79,6 +79,8 @@ body > .scrim,body > .drawer,body > .modal,body > .emx-reader,body > .docview,bo
 #sigHost{position:fixed;inset:0;width:auto;top:0;right:0;background:transparent;border:0;box-shadow:none;overflow:visible;display:none;z-index:80;pointer-events:none}
 #sigHost.on{display:block}
 #sigHost .sig,#sigHost .scrim{pointer-events:auto}
+#sigHost .sig{overflow:hidden;display:flex;flex-direction:column}
+#sigHost .sig .tabs,#sigHost .sig .sgtabs{position:relative!important;top:auto!important;left:auto!important;height:auto!important;max-height:none;width:auto!important;background:transparent!important;border-bottom:1px solid #e8ecf3;overflow:visible;flex:none;display:flex!important;flex-direction:row!important;flex-wrap:wrap;padding:0 16px 10px}
 .sigpanel{position:fixed;top:60px;right:22px;width:400px;background:#fff;border-radius:16px;box-shadow:0 30px 80px rgba(3,10,30,.5);border:1px solid #e8ecf3;z-index:80;color:#101a33;font-family:Inter,-apple-system,system-ui,sans-serif;overflow:hidden;display:none}
 .sigpanel.on{display:block}
 .sigpanel[hidden]{display:none!important}

@@ -110,7 +110,7 @@ button{font:inherit;cursor:pointer}
 .allday{display:grid;padding-left:52px;border-top:1px solid var(--edge);border-bottom:1px solid var(--edge);min-height:30px;position:relative}
 .allday .lab{position:absolute;left:0;top:7px;font-size:10px;color:var(--dim);font-weight:700}
 .allday .c{padding:4px 3px;border-left:1px solid var(--edge2);display:flex;flex-direction:column;gap:3px}
-.pill{font-size:9.5px;font-weight:700;border-radius:6px;padding:3px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#0c1220}
+.pill{font-size:9.5px;font-weight:700;border-radius:6px;padding:3px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.35)}
 .tgrid{display:grid;position:relative}
 .hours{position:relative}
 .hl{height:46px;border-top:1px solid var(--edge2);font-size:10px;color:var(--dim);font-weight:700;padding-right:8px;text-align:right;transform:translateY(-6px)}
@@ -118,7 +118,8 @@ button{font:inherit;cursor:pointer}
 .col.today{background:rgba(31,95,255,.06)}
 .col .line{height:46px;border-top:1px solid var(--edge2)}
 .ev{position:absolute;left:4px;right:4px;border-radius:7px;padding:3px 6px;font-size:9.5px;line-height:1.2;overflow:hidden;cursor:pointer}
-.ev .tt{font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ev .tm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ev .tm{opacity:.8;font-size:8.5px;font-weight:650}
+.ev .tt,.ev .tm{color:#fff!important;text-shadow:0 1px 0 rgba(0,0,0,.35);font-weight:650}
+.ev .tt{font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ev .tm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ev .tm{opacity:1;font-size:8.5px;font-weight:650}
 .ev.short{display:flex;align-items:center;padding-top:0;padding-bottom:0;min-height:17px;z-index:2}.ev.short .tt{font-size:9px}.ev.short .tt{line-height:1}
 .ev.real{color:#0c1220;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 .ev.sug{border:1.5px dashed;background:transparent;color:var(--txt)}
@@ -231,7 +232,7 @@ button{font:inherit;cursor:pointer}
 .eyeT,.bellT{font-size:11px;font-weight:800;color:#4a5672;background:#f5f7fb;border-radius:6px;padding:2px 7px;cursor:pointer;white-space:nowrap}.eye{border:none;background:none;padding:0}
 /* ===== 10d: Neon calendar ===== */
 .calwrap{--bg:#080c1f!important;--rail:#0a0f26!important;--panel:#0e1430!important;--edge:#1c2650!important;--edge2:#141c3c!important;border-color:rgba(120,150,255,.14)!important}
-.col.today{background:rgba(255,77,141,.055)!important;box-shadow:inset 1px 0 0 rgba(255,77,141,.45);border-left:1px solid rgba(255,77,141,.45)!important}
+.col.today{background:rgba(255,77,141,.055)!important;box-shadow:inset 1px 0 0 rgba(255,77,141,.28);border-left:1px solid rgba(255,77,141,.28)!important}
 .nowline{background:#ff4d8d!important;box-shadow:0 0 10px #ff4d8d}.nowline::before{background:#ff4d8d!important;box-shadow:0 0 10px #ff4d8d}
 .ev.real{color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.35);border-radius:6px!important;box-shadow:0 0 14px var(--glow,rgba(59,130,255,.55)),inset 0 0 0 1px rgba(255,255,255,.35)!important;filter:saturate(1.15) brightness(.72)}
 .ev.real .tt,.ev.real .tm{color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.35)}
@@ -241,5 +242,7 @@ button{font:inherit;cursor:pointer}
 .mini .d.today,.mini .d.sel{background:#ff4d8d!important;color:#fff!important;box-shadow:0 0 12px #ff4d8d}
 .whead .dn.today,.dn.today{color:#ff4d8d!important}
 .dd.today,.whead .today .dd{background:#ff4d8d!important;box-shadow:0 0 12px #ff4d8d}
+.qc.td,.mc.td{background:rgba(255,77,141,.055)!important}
+.qc.td .c-n,.mc.td .c-n{color:#ff4d8d!important;font-weight:850}
 .rail .seg{box-shadow:0 0 8px currentColor}
 .rail .next,.rail .nx,.rail .card{background:linear-gradient(140deg,#121a44,#0e1430)!important;border:1px solid rgba(120,150,255,.18)}

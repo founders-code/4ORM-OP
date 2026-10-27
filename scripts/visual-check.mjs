@@ -532,7 +532,8 @@ async function main() {
     });
     await contrastPage.close();
     const contrastOk = contrast.checked > 0 && contrast.below === 0;
-    rows.push({ page: 'contrast-calendar', pct: contrast.below, pass: true, pixels: contrast.below, total: contrast.checked, overflow: 'no', reason: contrastOk ? '' : 'audit: ' + contrast.below + '/' + contrast.checked + ' event tiles under 4.5:1 vs inherited bg (titles use white + 1px shadow on the chip)' });
+    if (!contrastOk) failed += 1;
+    rows.push({ page: 'contrast-calendar', pct: contrast.below, pass: contrastOk, pixels: contrast.below, total: contrast.checked, overflow: 'no', reason: contrastOk ? '' : 'audit: ' + contrast.below + '/' + contrast.checked + ' event tiles under 4.5:1 vs inherited bg' });
     console.log(`contrast-calendar  below=${contrast.below}/${contrast.checked}  ${contrastOk ? 'PASS' : 'FAIL'}`);
 
     for (const spec of P9) {
@@ -549,14 +550,14 @@ async function main() {
         continue;
       }
       await pageP9.goto(`http://127.0.0.1:${port}/design/21-fixes.html`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await pageP9.evaluate((inter, tab) => {
+      await pageP9.evaluate(({ inter, tab }) => {
         if (!document.querySelector('link[href*="Inter"]')) {
           document.head.insertAdjacentHTML('beforeend', inter);
         }
         const b = document.querySelector('#tabs button[data-p="' + tab + '"]');
         if (b) b.click();
         window.scrollTo(0, 0);
-      }, INTER, spec.tab);
+      }, { inter: INTER, tab: spec.tab });
       await pageP9.evaluate(async () => {
         if (document.fonts && document.fonts.load) {
           await Promise.all(['400 16px Inter', '650 13px Inter', '750 12.5px Inter', '800 13.5px Inter', '850 19px Inter'].map((f) => document.fonts.load(f).catch(() => {})));
@@ -585,6 +586,66 @@ async function main() {
       writeFileSync(join(OUT, `${spec.page}.png`), PNG.sync.write(diff));
       rows.push({ page: spec.page, pct: p, pass: ok, pixels: n, total, overflow: 'no', reason });
       console.log(`p9 ${spec.page.padEnd(28)} ${p.toFixed(3)}%  ${ok ? 'PASS' : 'FAIL'}`);
+    }
+    const P10 = [
+      { page: '22-pipeline', shot: 'shots-p10/22-pipeline.png', tab: '0' },
+      { page: '22-signals', shot: 'shots-p10/22-signals.png', tab: '1' },
+      { page: '22-email-pills', shot: 'shots-p10/22-email-pills.png', tab: '2' },
+      { page: '22-zoom-grids', shot: 'shots-p10/22-zoom-grids.png', tab: '3' },
+      { page: '22-heatmap', shot: 'shots-p10/22-heatmap.png', tab: '5' },
+      { page: '22-heat-ramps', shot: 'shots-p10/22-heat-ramps.png', tab: '6' },
+      { page: '22-guards', shot: 'shots-p10/22-guards.png', tab: '7' },
+    ];
+    for (const spec of P10) {
+      const pageP10 = await context.newPage();
+      await pageP10.setViewportSize({ width: 1440, height: 1000 });
+      let mock;
+      try {
+        const shotBuf = readFileSync(join(ROOT, 'design-reference/redesign', spec.shot));
+        mock = PNG.sync.read(shotBuf);
+      } catch {
+        rows.push({ page: spec.page, pct: 100, pass: false, pixels: 0, total: 1, overflow: 'no', reason: 'missing shot' });
+        await pageP10.close();
+        failed += 1;
+        continue;
+      }
+      await pageP10.goto(`http://127.0.0.1:${port}/design/22-ops.html`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await pageP10.evaluate(({ inter, tab }) => {
+        if (!document.querySelector('link[href*="Inter"]')) {
+          document.head.insertAdjacentHTML('beforeend', inter);
+        }
+        const b = document.querySelector('#tabs button[data-p="' + tab + '"]');
+        if (b) b.click();
+        window.scrollTo(0, 0);
+      }, { inter: INTER, tab: spec.tab });
+      await pageP10.evaluate(async () => {
+        if (document.fonts && document.fonts.load) {
+          await Promise.all(['400 16px Inter', '650 13px Inter', '750 12.5px Inter', '800 13.5px Inter'].map((f) => document.fonts.load(f).catch(() => {})));
+          await document.fonts.ready;
+        }
+      }).catch(() => {});
+      await pageP10.waitForTimeout(400);
+      const liveBuf = await pageP10.screenshot({ type: 'png', fullPage: false });
+      await pageP10.close();
+      const livePng = PNG.sync.read(liveBuf);
+      const w = Math.min(mock.width, livePng.width);
+      const h = Math.min(mock.height, livePng.height);
+      const a = new PNG({ width: w, height: h });
+      const b = new PNG({ width: w, height: h });
+      PNG.bitblt(mock, a, 0, 0, w, h, 0, 0);
+      PNG.bitblt(livePng, b, 0, 0, w, h, 0, 0);
+      const diff = new PNG({ width: w, height: h });
+      const n = pixelmatch(a.data, b.data, diff.data, w, h, { threshold: 0.2 });
+      const total = w * h;
+      const p = pct(n, total);
+      const ok = p < 1;
+      const reason = ok ? (p < PASS ? '' : 'antialias vs shots-p10 PNG (under 1%)') : `${p.toFixed(3)}% vs ${spec.shot}`;
+      if (!ok) failed += 1;
+      writeFileSync(join(OUT, `${spec.page}-mockup.png`), PNG.sync.write(a));
+      writeFileSync(join(OUT, `${spec.page}-live.png`), PNG.sync.write(b));
+      writeFileSync(join(OUT, `${spec.page}.png`), PNG.sync.write(diff));
+      rows.push({ page: spec.page, pct: p, pass: ok, pixels: n, total, overflow: 'no', reason });
+      console.log(`p10 ${spec.page.padEnd(28)} ${p.toFixed(3)}%  ${ok ? 'PASS' : 'FAIL'}`);
     }
   } finally {
     await browser.close();

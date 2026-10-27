@@ -1137,6 +1137,9 @@
       })();
       liveLog('zoom', { meetings: meetings.length });
       if (P().finishPaint) P().finishPaint(wrap);
+      if (typeof window.bindGridZoom === 'function') {
+        wrap.querySelectorAll('.gridm').forEach(function (g) { window.bindGridZoom(wrap, g, 'zoom', 4); });
+      }
       markReady('zoomDesk');
     });
   }
