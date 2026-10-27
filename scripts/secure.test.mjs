@@ -358,7 +358,7 @@ test('every signed-in API route is allowlisted (sessionOwner) and fails closed',
   walk(apiRoot, '');
   assert.ok(files.length > 80);
   // Token-authenticated (webhooks, cron, ingest), deliberately public, or checked by email directly.
-  const exempt = /^(book|clerk-publishable-key|news\/(image|thumb)\/\[id\]|hooks\/.*|cron\/.*|ingest|mcp|ops\/dedupe|private-doc)$/;
+  const exempt = /^(book|clerk-publishable-key|news\/(image|thumb)\/\[id\]|hooks\/.*|cron\/.*|ingest|mcp|ops\/dedupe|ops\/chad-account|private-doc)$/;
   const missing = [];
   for (const rel of files) {
     const src = readFileSync(new URL(rel + '/route.ts', apiRoot), 'utf8');

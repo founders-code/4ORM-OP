@@ -66,11 +66,14 @@
     var auto = 0;
     function titleOf(n) {
       var meta = n.meta || {};
-      var t = String(n.title || meta.title || '').trim();
-      if (!t || /^note$/i.test(t) || /^untitled/i.test(t)) {
-        t = String(n.body || '').replace(/^\s+/, '').split(/\n/)[0].trim();
+      function clean(v) {
+        var t = String(v || '').replace(/^\s+/, '').split(/\n/)[0].trim();
+        if (!t || /^note$/i.test(t) || /^untitled/i.test(t) || /^\d+(\s*[x×]\s*\d+)?$/i.test(t)) return '';
+        return t.slice(0, 60);
       }
-      return t;
+      var t = clean(n.title || meta.title);
+      if (!t) t = clean(n.body || n.p || '');
+      return t || 'Note';
     }
     function savedPos(n) {
       var x = n.canvas_x != null ? Number(n.canvas_x) : (n.x != null ? Number(n.x) : NaN);
@@ -150,7 +153,7 @@
       + '<button class="btn" data-action="canvas-add-cluster">+ Cluster</button><button class="btn pri" data-action="canvas-add-note">+ Note</button></div></div>'
       + '<div class="tools"><input class="search" id="q" data-action="canvas-search" placeholder="Search notes - the canvas flies to the match">'
       + '<div class="zoom"><button type="button" data-action="canvas-zoom-out" aria-label="Zoom out">&minus;</button><b id="zLbl">100%</b><button type="button" data-action="canvas-zoom-in" aria-label="Zoom in">+</button></div>'
-      + '<button class="btn" data-action="canvas-fit">Fit all</button>'
+      + '<button class="btn" data-action="canvas-fit">Fit all</button><button class="btn" data-action="canvas-tidy">Tidy up</button>'
       + '<span class="hint">Drag empty space to pan &middot; pinch or ' + String.fromCharCode(8984) + ' scroll to zoom &middot; Shift-drag to select</span></div>'
       + '<div class="stage" id="stage" data-action="canvas-stage">'
       + '<div class="world" id="world"></div><div class="marq" id="marq"></div>'
@@ -168,7 +171,7 @@
     var world = root.getElementById ? root.getElementById('world') : root.querySelector('#world');
     var stage = root.getElementById ? root.getElementById('stage') : root.querySelector('#stage');
     if (!world || !stage) return;
-    var z = 1, ox = -60, oy = -40, drag = null, sel = new Set();
+    var z = 1, ox = -60, oy = -40, drag = null, sel = new Set(), undoPos = null;
     var types = TY();
     function apply() {
       world.style.transform = 'translate(' + ox + 'px,' + oy + 'px) scale(' + z + ')';
@@ -183,8 +186,12 @@
         return '<div class="cluster" data-id="' + esc(c.id) + '" data-action="canvas-cluster" style="left:' + c.x + 'px;top:' + c.y + 'px;width:' + c.w + 'px;height:' + c.h + 'px;border-color:' + esc(c.color) + '"><div class="cn" data-action="canvas-cluster-name" style="background:' + esc(c.color) + '">' + esc(c.name) + ' <i>' + NOTES.filter(function (n) { return n.c == c.id; }).length + '</i></div><span class="rz" data-action="canvas-rz"></span></div>';
       }).join('') + NOTES.map(function (n, i) {
         var nw = n.w || 240, nh = n.hh || 180;
-        return '<div class="note ' + esc(n.k) + '" data-i="' + i + '" data-action="canvas-note" style="left:' + n.x + 'px;top:' + n.y + 'px;width:' + nw + 'px;height:' + nh + 'px"><span class="ty ' + esc(n.t) + '">' + esc(types[n.t] || 'Note') + '</span><h4>' + esc(n.h) + '</h4><p>' + esc(n.p) + '</p><span class="sz">' + nw + ' x ' + nh + '</span><span class="nrz" data-action="canvas-note-rz"></span></div>';
+        var tyCls = n.t && n.t !== 'note' ? ' ' + esc(n.t) : '';
+        var heading = String(n.h || '').trim();
+        if (!heading || /^\d+(\s*[x×]\s*\d+)?$/i.test(heading)) heading = String(n.p || '').replace(/^\s+/, '').split(/\n/)[0].trim().slice(0, 60) || 'Note';
+        return '<div class="note ' + esc(n.k) + '" data-i="' + i + '" data-action="canvas-note" style="left:' + n.x + 'px;top:' + n.y + 'px;width:' + nw + 'px;height:' + nh + 'px"><span class="ty' + tyCls + '">' + esc(types[n.t] || 'Note') + '</span><h4>' + esc(heading) + '</h4><p>' + esc(n.p) + '</p><span class="sz">' + nw + ' x ' + nh + '</span><span class="nrz" data-action="canvas-note-rz"></span></div>';
       }).join('');
+      world.querySelectorAll('.note .note').forEach(function (el) { el.parentNode.removeChild(el); });
       apply();
     }
     function toWorld(cx, cy) {
@@ -399,6 +406,28 @@
       if (a === 'canvas-zoom-in') zoomAt(1.25);
       if (a === 'canvas-zoom-out') zoomAt(0.8);
       if (a === 'canvas-fit') fit();
+      if (a === 'canvas-tidy') {
+        var idxs = sel.size ? Array.from(sel) : NOTES.map(function (_n, i) { return i; });
+        undoPos = idxs.map(function (i) { return { i: i, x: NOTES[i].x, y: NOTES[i].y, w: NOTES[i].w, hh: NOTES[i].hh }; });
+        var gap = 24, capW = 360, capH = 300, cols = 4;
+        idxs.forEach(function (i, n) {
+          NOTES[i].w = Math.max(160, Math.min(capW, NOTES[i].w || 240));
+          NOTES[i].hh = Math.max(100, Math.min(capH, NOTES[i].hh || 180));
+          NOTES[i].x = 80 + (n % cols) * (capW + gap);
+          NOTES[i].y = 80 + Math.floor(n / cols) * (capH + gap);
+          if (writeOk()) saveNotePos(NOTES[i]);
+        });
+        render(); markSel(); fit();
+        toast(root, 'Tidied ' + idxs.length + ' notes', function () {
+          if (!undoPos) return;
+          undoPos.forEach(function (p) {
+            NOTES[p.i].x = p.x; NOTES[p.i].y = p.y; NOTES[p.i].w = p.w; NOTES[p.i].hh = p.hh;
+            if (writeOk()) saveNotePos(NOTES[p.i]);
+          });
+          undoPos = null;
+          render(); markSel();
+        });
+      }
       if (a === 'canvas-sel-clear') { sel.clear(); markSel(); }
       if (a === 'canvas-mk-cluster') {
         var ids = Array.from(sel), xs = ids.map(function (i) { return NOTES[i].x; }), ys = ids.map(function (i) { return NOTES[i].y; });
@@ -1414,6 +1443,7 @@
       return r.json();
     }).then(function (d) {
       plannerCache.items = (d && d.items) || [];
+      if (window.STATE) window.STATE.timeline = plannerCache.items;
       plannerCache.inflight = null;
       go(plannerCache.items);
       return plannerCache.items;

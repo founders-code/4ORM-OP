@@ -52,8 +52,8 @@
     "file": "redesign/03c-notes-canvas.html",
     "page": "Notes canvas",
     "route": "/notes?fixture=mockup&canvas=1",
-    "bytes": 21429,
-    "sha256": "6b491d5f3cacf28c"
+    "bytes": 21480,
+    "sha256": "0207ac56a1722e8c"
   },
   {
     "file": "redesign/03c-notes-categories.html",

@@ -1211,51 +1211,76 @@
     var Sdone = window.STATE || {};
     var itemsAll = asList(Sdone.items).concat(asList(Sdone.plannerItems), asList(Sdone.timeline));
     function toMs(v) { var n = typeof v === 'number' ? v : Date.parse(String(v || '')); return Number.isFinite(n) ? n : 0; }
-    function snapActive(s) {
-      var c = s.counts || {};
-      var p = s.payload || {};
-      return (Number(c.tasks) || 0) + (Number(c.meetings) || 0) + (Number(c.sent) || 0) + asList(p.tasks).length + asList(p.meetings).length + asList(p.sent).length;
+    function isDone(it) {
+      if (!it) return false;
+      var st = String(it.status || it.st || '');
+      return st === 'done' || it.done === true;
+    }
+    function dueMs(it) {
+      if (!it) return 0;
+      if (it.due) return toMs(it.due);
+      if (typeof it.e === 'number' && it.e > 10000) return it.e * 86400000;
+      return 0;
+    }
+    function doneMs(it) {
+      var t = toMs(it.updatedAt || it.updated_at || it.doneAt || it.done_at);
+      if (t) return t;
+      return dueMs(it);
     }
     var now = Date.now();
     var d30 = now - 30 * 86400000;
     var d60 = now - 60 * 86400000;
-    var dated = itemsAll.filter(function (it) { return it && it.due; });
-    var done30 = dated.filter(function (it) { return (it.status === 'done' || it.done) && toMs(it.updatedAt || it.updated_at || it.due) >= d30; });
-    var onTime = done30.filter(function (it) { return toMs(it.updatedAt || it.updated_at) <= toMs(it.due) || !toMs(it.updatedAt || it.updated_at); });
-    var prevDone = dated.filter(function (it) { return (it.status === 'done' || it.done) && toMs(it.updatedAt || it.updated_at) >= d60 && toMs(it.updatedAt || it.updated_at) < d30; });
-    var prevOn = prevDone.filter(function (it) { return toMs(it.updatedAt || it.updated_at) <= toMs(it.due); });
+    var doneItems = itemsAll.filter(function (it) { return isDone(it); });
+    var done30 = doneItems.filter(function (it) { var t = doneMs(it); return t >= d30 && t <= now; });
+    var datedDone = done30.filter(function (it) { return dueMs(it); });
+    var onTime = datedDone.filter(function (it) { return doneMs(it) <= dueMs(it) + 86400000; });
+    var prevDone = doneItems.filter(function (it) { var t = doneMs(it); return t >= d60 && t < d30; });
+    var prevDated = prevDone.filter(function (it) { return dueMs(it); });
+    var prevOn = prevDated.filter(function (it) { return doneMs(it) <= dueMs(it) + 86400000; });
     var daysWith = {};
-    snaps.forEach(function (s) { if (snapActive(s) && s.date) daysWith[s.date] = 1; });
-    done30.forEach(function (it) { var d = ymdOf(it.updatedAt || it.updated_at); if (d) daysWith[d] = 1; });
+    done30.forEach(function (it) { var d = ymdOf(doneMs(it)); if (d) daysWith[d] = 1; });
     var dayN = Object.keys(daysWith).length;
-    var fall = dated.filter(function (it) { return (it.status === 'dropped') || (it.status !== 'done' && !it.done && toMs(it.due) < d30 && toMs(it.due) >= d60); });
+    var fall = itemsAll.filter(function (it) {
+      if (isDone(it)) return String(it.status) === 'dropped';
+      var due = dueMs(it);
+      return due && due < d30 && due >= d60;
+    });
     var thin = dayN < 7;
     function pctN(a, b) { return b ? Math.round(100 * a / b) : 0; }
-    var onPct = thin ? '-' : (pctN(onTime.length, done30.length) + '%');
+    var onPct = !datedDone.length ? '-' : (pctN(onTime.length, datedDone.length) + '%');
     var cons = thin ? '-' : (dayN + ' / 30');
     var fallTxt = thin ? '-' : (fall.length + ' · ' + pctN(fall.length, itemsAll.length) + '%');
     var weeks = [];
     for (var w = 7; w >= 0; w--) {
       var from = now - (w + 1) * 7 * 86400000, to = now - w * 7 * 86400000;
-      weeks.push(itemsAll.filter(function (it) { var t = toMs(it.updatedAt); return it.status === 'done' && t >= from && t < to; }).length);
+      weeks.push(doneItems.filter(function (it) { var t = doneMs(it); return t >= from && t < to; }).length);
     }
+    var thru = weeks.reduce(function (a, n) { return a + n; }, 0);
+    window.__doneStats = {
+      done30: done30.length, datedDone: datedDone.length, onTime: onTime.length,
+      dayN: dayN, fall: fall.length, throughput: thru, items: itemsAll.length
+    };
     var maxW = Math.max.apply(null, weeks.concat([1]));
     var bars = weeks.map(function (n) { return '<i style="height:' + Math.max(8, Math.round(36 * n / maxW)) + 'px"></i>'; }).join('');
     var byArea = {};
-    itemsAll.filter(function (it) { return it.status !== 'done' && it.due && toMs(it.due) < now; }).forEach(function (it) {
-      var a = String(it.area || it.category || 'other');
+    itemsAll.filter(function (it) { return !isDone(it) && dueMs(it) && dueMs(it) < now; }).forEach(function (it) {
+      var a = String(it.area || it.p || it.category || 'other');
       byArea[a] = (byArea[a] || 0) + 1;
     });
     var slip = Object.keys(byArea).map(function (k) { return [k, byArea[k]]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 3);
+    var onRate = datedDone.length ? (onTime.length / datedDone.length) : null;
     var tips = thin ? ['Need seven days of data before these lines fill in.'] : [
       slip[0] ? (slip[0][0] + ' items slip most: ' + slip[0][1] + ' overdue. Book those calls first thing Monday.') : 'Keep clearing the oldest overdue item first.',
       dayN < 20 ? 'Consistency is ' + dayN + ' of 30 days. Close one small item every weekday.' : 'Streak is holding. Protect the first 25 minutes.',
-      Number(onTime.length) < done30.length / 2 ? 'On-time rate is low. Pull due dates forward before the week starts.' : 'On-time rate is holding. Keep the same Friday review.'
+      onRate == null ? 'No due-dated items were finished in the last 30 days, so on-time has no rate yet.'
+        : (onRate < 0.5 ? 'On-time rate is low. Pull due dates forward before the week starts.'
+          : (onRate < 0.8 ? 'On-time rate has room to move. Finish due items on the day they land.'
+            : 'On-time rate is holding. Keep the same Friday review.'))
     ];
-    var statsHtml = '<div class="house"><div class="hx"><b>' + onPct + '</b><span>On time</span><em>' + (thin ? '' : 'vs prior 30 days ' + pctN(prevOn.length, prevDone.length) + '%') + '</em></div>'
+    var statsHtml = '<div class="house"><div class="hx"><b>' + onPct + '</b><span>On time</span><em>' + (thin || !prevDated.length ? '' : 'vs prior 30 days ' + pctN(prevOn.length, prevDated.length) + '%') + '</em></div>'
       + '<div class="hx"><b>' + cons + '</b><span>Consistency</span><em>' + (thin ? '' : 'days with at least one item done') + '</em></div>'
       + '<div class="hx"><b>' + fallTxt + '</b><span>Fall-off</span><em>overdue never done, or dropped</em></div>'
-      + '<div class="hx"><b>' + (thin ? '-' : weeks.reduce(function (a, n) { return a + n; }, 0)) + '</b><span>Throughput</span><div class="bars">' + bars + '</div></div>'
+      + '<div class="hx"><b>' + (thin ? '-' : thru) + '</b><span>Throughput</span><div class="bars">' + bars + '</div></div>'
       + '<div class="hx wide"><b>Slipping by area</b><span>' + (slip.map(function (s) { return esc(s[0]) + ' ' + s[1]; }).join(' · ') || '-') + '</span></div>'
       + '<div class="hx wide"><b>What to improve</b>' + tips.slice(0, 3).map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') + '</div></div>';
     wrap.innerHTML = '<div class="bar"><h1>Completed</h1><span class="sub">A snapshot of every day, saved at 23:55 — what moved, who you met, what you owe</span><div class="r"><button class="btn" type="button" data-action="done-search">Search days</button><button class="btn pri" type="button" id="snapNowLive" data-action="done-snap">Snapshot now</button></div></div>'

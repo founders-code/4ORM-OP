@@ -3,6 +3,7 @@ import { clerkSetup } from '@clerk/testing/playwright';
 import { loadLocalEnv } from './load-local-env.mjs';
 
 export const TEST_EMAIL = 'opstest@4ormfinance.com';
+export const CHAD_EMAIL = 'chad@4ormfinance.com';
 export const TEST_EXTERNAL_ID = 'clerk-test';
 export const TEST_NAME = 'Ops Test';
 export const LIVE_ORIGIN = (process.env.PLAYWRIGHT_BASE_URL || 'https://www.4ormop.com').replace(/\/$/, '');
@@ -139,3 +140,60 @@ export async function signInAsTestUser(page, origin = LIVE_ORIGIN) {
 }
 
 export const signInTestUser = signInAsTestUser;
+
+async function findUserIdByEmail(secret, email) {
+  const res = await fetch(API + '/users?email_address=' + encodeURIComponent(email) + '&limit=5', {
+    headers: { authorization: 'Bearer ' + secret, 'clerk-api-version': '2025-04-10' },
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok) stopSignIn({ status: res.status, message: 'users.list failed', errors: json && json.errors, ...json });
+  const row = Array.isArray(json) ? json[0] : json && Array.isArray(json.data) ? json.data[0] : null;
+  if (!row || !row.id) stopSignIn({ message: 'user not found: ' + email });
+  return row.id;
+}
+
+export async function signInAsChad(page, origin = LIVE_ORIGIN) {
+  await setupClerkTesting();
+  const secret = process.env.CLERK_SECRET_KEY || '';
+  const userId = await findUserIdByEmail(secret, CHAD_EMAIL);
+  const ticket = await createTicket(secret, userId);
+
+  await page.goto(origin + '/', { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.waitForFunction(() => !!window.Clerk, { timeout: 20000 });
+  try {
+    await page.evaluate(async (token) => {
+      await window.Clerk.load();
+      const r = await window.Clerk.client.signIn.create({ strategy: 'ticket', ticket: token });
+      if (!r.createdSessionId) {
+        const err = new Error('ticket sign-in did not create a session. status=' + r.status);
+        err.status = r.status;
+        throw err;
+      }
+      await window.Clerk.setActive({ session: r.createdSessionId });
+    }, ticket);
+  } catch (err) {
+    stopSignIn(err);
+  }
+
+  await page.goto(origin + '/planner', { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.waitForSelector('#warDesk', { timeout: 20000, state: 'attached' });
+  const who = await page.evaluate(() => {
+    const clerkObj = window.Clerk || window.__clerk;
+    const user = clerkObj && clerkObj.user;
+    const email = user && (
+      (user.primaryEmailAddress && user.primaryEmailAddress.emailAddress) ||
+      (Array.isArray(user.emailAddresses) && user.emailAddresses[0] && (user.emailAddresses[0].emailAddress || user.emailAddresses[0].email_address)) ||
+      ''
+    );
+    return {
+      path: location.pathname,
+      name: (user && (user.fullName || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.firstName || email)) || '',
+      email: email || '',
+    };
+  });
+  if (!/\/(war-room|planner|timeline)/.test(who.path) || String(who.email || '').toLowerCase() !== CHAD_EMAIL) {
+    stopSignIn({ message: 'Chad sign-in failed. path=' + who.path + ' email=' + (who.email || '(empty)') });
+  }
+  console.log('signed in ' + who.name + ' <' + who.email + '> at ' + who.path);
+  return who;
+}

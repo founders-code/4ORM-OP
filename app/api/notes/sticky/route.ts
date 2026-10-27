@@ -10,10 +10,12 @@ function shape(row: Record<string, unknown>) {
     id: String(row.id),
     body: String(row.body || ''),
     color: String(row.color || 'yellow'),
-    x: Number(row.x) || 0,
-    y: Number(row.y) || 0,
+    x: Number(row.canvas_x ?? row.x) || 0,
+    y: Number(row.canvas_y ?? row.y) || 0,
     w: Number(row.w) || 180,
     h: Number(row.h) || 120,
+    canvas_x: row.canvas_x == null ? null : Number(row.canvas_x),
+    canvas_y: row.canvas_y == null ? null : Number(row.canvas_y),
     meta: row.meta && typeof row.meta === 'object' ? row.meta : {},
   };
 }
@@ -25,7 +27,7 @@ export async function GET() {
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ notes: [] });
     const rows = await session.sql`
-      SELECT id, body, color, x, y, w, h, meta FROM sticky_notes WHERE owner_id = ${session.userId} AND deleted_at IS NULL ORDER BY created_at
+      SELECT id, body, color, x, y, w, h, canvas_x, canvas_y, meta FROM sticky_notes WHERE owner_id = ${session.userId} AND deleted_at IS NULL ORDER BY created_at
     `;
     return NextResponse.json({ notes: (rows as Record<string, unknown>[]).map(shape) });
   } catch (err) {

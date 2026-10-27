@@ -162,29 +162,30 @@ export async function GET(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const ownerId = await sessionOwner(session);
+    if (!ownerId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const url = new URL(req.url);
     const id = url.searchParams.get('id') || '';
     const backfill = url.searchParams.get('backfill') === '1' || url.searchParams.get('backfill') === 'all';
     const all = url.searchParams.get('backfill') === 'all';
     if (id) {
-      const one = await previewOne(session.sql, session.userId, id);
+      const one = await previewOne(session.sql, ownerId, id);
       return NextResponse.json(one);
     }
     if (backfill) {
       const offset = Math.max(0, Number(url.searchParams.get('offset') || 0) || 0);
       const pending = all
         ? (await session.sql`
-            SELECT id FROM links WHERE owner_id = ${session.userId} AND deleted_at IS NULL
+            SELECT id FROM links WHERE owner_id = ${ownerId} AND deleted_at IS NULL
             ORDER BY created_at DESC
           `).slice(offset, offset + 8)
         : await session.sql`
-            SELECT id FROM links WHERE owner_id = ${session.userId} AND deleted_at IS NULL AND (thumb_url IS NULL OR thumb_url = '')
+            SELECT id FROM links WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND (thumb_url IS NULL OR thumb_url = '')
             ORDER BY created_at DESC LIMIT 3
           `;
       const results = [];
-      for (const row of pending) results.push(await previewOne(session.sql, session.userId, String(row.id)));
+      for (const row of pending) results.push(await previewOne(session.sql, ownerId, String(row.id)));
       const ok = results.filter((r) => r.kind === 'ok').length;
       const letter = results.filter((r) => r.kind === 'letter').length;
       const failed = results.filter((r) => r.kind === 'failed' || !r.ok && r.kind !== 'letter').length;

@@ -21,6 +21,8 @@ export async function ensureNoteCanvas(sql: Sql) {
     ['db_notes_canvas_x', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS canvas_x int`],
     ['db_notes_canvas_y', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS canvas_y int`],
     ['db_notes_cluster_id', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS cluster_id uuid`],
+    ['db_notes_canvas_w', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS canvas_w int`],
+    ['db_notes_canvas_h', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS canvas_h int`],
     ['db_sticky_canvas_x', () => sql`ALTER TABLE sticky_notes ADD COLUMN IF NOT EXISTS canvas_x int`],
     ['db_sticky_canvas_y', () => sql`ALTER TABLE sticky_notes ADD COLUMN IF NOT EXISTS canvas_y int`],
     ['db_sticky_cluster_id', () => sql`ALTER TABLE sticky_notes ADD COLUMN IF NOT EXISTS cluster_id uuid`],

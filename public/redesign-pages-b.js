@@ -1343,13 +1343,40 @@
         var letter = esc(String(w[0] || '?')[0]);
         var id = esc(w[6] || '');
         var thumb = w[7] ? '/api/links/thumb?id=' + encodeURIComponent(w[6] || '') : '';
-        var cover = thumb ? '<img alt="" loading="lazy" src="' + esc(thumb) + '" style="width:100%;height:100%;object-fit:cover;display:block">' : '<i style="background:' + w[2] + '">' + letter + '</i>';
+        var cover = thumb ? '<img alt="" loading="lazy" src="' + esc(thumb) + '" class="thumb">' : '<i style="background:' + w[2] + '">' + letter + '</i>';
         return '<a class="tile" data-action="link-open" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" data-id="' + id + '" data-url="' + esc(href) + '">' + (w[4] == 2 ? '<span class="dup">Duplicate</span>' : '')
           + '<div class="lg" style="background:' + w[2] + '14">' + cover + '</div>'
           + '<div class="tm"><span title="Edit" data-action="link-edit" data-id="' + id + '" data-title="' + esc(w[0]) + '">Edit</span><span title="Move" data-action="link-move" data-id="' + id + '" data-title="' + esc(w[0]) + '" data-url="' + esc(href) + '">Move</span><span title="Delete" data-action="link-archive" data-id="' + id + '" data-note="' + esc(w[3] || '') + '">&times;</span></div>'
           + '<div class="nb"><b>' + esc(w[0]) + '</b><div class="dm">' + esc(w[1]) + '</div><div class="nt' + (w[3] ? '' : ' empty') + '" data-action="link-note" data-id="' + id + '">' + (w[3] ? esc(w[3]) : 'Add a note') + '</div></div></a>';
       }).join('') + ((data.wall || []).length ? '' : '<div class="hint">No links here yet.</div>') + '</div>'
       + '<div class="hint">Hover a tile to edit, move or delete it.</div></section></div>';
+    wrap.querySelectorAll('.lg img.thumb').forEach(function (img) {
+      function markLogo() {
+        var w = img.naturalWidth || 0, h = img.naturalHeight || 0;
+        var wide = h > 0 && w / h >= 1.55;
+        var clear = false;
+        try {
+          if (w && h) {
+            var cv = document.createElement('canvas');
+            cv.width = Math.min(48, w); cv.height = Math.min(48, h);
+            var ctx = cv.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, cv.width, cv.height);
+              var data = ctx.getImageData(0, 0, cv.width, cv.height).data;
+              var trans = 0;
+              for (var i = 3; i < data.length; i += 4) if (data[i] < 12) trans += 1;
+              clear = trans / (data.length / 4) > 0.18;
+            }
+          }
+        } catch (e) { clear = false; }
+        if (wide || clear) {
+          img.classList.add('logo');
+          if (img.parentNode) img.parentNode.classList.add('logo');
+        }
+      }
+      if (img.complete && img.naturalWidth) markLogo();
+      else img.addEventListener('load', markLogo);
+    });
     if (P().finishPaint) P().finishPaint(wrap);
     else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
     markReady('linksDesk');
@@ -1590,6 +1617,8 @@
       if (!sb || typeof sb !== 'object') return false;
       var addrs = asList(sb.addrs);
       var n = String(sb.n || sb.name || '').trim();
+      if (!addrs.length && /@/.test(String(sb.o || ''))) addrs = [String(sb.o)];
+      if (!addrs.length && (!n || /^box$/i.test(n))) return false;
       return !!(n || addrs.length);
     });
   }
@@ -1613,10 +1642,17 @@
        (drag one onto a box to add the address). With no stored boxes yet, every sender still gets a box. */
     var stored = out.length;
     var loose = [];
+    var cut = Date.now() - 30 * 86400000;
     Object.keys(derived).forEach(function (k) {
       if (claimed[k]) return;
-      if (stored && /@/.test(k)) loose.push(derived[k]);
-      else out.push(derived[k]);
+      var box = derived[k];
+      var recent = asList(box.m).filter(function (row) { return (row[7] || 0) >= cut; }).length;
+      if (!stored) {
+        if (recent >= 2) out.push(box);
+        return;
+      }
+      if (/@/.test(k)) loose.push(box);
+      else out.push(box);
     });
     out.forEach(function (b) {
       b.m.sort(function (x, y) { return (y[7] || 0) - (x[7] || 0); });

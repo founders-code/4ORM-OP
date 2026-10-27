@@ -188,7 +188,7 @@
     return copy;
   }
   /* Only durable fields are stored; messages, files and counts always come from live mail. */
-  function persistPeopleBoxes() {
+  function persistPeopleBoxes(opts) {
     var list = peopleBoxList();
     if (fixtureOn()) return;
     var clean = list.map(function (b) {
@@ -196,7 +196,10 @@
     });
     S().emailBoxes = list;
     try { localStorage.setItem('cr_email_boxes', JSON.stringify(clean)); } catch (e) {}
-    if (writeOk()) api('/api/mail/boxes', { method: 'POST', body: { action: 'save', boxes: clean } }).catch(function () {});
+    if (!writeOk()) return;
+    var body = { action: 'save', boxes: clean };
+    if (opts && Array.isArray(opts.confirmRemove) && opts.confirmRemove.length) body.confirmRemove = opts.confirmRemove.map(String);
+    api('/api/mail/boxes', { method: 'POST', body: body }).catch(function () {});
   }
 
   /* ---------- focus timer ---------- */
@@ -2159,6 +2162,7 @@
     'canvas-zoom-in': function () {},
     'canvas-zoom-out': function () {},
     'canvas-fit': function () {},
+    'canvas-tidy': function () {},
     'canvas-add-cluster': function () {},
     'canvas-add-note': function () {},
     'canvas-mk-cluster': function () {},
@@ -3572,7 +3576,7 @@
         var list = peopleBoxList();
         var at = list.indexOf(box);
         if (at >= 0) list.splice(at, 1);
-        persistPeopleBoxes();
+        persistPeopleBoxes({ confirmRemove: [String(box.id)] });
         refresh('mail');
         toast(root, 'Box removed', function () { list.splice(Math.max(0, at), 0, box); persistPeopleBoxes(); refresh('mail'); });
         return;

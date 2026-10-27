@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { allowNoteColor } from '@/lib/guard.mjs';
 import { fail } from '@/lib/log';
+import { ensureNoteCanvas } from '@/lib/note-clusters';
 import { openBoard, sessionOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -21,6 +22,11 @@ function noteShape(row: Record<string, unknown>) {
     color: String(row.color || 'yellow'),
     pin: !!row.pinned,
     updatedAt: row.updated_at ? new Date(String(row.updated_at)).getTime() : null,
+    canvas_x: row.canvas_x == null ? null : Number(row.canvas_x),
+    canvas_y: row.canvas_y == null ? null : Number(row.canvas_y),
+    canvas_w: row.canvas_w == null ? null : Number(row.canvas_w),
+    canvas_h: row.canvas_h == null ? null : Number(row.canvas_h),
+    cluster_id: row.cluster_id ? String(row.cluster_id) : null,
   };
 }
 
@@ -45,9 +51,11 @@ export async function GET() {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ notes: [] });
+    await ensureNoteCanvas(session.sql);
+    const ownerId = await sessionOwner(session);
     const rows = await session.sql`
-      SELECT id, cat_id, title, body, color, pinned, updated_at
-      FROM notes WHERE owner_id = ${session.userId} AND deleted_at IS NULL
+      SELECT id, cat_id, title, body, color, pinned, updated_at, canvas_x, canvas_y, canvas_w, canvas_h, cluster_id
+      FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NULL
       ORDER BY updated_at DESC
       LIMIT 400
     `;

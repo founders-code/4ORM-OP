@@ -308,7 +308,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
   }, []);
   const notes = await read(reads, 'notes', async () => {
     const rows = await sql`
-      SELECT id, cat_id, title, body, color, pinned, updated_at FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 400
+      SELECT id, cat_id, title, body, color, pinned, updated_at, canvas_x, canvas_y, canvas_w, canvas_h, cluster_id FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 400
     `;
     return rows as Row[];
   }, []);
@@ -412,6 +412,7 @@ export async function loadBoard(sql: Sql, ownerId: string) {
       status: String(row.status),
       priority: String(row.priority),
       due: row.due ? new Date(String(row.due)).getTime() : null,
+      updatedAt: row.updated_at ? new Date(String(row.updated_at)).getTime() : null,
       owner: String(row.owner || ''),
       source: String(row.source || 'manual'),
       category: row.category ? String(row.category) : '',
@@ -451,6 +452,11 @@ export async function loadBoard(sql: Sql, ownerId: string) {
       color: String(row.color || 'yellow'),
       pin: !!row.pinned,
       updatedAt: row.updated_at ? new Date(String(row.updated_at)).getTime() : null,
+      canvas_x: row.canvas_x == null ? null : Number(row.canvas_x),
+      canvas_y: row.canvas_y == null ? null : Number(row.canvas_y),
+      canvas_w: row.canvas_w == null ? null : Number(row.canvas_w),
+      canvas_h: row.canvas_h == null ? null : Number(row.canvas_h),
+      cluster_id: row.cluster_id ? String(row.cluster_id) : null,
     })),
     runwayWeeks: settings[0]?.runway_weeks == null ? null : Number(settings[0].runway_weeks),
     categories: categories.map((row) => ({

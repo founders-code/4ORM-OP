@@ -46,20 +46,21 @@ export async function GET() {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const ownerId = await sessionOwner(session);
+    if (!ownerId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ boxes: [] });
     await ensureBoxes(session.sql);
     const rows = await session.sql`
       SELECT key, name, org, color, closed, position, extra
       FROM email_boxes
-      WHERE owner_id = ${session.userId} AND deleted_at IS NULL
+      WHERE owner_id = ${ownerId} AND deleted_at IS NULL
       ORDER BY position ASC, created_at ASC
     `;
     const tags = await session.sql`
-      SELECT box_key, tag FROM email_box_tags WHERE owner_id = ${session.userId} AND deleted_at IS NULL
+      SELECT box_key, tag FROM email_box_tags WHERE owner_id = ${ownerId} AND deleted_at IS NULL
     `;
     const addrs = await session.sql`
-      SELECT box_key, email FROM email_box_addresses WHERE owner_id = ${session.userId} AND deleted_at IS NULL
+      SELECT box_key, email FROM email_box_addresses WHERE owner_id = ${ownerId} AND deleted_at IS NULL
     `;
     const tagMap: Record<string, string[]> = {};
     const addrMap: Record<string, string[]> = {};
@@ -132,20 +133,34 @@ export async function POST(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const ownerId = await sessionOwner(session);
+    if (!ownerId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     if (!session.sql) return NextResponse.json({ saved: false, error: 'Unavailable' }, { status: 503 });
     if (!body || String(body.action || 'save') !== 'save') {
       return NextResponse.json({ saved: false, error: 'Unknown action.' }, { status: 400 });
     }
     const sql = session.sql;
-    const ownerId = session.userId;
     await ensureBoxes(sql);
     const boxes = readBoxes(body.boxes);
     if (!boxes.length && body.confirmEmpty !== true) {
       return NextResponse.json({ saved: false, error: 'Refusing to remove every box. Send confirmEmpty: true to do that.' }, { status: 400 });
     }
     const keys = boxes.map((b) => b.key);
+    const live = await sql`SELECT key FROM email_boxes WHERE owner_id = ${ownerId} AND deleted_at IS NULL`;
+    const incoming = new Set(keys);
+    const toDrop = (live as { key?: string }[]).map((r) => String(r.key || '')).filter((k) => k && !incoming.has(k));
+    const confirmRemove = (Array.isArray(body.confirmRemove) ? body.confirmRemove : []).map((k) => String(k || ''));
+    if (toDrop.length > 2) {
+      const missing = toDrop.filter((k) => confirmRemove.indexOf(k) < 0);
+      if (missing.length) {
+        return NextResponse.json({
+          saved: false,
+          error: 'Refusing to remove ' + toDrop.length + ' boxes in one save. Send confirmRemove with those keys.',
+          toDrop,
+        }, { status: 400 });
+      }
+    }
     // Soft-delete removed boxes first so a new box may reuse a removed box's name (live-name unique index).
     const queries = [sql`
       UPDATE email_boxes SET deleted_at = now()
