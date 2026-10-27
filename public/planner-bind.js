@@ -531,7 +531,7 @@ index();renderAll();drawTimer();goToday(false);
 /* ===== Zoom, scroll and drag-to-add (18) ===== */
 const ZMIN=2,ZMAX=2400;
 function zoomTo(np,clientX){const r=scroller.getBoundingClientRect();const px=(clientX==null?r.left+LW+trackW()/2:clientX)-r.left-LW;
-  const day=(scroller.scrollLeft+px)/ppd;state.zoom=String(Math.min(ZMAX,Math.max(ZMIN,np)));renderControls();renderBoard();scroller.scrollLeft=Math.max(0,day*ppd-px)}
+  const day=(scroller.scrollLeft+px)/ppd;state.zoom=String(Math.min(ZMAX,Math.max(ZMIN,np)));if(canvas)canvas.setAttribute('data-zoom',state.zoom);renderControls();renderBoard();scroller.scrollLeft=Math.max(0,day*ppd-px)}
 let zq=null,zpend=null;function zoomSoon(np,cx){zpend=[np,cx];if(zq)return;zq=requestAnimationFrame(()=>{zq=null;const [a,b]=zpend;zoomTo(a,b);saveSoon()})}
 let stz;function saveSoon(){clearTimeout(stz);stz=setTimeout(save,400)}
 var ctrlHeld=false;
@@ -566,7 +566,7 @@ function startDragAdd(e){
   const trk=t.closest('.trk.can-add');if(!trk||(t!==trk&&!(t.classList&&t.classList.contains('range')))||(e.button!=null&&e.button!==0))return;
   const row=trk.closest('.row');if(!row)return;
   const r=trk.getBoundingClientRect();const d0=START+Math.floor((e.clientX-r.left)/ppd);
-  const g=document.createElement('div');g.className='ghost';g.style.setProperty('--c',getComputedStyle(row).getPropertyValue('--c'));g.style.top=Math.max(6,e.clientY-r.top-13)+'px';trk.appendChild(g);
+  const g=window.document.createElement('div');g.className='ghost';g.style.setProperty('--c',getComputedStyle(row).getPropertyValue('--c'));g.style.top=Math.max(6,e.clientY-r.top-13)+'px';trk.appendChild(g);
   dg={trk,row,r,d0,d1:d0,g};updG();
   try{trk.setPointerCapture(e.pointerId)}catch(err){}
   e.preventDefault();
@@ -577,7 +577,7 @@ function updG(){const a=Math.min(dg.d0,dg.d1),b=Math.max(dg.d0,dg.d1);dg.g.style
 canvas.addEventListener('pointermove',e=>{if(!dg)return;dg.d1=Math.max(START,Math.min(END,START+Math.floor((e.clientX-dg.r.left)/ppd)));updG()});
 canvas.addEventListener('pointerup',e=>{if(!dg)return;const a=Math.min(dg.d0,dg.d1),b=Math.max(dg.d0,dg.d1);const {row,g,trk}=dg;dg=null;askName(row,trk,g,a,b)});
 function askName(row,trk,g,a,b){const pid=row.dataset.pipe||row.getAttribute('data-pipe'),stream=row.dataset.stream||row.getAttribute('data-stream')||'Inbox';const P=pipe(pid)||{name:'Pipeline'};
-  const box=document.createElement('div');box.className='newbox';box.style.left=Math.min(parseFloat(g.style.left)||0,W-460)+'px';box.style.top=((parseFloat(g.style.top)||0)+32)+'px';
+  const box=window.document.createElement('div');box.className='newbox';box.style.left=Math.min(parseFloat(g.style.left)||0,W-460)+'px';box.style.top=((parseFloat(g.style.top)||0)+32)+'px';
   box.innerHTML=`<input id="f-newstep" placeholder="Name this step, press Return"><small>${P.name} · ${a===b?fmt(a):fmt(a)+' to '+fmt(b)}</small><button data-nb="ok">Add</button><button class="x2" data-nb="x">Cancel</button>`;
   trk.appendChild(box);const inp=box.querySelector('input');inp.focus();
   const done=ok=>{const n=inp.value.trim();box.remove();g.remove();if(!ok||!n)return;
