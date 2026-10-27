@@ -90,7 +90,8 @@
   "page": "Links",
   "route": "/links",
   "bytes": 46988,
-  "sha256": "e3826a851ceed82d"
+  "sha256": "e3826a851ceed82d",
+  "superseded_by": "redesign/21-fixes.html"
  },
  {
   "file": "redesign/08-email.html",
@@ -354,6 +355,14 @@
   "sha256": "77b7553f27159fab"
  },
  {
+  "file": "redesign/17c-vault-control.html",
+  "page": "Vault (audits, registers, important documents) and Control room (4ormop system map with tests, 4ormIQ mapped in by API, canonical ledger)",
+  "route": "/vault?fixture=mockup and /control-room?fixture=mockup",
+  "bytes": 78994,
+  "sha256": "7c5e816f6a6ba4ac",
+  "superseded_by": "redesign/17f-vault-control-ops.html"
+ },
+ {
   "file": "redesign/17f-vault-control-ops.html",
   "page": "Vault + Control room operations console (Neon)",
   "route": "/vault and /control-room",
@@ -361,68 +370,17 @@
   "sha256": "71846183e82f56f6"
  },
  {
-  "file": "redesign/02e-signals-detail.html",
-  "page": "Signals detail (prompt 7)",
-  "route": "/planner?fixture=mockup&sigdetail=1",
-  "bytes": 21491,
-  "sha256": "14c59249b9165a45"
- },
- {
-  "file": "redesign/03c-notes-canvas.html",
-  "page": "Notes canvas (superseded by 03d)",
-  "route": "/notes?fixture=mockup&view=canvas",
-  "bytes": 21480,
-  "sha256": "0207ac56a1722e8c",
-  "superseded_by": "redesign/03d-notes-canvas-open.html"
- },
- {
-  "file": "redesign/05d-spaces-arrange.html",
-  "page": "Spaces arrange (prompt 7)",
-  "route": "/spaces?fixture=mockup&arrange=1",
-  "bytes": 14310,
-  "sha256": "2906d6c8b4103d5b"
- },
- {
-  "file": "redesign/05e-spaces-cards.html",
-  "page": "Spaces cards (prompt 7)",
-  "route": "/spaces?fixture=mockup&cards=1",
-  "bytes": 24863,
-  "sha256": "cebddd6ec86324a0"
- },
- {
-  "file": "redesign/05f-spaces-card-open.html",
-  "page": "Spaces card open (prompt 7)",
-  "route": "/spaces?fixture=mockup&space=open",
-  "bytes": 23794,
-  "sha256": "a8989a6f191470c2"
- },
- {
-  "file": "redesign/08g-email-person-card.html",
-  "page": "Email person card (prompt 7)",
-  "route": "/email?fixture=mockup",
-  "bytes": 25594,
-  "sha256": "42792122a4ef96c7"
- },
- {
-  "file": "redesign/09b-playbook-wording.html",
-  "page": "Playbook wording (superseded by 09g)",
-  "route": "/playbook?fixture=mockup",
-  "bytes": 79248,
-  "sha256": "b022b28a6a7757b0",
-  "superseded_by": "redesign/09g-playbook.html"
- },
- {
-  "file": "redesign/15-recordings.html",
-  "page": "Recordings (prompt 6)",
-  "route": "/recordings",
-  "bytes": 23345,
-  "sha256": "177c57009f7e0b43"
- },
- {
   "file": "redesign/17e-integrations-neon.html",
   "page": "Integrations connections (Neon)",
   "route": "/integrations",
   "bytes": 41584,
   "sha256": "f582759b5740d6bb"
+ },
+ {
+  "file": "redesign/21-fixes.html",
+  "page": "Prompt 9 fixes: links, email folders, space panel, documents size, vault lock and reader, dials, calendar, pulse",
+  "route": "/design/21-fixes.html (nine tabs)",
+  "bytes": 71682,
+  "sha256": "bd35e3310cb93828"
  }
 ]

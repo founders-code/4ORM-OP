@@ -1,0 +1,430 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fixes to look at</title><style>
+*{box-sizing:border-box}html,body{margin:0}
+html{background:#0d1838}
+body{font-family:Inter,-apple-system,"SF Pro Display","Segoe UI",system-ui,sans-serif;
+ background:linear-gradient(165deg,#0b1430,#13224a) fixed;color:#e9eefa;min-height:100vh}
+button{font:inherit;cursor:pointer}
+.top{height:56px;background:#fff;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid #e8ecf3;color:#101a33}
+.top b{font-size:15px;font-weight:850}
+.top .sub{font-size:12.5px;color:#7a86a0;font-weight:650}
+.tabs{display:flex;gap:4px;padding:14px 20px 0;flex-wrap:wrap}
+.tabs button{border:0;background:rgba(255,255,255,.08);color:#cfd8ee;font-size:12.5px;font-weight:750;padding:8px 13px;border-radius:9px}
+.tabs button.on{background:#ff4d8d;color:#fff;box-shadow:0 0 14px rgba(255,77,141,.45)}
+.wrap{padding:16px 20px 60px}
+.pan{display:none}.pan.on{display:block}
+h2{margin:0 0 4px;font-size:19px;font-weight:850;letter-spacing:-.01em}
+.lede{margin:0 0 16px;font-size:13px;color:#aebbe0;font-weight:650;max-width:860px;line-height:1.5}
+.card{background:#080c1f;border:1px solid rgba(120,150,255,.14);border-radius:16px;box-shadow:0 14px 40px rgba(0,0,0,.45)}
+.ch{display:flex;align-items:center;gap:10px;padding:13px 16px 2px;flex-wrap:wrap}
+.ch h3{margin:0;font-size:11px;font-weight:850;letter-spacing:.1em;text-transform:uppercase;color:#8fa0c8}
+.ch .st{font-size:12px;color:#6f7fa6;font-weight:650}
+.ch .r{margin-left:auto;display:flex;gap:7px}
+.b{height:29px;border-radius:8px;border:1px solid #243266;background:#0e1430;color:#cfd8ee;padding:0 11px;font-size:12px;font-weight:750}
+.b.pri{background:#13204a;border-color:#3b82ff;color:#cfe0ff}
+.b.pink{background:#ff4d8d;border-color:#ff4d8d;color:#fff}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:1100px){.grid2{grid-template-columns:1fr}}
+.now,.was{position:relative}
+.tag{position:absolute;top:-9px;left:14px;font-size:9.5px;font-weight:850;letter-spacing:.1em;padding:2px 8px;border-radius:999px;z-index:2}
+.was .tag{background:#2a1424;color:#ff6b7d}
+.now .tag{background:#0f2e24;color:#2ee59d}
+.note{font-size:12px;color:#7f8db5;font-weight:650;padding:10px 16px 14px;line-height:1.55}
+.note b{color:#cfe0ff}
+
+/* ---- LINKS ---- */
+.lk{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:12px 16px 16px}
+.lkc{background:#0b1026;border:1px solid #1a2450;border-radius:12px;overflow:hidden}
+.shot{height:108px;background:#1a2345 center/cover no-repeat;position:relative}
+.ph{position:absolute;inset:0;display:grid;place-items:center;font-size:11px;font-weight:800;color:#59688f;letter-spacing:.08em}
+/* A: overlay (current, broken) */
+.lkc.o-a .shot .ovl{position:absolute;left:10px;bottom:8px;right:10px;font-size:13.5px;font-weight:850;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.lkc.o-a .meta{padding:8px 11px 11px}
+/* B: caption under */
+.lkc.o-b .meta{padding:10px 11px 12px}
+.lkc.o-b .meta b{display:block;font-size:13.5px;font-weight:800;color:#e9eefa;line-height:1.3}
+.lkc.o-b .meta span{display:block;font-size:11.5px;color:#6f7fa6;font-weight:650;margin-top:3px}
+.lkc.o-b .meta .add{display:block;font-size:11.5px;color:#7fb0ff;font-weight:750;margin-top:7px}
+/* C: row, thumbnail left */
+.lkc.o-c{display:grid;grid-template-columns:76px minmax(0,1fr);align-items:stretch}
+.lkc.o-c .shot{height:100%;min-height:72px}
+.lkc.o-c .meta{padding:10px 11px}
+.lkc.o-c .meta b{display:block;font-size:13px;font-weight:800;line-height:1.25}
+.lkc.o-c .meta span{display:block;font-size:11px;color:#6f7fa6;font-weight:650;margin-top:2px}
+.lkc.o-c .meta .add{font-size:11px;color:#7fb0ff;font-weight:750;margin-top:6px;display:block}
+.lkone{display:grid;grid-template-columns:1fr;gap:9px;padding:12px 16px 16px}
+
+/* ---- EMAIL: more menu ---- */
+.boxes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:12px 16px 16px}
+.box{background:#0b1026;border:1px solid #1a2450;border-radius:12px;padding:12px;position:relative}
+.box .bh{display:flex;align-items:flex-start;gap:9px}
+.av{width:34px;height:34px;border-radius:9px;background:#243266;display:grid;place-items:center;font-size:12px;font-weight:850;color:#cfe0ff;flex:0 0 auto}
+.box b{display:block;font-size:13.5px;font-weight:800}
+.box small{display:block;font-size:11.5px;color:#7f8db5;font-weight:650;margin-top:2px}
+.box .more{margin-left:auto;font-size:11.5px;font-weight:750;color:#7fb0ff;background:none;border:0;padding:2px 4px}
+.box .thr{margin-top:9px;font-size:11.5px;color:#8fa0c8;font-weight:650;border-top:1px solid #141c3d;padding-top:8px}
+.bmenu{position:absolute;right:10px;top:38px;width:224px;background:#fff;border:1px solid #e3e8f1;border-radius:12px;box-shadow:0 18px 50px rgba(3,10,30,.45);padding:6px;z-index:5;color:#101a33}
+.bmenu .it{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:650;cursor:pointer}
+.bmenu .it:hover{background:#f3f6fb}
+.bmenu .lb{font-size:11.5px;color:#7a86a0;font-weight:800;padding:6px 10px 2px}
+.bmenu .folders{display:flex;flex-wrap:wrap;gap:5px;padding:2px 10px 6px}
+.bmenu .folders span{font-size:12px;font-weight:700;border:1px solid #e3e8f1;border-radius:999px;padding:3px 9px;cursor:pointer;color:#33405a}
+.bmenu .folders span.cur{background:#eaf1fe;border-color:#c9d8ff;color:#2e6bf2}
+.bmenu hr{border:0;border-top:1px solid #eef1f6;margin:5px 4px}
+.bmenu .it.red{color:#d6334e}
+.strip{display:flex;gap:7px;padding:0 16px 10px;flex-wrap:wrap}
+.strip span{font-size:12px;font-weight:750;border:1px solid #243266;border-radius:999px;padding:5px 11px;color:#aebbe0;background:#0e1430}
+.strip span.on{background:#13204a;border-color:#3b82ff;color:#cfe0ff}
+
+/* ---- SPACE FULL SCREEN ---- */
+.sfull{position:relative;background:#0b1026;border:1px solid #1a2450;border-radius:14px;overflow:hidden;margin:12px 16px 16px}
+.sfh{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #141c3d;flex-wrap:wrap}
+.sfh .bc{font-size:12px;color:#7f8db5;font-weight:700}
+.sfh .bc b{color:#e9eefa}
+.sfh .r{margin-left:auto;display:flex;gap:7px;align-items:center}
+.sfb{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:14px;padding:14px 16px 16px}
+.sec2{background:#070b1c;border:1px solid #141c3d;border-radius:12px;padding:12px;margin-bottom:12px}
+.sec2 h4{margin:0 0 8px;font-size:10.5px;font-weight:850;letter-spacing:.1em;text-transform:uppercase;color:#8fa0c8;display:flex;gap:8px;align-items:center}
+.sec2 h4 .r{margin-left:auto;font-size:11px;color:#7fb0ff;font-weight:750}
+.fld{font-size:12.5px;color:#dfe7fb;line-height:1.6}
+.fld .k{color:#6f7fa6;font-weight:750;display:inline-block;min-width:62px}
+.body2{background:#0b1026;border:1px solid #1a2450;border-radius:9px;padding:10px;font-size:12.5px;line-height:1.65;color:#cfd8ee;margin-top:8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chips span{font-size:11px;font-weight:750;border:1px solid #243266;border-radius:999px;padding:3px 9px;color:#aebbe0}
+.steps{display:grid;gap:7px}
+.steps label{display:flex;gap:9px;align-items:center;font-size:12.5px;font-weight:700;color:#dfe7fb}
+.steps input{accent-color:#19d38a}
+.ylw{background:#2a2a12;border:1px solid #3a3a1e;border-radius:9px;padding:10px;font-size:12.5px;color:#f0eccf;min-height:60px}
+.sff{display:flex;gap:8px;align-items:center;padding:12px 16px;border-top:1px solid #141c3d;flex-wrap:wrap}
+.sff .r{margin-left:auto;display:flex;gap:8px}
+.ready{display:flex;align-items:center;gap:9px;font-size:11px;font-weight:850;letter-spacing:.07em;color:#8fa0c8}
+.ready i{width:8px;height:8px;border-radius:50%;background:#2a3a72;display:block}
+.ready i.on{background:#19d38a;box-shadow:0 0 8px rgba(25,211,138,.8)}
+
+/* ---- DOCUMENTS size ---- */
+.sizer{display:flex;align-items:center;gap:9px;font-size:11px;font-weight:800;letter-spacing:.08em;color:#8fa0c8}
+.sizer input[type=range]{width:120px;accent-color:#ff4d8d}
+.dgrid{display:grid;gap:11px;padding:12px 16px 16px;grid-template-columns:repeat(auto-fill,minmax(var(--dw,168px),1fr))}
+.dcard{background:#0b1026;border:1px solid #1a2450;border-radius:11px;overflow:hidden}
+.dprev{height:calc(var(--dw,168px)*.72);background:#141c3d;display:grid;place-items:center;color:#59688f;font-size:10.5px;font-weight:800;letter-spacing:.08em}
+.dmeta{padding:8px 10px 10px}
+.dmeta b{display:block;font-size:12px;font-weight:800;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dmeta span{display:block;font-size:10.5px;color:#6f7fa6;font-weight:650;margin-top:2px}
+
+/* ---- VAULT ---- */
+.gate{display:grid;place-items:center;padding:52px 16px}
+.gatebox{width:320px;text-align:center;background:#0b1026;border:1px solid #1a2450;border-radius:14px;padding:24px}
+.gatebox b{display:block;font-size:15px;font-weight:850;margin-bottom:5px}
+.gatebox small{display:block;font-size:12px;color:#7f8db5;font-weight:650;line-height:1.5;margin-bottom:14px}
+.pin{display:flex;gap:7px;justify-content:center;margin-bottom:13px}
+.pin i{width:42px;height:50px;border-radius:9px;background:#070b1c;border:1px solid #243266;display:grid;place-items:center;font-size:20px;font-weight:850;color:#e9eefa}
+.pin i.f{border-color:#ff4d8d;box-shadow:0 0 12px rgba(255,77,141,.35)}
+.vrow{display:grid;grid-template-columns:86px minmax(0,1fr) 70px 90px 86px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #141c3d;font-size:12.5px;cursor:pointer}
+.vrow:hover{background:rgba(59,130,255,.06)}
+.vrow .id{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:#7fb0ff}
+.vrow b{font-weight:800}
+.vrow small{display:block;font-size:11px;color:#6f7fa6;font-weight:650;margin-top:1px}
+.pill2{font-size:10px;font-weight:850;letter-spacing:.06em;padding:3px 8px;border-radius:999px;text-align:center}
+.p-cur{background:#0f2e24;color:#2ee59d}.p-dr{background:#2a2112;color:#ffb547}
+.vdoc{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;padding:12px 16px 16px}
+.paper{background:#f7f8fb;color:#1b2440;border-radius:11px;padding:26px 30px;min-height:380px;font-size:12.5px;line-height:1.7}
+.paper h5{margin:0 0 3px;font-size:17px;font-weight:850;color:#101a33}
+.paper .meta{font-size:11px;color:#6b7390}
+.paper .m2{font-size:11px;color:#6b7390;font-weight:700;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #e3e8f1}
+.paper p{margin:0 0 11px}
+.paper h6{margin:16px 0 6px;font-size:12.5px;font-weight:850;color:#101a33}
+
+/* ---- CONTROL ROOM dials ---- */
+.dials{display:grid;gap:9px;padding:12px 16px 16px}
+.dials.big{grid-template-columns:repeat(4,1fr)}
+.dials.small{grid-template-columns:repeat(6,1fr)}
+.dial{background:#0b1026;border:1px solid #1a2450;border-radius:11px;padding:10px 7px 11px;text-align:center}
+.dial svg{display:block;width:100%;height:auto}
+.dial .val{font-size:21px;font-weight:850;line-height:1;margin-top:3px;color:#7fb0ff;text-shadow:0 0 12px rgba(127,176,255,.5)}
+.dials.small .dial .val{font-size:17px}
+.dial .val span{display:block;font-size:8.5px;font-weight:800;letter-spacing:.1em;color:#6f7fa6;margin-top:4px}
+.dial .lab{font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#8fa0c8;margin-top:6px}
+.dials.small .dial .lab{font-size:9px}
+.dial .dlt{font-size:10px;font-weight:700;color:#6f7fa6;margin-top:2px}
+.dials.small .dial .dlt{display:none}
+
+/* ---- CALENDAR ---- */
+.cal{display:grid;grid-template-columns:52px repeat(5,1fr);gap:0;padding:12px 16px 16px}
+.cal .hd{font-size:10.5px;font-weight:800;letter-spacing:.07em;color:#8fa0c8;text-align:center;padding:6px 0 8px;text-transform:uppercase}
+.cal .hd.t{color:#ff4d8d}
+.cal .tm{font-size:10px;color:#50607f;font-weight:700;text-align:right;padding-right:7px;height:46px}
+.col{border-left:1px solid rgba(255,255,255,.05);position:relative;height:276px}
+.col.today.loud{background:rgba(255,77,141,.18);border-left:2px solid #ff4d8d;border-right:2px solid #ff4d8d}
+.col.today.soft{background:rgba(255,77,141,.055);border-left:1px solid rgba(255,77,141,.45)}
+.ev{position:absolute;left:4px;right:4px;border-radius:7px;padding:5px 7px;font-size:10.5px;font-weight:750;line-height:1.3;overflow:hidden}
+.ev b{display:block;font-size:11px;font-weight:850}
+.ev.blk{color:#101a33}
+.ev.wht{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.ev .t2{font-size:9.5px;font-weight:700;opacity:.85}
+.swatch{display:flex;gap:8px;padding:0 16px 12px;flex-wrap:wrap;font-size:11.5px;font-weight:700;color:#8fa0c8}
+.swatch span{display:inline-flex;align-items:center;gap:6px}
+.swatch i{width:11px;height:11px;border-radius:3px;display:block}
+
+/* ---- NEWS gauges ---- */
+.gg{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;padding:12px 16px 16px}
+.gc{background:#16214a;border-radius:12px;padding:12px;border-left:3px solid #3b82ff}
+.gc.r{border-left-color:#ff4d6d}.gc.p{border-left-color:#a173ff}.gc.g{border-left-color:#19d38a}
+.gc .gt{font-size:12.5px;font-weight:800;color:#e9eefa}
+.gc .gv{font-size:30px;font-weight:850;letter-spacing:-.02em;margin-top:5px;line-height:1}
+.gc .gv em{font-style:normal;font-size:11px;font-weight:850;letter-spacing:.08em;margin-left:6px}
+.gc .gd{font-size:11.5px;font-weight:700;margin-top:3px}
+.gc .gw{display:flex;gap:3px;align-items:flex-end;height:26px;margin-top:9px}
+.gc .gw i{flex:1;border-radius:2px;background:#24304f;display:block}
+.gc .gy{font-size:11px;color:#9fb0d6;font-weight:650;margin-top:9px;line-height:1.45}
+.bb{font-size:11px;font-weight:850;letter-spacing:.07em;color:#ffb547}
+</style></head><body>
+<div class="top"><b>4orm Ops</b><span class="sub">ten fixes, drawn out before anything is written</span></div>
+<div class="tabs" id="tabs">
+ <button class="on" data-p="0">1 Links</button>
+ <button data-p="1">2 Email folders</button>
+ <button data-p="2">3 Space full screen</button>
+ <button data-p="3">4 Documents size</button>
+ <button data-p="4">5 Vault lock</button>
+ <button data-p="5">6 Vault documents</button>
+ <button data-p="6">7 Control room dials</button>
+ <button data-p="7">8 Calendar</button>
+ <button data-p="8">9 News pulse</button>
+</div>
+<div class="wrap">
+
+<div class="pan on" data-p="0">
+<h2>Links: the name is sitting on the photo</h2>
+<p class="lede">On your Links board the title is printed over the picture, so "BCF Ventures", "Filogix" and "The Mortgage Group" land on top of faces and are hard to read. Three ways out. Pick one and it becomes the Links card everywhere.</p>
+<div class="grid2">
+ <div class="card was"><span class="tag">NOW</span><div class="ch"><h3>A &middot; name over the picture</h3><span class="st">what is live</span></div>
+  <div class="lk"><div class="lkc o-a"><div class="shot"><div class="ph">PHOTO</div><div class="ovl">BCF Ventures</div></div><div class="meta"><span style="font-size:11.5px;color:#6f7fa6;font-weight:650">bcfventures.vc</span></div></div><div class="lkc o-a"><div class="shot"><div class="ph">PHOTO</div><div class="ovl">Weekend Fund</div></div><div class="meta"><span style="font-size:11.5px;color:#6f7fa6;font-weight:650">weekend.fund</span></div></div><div class="lkc o-a"><div class="shot"><div class="ph">PHOTO</div><div class="ovl">CVCA</div></div><div class="meta"><span style="font-size:11.5px;color:#6f7fa6;font-weight:650">cvca.ca</span></div></div><div class="lkc o-a"><div class="shot"><div class="ph">PHOTO</div><div class="ovl">DocSend</div></div><div class="meta"><span style="font-size:11.5px;color:#6f7fa6;font-weight:650">docsend.com</span></div></div><div class="lkc o-a"><div class="shot"><div class="ph">PHOTO</div><div class="ovl">Foundersuite</div></div><div class="meta"><span style="font-size:11.5px;color:#6f7fa6;font-weight:650">foundersuite.com</span></div></div><div class="lkc o-a"><div class="shot"><div class="ph">PHOTO</div><div class="ovl">Visible</div></div><div class="meta"><span style="font-size:11.5px;color:#6f7fa6;font-weight:650">visible.vc</span></div></div></div><div class="note">Unreadable the moment a photo is busy or light. No fix beyond a darker scrim, which makes every card murky.</div></div>
+ <div class="card now"><span class="tag">OPTION B</span><div class="ch"><h3>B &middot; picture, then the name under it</h3><span class="st">recommended</span></div>
+  <div class="lk"><div class="lkc o-b"><div class="shot"><div class="ph">PHOTO</div></div><div class="meta"><b>BCF Ventures</b><span>bcfventures.vc</span><span class="add">Add a note</span></div></div><div class="lkc o-b"><div class="shot"><div class="ph">PHOTO</div></div><div class="meta"><b>Weekend Fund</b><span>weekend.fund</span><span class="add">Add a note</span></div></div><div class="lkc o-b"><div class="shot"><div class="ph">PHOTO</div></div><div class="meta"><b>CVCA</b><span>cvca.ca</span><span class="add">Add a note</span></div></div><div class="lkc o-b"><div class="shot"><div class="ph">PHOTO</div></div><div class="meta"><b>DocSend</b><span>docsend.com</span><span class="add">Add a note</span></div></div><div class="lkc o-b"><div class="shot"><div class="ph">PHOTO</div></div><div class="meta"><b>Foundersuite</b><span>foundersuite.com</span><span class="add">Add a note</span></div></div><div class="lkc o-b"><div class="shot"><div class="ph">PHOTO</div></div><div class="meta"><b>Visible</b><span>visible.vc</span><span class="add">Add a note</span></div></div></div><div class="note"><b>The picture stays a picture.</b> Name, domain and "Add a note" sit on the card below it, always legible. Same grid, same card size.</div></div>
+</div>
+<div class="card now" style="margin-top:14px"><span class="tag">OPTION C</span><div class="ch"><h3>C &middot; a row, thumbnail on the left</h3><span class="st">for when you have a lot of links</span></div>
+ <div class="lkone"><div class="lkc o-c"><div class="shot"><div class="ph">IMG</div></div><div class="meta"><b>BCF Ventures</b><span>bcfventures.vc</span><span class="add">Add a note</span></div></div><div class="lkc o-c"><div class="shot"><div class="ph">IMG</div></div><div class="meta"><b>Weekend Fund</b><span>weekend.fund</span><span class="add">Add a note</span></div></div><div class="lkc o-c"><div class="shot"><div class="ph">IMG</div></div><div class="meta"><b>CVCA</b><span>cvca.ca</span><span class="add">Add a note</span></div></div><div class="lkc o-c"><div class="shot"><div class="ph">IMG</div></div><div class="meta"><b>DocSend</b><span>docsend.com</span><span class="add">Add a note</span></div></div></div>
+ <div class="note">Four times as many links per screen, and the note sits beside the name. Good if the board is a list you scan rather than a wall you look at. Both B and C can be the two views of the same board, switched from the header.</div></div>
+</div>
+
+<div class="pan" data-p="1">
+<h2>Email: More does nothing, and boxes will not go into folders</h2>
+<p class="lede">Clicking More on a person's box does nothing today. Here it opens a menu with the folder list in it, so you file a box without dragging, and you can see which folder it is in now.</p>
+<div class="card"><div class="ch"><h3>People</h3><span class="st">the folder strip stays at the top &middot; Main is everything unfiled</span><div class="r"><button class="b">+ Folder</button></div></div>
+ <div class="strip"><span class="on">Main 12</span><span>Team 4</span><span>Legal 2</span><span>Investors 7</span><span>Partners 3</span><span>+ Folder</span></div>
+ <div class="boxes">
+  <div class="box"><div class="bh"><div class="av">BF</div><div><b>Bruce Fair</b><small>bruce@4ormfinance.com</small></div><button class="more">More</button></div><div class="thr">6 threads &middot; last reply 2 days ago</div>
+   <div class="bmenu">
+    <div class="it">Open<small style="color:#7a86a0;font-size:11.5px">6 threads</small></div>
+    <div class="it">Rename</div>
+    <div class="lb">MOVE TO A FOLDER</div>
+    <div class="folders"><span class="cur">Main</span><span>Team</span><span>Legal</span><span>Investors</span><span>Partners</span><span>+ New</span></div>
+    <hr>
+    <div class="it">Pin to top</div>
+    <div class="it">Mark all read</div>
+    <div class="it red">Remove from the board</div>
+   </div></div>
+  <div class="box"><div class="bh"><div class="av">JA</div><div><b>James Atherton</b><small>james@capiche.law</small></div><button class="more">More</button></div><div class="thr">11 threads &middot; in Legal</div></div>
+  <div class="box"><div class="bh"><div class="av">KW</div><div><b>Kevin Wong</b><small>kevin@4ormfinance.com</small></div><button class="more">More</button></div><div class="thr">3 threads &middot; last reply today</div></div>
+ </div>
+ <div class="note"><b>What changes.</b> More opens this menu under the button, inside the shadow root, with a white card behind it. The folder chips show every folder with the current one marked. Picking one files the box and toasts with Undo. Dragging a box onto a folder still works. Clicking the card body still opens the box; only the grab area drags.</div>
+</div>
+</div>
+
+<div class="pan" data-p="2">
+<h2>Spaces from Email: the wide panel, and Close puts you back</h2>
+<p class="lede">Opening a space from Email still throws you at the old full page with the list down the left. This is the panel you approved, opened over whatever you were on, with no list. Close returns you to the exact row you came from.</p>
+<div class="card">
+ <div class="sfull">
+  <div class="sfh"><span class="bc">Email / Bruce Fair / <b>Pre-seed: Weekend Fund</b></span>
+   <div class="r"><span class="ready"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i> 3 OF 6 READY</span>
+   <button class="b">&lsaquo; Prev</button><button class="b">Next &rsaquo;</button><button class="b">&middot;&middot;&middot;</button><button class="b pri">Close</button></div></div>
+  <div class="sfb">
+   <div>
+    <div class="sec2"><h4>The email<span class="r">Rewrite</span></h4>
+     <div class="fld"><span class="k">Route</span>Through GoHighLevel, from chad@4ormfinance.com</div>
+     <div class="fld"><span class="k">To</span>ryan@weekend.fund</div>
+     <div class="fld"><span class="k">Subject</span>4orm Finance &middot; suitability as a shared record</div>
+     <div class="body2">Ryan,<br><br>You backed Pipe and Mercury early, both infrastructure plays that sat under the thing everyone else was building on top of. 4orm is the same shape for suitability.<br><br>Every regulated financial decision in Canada produces a suitability judgement, and today it lives in a PDF nobody reads twice. We turn it into a record both sides sign and both sides can audit.<br><br>Worth twenty minutes?<br><br>Chad Johnston<br>Founder and CEO, 4orm Finance</div>
+     <div class="chips"><span>Intro deck</span><span>One-pager</span><span>+ Add from Documents</span></div></div>
+    <div class="sec2"><h4>The angle</h4>
+     <div class="fld">Backed Pipe and Mercury. Writes $250K-$1M. Moves fast on infrastructure, slow on consumer.</div>
+     <div class="body2" style="border-color:#3a2a12;background:#2a2112;color:#f0d9a8">Watch out: do not call 4orm a platform that is built. 4ormIQ is built; the 4orm platform is not.</div></div>
+   </div>
+   <div>
+    <div class="sec2"><h4>What goes out</h4><div class="steps">
+     <label><input type="checkbox" checked>Intro deck (12 pages)</label>
+     <label><input type="checkbox" checked>One-pager</label>
+     <label><input type="checkbox">Data room link</label>
+     <label><input type="checkbox">Pro forma summary</label></div>
+     <div class="chips"><span>+ Add from Documents</span><span>+ Add a link</span></div></div>
+    <div class="sec2"><h4>Notes<span class="r">saves as you type</span></h4><div class="ylw">Met at the YC meetup. Said to come back once we had a design partner signed.</div></div>
+    <div class="sec2"><h4>Tasks<span class="r">these land on the Planner</span></h4><div class="steps">
+     <label><input type="checkbox">Send the intro &middot; due today</label>
+     <label><input type="checkbox">Follow up if no reply &middot; due Fri 30 Oct</label></div>
+     <div class="chips"><span>+ Add a task</span></div></div>
+   </div>
+  </div>
+  <div class="sff"><span class="st" style="font-size:12px;color:#7f8db5;font-weight:650">3 of 6 ready &middot; attach the deck and approve the intro</span>
+   <div class="r"><button class="b">Send me a test</button><button class="b">Copy the email</button><button class="b pink">Send through GoHighLevel</button></div></div>
+ </div>
+ <div class="note"><b>What changes.</b> The panel opens over the page at min(1180px, 100vw - 224px - 96px). No list on the left, the breadcrumb tells you where you came from. Close and Esc return you to that row, scrolled to it and highlighted for a second, instead of dumping you at the top of Spaces. Prev and Next walk the list you opened from, whether that was Email, a Contacts list or the Pipeline.</div>
+</div>
+</div>
+
+<div class="pan" data-p="3">
+<h2>Documents: let me make the tiles smaller or bigger</h2>
+<p class="lede">You like the mixed sizes. This adds a size control to the header so the whole grid scales, and remembers where you left it.</p>
+<div class="card"><div class="ch"><h3>Documents</h3><span class="st">42 files</span>
+ <div class="r"><span class="sizer">SIZE <input type="range" min="120" max="280" value="168" id="rng"> <b id="rngv" style="color:#ff4d8d">168</b></span></div></div>
+ <div class="dgrid" id="dg" style="--dw:168px">
+  <div class="dcard"><div class="dprev">XLSX</div><div class="dmeta"><b>First 25 Pre-Seed Investor List</b><span>2.1 MB · 27 Oct</span></div></div><div class="dcard"><div class="dprev">PDF</div><div class="dmeta"><b>Intro to 4orm deck</b><span>4.8 MB · 21 Oct</span></div></div><div class="dcard"><div class="dprev">XLSX</div><div class="dmeta"><b>Top 50 Enterprise Playbook</b><span>1.4 MB · 19 Oct</span></div></div><div class="dcard"><div class="dprev">PDF</div><div class="dmeta"><b>Pre-seed financial summary</b><span>880 KB · 19 Sep</span></div></div><div class="dcard"><div class="dprev">DOCX</div><div class="dmeta"><b>Investor FAQ</b><span>310 KB · 19 Sep</span></div></div><div class="dcard"><div class="dprev">PDF</div><div class="dmeta"><b>Research paper</b><span>6.2 MB · 12 Oct</span></div></div><div class="dcard"><div class="dprev">PDF</div><div class="dmeta"><b>Articles of incorporation</b><span>1.1 MB · 25 Jul</span></div></div><div class="dcard"><div class="dprev">XLSX</div><div class="dmeta"><b>Master pro forma</b><span>3.3 MB · 16 Aug</span></div></div>
+ </div>
+ <div class="note"><b>What changes.</b> A size slider in the Documents header from small to large. The grid is <span class="mono">repeat(auto-fill, minmax(var(--dw), 1fr))</span> so the tiles reflow at any width, and the preview keeps its ratio. Saved per user, so it is the size you left it at. Drag it above to try it.</div>
+</div>
+</div>
+
+<div class="pan" data-p="4">
+<h2>Vault: locked, same as Financials</h2>
+<p class="lede">Same gate and the same code, 1313. It asks once per session and stays open until you sign out or close the tab.</p>
+<div class="card"><div class="gate"><div class="gatebox">
+ <b>The Vault is locked</b><small>Audits, registers and important documents. Enter the code to open it.</small>
+ <div class="pin"><i>1</i><i>3</i><i>1</i><i class="f">&middot;</i></div>
+ <button class="b pink" style="width:100%;height:36px">Open the Vault</button>
+ <small style="margin:12px 0 0">Wrong code shakes the box and clears it. Three wrong tries waits thirty seconds.</small>
+</div></div>
+<div class="note"><b>What changes.</b> Exactly the Financials gate, pointed at the Vault: same markup, same four-box entry, same session key so unlocking one does not unlock the other. The Vault row in the menu shows a small "locked" word until it is open.</div>
+</div>
+</div>
+
+<div class="pan" data-p="5">
+<h2>Vault: every document in it, and clicking one opens it</h2>
+<p class="lede">Right now the Vault is empty and a row opens an empty drawer. Every audit and register gets a real entry, and clicking it shows the document itself, not a summary of it.</p>
+<div class="card"><div class="ch"><h3>4ormIQ &middot; Audits</h3><span class="st">7 documents</span><div class="r"><button class="b">Export register</button><button class="b pri">Run an audit</button></div></div>
+ <div style="padding:4px 16px 8px">
+  <div class="vrow"><span class="id">HRA-001</span><div><b>Human rights assessment</b><small>4ormIQ &middot; Audits</small></div><span>v1.0</span><span class="pill2 p-cur">CURRENT</span><span style="font-size:11.5px;color:#6f7fa6">12 Oct 2026</span></div>
+  <div class="vrow"><span class="id">PIA-001</span><div><b>Privacy impact assessment</b><small>4ormIQ &middot; Audits</small></div><span>v2.0</span><span class="pill2 p-cur">CURRENT</span><span style="font-size:11.5px;color:#6f7fa6">9 Oct 2026</span></div>
+  <div class="vrow"><span class="id">CS-001</span><div><b>Code sweep</b><small>4ormIQ &middot; Audits</small></div><span>v1.0</span><span class="pill2 p-dr">DRAFT</span><span style="font-size:11.5px;color:#6f7fa6">4 Sep 2026</span></div>
+ </div>
+ <div class="vdoc">
+  <div class="paper">
+   <h5>Human rights assessment</h5>
+   <div class="m2">HRA-001 &middot; version 1.0 &middot; current &middot; verified 12 October 2026 &middot; owner: Chad Johnston</div>
+   <p>This assessment covers the 4ormIQ consumer trust layer and the evidence store behind it, against the Canadian Human Rights Act and the Alberta and British Columbia human rights codes.</p>
+   <h6>1. Scope</h6>
+   <p>The assessment covers automated retrieval, the ranking of favourable and unfavourable evidence, and the consumer-facing result page. It does not cover the firm-side surface, which is assessed separately under SEC-001.</p>
+   <h6>2. Protected grounds</h6>
+   <p>No protected ground is collected, inferred or used as an input to any ranking. Where a record names one, it is sealed until selected and never carried into a comparison.</p>
+   <h6>3. Findings</h6>
+   <p>Two findings, both closed. The retrieval window favoured recency in a way that advantaged larger firms with more coverage; corrected in the time-window rule. The second concerned language in the result page, corrected in the conversation standard.</p>
+  </div>
+  <div>
+   <div class="sec2"><h4>This document</h4>
+    <div class="fld"><span class="k">ID</span>HRA-001</div>
+    <div class="fld"><span class="k">Version</span>1.0 &middot; current</div>
+    <div class="fld"><span class="k">Verified</span>12 October 2026</div>
+    <div class="fld"><span class="k">Owner</span>Chad Johnston</div>
+    <div class="fld"><span class="k">Source</span>4ormIQ repo &middot; DR-001</div>
+    <div class="chips"><span>Download PDF</span><span>Open the source</span></div></div>
+   <div class="sec2"><h4>Versions</h4>
+    <div class="fld" style="font-size:12px">v1.0 &middot; 12 Oct 2026 &middot; current<br><span style="color:#6f7fa6">v0.3 &middot; 28 Sep 2026 &middot; superseded</span></div>
+    <div class="chips"><span>+ Upload a new version</span></div></div>
+   <div class="sec2"><h4>Depends on</h4><div class="chips"><span>SEC-001</span><span>CR-001</span><span>DR-001</span></div>
+    <div class="note" style="padding:8px 0 0">A change to any of these re-flags this document for review.</div></div>
+  </div>
+ </div>
+ <div class="note"><b>What changes.</b> The Vault is seeded from the 4ormIQ DR-001 register plus your own audits, registers and important documents, so every row is a real file. Clicking a row opens the document itself in the right-hand reader, with the facts, every version kept, and what it depends on beside it. PDFs render in the reader, Drive files open in the in-app viewer, JSON renders as a table. Nothing is ever deleted, only superseded.</div>
+</div>
+</div>
+
+<div class="pan" data-p="6">
+<h2>Control room: the dials, a size down</h2>
+<p class="lede">Same dials, same readings, same colours. Six across instead of four, so the lamp rail, the dials and the engages all land on one screen.</p>
+<div class="card was"><span class="tag">NOW</span><div class="ch"><h3>Four across</h3><span class="st">two rows, 1 052px tall</span></div><div class="dials big"><div class="dial"><svg viewBox="0 0 160 93"><path d="M22.0 84.0 A58 58 0 0 1 138.0 84.0" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M114.1 37.1 A58 58 0 0 1 131.7 57.7" stroke="#3a2a12" stroke-width="9" fill="none"/><path d="M131.7 57.7 A58 58 0 0 1 138.0 84.0" stroke="#3a1420" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M22.0 84.0 A58 58 0 0 1 34.2 48.5" stroke="#3b82ff" stroke-width="9" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 8px #3b82ffaa)"/><line x1="22.0" y1="84.0" x2="32.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="24.8" y1="66.1" x2="29.6" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="33.1" y1="49.9" x2="37.1" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="45.9" y1="37.1" x2="48.8" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="62.1" y1="28.8" x2="63.6" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="80.0" y1="26.0" x2="80.0" y2="36.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="97.9" y1="28.8" x2="96.4" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="114.1" y1="37.1" x2="111.2" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="126.9" y1="49.9" x2="122.9" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="135.2" y1="66.1" x2="130.4" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="138.0" y1="84.0" x2="128.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="80" y1="84" x2="48.4" y2="59.5" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/><circle cx="80" cy="84" r="4" fill="#0b1026" stroke="#3b82ff" stroke-width="2"/></svg><div class="val">128<span>MS</span></div><div class="lab">API latency</div><div class="dlt">-14 ms on the hour</div></div><div class="dial"><svg viewBox="0 0 160 93"><path d="M22.0 84.0 A58 58 0 0 1 138.0 84.0" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M114.1 37.1 A58 58 0 0 1 131.7 57.7" stroke="#3a2a12" stroke-width="9" fill="none"/><path d="M131.7 57.7 A58 58 0 0 1 138.0 84.0" stroke="#3a1420" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M22.0 84.0 A58 58 0 0 1 23.8 69.6" stroke="#19d38a" stroke-width="9" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 8px #19d38aaa)"/><line x1="22.0" y1="84.0" x2="32.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="24.8" y1="66.1" x2="29.6" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="33.1" y1="49.9" x2="37.1" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="45.9" y1="37.1" x2="48.8" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="62.1" y1="28.8" x2="63.6" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="80.0" y1="26.0" x2="80.0" y2="36.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="97.9" y1="28.8" x2="96.4" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="114.1" y1="37.1" x2="111.2" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="126.9" y1="49.9" x2="122.9" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="135.2" y1="66.1" x2="130.4" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="138.0" y1="84.0" x2="128.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="80" y1="84" x2="41.3" y2="74.1" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/><circle cx="80" cy="84" r="4" fill="#0b1026" stroke="#19d38a" stroke-width="2"/></svg><div class="val">0.40<span>%</span></div><div class="lab">Error rate</div><div class="dlt">4 errors in 1 020 calls</div></div><div class="dial"><svg viewBox="0 0 160 93"><path d="M22.0 84.0 A58 58 0 0 1 138.0 84.0" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M114.1 37.1 A58 58 0 0 1 131.7 57.7" stroke="#3a2a12" stroke-width="9" fill="none"/><path d="M131.7 57.7 A58 58 0 0 1 138.0 84.0" stroke="#3a1420" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M22.0 84.0 A58 58 0 0 1 41.6 40.5" stroke="#19d38a" stroke-width="9" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 8px #19d38aaa)"/><line x1="22.0" y1="84.0" x2="32.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="24.8" y1="66.1" x2="29.6" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="33.1" y1="49.9" x2="37.1" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="45.9" y1="37.1" x2="48.8" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="62.1" y1="28.8" x2="63.6" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="80.0" y1="26.0" x2="80.0" y2="36.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="97.9" y1="28.8" x2="96.4" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="114.1" y1="37.1" x2="111.2" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="126.9" y1="49.9" x2="122.9" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="135.2" y1="66.1" x2="130.4" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="138.0" y1="84.0" x2="128.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="80" y1="84" x2="53.5" y2="54.0" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/><circle cx="80" cy="84" r="4" fill="#0b1026" stroke="#19d38a" stroke-width="2"/></svg><div class="val">11<span>OF 40</span></div><div class="lab">Database pool</div><div class="dlt">no waiting queries</div></div><div class="dial"><svg viewBox="0 0 160 93"><path d="M22.0 84.0 A58 58 0 0 1 138.0 84.0" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M114.1 37.1 A58 58 0 0 1 131.7 57.7" stroke="#3a2a12" stroke-width="9" fill="none"/><path d="M131.7 57.7 A58 58 0 0 1 138.0 84.0" stroke="#3a1420" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M22.0 84.0 A58 58 0 0 1 23.4 71.3" stroke="#3b82ff" stroke-width="9" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 8px #3b82ffaa)"/><line x1="22.0" y1="84.0" x2="32.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="24.8" y1="66.1" x2="29.6" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="33.1" y1="49.9" x2="37.1" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="45.9" y1="37.1" x2="48.8" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="62.1" y1="28.8" x2="63.6" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="80.0" y1="26.0" x2="80.0" y2="36.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="97.9" y1="28.8" x2="96.4" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="114.1" y1="37.1" x2="111.2" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="126.9" y1="49.9" x2="122.9" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="135.2" y1="66.1" x2="130.4" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="138.0" y1="84.0" x2="128.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="80" y1="84" x2="41.0" y2="75.3" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/><circle cx="80" cy="84" r="4" fill="#0b1026" stroke="#3b82ff" stroke-width="2"/></svg><div class="val">3<span>JOBS</span></div><div class="lab">Jobs waiting</div><div class="dlt">oldest 11 s</div></div><div class="dial"><svg viewBox="0 0 160 93"><path d="M22.0 84.0 A58 58 0 0 1 138.0 84.0" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M114.1 37.1 A58 58 0 0 1 131.7 57.7" stroke="#3a2a12" stroke-width="9" fill="none"/><path d="M131.7 57.7 A58 58 0 0 1 138.0 84.0" stroke="#3a1420" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M22.0 84.0 A58 58 0 0 1 33.1 49.9" stroke="#a173ff" stroke-width="9" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 8px #a173ffaa)"/><line x1="22.0" y1="84.0" x2="32.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="24.8" y1="66.1" x2="29.6" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="33.1" y1="49.9" x2="37.1" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="45.9" y1="37.1" x2="48.8" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="62.1" y1="28.8" x2="63.6" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="80.0" y1="26.0" x2="80.0" y2="36.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="97.9" y1="28.8" x2="96.4" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="114.1" y1="37.1" x2="111.2" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="126.9" y1="49.9" x2="122.9" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="135.2" y1="66.1" x2="130.4" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="138.0" y1="84.0" x2="128.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="80" y1="84" x2="47.6" y2="60.5" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/><circle cx="80" cy="84" r="4" fill="#0b1026" stroke="#a173ff" stroke-width="2"/></svg><div class="val">5<span>OF 25</span></div><div class="lab">Sends today</div><div class="dlt">20 left this week</div></div><div class="dial"><svg viewBox="0 0 160 93"><path d="M22.0 84.0 A58 58 0 0 1 138.0 84.0" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M114.1 37.1 A58 58 0 0 1 131.7 57.7" stroke="#3a2a12" stroke-width="9" fill="none"/><path d="M131.7 57.7 A58 58 0 0 1 138.0 84.0" stroke="#3a1420" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M22.0 84.0 A58 58 0 0 1 40.3 41.7" stroke="#ffb547" stroke-width="9" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 8px #ffb547aa)"/><line x1="22.0" y1="84.0" x2="32.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="24.8" y1="66.1" x2="29.6" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="33.1" y1="49.9" x2="37.1" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="45.9" y1="37.1" x2="48.8" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="62.1" y1="28.8" x2="63.6" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="80.0" y1="26.0" x2="80.0" y2="36.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="97.9" y1="28.8" x2="96.4" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="114.1" y1="37.1" x2="111.2" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="126.9" y1="49.9" x2="122.9" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="135.2" y1="66.1" x2="130.4" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="138.0" y1="84.0" x2="128.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="80" y1="84" x2="52.6" y2="54.8" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/><circle cx="80" cy="84" r="4" fill="#0b1026" stroke="#ffb547" stroke-width="2"/></svg><div class="val">6.41<span>OF $25</span></div><div class="lab">AI spend</div><div class="dlt">Anthropic $6.41</div></div><div class="dial"><svg viewBox="0 0 160 93"><path d="M22.0 84.0 A58 58 0 0 1 138.0 84.0" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M114.1 37.1 A58 58 0 0 1 131.7 57.7" stroke="#3a2a12" stroke-width="9" fill="none"/><path d="M131.7 57.7 A58 58 0 0 1 138.0 84.0" stroke="#3a1420" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M22.0 84.0 A58 58 0 0 1 52.1 33.2" stroke="#19d38a" stroke-width="9" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 8px #19d38aaa)"/><line x1="22.0" y1="84.0" x2="32.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="24.8" y1="66.1" x2="29.6" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="33.1" y1="49.9" x2="37.1" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="45.9" y1="37.1" x2="48.8" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="62.1" y1="28.8" x2="63.6" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="80.0" y1="26.0" x2="80.0" y2="36.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="97.9" y1="28.8" x2="96.4" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="114.1" y1="37.1" x2="111.2" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="126.9" y1="49.9" x2="122.9" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="135.2" y1="66.1" x2="130.4" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="138.0" y1="84.0" x2="128.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="80" y1="84" x2="60.7" y2="48.9" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/><circle cx="80" cy="84" r="4" fill="#0b1026" stroke="#19d38a" stroke-width="2"/></svg><div class="val">34<span>%</span></div><div class="lab">Function load</div><div class="dlt">p95 0.9 s</div></div><div class="dial"><svg viewBox="0 0 160 93"><path d="M22.0 84.0 A58 58 0 0 1 138.0 84.0" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M114.1 37.1 A58 58 0 0 1 131.7 57.7" stroke="#3a2a12" stroke-width="9" fill="none"/><path d="M131.7 57.7 A58 58 0 0 1 138.0 84.0" stroke="#3a1420" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M22.0 84.0 A58 58 0 0 1 23.4 71.3" stroke="#ffb547" stroke-width="9" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 8px #ffb547aa)"/><line x1="22.0" y1="84.0" x2="32.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="24.8" y1="66.1" x2="29.6" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="33.1" y1="49.9" x2="37.1" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="45.9" y1="37.1" x2="48.8" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="62.1" y1="28.8" x2="63.6" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="80.0" y1="26.0" x2="80.0" y2="36.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="97.9" y1="28.8" x2="96.4" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="114.1" y1="37.1" x2="111.2" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="126.9" y1="49.9" x2="122.9" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="135.2" y1="66.1" x2="130.4" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="138.0" y1="84.0" x2="128.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="80" y1="84" x2="41.0" y2="75.3" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/><circle cx="80" cy="84" r="4" fill="#0b1026" stroke="#ffb547" stroke-width="2"/></svg><div class="val">2<span>PLACES</span></div><div class="lab">Fact drift</div><div class="dlt">2 of 86 copies</div></div></div></div>
+<div class="card now" style="margin-top:14px"><span class="tag">SMALLER</span><div class="ch"><h3>Six across</h3><span class="st">two rows, 612px tall &middot; the note line drops, it is in the click-through</span></div><div class="dials small"><div class="dial"><svg viewBox="0 0 160 93"><path d="M22.0 84.0 A58 58 0 0 1 138.0 84.0" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M114.1 37.1 A58 58 0 0 1 131.7 57.7" stroke="#3a2a12" stroke-width="9" fill="none"/><path d="M131.7 57.7 A58 58 0 0 1 138.0 84.0" stroke="#3a1420" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M22.0 84.0 A58 58 0 0 1 34.2 48.5" stroke="#3b82ff" stroke-width="9" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 8px #3b82ffaa)"/><line x1="22.0" y1="84.0" x2="32.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="24.8" y1="66.1" x2="29.6" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="33.1" y1="49.9" x2="37.1" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="45.9" y1="37.1" x2="48.8" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="62.1" y1="28.8" x2="63.6" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="80.0" y1="26.0" x2="80.0" y2="36.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="97.9" y1="28.8" x2="96.4" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="114.1" y1="37.1" x2="111.2" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="126.9" y1="49.9" x2="122.9" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="135.2" y1="66.1" x2="130.4" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="138.0" y1="84.0" x2="128.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="80" y1="84" x2="48.4" y2="59.5" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/><circle cx="80" cy="84" r="4" fill="#0b1026" stroke="#3b82ff" stroke-width="2"/></svg><div class="val">128<span>MS</span></div><div class="lab">API latency</div><div class="dlt">-14 ms on the hour</div></div><div class="dial"><svg viewBox="0 0 160 93"><path d="M22.0 84.0 A58 58 0 0 1 138.0 84.0" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M114.1 37.1 A58 58 0 0 1 131.7 57.7" stroke="#3a2a12" stroke-width="9" fill="none"/><path d="M131.7 57.7 A58 58 0 0 1 138.0 84.0" stroke="#3a1420" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M22.0 84.0 A58 58 0 0 1 23.8 69.6" stroke="#19d38a" stroke-width="9" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 8px #19d38aaa)"/><line x1="22.0" y1="84.0" x2="32.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="24.8" y1="66.1" x2="29.6" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="33.1" y1="49.9" x2="37.1" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="45.9" y1="37.1" x2="48.8" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="62.1" y1="28.8" x2="63.6" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="80.0" y1="26.0" x2="80.0" y2="36.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="97.9" y1="28.8" x2="96.4" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="114.1" y1="37.1" x2="111.2" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="126.9" y1="49.9" x2="122.9" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="135.2" y1="66.1" x2="130.4" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="138.0" y1="84.0" x2="128.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="80" y1="84" x2="41.3" y2="74.1" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/><circle cx="80" cy="84" r="4" fill="#0b1026" stroke="#19d38a" stroke-width="2"/></svg><div class="val">0.40<span>%</span></div><div class="lab">Error rate</div><div class="dlt">4 errors in 1 020 calls</div></div><div class="dial"><svg viewBox="0 0 160 93"><path d="M22.0 84.0 A58 58 0 0 1 138.0 84.0" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M114.1 37.1 A58 58 0 0 1 131.7 57.7" stroke="#3a2a12" stroke-width="9" fill="none"/><path d="M131.7 57.7 A58 58 0 0 1 138.0 84.0" stroke="#3a1420" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M22.0 84.0 A58 58 0 0 1 41.6 40.5" stroke="#19d38a" stroke-width="9" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 8px #19d38aaa)"/><line x1="22.0" y1="84.0" x2="32.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="24.8" y1="66.1" x2="29.6" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="33.1" y1="49.9" x2="37.1" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="45.9" y1="37.1" x2="48.8" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="62.1" y1="28.8" x2="63.6" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="80.0" y1="26.0" x2="80.0" y2="36.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="97.9" y1="28.8" x2="96.4" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="114.1" y1="37.1" x2="111.2" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="126.9" y1="49.9" x2="122.9" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="135.2" y1="66.1" x2="130.4" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="138.0" y1="84.0" x2="128.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="80" y1="84" x2="53.5" y2="54.0" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/><circle cx="80" cy="84" r="4" fill="#0b1026" stroke="#19d38a" stroke-width="2"/></svg><div class="val">11<span>OF 40</span></div><div class="lab">Database pool</div><div class="dlt">no waiting queries</div></div><div class="dial"><svg viewBox="0 0 160 93"><path d="M22.0 84.0 A58 58 0 0 1 138.0 84.0" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M114.1 37.1 A58 58 0 0 1 131.7 57.7" stroke="#3a2a12" stroke-width="9" fill="none"/><path d="M131.7 57.7 A58 58 0 0 1 138.0 84.0" stroke="#3a1420" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M22.0 84.0 A58 58 0 0 1 23.4 71.3" stroke="#3b82ff" stroke-width="9" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 8px #3b82ffaa)"/><line x1="22.0" y1="84.0" x2="32.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="24.8" y1="66.1" x2="29.6" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="33.1" y1="49.9" x2="37.1" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="45.9" y1="37.1" x2="48.8" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="62.1" y1="28.8" x2="63.6" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="80.0" y1="26.0" x2="80.0" y2="36.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="97.9" y1="28.8" x2="96.4" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="114.1" y1="37.1" x2="111.2" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="126.9" y1="49.9" x2="122.9" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="135.2" y1="66.1" x2="130.4" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="138.0" y1="84.0" x2="128.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="80" y1="84" x2="41.0" y2="75.3" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/><circle cx="80" cy="84" r="4" fill="#0b1026" stroke="#3b82ff" stroke-width="2"/></svg><div class="val">3<span>JOBS</span></div><div class="lab">Jobs waiting</div><div class="dlt">oldest 11 s</div></div><div class="dial"><svg viewBox="0 0 160 93"><path d="M22.0 84.0 A58 58 0 0 1 138.0 84.0" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M114.1 37.1 A58 58 0 0 1 131.7 57.7" stroke="#3a2a12" stroke-width="9" fill="none"/><path d="M131.7 57.7 A58 58 0 0 1 138.0 84.0" stroke="#3a1420" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M22.0 84.0 A58 58 0 0 1 33.1 49.9" stroke="#a173ff" stroke-width="9" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 8px #a173ffaa)"/><line x1="22.0" y1="84.0" x2="32.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="24.8" y1="66.1" x2="29.6" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="33.1" y1="49.9" x2="37.1" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="45.9" y1="37.1" x2="48.8" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="62.1" y1="28.8" x2="63.6" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="80.0" y1="26.0" x2="80.0" y2="36.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="97.9" y1="28.8" x2="96.4" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="114.1" y1="37.1" x2="111.2" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="126.9" y1="49.9" x2="122.9" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="135.2" y1="66.1" x2="130.4" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="138.0" y1="84.0" x2="128.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="80" y1="84" x2="47.6" y2="60.5" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/><circle cx="80" cy="84" r="4" fill="#0b1026" stroke="#a173ff" stroke-width="2"/></svg><div class="val">5<span>OF 25</span></div><div class="lab">Sends today</div><div class="dlt">20 left this week</div></div><div class="dial"><svg viewBox="0 0 160 93"><path d="M22.0 84.0 A58 58 0 0 1 138.0 84.0" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M114.1 37.1 A58 58 0 0 1 131.7 57.7" stroke="#3a2a12" stroke-width="9" fill="none"/><path d="M131.7 57.7 A58 58 0 0 1 138.0 84.0" stroke="#3a1420" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M22.0 84.0 A58 58 0 0 1 40.3 41.7" stroke="#ffb547" stroke-width="9" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 8px #ffb547aa)"/><line x1="22.0" y1="84.0" x2="32.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="24.8" y1="66.1" x2="29.6" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="33.1" y1="49.9" x2="37.1" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="45.9" y1="37.1" x2="48.8" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="62.1" y1="28.8" x2="63.6" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="80.0" y1="26.0" x2="80.0" y2="36.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="97.9" y1="28.8" x2="96.4" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="114.1" y1="37.1" x2="111.2" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="126.9" y1="49.9" x2="122.9" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="135.2" y1="66.1" x2="130.4" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="138.0" y1="84.0" x2="128.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="80" y1="84" x2="52.6" y2="54.8" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/><circle cx="80" cy="84" r="4" fill="#0b1026" stroke="#ffb547" stroke-width="2"/></svg><div class="val">6.41<span>OF $25</span></div><div class="lab">AI spend</div><div class="dlt">Anthropic $6.41</div></div><div class="dial"><svg viewBox="0 0 160 93"><path d="M22.0 84.0 A58 58 0 0 1 138.0 84.0" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M114.1 37.1 A58 58 0 0 1 131.7 57.7" stroke="#3a2a12" stroke-width="9" fill="none"/><path d="M131.7 57.7 A58 58 0 0 1 138.0 84.0" stroke="#3a1420" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M22.0 84.0 A58 58 0 0 1 52.1 33.2" stroke="#19d38a" stroke-width="9" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 8px #19d38aaa)"/><line x1="22.0" y1="84.0" x2="32.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="24.8" y1="66.1" x2="29.6" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="33.1" y1="49.9" x2="37.1" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="45.9" y1="37.1" x2="48.8" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="62.1" y1="28.8" x2="63.6" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="80.0" y1="26.0" x2="80.0" y2="36.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="97.9" y1="28.8" x2="96.4" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="114.1" y1="37.1" x2="111.2" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="126.9" y1="49.9" x2="122.9" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="135.2" y1="66.1" x2="130.4" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="138.0" y1="84.0" x2="128.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="80" y1="84" x2="60.7" y2="48.9" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/><circle cx="80" cy="84" r="4" fill="#0b1026" stroke="#19d38a" stroke-width="2"/></svg><div class="val">34<span>%</span></div><div class="lab">Function load</div><div class="dlt">p95 0.9 s</div></div><div class="dial"><svg viewBox="0 0 160 93"><path d="M22.0 84.0 A58 58 0 0 1 138.0 84.0" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M114.1 37.1 A58 58 0 0 1 131.7 57.7" stroke="#3a2a12" stroke-width="9" fill="none"/><path d="M131.7 57.7 A58 58 0 0 1 138.0 84.0" stroke="#3a1420" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M22.0 84.0 A58 58 0 0 1 23.4 71.3" stroke="#ffb547" stroke-width="9" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 8px #ffb547aa)"/><line x1="22.0" y1="84.0" x2="32.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="24.8" y1="66.1" x2="29.6" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="33.1" y1="49.9" x2="37.1" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="45.9" y1="37.1" x2="48.8" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="62.1" y1="28.8" x2="63.6" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="80.0" y1="26.0" x2="80.0" y2="36.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="97.9" y1="28.8" x2="96.4" y2="33.6" stroke="#2a3a72" stroke-width="1"/><line x1="114.1" y1="37.1" x2="111.2" y2="41.1" stroke="#2a3a72" stroke-width="1"/><line x1="126.9" y1="49.9" x2="122.9" y2="52.8" stroke="#2a3a72" stroke-width="1"/><line x1="135.2" y1="66.1" x2="130.4" y2="67.6" stroke="#2a3a72" stroke-width="1"/><line x1="138.0" y1="84.0" x2="128.0" y2="84.0" stroke="#2a3a72" stroke-width="1.6"/><line x1="80" y1="84" x2="41.0" y2="75.3" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/><circle cx="80" cy="84" r="4" fill="#0b1026" stroke="#ffb547" stroke-width="2"/></svg><div class="val">2<span>PLACES</span></div><div class="lab">Fact drift</div><div class="dlt">2 of 86 copies</div></div></div></div>
+<div class="note" style="padding:12px 2px 0"><b>What changes.</b> Only the dial tile: the gauge keeps its needle, bands and ticks, the number drops from 24px to 17px, the one-line note moves into the dial's own popup. Everything else on the board is preserved exactly as it is.</div>
+</div>
+
+<div class="pan" data-p="7">
+<h2>Calendar: the week highlight, and black text on dark</h2>
+<p class="lede">The today column is shouting. And several events still carry their light-mode text colour, so you get near-black words on a dark block.</p>
+<div class="grid2">
+ <div class="card was"><span class="tag">NOW</span><div class="ch"><h3>Today at full strength</h3></div>
+  <div class="cal"><div class="hd"></div><div class="hd">MON 26</div><div class="hd t">TUE 27</div><div class="hd">WED 28</div><div class="hd">THU 29</div><div class="hd">FRI 30</div>
+   <div><div class="tm">08:00</div><div class="tm">10:00</div><div class="tm">12:00</div><div class="tm">14:00</div><div class="tm">16:00</div><div class="tm">18:00</div></div>
+   <div class="col"><div class="ev blk" style="top:18px;height:40px;background:#a7d8f0"><b>Weekly kick-off</b><span class="t2">09:00 - 10:00</span></div></div>
+   <div class="col today loud"><div class="ev blk" style="top:6px;height:30px;background:#c43d52"><b>Door knock</b><span class="t2">08:00 - 08:30</span></div><div class="ev blk" style="top:92px;height:46px;background:#f0b429"><b>Investor place card</b><span class="t2">13:00 - 14:00</span></div></div>
+   <div class="col"><div class="ev blk" style="top:6px;height:30px;background:#b6e34a"><b>Play - video</b><span class="t2">08:00 - 08:30</span></div><div class="ev blk" style="top:92px;height:60px;background:#5bb8f0"><b>Placard</b><span class="t2">13:00 - 15:00</span></div></div>
+   <div class="col"><div class="ev blk" style="top:150px;height:40px;background:#1f9d6b"><b>Research</b><span class="t2">15:00 - 16:00</span></div></div>
+   <div class="col"></div></div>
+  <div class="note">The pink wash plus two pink edges pulls your eye off the events. The event words are the light-mode ink, so they read near-black on these blocks.</div></div>
+ <div class="card now"><span class="tag">SOFTER</span><div class="ch"><h3>Today, quieter &middot; words in white</h3></div>
+  <div class="cal"><div class="hd"></div><div class="hd">MON 26</div><div class="hd t">TUE 27</div><div class="hd">WED 28</div><div class="hd">THU 29</div><div class="hd">FRI 30</div>
+   <div><div class="tm">08:00</div><div class="tm">10:00</div><div class="tm">12:00</div><div class="tm">14:00</div><div class="tm">16:00</div><div class="tm">18:00</div></div>
+   <div class="col"><div class="ev wht" style="top:18px;height:40px;background:#2a6f9e"><b>Weekly kick-off</b><span class="t2">09:00 - 10:00</span></div></div>
+   <div class="col today soft"><div class="ev wht" style="top:6px;height:30px;background:#8e2a3a"><b>Door knock</b><span class="t2">08:00 - 08:30</span></div><div class="ev wht" style="top:92px;height:46px;background:#9a6f14"><b>Investor place card</b><span class="t2">13:00 - 14:00</span></div></div>
+   <div class="col"><div class="ev wht" style="top:6px;height:30px;background:#5e7a24"><b>Play - video</b><span class="t2">08:00 - 08:30</span></div><div class="ev wht" style="top:92px;height:60px;background:#2f6f9e"><b>Placard</b><span class="t2">13:00 - 15:00</span></div></div>
+   <div class="col"><div class="ev wht" style="top:150px;height:40px;background:#176a49"><b>Research</b><span class="t2">15:00 - 16:00</span></div></div>
+   <div class="col"></div></div>
+  <div class="note"><b>Today</b> drops to a 5.5% wash with one soft pink edge and the pink date in the header. Every event keeps its own colour, darkened enough that white words sit on it cleanly.</div></div>
+</div>
+<div class="card" style="margin-top:14px"><div class="ch"><h3>The sweep</h3><span class="st">every page, not just the calendar</span></div>
+ <div class="note" style="font-size:12.5px;line-height:1.75">Any text that still carries a light-mode colour on a dark ground gets changed. Found so far: calendar event titles and times, the Planner list rows, the Completed right column, the Documents tile captions, the Links note line, the Spaces group labels, table headers in the Vault and the Pipeline card body. The rule for the sweep: on a dark card, body text is <b>#e9eefa</b>, secondary is <b>#aebbe0</b>, quiet is <b>#7f8db5</b>; on a coloured block, white with a 1px shadow. Nothing below 4.5:1.</div></div>
+</div>
+
+<div class="pan" data-p="8">
+<h2>News: why everything reads 100</h2>
+<p class="lede">The gauges are not wrong about the news, they are wrong about the baseline. Regulation's eight weeks come back as <span class="mono" style="color:#ff8a9c">[0, 0, 0, 70, 64, 87, 100, 100]</span>. The first three weeks are zero because there was no news in the system yet, so the average it compares against is far too low and almost everything scales to the top.</p>
+<div class="card was"><span class="tag">NOW</span><div class="ch"><h3>Saturated</h3><span class="st">three of four pinned at the ceiling</span></div>
+ <div class="gg">
+  <div class="gc"><div class="gt">Regulation heat</div><div class="gv">100<em style="color:#ff6b7d">HOT</em></div><div class="gd" style="color:#8fa0c8">+0 vs last week</div>
+   <div class="gw"><i style="height:2px"></i><i style="height:2px"></i><i style="height:2px"></i><i style="height:18px"></i><i style="height:16px"></i><i style="height:22px"></i><i style="height:26px;background:#3b82ff"></i><i style="height:26px;background:#3b82ff"></i></div>
+   <div class="gy">Alberta regulator approves power plant project for data centre near Edmonton</div></div>
+  <div class="gc r"><div class="gt">Fraud heat</div><div class="gv">93<em style="color:#ff6b7d">HOT</em></div><div class="gd" style="color:#2ee59d">-7 vs last week</div>
+   <div class="gw"><i style="height:2px"></i><i style="height:2px"></i><i style="height:4px"></i><i style="height:4px"></i><i style="height:21px"></i><i style="height:21px"></i><i style="height:26px;background:#ff4d6d"></i><i style="height:24px;background:#ff4d6d"></i></div>
+   <div class="gy">Canadian business risk is rising as tariffs, cyber fraud and benefits costs converge</div></div>
+  <div class="gc p"><div class="gt">AI and governance</div><div class="gv">100<em style="color:#ff6b7d">HOT</em></div><div class="gd bb">building a baseline</div>
+   <div class="gw"><i style="height:2px"></i><i style="height:2px"></i><i style="height:2px"></i><i style="height:2px"></i><i style="height:12px"></i><i style="height:16px"></i><i style="height:20px"></i><i style="height:26px;background:#a173ff"></i></div>
+   <div class="gy">Zafin to buy Naehas to expand AI-powered banking and compliance platform</div></div>
+  <div class="gc g"><div class="gt">Mortgage market</div><div class="gv">100<em style="color:#ff6b7d">HOT</em></div><div class="gd" style="color:#8fa0c8">+0 vs last week</div>
+   <div class="gw"><i style="height:2px"></i><i style="height:2px"></i><i style="height:2px"></i><i style="height:3px"></i><i style="height:9px"></i><i style="height:14px"></i><i style="height:21px"></i><i style="height:26px;background:#19d38a"></i></div>
+   <div class="gy">Rahul Rohilla - BCFSA</div></div>
+ </div>
+ <div class="note">A gauge that says HOT for everything, every week, tells you nothing. Note the tell: "+0 vs last week" next to 100 means it was already pinned last week too.</div></div>
+
+<div class="card now" style="margin-top:14px"><span class="tag">FIXED</span><div class="ch"><h3>Honest while the history fills in</h3><span class="st">same news, correct maths</span></div>
+ <div class="gg">
+  <div class="gc"><div class="gt">Regulation heat</div><div class="gv" style="color:#7fb0ff">68<em style="color:#ffb547">WARM</em></div><div class="gd" style="color:#ff8a9c">+11 vs last week</div>
+   <div class="gw"><i style="height:0"></i><i style="height:0"></i><i style="height:0"></i><i style="height:16px"></i><i style="height:14px"></i><i style="height:19px"></i><i style="height:15px"></i><i style="height:18px;background:#3b82ff"></i></div>
+   <div class="gy">Alberta regulator approves power plant project for data centre near Edmonton</div></div>
+  <div class="gc r"><div class="gt">Fraud heat</div><div class="gv" style="color:#ff6b7d">81<em style="color:#ff6b7d">HOT</em></div><div class="gd" style="color:#2ee59d">-6 vs last week</div>
+   <div class="gw"><i style="height:0"></i><i style="height:0"></i><i style="height:5px"></i><i style="height:5px"></i><i style="height:20px"></i><i style="height:20px"></i><i style="height:24px"></i><i style="height:22px;background:#ff4d6d"></i></div>
+   <div class="gy">Canadian business risk is rising as tariffs, cyber fraud and benefits costs converge</div></div>
+  <div class="gc p"><div class="gt">AI and governance</div><div class="gv" style="color:#8fa0c8">&ndash;</div><div class="gd bb">BUILDING A BASELINE &middot; 3 OF 4 WEEKS</div>
+   <div class="gw"><i style="height:0"></i><i style="height:0"></i><i style="height:0"></i><i style="height:0"></i><i style="height:10px"></i><i style="height:13px"></i><i style="height:16px"></i><i style="height:20px;background:#a173ff"></i></div>
+   <div class="gy">Zafin to buy Naehas to expand AI-powered banking and compliance platform</div></div>
+  <div class="gc g"><div class="gt">Mortgage market</div><div class="gv" style="color:#8fa0c8">&ndash;</div><div class="gd bb">BUILDING A BASELINE &middot; 3 OF 4 WEEKS</div>
+   <div class="gw"><i style="height:0"></i><i style="height:0"></i><i style="height:0"></i><i style="height:3px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:17px"></i><i style="height:21px;background:#19d38a"></i></div>
+   <div class="gy">Rahul Rohilla - BCFSA</div></div>
+ </div>
+ <div class="note" style="font-size:12.5px;line-height:1.8">
+ <b>The three changes.</b><br>
+ 1. A week with no items in it is <b>not</b> a quiet week, it is a week with no data. Leading empty weeks come out of the baseline entirely instead of counting as zero.<br>
+ 2. The baseline is the <b>median</b> of the real weeks, not the mean, so one quiet week cannot drag the whole scale.<br>
+ 3. Under four real weeks, the gauge shows <b>&ndash;</b> and "building a baseline, 3 of 4 weeks" instead of a number. It already has that state in the design, it is just never switched on.<br><br>
+ After that, 50 stays a normal week, the arc only reaches 100 when a topic genuinely runs at double its own median, and the delta is in points against the same week last week. Right now, honestly, two of the four do not have enough history to score and should say so.</div></div>
+</div>
+
+</div>
+<script>
+const tabs=document.getElementById('tabs');
+tabs.onclick=e=>{const b=e.target.closest('button');if(!b)return;
+ document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
+ document.querySelectorAll('.pan').forEach(p=>p.classList.toggle('on',p.dataset.p===b.dataset.p));
+ window.scrollTo(0,0);};
+const rng=document.getElementById('rng');
+if(rng)rng.oninput=()=>{document.getElementById('dg').style.setProperty('--dw',rng.value+'px');document.getElementById('rngv').textContent=rng.value;};
+document.querySelectorAll('.box .more').forEach(b=>b.onclick=()=>{
+ const m=b.closest('.box').querySelector('.bmenu');
+ if(m){m.style.display=m.style.display==='none'?'block':'none';return}
+ alert('');});
+</script></body></html>
