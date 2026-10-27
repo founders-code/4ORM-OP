@@ -599,6 +599,7 @@
   function paintPlaybookLive() {
     var wrap = wrapOf('playDesk');
     if (!wrap) { markReady('playDesk'); return; }
+    if (P().applyPageCss) P().applyPageCss(wrap, 'playbook');
     var ST = window.STATE || {};
     var stale = !!(ST.playbook && ST.playbook.today && ST.playbook.today !== vancouverTodayIso());
     if (!fixtureOn() && (!ST.playbook || stale) && !ST.playbookError) {
@@ -616,7 +617,7 @@
       markReady('playDesk');
       return;
     }
-    loadSnip('/pbwrap-snippet.html?v=3', function (html) {
+    loadSnip('/pbwrap-snippet.html?v=4', function (html) {
       try {
         wrap.innerHTML = html || '<div class="pbwrap"></div>';
         if (!fixtureOn()) {
@@ -625,6 +626,7 @@
         }
         var root = wrap.getRootNode();
         mountPlaybook(root, wrap, data);
+        if (typeof window.bindPlaybookP8 === 'function') window.bindPlaybookP8(root);
         liveLog('playbook', { rows: (data.rows || []).length, todayIdx: data.todayIdx });
         if (P().finishPaint) P().finishPaint(wrap);
       } catch (err) {
@@ -847,6 +849,7 @@
   function paintCalendarLive(focusDate) {
     var wrap = wrapOf('calDesk');
     if (!wrap) { markReady('calDesk'); return; }
+    if (P().applyPageCss) P().applyPageCss(wrap, 'calendar');
     var keepView = window.__redesignCal && window.__redesignCal.root === wrap.getRootNode() && window.__redesignCal.view ? window.__redesignCal.view() : '';
     var keepFocus = focusDate || (window.__redesignCal && window.__redesignCal.root === wrap.getRootNode() && window.__redesignCal.focusYmd ? new Date(window.__redesignCal.focusYmd() + 'T12:00') : null);
     if (!wrap.querySelector('.calwrap')) wrap.innerHTML = '<div class="card" style="padding:28px 24px">Loading&hellip;</div>';
@@ -1137,6 +1140,7 @@
   function paintCompletedLive() {
     var wrap = wrapOf('doneDesk');
     if (!wrap) { markReady('doneDesk'); return; }
+    if (P().applyPageCss) P().applyPageCss(wrap, 'completed');
     if (fixtureOn()) {
       loadSnip('/done-snippet.html?v=2', function (html) {
         wrap.innerHTML = html;

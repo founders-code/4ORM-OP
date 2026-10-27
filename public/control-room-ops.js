@@ -1228,7 +1228,8 @@
     renderNews._on = true;
     try {
     var loading = !STATE.newsLoaded && !(items && items.length);
-    var all = (items || []).filter(newsKeep).slice().sort(function (a, b) { return (b.isTop ? 1 : 0) - (a.isTop ? 1 : 0) || newsTs(b) - newsTs(a); });
+    var hidden = STATE.newsHidden || {};
+    var all = (items || []).filter(newsKeep).filter(function (item) { return !hidden[String(item.id || item.url || '')]; }).slice().sort(function (a, b) { return (b.isTop ? 1 : 0) - (a.isTop ? 1 : 0) || newsTs(b) - newsTs(a); });
     var on = STATE.newsCat && (STATE.newsCat === 'All' || NEWS_CHIPS.indexOf(STATE.newsCat) >= 0) ? STATE.newsCat : 'All';
     var q = String(STATE.newsQ || '').trim().toLowerCase();
     var span = STATE.newsSpan === 'today' ? 'today' : STATE.newsSpan === 'week' ? 'week' : 'month';
@@ -1256,7 +1257,7 @@
     function story(item) {
       var sum = newsSummary(item);
       var why = newsWhy(item);
-      return '<div class="card story" data-action="news-open" data-nw-i="' + idx(item) + '" role="button" tabindex="0">' + newsCover(item, false) + '<div class="b"><h3 class="hdline">' + esc(item.title || '') + '</h3>' + (sum ? '<div class="tk">' + esc(sum) + '</div>' : '') + (why ? '<div class="why"><b>Why it matters:</b> ' + esc(why) + '</div>' : '') + '<div class="foot"><span class="src">' + esc(newsSource(item)) + (newsWhen(item) ? ' · ' + newsWhen(item) : '') + '</span><button type="button" class="save" data-action="news-save" data-nw-save="' + idx(item) + '">Save</button></div></div></div>';
+      return '<div class="card story" data-action="news-open" data-nw-i="' + idx(item) + '" role="button" tabindex="0">' + newsCover(item, false) + '<div class="b"><h3 class="hdline">' + esc(item.title || '') + '</h3>' + (sum ? '<div class="tk">' + esc(sum) + '</div>' : '') + (why ? '<div class="why"><b>Why it matters:</b> ' + esc(why) + '</div>' : '') + '<div class="foot"><span class="src">' + esc(newsSource(item)) + (newsWhen(item) ? ' · ' + newsWhen(item) : '') + '</span><button type="button" class="save" data-action="news-save" data-nw-save="' + idx(item) + '">Save</button><button type="button" class="rmv" data-action="news-hide" data-nw-i="' + idx(item) + '">Remove</button></div></div></div>';
     }
     var hero = '';
     if (top) {
@@ -1264,7 +1265,7 @@
       var host = newsHost(top.url || '');
       var srcLine = [esc(newsSource(top)), top.publishedAt ? new Date(newsTs(top)).toLocaleDateString('en-CA') : '', NEWS_PRIMARY.test(host) ? 'credibility: primary source' : 'credibility: reported'].filter(Boolean).join(' &middot; ');
       var sum = newsSummary(top);
-      hero = '<div class="card hero"><div data-action="news-open" data-nw-i="' + i + '" class="hero-open" role="button" tabindex="0">' + newsCover(top, true) + '</div><div class="b"><div class="ntop">Top release today</div><h2>' + esc(top.title || '') + '</h2>' + (sum ? '<div class="sum">' + esc(sum) + '</div>' : '') + '<div class="take"><b>Why it matters to 4orm:</b> ' + esc(newsWhy(top)) + '</div><div class="src">' + srcLine + '</div><div class="acts"><button type="button" class="a pri" data-action="news-act" data-nw-act="post" data-nw-at="' + i + '">Draft a LinkedIn post</button><button type="button" class="a" data-action="news-act" data-nw-act="letter" data-nw-at="' + i + '">Add to investor newsletter</button><button type="button" class="a" data-action="news-act" data-nw-act="vc" data-nw-at="' + i + '">Cite to a VC</button><button type="button" class="a" data-action="news-save" data-nw-save="' + i + '">Save to&hellip;</button><button type="button" class="a" data-action="news-act" data-nw-act="open" data-nw-at="' + i + '">Open source</button></div></div></div>';
+      hero = '<div class="card hero"><button type="button" class="hrm" data-action="news-hide" data-nw-i="' + i + '">Remove</button><div data-action="news-open" data-nw-i="' + i + '" class="hero-open" role="button" tabindex="0">' + newsCover(top, true) + '</div><div class="b"><div class="ntop">Top release today</div><h2>' + esc(top.title || '') + '</h2>' + (sum ? '<div class="sum">' + esc(sum) + '</div>' : '') + '<div class="take"><b>Why it matters to 4orm:</b> ' + esc(newsWhy(top)) + '</div><div class="src">' + srcLine + '</div><div class="acts"><button type="button" class="a pri" data-action="news-act" data-nw-act="post" data-nw-at="' + i + '">Draft a LinkedIn post</button><button type="button" class="a" data-action="news-act" data-nw-act="letter" data-nw-at="' + i + '">Add to investor newsletter</button><button type="button" class="a" data-action="news-act" data-nw-act="vc" data-nw-at="' + i + '">Cite to a VC</button><button type="button" class="a" data-action="news-save" data-nw-save="' + i + '">Save to&hellip;</button><button type="button" class="a" data-action="news-act" data-nw-act="open" data-nw-at="' + i + '">Open source</button></div></div></div>';
     }
     var briefRows = (top ? [top] : []).concat(rest).slice(0, 4);
     var brief = briefRows.map(function (item, n) { return '<button type="button" class="r" data-action="news-open" data-nw-i="' + idx(item) + '"><span class="n">' + (n + 1) + '</span><span>' + esc(String(item.title || '').slice(0, 110)) + '</span></button>'; }).join('') || '<div class="r">The 8am sweep fills the briefing.</div>';
@@ -1308,7 +1309,9 @@
       var fxNews = !!(window.fixtureMockup || (typeof fixtureOn === 'function' && fixtureOn()));
       var pulseData = fxNews ? window.__NEWS_PULSE_FIXTURE : (STATE.newsPulse || window.__NEWS_PULSE_FIXTURE);
       window.bindNewsPulse(el, pulseData);
-      if (!fxNews && !STATE.newsPulseBusy) {
+      var nextAt = STATE.newsPulse && Date.parse(STATE.newsPulse.nextAt || '') || 0;
+      var due = !fxNews && !STATE.newsPulseBusy && (!STATE.newsPulse || (nextAt && Date.now() >= nextAt));
+      if (due) {
         STATE.newsPulseBusy = true;
         authFetch('/api/news/pulse?view=' + (STATE.newsPulseView || 'market')).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {
           STATE.newsPulseBusy = false;
@@ -1368,6 +1371,21 @@
     }
     if (name === 'news-open') {
       newsOpen(newsItemFromEl(el));
+      return;
+    }
+    if (name === 'news-hide') {
+      var hideItem = newsItemFromEl(el);
+      var hid = hideItem && String(hideItem.id || hideItem.url || '');
+      if (!hid) return;
+      STATE.newsHidden = STATE.newsHidden || {};
+      STATE.newsHidden[hid] = 1;
+      renderNews(STATE.news || []);
+      (window.deskToast || function () {})(document.getElementById('v-news') || document.body, 'Story removed', function () {
+        delete STATE.newsHidden[hid];
+        if (typeof authFetch === 'function') authFetch('/api/news/hidden', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: hid, undo: true }) }).catch(function () {});
+        renderNews(STATE.news || []);
+      }, 6000);
+      if (typeof authFetch === 'function') authFetch('/api/news/hidden', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: hid }) }).catch(function () {});
       return;
     }
     if (name === 'news-url') {
@@ -1468,6 +1486,10 @@
     }
     renderNews(STATE.news || []);
     bindNewsDesk();
+    authFetch('/api/news/hidden', { credentials: 'same-origin', quiet: true }).then(function (r) { return r.json(); }).then(function (data) {
+      STATE.newsHidden = {};
+      (data && data.ids || []).forEach(function (id) { STATE.newsHidden[id] = 1; });
+    }).catch(function () {}).then(function () {
     authFetch('/api/news?span=month', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
       STATE.newsLoaded = true;
       if (data && data.items && data.items.length) STATE.news = data.items;
@@ -1476,6 +1498,7 @@
       if (!(STATE.news || []).length) runNewsSweep(true);
       else if (newsNeedThumbs(STATE.news)) pollNewsThumbs();
     }).catch(function () { STATE.newsLoaded = true; renderNews(STATE.news || []); });
+    });
   }
   /* NEWS:END */
 

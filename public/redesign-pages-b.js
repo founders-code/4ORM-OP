@@ -825,33 +825,30 @@
       var filled = stages.filter(function (s) { return s.opps.length; });
       var empty = stages.filter(function (s) { return !s.opps.length; });
       var colAll = S.pipeColAll || {};
+      var colShut = S.pipeColShut || {};
       function cardHtml(o, st) {
         var age = daysAgo(o.updatedAt);
         var sub = o.sub != null ? String(o.sub) : [o.company || '', o.email || '', age < 99 ? age + 'd' : ''].filter(Boolean).join(' · ');
         var hot = o.hot != null ? !!o.hot : age <= 3;
         return '<div class="bcard' + (hot ? ' hot' : '') + '" draggable="true" data-action="contact-drag" data-kind="opp" data-id="' + esc(o.id) + '" data-opp="' + esc(o.id) + '" data-pipe="' + esc(st.pipe) + '" data-stage-id="' + esc(st.id) + '" data-stage="' + esc(st.name) + '" data-contact="' + esc(o.contactId || '') + '" data-email="' + esc(o.email || '') + '" data-name="' + esc(o.contact || o.name || '') + '"><b>' + esc(o.contact || o.name || 'Opportunity') + '</b><span>' + esc(sub || o.name || '') + '</span></div>';
       }
-      function colHtml(st, ghost) {
+      function colHtml(st) {
+        var shut = !!colShut[st.id] || (!!S.pipeCloseEmpty && !st.opps.length);
         var all = !!colAll[st.id];
-        var shown = all ? st.opps : st.opps.slice(0, 4);
-        var more = Math.max(0, st.count - shown.length);
-        return '<div class="bcol' + (ghost ? ' ghost' : '') + '" data-action="stage-drop" data-stage="' + esc(st.name) + '" data-stage-id="' + esc(st.id) + '" data-pipe="' + esc(st.pipe) + '"><div class="bch"><b>' + esc(ghost ? ('+ ' + empty.length + ' empty') : st.name) + '</b><span class="c">' + (ghost ? 0 : st.count) + '</span></div>'
-          + (ghost
-            ? '<div class="emptyb">' + empty.map(function (e) { return esc(e.name); }).join(', ') + '</div>'
-            : shown.map(function (o) { return cardHtml(o, st); }).join('')
-              + (more && st.opps.length > shown.length ? '<div class="more3" data-action="pipe-col-more" data-stage-id="' + esc(st.id) + '">+ ' + more + ' more</div>' : '')
-              + (more && st.opps.length <= shown.length ? '<div class="more3">+ ' + more + ' more</div>' : ''))
+        var shown = all ? st.opps : st.opps.slice(0, st.name === 'Storage' ? 6 : 4);
+        var more = Math.max(0, st.opps.length - shown.length);
+        return '<div class="bcol' + (shut ? ' shut' : '') + '" data-action="' + (shut ? 'pipe-col-open' : 'stage-drop') + '" data-stage="' + esc(st.name) + '" data-stage-id="' + esc(st.id) + '" data-pipe="' + esc(st.pipe) + '" style="' + (shut ? 'width:46px;flex:none;writing-mode:vertical-rl' : '') + '"><div class="bch" data-action="pipe-col-toggle" data-stage-id="' + esc(st.id) + '"><b>' + esc(st.name) + '</b><span class="c">' + st.count + '</span></div>'
+          + (shut ? '' : (shown.map(function (o) { return cardHtml(o, st); }).join('')
+              + (more ? '<div class="more3" data-action="pipe-col-more" data-stage-id="' + esc(st.id) + '">+ ' + more + ' more</div>' : '')))
           + '</div>';
       }
-      var boardCols = filled.map(function (c) { return colHtml(c, false); }).join('')
-        + (empty.length ? (S.pipeShowEmpty
-          ? empty.map(function (c) { return colHtml(c, false); }).join('')
-          : colHtml({ id: '', name: 'empty', pipe: '', count: 0, opps: [] }, true)) : '');
+      var boardCols = stages.map(function (c) { return colHtml(c); }).join('');
       if (!stages.length) boardCols = '<div class="emptyb">No GoHighLevel pipeline loaded yet.</div>';
       var pipeName = ((data.pills || []).filter(function (p) { return p.on; })[0] || { name: 'Pipeline' }).name;
         wrap.innerHTML = bar + needHtml
         + '<section class="card board pipe-board" id="boardCard"><div class="ch"><h3>' + esc(pipeName) + ' &middot; Board</h3><span class="s">drag a card to move it &middot; writes the stage to GoHighLevel</span>'
-        + (empty.length ? '<span class="lnk" style="margin-left:auto" data-action="pipe-empty">' + (S.pipeShowEmpty ? 'Hide empty stages' : '+ ' + empty.length + ' empty stages') + '</span>' : '')
+        + '<span class="lnk" style="margin-left:auto" data-action="pipe-open-all">Open all stages</span>'
+        + (empty.length ? '<span class="lnk" data-action="pipe-empty">Close empty stages</span>' : '')
         + '</div><div class="bcols" id="bcols">' + boardCols + '</div></section>';
     } else if (view === 'table') {
       wrap.innerHTML = bar + needHtml + tableCard;
@@ -1856,14 +1853,14 @@
         var latest = asList(b.m).slice(0, 3).map(function (row) {
           return '<div class="em"><b>' + esc(row[1]) + '</b><span>' + esc(row[2]) + '</span></div>';
         }).join('');
-        return '<div class="pb' + hide + '" draggable="true" data-action="mail-box-drag" data-kind="box" data-id="' + esc(b.id) + '" style="--c:' + esc(b.c || '#2e6bf2') + ';--cbg:#eaf1fe">'
-          + '<div class="h"><span class="av" style="background:' + esc(b.c) + '">' + esc(peopleIni(b.n)) + '</span><div style="min-width:0"><h4>' + esc(b.n) + '</h4><div class="org">' + esc(b.o) + '</div></div><span class="cat">' + esc(tag0) + '</span><span class="acts"><span class="m" data-action="mail-box-menu" data-id="' + esc(b.id) + '">More</span><span class="x rmv" data-action="mail-box-remove" data-id="' + esc(b.id) + '">Remove</span></span></div>'
+        return '<div class="pb' + hide + '" data-action="mail-box-open" data-kind="box" data-id="' + esc(b.id) + '" style="--c:' + esc(b.c || '#2e6bf2') + ';--cbg:#eaf1fe">'
+          + '<div class="h"><span class="grab" draggable="true" data-action="mail-box-drag" data-kind="box" data-id="' + esc(b.id) + '">Move</span><span class="av" style="background:' + esc(b.c) + '">' + esc(peopleIni(b.n)) + '</span><div style="min-width:0"><h4>' + esc(b.n) + '</h4><div class="org">' + esc(b.o) + '</div></div><span class="cat">' + esc(tag0) + '</span><span class="acts"><span class="m" data-action="mail-box-menu" data-id="' + esc(b.id) + '">More</span><span class="x rmv" data-action="mail-box-remove" data-id="' + esc(b.id) + '">Remove</span></span></div>'
           + '<div class="nums"><div><b>' + esc(b.in) + '</b><small>from them</small></div><div><b>' + esc(b.out) + '</b><small>from you</small></div><div><b>' + (fileN + linkN) + '</b><small>files, links</small></div><div class="' + ((b.st || [])[0] === 'rep' ? 'hot' : '') + '"><b>' + esc(b.last) + '</b><small>last</small></div></div>'
           + '<div class="lt">Latest</div>' + latest
-          + '<div class="ft"><span class="fl">' + fileN + ' files · ' + linkN + ' links</span>' + ((b.st || [])[0] === 'rep' ? '<span class="owe">You owe a reply</span>' : '') + '<span class="go">Open</span></div></div>';
+          + '<div class="ft"><span class="fl">' + fileN + ' files · ' + linkN + ' links</span>' + ((b.st || [])[0] === 'rep' ? '<span class="owe">You owe a reply</span>' : '') + '<span class="go" data-action="mail-box-open" data-id="' + esc(b.id) + '">Open</span></div></div>';
       }
-      return '<div class="bx' + hide + '" draggable="true" data-action="mail-box-drag" data-kind="box" data-id="' + esc(b.id) + '">'
-        + '<div class="bh"><span class="grab" title="Drag to move">Move</span><span class="av" style="background:' + esc(b.c) + '">' + esc(peopleIni(b.n)) + '</span><div style="min-width:0"><b>' + esc(b.n) + '</b><span>' + esc(b.o) + '</span></div><span class="acts"><span class="m" data-action="mail-box-menu" data-id="' + esc(b.id) + '">More</span><span class="x rmv" data-action="mail-box-remove" data-id="' + esc(b.id) + '">Remove</span></span></div>'
+      return '<div class="bx' + hide + '" data-action="mail-box-open" data-kind="box" data-id="' + esc(b.id) + '">'
+        + '<div class="bh"><span class="grab" draggable="true" data-action="mail-box-drag" data-kind="box" data-id="' + esc(b.id) + '" title="Drag to move">Move</span><span class="av" style="background:' + esc(b.c) + '">' + esc(peopleIni(b.n)) + '</span><div style="min-width:0"><b>' + esc(b.n) + '</b><span>' + esc(b.o) + '</span></div><span class="acts"><span class="m" data-action="mail-box-menu" data-id="' + esc(b.id) + '">More</span><span class="x rmv" data-action="mail-box-remove" data-id="' + esc(b.id) + '">Remove</span></span></div>'
         + '<div class="tags">' + tags + '<span class="add" data-action="mail-box-tag-add" data-id="' + esc(b.id) + '">+ tag</span></div>'
         + '<div class="kp"><div><b>' + esc(b.in) + '</b><span>from them</span></div><div><b>' + esc(b.out) + '</b><span>from you</span></div><div><b>' + esc((asList(b.files).length + (Number(b.more) || 0))) + '</b><span>files</span></div><div class="' + ((b.st || [])[0] === 'rep' ? 'warn' : '') + '"><b>' + esc(b.last) + '</b><span>last</span></div></div>'
         + '<div class="last">Latest</div>' + msgs

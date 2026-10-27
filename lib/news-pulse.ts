@@ -40,28 +40,58 @@ type Item = {
   image_url?: string;
 };
 
-function weekStart(d: Date) {
-  const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  const dow = x.getUTCDay() || 7;
-  x.setUTCDate(x.getUTCDate() - dow + 1);
-  x.setUTCHours(0, 0, 0, 0);
-  return x;
-}
+const WEEK_MS = 7 * 24 * 3600 * 1000;
+const PULSE_HOURS = [6, 10, 14, 18];
 
-function weeksBack(n: number) {
-  const now = weekStart(new Date());
-  const out: Date[] = [];
-  for (let i = n - 1; i >= 0; i -= 1) {
-    const d = new Date(now);
-    d.setUTCDate(d.getUTCDate() - i * 7);
-    out.push(d);
+function rollingWindows(count: number, endAt: number) {
+  const out: { start: number; end: number }[] = [];
+  for (let i = count - 1; i >= 0; i -= 1) {
+    out.push({ start: endAt - (i + 1) * WEEK_MS, end: endAt - i * WEEK_MS });
   }
   return out;
 }
 
-function weekLabel(d: Date) {
-  if (d.getTime() === weekStart(new Date()).getTime()) return 'Now';
-  return `${d.getUTCDate()} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()]}`;
+function vancouverParts(d: Date) {
+  const hit: Record<string, string> = {};
+  new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/Vancouver',
+    hour: '2-digit',
+    minute: '2-digit',
+    day: 'numeric',
+    month: 'short',
+    hourCycle: 'h23',
+  }).formatToParts(d).forEach((p) => { hit[p.type] = p.value; });
+  return hit;
+}
+
+export function vancouverHour(d = new Date()) {
+  return Number(vancouverParts(d).hour || '0');
+}
+
+export function isPulseHour(d = new Date()) {
+  return PULSE_HOURS.includes(vancouverHour(d));
+}
+
+export function formatPulseClock(d = new Date()) {
+  const p = vancouverParts(d);
+  return `${p.hour || '00'}:${p.minute || '00'}`;
+}
+
+export function nextPulseAt(from = new Date()) {
+  const start = from.getTime();
+  for (let h = 1; h <= 48; h += 1) {
+    const t = new Date(start + h * 3600 * 1000);
+    t.setUTCMinutes(0, 0, 0);
+    if (t.getTime() <= start) continue;
+    if (PULSE_HOURS.includes(vancouverHour(t))) return t.toISOString();
+  }
+  return new Date(start + 6 * 3600 * 1000).toISOString();
+}
+
+function weekLabel(start: number, last: boolean) {
+  if (last) return 'Now';
+  const p = vancouverParts(new Date(start));
+  return `${p.day || ''} ${p.month || ''}`.trim();
 }
 
 function weight(it: Item) {
@@ -76,29 +106,37 @@ function inCat(it: Item, cats: string[]) {
   return cats.some((x) => c.toLowerCase() === x.toLowerCase() || c.toLowerCase().includes(x.toLowerCase().split(' / ')[0]));
 }
 
-function heat(items: Item[], cats: string[], weeks: Date[]) {
-  const buckets = weeks.map((w) => {
-    const end = new Date(w);
-    end.setUTCDate(end.getUTCDate() + 7);
-    return items.filter((it) => {
-      const t = new Date(it.published_at || 0).getTime();
-      return t >= w.getTime() && t < end.getTime() && inCat(it, cats);
-    }).reduce((a, it) => a + weight(it), 0);
-  });
-  const now = buckets[buckets.length - 1] || 0;
-  const prior = buckets.slice(0, -1);
-  const mean = prior.length ? prior.reduce((a, b) => a + b, 0) / prior.length : 1;
-  const v = Math.max(0, Math.min(100, Math.round((now / (mean || 1)) * 50)));
-  const last = buckets[buckets.length - 2] || 0;
-  const lastV = Math.max(0, Math.min(100, Math.round((last / (mean || 1)) * 50)));
-  const top = items.filter((it) => inCat(it, cats)).sort((a, b) => weight(b) - weight(a) || new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime())[0];
+function windowWeight(items: Item[], cats: string[], start: number, end: number) {
+  return items.filter((it) => {
+    const t = new Date(it.published_at || 0).getTime();
+    return t >= start && t < end && inCat(it, cats);
+  }).reduce((a, it) => a + weight(it), 0);
+}
+
+function scaled(n: number, mean: number) {
+  return Math.max(0, Math.min(100, Math.round((n / (mean || 1)) * 50)));
+}
+
+function heat(items: Item[], cats: string[], hist: { start: number; end: number }[], nowMs: number) {
+  const topic = items.filter((it) => inCat(it, cats));
+  const times = topic.map((it) => new Date(it.published_at || 0).getTime()).filter((t) => t > 0);
+  const spanWeeks = times.length ? (Math.max(...times) - Math.min(...times)) / WEEK_MS : 0;
+  const building = spanWeeks < 4;
+  const mean = rollingWindows(8, nowMs - WEEK_MS).reduce((a, w) => a + windowWeight(items, cats, w.start, w.end), 0) / 8 || 1;
+  const nowCount = windowWeight(items, cats, nowMs - WEEK_MS, nowMs);
+  const v = scaled(nowCount, mean);
+  const thenCount = windowWeight(items, cats, nowMs - 2 * WEEK_MS, nowMs - WEEK_MS);
+  const meanThen = rollingWindows(8, nowMs - 2 * WEEK_MS).reduce((a, w) => a + windowWeight(items, cats, w.start, w.end), 0) / 8 || 1;
+  const lastV = scaled(thenCount, meanThen);
+  const bars = hist.map((w) => scaled(windowWeight(items, cats, w.start, w.end), mean));
+  const top = topic.slice().sort((a, b) => weight(b) - weight(a) || new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime())[0];
   const title = String(top?.title || '');
-  const first = title.split(/[:—-]/)[0].trim().slice(0, 28) || 'News';
   return {
     v,
-    d: v - lastV,
-    w: buckets.map((n) => Math.round((n / (mean || 1)) * 50)),
-    why: [first, title.slice(first.length).replace(/^[\s:—-]+/, '') || String(top?.summary || '').slice(0, 80)],
+    d: building ? 0 : v - lastV,
+    building,
+    w: bars,
+    why: title,
     story: top
       ? {
           chip: String(top.category || cats[0]),
@@ -144,9 +182,9 @@ async function valetSeries(id: string) {
 let valetCache: { at: number; mkt: { k: string; v: string; d: string; dir: string; s: number[] }[] } | null = null;
 
 export async function buildPulse(sql: Sql, ownerId: string, view: 'market' | 'consumer') {
-  const weeks = weeksBack(8);
-  const since = new Date(weeks[0]);
-  since.setUTCDate(since.getUTCDate() - 2);
+  const nowMs = Date.now();
+  const hist = rollingWindows(8, nowMs);
+  const since = new Date(nowMs - 10 * WEEK_MS);
   const rows = await sql`
     SELECT title, url, source, category, impact, published_at, is_top, why_it_matters, summary, image_url
     FROM news_items
@@ -157,10 +195,10 @@ export async function buildPulse(sql: Sql, ownerId: string, view: 'market' | 'co
   `.catch(() => []) as Item[];
   const items = rows || [];
   const specs = view === 'consumer' ? CONSUMER_GAUGES : MARKET_GAUGES;
-  const gauges = specs.map((g) => Object.assign({ k: g.k, t: g.t, chip: g.chip }, heat(items, g.cats, weeks)));
+  const gauges = specs.map((g) => Object.assign({ k: g.k, t: g.t, chip: g.chip }, heat(items, g.cats, hist, nowMs)));
   const thisWeek = items.filter((it) => {
     const t = new Date(it.published_at || 0).getTime();
-    return t >= weeks[weeks.length - 1].getTime();
+    return t >= nowMs - WEEK_MS;
   });
   const worry = thisWeek.filter((it) => FEAR_THEMES.some((th) => th.re.test(`${it.title} ${it.summary}`)));
   const fear = FEAR_THEMES.map((th) => {
@@ -169,14 +207,10 @@ export async function buildPulse(sql: Sql, ownerId: string, view: 'market' | 'co
   });
   if (fear.reduce((a, f) => a + f.p, 0) === 0) fear.forEach((f, i, arr) => { f.p = i === arr.length - 1 ? 0 : 0; });
   const regs = REGS.map((n) => {
-    const c = weeks.map((w) => {
-      const end = new Date(w);
-      end.setUTCDate(end.getUTCDate() + 7);
-      return items.filter((it) => {
-        const t = new Date(it.published_at || 0).getTime();
-        return regulatorOf(it) === n && t >= w.getTime() && t < end.getTime();
-      }).length;
-    });
+    const c = hist.map((w) => items.filter((it) => {
+      const t = new Date(it.published_at || 0).getTime();
+      return regulatorOf(it) === n && t >= w.start && t < w.end;
+    }).length);
     const lastIt = items.filter((it) => regulatorOf(it) === n)[0];
     return { n, c, last: lastIt ? String(lastIt.title || '').slice(0, 64) : 'quiet' };
   });
@@ -210,13 +244,41 @@ export async function buildPulse(sql: Sql, ownerId: string, view: 'market' | 'co
     { k: 'Fraud losses reported, YTD', key: 'cafc_ytd' },
   ].map((x) => ({ k: x.k, v: byKey[x.key] || '-', d: '-', dir: 'fl', s: [] as number[] }));
 
+  const updatedAt = new Date();
   return {
     gauges: view === 'consumer' ? [] : gauges,
     consumer: view === 'consumer' ? gauges : [],
     fear,
     cmkt,
-    weeks: weeks.map(weekLabel),
+    weeks: hist.map((w, i) => weekLabel(w.start, i === hist.length - 1)),
     regs,
     mkt,
+    updated: formatPulseClock(updatedAt),
+    updatedAt: updatedAt.toISOString(),
+    nextAt: nextPulseAt(updatedAt),
   };
+}
+
+export async function loadPulse(sql: Sql, ownerId: string, view: 'market' | 'consumer') {
+  const rows = await sql`
+    SELECT payload, updated_at FROM news_pulse_cache
+    WHERE owner_id = ${ownerId} AND view = ${view}
+    LIMIT 1
+  `.catch(() => []) as { payload?: unknown; updated_at?: string }[];
+  const row = rows[0];
+  if (!row || !row.payload || typeof row.payload !== 'object') return null;
+  const updatedAt = row.updated_at ? new Date(row.updated_at) : new Date();
+  return Object.assign({}, row.payload as Record<string, unknown>, {
+    updated: formatPulseClock(updatedAt),
+    updatedAt: updatedAt.toISOString(),
+    nextAt: nextPulseAt(updatedAt),
+  });
+}
+
+export async function savePulse(sql: Sql, ownerId: string, view: 'market' | 'consumer', payload: unknown) {
+  await sql`
+    INSERT INTO news_pulse_cache (owner_id, view, payload, updated_at)
+    VALUES (${ownerId}, ${view}, ${payload as never}, now())
+    ON CONFLICT (owner_id, view) DO UPDATE SET payload = EXCLUDED.payload, updated_at = now()
+  `.catch(() => {});
 }

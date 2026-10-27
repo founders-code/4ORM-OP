@@ -8,7 +8,7 @@ export type Sql = NeonQueryFunction<false, false>;
 let ready: Promise<Sql> | null = null;
 
 /** Bump when migrate() gains a new step so cold starts skip the full IF NOT EXISTS pass. */
-const SCHEMA_VERSION = '2026-10-26-prompt7-pulse-folders';
+const SCHEMA_VERSION = '2026-10-27-prompt8';
 
 export async function databaseUrl() {
   const envUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
@@ -974,6 +974,175 @@ async function migrateWar(sql: Sql) {
       updated_at timestamptz NOT NULL DEFAULT now(),
       PRIMARY KEY (owner_id, key)
     )`],
+    ['db_news_pulse_cache', () => sql`CREATE TABLE IF NOT EXISTS news_pulse_cache (
+      owner_id text NOT NULL,
+      view text NOT NULL,
+      payload jsonb NOT NULL,
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (owner_id, view)
+    )`],
+    ['db_nav_prefs_hidden', () => sql`ALTER TABLE nav_prefs ADD COLUMN IF NOT EXISTS hidden boolean NOT NULL DEFAULT false`],
+    ['db_news_hidden_table', () => sql`CREATE TABLE IF NOT EXISTS news_hidden (
+      owner_id text NOT NULL,
+      item_id text NOT NULL,
+      hidden_at timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (owner_id, item_id)
+    )`],
+    ['db_todos', () => sql`CREATE TABLE IF NOT EXISTS todos (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      title text NOT NULL,
+      source text NOT NULL DEFAULT 'Typed',
+      from_line text NOT NULL DEFAULT '',
+      with_who text,
+      bucket text NOT NULL DEFAULT 'today',
+      waiting_days int NOT NULL DEFAULT 0,
+      notes text,
+      links jsonb,
+      done_at timestamptz,
+      deleted_at timestamptz,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_playbook_plays', () => sql`CREATE TABLE IF NOT EXISTS playbook_plays (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      name text NOT NULL,
+      days text NOT NULL DEFAULT 'Mon-Fri',
+      kind text NOT NULL DEFAULT 'manual',
+      position int NOT NULL DEFAULT 0,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_contact_lists', () => sql`CREATE TABLE IF NOT EXISTS contact_lists (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      name text NOT NULL,
+      kind text NOT NULL DEFAULT 'sheet',
+      source text,
+      columns jsonb,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_contact_list_rows', () => sql`CREATE TABLE IF NOT EXISTS contact_list_rows (
+      list_id uuid NOT NULL,
+      contact_id text NOT NULL,
+      position int NOT NULL DEFAULT 0,
+      day text,
+      sent_at timestamptz,
+      stage text,
+      PRIMARY KEY (list_id, contact_id)
+    )`],
+    ['db_space_email', () => sql`CREATE TABLE IF NOT EXISTS space_email (
+      space_id text PRIMARY KEY,
+      "to" text,
+      subject text,
+      body text,
+      attachments jsonb,
+      test_sent_at timestamptz,
+      sent_at timestamptz
+    )`],
+    ['db_vault_docs', () => sql`CREATE TABLE IF NOT EXISTS vault_docs (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      org text,
+      kind text,
+      doc_id text,
+      name text NOT NULL,
+      version text,
+      status text,
+      verified_at timestamptz,
+      owner text,
+      note text,
+      source_url text,
+      drive_id text,
+      json_path text
+    )`],
+    ['db_vault_versions', () => sql`CREATE TABLE IF NOT EXISTS vault_versions (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      doc_id uuid NOT NULL,
+      version text,
+      file text,
+      uploaded_at timestamptz NOT NULL DEFAULT now(),
+      by_user text,
+      superseded_at timestamptz
+    )`],
+    ['db_vault_links', () => sql`CREATE TABLE IF NOT EXISTS vault_links (
+      doc_id uuid NOT NULL,
+      depends_on uuid NOT NULL,
+      PRIMARY KEY (doc_id, depends_on)
+    )`],
+    ['db_ops_switches', () => sql`CREATE TABLE IF NOT EXISTS ops_switches (
+      key text PRIMARY KEY,
+      on_state boolean NOT NULL DEFAULT true,
+      changed_at timestamptz NOT NULL DEFAULT now(),
+      changed_by text
+    )`],
+    ['db_ops_switch_log', () => sql`CREATE TABLE IF NOT EXISTS ops_switch_log (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      key text NOT NULL,
+      on_state boolean NOT NULL,
+      at timestamptz NOT NULL DEFAULT now(),
+      by_user text
+    )`],
+    ['db_ops_metrics', () => sql`CREATE TABLE IF NOT EXISTS ops_metrics (
+      key text NOT NULL,
+      value double precision,
+      taken_at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_api_calls', () => sql`CREATE TABLE IF NOT EXISTS api_calls (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      api text NOT NULL,
+      path text,
+      code int,
+      ms int,
+      at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_ops_events', () => sql`CREATE TABLE IF NOT EXISTS ops_events (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      level text NOT NULL DEFAULT 'info',
+      source text,
+      message text,
+      at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_ops_items', () => sql`CREATE TABLE IF NOT EXISTS ops_items (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      priority text,
+      title text NOT NULL,
+      detail text,
+      opened_at timestamptz NOT NULL DEFAULT now(),
+      fixed_at timestamptz
+    )`],
+    ['db_health_runs', () => sql`CREATE TABLE IF NOT EXISTS health_runs (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      part text NOT NULL,
+      ok boolean,
+      ms int,
+      reading text,
+      at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_audit_runs', () => sql`CREATE TABLE IF NOT EXISTS audit_runs (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      concerns jsonb,
+      at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_ledger_facts', () => sql`CREATE TABLE IF NOT EXISTS ledger_facts (
+      key text PRIMARY KEY,
+      value text,
+      hash text
+    )`],
+    ['db_ledger_places', () => sql`CREATE TABLE IF NOT EXISTS ledger_places (
+      fact_key text NOT NULL,
+      place text NOT NULL,
+      hash text,
+      PRIMARY KEY (fact_key, place)
+    )`],
+    ['db_sheet_cache', () => sql`CREATE TABLE IF NOT EXISTS sheet_cache (
+      file_id text PRIMARY KEY,
+      version text,
+      payload jsonb,
+      updated_at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_timeline_prefs_filter', () => sql`ALTER TABLE timeline_prefs ADD COLUMN IF NOT EXISTS filter text`],
   ];
   for (const [code, run] of steps) {
     try {

@@ -59,6 +59,8 @@ const isControlRoom = createRouteMatcher([
   '/timeline',
   '/financials',
   '/integrations',
+  '/vault',
+  '/ops',
 ]);
 const isDesign = createRouteMatcher(['/design', '/design/(.*)']);
 // Legal pages are public. Members read them before they sign in.
@@ -203,6 +205,8 @@ export const config = {
     '/contacts',
     '/financials',
     '/integrations',
+    '/vault',
+    '/ops',
     '/design',
     '/design/:path*',
     '/terms-of-service',

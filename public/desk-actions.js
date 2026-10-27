@@ -627,7 +627,7 @@
     return docPicked().map(docRow);
   }
   function spacePickHtml(kind) {
-    var rows = (S().packages || []).filter(function (p) { return p && UUID_RE.test(String(p.id || '')); });
+    var rows = (S().packages || S().spaces || []).filter(function (p) { return p && UUID_RE.test(String(p.id || '')); });
     return '<div style="font-weight:600;margin:2px 0 6px">Add to a Space</div>'
       + '<div style="max-height:280px;overflow:auto">' + (rows.length ? rows.slice(0, 80).map(function (p) {
         return '<button type="button" data-action="doc-space-pick" data-kind="' + kind + '" data-space="' + esc(p.id) + '" data-name="' + esc(p.name || 'Space') + '">' + esc(p.name || 'Space') + '</button>';
@@ -1981,7 +1981,26 @@
       refresh('pipe');
     },
     'pipe-empty': function () {
-      S().pipeShowEmpty = !S().pipeShowEmpty;
+      S().pipeCloseEmpty = true;
+      refresh('pipe');
+    },
+    'pipe-open-all': function () {
+      S().pipeColShut = {};
+      S().pipeCloseEmpty = false;
+      refresh('pipe');
+    },
+    'pipe-col-toggle': function (el) {
+      var id = attr(el, 'data-stage-id');
+      if (!id) return;
+      var shut = S().pipeColShut || (S().pipeColShut = {});
+      if (shut[id]) delete shut[id]; else shut[id] = true;
+      refresh('pipe');
+    },
+    'pipe-col-open': function (el) {
+      var id = attr(el, 'data-stage-id');
+      if (!id) return;
+      var shut = S().pipeColShut || (S().pipeColShut = {});
+      delete shut[id];
       refresh('pipe');
     },
     'pipe-need-chip': function (el) {
@@ -2203,6 +2222,50 @@
     'canvas-mini': function () {},
     'canvas-cluster': function () {},
     'canvas-cluster-name': function () {},
+    'spaces-card-open': function (el, root) {
+      if (el && window.__openSpacePanel) window.__openSpacePanel(el, root);
+    },
+    'spaces-card-full': function (el, root) {
+      if (el && window.__openSpacePanel) window.__openSpacePanel(el, root);
+    },
+    'ops-switch': function (el, root) {
+      var key = attr(el, 'data-k');
+      var on = !el.classList.contains('on');
+      if (typeof authFetch === 'function') {
+        authFetch('/api/ops/switches', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: key, on: on }) }).then(function (r) { return r.json(); }).then(function (d) {
+          toast(root, d && d.saved ? (on ? 'Armed' : 'Safe') : (d && d.error) || 'Could not switch');
+          if (typeof window.paintRedesignOps === 'function') window.paintRedesignOps();
+        }).catch(function () { toast(root, 'Could not switch'); });
+      }
+    },
+    'ops-ping': function (el, root) {
+      authFetch('/api/ops/apis', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: attr(el, 'data-k'), act: 'ping' }) }).then(function (r) { return r.json(); }).then(function (d) {
+        toast(root, d && d.ms != null ? (d.ms + ' ms') : 'No reply');
+      }).catch(function () { toast(root, 'Ping failed'); });
+    },
+    'ops-api-pause': function (el, root) {
+      authFetch('/api/ops/apis', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: attr(el, 'data-k'), act: 'pause' }) }).then(function () { toast(root, 'Paused'); }).catch(function () {});
+    },
+    'ops-stop-sends': function (el, root) {
+      authFetch('/api/ops/switches', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: 'send_rail', on: false }) }).then(function () { toast(root, 'Send rail is safe'); }).catch(function () {});
+    },
+    'ops-resume-sends': function (el, root) {
+      authFetch('/api/ops/switches', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: 'send_rail', on: true }) }).then(function () { toast(root, 'Send rail re-armed'); }).catch(function () {});
+    },
+    'ops-lamp': function (el, root) { toast(root, (el.textContent || '').replace(/\s+/g, ' ').trim()); },
+    'ops-dial': function (el, root) { toast(root, (el.textContent || '').replace(/\s+/g, ' ').trim()); },
+    'ops-sweep': function (el, root) { if (typeof window.paintRedesignOps === 'function') window.paintRedesignOps(); toast(root, 'Sweep stamped'); },
+    'vault-open': function (el, root) { toast(root, 'Vault row ' + attr(el, 'data-id')); },
+    'nav-hide': function () {
+      document.body.classList.toggle('navshut');
+      var on = document.body.classList.contains('navshut');
+      var b = document.getElementById('navtog');
+      if (b) b.textContent = on ? 'Menu' : 'Hide menu';
+      try { localStorage.setItem('cr_nav_hidden', on ? '1' : '0'); } catch (e) {}
+      if (typeof authFetch === 'function') {
+        authFetch('/api/nav-prefs', { method: 'PUT', credentials: 'same-origin', quiet: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ hidden: on }) }).catch(function () {});
+      }
+    },
     'canvas-note': function () {},
     'canvas-rz': function () {},
     'canvas-note-rz': function () {},
@@ -2503,10 +2566,17 @@
       menu.style.display = 'block';
       menu.classList.add('on', 'smenu');
       var r = el.getBoundingClientRect();
-      var mh = menu.offsetHeight || 280, mw = menu.offsetWidth || 236;
+      var mh = menu.offsetHeight || 280, mw = 236;
+      menu.style.width = '236px';
       var top = r.bottom + 6;
       if (top + mh > window.innerHeight - 8) top = Math.max(8, r.top - mh - 6);
-      var left = Math.min(Math.max(8, r.right - mw), window.innerWidth - mw - 8);
+      var sideEl = document.querySelector('.side');
+      var side = (sideEl && sideEl.getBoundingClientRect().width) || 0;
+      if (document.body.classList.contains('navshut') || document.body.classList.contains('nav-collapsed')) side = 0;
+      var left = r.left;
+      if (left + mw > window.innerWidth - 8) left = r.right - mw;
+      if (left < side + 8) left = side + 8;
+      if (left + mw > window.innerWidth - 8) left = Math.max(side + 8, window.innerWidth - mw - 8);
       menu.style.left = left + 'px';
       menu.style.top = top + 'px';
       menu.style.right = 'auto';
@@ -2765,11 +2835,11 @@
     },
     'doc-add-space': function (el, root) {
       if (!S().docOpen) return;
-      openPop(root, el, spacePickHtml('open'));
+      withSpaces(function () { openPop(root, el, spacePickHtml('open')); });
     },
     'docs-bulk-space': function (el, root) {
       if (!docPicked().length) { toast(root, 'Tick the files first'); return; }
-      openPop(root, el, spacePickHtml('pick'));
+      withSpaces(function () { openPop(root, el, spacePickHtml('pick')); });
     },
     'doc-space-pick': function (el, root) {
       closePop(root);
@@ -4250,6 +4320,7 @@
     'news-search': function () {},
     'news-cat': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-cat', el, root); },
     'news-open': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-open', el, root); },
+    'news-hide': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-hide', el, root); },
     'news-save': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-save', el, root); else toast(root, 'Saved to News'); },
     'news-space': function (el, root) {
       if (window.__newsHandle) window.__newsHandle('news-save', el, root);
@@ -4921,7 +4992,7 @@
   }
   function withSpaces(fn) {
     var packs = S().packages || [];
-    if (packs.length || !writeOk()) { fn(packs); return; }
+    if (packs.length) { fn(packs); return; }
     api('/api/spaces', { method: 'GET' }).then(ok).then(json).then(function (d) {
       S().packages = (d && (d.packages || d.spaces)) || [];
       fn(S().packages);
@@ -5156,6 +5227,13 @@
       return;
     }
     if (e.key === 'Escape') {
+      var smenu = root.getElementById && root.getElementById('menu');
+      if (smenu && (smenu.classList.contains('on') || smenu.style.display === 'block')) {
+        smenu.style.display = 'none';
+        smenu.classList.remove('on');
+        e.preventDefault();
+        return;
+      }
       var nbig = root.getElementById && root.getElementById('ovNote');
       var nscrim = root.getElementById && root.getElementById('nscrim');
       if (nbig && !nbig.hidden && !nbig.hasAttribute('hidden')) {
@@ -5416,6 +5494,10 @@
     var el = t && t.closest ? t.closest('[draggable="true"]') : null;
     if (!el || !e.dataTransfer) return;
     var action = attr(el, 'data-action');
+    if (action === 'mail-box-drag' && !(t.closest && t.closest('.grab'))) {
+      e.preventDefault();
+      return;
+    }
     /* Link-category rows carry data-kind="cat|sub|leaf" for the tree; as a drag payload they are always folders. */
     var kind = action === 'link-cat' ? 'folder' : attr(el, 'data-kind') || (action === 'mail-card' ? 'mail' : action === 'contact-drag' ? 'contact' : action === 'doc-drag' ? 'doc' : action === 'link-cat' ? 'folder' : 'task');
     var payload = JSON.stringify({
@@ -5800,6 +5882,7 @@
     window.addEventListener('pagehide', flushOpenNote);
   }
 
+  window.deskToast = toast;
   window.bindShadowActions = bindShadowActions;
   window.stampDeskControls = stampDeskControls;
   window.syncDeskFocus = paintFocus;

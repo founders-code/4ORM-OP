@@ -192,6 +192,12 @@
       if (!Number.isFinite(oy)) oy = -40;
       world.style.transform = 'translate(' + ox + 'px,' + oy + 'px) scale(' + z + ')';
       world.classList.toggle('far', z < 0.55);
+      if (stage) {
+        var size = Math.max(8, 24 * z);
+        stage.style.backgroundImage = 'radial-gradient(circle, rgba(16,26,51,.22) 1px, transparent 1.2px)';
+        stage.style.backgroundSize = size + 'px ' + size + 'px';
+        stage.style.backgroundPosition = ox + 'px ' + oy + 'px';
+      }
       var zl = root.getElementById ? root.getElementById('zLbl') : root.querySelector('#zLbl');
       if (zl) zl.textContent = Math.round(z * 100) + '%';
       root.__canvasPan = { z: z, ox: ox, oy: oy };
@@ -209,7 +215,6 @@
         if (!heading || /^\d+(\s*[xX]\s*\d+)?$/i.test(heading)) heading = String(n.p || '').replace(/^\s+/, '').split(/\n/)[0].trim().slice(0, 60) || 'Note';
         return '<div class="note ' + esc(n.k) + '" data-i="' + i + '" data-action="canvas-note" style="left:' + n.x + 'px;top:' + n.y + 'px;width:' + nw + 'px;height:' + nh + 'px"><span class="ty' + tyCls + '">' + esc(types[n.t] || 'Note') + '</span><h4>' + esc(heading) + '</h4><p>' + esc(n.p) + '</p><span class="sz">' + nw + ' x ' + nh + '</span><span class="nrz" data-action="canvas-note-rz"></span></div>';
       }).join('');
-      world.querySelectorAll('.note .note').forEach(function (el) { el.parentNode.removeChild(el); });
       apply();
     }
     function toWorld(cx, cy) {
@@ -221,28 +226,14 @@
       cx = cx != null ? cx : r.left + r.width / 2;
       cy = cy != null ? cy : r.top + r.height / 2;
       var w = toWorld(cx, cy);
-      z = Math.min(2, Math.max(0.15, z * f));
+      z = Math.min(2, Math.max(0.08, z * f));
       ox = cx - r.left - w[0] * z;
       oy = cy - r.top - w[1] * z;
       apply();
     }
     function grow() {
-      if (fixtureOn()) {
-        world.style.width = '6000px';
-        world.style.height = '4000px';
-        return;
-      }
-      var maxX = 2400, maxY = 1600;
-      NOTES.forEach(function (n) {
-        maxX = Math.max(maxX, (n.x || 0) + (n.w || 240) + 480);
-        maxY = Math.max(maxY, (n.y || 0) + (n.hh || 180) + 480);
-      });
-      CL.forEach(function (c) {
-        maxX = Math.max(maxX, c.x + c.w + 480);
-        maxY = Math.max(maxY, c.y + c.h + 480);
-      });
-      world.style.width = maxX + 'px';
-      world.style.height = maxY + 'px';
+      world.style.width = '24000px';
+      world.style.height = '16000px';
     }
     function centerLatest() {
       var latest = NOTES.slice().sort(function (a, b) { return String(b.updated || '').localeCompare(String(a.updated || '')); })[0];
@@ -341,9 +332,11 @@
         var c = CL.find(function (x) { return String(x.id) === String(rz.parentNode.dataset.id); });
         drag = { type: 'rz', c: c, sx: wx, sy: wy, w: c.w, h: c.h };
       } else if (note) {
+        e.preventDefault();
         var i = +note.dataset.i;
+        if (!NOTES[i]) return;
         if (!sel.has(i)) { if (!e.shiftKey) sel.clear(); sel.add(i); }
-        drag = { type: 'note', sx: wx, sy: wy, start: Array.from(sel).map(function (j) { return [j, NOTES[j].x, NOTES[j].y]; }) };
+        drag = { type: 'note', sx: wx, sy: wy, start: Array.from(sel).map(function (j) { return [j, NOTES[j].x, NOTES[j].y]; }).filter(function (p) { return NOTES[p[0]]; }) };
         markSel();
       } else if (cn) {
         var cl = CL.find(function (x) { return String(x.id) === String(cn.parentNode.dataset.id); });
@@ -378,10 +371,19 @@
       }
       if (drag.type === 'cl') {
         drag.c.x = drag.x + dx; drag.c.y = drag.y + dy;
-        drag.inner.forEach(function (p) { NOTES[p[0]].x = p[1] + dx; NOTES[p[0]].y = p[2] + dy; });
-        render(); markSel();
+        var cel = world.querySelector('.cluster[data-id="' + drag.c.id + '"]');
+        if (cel) { cel.style.left = drag.c.x + 'px'; cel.style.top = drag.c.y + 'px'; }
+        drag.inner.forEach(function (p) {
+          NOTES[p[0]].x = p[1] + dx; NOTES[p[0]].y = p[2] + dy;
+          var nel = world.querySelector('.note[data-i="' + p[0] + '"]');
+          if (nel) { nel.style.left = NOTES[p[0]].x + 'px'; nel.style.top = NOTES[p[0]].y + 'px'; }
+        });
       }
-      if (drag.type === 'rz') { drag.c.w = Math.max(260, drag.w + dx); drag.c.h = Math.max(200, drag.h + dy); render(); }
+      if (drag.type === 'rz') {
+        drag.c.w = Math.max(260, drag.w + dx); drag.c.h = Math.max(200, drag.h + dy);
+        var rel = world.querySelector('.cluster[data-id="' + drag.c.id + '"]');
+        if (rel) { rel.style.width = drag.c.w + 'px'; rel.style.height = drag.c.h + 'px'; }
+      }
       if (drag.type === 'n-rz') {
         NOTES[drag.i].w = Math.max(160, Math.min(900, drag.w + dx));
         NOTES[drag.i].hh = Math.max(100, Math.min(900, drag.h + dy));

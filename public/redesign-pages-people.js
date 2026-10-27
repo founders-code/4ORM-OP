@@ -332,7 +332,21 @@
     var foot = vm.matched > vm.rows.length
       ? 'Showing ' + vm.rows.length + ' of ' + vm.matched + ' &middot; <span class="lnk" data-action="people-show-all">Show all</span>'
       : 'Showing ' + vm.rows.length + ' of ' + vm.matched + (vm.showAll && vm.matched > PAGE_ROWS ? ' &middot; <span class="lnk" data-action="people-show-all">Show fewer</span>' : '');
-    return '<div class="bar"><h1>Contacts</h1><span class="sub">Everyone you know &mdash; warmth from real email, calls and GoHighLevel</span>'
+    var tab = S().peopleTab === 'lists' ? 'lists' : 'contacts';
+    var tabs = '<div class="vseg" style="display:inline-flex;gap:12px;margin:0 16px 0 0"><button type="button" data-action="people-tab" data-tab="contacts" class="' + (tab === 'contacts' ? 'on' : '') + '" style="background:none;border:0;border-bottom:2px solid ' + (tab === 'contacts' ? '#5b8cff' : 'transparent') + ';font-weight:750;padding:6px 0">Contacts</button><button type="button" data-action="people-tab" data-tab="lists" class="' + (tab === 'lists' ? 'on' : '') + '" style="background:none;border:0;border-bottom:2px solid ' + (tab === 'lists' ? '#5b8cff' : 'transparent') + ';font-weight:750;padding:6px 0">Lists</button></div>';
+    if (tab === 'lists') {
+      var lists = S().peopleLists || [];
+      var open = S().peopleListId;
+      var cur = lists.filter(function (l) { return String(l.id) === String(open); })[0] || lists[0];
+      var rows = ((cur && cur.rows) || []).map(function (r, i) {
+        return '<tr data-action="list-row-open" data-id="' + esc(r.contact_id) + '"><td>' + (r.position || (i + 1)) + '</td><td>' + esc(r.name || 'Row ' + (i + 1)) + '</td><td>' + esc(r.company || '') + '</td><td>' + esc(r.email || '') + '</td><td>' + esc(r.day || '') + '</td><td>' + (r.sent_at ? 'Sent' : '') + '</td></tr>';
+      }).join('');
+      return '<div class="bar"><h1>Contacts</h1>' + tabs + '<span class="sub">Saved outreach tables</span></div>'
+        + '<div class="lay"><section class="card" style="padding:12px">' + lists.map(function (l) {
+          return '<div class="sg' + (cur && l.id === cur.id ? ' on' : '') + '" data-action="people-list" data-id="' + esc(l.id) + '">' + esc(l.name) + '<span class="n">' + (l.count || 0) + '</span></div>';
+        }).join('') + '</section><section class="card" style="min-width:0"><table class="tbl"><tr><th>#</th><th>Name</th><th>Company</th><th>Email</th><th>Day</th><th>Sent</th></tr>' + (rows || '<tr><td colspan="6">No rows yet.</td></tr>') + '</table></section></div>';
+    }
+    return '<div class="bar"><h1>Contacts</h1>' + tabs + '<span class="sub">Everyone you know &mdash; warmth from real email, calls and GoHighLevel</span>'
       + '<div class="r"><input class="search" placeholder="Search name, company, tag" aria-label="Search contacts" data-action="people-search" data-ext-field value="' + esc(vm.q) + '"><button type="button" class="btn pri" data-action="people-add">+ Add contact</button></div></div>'
       + '<div class="lay"><section class="card">' + rail + '</section><div style="min-width:0">' + cold
       + '<section class="card">' + flt
@@ -351,6 +365,11 @@
       watchDrawer();
     }); });
     loadContactExtras(false);
+    if (!S().peopleLists && typeof api === 'function') {
+      api('/api/contact-lists').then(readJson).catch(function () { return null; }).then(function (d) {
+        if (d && d.lists) { S().peopleLists = d.lists; if (S().peopleTab === 'lists') repaintPeople(); }
+      });
+    }
   }
 
   /* Email via GoHighLevel: one real 1:1 send through /api/contacts/:id (GoHighLevel conversations). */
@@ -391,6 +410,21 @@
   }
 
   var peopleActions = {
+    'people-tab': function (el) {
+      S().peopleTab = attr(el, 'data-tab') || 'contacts';
+      if (S().peopleTab === 'lists' && !S().peopleLists) {
+        api('/api/contact-lists').then(readJson).then(function (d) {
+          S().peopleLists = (d && d.lists) || [];
+          repaintPeople();
+        }).catch(function () { S().peopleLists = []; repaintPeople(); });
+      }
+      repaintPeople();
+    },
+    'people-list': function (el) {
+      S().peopleListId = attr(el, 'data-id');
+      S().peopleTab = 'lists';
+      repaintPeople();
+    },
     'people-filter': function (el) {
       var s = S();
       s.peopleType = attr(el, 'data-type') || 'all';

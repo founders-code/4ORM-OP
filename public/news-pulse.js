@@ -72,11 +72,13 @@ window.bindNewsPulse = function(root, pulse){
   const GA=()=>VIEW==='market'?PULSE.gauges:PULSE.consumer;
   function drawGauges(anim){const g=q(root,'#gg'); if(!g) return;
    g.innerHTML=GA().map(x=>{const L=LEV(x.v);const mx=Math.max.apply(null,x.w);
+    const why = Array.isArray(x.why) ? ('<b>'+x.why[0]+'</b> '+(x.why[1]||'')) : (x.why||'');
+    const delta = x.building ? 'building a baseline' : ('<span class="'+(x.d>=0?'up':'dn')+'">'+(x.d>=0?'+':'')+x.d+'</span> vs last week');
     return `<button class="gc${FOCUS===x.k?' on':''}" data-g="${x.k}" data-action="news-heat-focus" aria-pressed="${FOCUS===x.k}">${gaugeSVG(anim?0:x.v)}
     <div><div class="gt">${x.t}</div><div class="gv"><b data-to="${x.v}">${anim?0:x.v}</b><em class="lv-${L[0]}">${L[1]}</em></div>
-    <div class="gd"><span class="${x.d>=0?'up':'dn'}">${x.d>=0?'+':''}${x.d}</span> vs last week</div></div>
+    <div class="gd">${delta}</div></div>
     <div class="sp">${x.w.map((n,i)=>`<i class="${i===x.w.length-1?'now':''}" style="height:${Math.max(8,n/mx*100)}%" data-tip="<b>${x.t}</b><br>${PULSE.weeks[i]}: ${n}"></i>`).join('')}</div>
-    <div class="why"><b>${x.why[0]}</b> ${x.why[1]}</div></button>`}).join('');
+    <div class="why">${why}</div></button>`}).join('');
    if(anim&&!reduce){GA().forEach((x,gi)=>{const el=g.children[gi];if(!el)return;const t0=performance.now();const D=1100+gi*120;
     (function step(t){const p=Math.min(1,(t-t0)/D);const e=1-Math.pow(1-p,3);const v=x.v*e;const svg=el.querySelector('svg'); if(svg) svg.outerHTML=gaugeSVG(v);const b=el.querySelector('.gv b'); if(b) b.textContent=Math.round(v);if(p<1)requestAnimationFrame(step)})(t0)})}
   }
@@ -113,7 +115,7 @@ window.bindNewsPulse = function(root, pulse){
   }
   const gg=q(root,'#gg'); if(gg && !gg._pz){ gg._pz=1; gg.addEventListener('click',e=>{const b=e.target.closest('.gc'); if(b){ e.preventDefault(); focus(b.getAttribute('data-g')); }}); }
   const clr=q(root,'#pzClr'); if(clr && !clr._pz){ clr._pz=1; clr.addEventListener('click',()=>{ if(FOCUS) focus(FOCUS); }); }
-  const pzs=q(root,'.pzs'); if(pzs && !pzs._pz){ pzs._pz=1; pzs.addEventListener('click',e=>{const b=e.target.closest('[data-pv]'); if(!b)return; const v=b.getAttribute('data-pv'); if(VIEW===v)return; if(FOCUS)focus(FOCUS); VIEW=v;
+  const pzs=q(root,'.pzs'); if(pzs && !pzs._pz){ pzs._pz=1; pzs.addEventListener('click',e=>{const b=e.target.closest('[data-pv]'); if(!b)return; const v=b.getAttribute('data-pv'); if(VIEW===v)return; if(FOCUS)focus(FOCUS); VIEW=v; const band=q(root,'#pz'); if(band) band.classList.toggle('consumer', v==='consumer');
     qa(root,'.pzs button').forEach(x=>x.setAttribute('aria-pressed',String(x.getAttribute('data-pv')===v)));
     const t=q(root,'#pzT'); if(t) t.textContent=v==='market'?'Market pulse':'Consumer pulse';
     const s=q(root,'#pzS'); if(s) s.innerHTML=v==='market'?'This week against the last 8 weeks &middot; Canadian sources &middot; updated with every sweep':'How Canadian households feel this week &middot; news, searches, complaints and scam reports';
@@ -127,11 +129,16 @@ window.bindNewsPulse = function(root, pulse){
       tip.innerHTML=t.getAttribute('data-tip'); tip.classList.add('on'); const w=tip.offsetWidth||180; tip.style.left=Math.min(innerWidth-w-12,e.clientX+14)+'px'; tip.style.top=(e.clientY+16)+'px';});
     pz.addEventListener('pointerleave',()=>tip.classList.remove('on'));
   }
-  drawGauges(!(window.fixtureMockup)); drawRadar(); drawMkt(); drawConsumer();
+  const sig = JSON.stringify((GA()||[]).map(function(g){ return g.k+':'+g.v; }));
+  const first = root._pulseSig !== sig;
+  root._pulseSig = sig;
+  const upd = q(root,'#pzUpd');
+  if (upd) upd.textContent = PULSE.updated ? ('Updated '+PULSE.updated) : '';
+  drawGauges(!(window.fixtureMockup) && first); drawRadar(); drawMkt(); drawConsumer();
 };
 window.newsPulseBandHtml = function(sample){
   return `<section class="pz" id="pz" aria-label="Market pulse">
-  <div class="pzh"><h3 id="pzT">Market pulse</h3><div class="pzs" role="group" aria-label="Pulse view"><button type="button" data-pv="market" aria-pressed="true" data-action="news-pulse-view">Market</button><button type="button" data-pv="consumer" aria-pressed="false" data-action="news-pulse-view">Consumer</button></div><span class="s" id="pzS">This week against the last 8 weeks &middot; Canadian sources &middot; updated with every sweep</span>
+  <div class="pzh"><h3 id="pzT">Market pulse</h3><div class="pzs" role="group" aria-label="Pulse view"><button type="button" data-pv="market" aria-pressed="true" data-action="news-pulse-view">Market</button><button type="button" data-pv="consumer" aria-pressed="false" data-action="news-pulse-view">Consumer</button></div><span class="s" id="pzS">This week against the last 8 weeks &middot; Canadian sources</span><span class="s" id="pzUpd"></span>
     <div class="r"><span class="clr" id="pzClr" data-action="news-heat-clear">Show everything</span>${sample?'<span class="samp">Sample data</span>':''}</div></div>
   <div class="gg" id="gg"></div>
   <div class="pzb" id="pzMarket">

@@ -43,17 +43,26 @@
     + '.pick-row:first-child{border-top:0}';
   var CSS = {
     room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=7', notes: '/port-css/notes.css?v=4',
-    notesCanvas: '/port-css/notes-canvas.css?v=9', spacesArrange: '/port-css/spaces-arrange.css?v=1', spacesCards: '/port-css/spaces-cards.css?v=2', signalsDetail: '/port-css/signals-detail.css?v=4', rec: '/port-css/recordings.css?v=2',
+    notesCanvas: '/port-css/notes-canvas.css?v=9', spacesArrange: '/port-css/spaces-arrange.css?v=1', spacesCards: '/port-css/spaces-cards.css?v=4', signalsDetail: '/port-css/signals-detail.css?v=4', rec: '/port-css/recordings.css?v=2',
     contacts: '/port-css/pipeline.css?v=5', work: '/port-css/spaces.css?v=9', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css?v=3',
-    links: '/port-css/links.css?v=5', mail: '/port-css/email.css?v=8', mailPeople: '/port-css/email-people.css?v=6',
+    links: '/port-css/links.css?v=5', mail: '/port-css/email.css?v=8', mailPeople: '/port-css/email-people.css?v=7',
     playbook: '/port-css/playbook.css?v=3', calendar: '/port-css/calendar.css?v=5', zoom: '/port-css/zoom.css?v=2',
-    completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=3'
+    completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=3',
+    neon: '/port-css/neon.css?v=1', playbookP8: '/port-css/playbook-p8.css?v=1', plannerNeon: '/port-css/planner-neon.css?v=1',
+    calendarNeon: '/port-css/calendar-neon.css?v=1', completedNeon: '/port-css/completed-neon.css?v=1',
+    intNeon: '/port-css/integrations-neon.css?v=1', vaultOps: '/port-css/vault-ops.css?v=1',
+    sheetViewer: '/port-css/sheet-viewer.css?v=1', notesCanvasP8: '/port-css/notes-canvas-p8.css?v=1',
+    outreach: '/port-css/outreach-lists.css?v=1',
+    vault: '/port-css/vault-ops.css?v=1',
+    ops: '/port-css/vault-ops.css?v=1'
   };
   var HOSTS = {
     opsDash: 'room', warDesk: 'war', notesDesk: 'notes',
     pipeDesk: 'contacts', spacesDesk: 'work', docsDesk: 'docs', linksDesk: 'links', mailDesk: 'mail',
-    playDesk: 'playbook', calDesk: 'calendar', zoomDesk: 'zoom', doneDesk: 'completed', recDesk: 'rec'
+    playDesk: 'playbook', calDesk: 'calendar', zoomDesk: 'zoom', doneDesk: 'completed', recDesk: 'rec',
+    vaultDesk: 'vault', opsDesk: 'ops', intDesk: 'int'
   };
+  var NEON_KEYS = { playbook: 1, planner: 1, calendar: 1, contacts: 1, completed: 1, docs: 1, vault: 1, ops: 1, int: 1, war: 1 };
   var cssText = {};
   var cssWait = [];
   var BELL = '<span class="bellT">Alarm</span>';
@@ -148,10 +157,23 @@
     var style = root && root.querySelector ? root.querySelector('style') : null;
     if (!style) return;
     if (key === 'work+spaceOpen') {
-      style.textContent = TOKEN + (cssText.work || '');
+      style.textContent = TOKEN + (cssText.work || '') + (cssText.spacesCards || '');
       return;
     }
-    if (cssText[key] != null) style.textContent = TOKEN + cssText[key];
+    var body = cssText[key] != null ? cssText[key] : '';
+    if (key === 'work' || key === 'spacesCards') body = (cssText.work || '') + (cssText.spacesCards || '');
+    if (key === 'playbook') body += cssText.playbookP8 || '';
+    if (key === 'war' || key === 'planner') body += (cssText.plannerNeon || '') + (cssText.neon || '');
+    if (key === 'calendar') body += cssText.calendarNeon || '';
+    if (key === 'completed') body += cssText.completedNeon || '';
+    if (key === 'int') body += cssText.intNeon || '';
+    if (key === 'contacts') body += (cssText.outreach || '') + (cssText.neon || '');
+    if (key === 'docs') body += (cssText.sheetViewer || '') + (cssText.neon || '');
+    if (key === 'notesCanvas') body += cssText.notesCanvasP8 || '';
+    if (key === 'vault' || key === 'ops') body += (cssText.vaultOps || '') + (cssText.neon || '');
+    if (NEON_KEYS[key] && cssText.neon && key !== 'war' && key !== 'planner' && key !== 'contacts' && key !== 'docs' && key !== 'vault' && key !== 'ops') body = (cssText.neon || '') + body;
+    if (wrap && wrap.classList && NEON_KEYS[key]) wrap.classList.add('neon');
+    if (cssText[key] != null || body) style.textContent = TOKEN + body;
   }
   function finishPaint(wrap) {
     var root = wrap && wrap.getRootNode ? wrap.getRootNode() : null;

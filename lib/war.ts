@@ -173,6 +173,8 @@ export async function listNews(sql: Sql, ownerId: string, day = todayKey(), span
     FROM news_items
     WHERE owner_id = ${ownerId}
       AND COALESCE(hidden, false) = false
+      AND id::text NOT IN (SELECT item_id FROM news_hidden WHERE owner_id = ${ownerId})
+      AND (url = '' OR url NOT IN (SELECT item_id FROM news_hidden WHERE owner_id = ${ownerId}))
       AND published_at >= now() - (${days}::int * interval '1 day')
     ORDER BY is_top DESC, published_at DESC NULLS LAST
     LIMIT 200
@@ -184,6 +186,8 @@ export async function listNews(sql: Sql, ownerId: string, day = todayKey(), span
     FROM news_items
     WHERE owner_id = ${ownerId}
       AND COALESCE(hidden, false) = false
+      AND id::text NOT IN (SELECT item_id FROM news_hidden WHERE owner_id = ${ownerId})
+      AND (url = '' OR url NOT IN (SELECT item_id FROM news_hidden WHERE owner_id = ${ownerId}))
     ORDER BY is_top DESC, published_at DESC NULLS LAST
     LIMIT 200
   `;
@@ -211,6 +215,12 @@ export async function upsertNews(sql: Sql, ownerId: string, items: Array<Record<
     const key = url || `title:${title.toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
+    const blocked = await sql`
+      SELECT 1 FROM news_hidden
+      WHERE owner_id = ${ownerId} AND (item_id = ${url} OR item_id = ${title})
+      LIMIT 1
+    `.catch(() => []);
+    if (blocked.length) continue;
     const rawImage = String(item.image_url || item.image || '').trim().slice(0, 600);
     const image = /^\/api\/news\/(?:image|thumb)\/[0-9a-f-]{36}$/i.test(rawImage) ? rawImage : '';
     const isTop = item.is_top === true || item.isTop === true;

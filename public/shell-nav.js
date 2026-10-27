@@ -19,17 +19,20 @@
     ['Signals'],
     ['Completed', '', '', 'done', '/completed'],
     ['Financials', '', '', 'finance', '/financials'],
-    ['Integrations', '', '', 'int', '/integrations']
+    ['Vault', '', '', 'vault', '/vault'],
+    ['Integrations', '', '', 'int', '/integrations'],
+    ['Control room', '', '', 'ops', '/control-room']
   ];
   var PAGE = {
     room: 'Planner', war: 'Planner', planner: 'Planner', contacts: 'Pipeline', work: 'Spaces', docs: 'Documents',
     links: 'Links', mail: 'Email', playbook: 'Playbook', calendar: 'Calendar', znotes: 'Zoom',
     notes: 'Notes', done: 'Completed', news: 'News', people: 'Contacts', rec: 'Recordings',
-    finance: 'Financials', int: 'Integrations'
+    finance: 'Financials', int: 'Integrations', vault: 'Vault', ops: 'Control room'
   };
   var DEFAULT = NAV.filter(function (n) { return n.length > 1; }).map(function (n) { return n[0]; });
   var order = null;
   try { order = JSON.parse(localStorage.getItem('cr_nav_order') || 'null'); } catch (e) { order = null; }
+  try { if (localStorage.getItem('cr_nav_hidden') === '1') document.body.classList.add('navshut'); } catch (e) {}
 
   function itemByName(name) {
     for (var i = 0; i < NAV.length; i++) if (NAV[i][0] === name && NAV[i].length > 1) return NAV[i];
@@ -147,8 +150,6 @@
       if (!it) return;
       html += '<div class="nav' + (it[0] === active ? ' on' : '') + '" data-action="nav-go" data-v="' + it[3] + '" data-path="' + it[4] + '" data-name="' + it[0] + '" draggable="' + drag + '" tabindex="0"><span class="grip" aria-hidden="true"></span><span class="nl">' + it[0] + '</span></div>';
     });
-    var arranging = document.body.classList.contains('arranging');
-    html += '<div class="arr-row"><button type="button" class="arr" id="navArrange" data-action="nav-arrange">' + (arranging ? 'Done' : 'Arrange') + '</button><button type="button" class="arr-reset" id="navReset" data-action="nav-reset">Reset to default</button></div>';
     side.innerHTML = html;
     var crumb = document.getElementById('pageCrumb');
     if (crumb) crumb.textContent = active;
@@ -209,8 +210,15 @@
       if (d && Array.isArray(d.order) && d.order.length) {
         order = d.order;
         try { localStorage.setItem('cr_nav_order', JSON.stringify(order)); } catch (e) {}
-        paint();
       }
+      var hidden = d && d.hidden;
+      try { if (hidden == null) hidden = localStorage.getItem('cr_nav_hidden') === '1'; } catch (e) {}
+      if (hidden) {
+        document.body.classList.add('navshut');
+        var tog = document.getElementById('navtog');
+        if (tog) tog.textContent = 'Menu';
+      }
+      paint();
     }).catch(function () {});
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { paint(); clock(); });

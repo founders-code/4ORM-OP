@@ -34,7 +34,6 @@ const nextConfig = {
   // /control-room rewrites to the Control Room prototype.
   async redirects() {
     return [
-      { source: '/control-room', destination: '/planner', permanent: false },
       { source: '/war-room', destination: '/planner', permanent: false },
       { source: '/timeline', destination: '/planner', permanent: false },
       { source: '/drive', destination: '/documents?source=drive', permanent: false },
@@ -65,6 +64,8 @@ const nextConfig = {
       { source: '/recordings', destination: '/control-room.html' },
       { source: '/financials', destination: '/control-room.html' },
       { source: '/integrations', destination: '/control-room.html' },
+      { source: '/vault', destination: '/control-room.html' },
+      { source: '/ops', destination: '/control-room.html' },
       { source: '/terms-of-service', destination: '/terms-of-service.html' },
       { source: '/privacy-policy', destination: '/privacy-policy.html' },
       { source: '/book', destination: '/book.html' },

@@ -3,14 +3,28 @@
 
 <div class="head">
   <div class="calbtn" id="openCal" title="Month view" data-action="play-month">Month</div>
-  <div class="iqbrand"><img src="/assets/mark-4orm-iq.png" alt="4orm"><b>IQ</b></div><h1>Playbook</h1>
+  <h1>Playbook</h1>
   <span class="wk">WEEK 43 &middot; OCT 19 - 25</span>
   <button class="play" id="runBtn" data-action="play-run"><span class="tri">&#9654;</span><span id="runTxt">Run today's plays</span></button>
+  <div class="ctr" id="ctr"><button data-m="full" class="on">Full week</button><button data-m="focusday">Focus today</button><button data-m="compact">Compact</button></div>
   <div class="score"><div><div class="big" id="pct">0%</div><div class="s">week on beat &middot; day 1<br>best streak: 9 days</div></div></div>
 </div>
 
+
+<div class="lh beatlh">COMING UP &middot; DAYS LEFT</div>
+<div class="beats">
+  <div class="beat goal"><div class="btop"><span class="n">4ormIQ &middot; 1,000 users</span><span class="d">7<small>days to launch</small></span></div><div class="bar"><i style="width:3%;background:var(--lime)"></i></div><div class="f"><span><b style="color:#fff">0</b> / 1,000 &middot; launch Oct 23</span><span style="color:var(--lime)">~143 / day</span></div></div>
+  <div class="beat"><div class="btop"><span class="n">Marketing drop</span><span class="d">4<small>days left</small></span></div><div class="bar"><i style="width:72%;background:var(--green)"></i></div><div class="f"><span>every 14 days</span><span class="rdy">material ready</span></div></div>
+  <div class="beat"><div class="btop"><span class="n">Newsletter</span><span class="d">15<small>days left</small></span></div><div class="bar"><i style="width:52%;background:var(--blue)"></i></div><div class="f"><span>monthly</span><span class="rdy">draft ready</span></div></div>
+  <div class="beat"><div class="btop"><span class="n">Research paper</span><span class="d">15<small>days left</small></span></div><div class="bar"><i style="width:52%;background:var(--violet)"></i></div><div class="f"><span>monthly</span><span>outline</span></div></div>
+  <div class="beat"><div class="btop"><span class="n">Investor update</span><span class="d">15<small>days left</small></span></div><div class="bar"><i style="width:52%;background:var(--red)"></i></div><div class="f"><span>monthly</span><span class="rdy">metrics ready</span></div></div>
+  <div class="beat"><div class="btop"><span class="n">Investor letter</span><span class="d">76<small>days left</small></span></div><div class="bar"><i style="width:18%;background:var(--amber)"></i></div><div class="f"><span>quarterly</span><span>-</span></div></div>
+</div>
+
+
+
 <div class="seq">
-  <div class="ph" id="ph"></div>
+  <div style="display:flex;padding:0 0 8px"><button class="editp" id="editPlays" data-action="play-edit-plays">Edit plays</button></div><div class="ph" id="ph"></div>
   <div class="grid" id="g"></div>
   <div class="legend">
     <span><i style="background:#ff5470"></i>bright = due today, click it</span>
@@ -20,41 +34,31 @@
   </div>
 </div>
 
-<div class="lh">LONGER BEATS</div>
-<div class="beats">
-  <div class="beat goal" data-action="play-beat"><div class="btop"><span class="n">4ormIQ &middot; 1,000 users</span><span class="d">7<small>d to launch</small></span></div><div class="bar"><i style="width:3%;background:var(--lime)"></i></div><div class="f"><span><b style="color:#fff">0</b> / 1,000 &middot; launch Oct 23</span><span style="color:var(--lime)">~143 / day</span></div></div>
-  <div class="beat" data-action="play-beat"><div class="btop"><span class="n">Marketing drop</span><span class="d">4<small>d</small></span></div><div class="bar"><i style="width:72%;background:var(--green)"></i></div><div class="f"><span>every 14 days</span><span class="rdy">material ready</span></div></div>
-  <div class="beat" data-action="play-beat"><div class="btop"><span class="n">Newsletter</span><span class="d">15<small>d</small></span></div><div class="bar"><i style="width:52%;background:var(--blue)"></i></div><div class="f"><span>monthly</span><span class="rdy">draft ready</span></div></div>
-  <div class="beat" data-action="play-beat"><div class="btop"><span class="n">Research paper</span><span class="d">15<small>d</small></span></div><div class="bar"><i style="width:52%;background:var(--violet)"></i></div><div class="f"><span>monthly</span><span>outline</span></div></div>
-  <div class="beat" data-action="play-beat"><div class="btop"><span class="n">Investor update</span><span class="d">15<small>d</small></span></div><div class="bar"><i style="width:52%;background:var(--red)"></i></div><div class="f"><span>monthly</span><span class="rdy">metrics ready</span></div></div>
-  <div class="beat" data-action="play-beat"><div class="btop"><span class="n">Investor letter</span><span class="d">76<small>d</small></span></div><div class="bar"><i style="width:18%;background:var(--amber)"></i></div><div class="f"><span>quarterly</span><span>-</span></div></div>
-</div>
 
 
-<div class="lh">VOICE LOG &middot; SAY WHAT YOU DID</div>
-<div class="vlog">
-  <div class="vcard vrec">
-    <button class="recbtn" id="recBtn" title="Record" data-action="play-voice-rec"><i></i></button>
-    <div class="vtime" id="vTime">0:00</div>
-    <div class="wave" id="wave"></div>
-    <div class="vhint" id="vHint">Tap to record.<br>Tap again to stop.</div>
-  </div>
-  <div class="vcard">
-    <div class="vh"><span class="t">Transcript</span><span class="s" id="vState">ready</span></div>
-    <div class="vtx" id="vTx" contenteditable="true" data-action="play-tx"></div>
-    <div class="dest"><span>Save to</span><em class="on" data-action="play-voice-dest">Today&rsquo;s log</em><em data-action="play-voice-dest">Completed</em><em data-action="play-voice-dest">A Space&hellip;</em><em data-action="play-voice-dest">Notes</em><em data-action="play-voice-dest">Drive doc</em></div>
-  </div>
-  <div class="vcard">
-    <div class="vh"><span class="t">4orm Intelligence heard</span><span class="s" id="vCount">0 items</span></div>
-    <div class="heard" id="heard"><div class="hempty">Plays it matches will light off here, and new to-dos land in Execution.</div></div>
-    <div class="vact"><button id="vDiscard" data-action="play-voice-discard" disabled>Discard</button><button class="save" id="vSave" data-action="play-voice-save" disabled>Save to today</button></div>
-  </div>
-</div>
-<div class="vhist" id="vHist">
-  <div class="vrow"><span class="pl">&#9654;</span><span class="tm">09:12</span><span>&ldquo;Video done, 28 minutes on RPAA safeguarding. Inbox at zero.&rdquo;</span><span class="c">2 plays &middot; 0 tasks</span></div>
-  <div class="vrow"><span class="pl">&#9654;</span><span class="tm">Thu 16:40</span><span>&ldquo;Speer sync moved to Monday. Need to send Bruce the pilot outline.&rdquo;</span><span class="c">1 task &middot; 1 note</span></div>
-</div>
 
+<section class="td" id="todo">
+ <div class="tdh"><h3>To do</h3><span class="s">from calls, recordings, email and what you type &middot; knock them off, or push them</span>
+  <div class="tdadd"><input id="tdIn" placeholder="Add a to-do, press Return"><select id="tdWhen"><option>Today</option><option>This week</option><option>Next week</option></select></div></div>
+ <div class="tdg">
+  <div class="tdc" data-b="today" style="--cc:#ff5a6e"><h4>Today <i id="cnt-today"></i></h4><div class="tl" id="b-today"></div></div>
+  <div class="tdc" data-b="week" style="--cc:#ffb547"><h4>This week <i id="cnt-week"></i></h4><div class="tl" id="b-week"></div></div>
+  <div class="tdc" data-b="next" style="--cc:#3b82ff"><h4>Next week <i id="cnt-next"></i></h4><div class="tl" id="b-next"></div></div>
+ </div>
+ 
+<div class="vfocus" id="vfocus">
+ <div class="vrow2">
+  <button class="recbtn sm" id="recBtn" title="Record" data-action="play-say-rec"><i></i></button>
+  <div class="vmid"><div class="vh"><span class="t">Say it</span><span class="s" id="vState">ready</span><span class="vtime" id="vTime">0:00</span><div class="wave" id="wave"></div></div>
+   <div class="vtx" id="vTx" contenteditable="true" data-ph="Tap record and talk: &ldquo;Done with the Kevin call. Add: send Bruce the pilot outline, this week. Push the GTM deck to tomorrow.&rdquo;"></div>
+   <div class="vhint" id="vHint">Tap to record. Say <b>done</b>, <b>add</b>, <b>today</b>, <b>this week</b>, <b>next week</b> or <b>push to tomorrow</b>.</div></div>
+  <div class="vheard"><div class="vh"><span class="t">Heard</span><span class="s" id="vCount">0 items</span></div><div class="heard" id="heard"><div class="hempty">What you say shows here before it is applied.</div></div>
+   <div class="vact"><button id="vDiscard" data-action="play-say-discard" disabled>Discard</button><button class="save" id="vSave" data-action="play-say-apply" disabled>Apply</button></div></div>
+ </div>
+</div>
+<div class="tdf"><span><b id="tdDone">0</b> done today</span><span>Drag between columns, or hover for Tomorrow, This week, Next week, To the Planner</span><span>Anything not done today rolls to tomorrow and shows how many days it has waited</span></div>
+</section>
+<div class="tdm" id="tdm"><div class="tdbox" id="tdbox"></div></div>
 <!-- popover + toast -->
 <div class="pop" id="pop">
   <div class="pt"><i id="popSw"></i><span id="popT">One move</span></div>

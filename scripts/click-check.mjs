@@ -55,7 +55,7 @@ function serve() {
       const url = new URL(req.url, 'http://127.0.0.1');
       let pathName = decodeURIComponent(url.pathname);
       if (pathName === '/') pathName = '/index.html';
-      if (/^\/(control-room|war-room|planner|timeline|notes|links|pipeline|spaces|documents|email|playbook|calendar|zoom|completed|people|recordings|news|financials|finance|contacts|messages|4ormiq)$/.test(pathName)) pathName = '/control-room.html';
+      if (/^\/(control-room|war-room|planner|timeline|notes|links|pipeline|spaces|documents|email|playbook|calendar|zoom|completed|people|recordings|news|financials|finance|contacts|messages|4ormiq|vault|ops)$/.test(pathName)) pathName = '/control-room.html';
       const tries = [join(ROOT, 'public', pathName), join(ROOT, 'design-reference', pathName), join(ROOT, 'design-reference/redesign', pathName.replace(/^\//, ''))];
       let body = null;
       let used = '';
@@ -699,6 +699,31 @@ async function productionStep1(browser) {
     return { ok: r.top >= 0 && r.bottom <= (window.innerHeight + 2) && r.height > 20, top: r.top, bottom: r.bottom };
   });
   if (!pushLive(rows, 'Spaces', 'Menu in viewport', { dom: menuLive.ok, net: true, persist: true, extra: 'top=' + Math.round(menuLive.top || 0) })) failed = true;
+
+  async function smenuAt(width) {
+    await live.setViewportSize({ width, height: 900 });
+    await readyView('/spaces?cards=1', '#spacesDesk');
+    return live.evaluate((w) => {
+      const root = document.getElementById('spacesDesk').shadowRoot;
+      const dots = root.querySelector('[data-action="space-menu"]');
+      if (dots) dots.click();
+      const menu = root.getElementById('menu');
+      if (!menu) return { ok: false, w };
+      const cs = getComputedStyle(menu);
+      const r = menu.getBoundingClientRect();
+      const side = (document.querySelector('.side') || {}).getBoundingClientRect?.() || { width: 0, right: 0 };
+      const bg = cs.backgroundColor === 'rgb(255, 255, 255)';
+      const widthOk = Math.abs(r.width - 236) < 8 || cs.width === '236px';
+      const inView = r.left >= 0 && r.right <= window.innerWidth + 2 && r.top >= 0 && r.bottom <= window.innerHeight + 2;
+      const rightOfSide = r.left + 0.5 >= (side.right || side.width || 0);
+      return { ok: bg && widthOk && inView && rightOfSide, bg: cs.backgroundColor, width: r.width, left: r.left, side: side.width };
+    }, width);
+  }
+  const sm1440 = await smenuAt(1440);
+  const sm800 = await smenuAt(800);
+  if (!pushLive(rows, 'Spaces', 'Menu styles 1440', { dom: !!sm1440.ok, net: true, persist: true, extra: JSON.stringify(sm1440) })) failed = true;
+  if (!pushLive(rows, 'Spaces', 'Menu styles 800', { dom: !!sm800.ok, net: true, persist: true, extra: JSON.stringify(sm800) })) failed = true;
+  await live.setViewportSize({ width: 1440, height: 900 });
 
   await readyView('/notes?canvas=1', '#notesDesk');
   await live.evaluate(() => {
