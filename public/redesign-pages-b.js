@@ -1386,21 +1386,19 @@
     if (P().finishPaint) P().finishPaint(wrap);
     else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
     markReady('linksDesk');
-    if (!fixtureOn() && !window.__linksThumbFill) {
+    var onLinks = (window.STATE && window.STATE.desk === 'links') || /\/links\/?$/.test(location.pathname || '');
+    if (!fixtureOn() && onLinks && !window.__linksThumbFill) {
       window.__linksThumbFill = true;
       window.__linksThumbReport = { ok: 0, failed: 0, letter: 0 };
       function fillThumbs(offset) {
+        if (!((window.STATE && window.STATE.desk === 'links') || /\/links\/?$/.test(location.pathname || ''))) return;
         var q = offset == null ? '/api/links/preview?backfill=all&offset=0' : '/api/links/preview?backfill=all&offset=' + offset;
         fetch(q, { credentials: 'include' }).then(function (r) { return r.json(); }).then(function (d) {
           if (!d) return;
           window.__linksThumbReport.ok += Number(d.ok || 0);
           window.__linksThumbReport.failed += Number(d.failed || 0);
           window.__linksThumbReport.letter += Number(d.letter || 0);
-          if (d.n) {
-            if (typeof window.refreshBoard === 'function') window.refreshBoard();
-            else if (typeof window.loadBoard === 'function') window.loadBoard();
-          }
-          if (d.next != null) setTimeout(function () { fillThumbs(d.next); }, 200);
+          if (d.next != null) setTimeout(function () { fillThumbs(d.next); }, 1500);
         }).catch(function () {});
       }
       fillThumbs(0);
