@@ -11,6 +11,7 @@ const DEFAULT_CODE = '1313';
 
 export const FINANCE_COOKIE = 'fin_ok';
 export const FINANCE_UNLOCK_SECONDS = 15 * 60;
+export const VAULT_COOKIE = 'vault_ok';
 
 /** The owner's gate code: owner_settings.finance_code, else FINANCE_CODE, else the default. Server-side only. */
 async function financeCode(sql: Sql | null, ownerId: string) {
@@ -54,6 +55,24 @@ export function financeUnlocked(value: string | undefined, userId: string, now =
   const expires = Number(rawExpires);
   if (!mac || !Number.isFinite(expires) || expires <= now) return false;
   const expected = sign(userId, expires);
+  return !!expected && tokenOk(mac, expected);
+}
+
+function vaultSign(userId: string) {
+  const key = cookieKey();
+  if (!key) return '';
+  return createHmac('sha256', key).update(`vault:${userId}:session`).digest('base64url');
+}
+
+export function vaultUnlockValue(userId: string) {
+  const mac = vaultSign(userId);
+  return mac ? `session.${mac}` : '';
+}
+
+export function vaultUnlocked(value: string | undefined, userId: string) {
+  const [kind, mac] = String(value || '').split('.');
+  if (kind !== 'session' || !mac) return false;
+  const expected = vaultSign(userId);
   return !!expected && tokenOk(mac, expected);
 }
 

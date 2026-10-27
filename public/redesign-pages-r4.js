@@ -109,8 +109,9 @@
       (arr || []).slice().sort(function (a, b) {
         return String(b.updated_at || b.updatedAt || b.created_at || '').localeCompare(String(a.updated_at || a.updatedAt || a.created_at || ''));
       }).forEach(function (n) {
-        if (!n || !n.id || seen[n.id]) return;
-        seen[n.id] = 1;
+        var sid = n.id || (src + ':' + (n.h || n.title || n.body || Math.random()));
+        if (!n || seen[sid]) return;
+        seen[sid] = 1;
         push(n, src);
       });
     }
@@ -145,8 +146,9 @@
     if (!wrap) return;
     if (P().applyPageCss) P().applyPageCss(wrap, 'notesCanvas');
     var data = fixtureOn() ? canvasSample() : liveCanvasData();
-    var CL = data.clusters.slice();
-    var NOTES = data.notes.slice();
+    var kept = !fixtureOn() && wrap.__canvasWorld;
+    var CL = kept ? wrap.__canvasWorld.CL : data.clusters.slice();
+    var NOTES = kept ? wrap.__canvasWorld.NOTES : data.notes.slice();
     wrap.innerHTML =
       '<div class="bar"><h1>Notes</h1><span class="sub">Lay notes out on a grid, group them into named clusters</span>'
       + '<div class="r"><div class="seg"><span data-action="notes-view" data-view="board">Board</span><span class="on" data-action="notes-view" data-view="canvas">Canvas</span></div>'
@@ -163,6 +165,7 @@
       + '<div class="toast" id="toast"></div>';
     if (P().finishPaint) P().finishPaint(wrap);
     bindCanvas(wrap, CL, NOTES);
+    wrap.__canvasWorld = { CL: CL, NOTES: NOTES };
     if (fixtureOn()) setTimeout(function () { markReady('notesDesk'); }, 220);
     else markReady('notesDesk');
   }
@@ -868,7 +871,6 @@
       + '<div class="qh"><span class="cr" id="qCr"></span><div class="r">'
       + '<button class="btn sm" data-action="spaces-card-prev" id="prev">&lsaquo; Prev</button>'
       + '<button class="btn sm" data-action="spaces-card-next" id="next">Next &rsaquo;</button>'
-      + '<button class="btn sm" data-action="spaces-card-full" id="full">Open full page</button>'
       + '<button class="btn sm" data-action="spaces-card-close" id="close">Close</button></div></div>'
       + '<div class="qb" id="qb"></div>'
       + '<div class="qf"><span class="st" id="qSt"></span>'
@@ -881,6 +883,15 @@
       + '<div class="toast" id="toast"></div>';
     if (P().finishPaint) P().finishPaint(wrap);
     bindCards(wrap, CATS, !!openWanted);
+    try {
+      if (new URLSearchParams(String(location.search || '')).get('menu') === '1') {
+        setTimeout(function () {
+          var dots = wrap.querySelector('[data-action="space-menu"]');
+          var root = wrap.getRootNode ? wrap.getRootNode() : wrap;
+          if (dots && window.deskActions && window.deskActions['space-menu']) window.deskActions['space-menu'](dots, root);
+        }, 80);
+      }
+    } catch (e) {}
     markReady('spacesDesk');
   }
   function bindCards(root, CATS, openWanted) {
@@ -956,7 +967,9 @@
       var qw = root.getElementById ? root.getElementById('qw') : root.querySelector('#qw');
       var scrim = root.getElementById ? root.getElementById('scrim') : root.querySelector('#scrim');
       var left = CARD_STEPS.filter(function (x, i) { return !s.d[i]; }).slice(0, 2).join(', ').toLowerCase();
-      if (qCr) qCr.innerHTML = esc(CATS[cur.ci].name) + ' / <b>' + esc(s.n) + '</b>';
+      var from = (window.STATE && window.STATE.spaceFrom) || {};
+      var crumb = from.crumb ? (from.crumb + ' / ' + s.n) : (esc(CATS[cur.ci].name) + ' / <b>' + esc(s.n) + '</b>');
+      if (qCr) qCr.innerHTML = crumb.indexOf('<b>') >= 0 ? crumb : (esc(from.crumb || CATS[cur.ci].name) + ' / <b>' + esc(s.n) + '</b>');
       var files = (s.files || []).map(function (f) { return '<span>' + esc(f.name || 'File') + '</span>'; }).join('');
       if (!files && s.docs) {
         if (s.docs >= 1) files += '<span>4orm one-pager.pdf</span>';
@@ -1018,12 +1031,30 @@
       var scrim = root.getElementById ? root.getElementById('scrim') : root.querySelector('#scrim');
       if (qw) qw.classList.remove('on');
       if (scrim) scrim.classList.remove('on');
+      var row = cur && root.querySelector('.sp[data-c="' + cur.ci + '"][data-s="' + cur.si + '"]');
       cur = null;
       markCur();
       var host = document.getElementById('spacesDesk');
       if (host) host.scrollTop = savedScroll;
+      if (row && row.classList) {
+        row.classList.add('flash-row');
+        setTimeout(function () { row.classList.remove('flash-row'); }, 1000);
+      }
+      if (window.deskActions && window.deskActions['space-back'] && window.STATE && window.STATE.spaceFrom && window.STATE.spaceFrom.desk !== 'work') {
+        window.deskActions['space-back'](null, root);
+      }
     }
     function step(d) {
+      var from = window.STATE && window.STATE.spaceFrom;
+      if (from && from.list && from.list.length) {
+        var ids = from.list.map(String);
+        var sid = cur && CATS[cur.ci] && CATS[cur.ci].sp[cur.si] && CATS[cur.ci].sp[cur.si].id;
+        var i0 = ids.indexOf(String(sid));
+        var nextId = ids[(i0 + d + ids.length) % ids.length];
+        var f0 = flat();
+        var hit = f0.filter(function (x) { return String(x.s.id) === String(nextId); })[0];
+        if (hit) { openCard(hit.ci, hit.si); return; }
+      }
       var f = flat();
       if (!cur || !f.length) return;
       var i = f.findIndex(function (x) { return x.ci === cur.ci && x.si === cur.si; });
@@ -1171,11 +1202,11 @@
       drag = null;
     });
     render();
-    if (openWanted) openCard(1, 3);
-    var focusId = window.STATE && window.STATE.spaceFocusId;
-    if (focusId && !openWanted) {
+    if (openWanted && fixtureOn()) openCard(1, 3);
+    var wantId = (window.STATE && window.STATE.pkg && window.STATE.pkg.id) || (window.STATE && window.STATE.spaceFocusId);
+    if (wantId) {
       CATS.forEach(function (c, ci) {
-        c.sp.forEach(function (s, si) { if (String(s.id) === String(focusId)) openCard(ci, si); });
+        c.sp.forEach(function (s, si) { if (String(s.id) === String(wantId)) openCard(ci, si); });
       });
     }
   }

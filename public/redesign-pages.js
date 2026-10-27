@@ -40,21 +40,33 @@
     + '.plan-acts .pri,.pick-acts .pri{background:var(--blue);border-color:var(--blue);color:#fff}'
     + '.pick-list{max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:12px}'
     + '.pick-row{display:flex;gap:10px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);font-size:13.5px}'
-    + '.pick-row:first-child{border-top:0}';
+    + '.pick-row:first-child{border-top:0}'
+    + '.smenu{position:fixed;z-index:80;width:236px;background:#fff;border:1px solid #e3e8f1;border-radius:12px;box-shadow:0 18px 50px rgba(3,10,30,.35);padding:6px;display:none;font-size:13px}'
+    + '.smenu.on{display:block}'
+    + '.smenu .it{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;cursor:pointer;color:#101a33;font-weight:650}'
+    + '.smenu .it:hover{background:#f3f6fb}'
+    + '.smenu .it small{font-size:11.5px;color:#7a86a0;font-weight:600}'
+    + '.smenu hr{border:0;border-top:1px solid #eef1f6;margin:5px 4px}'
+    + '.smenu .grp,.smenu .folders{padding:4px 10px 6px;display:flex;flex-wrap:wrap;gap:5px}'
+    + '.smenu .grp span,.smenu .folders span{font-size:12px;font-weight:700;border:1px solid #e3e8f1;border-radius:999px;padding:3px 9px;cursor:pointer;color:#33405a}'
+    + '.smenu .grp span.cur,.smenu .folders span.cur{background:#eaf1fe;border-color:#c9d8ff;color:#2e6bf2}'
+    + '.smenu .lb{font-size:11.5px;color:#7a86a0;font-weight:700;padding:6px 10px 2px}'
+    + '.smenu .it.red{color:#d6334e}'
+    + '.flash-row{box-shadow:0 0 0 3px rgba(127,176,255,.85)!important;transition:box-shadow .2s}';
   var CSS = {
-    room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=7', notes: '/port-css/notes.css?v=4',
-    notesCanvas: '/port-css/notes-canvas.css?v=9', spacesArrange: '/port-css/spaces-arrange.css?v=1', spacesCards: '/port-css/spaces-cards.css?v=4', signalsDetail: '/port-css/signals-detail.css?v=4', rec: '/port-css/recordings.css?v=2',
-    contacts: '/port-css/pipeline.css?v=5', work: '/port-css/spaces.css?v=9', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css?v=3',
-    links: '/port-css/links.css?v=5', mail: '/port-css/email.css?v=8', mailPeople: '/port-css/email-people.css?v=7',
+    room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=8', notes: '/port-css/notes.css?v=4',
+    notesCanvas: '/port-css/notes-canvas.css?v=9', spacesArrange: '/port-css/spaces-arrange.css?v=1', spacesCards: '/port-css/spaces-cards.css?v=5', signalsDetail: '/port-css/signals-detail.css?v=4', rec: '/port-css/recordings.css?v=2',
+    contacts: '/port-css/pipeline.css?v=6', work: '/port-css/spaces.css?v=10', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css?v=4',
+    links: '/port-css/links.css?v=6', mail: '/port-css/email.css?v=8', mailPeople: '/port-css/email-people.css?v=8',
     playbook: '/port-css/playbook.css?v=3', calendar: '/port-css/calendar.css?v=5', zoom: '/port-css/zoom.css?v=2',
     completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=3',
     neon: '/port-css/neon.css?v=1', playbookP8: '/port-css/playbook-p8.css?v=4', plannerNeon: '/port-css/planner-neon.css?v=1',
-    calendarNeon: '/port-css/calendar-neon.css?v=1', completedNeon: '/port-css/completed-neon.css?v=2',
-    intNeon: '/port-css/integrations-neon.css?v=2',     vaultOps: '/port-css/vault-ops.css?v=4',
+    calendarNeon: '/port-css/calendar-neon.css?v=2', completedNeon: '/port-css/completed-neon.css?v=3',
+    intNeon: '/port-css/integrations-neon.css?v=2',     vaultOps: '/port-css/vault-ops.css?v=5',
     sheetViewer: '/port-css/sheet-viewer.css?v=2', notesCanvasP8: '/port-css/notes-canvas-p8.css?v=1',
     outreach: '/port-css/outreach-lists.css?v=2',
-    vault: '/port-css/vault-ops.css?v=4',
-    ops: '/port-css/vault-ops.css?v=4'
+    vault: '/port-css/vault-ops.css?v=5',
+    ops: '/port-css/vault-ops.css?v=5'
   };
   var HOSTS = {
     opsDash: 'room', warDesk: 'war', notesDesk: 'notes',

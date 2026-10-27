@@ -231,10 +231,10 @@ button{font:inherit;cursor:pointer}
 .eyeT,.bellT{font-size:11px;font-weight:800;color:#4a5672;background:#f5f7fb;border-radius:6px;padding:2px 7px;cursor:pointer;white-space:nowrap}.eye{border:none;background:none;padding:0}
 /* ===== 10d: Neon calendar ===== */
 .calwrap{--bg:#080c1f!important;--rail:#0a0f26!important;--panel:#0e1430!important;--edge:#1c2650!important;--edge2:#141c3c!important;border-color:rgba(120,150,255,.14)!important}
-.col.today{background:linear-gradient(180deg,rgba(255,77,141,.12),rgba(255,77,141,.03))!important;box-shadow:inset 1px 0 0 #ff4d8d,inset -1px 0 0 #ff4d8d}
+.col.today{background:rgba(255,77,141,.055)!important;box-shadow:inset 1px 0 0 rgba(255,77,141,.45);border-left:1px solid rgba(255,77,141,.45)!important}
 .nowline{background:#ff4d8d!important;box-shadow:0 0 10px #ff4d8d}.nowline::before{background:#ff4d8d!important;box-shadow:0 0 10px #ff4d8d}
-.ev.real{color:#fff!important;border-radius:6px!important;box-shadow:0 0 14px var(--glow,rgba(59,130,255,.55)),inset 0 0 0 1px rgba(255,255,255,.35)!important;filter:saturate(1.15)}
-.ev.real .tt,.ev.real .tm{text-shadow:0 1px 2px rgba(0,0,0,.45)}
+.ev.real{color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.35);border-radius:6px!important;box-shadow:0 0 14px var(--glow,rgba(59,130,255,.55)),inset 0 0 0 1px rgba(255,255,255,.35)!important;filter:saturate(1.15) brightness(.72)}
+.ev.real .tt,.ev.real .tm{color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.35)}
 .ev.sug{border-style:solid!important;opacity:.55}
 .ev.sug:hover{opacity:1}
 .allday .pill{box-shadow:0 0 10px color-mix(in srgb,currentColor 40%,transparent)}

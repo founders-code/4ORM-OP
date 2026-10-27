@@ -1,4 +1,6 @@
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { VAULT_COOKIE, vaultUnlocked } from '@/lib/finance';
 import { fail } from '@/lib/log';
 import { openBoard, sessionOwner } from '@/lib/session';
 
@@ -10,6 +12,9 @@ export async function GET() {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const ownerId = await sessionOwner(session);
     if (!ownerId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!vaultUnlocked(cookies().get(VAULT_COOKIE)?.value, session.userId)) {
+      return NextResponse.json({ locked: true }, { status: 403 });
+    }
     if (!session.sql) return NextResponse.json({ docs: [], reason: 'no database url' });
     const docs = await session.sql`
       SELECT id, org, kind, doc_id, name, version, status, verified_at, owner, note, source_url, drive_id, json_path

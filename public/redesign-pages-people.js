@@ -351,6 +351,9 @@
   }
 
   function paintContacts() {
+    try {
+      if (new URLSearchParams(String(location.search || '')).get('lists') === '1') S().peopleTab = 'lists';
+    } catch (e) {}
     loadCss('contacts').then(function () { whenFixture(function () {
       var root = mount('peopleDesk', 'contacts');
       if (!root) return;

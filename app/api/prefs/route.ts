@@ -44,6 +44,16 @@ export async function PATCH(req: Request) {
     if (body.rec_source === 'mic' || body.rec_source === 'both') patch.rec_source = body.rec_source;
     const rows = await session.sql`SELECT prefs FROM owner_settings WHERE owner_id = ${ownerId} LIMIT 1`;
     const cur = ((rows[0] as { prefs?: Record<string, unknown> } | undefined)?.prefs) || {};
+    if (body.links_prefs && typeof body.links_prefs === 'object') {
+      const view = (body.links_prefs as { view?: string }).view === 'list' ? 'list' : 'cards';
+      patch.links_prefs = Object.assign({}, (cur.links_prefs as object) || {}, { view });
+    }
+    if (body.docs_prefs && typeof body.docs_prefs === 'object') {
+      const size = Math.round(Number((body.docs_prefs as { size?: number }).size));
+      if (Number.isFinite(size)) {
+        patch.docs_prefs = Object.assign({}, (cur.docs_prefs as object) || {}, { size: Math.max(120, Math.min(280, size)) });
+      }
+    }
     const next = Object.assign({}, cur, patch);
     await session.sql`
       INSERT INTO owner_settings (owner_id, prefs)

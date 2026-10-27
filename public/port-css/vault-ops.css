@@ -50,15 +50,15 @@
 .upt b{color:#7fb0ff;text-shadow:0 0 8px rgba(127,176,255,.5)}
 
 /* --- dials --- */
-.dials{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:10px 18px 18px}
-@media(max-width:1100px){.dials{grid-template-columns:repeat(2,minmax(0,1fr))}.lamps{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.dial{background:#0b1026;border:1px solid #1a2450;border-radius:12px;padding:12px 8px 13px;text-align:center;position:relative;cursor:pointer}
+.dials{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px;padding:12px 16px 16px}
+@media(max-width:1100px){.dials{grid-template-columns:repeat(3,minmax(0,1fr))}.lamps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.dial{background:#0b1026;border:1px solid #1a2450;border-radius:11px;padding:10px 7px 11px;text-align:center;position:relative;cursor:pointer}
 .dial:hover{border-color:#3b82ff}
 .dial svg{display:block;width:100%;height:auto}
-.dial .val{font-size:24px;font-weight:850;letter-spacing:-.02em;line-height:1;margin-top:4px;position:relative}
-.dial .val span{display:block;font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6f7fa6;margin-top:5px}
-.dial .lab{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#8fa0c8;margin-top:7px}
-.dial .dlt{font-size:11px;font-weight:700;margin-top:3px;color:#6f7fa6}
+.dial .val{font-size:17px;font-weight:850;letter-spacing:-.02em;line-height:1;margin-top:3px;position:relative}
+.dial .val span{display:block;font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6f7fa6;margin-top:4px}
+.dial .lab{font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#8fa0c8;margin-top:6px}
+.dial .dlt{display:none}
 .dial.g .val{color:#2ee59d;text-shadow:0 0 14px rgba(46,229,157,.55)}
 .dial.b .val{color:#7fb0ff;text-shadow:0 0 14px rgba(127,176,255,.55)}
 .dial.a .val{color:#ffb547;text-shadow:0 0 14px rgba(255,181,71,.55)}
@@ -368,3 +368,16 @@ table.v td.mut{color:#aebbe0}
 #pg-ledger,#pg-map,#pg-vault{display:none}
 #pg-vault.show,#pg-map.show,#pg-ledger.show{display:block}
 .vwrap{display:grid;grid-template-columns:240px minmax(0,1fr);gap:16px}
+.gate{display:grid;place-items:center;padding:52px 16px;min-height:60vh}
+.gatebox{width:320px;text-align:center;background:#0b1026;border:1px solid #1a2450;border-radius:14px;padding:24px}
+.gatebox b{display:block;font-size:15px;font-weight:850;margin-bottom:5px}
+.gatebox small{display:block;font-size:12px;color:#7f8db5;font-weight:650;line-height:1.5;margin-bottom:14px}
+.pin{display:flex;gap:7px;justify-content:center;margin-bottom:13px}
+.pin i{width:42px;height:50px;border-radius:9px;background:#070b1c;border:1px solid #243266;display:grid;place-items:center;font-size:20px;font-weight:850;color:#e9eefa}
+.pin i.f{border-color:#ff4d8d;box-shadow:0 0 12px rgba(255,77,141,.35)}
+.gatebox.shake{animation:vshake .35s}
+@keyframes vshake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.vdoc{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px}
+.paper{background:#f7f8fb;color:#1b2440;border-radius:11px;padding:26px 30px;min-height:380px;font-size:12.5px;line-height:1.7}
+.paper h5{margin:0 0 3px;font-size:17px;font-weight:850;color:#101a33}
+.nav .nl .locked,.nav .locked{font-size:10px;font-weight:800;letter-spacing:.06em;color:#7f8db5;margin-left:6px}

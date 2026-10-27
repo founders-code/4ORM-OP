@@ -73,13 +73,16 @@ window.bindNewsPulse = function(root, pulse){
   function drawGauges(anim){const g=q(root,'#gg'); if(!g) return;
    g.innerHTML=GA().map(x=>{const L=LEV(x.v);const mx=Math.max.apply(null,x.w);
     const why = Array.isArray(x.why) ? ('<b>'+x.why[0]+'</b> '+(x.why[1]||'')) : (x.why||'');
-    const delta = x.building ? 'building a baseline' : ('<span class="'+(x.d>=0?'up':'dn')+'">'+(x.d>=0?'+':'')+x.d+'</span> vs last week');
-    return `<button class="gc${FOCUS===x.k?' on':''}" data-g="${x.k}" data-action="news-heat-focus" aria-pressed="${FOCUS===x.k}">${gaugeSVG(anim?0:x.v)}
-    <div><div class="gt">${x.t}</div><div class="gv"><b data-to="${x.v}">${anim?0:x.v}</b><em class="lv-${L[0]}">${L[1]}</em></div>
+    const nWeeks = x.buildingN != null ? x.buildingN : 0;
+    const delta = x.building ? ('building a baseline, ' + nWeeks + ' of 4 weeks') : ('<span class="'+(x.d>=0?'up':'dn')+'">'+(x.d>=0?'+':'')+x.d+'</span> vs last week');
+    const shown = x.building || x.v == null ? '-' : (anim?0:x.v);
+    const L2 = x.building || x.v == null ? ['calm',''] : L;
+    return `<button class="gc${FOCUS===x.k?' on':''}" data-g="${x.k}" data-action="news-heat-focus" aria-pressed="${FOCUS===x.k}">${gaugeSVG(anim?0:(x.v||0))}
+    <div><div class="gt">${x.t}</div><div class="gv"><b data-to="${x.v||0}">${shown}</b>${L2[1]?'<em class="lv-'+L2[0]+'">'+L2[1]+'</em>':''}</div>
     <div class="gd">${delta}</div></div>
-    <div class="sp">${x.w.map((n,i)=>`<i class="${i===x.w.length-1?'now':''}" style="height:${Math.max(8,n/mx*100)}%" data-tip="<b>${x.t}</b><br>${PULSE.weeks[i]}: ${n}"></i>`).join('')}</div>
+    <div class="sp">${x.w.map((n,i)=>`<i class="${i===x.w.length-1?'now':''}" style="height:${Math.max(8,(mx?n/mx:0)*100)}%" data-tip="<b>${x.t}</b><br>${PULSE.weeks[i]}: ${n}"></i>`).join('')}</div>
     <div class="why">${why}</div></button>`}).join('');
-   if(anim&&!reduce){GA().forEach((x,gi)=>{const el=g.children[gi];if(!el)return;const t0=performance.now();const D=1100+gi*120;
+   if(anim&&!reduce){GA().forEach((x,gi)=>{if(x.building||x.v==null)return;const el=g.children[gi];if(!el)return;const t0=performance.now();const D=1100+gi*120;
     (function step(t){const p=Math.min(1,(t-t0)/D);const e=1-Math.pow(1-p,3);const v=x.v*e;const svg=el.querySelector('svg'); if(svg) svg.outerHTML=gaugeSVG(v);const b=el.querySelector('.gv b'); if(b) b.textContent=Math.round(v);if(p<1)requestAnimationFrame(step)})(t0)})}
   }
   function drawRadar(){const g=q(root,'#rrg'); if(!g) return; const lv=n=>n>=4?4:n;

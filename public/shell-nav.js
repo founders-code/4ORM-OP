@@ -29,6 +29,7 @@
     notes: 'Notes', done: 'Completed', news: 'News', people: 'Contacts', rec: 'Recordings',
     finance: 'Financials', int: 'Integrations', vault: 'Vault', ops: 'Control room'
   };
+  /* Desk alias kept for the Control room: 'war', '/planner' */
   var DEFAULT = NAV.filter(function (n) { return n.length > 1; }).map(function (n) { return n[0]; });
   var order = null;
   try { order = JSON.parse(localStorage.getItem('cr_nav_order') || 'null'); } catch (e) { order = null; }
@@ -141,7 +142,7 @@
         seen[name] = 1;
         var badge = bag[name];
         if (badge === '' || badge == null) badge = it[2] || '';
-        html += '<div class="nav' + (it[0] === active ? ' on' : '') + '" data-action="nav-go" data-v="' + it[3] + '" data-path="' + it[4] + '" data-name="' + it[0] + '" draggable="' + drag + '" tabindex="0"><span class="grip" aria-hidden="true"></span><span class="nl">' + it[0] + '</span>' + (badge ? '<span class="n" id="' + (name === 'Pipeline' ? 'cCount' : name === 'Integrations' ? 'iCount' : '') + '">' + badge + '</span>' : '') + '</div>';
+        html += '<div class="nav' + (it[0] === active ? ' on' : '') + '" data-action="nav-go" data-v="' + it[3] + '" data-path="' + it[4] + '" data-name="' + it[0] + '" draggable="' + drag + '" tabindex="0"><span class="grip" aria-hidden="true"></span><span class="nl">' + it[0] + (it[0] === 'Vault' && !window.__vaultOpen ? ' <span class="locked">locked</span>' : '') + '</span>' + (badge ? '<span class="n" id="' + (name === 'Pipeline' ? 'cCount' : name === 'Integrations' ? 'iCount' : '') + '">' + badge + '</span>' : '') + '</div>';
       });
     });
     names.forEach(function (name) {

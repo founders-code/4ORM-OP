@@ -1067,8 +1067,8 @@
     var cardsOn = false;
     try { cardsOn = new URLSearchParams(location.search || '').get('cards') === '1'; } catch (e) {}
     var panelWanted = spaceOpenWanted();
-    if (typeof window.paintSpacesCardsPage === 'function' && (spaceQ === 'open' || cardsOn || (!fixtureOn() && !panelWanted))) {
-      window.paintSpacesCardsPage(spaceQ === 'open');
+    if (typeof window.paintSpacesCardsPage === 'function' && (spaceQ === 'open' || cardsOn || !fixtureOn() || (panelWanted && !fixtureOn()))) {
+      window.paintSpacesCardsPage(spaceQ === 'open' || (!fixtureOn() && panelWanted));
       return;
     }
     var arrangeOn = (typeof window.paintSpacesArrangePage === 'function') && (!fixtureOn() || (function () { try { return new URLSearchParams(location.search || '').get('arrange') === '1'; } catch (e) { return false; } })());
@@ -1084,7 +1084,7 @@
       } else panelOn = false;
     }
     if (P().applyPageCss) P().applyPageCss(wrap, panelOn ? 'work+spaceOpen' : 'work');
-    wrap.classList.toggle('withpanel', !!panelOn);
+    wrap.classList.toggle('withpanel', !!(panelOn && fixtureOn()));
     var view = S.spaceView || 'groups';
     var data = spacesData();
     var filterLabel = (!S.spaceFilter || S.spaceFilter === 'all') ? 'all' : S.spaceFilter;
@@ -1242,7 +1242,7 @@
     var titleLines = asList(sh.title);
     var files = booksShow.map(function (b, i) {
       var n = (b.sheets || []).length;
-      return '<div class="file' + (i === bi ? ' on' : '') + '" data-action="docs-sheet-book" data-i="' + i + '" data-name="' + esc(b.name) + '">' + esc(b.name) + '<small>' + n + ' sheet' + (n === 1 ? '' : 's') + '</small></div>';
+      return '<div class="file' + (i === bi ? ' on' : '') + '" data-action="docs-sheet-book" data-i="' + i + '" data-name="' + esc(b.name) + '">' + esc(b.name) + '<small>' + n + ' tab' + (n === 1 ? '' : 's') + ' · opened from Documents</small></div>';
     }).join('');
     var tabs = sheets.map(function (s, i) {
       return '<span class="' + (i === si ? 'on' : '') + '" data-action="docs-sheet-tab" data-i="' + i + '">' + esc(s.name) + '</span>';
@@ -1266,8 +1266,8 @@
       '<div class="bar"><h1>Documents</h1><span class="sub">sheets open right here, no Google sign-in</span><div class="r"><input class="search" data-action="docs-sheet-search" placeholder="Search this sheet" value="' + esc(S.docSheetQ || '') + '"></div></div>'
       + '<div class="files" id="files">' + files + '</div>'
       + '<section class="card doc">'
-      + '<div class="dh"><span class="kind">SHEET</span><h2>' + esc(book.name) + '</h2><span style="font-size:12px;color:var(--ink3);font-weight:650">' + sheets.length + ' tabs · ' + (sh.rows || []).length + ' rows</span>'
-      + '<div class="r"><button class="btn" data-action="doc-download">Download .xlsx</button><button class="btn" data-action="docs-sheet-google">Open in Google Sheets</button><button class="btn pri" data-action="docs-sheet-make">Make a list from this sheet</button><button class="btn" data-action="doc-add-space">Add to a Space</button><button class="btn" data-action="doc-close">Close</button></div></div>'
+      + '<div class="dh"><span class="kind">SHEET</span><h2>' + esc(book.name) + '</h2><span style="font-size:12px;color:var(--ink3);font-weight:650">' + (sh.rows || []).length + ' rows · ' + hdr.length + ' columns</span>'
+      + '<div class="r"><button class="btn" data-action="doc-download">Download .xlsx</button><button class="btn" data-action="docs-sheet-google">Open in Google Sheets</button><button class="btn pri" data-action="docs-sheet-make">Make a list from this sheet</button></div></div>'
       + '<div class="tabs">' + tabs + '</div>'
       + '<div class="sttl">' + (titleLines[0] ? '<b>' + esc(titleLines[0]) + '</b>' : '') + (titleLines[1] ? '<br>' + esc(titleLines[1]) : '') + '</div>'
       + '<div class="grid"><table class="sg">' + th + tb + '</table></div></section>'
@@ -1343,9 +1343,10 @@
       + '<div class="types">' + TYPE_CHIPS.map(function (c) {
         return '<button class="chip' + (typeOn === c[0] ? ' on' : '') + '" data-action="docs-type" data-type="' + c[0] + '">' + c[1] + '</button>';
       }).join('') + '</div></section>'
-      + '<section class="card ctr"><div class="ch"><h3>' + esc(data.title || 'All documents') + '</h3><span class="s">' + (data.files || []).length + ' files &middot; hover a file to select it, then drop it on a Space</span></div>'
+      + '<section class="card ctr"><div class="ch"><h3>' + esc(data.title || 'All documents') + '</h3><span class="s">' + (data.files || []).length + ' files &middot; hover a file to select it, then drop it on a Space</span>'
+      + '<span class="sizer">Size <input type="range" min="120" max="280" value="' + (Number((window.STATE && window.STATE.prefs && window.STATE.prefs.docs_prefs && window.STATE.prefs.docs_prefs.size) || 168)) + '" data-action="docs-size"></span></div>'
       + bulk
-      + '<div class="files' + (view === 'list' ? ' list' : '') + '" id="files">' + (files || empty) + '</div>'
+      + '<div class="files' + (view === 'list' ? ' list' : '') + '" id="files" style="--dw:' + (Number((window.STATE && window.STATE.prefs && window.STATE.prefs.docs_prefs && window.STATE.prefs.docs_prefs.size) || 168)) + 'px">' + (files || empty) + '</div>'
       + '<div class="drop">Drop files here, <span class="lnk" data-action="docs-upload">upload</span> or <span class="lnk" data-action="docs-drive">pull from Drive</span> &mdash; <b>first-page previews</b> appear automatically.</div></section>'
       + '<div class="rs"><section class="card"><div class="ch"><h3>Drop into a Space</h3><span class="s">drag a file here</span></div>'
       + ((data.drops || []).length ? (data.drops || []).map(function (d) {
@@ -1464,7 +1465,8 @@
     var data = linksData();
     wrap.innerHTML =
       '<div class="bar"><h1>Links</h1><span class="sub">Every bookmark, sorted &mdash; each opens the site in a new tab</span>'
-      + '<div class="r"><input class="search" data-action="link-search" placeholder="Search links, notes or sites"></div></div>'
+      + '<div class="r"><input class="search" data-action="link-search" placeholder="Search links, notes or sites">'
+      + '<div class="seg"><span' + (((window.STATE && window.STATE.prefs && window.STATE.prefs.links_prefs && window.STATE.prefs.links_prefs.view) || 'cards') === 'cards' ? ' class="on"' : '') + ' data-action="links-view" data-view="cards">Cards</span><span' + (((window.STATE && window.STATE.prefs && window.STATE.prefs.links_prefs && window.STATE.prefs.links_prefs.view) === 'list') ? ' class="on"' : '') + ' data-action="links-view" data-view="list">List</span></div></div></div>'
       + '<div class="lay"><section class="card tree"><div class="lh">Categories <span class="lnk" data-action="link-cat-new">+ New</span></div><div id="tree2">'
       + (data.tree || []).map(function (t) {
         var car = t.car === 'open' ? '&#9662;' : t.car === 'closed' ? '&#9656;' : '';
@@ -1486,13 +1488,14 @@
       + '<div class="exp" data-action="link-expand">' + ((window.STATE && window.STATE.linkAllOpen) ? 'Collapse all' : 'Expand all') + '</div><div class="hint2">Drag to reorder. Drop a folder onto another to make it a subfolder.</div></div></section>'
       + '<section class="card"><div class="crumbs">Links &rsaquo; <b>' + esc(data.crumb || '') + '</b> &middot; ' + (data.crumbN || 0) + ' links</div>'
       + '<div class="add"><input data-action="link-title" placeholder="Title (optional - we\'ll read it from the site)"><input data-action="link-url" placeholder="Paste a link - https://"><button data-action="link-add">Add link</button></div>'
-      + '<div class="wall" id="wall">' + (data.wall || []).map(function (w) {
+      + '<div class="wall' + (((window.STATE && window.STATE.prefs && window.STATE.prefs.links_prefs && window.STATE.prefs.links_prefs.view) === 'list') ? ' list' : '') + '" id="wall">' + (data.wall || []).map(function (w) {
         var href = absUrl(w[5] || w[1]);
         var letter = esc(String(w[0] || '?')[0]);
         var id = esc(w[6] || '');
         var thumb = w[7] ? '/api/links/thumb?id=' + encodeURIComponent(w[6] || '') : '';
         var cover = thumb ? '<img alt="" loading="lazy" src="' + esc(thumb) + '" class="thumb">' : '<i style="background:' + w[2] + '">' + letter + '</i>';
-        return '<a class="tile" data-action="link-open" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" data-id="' + id + '" data-url="' + esc(href) + '">' + (w[4] == 2 ? '<span class="dup">Duplicate</span>' : '')
+        var listOn = (window.STATE && window.STATE.prefs && window.STATE.prefs.links_prefs && window.STATE.prefs.links_prefs.view) === 'list';
+        return '<a class="tile' + (listOn ? ' row' : '') + '" data-action="link-open" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" data-id="' + id + '" data-url="' + esc(href) + '">' + (w[4] == 2 ? '<span class="dup">Duplicate</span>' : '')
           + '<div class="lg" style="background:' + w[2] + '14">' + cover + '</div>'
           + '<div class="tm"><span title="Edit" data-action="link-edit" data-id="' + id + '" data-title="' + esc(w[0]) + '">Edit</span><span title="Move" data-action="link-move" data-id="' + id + '" data-title="' + esc(w[0]) + '" data-url="' + esc(href) + '">Move</span><span title="Delete" data-action="link-archive" data-id="' + id + '" data-note="' + esc(w[3] || '') + '">&times;</span></div>'
           + '<div class="nb"><b>' + esc(w[0]) + '</b><div class="dm">' + esc(w[1]) + '</div><div class="nt' + (w[3] ? '' : ' empty') + '" data-action="link-note" data-id="' + id + '">' + (w[3] ? esc(w[3]) : 'Add a note') + '</div></div></a>';

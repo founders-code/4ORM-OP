@@ -131,16 +131,105 @@
       if (!x) return;
       var dbc = $(root, '#dbc'); if (dbc) dbc.innerHTML = 'Vault / ' + x.org + ' / ' + x.kind + ' / <b>' + x.id + '</b>';
       var body = $(root, '#dbody');
-      if (body) body.innerHTML = '<div class="box"><div class="vfacts"><div><small>Document</small><span>' + x.n + '</span></div><div><small>Version</small><span>' + (x.v || '-') + '</span></div><div><small>Status</small><span class="pill ' + stp(x.st) + '">' + x.st + '</span></div><div><small>Owner</small><span>' + x.own + '</span></div></div>' + (x.note ? '<div class="watch">' + x.note + '</div>' : '') + '</div>';
+      if (body) body.innerHTML = '<div class="vdoc"><div class="paper" id="vpaper">Loading the document…</div><div><div class="box"><h4>This document</h4><div class="vfacts"><div><small>ID</small><span>' + x.id + '</span></div><div><small>Version</small><span>' + (x.v || '-') + '</span></div><div><small>Status</small><span class="pill ' + stp(x.st) + '">' + x.st + '</span></div><div><small>Verified</small><span>' + (x.dt || '-') + '</span></div><div><small>Owner</small><span>' + x.own + '</span></div></div><button class="btn" type="button" data-action="vault-source">Open the source</button></div><div class="box" id="vvers"><h4>Versions</h4></div><div class="box" id="vdep"><h4>Depends on</h4></div></div></div>';
       var foot = $(root, '#dfoot');
-      if (foot) foot.innerHTML = '<span class="msg">' + x.id + ' · ' + x.n + '</span><button class="btn" type="button" data-action="vault-assign">Assign an owner</button><button class="btn pri" type="button" data-action="vault-upload">Upload a new version</button>';
+      if (foot) foot.innerHTML = '<span class="msg">' + x.id + ' · ' + x.n + '</span><button class="btn" type="button" data-action="vault-assign">Assign an owner</button><label class="btn pri">Upload a new version<input type="file" id="vup" hidden></label>';
       openDrawer(root);
+      var key = x.uuid || x.id;
+      api('/api/vault/' + encodeURIComponent(key)).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {
+        var paper = $(root, '#vpaper');
+        if (!paper) return;
+        var b = (d && d.body) || {};
+        if (b.kind === 'pdf' && b.url) paper.innerHTML = '<iframe src="' + b.url + '" title="' + x.n + '" style="width:100%;height:70vh;border:0;background:#fff"></iframe>';
+        else if (b.kind === 'drive' && b.url) paper.innerHTML = '<iframe src="' + b.url + '" title="' + x.n + '" style="width:100%;height:70vh;border:0;background:#fff"></iframe>';
+        else if (b.kind === 'json') {
+          api(b.path || '/data/vault_seed.json').then(function (r) { return r && r.ok ? r.json() : null; }).then(function (j) {
+            var rows = Array.isArray(j) ? j : (j && (j.docs || j.documents || j.register)) || [];
+            var keys = rows[0] ? Object.keys(rows[0]) : [];
+            paper.innerHTML = '<h5>' + x.n + '</h5><table class="t"><tr>' + keys.map(function (k) { return '<th>' + k + '</th>'; }).join('') + '</tr>' + rows.slice(0, 80).map(function (row) {
+              return '<tr>' + keys.map(function (k) { return '<td>' + String(row[k] == null ? '' : row[k]) + '</td>'; }).join('') + '</tr>';
+            }).join('') + '</table>';
+          }).catch(function () { paper.textContent = x.n; });
+        } else if (b.kind === 'md' || b.text) {
+          paper.innerHTML = '<h5>' + x.n + '</h5><div>' + String(b.text || x.note || '').replace(/\n/g, '<br>') + '</div>';
+        } else paper.innerHTML = '<h5>' + x.n + '</h5><p>' + (x.note || 'No stored copy to preview yet.') + '</p>';
+        var vers = $(root, '#vvers');
+        if (vers) {
+          var vs = (d && d.versions) || [];
+          vers.innerHTML = '<h4>Versions</h4>' + (vs.length ? vs.map(function (v) {
+            return '<div>' + (v.version || '-') + ' · ' + (v.superseded_at ? 'superseded' : 'current') + ' · ' + (v.file || '') + '</div>';
+          }).join('') : '<div>Current ' + (x.v || '-') + '</div>') + '<div>+ Upload a new version</div>';
+        }
+        var dep = $(root, '#vdep');
+        if (dep) {
+          var ds = (d && d.depends) || [];
+          dep.innerHTML = '<h4>Depends on</h4>' + (ds.length ? ds.map(function (c) { return '<span class="chip2">' + (c.name || c.doc_id) + '</span>'; }).join('') : '<span>none</span>');
+        }
+      });
+      var up = $(root, '#vup');
+      if (up) up.onchange = function () {
+        if (!up.files || !up.files[0]) return;
+        var fd = new FormData();
+        fd.append('file', up.files[0]);
+        fd.append('version', 'v-test');
+        var fn = window.authFetch || fetch;
+        fn('/api/vault/' + encodeURIComponent(key), { method: 'POST', credentials: 'same-origin', body: fd }).then(function (r) { return r && r.ok ? r.json() : null; }).then(function () { openDoc(id); toast(root, 'Version stored; the previous copy is kept as superseded'); });
+      };
     }
     var vq = $(root, '#vq');
     if (vq) vq.oninput = function (e) { q = String(e.target.value || '').toLowerCase(); render(); };
     var dc = $(root, '#dclose'); if (dc) dc.onclick = function () { closeDrawer(root); };
     var sc = $(root, '#scrim'); if (sc) sc.onclick = function () { closeDrawer(root); };
-    api('/api/vault/documents').then(function (r) { return r && r.ok ? r.json() : api('/api/vault').then(function (r2) { return r2 && r2.ok ? r2.json() : { docs: [], reason: 'vault unavailable' }; }); }).then(function (d) {
+    function paintGate(msg) {
+      var host = $(root, '#pg-vault') || root;
+      host.innerHTML = '<div class="gate"><div class="gatebox" id="gbox"><b>Vault</b><small>Enter the four-digit code. Unlocking Financials does not open this page.</small><div class="pin" id="vpin"><i class="f"></i><i></i><i></i><i></i></div><small id="ver">' + (msg || '') + '</small></div></div>';
+      var digits = [];
+      var fails = 0;
+      var lockedUntil = 0;
+      function draw() {
+        var cells = host.querySelectorAll('#vpin i');
+        cells.forEach(function (c, i) {
+          c.textContent = digits[i] ? '·' : '';
+          c.classList.toggle('f', i === digits.length);
+        });
+      }
+      function submit() {
+        if (Date.now() < lockedUntil) return;
+        api('/api/vault', { method: 'POST', body: JSON.stringify({ code: digits.join('') }), headers: { 'content-type': 'application/json' } }).then(function (r) {
+          if (r && r.status === 429) { fails = 3; lockedUntil = Date.now() + 30000; shake('Wait 30 seconds'); return null; }
+          if (!r || !r.ok) { fails += 1; if (fails >= 3) lockedUntil = Date.now() + 30000; shake(fails >= 3 ? 'Wait 30 seconds' : 'That code did not match.'); return null; }
+          window.__vaultOpen = true;
+          if (typeof window.paintShellNav === 'function') window.paintShellNav();
+          if (typeof window.paintRedesignVault === 'function') window.paintRedesignVault();
+          return null;
+        }).catch(function () { shake('Vault is unavailable'); });
+        digits = [];
+      }
+      function shake(m) {
+        var box = $(host, '#gbox');
+        if (box) { box.classList.add('shake'); setTimeout(function () { box.classList.remove('shake'); }, 400); }
+        var er = $(host, '#ver'); if (er) er.textContent = m || '';
+        digits = [];
+        draw();
+      }
+      document.addEventListener('keydown', function onKey(e) {
+        if (!(window.STATE && window.STATE.desk === 'vault')) return;
+        if (e.key === 'Backspace') { digits.pop(); draw(); return; }
+        if (/^\d$/.test(e.key)) {
+          if (digits.length < 4) digits.push(e.key);
+          draw();
+          if (digits.length === 4) submit();
+        }
+      });
+      draw();
+    }
+    api('/api/vault').then(function (r) {
+      if (r && r.status === 403 && !window.fixtureMockup) { paintGate(); return { locked: true }; }
+      return r && r.ok ? r.json() : api('/api/vault/documents').then(function (r2) { return r2 && r2.ok ? r2.json() : { docs: [], reason: 'vault unavailable' }; });
+    }).then(function (d) {
+      if (!d || d.locked) return;
+      window.__vaultOpen = true;
+      if (typeof window.paintShellNav === 'function') window.paintShellNav();
       docs = ((d && d.docs) || []).map(rowOf);
       reason = (d && d.reason) || (docs.length ? '' : 'no documents in the vault yet');
       nav(); render();
@@ -200,10 +289,10 @@
       var nx = 80 + 40 * Math.cos(a * Math.PI / 180), ny = 84 + 40 * Math.sin(a * Math.PI / 180);
       var shown = has ? (num % 1 ? num.toFixed(2) : String(num)) : '-';
       var note = d.note || (has ? '' : 'no sample yet');
-      return '<div class="dial" data-k="' + d.key + '" title="' + note + '"><span class="rl">0–' + (d.red || '-') + '</span><svg viewBox="0 0 160 100">'
+      return '<div class="dial" data-k="' + d.key + '" data-note="' + String(note).replace(/"/g, '') + '" title="' + note + '"><span class="rl">0–' + (d.red || '-') + '</span><svg viewBox="0 0 160 100">'
         + '<path d="M22 84 A58 58 0 0 1 138 84" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/>'
         + '<line class="ndl" x1="80" y1="84" x2="' + nx.toFixed(1) + '" y2="' + ny.toFixed(1) + '" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/>'
-        + '</svg><div class="val">' + shown + '<span>' + (d.unit || '') + '</span></div><div class="lab">' + (d.label || d.key) + '</div><div class="dlt">' + note + '</div></div>';
+        + '</svg><div class="val">' + shown + '<span>' + (d.unit || '') + '</span></div><div class="lab">' + (d.label || d.key) + '</div></div>';
     }
     function paintDials(dials) {
       var box = $(root, '#dials'); if (!box) return;

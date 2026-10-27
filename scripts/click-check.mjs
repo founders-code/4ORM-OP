@@ -20,7 +20,7 @@ const PAGES = {
     { name: 'Links', live: 'control-room.html?view=links&fixture=mockup', ready: '#linksDesk[data-port-ready]', host: 'linksDesk' },
     { name: 'Recordings', live: 'control-room.html?view=rec&fixture=mockup', ready: '#recDesk[data-port-ready]', host: 'recDesk' },
     { name: 'Playbook wording', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', host: 'playDesk' },
-    { name: 'News', live: 'control-room.html?view=news', ready: '#v-news', host: 'v-news', waitCards: true },
+    { name: 'News', live: 'control-room.html?view=news&fixture=mockup', ready: '#v-news', host: 'v-news', waitCards: true },
     { name: 'Financials', live: 'control-room.html?view=finance', ready: '#v-finance', host: 'v-finance', waitCards: true },
   ],
   2: [
@@ -36,7 +36,7 @@ const PAGES = {
     { name: 'Completed', live: 'control-room.html?view=done&fixture=mockup', ready: '#doneDesk[data-port-ready]', host: 'doneDesk' },
   ],
   4: [
-    { name: 'News', live: 'control-room.html?view=news', ready: '#v-news', host: 'v-news' },
+    { name: 'News', live: 'control-room.html?view=news&fixture=mockup', ready: '#v-news', host: 'v-news' },
   ],
 };
 const MIME = {
@@ -156,7 +156,7 @@ async function productionStep1(browser) {
   let failed = false;
 
   async function readyWar() {
-    await live.goto('https://www.4ormop.com/planner?view=war', { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await live.goto('https://www.4ormop.com/war-room', { waitUntil: 'domcontentloaded', timeout: 45000 });
     await live.waitForSelector('#warDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
   }
   async function readyView(path, host) {
@@ -384,6 +384,10 @@ async function productionStep1(browser) {
     if (add) add.click();
   }, delTitle);
   await live.waitForTimeout(600);
+  await live.waitForFunction((title) => {
+    const root = document.getElementById('warDesk') && document.getElementById('warDesk').shadowRoot;
+    return !!(root && Array.from(root.querySelectorAll('.task')).some((n) => (n.textContent || '').indexOf(title) >= 0));
+  }, delTitle, { timeout: 10000 }).catch(() => {});
   const xClick = await live.evaluate((title) => {
     const root = document.getElementById('warDesk').shadowRoot;
     const task = Array.from(root.querySelectorAll('.exec.today .task')).filter((n) => (n.textContent || '').indexOf(title) >= 0)[0];
@@ -594,9 +598,9 @@ async function productionStep1(browser) {
   });
   if (!pushLive(rows, 'Recordings', '/recordings loads', { dom: !!recLive.ok, net: true, persist: true, extra: 'desk=' + recLive.desk + ' path=' + recLive.path + ' paint=' + recLive.paint + ' scripts=' + (recLive.scripts || []).join(',') + ' txt=' + JSON.stringify(recLive.txt || '') })) failed = true;
 
-  await readyView('/planner?view=timeline', '#warDesk');
+  await readyView('/planner?view=timeline', '#plannerDesk');
   const boardScroll = await live.evaluate(() => {
-    const root = document.getElementById('warDesk').shadowRoot;
+    const root = document.getElementById('plannerDesk').shadowRoot;
     const sc = root && root.querySelector('#scroller');
     if (!sc) return { ok: false };
     const cs = getComputedStyle(sc);
@@ -605,7 +609,7 @@ async function productionStep1(browser) {
     return { ok: cs.overflowY === 'hidden' && cs.overflowX === 'auto', y0, y1: window.scrollY, maxH: cs.maxHeight };
   });
   const boardBox = await live.evaluate(() => {
-    const root = document.getElementById('warDesk').shadowRoot;
+    const root = document.getElementById('plannerDesk').shadowRoot;
     const sc = root && root.querySelector('#scroller');
     if (!sc) return null;
     const r = sc.getBoundingClientRect();
@@ -623,7 +627,7 @@ async function productionStep1(browser) {
   if (!pushLive(rows, 'Planner', 'Board page scroll', { dom: boardScroll.ok && wheelY, net: true, persist: true, extra: 'oy=' + (boardScroll.ok) })) failed = true;
 
   const w0 = await live.evaluate(() => {
-    const root = document.getElementById('warDesk').shadowRoot;
+    const root = document.getElementById('plannerDesk').shadowRoot;
     const c = root && root.querySelector('#canvas');
     return c ? c.getBoundingClientRect().width : 0;
   });
@@ -635,21 +639,21 @@ async function productionStep1(browser) {
     await live.waitForTimeout(400);
   }
   const w1 = await live.evaluate(() => {
-    const root = document.getElementById('warDesk').shadowRoot;
+    const root = document.getElementById('plannerDesk').shadowRoot;
     const c = root && root.querySelector('#canvas');
     return c ? c.getBoundingClientRect().width : 0;
   });
   await live.reload({ waitUntil: 'domcontentloaded' });
-  await live.waitForSelector('#warDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  await live.waitForSelector('#plannerDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
   const w2 = await live.evaluate(() => {
-    const root = document.getElementById('warDesk').shadowRoot;
+    const root = document.getElementById('plannerDesk').shadowRoot;
     const c = root && root.querySelector('#canvas');
     return c ? c.getBoundingClientRect().width : 0;
   });
   if (!pushLive(rows, 'Planner', 'Pinch zoom persist', { dom: w1 !== w0, net: true, persist: Math.abs(w2 - w1) < 80 || w1 !== w0, extra: 'w0=' + Math.round(w0) + ' w1=' + Math.round(w1) + ' w2=' + Math.round(w2) })) failed = true;
 
   const presets = await live.evaluate(() => {
-    const root = document.getElementById('warDesk').shadowRoot;
+    const root = document.getElementById('plannerDesk').shadowRoot;
     const keys = ['day', 'week', 'month', 'quarter', 'year'];
     const hit = keys.map((k) => !!(root.querySelector('[data-zlv="' + k + '"]')));
     keys.forEach((k) => { const b = root.querySelector('[data-zlv="' + k + '"]'); if (b) b.click(); });
@@ -659,7 +663,7 @@ async function productionStep1(browser) {
 
   const dragTitle = 'TEST click-check drag ' + stamp;
   const dragAdd = await live.evaluate(async (title) => {
-    const root = document.getElementById('warDesk').shadowRoot;
+    const root = document.getElementById('plannerDesk').shadowRoot;
     const trk = root.querySelector('.trk.can-add');
     if (!trk) return { ok: false };
     const r = trk.getBoundingClientRect();
@@ -678,9 +682,9 @@ async function productionStep1(browser) {
   }, dragTitle);
   await live.waitForTimeout(800);
   await live.reload({ waitUntil: 'domcontentloaded' });
-  await live.waitForSelector('#warDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  await live.waitForSelector('#plannerDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
   const dragPersist = await live.evaluate((title) => {
-    const root = document.getElementById('warDesk').shadowRoot;
+    const root = document.getElementById('plannerDesk').shadowRoot;
     return !!(root && (root.textContent || '').indexOf(title) >= 0);
   }, dragTitle);
   const items = await liveApi(live, '/api/timeline', 'GET');
@@ -1977,12 +1981,48 @@ async function main() {
 
     await page.goto(`http://127.0.0.1:${port}/control-room.html?view=news&fixture=mockup`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#v-news', { timeout: 15000, state: 'attached' });
+    await page.waitForFunction(() => {
+      const host = document.getElementById('v-news');
+      const root = (host && host.shadowRoot) || host;
+      return !!(root && root.querySelector('#pz') && /Market pulse/.test(root.textContent || ''));
+    }, { timeout: 15000 });
     const pulse = await page.evaluate(() => {
       const host = document.getElementById('v-news');
       const root = (host && host.shadowRoot) || host;
       return !!(root && root.querySelector('#pz') && /Market pulse/.test(root.textContent || ''));
     });
     clicks.push({ page: 'News', control: 'Market pulse band', dom: pulse, net: true, persist: true, pass: pulse });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=mail&fixture=mockup&people=1`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#mailDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const mailMenu = await page.evaluate(() => {
+      const root = document.getElementById('mailDesk').shadowRoot;
+      const more = root.querySelector('[data-action="mail-box-menu"]');
+      if (more) more.click();
+      const menu = root.getElementById('boxMenu');
+      if (!menu) return { ok: false };
+      const cs = getComputedStyle(menu);
+      const r = menu.getBoundingClientRect();
+      const bg = cs.backgroundColor;
+      const inView = r.top >= 0 && r.left >= 0 && r.bottom <= window.innerHeight && r.right <= window.innerWidth && r.height > 10;
+      return { ok: bg === 'rgb(255, 255, 255)' && inView && menu.classList.contains('smenu') };
+    });
+    clicks.push({ page: 'Email', control: 'More menu white in viewport', dom: !!mailMenu.ok, net: true, persist: true, pass: !!mailMenu.ok });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=notes&fixture=mockup&canvas=1`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#notesDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const clusterKeep = await page.evaluate(() => {
+      const root = document.getElementById('notesDesk').shadowRoot;
+      const notes = Array.from(root.querySelectorAll('.note'));
+      const before = notes.map((n) => ({ t: n.style.top, l: n.style.left }));
+      const n = notes.length;
+      const mk = root.querySelector('[data-action="canvas-mk-cluster"]');
+      if (mk) mk.click();
+      const after = Array.from(root.querySelectorAll('.note'));
+      if (after.length !== n) return false;
+      return after.every((el, i) => el.style.top === before[i].t && el.style.left === before[i].l);
+    });
+    clicks.push({ page: 'Notes', control: 'Cluster keeps notes', dom: clusterKeep, net: true, persist: true, pass: clusterKeep });
     }
 
     console.log('\nB  click-check (fixture DOM)');

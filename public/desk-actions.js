@@ -1702,6 +1702,13 @@
       toast(root, 'All categories expanded');
     },
     'link-search': function () { /* input handler */ },
+    'links-view': function (el) {
+      var view = attr(el, 'data-view') === 'list' ? 'list' : 'cards';
+      S().prefs = S().prefs || {};
+      S().prefs.links_prefs = Object.assign({}, S().prefs.links_prefs || {}, { view: view });
+      api('/api/prefs', { method: 'PATCH', body: { links_prefs: { view: view } } }).catch(function () {});
+      refresh('links');
+    },
     'link-note': function (el, root, ev) {
       if (ev) { ev.preventDefault(); ev.stopPropagation(); }
       if (el.getAttribute('contenteditable') === 'true') return;
@@ -2308,13 +2315,24 @@
     'space-card-name': function () {},
     'space-card-desc': function () {},
     'space-open': function (el, root) {
-      var card = el.closest && el.closest('.sp');
+      var card = el.closest && el.closest('.sp, tr.row, .pb, .pipe-card');
       var id = attr(el, 'data-id') || attr(el, 'data-space') || (card && attr(card, 'data-id')) || '';
       var name = (card && card.querySelector('h4') && card.querySelector('h4').textContent) || 'Space';
       var intel = (card && card.querySelector('p') && card.querySelector('p').textContent) || '';
       if (!id && !name) { soon(root, 'Open space'); return; }
       var hit = (S().packages || []).filter(function (p) { return id && String(p.id) === String(id); })[0];
+      var wrap = (root.querySelector && root.querySelector('.port-body')) || root;
+      if (!S().spaceFrom) {
+        S().spaceFrom = {
+          desk: S().desk || 'work',
+          crumb: (S().desk === 'mail' ? 'Email' : S().desk === 'people' ? 'Contacts' : S().desk === 'contacts' ? 'Pipeline' : 'Spaces'),
+          rowId: id,
+          scroll: wrap.scrollTop || 0,
+          list: (S().packages || []).map(function (p) { return p.id; })
+        };
+      }
       S().pkg = hit || { id: id || ('fx-' + Date.now()), name: name, notes: intel, docs: [], recipients: [] };
+      if (S().desk !== 'work') go('work');
       refresh('spaces');
       if (!writeOk() || !/^[0-9a-f-]{36}$/i.test(String(S().pkg.id))) return;
       api('/api/spaces/' + encodeURIComponent(S().pkg.id), { method: 'GET' }).then(ok).then(json).then(function (d) {
@@ -2324,7 +2342,25 @@
       }).catch(function () { toast(root, 'Opened locally — server copy unavailable'); });
     },
     'space-back': function () {
+      var from = S().spaceFrom;
       S().pkg = null;
+      S().spaceFrom = null;
+      if (from && from.desk && from.desk !== 'work') {
+        go(from.desk);
+        setTimeout(function () {
+          var hostId = { mail: 'mailDesk', people: 'peopleDesk', contacts: 'pipeDesk', work: 'spacesDesk' }[from.desk] || 'spacesDesk';
+          var host = document.getElementById(hostId);
+          var root = host && host.shadowRoot;
+          var wrap = root && (root.querySelector('.port-body') || root);
+          if (wrap) wrap.scrollTop = from.scroll || 0;
+          var row = root && root.querySelector('[data-id="' + from.rowId + '"]');
+          if (row && row.classList) {
+            row.classList.add('flash-row');
+            setTimeout(function () { row.classList.remove('flash-row'); }, 1000);
+          }
+        }, 80);
+        return;
+      }
       refresh('spaces');
     },
     'space-email': function (el, root) {
@@ -2368,14 +2404,20 @@
       }).catch(function () { toast(root, 'Could not send the test'); });
     },
     'space-prev': function () {
-      var packs = S().packages || [];
+      var from = S().spaceFrom;
+      var packs = (from && from.list && from.list.length)
+        ? from.list.map(function (id) { return (S().packages || []).filter(function (p) { return String(p.id) === String(id); })[0]; }).filter(Boolean)
+        : (S().packages || []);
       var id = S().pkg && S().pkg.id;
       var i = packs.map(function (p) { return String(p.id); }).indexOf(String(id));
       if (i > 0) S().pkg = packs[i - 1];
       refresh('spaces');
     },
     'space-next': function () {
-      var packs = S().packages || [];
+      var from = S().spaceFrom;
+      var packs = (from && from.list && from.list.length)
+        ? from.list.map(function (id) { return (S().packages || []).filter(function (p) { return String(p.id) === String(id); })[0]; }).filter(Boolean)
+        : (S().packages || []);
       var id = S().pkg && S().pkg.id;
       var i = packs.map(function (p) { return String(p.id); }).indexOf(String(id));
       if (i >= 0 && i < packs.length - 1) S().pkg = packs[i + 1];
@@ -2700,6 +2742,14 @@
     'docs-view': function (el) {
       S().docsView = attr(el, 'data-view') || 'grid';
       refresh('docs');
+    },
+    'docs-size': function (el) {
+      var size = Math.max(120, Math.min(280, Math.round(Number(el.value) || 168)));
+      S().prefs = S().prefs || {};
+      S().prefs.docs_prefs = Object.assign({}, S().prefs.docs_prefs || {}, { size: size });
+      var files = el.getRootNode && el.getRootNode().querySelector && el.getRootNode().querySelector('#files');
+      if (files) files.style.setProperty('--dw', size + 'px');
+      api('/api/prefs', { method: 'PATCH', body: { docs_prefs: { size: size } } }).catch(function () {});
     },
     'docs-source': function (el) {
       S().docSource = attr(el, 'data-source') === 'drive' ? 'drive' : 'local';
@@ -3590,11 +3640,54 @@
       S().mailSortOpen = false;
       refresh('mail');
     },
-    'mail-box-menu': function (el) {
-      S().mailPeopleMenu = attr(el, 'data-id');
-      S().mailBoxMenuOpen = !S().mailBoxMenuOpen;
+    'mail-box-menu': function (el, root, e) {
+      if (e && e.stopPropagation) e.stopPropagation();
+      if (e && e.preventDefault) e.preventDefault();
+      var id = attr(el, 'data-id');
+      S().mailPeopleMenu = id;
+      S().mailBoxMenuOpen = true;
       S().mailSortOpen = false;
-      refresh('mail');
+      var menu = root.getElementById && root.getElementById('boxMenu');
+      if (!menu) {
+        menu = root.querySelector && root.querySelector('#boxMenu');
+      }
+      if (!menu && root.appendChild) {
+        menu = document.createElement('div');
+        menu.id = 'boxMenu';
+        root.appendChild(menu);
+      }
+      if (!menu) return;
+      var box = personBox(id) || {};
+      var folders = S().emailFolders || [];
+      var curF = String(box.folder_id || box.folder || '');
+      var nMail = (box.m && box.m.length) || (Number(box.in) || 0) + (Number(box.out) || 0);
+      menu.className = 'smenu on';
+      menu.innerHTML =
+        '<div class="it" data-action="mail-box-act" data-a="open">Open<small>' + nMail + ' threads</small></div>'
+        + '<div class="it" data-action="mail-box-act" data-a="rename">Rename</div>'
+        + '<div class="lb">Move to a folder</div><div class="folders">'
+        + '<span data-action="mail-box-folder" data-id="' + esc(id) + '" data-folder="" class="' + (!curF ? 'cur' : '') + '">Main</span>'
+        + folders.slice(0, 9).map(function (f) {
+          var fid = f.id || f.name;
+          return '<span data-action="mail-box-folder" data-id="' + esc(id) + '" data-folder="' + esc(fid) + '" class="' + (String(fid) === curF ? 'cur' : '') + '">' + esc(f.name || f.id) + '</span>';
+        }).join('')
+        + '</div><hr>'
+        + '<div class="it" data-action="mail-box-act" data-a="pin">' + (box.pin ? 'Unpin' : 'Pin to top') + '</div>'
+        + '<div class="it" data-action="mail-box-act" data-a="read">Mark all read</div>'
+        + '<div class="it red" data-action="mail-box-remove" data-id="' + esc(id) + '">Remove from the board</div>';
+      menu.style.position = 'fixed';
+      menu.style.display = 'block';
+      var r = el.getBoundingClientRect();
+      var mh = menu.offsetHeight || 280, mw = 224;
+      menu.style.width = '224px';
+      var top = r.bottom + 6;
+      if (top + mh > window.innerHeight - 8) top = Math.max(8, r.top - mh - 6);
+      var left = r.right - mw;
+      if (left < 8) left = 8;
+      if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+      menu.style.left = left + 'px';
+      menu.style.top = top + 'px';
+      menu.style.right = 'auto';
     },
     'mail-box-open': function (el) {
       S().mailPerson = attr(el, 'data-id');
@@ -3863,6 +3956,13 @@
       } else if (a === 'folder') {
         fileBoxInFolder(box.id, attr(el, 'data-folder') || '', root);
         return;
+      } else if (a === 'pin') {
+        box.pin = !box.pin;
+        persistPeopleBoxes();
+      } else if (a === 'read') {
+        (box.m || []).forEach(function (row) { if (row) row[3] = false; });
+        persistPeopleBoxes();
+        toast(root, 'Marked all read');
       }
       refresh('mail');
     },
@@ -5069,6 +5169,16 @@
           || String(p.name || '').toLowerCase() === String(box.n || '').toLowerCase();
       })[0];
       if (!hit) { toast(root, 'No Space for ' + box.n + ' yet - add them to one from the reader'); return; }
+      var wrap = (root.querySelector && root.querySelector('.port-body')) || root;
+      S().spaceFrom = {
+        desk: S().desk || 'mail',
+        crumb: 'Email / ' + (box.n || 'Person'),
+        rowId: box.id,
+        scroll: wrap.scrollTop || 0,
+        list: packs.filter(function (p) {
+          return (p.recipients || p.people || []).some(function (r) { return addrs.indexOf(String(r.email || '').toLowerCase()) >= 0; });
+        }).map(function (p) { return p.id; })
+      };
       S().pkg = hit;
       S().mailPerson = '';
       go('work');
@@ -5183,7 +5293,7 @@
     if (t && t.closest) {
       var ignore = t.closest('input, textarea, select, [contenteditable="true"]');
       var ignAct = ignore && ignore.getAttribute ? (ignore.getAttribute('data-action') || '') : '';
-      if (ignore && /^(capture-input|notes-search|note-edit|link-title|link-url|link-search|link-note|plan-draft|reach-pick-search|pipe-search|mail-search|mail-people-search|mail-closed-search|docs-search|spaces-search|space-notes|space-angle|space-subject|space-intro|space-card-name|space-card-desc|mail-body|mail-to|mail-subject|mail-col-name|mail-sig|mail-link-url|mail-pick-q|intel-ask|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|play-tx|zoom-search|zoom-ask-input|news-search)$/.test(ignAct)) return;
+      if (ignore && /^(capture-input|notes-search|note-edit|link-title|link-url|link-search|link-note|plan-draft|reach-pick-search|pipe-search|mail-search|mail-people-search|mail-closed-search|docs-search|docs-size|spaces-search|space-notes|space-angle|space-subject|space-intro|space-card-name|space-card-desc|mail-body|mail-to|mail-subject|mail-col-name|mail-sig|mail-link-url|mail-pick-q|intel-ask|cal-nl|cal-title|cal-notes|cal-date|cal-time|cal-select|cal-people|play-tx|zoom-search|zoom-ask-input|news-search)$/.test(ignAct)) return;
       if (ignore && ignore.hasAttribute && ignore.hasAttribute('data-ext-field')) return;
     }
     var rootEarly = rootOf(el || t, e);
@@ -5312,6 +5422,11 @@
       if (S().mailPerson) { S().mailPerson = ''; refresh('mail'); e.preventDefault(); return; }
       if (S().mailOpen && !S().composeOpen) { S().mailOpen = null; S().mailOpenThread = null; refresh('mail'); e.preventDefault(); return; }
       if (S().mailPeopleDrawer) { S().mailPeopleDrawer = false; refresh('mail'); e.preventDefault(); return; }
+      if (S().pkg && (S().desk === 'work' || (S().spaceFrom && S().spaceFrom.desk))) {
+        actions['space-back'](el, root);
+        e.preventDefault();
+        return;
+      }
       if (S().mailPeoplePanel || S().mailSortOpen || S().mailBoxMenuOpen) {
         S().mailPeoplePanel = '';
         S().mailSortOpen = false;
@@ -5435,6 +5550,7 @@
     var root = el.getRootNode ? el.getRootNode() : document;
     /* Extension pages (redesign-pages-d / -people / news saved) register input handlers by data-action. */
     if (window.__deskInputExt && typeof window.__deskInputExt[name] === 'function') { try { window.__deskInputExt[name](el, root, e); } catch (err) {} return; }
+    if (name === 'docs-size' && actions['docs-size']) { actions['docs-size'](el, root, e); return; }
     if (name === 'notes-search') {
       clearTimeout(searchTimer);
       searchTimer = setTimeout(function () {
@@ -5927,6 +6043,7 @@
 
   window.deskToast = toast;
   window.bindShadowActions = bindShadowActions;
+  window.__openSpacePanel = function (el, root) { actions['space-open'](el, root); };
   window.stampDeskControls = stampDeskControls;
   window.syncDeskFocus = paintFocus;
   window.deskActions = actions;

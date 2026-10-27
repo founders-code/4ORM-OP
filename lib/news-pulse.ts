@@ -114,28 +114,38 @@ function windowWeight(items: Item[], cats: string[], start: number, end: number)
   }).reduce((a, it) => a + weight(it), 0);
 }
 
-function scaled(n: number, mean: number) {
-  return Math.max(0, Math.min(100, Math.round((n / (mean || 1)) * 50)));
+function scaled(n: number, median: number) {
+  return Math.max(0, Math.min(100, Math.round((n / (median || 1)) * 50)));
 }
 
-function heat(items: Item[], cats: string[], hist: { start: number; end: number }[], nowMs: number) {
+function medianOf(nums: number[]) {
+  const a = nums.slice().sort((x, y) => x - y);
+  if (!a.length) return 0;
+  const m = Math.floor(a.length / 2);
+  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+}
+
+function heat(items: Item[], cats: string[], hist: { start: number; end: number }[], _nowMs: number) {
   const topic = items.filter((it) => inCat(it, cats));
-  const times = topic.map((it) => new Date(it.published_at || 0).getTime()).filter((t) => t > 0);
-  const spanWeeks = times.length ? (Math.max(...times) - Math.min(...times)) / WEEK_MS : 0;
-  const building = spanWeeks < 4;
-  const mean = rollingWindows(8, nowMs - WEEK_MS).reduce((a, w) => a + windowWeight(items, cats, w.start, w.end), 0) / 8 || 1;
-  const nowCount = windowWeight(items, cats, nowMs - WEEK_MS, nowMs);
-  const v = scaled(nowCount, mean);
-  const thenCount = windowWeight(items, cats, nowMs - 2 * WEEK_MS, nowMs - WEEK_MS);
-  const meanThen = rollingWindows(8, nowMs - 2 * WEEK_MS).reduce((a, w) => a + windowWeight(items, cats, w.start, w.end), 0) / 8 || 1;
-  const lastV = scaled(thenCount, meanThen);
-  const bars = hist.map((w) => scaled(windowWeight(items, cats, w.start, w.end), mean));
+  const counts = hist.map((w) => windowWeight(items, cats, w.start, w.end));
+  let lead = 0;
+  while (lead < counts.length && counts[lead] === 0) lead += 1;
+  const afterLead = counts.slice(lead);
+  const real = afterLead.filter((n) => n > 0);
+  const building = real.length < 4;
+  const med = medianOf(real) || 1;
+  const nowCount = counts[counts.length - 1] || 0;
+  const thenCount = counts[counts.length - 2] || 0;
+  const v = building ? null : scaled(nowCount, med);
+  const lastV = building ? null : scaled(thenCount, med);
+  const bars = counts.map((n, i) => (i < lead ? 0 : scaled(n, med)));
   const top = topic.slice().sort((a, b) => weight(b) - weight(a) || new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime())[0];
   const title = String(top?.title || '');
   return {
-    v,
-    d: building ? 0 : v - lastV,
+    v: v == null ? null : v,
+    d: building || v == null || lastV == null ? 0 : v - lastV,
     building,
+    buildingN: real.length,
     w: bars,
     why: title,
     story: top

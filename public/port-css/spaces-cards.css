@@ -69,7 +69,7 @@
 
 .scrim{position:fixed;inset:56px 0 0 224px;background:rgba(5,10,28,.42);opacity:0;pointer-events:none;transition:opacity .22s;z-index:40}
 .scrim.on{opacity:1;pointer-events:auto}
-.qw{position:fixed;top:68px;right:14px;bottom:14px;width:min(620px,48vw);background:#fff;border-radius:20px;box-shadow:0 30px 90px rgba(3,10,30,.55);z-index:50;display:flex;flex-direction:column;transform:translateX(110%);transition:transform .32s cubic-bezier(.32,.72,0,1)}
+.qw{position:fixed;top:56px;right:0;bottom:0;width:min(1180px, calc(100vw - 224px - 96px));min-width:0;background:linear-gradient(165deg,#0f1d4a,#0b1430);color:#e9eefa;border-radius:18px 0 0 18px;box-shadow:-40px 0 90px rgba(0,0,0,.55);z-index:50;display:flex;flex-direction:column;transform:translateX(110%);transition:transform .32s cubic-bezier(.32,.72,0,1)}
 .qw.on{transform:none}
 @media (prefers-reduced-motion:reduce){.qw,.scrim{transition:none}}
 .qh{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}

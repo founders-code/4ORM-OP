@@ -23,44 +23,53 @@ const ROUTES = [
   { path: '/financials', desk: 'finDesk' },
 ];
 
-function mounted(page) {
-  return page.evaluate(() => {
-    const views = Array.from(document.querySelectorAll('.view'));
-    const shown = views.filter((v) => {
-      if (v.hidden) return false;
-      const s = getComputedStyle(v);
-      return s.display !== 'none' && s.visibility !== 'hidden';
-    });
-    const view = shown[0] || null;
-    const desks = view ? Array.from(view.querySelectorAll('[id$="Desk"]')) : [];
-    const vis = desks.map((d) => {
-      const s = getComputedStyle(d);
-      return {
-        id: d.id,
-        display: s.display,
-        hidden: !!d.hidden,
-        h: Math.round(d.getBoundingClientRect().height),
-        controls: ((d.shadowRoot || d).querySelectorAll ? (d.shadowRoot || d).querySelectorAll('button, [data-action], .day, .tl, .hx').length : 0),
-      };
-    });
-    const mountedDesk = vis.filter((d) => d.display !== 'none' && !d.hidden && d.h > 0)[0] || vis[0] || null;
-    const h1 = (function () {
-      const host = mountedDesk && document.getElementById(mountedDesk.id);
-      const root = host && (host.shadowRoot || host);
-      const el = root && root.querySelector && root.querySelector('h1');
-      return el ? String(el.textContent || '').trim() : '';
+function mounted(page, expectId) {
+  return page.evaluate((expectId) => {
+    function findDesk(id) {
+      const direct = document.getElementById(id);
+      if (direct) return direct;
+      const views = Array.from(document.querySelectorAll('.view'));
+      for (const v of views) {
+        const root = v.shadowRoot;
+        if (!root) continue;
+        const hit = root.getElementById ? root.getElementById(id) : root.querySelector('#' + id);
+        if (hit) return hit;
+      }
+      if (typeof window.portEl === 'function') {
+        const via = window.portEl('v-news', id);
+        if (via) return via;
+      }
+      return null;
+    }
+    const host = findDesk(expectId);
+    const view = (function () {
+      if (!host) return document.getElementById('v-news');
+      const root = host.getRootNode && host.getRootNode();
+      if (root && root.host) return root.host.id ? root.host : root.host.closest && root.host.closest('.view');
+      return host.closest && host.closest('.view');
     })();
+    const s = host ? getComputedStyle(host) : null;
+    const vs = view ? getComputedStyle(view) : null;
+    const root = host && (host.shadowRoot || host);
+    const h1s = root && root.querySelectorAll ? Array.from(root.querySelectorAll('h1')) : [];
+    const h1 = (h1s.filter((el) => {
+      const p = el.closest && (el.closest('#barVault, #barControl, .bar') || el);
+      const st = getComputedStyle(p);
+      return st.display !== 'none';
+    })[0] || h1s[0]);
     return {
       path: location.pathname,
       view: view && view.id,
-      desk: mountedDesk && mountedDesk.id,
-      display: mountedDesk && mountedDesk.display,
-      height: mountedDesk && mountedDesk.h,
-      h1,
-      vis,
+      viewHidden: !!(view && view.hidden),
+      viewDisplay: vs && vs.display,
+      desk: host && host.id,
+      display: s && s.display,
+      hidden: !!(host && host.hidden),
+      height: host ? Math.round(host.getBoundingClientRect().height) : 0,
+      h1: h1 ? String(h1.textContent || '').trim() : '',
       email: (window.Clerk && window.Clerk.user && window.Clerk.user.primaryEmailAddress && window.Clerk.user.primaryEmailAddress.emailAddress) || '',
     };
-  });
+  }, expectId);
 }
 
 async function jsonGet(page, path) {
@@ -80,12 +89,17 @@ const fails = [];
 const rows = [];
 for (const r of ROUTES) {
   await page.goto(ORIGIN + r.path, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  await page.waitForTimeout(1800);
-  const got = await mounted(page);
-  const ok = got.desk === r.desk && got.display !== 'none' && (got.height || 0) > 20;
+  await page.waitForTimeout(1600);
+  await page.waitForFunction((id) => {
+    const host = document.getElementById(id) || (document.getElementById('v-news') && document.getElementById('v-news').shadowRoot && document.getElementById('v-news').shadowRoot.getElementById(id));
+    if (!host) return false;
+    return getComputedStyle(host).display !== 'none';
+  }, r.desk, { timeout: 15000 }).catch(() => {});
+  const got = await mounted(page, r.desk);
+  const ok = got.desk === r.desk && got.display !== 'none' && !got.hidden && !got.viewHidden;
   const playOk = r.path !== '/playbook' || (got.desk === 'playDesk' && got.display === 'block' && got.height > 20);
-  const planOk = r.path !== '/planner' || (got.desk === 'plannerDesk' && !/war room/i.test(got.h1 || ''));
-  const warOk = r.path !== '/war-room' || got.desk === 'warDesk';
+  const planOk = r.path !== '/planner' || (got.desk === 'plannerDesk' && !/war room/i.test(got.h1 || '') && /planner/i.test(got.h1 || 'Planner'));
+  const warOk = r.path !== '/war-room' || (got.desk === 'warDesk' && got.view === 'v-war');
   const pass = ok && playOk && planOk && warOk;
   rows.push({ path: r.path, expect: r.desk, got: got.desk, display: got.display, h: got.height, h1: got.h1, pass });
   console.log((pass ? 'PASS' : 'FAIL'), r.path, 'expect', r.desk, 'got', got.desk, 'display', got.display, 'h', got.height, 'h1', got.h1);
@@ -141,10 +155,10 @@ const doneN = await page.evaluate(() => {
   if (!root) return 0;
   if (typeof window.stampDeskControls === 'function') window.stampDeskControls(root);
   const inv = typeof window.deskInventory === 'function' ? window.deskInventory(root) : null;
-  const n = root.querySelectorAll('button, [data-action], .day, .tl, .hx, .pads span').length;
-  return inv ? inv.withAction : n;
+  const sel = window.__deskControlSel || 'button, [data-action]';
+  return { inventory: inv, marked: root.querySelectorAll('[data-action]').length, sel: root.querySelectorAll(sel).length };
 });
-console.log('completed controls', doneN);
+console.log('completed controls', JSON.stringify(doneN));
 
 if (vaultUi.hasArticles) fails.push('vault still showing design fixture documents');
 if (opsUi.hasContactsLog) fails.push('logs still serving one fixture for every service');

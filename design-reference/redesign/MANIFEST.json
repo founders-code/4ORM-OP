@@ -28,6 +28,13 @@
   "sha256": "1676cc3fa98583e8"
  },
  {
+  "file": "redesign/02e-signals-detail.html",
+  "page": "Signals detail (prompt 7)",
+  "route": "/planner?fixture=mockup&sigdetail=1",
+  "bytes": 21491,
+  "sha256": "14c59249b9165a45"
+ },
+ {
   "file": "redesign/03-notes.html",
   "page": "Notes",
   "route": "/notes",
@@ -42,11 +49,26 @@
   "sha256": "4056eca639d2f22d"
  },
  {
+  "file": "redesign/03c-notes-canvas.html",
+  "page": "Notes canvas (superseded by 03d)",
+  "route": "/notes?fixture=mockup&view=canvas",
+  "bytes": 21480,
+  "sha256": "0207ac56a1722e8c",
+  "superseded_by": "redesign/03d-notes-canvas-open.html"
+ },
+ {
   "file": "redesign/03c-notes-categories.html",
   "page": "Notes - categories + Pin",
   "route": "/notes",
   "bytes": 49844,
   "sha256": "82e1daa88b5d68e5"
+ },
+ {
+  "file": "redesign/03d-notes-canvas-open.html",
+  "page": "Notes canvas with no bounds: pan anywhere, zoom 8-200%, clusters",
+  "route": "/notes?fixture=mockup&view=canvas",
+  "bytes": 45756,
+  "sha256": "1f3aa2c9e578c8dd"
  },
  {
   "file": "redesign/04-pipeline.html",
@@ -72,6 +94,34 @@
   "superseded_by": "redesign/20-outreach-lists.html"
  },
  {
+  "file": "redesign/05d-spaces-arrange.html",
+  "page": "Spaces arrange (prompt 7)",
+  "route": "/spaces?fixture=mockup&arrange=1",
+  "bytes": 14310,
+  "sha256": "2906d6c8b4103d5b"
+ },
+ {
+  "file": "redesign/05e-spaces-cards.html",
+  "page": "Spaces cards (prompt 7)",
+  "route": "/spaces?fixture=mockup&cards=1",
+  "bytes": 24863,
+  "sha256": "cebddd6ec86324a0"
+ },
+ {
+  "file": "redesign/05f-spaces-card-open.html",
+  "page": "Spaces card open (prompt 7)",
+  "route": "/spaces?fixture=mockup&space=open",
+  "bytes": 23794,
+  "sha256": "a8989a6f191470c2"
+ },
+ {
+  "file": "redesign/05g-spaces-menu.html",
+  "page": "Spaces: three-dot menu open under the dots (Open, Rename, Move to group, Pin, Add people, Copy link, Move to Drive, Delete with Undo)",
+  "route": "/spaces?fixture=mockup&state=menu",
+  "bytes": 30239,
+  "sha256": "2fbdfb2de9b9ba22"
+ },
+ {
   "file": "redesign/06-documents.html",
   "page": "Documents",
   "route": "/documents",
@@ -84,6 +134,13 @@
   "route": "/documents (file clicked)",
   "bytes": 48992,
   "sha256": "95f92c18c916ff70"
+ },
+ {
+  "file": "redesign/06c-sheet-viewer.html",
+  "page": "Documents: xlsx/csv open in the app as a Neon table, tabs per sheet, Make a list from this sheet",
+  "route": "/documents?fixture=mockup&file=sheet",
+  "bytes": 166642,
+  "sha256": "77b7553f27159fab"
  },
  {
   "file": "redesign/07-links.html",
@@ -136,12 +193,56 @@
   "sha256": "4e5c5028ba5c6db7"
  },
  {
+  "file": "redesign/08g-email-person-card.html",
+  "page": "Email person card (prompt 7)",
+  "route": "/email?fixture=mockup",
+  "bytes": 25594,
+  "sha256": "42792122a4ef96c7"
+ },
+ {
+  "file": "redesign/08h-email-people-remove.html",
+  "page": "Email People: Inbox | People | Scheduled, Remove on every box with Undo, no Tags or Stats",
+  "route": "/email?view=people&fixture=mockup",
+  "bytes": 74178,
+  "sha256": "cdc34bea3f06c2e4",
+  "superseded_by": "redesign/08j-email-people-folders.html"
+ },
+ {
+  "file": "redesign/08i-email-compose-resize.html",
+  "page": "Email compose open, left edge drags to resize, width saved",
+  "route": "/email?fixture=mockup&state=compose",
+  "bytes": 56661,
+  "sha256": "3b420e3629847f9d"
+ },
+ {
+  "file": "redesign/08j-email-people-folders.html",
+  "page": "Email People with folders strip (drag a box onto a folder), More/Remove on hover",
+  "route": "/email?view=people&fixture=mockup",
+  "bytes": 79465,
+  "sha256": "1d1bc3006b83c37f"
+ },
+ {
   "file": "redesign/09-playbook.html",
   "page": "Playbook",
   "route": "/playbook",
   "bytes": 79122,
   "sha256": "1e6f5a882d528914",
   "superseded_by": "redesign/09g-playbook.html"
+ },
+ {
+  "file": "redesign/09b-playbook-wording.html",
+  "page": "Playbook wording (superseded by 09g)",
+  "route": "/playbook?fixture=mockup",
+  "bytes": 79248,
+  "sha256": "b022b28a6a7757b0",
+  "superseded_by": "redesign/09g-playbook.html"
+ },
+ {
+  "file": "redesign/09g-playbook.html",
+  "page": "Playbook: countdown goals, plays grid, To do board; Full week / Focus today / Compact; to-do popup; Edit plays; Say it; Hide menu",
+  "route": "/playbook?fixture=mockup",
+  "bytes": 86685,
+  "sha256": "f59f584a91e40e29"
  },
  {
   "file": "redesign/10-calendar.html",
@@ -166,6 +267,13 @@
   "sha256": "e548a06836440d8e"
  },
  {
+  "file": "redesign/10d-calendar-neon.html",
+  "page": "Calendar: Neon week and day, glowing events, pink today column, suggested plays as coloured outlines",
+  "route": "/calendar?fixture=mockup",
+  "bytes": 101824,
+  "sha256": "2092eae746b8003d"
+ },
+ {
   "file": "redesign/11-zoom.html",
   "page": "Zoom",
   "route": "/zoom",
@@ -179,6 +287,13 @@
   "bytes": 42941,
   "sha256": "3a9db0f046b5e57d",
   "superseded_by": "redesign/12b-completed-neon.html"
+ },
+ {
+  "file": "redesign/12b-completed-neon.html",
+  "page": "Completed in Neon",
+  "route": "/completed?fixture=mockup",
+  "bytes": 44700,
+  "sha256": "c9e3cc50dc03fb68"
  },
  {
   "file": "redesign/13-news.html",
@@ -195,6 +310,21 @@
   "sha256": "c20ffac42e2304b8"
  },
  {
+  "file": "redesign/13c-news-pulse.html",
+  "page": "News with Market pulse (Market | Consumer gauges, regulator radar, market and consumer numbers); photos in redesign/news-images/",
+  "route": "/news?fixture=mockup",
+  "bytes": 72798,
+  "sha256": "08fd9a5ef42bdce7",
+  "superseded_by": "redesign/13d-news-pulse-dark.html"
+ },
+ {
+  "file": "redesign/13d-news-pulse-dark.html",
+  "page": "News: Market pulse band in the dark style, Market and Consumer views, Remove a story with Undo; white story cards",
+  "route": "/news?fixture=mockup",
+  "bytes": 78854,
+  "sha256": "58376e4eebb4fcdc"
+ },
+ {
   "file": "redesign/14-drive.html",
   "page": "Drive",
   "route": "/drive",
@@ -207,6 +337,20 @@
   "route": "/contacts",
   "bytes": 43514,
   "sha256": "cb8eae8672a68837"
+ },
+ {
+  "file": "redesign/15-recordings.html",
+  "page": "Recordings (prompt 6)",
+  "route": "/recordings",
+  "bytes": 23345,
+  "sha256": "177c57009f7e0b43"
+ },
+ {
+  "file": "redesign/15b-recordings-capture.html",
+  "page": "Recordings: record computer sound + mic, one searchable list, no Zoom notes",
+  "route": "/recordings?fixture=mockup",
+  "bytes": 23908,
+  "sha256": "d127f76f79e0152a"
  },
  {
   "file": "redesign/16-financials.html",
@@ -222,6 +366,28 @@
   "bytes": 40397,
   "sha256": "9269cc7f9890172d",
   "superseded_by": "redesign/17e-integrations-neon.html"
+ },
+ {
+  "file": "redesign/17e-integrations-neon.html",
+  "page": "Integrations connections (Neon)",
+  "route": "/integrations",
+  "bytes": 41584,
+  "sha256": "f582759b5740d6bb"
+ },
+ {
+  "file": "redesign/17f-vault-control-ops.html",
+  "page": "Vault + Control room operations console (Neon)",
+  "route": "/vault and /control-room",
+  "bytes": 117810,
+  "sha256": "71846183e82f56f6"
+ },
+ {
+  "file": "redesign/18-timeline.html",
+  "page": "Planner: Lists | Timeline, pinch zoom hours to year (Day/Week/Month/Quarter/Year), page always scrolls, drag on a lane to add a step",
+  "route": "/planner?fixture=mockup",
+  "bytes": 127779,
+  "sha256": "c72d8ec50ffa8639",
+  "superseded_by": "redesign/18j-timeline-neon.html"
  },
  {
   "file": "redesign/18b-timeline-item-open.html",
@@ -240,91 +406,11 @@
   "superseded_by": "redesign/18j-timeline-neon.html"
  },
  {
-  "file": "redesign/_nav.js",
-  "page": "Shared menu (War Room renamed Timeline)",
-  "route": "every page",
-  "bytes": 1222,
-  "sha256": "51d2af58faa348d2"
- },
- {
-  "file": "redesign/08h-email-people-remove.html",
-  "page": "Email People: Inbox | People | Scheduled, Remove on every box with Undo, no Tags or Stats",
-  "route": "/email?view=people&fixture=mockup",
-  "bytes": 74178,
-  "sha256": "cdc34bea3f06c2e4",
-  "superseded_by": "redesign/08j-email-people-folders.html"
- },
- {
-  "file": "redesign/08i-email-compose-resize.html",
-  "page": "Email compose open, left edge drags to resize, width saved",
-  "route": "/email?fixture=mockup&state=compose",
-  "bytes": 56661,
-  "sha256": "3b420e3629847f9d"
- },
- {
-  "file": "redesign/15b-recordings-capture.html",
-  "page": "Recordings: record computer sound + mic, one searchable list, no Zoom notes",
-  "route": "/recordings?fixture=mockup",
-  "bytes": 23908,
-  "sha256": "d127f76f79e0152a"
- },
- {
-  "file": "redesign/13c-news-pulse.html",
-  "page": "News with Market pulse (Market | Consumer gauges, regulator radar, market and consumer numbers); photos in redesign/news-images/",
-  "route": "/news?fixture=mockup",
-  "bytes": 72798,
-  "sha256": "08fd9a5ef42bdce7",
-  "superseded_by": "redesign/13d-news-pulse-dark.html"
- },
- {
-  "file": "redesign/18-timeline.html",
-  "page": "Planner: Lists | Timeline, pinch zoom hours to year (Day/Week/Month/Quarter/Year), page always scrolls, drag on a lane to add a step",
-  "route": "/planner?fixture=mockup",
-  "bytes": 127779,
-  "sha256": "c72d8ec50ffa8639",
-  "superseded_by": "redesign/18j-timeline-neon.html"
- },
- {
-  "file": "redesign/08j-email-people-folders.html",
-  "page": "Email People with folders strip (drag a box onto a folder), More/Remove on hover",
-  "route": "/email?view=people&fixture=mockup",
-  "bytes": 79465,
-  "sha256": "1d1bc3006b83c37f"
- },
- {
-  "file": "redesign/05g-spaces-menu.html",
-  "page": "Spaces: three-dot menu open under the dots (Open, Rename, Move to group, Pin, Add people, Copy link, Move to Drive, Delete with Undo)",
-  "route": "/spaces?fixture=mockup&state=menu",
-  "bytes": 30239,
-  "sha256": "2fbdfb2de9b9ba22"
- },
- {
-  "file": "redesign/09g-playbook.html",
-  "page": "Playbook: countdown goals, plays grid, To do board; Full week / Focus today / Compact; to-do popup; Edit plays; Say it; Hide menu",
-  "route": "/playbook?fixture=mockup",
-  "bytes": 86685,
-  "sha256": "f59f584a91e40e29"
- },
- {
   "file": "redesign/18j-timeline-neon.html",
   "page": "Planner: Neon timeline, What-needs-you band, noise filter (Everything / In motion / Needs me / Next 30 days / Key dates / Hide done)",
   "route": "/planner?fixture=mockup",
   "bytes": 145820,
   "sha256": "4fb7fb82e98f118e"
- },
- {
-  "file": "redesign/13d-news-pulse-dark.html",
-  "page": "News: Market pulse band in the dark style, Market and Consumer views, Remove a story with Undo; white story cards",
-  "route": "/news?fixture=mockup",
-  "bytes": 78854,
-  "sha256": "58376e4eebb4fcdc"
- },
- {
-  "file": "redesign/10d-calendar-neon.html",
-  "page": "Calendar: Neon week and day, glowing events, pink today column, suggested plays as coloured outlines",
-  "route": "/calendar?fixture=mockup",
-  "bytes": 101824,
-  "sha256": "2092eae746b8003d"
  },
  {
   "file": "redesign/20-outreach-lists.html",
@@ -334,53 +420,17 @@
   "sha256": "a61aea5510d3b0a9"
  },
  {
-  "file": "redesign/12b-completed-neon.html",
-  "page": "Completed in Neon",
-  "route": "/completed?fixture=mockup",
-  "bytes": 44700,
-  "sha256": "c9e3cc50dc03fb68"
- },
- {
-  "file": "redesign/03d-notes-canvas-open.html",
-  "page": "Notes canvas with no bounds: pan anywhere, zoom 8-200%, clusters",
-  "route": "/notes?fixture=mockup&view=canvas",
-  "bytes": 45756,
-  "sha256": "1f3aa2c9e578c8dd"
- },
- {
-  "file": "redesign/06c-sheet-viewer.html",
-  "page": "Documents: xlsx/csv open in the app as a Neon table, tabs per sheet, Make a list from this sheet",
-  "route": "/documents?fixture=mockup&file=sheet",
-  "bytes": 166642,
-  "sha256": "77b7553f27159fab"
- },
- {
-  "file": "redesign/17c-vault-control.html",
-  "page": "Vault (audits, registers, important documents) and Control room (4ormop system map with tests, 4ormIQ mapped in by API, canonical ledger)",
-  "route": "/vault?fixture=mockup and /control-room?fixture=mockup",
-  "bytes": 78994,
-  "sha256": "7c5e816f6a6ba4ac",
-  "superseded_by": "redesign/17f-vault-control-ops.html"
- },
- {
-  "file": "redesign/17f-vault-control-ops.html",
-  "page": "Vault + Control room operations console (Neon)",
-  "route": "/vault and /control-room",
-  "bytes": 117810,
-  "sha256": "71846183e82f56f6"
- },
- {
-  "file": "redesign/17e-integrations-neon.html",
-  "page": "Integrations connections (Neon)",
-  "route": "/integrations",
-  "bytes": 41584,
-  "sha256": "f582759b5740d6bb"
- },
- {
   "file": "redesign/21-fixes.html",
   "page": "Prompt 9 fixes: links, email folders, space panel, documents size, vault lock and reader, dials, calendar, pulse",
   "route": "/design/21-fixes.html (nine tabs)",
   "bytes": 71682,
   "sha256": "bd35e3310cb93828"
+ },
+ {
+  "file": "redesign/_nav.js",
+  "page": "Shared menu (War Room renamed Timeline)",
+  "route": "every page",
+  "bytes": 1222,
+  "sha256": "51d2af58faa348d2"
  }
 ]
