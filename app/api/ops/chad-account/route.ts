@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { applyChadAccountFix, chadDoneCounts, listDeletedBoxes } from '@/lib/chad-account-fix';
+import { applyChadAccountFix, archiveClaudeTestItems, chadDoneCounts, listDeletedBoxes, restoreDeletedBoxes, searchBoxesElsewhere } from '@/lib/chad-account-fix';
 import { getSql } from '@/lib/db';
 import { fail } from '@/lib/log';
 import { isRoomEmail, openBoard, roomOwner, sessionEmail } from '@/lib/session';
@@ -28,8 +28,9 @@ export async function GET() {
     const boxes = [];
     for (const ownerId of owners) {
       const deleted = await listDeletedBoxes(sql, ownerId);
+      const elsewhere = await searchBoxesElsewhere(sql, ownerId);
       const allBoxes = await sql`
-        SELECT key, name, deleted_at, created_at
+        SELECT key, name, org, deleted_at, created_at
         FROM email_boxes WHERE owner_id = ${ownerId}
         ORDER BY deleted_at NULLS FIRST, name
       `;
@@ -42,7 +43,7 @@ export async function GET() {
         ORDER BY name
       `;
       const counts = await chadDoneCounts(sql, ownerId);
-      boxes.push({ ownerId, deleted, live, allBoxes, done: counts });
+      boxes.push({ ownerId, deleted, live, allBoxes, elsewhere, done: counts });
     }
     return NextResponse.json({ ok: true, readOnly: true, owners, boxes });
   } catch (err) {
@@ -55,9 +56,19 @@ export async function POST(req: Request) {
   try {
     const gate = await chadOnly();
     if ('error' in gate && gate.error) return gate.error;
-    const body = (await req.json().catch(() => null)) as { apply?: boolean } | null;
-    if (!body?.apply) return NextResponse.json({ error: 'Send { apply: true }.' }, { status: 400 });
+    const body = (await req.json().catch(() => null)) as { apply?: boolean; restoreBoxes?: boolean; archiveClaudeTests?: boolean } | null;
+    if (!body?.apply && !body?.restoreBoxes && !body?.archiveClaudeTests) return NextResponse.json({ error: 'Send { apply: true } or { restoreBoxes: true }.' }, { status: 400 });
     const { sql, owners } = gate as { sql: NonNullable<Awaited<ReturnType<typeof getSql>>>; owners: string[] };
+    if (body.restoreBoxes) {
+      const restored = [];
+      for (const ownerId of owners) restored.push({ ownerId, ...(await restoreDeletedBoxes(sql, ownerId)) });
+      return NextResponse.json({ ok: true, restoreBoxes: true, restored });
+    }
+    if (body.archiveClaudeTests) {
+      const archived = [];
+      for (const ownerId of owners) archived.push({ ownerId, ...(await archiveClaudeTestItems(sql, ownerId)) });
+      return NextResponse.json({ ok: true, archiveClaudeTests: true, archived });
+    }
     const result = await applyChadAccountFix(sql, owners);
     return NextResponse.json({ ok: true, applied: true, ...result });
   } catch (err) {

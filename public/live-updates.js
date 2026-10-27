@@ -221,7 +221,7 @@
       return;
     }
     tick();
-    timer = setTimeout(loop, 15000);
+    timer = setTimeout(loop, 60000);
   }
 
   document.addEventListener('visibilitychange', function () {

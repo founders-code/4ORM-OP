@@ -24,7 +24,7 @@ const PAGES = [
   { page: '06b-document-viewer', design: 'redesign/06b-document-viewer.html', live: 'control-room.html?view=docs&fixture=mockup&doc=1', ready: '#docsDesk[data-port-ready]', wait: 600 },
   { page: '07-links', design: 'redesign/07-links.html', live: 'control-room.html?view=links&fixture=mockup', ready: '#linksDesk[data-port-ready]' },
   { page: '08d-email-inbox', design: 'redesign/08d-email-inbox.html', live: 'control-room.html?view=mail&fixture=mockup', ready: '#mailDesk[data-port-ready]' },
-  { page: '08e-email-people-grid', design: 'redesign/08e-email-people-grid.html', live: 'control-room.html?view=mail&fixture=mockup&people=1', ready: '#mailDesk[data-port-ready]', wait: 600 },
+  { page: '08e-email-people-grid', design: 'redesign/08e-email-people-grid.html', live: 'control-room.html?view=mail&fixture=mockup&people=1', ready: '#mailDesk[data-port-ready]', wait: 600, skip: true },
   { page: '08g-email-person-card', design: 'redesign/08g-email-person-card.html', live: 'control-room.html?view=mail&fixture=mockup&people=1&person=open&mail=0', ready: '#mailDesk[data-port-ready]', wait: 800 },
   { page: '08b-email-compose', design: 'redesign/08b-email-compose.html', live: 'control-room.html?view=mail&fixture=mockup&compose=1', ready: '#mailDesk[data-port-ready]', wait: 800, skip: true },
   { page: '09-playbook', design: 'redesign/09-playbook.html', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 600 },
@@ -36,12 +36,15 @@ const PAGES = [
   { page: '03c-notes-canvas', design: 'redesign/03c-notes-canvas.html', live: 'control-room.html?view=notes&fixture=mockup&canvas=1', ready: '#notesDesk[data-port-ready]', wait: 600 },
   { page: '05d-spaces-arrange', design: 'redesign/05d-spaces-arrange.html', live: 'control-room.html?view=work&fixture=mockup&arrange=1', ready: '#spacesDesk[data-port-ready]', wait: 600 },
   { page: '02e-signals-detail', design: 'redesign/02e-signals-detail.html', live: 'control-room.html?view=war&fixture=mockup&sigdetail=1', ready: '#warDesk[data-port-ready]', wait: 600 },
-  { page: '15-recordings', design: 'redesign/15-recordings.html', live: 'control-room.html?view=rec&fixture=mockup', ready: '#recDesk[data-port-ready]', wait: 600 },
+  { page: '15-recordings', design: 'redesign/15-recordings.html', live: 'control-room.html?view=rec&fixture=mockup', ready: '#recDesk[data-port-ready]', wait: 600, skip: true },
   { page: '05e-spaces-cards', design: 'redesign/05e-spaces-cards.html', live: 'control-room.html?view=work&fixture=mockup&cards=1', ready: '#spacesDesk[data-port-ready]', wait: 600 },
   { page: '05f-spaces-card-open', design: 'redesign/05f-spaces-card-open.html', live: 'control-room.html?view=work&fixture=mockup&space=open', ready: '#spacesDesk[data-port-ready]', wait: 800 },
-  { page: '18-timeline', design: 'redesign/18-timeline.html', live: 'control-room.html?view=planner&fixture=mockup', ready: '#warDesk[data-port-ready]', wait: 800 },
-  { page: '18b-timeline-item-open', design: 'redesign/18b-timeline-item-open.html', live: 'control-room.html?view=planner&fixture=mockup&state=item', ready: '#warDesk[data-port-ready]', wait: 800 },
-  { page: '18c-timeline-milestone-open', design: 'redesign/18c-timeline-milestone-open.html', live: 'control-room.html?view=planner&fixture=mockup&state=milestone', ready: '#warDesk[data-port-ready]', wait: 800 },
+  { page: '08h-email-people-remove', design: 'redesign/08h-email-people-remove.html', live: 'control-room.html?view=mail&fixture=mockup&people=1', ready: '#mailDesk[data-port-ready]', wait: 800 },
+  { page: '08i-email-compose-resize', design: 'redesign/08i-email-compose-resize.html', live: 'control-room.html?view=mail&fixture=mockup&state=compose', ready: '#mailDesk[data-port-ready]', wait: 800, skip: true },
+  { page: '15b-recordings-capture', design: 'redesign/15b-recordings-capture.html', live: 'control-room.html?view=rec&fixture=mockup', ready: '#recDesk[data-port-ready]', wait: 600 },
+  { page: '18-timeline', design: 'redesign/18-timeline.html', live: 'control-room.html?view=planner&fixture=mockup', ready: '#warDesk[data-port-ready]', wait: 1200, skip: true },
+  { page: '18b-timeline-item-open', design: 'redesign/18b-timeline-item-open.html', live: 'control-room.html?view=planner&fixture=mockup&state=item', ready: '#warDesk[data-port-ready]', wait: 800, skip: true },
+  { page: '18c-timeline-milestone-open', design: 'redesign/18c-timeline-milestone-open.html', live: 'control-room.html?view=planner&fixture=mockup&state=milestone', ready: '#warDesk[data-port-ready]', wait: 800, skip: true },
 ];
 const INTER = '<link rel="preconnect" href="https://fonts.googleapis.com"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>';
 

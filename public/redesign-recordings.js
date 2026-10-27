@@ -15,18 +15,14 @@
     }));
   }
   var TYPES = { zoom: 'Zoom', person: 'In person', call: 'Phone call', voice: 'Voice note' };
-  var recState = { group: 'type', q: '', openId: '', rec: null, chunks: [], paused: false, sec: 0, tick: null, stream: null, analyser: null, ctx: null };
+  var recState = { group: 'day', q: '', openId: '', rec: null, chunks: [], paused: false, sec: 0, tick: null, stream: null, analyser: null, ctx: null, src: 'both', recId: '', chunkN: 0, warn: 0 };
 
   function sample() {
     return [
-      { id: '1', type: 'zoom', week: 'This week', title: 'Dean and Chad weekly - wallet setup and investor intros', when: 'Mon 26 Oct · 10:00', duration_s: 42 * 60, people: ['Dean Hesse', 'Chad'], summary: 'Dean will introduce two investors once the one-pager is updated. Wallet setup steps are blocking his test account. Agreed to send the steps today and book a follow-up Thursday.', acts: [['Send Dean the wallet setup steps', 'due today'], ['Update the investor one-pager', 'Wed'], ['Book Thursday follow-up', 'Thu']], transcript: [{ t: '00:00', who: 'Chad', text: 'Thanks for making time.' }, { t: '00:42', who: 'Dean Hesse', text: 'Wallet setup is still blocking the test account.' }] },
-      { id: '2', type: 'person', week: 'This week', title: 'Coffee with Enrich Mortgage - discovery', when: 'Mon 26 Oct · 08:15', duration_s: 31 * 60, people: ['Enrich Mortgage Group', 'Chad'], summary: 'Enrich wants proof of what each client was told before a mortgage is signed. Interested in a 30-day pilot with two brokers. Asked for pricing for 10 seats.', acts: [['Send 10-seat pricing', 'due today'], ['Draft 30-day pilot outline', 'Fri']], transcript: [] },
-      { id: '3', type: 'call', week: 'This week', title: 'Kevin Wong - confirming the $25K', when: 'Sun 25 Oct · 16:40', duration_s: 9 * 60, people: ['Kevin Wong', 'Chad'], summary: 'Kevin confirmed the $25K and will wire Thursday once he has the subscription documents. Wants a short update every month after closing.', acts: [['Send subscription documents', 'due today']], transcript: [] },
-      { id: '4', type: 'voice', week: 'This week', title: 'Idea - credit union one-pager', when: 'Sun 25 Oct · 07:52', duration_s: 3 * 60, people: ['Chad'], summary: 'One page for credit union boards: what changes for members, what it costs, and the FINTRAC fines that make the case. Use Bow Valley as the first reader.', acts: [], transcript: [] },
-      { id: '5', type: 'zoom', week: 'Last week', title: 'Bow Valley CU - requirements walkthrough', when: 'Thu 22 Oct · 10:00', duration_s: 55 * 60, people: ['Bow Valley Credit Union', 'Chad'], summary: 'Their compliance lead needs the requirements list and a sample record before the board meeting. Booked the next meeting for Thursday 10:00.', acts: [['Send requirements PDF', 'done']], transcript: [] },
-      { id: '6', type: 'call', week: 'Last week', title: 'BCFSA - intro call request', when: 'Wed 21 Oct · 13:30', duration_s: 6 * 60, people: ['BCFSA', 'Chad'], summary: 'Left a message with the policy desk. They asked for a short written intro first, leading with conduct risk.', acts: [['Write the BCFSA intro', 'Mon']], transcript: [] },
-      { id: '7', type: 'person', week: 'Last week', title: 'Lunch with Mike - capture rate questions', when: 'Tue 20 Oct · 12:00', duration_s: 48 * 60, people: ['Mike Gardner', 'Chad'], summary: 'Mike questioned the capture rate assumption. Agreed to send the base case and the three scenarios. He may join the round if the pilot numbers hold.', acts: [['Send base case and scenarios', 'overdue']], transcript: [] },
-      { id: '8', type: 'voice', week: 'Earlier', title: 'Thoughts after the Speer review', when: 'Thu 8 Oct · 18:20', duration_s: 5 * 60, people: ['Chad'], summary: 'Keegan wants a named design partner before the next step. Bow Valley or Enrich are the two best candidates. Pivot the deck to lead with the partner.', acts: [], transcript: [] }
+      { id: 'r1', day: 'Today', time: '16:10', src: 'both', duration_s: 38 * 60, title: 'Bruce and Chad - deck order and the two-pager', summary: 'Agreed to lead with the counselling demo, then the evidence record. Bruce sends the revised two-pager by Wednesday.', acts: [['Send revised two-pager', 'Bruce'], ['Book Kevin for Thursday', 'Chad']], transcript: [{ t: '00:00', who: 'Chad', text: 'Thanks for jumping on. I want to settle the order of the deck before Thursday.' }, { t: '00:31', who: 'Bruce', text: 'I think the demo has to come first. People get it once they see the conversation.' }, { t: '01:12', who: 'Chad', text: 'Agreed. Then the evidence record, then the market.' }] },
+      { id: 'r2', day: 'Today', time: '11:02', src: 'both', duration_s: 24 * 60, title: 'Webinar - OSFI E-23 model risk guideline', summary: 'Notes from the OSFI webinar. E-23 takes effect 1 May 2027; firms must keep an inventory of models and show oversight.', acts: [], transcript: [{ t: '00:00', who: 'Speaker', text: "Welcome to today's session on guideline E-23." }, { t: '04:20', who: 'Speaker', text: 'Institutions are expected to maintain a model inventory.' }] },
+      { id: 'r3', day: 'Sun 25 Oct', time: '07:52', src: 'mic', duration_s: 3 * 60, title: 'Idea - credit union one-pager', summary: 'One page for credit union boards: what changes for members, what it costs, and the FINTRAC angle.', acts: [['Draft the credit union one-pager', 'Chad']], transcript: [{ t: '00:00', who: 'Chad', text: 'Quick idea for the credit union one-pager.' }] },
+      { id: 'r4', day: 'Thu 22 Oct', time: '10:00', src: 'both', duration_s: 55 * 60, title: 'Bow Valley CU - requirements walkthrough', summary: 'Their compliance lead needs the requirements list before the board meeting. Pricing goes in a separate page.', acts: [['Send the requirements list', 'done']], transcript: [{ t: '00:00', who: 'Chad', text: 'Thanks for making time.' }, { t: '00:42', who: 'Bow Valley', text: 'The main thing is seeing the record a member would get.' }] }
     ];
   }
 
@@ -34,7 +30,7 @@
     s = Number(s) || 0;
     if (s >= 3600) return Math.floor(s / 3600) + ' h ' + Math.round((s % 3600) / 60) + ' m';
     if (s >= 60) return Math.round(s / 60) + ' m';
-    return Math.max(1, s) + ' s';
+    return (Number(s) || 0) + ' s';
   }
   function fmtWhen(iso) {
     if (!iso) return '';
@@ -103,27 +99,25 @@
     }
     if (P().applyPageCss) P().applyPageCss(wrap, 'rec');
     var REC = list();
-    var owed = REC.reduce(function (n, r) { return n + (r.acts || []).filter(function (a) { return a[1] !== 'done'; }).length; }, 0);
     var month = REC.reduce(function (n, r) { return n + (Number(r.duration_s) || 0); }, 0);
+    var src = recState.src || (S().prefs && S().prefs.rec_source) || 'both';
+    recState.src = src;
     wrap.innerHTML =
-      '<div class="bar"><h1>Recordings</h1><span class="sub">Every meeting, call and voice note, titled and summed up for you</span>'
-      + '<div class="r"><div class="stats"><span><b>' + REC.length + '</b> recordings</span><span><b>' + owed + '</b> actions owed</span><span><b>' + fmtDur(month) + '</b> this month</span></div>'
-      + '<button class="btn rec" data-action="rec-start">Record meeting</button></div></div>'
-      + '<div class="recbar" id="recbar">'
-      + '<span class="live"><i></i><span id="liveTxt">Recording</span></span>'
-      + '<span class="tm" id="tm">00:00</span>'
-      + '<div class="meter" id="meter">' + Array(18).fill('<b></b>').join('') + '</div>'
-      + '<div class="who"><input id="recWho" data-action="rec-who" placeholder="Who\'s here? Type names, or leave it - the summary picks them up"><small>Tell people you\'re recording your notes. Audio stays private to you.</small></div>'
-      + '<span class="src">Browser mic</span>'
-      + '<button class="btn sm" data-action="rec-pause">Pause</button>'
-      + '<button class="btn sm pri" data-action="rec-stop">Stop and save</button>'
-      + '<button class="btn sm" data-action="rec-discard">Discard</button></div>'
-      + '<div class="tools"><input class="search" id="q" data-action="rec-search" placeholder="Search titles, summaries and transcripts">'
-      + '<span class="lbl">Columns</span><div class="seg" id="groupSeg">'
-      + '<span class="' + (recState.group === 'type' ? 'on' : '') + '" data-action="rec-group" data-g="type">Type</span>'
-      + '<span class="' + (recState.group === 'week' ? 'on' : '') + '" data-action="rec-group" data-g="week">Week</span>'
-      + '<span class="' + (recState.group === 'status' ? 'on' : '') + '" data-action="rec-group" data-g="status">Status</span></div></div>'
-      + '<div class="cols" id="cols"></div>'
+      '<div class="bar"><h1>Recordings</h1><span class="sub">Record what you hear and say: calls, Zoom, videos. Every recording is transcribed, summed up and searchable.</span>'
+      + '<div class="r"><div class="stats"><span><b>' + REC.filter(function (r) { return !r.proc; }).length + '</b> recordings</span><span><b>' + fmtDur(month) + '</b> this month</span></div>'
+      + '<button class="btn rec" data-action="rec-sheet">Record</button></div></div>'
+      + '<div class="start" id="start"><h3>What should it hear?</h3><p class="hint">Pick once. The site remembers your choice.</p>'
+      + '<div class="srcs" id="srcs"><label class="' + (src !== 'mic' ? 'on' : '') + '" data-action="rec-src" data-src="both"><b>My computer\'s sound and my mic</b><span>For Zoom, Teams, phone calls through the computer, or a video. Your browser asks which screen or tab to listen to: pick it and tick Share audio.</span></label>'
+      + '<label class="' + (src === 'mic' ? 'on' : '') + '" data-action="rec-src" data-src="mic"><b>Just my mic</b><span>For a meeting in the room or a voice note.</span></label></div>'
+      + '<div class="row"><input id="recTitle" placeholder="Name it now, or leave it blank and the title is written for you"><button class="btn" data-action="rec-cancel">Cancel</button><button class="btn pri" data-action="rec-start">Start recording</button></div>'
+      + '<div class="note">Let people know you are recording. Audio and transcripts stay private to your account.</div></div>'
+      + '<div class="recbar" id="recbar"><span class="live"><i></i><span id="liveTxt">Recording</span></span><span class="tm" id="tm">00:00</span>'
+      + '<div class="lv"><span>Computer</span><i><b id="lvC"></b></i><span>Mic</span><i><b id="lvM"></b></i></div>'
+      + '<input class="ttl" id="liveTitle" placeholder="Title (optional)">'
+      + '<button class="btn sm" data-action="rec-pause">Pause</button><button class="btn sm pri" data-action="rec-stop">Stop and save</button><button class="btn sm" data-action="rec-discard">Discard</button>'
+      + '<div class="warn" id="warnC">No sound from the computer yet. If the other people are silent, that is fine. If they are talking, stop and start again, and tick Share audio in the browser window.</div></div>'
+      + '<div class="tools"><input class="search" id="q" data-action="rec-search" placeholder="Search everything that was said: titles, summaries and transcripts"><span class="cnt" id="cnt"></span></div>'
+      + '<div class="list" id="list"></div>'
       + '<div class="scrim" id="scrim" data-action="rec-close"></div>'
       + '<aside class="dr" id="dr" role="dialog" aria-label="Recording"></aside>'
       + '<div class="toast" id="toast"></div>';
@@ -157,12 +151,51 @@
     var ppl = (r.people || []).filter(function (p) { return !/^chad$/i.test(p); }).join(', ') || 'Just you';
     return '<div class="rc" data-action="rec-open" data-id="' + esc(r.id) + '"><div class="k"><span class="tag ' + esc(r.type) + '">' + esc(TYPES[r.type] || r.type) + '</span><span class="when">' + esc(r.when || '') + '</span></div><h4>' + esc(r.title || 'Recording') + '</h4><p>' + esc(r.summary || '') + '</p><div class="ft"><span>' + esc(fmtDur(r.duration_s)) + '</span><span class="pp">' + esc(ppl) + '</span>' + (owed ? '<span class="ow">' + owed + ' owed</span>' : '') + '</div></div>';
   }
+  function dayOf(r) {
+    if (r.day) return r.day;
+    var iso = r.started_at;
+    if (!iso) return 'Earlier';
+    try {
+      var van = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(iso));
+      var today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', weekday: 'short', day: 'numeric', month: 'short' }).format(new Date());
+      return van === today ? 'Today' : van;
+    } catch (e) { return 'Earlier'; }
+  }
+  function timeOf(r) {
+    if (r.time) return r.time;
+    if (!r.started_at) return '';
+    try { return new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Vancouver', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(r.started_at)); }
+    catch (e) { return ''; }
+  }
   function paintCols(wrap) {
-    var cols = wrap.getElementById ? wrap.getElementById('cols') : wrap.querySelector('#cols');
-    if (!cols) return;
-    cols.innerHTML = colsFor(list()).map(function (pair) {
-      return '<div class="col"><div class="colh"><b>' + esc(pair[0]) + '</b><span class="n">' + pair[1].length + '</span></div><div class="list">' + (pair[1].map(card).join('') || '<div class="empty">Nothing here yet</div>') + '</div></div>';
-    }).join('');
+    var box = wrap.getElementById ? wrap.getElementById('list') : wrap.querySelector('#list');
+    if (!box) return;
+    var q = recState.q;
+    var shown = list().filter(function (r) { return r.proc || matches(r, q); });
+    var cnt = wrap.getElementById ? wrap.getElementById('cnt') : wrap.querySelector('#cnt');
+    if (cnt) cnt.textContent = q ? (shown.length + (shown.length === 1 ? ' match' : ' matches')) : '';
+    if (!shown.length) {
+      box.innerHTML = '<div class="empty">' + (q ? 'Nothing said matches "' + esc(q) + '". Try a name, a company or a word from the call.' : 'No recordings yet. Press Record before your next call.') + '</div>';
+      return;
+    }
+    var h = '', last = '';
+    shown.forEach(function (r) {
+      var day = dayOf(r);
+      if (day !== last) { last = day; h += '<div class="day">' + esc(day) + '</div>'; }
+      var src = (r.src || r.type) === 'mic' || r.type === 'voice' ? 'mic' : 'both';
+      var mins = Math.max(1, Math.round((Number(r.duration_s) || 0) / 60));
+      if (r.proc || r.status === 'transcribing' || r.status === 'summarizing' || r.status === 'waiting') {
+        h += '<div class="rw proc"><span class="t">' + esc(timeOf(r)) + '</span><div style="min-width:0"><h4>' + esc(r.step || 'Transcribing') + '</h4><div class="prog"><i style="width:' + (r.pct || 35) + '%"></i></div></div><span class="src' + (src === 'mic' ? ' mic' : '') + '">' + (src === 'mic' ? 'Mic' : 'Computer and mic') + '</span><span class="d">' + mins + ' m</span></div>';
+        return;
+      }
+      var line = r.summary || '';
+      if (q) {
+        var hit = [r.title, r.summary].concat((r.transcript || []).map(function (t) { return t.text || ''; })).find(function (x) { return String(x).toLowerCase().indexOf(q) >= 0; });
+        if (hit && String(r.title).toLowerCase().indexOf(q) < 0) line = hit;
+      }
+      h += '<div class="rw" data-action="rec-open" data-id="' + esc(r.id) + '"><span class="t">' + esc(timeOf(r)) + '</span><div style="min-width:0"><h4>' + esc(r.title) + '</h4><p>' + esc(line) + '</p></div><span class="src' + (src === 'mic' ? ' mic' : '') + '">' + (src === 'mic' ? 'Mic' : 'Computer and mic') + '</span><span class="d">' + mins + ' m</span></div>';
+    });
+    box.innerHTML = h;
   }
 
   function openDrawer(wrap, id) {
@@ -175,7 +208,7 @@
     var tr = r.transcript || [];
     dr.innerHTML =
       '<div class="dh"><div><h2 id="dTitle" contenteditable="true" spellcheck="false" data-action="rec-title">' + esc(r.title) + '</h2><div class="m">' + esc((TYPES[r.type] || r.type) + ' · ' + (r.when || '') + ' · ' + fmtDur(r.duration_s) + ' · title written automatically, click to rename') + '</div></div>'
-      + '<div class="r"><button class="btn sm" data-action="rec-space">Add to a Space</button><button class="btn sm" data-action="rec-close">Close</button></div></div>'
+      + '<div class="r"><button class="btn sm" data-action="rec-space">Add to a Space</button><button class="btn sm red" data-action="rec-delete">Delete</button><button class="btn sm" data-action="rec-close">Close</button></div></div>'
       + '<div class="db">'
       + '<div class="player"><button class="btn sm" data-action="rec-play">Play</button><audio id="recAudio" src="' + (r.fromZoom || fixtureOn() ? '' : '/api/recordings/' + encodeURIComponent(r.id) + '?audio=1') + '"></audio><div class="tl" data-action="rec-seek"><i></i></div><span class="t" id="dDur">' + esc(fmtDur(r.duration_s)) + '</span></div>'
       + '<div class="sec">Summary</div><div class="sum">' + esc(r.summary || '') + '</div>'
@@ -202,32 +235,74 @@
   }
 
   function startMic(root) {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toast(root, 'This browser cannot record'); return; }
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
-      recState.stream = stream;
+    var src = recState.src || 'both';
+    var start = root.getElementById ? root.getElementById('start') : root.querySelector('#start');
+    if (start) start.classList.remove('on');
+    function mixAndRecord(compStream, micStream) {
+      recState.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      var dest = recState.ctx.createMediaStreamDestination();
+      recState.analyser = recState.ctx.createAnalyser();
+      if (micStream) recState.ctx.createMediaStreamSource(micStream).connect(dest);
+      if (compStream && compStream.getAudioTracks().length) recState.ctx.createMediaStreamSource(compStream).connect(dest);
+      else if (src !== 'mic') {
+        var warn = root.getElementById ? root.getElementById('warnC') : root.querySelector('#warnC');
+        if (warn) warn.classList.add('on');
+      }
+      if (micStream) recState.ctx.createMediaStreamSource(micStream).connect(recState.analyser);
+      var tracks = dest.stream.getAudioTracks();
+      if (!tracks.length && micStream) tracks = micStream.getAudioTracks();
+      recState.stream = new MediaStream(tracks.concat((compStream && compStream.getVideoTracks()) || []));
+      if (compStream) compStream.getVideoTracks().forEach(function (t) { t.stop(); });
       recState.chunks = [];
       recState.sec = 0;
       recState.paused = false;
-      recState.rec = new MediaRecorder(stream);
-      recState.rec.ondataavailable = function (e) { if (e.data && e.data.size) recState.chunks.push(e.data); };
-      recState.rec.start(1000);
-      try {
-        recState.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        recState.analyser = recState.ctx.createAnalyser();
-        recState.ctx.createMediaStreamSource(stream).connect(recState.analyser);
-      } catch (e) {}
+      recState.chunkN = 0;
+      recState.rec = new MediaRecorder(new MediaStream(tracks), { mimeType: 'audio/webm;codecs=opus' });
+      recState.rec.ondataavailable = function (e) {
+        if (!e.data || !e.data.size) return;
+        recState.chunks.push(e.data);
+        if (recState.recId && !fixtureOn()) {
+          blobToB64(e.data).then(function (b64) {
+            api('/api/recordings/' + recState.recId + '/chunk', { method: 'POST', body: { n: recState.chunkN++, b64: b64 } });
+          });
+        }
+      };
+      recState.rec.start(10000);
       var bar = root.getElementById ? root.getElementById('recbar') : root.querySelector('#recbar');
       if (bar) { bar.classList.add('on'); bar.classList.remove('paused'); }
+      var titleIn = root.getElementById ? root.getElementById('recTitle') : root.querySelector('#recTitle');
+      var liveT = root.getElementById ? root.getElementById('liveTitle') : root.querySelector('#liveTitle');
+      if (liveT && titleIn) liveT.value = titleIn.value || '';
       recState.tick = setInterval(function () {
         if (recState.paused) return;
         recState.sec += 1;
         var tm = root.getElementById ? root.getElementById('tm') : root.querySelector('#tm');
         if (tm) tm.textContent = String(Math.floor(recState.sec / 60)).padStart(2, '0') + ':' + String(recState.sec % 60).padStart(2, '0');
-        var meter = root.getElementById ? root.getElementById('meter') : root.querySelector('#meter');
-        if (meter) Array.from(meter.querySelectorAll('b')).forEach(function (b) { b.style.height = (4 + Math.random() * 22) + 'px'; });
+        var lvM = root.getElementById ? root.getElementById('lvM') : root.querySelector('#lvM');
+        var lvC = root.getElementById ? root.getElementById('lvC') : root.querySelector('#lvC');
+        if (lvM) lvM.style.width = (10 + Math.random() * 60) + '%';
+        if (lvC) lvC.style.width = src === 'mic' ? '0%' : ((recState.sec % 7 < 5 ? 20 + Math.random() * 70 : 0) + '%');
       }, 1000);
-      toast(root, 'Recording from the browser mic');
-    }).catch(function () { toast(root, 'Mic permission is needed to record'); });
+      toast(root, 'Recording. Keep this tab open.');
+      if (fixtureOn()) return;
+      api('/api/recordings', { method: 'POST', body: { type: src === 'mic' ? 'voice' : 'person', duration_s: 0, started_at: new Date().toISOString() } })
+        .then(function (r) { return r && r.ok ? r.json() : null; })
+        .then(function (row) { if (row && row.id) recState.recId = row.id; });
+    }
+    var mic = navigator.mediaDevices && navigator.mediaDevices.getUserMedia
+      ? navigator.mediaDevices.getUserMedia({ audio: true })
+      : Promise.reject();
+    if (src === 'mic') {
+      mic.then(function (s) { mixAndRecord(null, s); }).catch(function () { toast(root, 'Mic permission is needed to record'); });
+      return;
+    }
+    var disp = navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia
+      ? navigator.mediaDevices.getDisplayMedia({ video: true, audio: true, systemAudio: 'include' })
+      : Promise.reject();
+    Promise.all([disp.catch(function () { return null; }), mic.catch(function () { return null; })]).then(function (pair) {
+      if (!pair[0] && !pair[1]) { toast(root, 'This browser cannot record'); return; }
+      mixAndRecord(pair[0], pair[1]);
+    });
   }
 
   function uploadAndProcess(root, blob, people) {
@@ -288,6 +363,15 @@
 
   window.deskActions = window.deskActions || {};
   Object.assign(window.deskActions, {
+    'rec-src': function (el, root) {
+      recState.src = el.getAttribute('data-src') || 'both';
+      root.querySelectorAll('#srcs label').forEach(function (n) { n.classList.toggle('on', n === el); });
+      if (!fixtureOn()) api('/api/prefs', { method: 'PATCH', body: { rec_source: recState.src } });
+    },
+    'rec-cancel': function (el, root) {
+      var start = root.getElementById ? root.getElementById('start') : root.querySelector('#start');
+      if (start) start.classList.remove('on');
+    },
     'rec-start': function (el, root) { startMic(root); },
     'rec-pause': function (el, root) {
       recState.paused = !recState.paused;
@@ -325,7 +409,33 @@
       root.querySelectorAll('#groupSeg span').forEach(function (s) { s.classList.toggle('on', s.getAttribute('data-g') === recState.group); });
     },
     'rec-search': function () {},
-    'rec-open': function (el, root) { openDrawer(root, el.getAttribute('data-id')); },
+    'rec-sheet': function (el, root) {
+      var start = root.getElementById ? root.getElementById('start') : root.querySelector('#start');
+      if (start) start.classList.add('on');
+    },
+    'rec-open': function (el, root) {
+      var id = el.getAttribute('data-id');
+      if (id) openDrawer(root, id);
+      else {
+        var start = root.getElementById ? root.getElementById('start') : root.querySelector('#start');
+        if (start) start.classList.add('on');
+      }
+    },
+    'rec-delete': function (el, root) {
+      var id = recState.openId;
+      if (!id) return;
+      var gone = (S().recordings || []).filter(function (r) { return String(r.id) === String(id); })[0];
+      S().recordings = (S().recordings || []).filter(function (r) { return String(r.id) !== String(id); });
+      recState.openId = '';
+      paint();
+      if (fixtureOn()) { toast(root, 'Recording deleted.'); return; }
+      api('/api/recordings/' + id, { method: 'DELETE' });
+      toast(root, 'Recording deleted.', function () {
+        if (gone) S().recordings.unshift(gone);
+        if (!fixtureOn()) api('/api/recordings/' + id, { method: 'PATCH', body: { status: 'ready', restore: true } });
+        paint();
+      });
+    },
     'rec-close': function (el, root) {
       recState.openId = '';
       var dr = root.getElementById ? root.getElementById('dr') : root.querySelector('#dr');

@@ -14,7 +14,7 @@ export async function PATCH(req: Request) {
     await ensureTimeline(session.sql);
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     await session.sql`
-      INSERT INTO timeline_prefs (owner_id, pipeline_order, hidden, open, zoom, show_links, one_move_id, updated_at)
+      INSERT INTO timeline_prefs (owner_id, pipeline_order, hidden, open, zoom, show_links, one_move_id, view, group_by, updated_at)
       VALUES (
         ${session.userId},
         ${JSON.stringify(body.pipeline_order || [])}::jsonb,
@@ -23,6 +23,8 @@ export async function PATCH(req: Request) {
         ${String(body.zoom || '6')},
         ${body.show_links !== false},
         ${body.one_move_id ? String(body.one_move_id) : null},
+        ${body.view != null ? String(body.view) : 'lists'},
+        ${body.group_by != null ? String(body.group_by) : 'pipe'},
         now()
       )
       ON CONFLICT (owner_id) DO UPDATE SET
@@ -32,6 +34,8 @@ export async function PATCH(req: Request) {
         zoom = CASE WHEN ${body.zoom != null} THEN ${String(body.zoom || '6')} ELSE timeline_prefs.zoom END,
         show_links = CASE WHEN ${body.show_links != null} THEN ${body.show_links !== false} ELSE timeline_prefs.show_links END,
         one_move_id = CASE WHEN ${body.one_move_id !== undefined} THEN ${body.one_move_id ? String(body.one_move_id) : null} ELSE timeline_prefs.one_move_id END,
+        view = CASE WHEN ${body.view != null} THEN ${String(body.view || 'lists')} ELSE timeline_prefs.view END,
+        group_by = CASE WHEN ${body.group_by != null} THEN ${String(body.group_by || 'pipe')} ELSE timeline_prefs.group_by END,
         updated_at = now()
     `;
     return NextResponse.json({ ok: true });

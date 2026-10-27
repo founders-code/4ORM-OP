@@ -971,8 +971,13 @@
     return s.replace(/^["“]+|["”]+$/g, '').trim();
   }
   function liveZoomState() {
+    var seenZoom = {};
     var notes = asList((window.STATE || {}).zoomNotes).filter(function (n) {
-      return !/^\[archived\]/i.test(String(n.title || ''));
+      if (/^\[archived\]/i.test(String(n.title || ''))) return false;
+      var kid = String(n.id || n.noteId || n.meetingId || '');
+      if (kid && seenZoom[kid]) return false;
+      if (kid) seenZoom[kid] = 1;
+      return true;
     });
     var gone = (window.STATE || {}).zoomDismissed || {};
     var actions = asList((window.STATE || {}).meetingActions).filter(function (a) {
@@ -1047,7 +1052,7 @@
         h += '<div class="mc" data-action="zoom-open" data-i="' + i + '" data-id="' + esc(x.id || '') + '"><div class="d">' + esc(x.m) + ' ' + x.d + (x.y ? ', ' + x.y : '') + '<span class="src">' + esc(x.src) + '</span></div><div class="t">' + esc(x.t) + '</div>'
           + '<div class="pp2">' + (people.map(function (n) { return '<span class="av" style="background:' + zcol(n) + '">' + esc(ini(n)) + '</span>'; }).join('') || '<span class="av" style="background:#8a96ad;margin:0">CJ</span>') + '<span class="n">' + esc(who) + '</span></div>'
           + '<div class="sn' + (x.solo ? ' self' : '') + '">' + (x.solo ? '<b style="color:#46556E">Note to self:</b> ' : (leadName ? '<b>' + esc(leadName) + ':</b> ' : '')) + esc(stripLead(x.s, x.p)) + '</div>'
-          + '<div class="ft">' + (x.solo ? '<span class="tag solo">Solo</span>' : x.owe ? '<span class="tag owe">You owe ' + x.owe + '</span>' : '<span class="tag solo">Nothing owed</span>') + '<span class="op" data-action="zoom-open" data-i="' + i + '" data-id="' + esc(x.id || '') + '">Open &rarr;</span><span class="ib" title="Edit" data-action="zoom-edit" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">Edit</span><span class="ib" title="Delete" data-action="zoom-archive" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">Delete</span></div></div>';
+          + '<div class="ft">' + (x.solo ? '<span class="tag solo">Solo</span>' : x.owe ? '<span class="tag owe">You owe ' + x.owe + '</span>' : '<span class="tag solo">Nothing owed</span>') + '<span class="op" data-action="zoom-open" data-i="' + i + '" data-id="' + esc(x.id || '') + '">Open</span><span class="ib" title="Edit" data-action="zoom-edit" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">Edit</span><span class="ib" title="Delete" data-action="zoom-archive" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">Delete</span></div></div>';
       });
       if (box) box.innerHTML = h + (w ? '</div>' : '');
       if (box && !fixtureOn() && (window.STATE || {}).zoomError) {

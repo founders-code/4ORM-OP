@@ -793,8 +793,8 @@
       + '<div class="picker">' + (data.pills || []).map(function (p) {
         return '<button class="pl' + (p.on ? ' on' : '') + '" data-action="pipe-pill"' + (p.id ? ' data-pipe="' + esc(p.id) + '"' : '') + '>' + esc(p.name) + ' <b>' + esc(p.n) + '</b></button>';
       }).join('')
-      + (data.more ? '<button class="pl more" data-action="pipe-more">+ ' + data.more + ' more &#9662;</button>' : '')
-      + '<span class="div"></span><button class="pl" data-action="pipe-cat">Category: ' + esc(catLabel) + ' &#9662;</button>'
+      + (data.more ? '<button class="pl more" data-action="pipe-more">+ ' + data.more + ' more</button>' : '')
+      + '<span class="div"></span><button class="pl" data-action="pipe-cat">Category: ' + esc(catLabel) + '</button>'
       + '<span class="ro">' + (data.ro ? esc(data.ro) : ((data.pills || []).length + (data.more || 0)) + ' pipelines from GoHighLevel &middot; read-only') + '</span></div>';
     var tableCard =
       '<section class="card"><div class="ch"><h3>Storage</h3><span class="s">' + esc(data.storageHead || (data.tableFoot || '').replace(/^Showing /, '') || '0') + ' &middot; sorted by needs attention</span></div>'
@@ -1280,12 +1280,18 @@
       var stageInner = '<div class="slide"><small>' + esc(dv.kicker) + '</small><h1>' + esc(dv.title) + '</h1><p>' + esc(dv.body) + '</p></div>';
       var navInner = '<span data-action="doc-slide-prev">&lsaquo;</span>' + esc(dv.page) + ' / ' + esc(dv.pages) + '<span data-action="doc-slide-next">&rsaquo;</span>';
       if (!fixtureOn()) {
-        var fsrc = od.drive ? 'https://drive.google.com/file/d/' + encodeURIComponent(od.drive) + '/preview'
-          : (/^[0-9a-f-]{36}$/i.test(String(od.id || '')) ? '/api/documents/file?id=' + encodeURIComponent(od.id) + (stagedPdf ? '#page=' + page : '') : '');
-        var z = Number(S.docZoom) || 1;
-        stageInner = fsrc
-          ? '<iframe class="docframe" src="' + esc(fsrc) + '" title="' + esc(dv.name) + '" allow="fullscreen" style="width:100%;height:70vh;border:0;border-radius:10px;background:#fff;display:block;transform:scale(' + z + ');transform-origin:top center"></iframe>'
-          : '<div class="slide"><h1>' + esc(dv.name) + '</h1><p>No stored copy to preview yet. Use Open in Drive or upload the file.</p></div>';
+        var pptx = /\.pptx?$/i.test(String(od.name || '')) || /powerpoint|presentation/i.test(String(od.mime || ''));
+        var fsrc = '';
+        if (pptx && od.drive) {
+          stageInner = '<div class="slide"><h1>' + esc(dv.name) + '</h1><p>Google Drive cannot preview this file type here.</p><p><button class="vb" data-action="doc-drive-open">Open in Google Drive</button> <button class="vb" data-action="doc-download">Download</button></p></div>';
+        } else {
+          fsrc = od.drive ? 'https://drive.google.com/file/d/' + encodeURIComponent(od.drive) + '/preview'
+            : (/^[0-9a-f-]{36}$/i.test(String(od.id || '')) ? '/api/documents/file?id=' + encodeURIComponent(od.id) + (stagedPdf ? '#page=' + page : '') : '');
+          var z = Number(S.docZoom) || 1;
+          stageInner = fsrc
+            ? '<iframe class="docframe" src="' + esc(fsrc) + '" title="' + esc(dv.name) + '" allow="fullscreen" style="width:100%;height:70vh;border:0;border-radius:10px;background:#fff;display:block;transform:scale(' + z + ');transform-origin:top center"></iframe>'
+            : '<div class="slide"><h1>' + esc(dv.name) + '</h1><p>No stored copy to preview yet. Use Open in Drive or upload the file.</p></div>';
+        }
         /* Page arrows only when this page can actually be paged (a stored PDF with a known count). Drive previews page by scrolling inside the preview. */
         navInner = pages > 1 && stagedPdf
           ? '<span data-action="doc-slide-prev" title="Previous page">&lsaquo;</span>' + page + ' / ' + pages + '<span data-action="doc-slide-next" title="Next page">&rsaquo;</span>'
@@ -1295,7 +1301,7 @@
         '<div class="vscrim" data-action="doc-close"></div>'
         + '<div class="vwin" id="docView">'
         + '<div class="vtop"><span class="vty">' + esc(dv.type) + '</span><b>' + esc(dv.name) + '</b><small>' + esc(dv.sub) + '</small>'
-        + '<div class="r"><button class="vb" data-action="doc-prev">&lsaquo; Prev file</button><button class="vb" data-action="doc-next">Next file &rsaquo;</button><button class="vb" data-action="doc-download">Download</button><button class="vb" data-action="doc-drive-open">Open in Drive</button><button class="vb pri" data-action="doc-add-space">+ Add to a Space</button><button class="vb" data-action="doc-close" title="Close (Esc)">&times;</button></div></div>'
+        + '<div class="r"><button class="vb" data-action="doc-prev">Prev file</button><button class="vb" data-action="doc-next">Next file</button><button class="vb" data-action="doc-download">Download</button><button class="vb" data-action="doc-drive-open">Open in Drive</button><button class="vb pri" data-action="doc-add-space">+ Add to a Space</button><button class="vb" data-action="doc-close" title="Close (Esc)">Close</button></div></div>'
         + '<div class="vbody"><div class="vthumbs">' + thumbs + '</div>'
         + '<div class="vstage">' + stageInner
         + '<div class="vnav">' + navInner + '<span data-action="doc-zoom-out">&#8722;</span><span data-action="doc-zoom-in">+</span><span data-action="doc-fit">Fit</span></div></div>'
@@ -1515,8 +1521,12 @@
       var how = attIsReal(a) ? '' : ' <span class="sz">link</span>';
       return '<span class="att' + (a.busy ? ' busy' : '') + '"><span class="ty" style="background:#2e6bf2">' + esc(kind === 'img' ? 'IMG' : String(kind || 'file').toUpperCase()) + '</span>' + esc(a.name || 'File') + (a.size ? ' <span class="sz">' + esc(sizeLabel(a.size)) + '</span>' : '') + how + '<span class="x2" data-action="mail-att-remove" data-i="' + i + '" title="Remove">&times;</span></span>';
     }).join('');
-    return '<aside class="compose' + (open ? ' open' : '') + '" id="compose" aria-hidden="' + (open ? 'false' : 'true') + '"' + (open ? '' : ' inert') + '>'
-      + '<div class="cw"><div class="ctop"><h2>' + title + '</h2><button class="btn x" id="cclose" data-action="mail-compose-close">Close &times;</button></div>'
+    var cw = Number((window.STATE && window.STATE.prefs && window.STATE.prefs.compose_width) || 0) || 760;
+    try { if (!cw) cw = Number(localStorage.getItem('compose_w') || 760) || 760; } catch (e) {}
+    cw = Math.max(520, Math.min(cw, Math.max(520, (typeof window !== 'undefined' ? window.innerWidth : 1280) - 240)));
+    return '<aside class="compose' + (open ? ' open' : '') + '" id="compose" style="width:' + cw + 'px" aria-hidden="' + (open ? 'false' : 'true') + '"' + (open ? '' : ' inert') + '>'
+      + '<div class="cgrab" id="cgrab" data-action="mail-compose-resize" title="Drag to make the email wider or narrower. Double-click to reset." tabindex="0"><b></b></div><span class="cwidth" id="cwidth">' + cw + ' px</span>'
+      + '<div class="cw"><div class="ctop"><h2>' + title + '</h2><button class="btn x" id="cclose" data-action="mail-compose-close">Close</button></div>'
       + '<div class="fr"><label>From</label><div class="val from">Chad Johnston &lt;chad@4ormfinance.com&gt;<small>sends from your Gmail</small></div><span></span></div>'
       + rcptRow(d, 'to', 'To', '<span class="sm" data-action="mail-cc-toggle">' + (d.showCc ? 'Hide Cc' : 'Cc &nbsp; Bcc') + '</span>')
       + (d.showCc ? rcptRow(d, 'cc', 'Cc') + rcptRow(d, 'bcc', 'Bcc') : '')
@@ -1647,6 +1657,8 @@
       if (claimed[k]) return;
       var box = derived[k];
       var recent = asList(box.m).filter(function (row) { return (row[7] || 0) >= cut; }).length;
+      var hidden = asList(S.emailBoxHidden).map(function (a) { return String(a).toLowerCase(); });
+      if (hidden.indexOf(k) >= 0 || hidden.indexOf(String(box.o || '').toLowerCase()) >= 0) return;
       if (!stored) {
         if (recent >= 2) out.push(box);
         return;
@@ -1832,18 +1844,18 @@
           return '<div class="em"><b>' + esc(row[1]) + '</b><span>' + esc(row[2]) + '</span></div>';
         }).join('');
         return '<div class="pb' + hide + '" draggable="true" data-action="mail-box-open" data-id="' + esc(b.id) + '" style="--c:' + esc(b.c || '#2e6bf2') + ';--cbg:#eaf1fe">'
-          + '<div class="h"><span class="av" style="background:' + esc(b.c) + '">' + esc(peopleIni(b.n)) + '</span><div style="min-width:0"><h4>' + esc(b.n) + '</h4><div class="org">' + esc(b.o) + '</div></div><span class="cat">' + esc(tag0) + '</span></div>'
+          + '<div class="h"><span class="av" style="background:' + esc(b.c) + '">' + esc(peopleIni(b.n)) + '</span><div style="min-width:0"><h4>' + esc(b.n) + '</h4><div class="org">' + esc(b.o) + '</div></div><span class="cat">' + esc(tag0) + '</span><span class="acts"><span class="m" data-action="mail-box-menu" data-id="' + esc(b.id) + '">More</span><span class="x rmv" data-action="mail-box-remove" data-id="' + esc(b.id) + '">Remove</span></span></div>'
           + '<div class="nums"><div><b>' + esc(b.in) + '</b><small>from them</small></div><div><b>' + esc(b.out) + '</b><small>from you</small></div><div><b>' + (fileN + linkN) + '</b><small>files, links</small></div><div class="' + ((b.st || [])[0] === 'rep' ? 'hot' : '') + '"><b>' + esc(b.last) + '</b><small>last</small></div></div>'
           + '<div class="lt">Latest</div>' + latest
           + '<div class="ft"><span class="fl">' + fileN + ' files · ' + linkN + ' links</span>' + ((b.st || [])[0] === 'rep' ? '<span class="owe">You owe a reply</span>' : '') + '<span class="go">Open</span></div></div>';
       }
       return '<div class="bx' + hide + '" draggable="true" data-action="mail-box-drag" data-kind="box" data-id="' + esc(b.id) + '">'
-        + '<div class="bh"><span class="grab" title="Drag to move">&#8942;&#8942;</span><span class="av" style="background:' + esc(b.c) + '">' + esc(peopleIni(b.n)) + '</span><div style="min-width:0"><b>' + esc(b.n) + '</b><span>' + esc(b.o) + '</span></div><span class="acts"><span class="m" data-action="mail-box-menu" data-id="' + esc(b.id) + '">&middot;&middot;&middot;</span><span class="x" data-action="mail-box-close" data-id="' + esc(b.id) + '" title="Close this box (it moves to the Closed list)">&times;</span></span></div>'
+        + '<div class="bh"><span class="grab" title="Drag to move">Move</span><span class="av" style="background:' + esc(b.c) + '">' + esc(peopleIni(b.n)) + '</span><div style="min-width:0"><b>' + esc(b.n) + '</b><span>' + esc(b.o) + '</span></div><span class="acts"><span class="m" data-action="mail-box-menu" data-id="' + esc(b.id) + '">More</span><span class="x rmv" data-action="mail-box-remove" data-id="' + esc(b.id) + '">Remove</span></span></div>'
         + '<div class="tags">' + tags + '<span class="add" data-action="mail-box-tag-add" data-id="' + esc(b.id) + '">+ tag</span></div>'
         + '<div class="kp"><div><b>' + esc(b.in) + '</b><span>from them</span></div><div><b>' + esc(b.out) + '</b><span>from you</span></div><div><b>' + esc((asList(b.files).length + (Number(b.more) || 0))) + '</b><span>files</span></div><div class="' + ((b.st || [])[0] === 'rep' ? 'warn' : '') + '"><b>' + esc(b.last) + '</b><span>last</span></div></div>'
         + '<div class="last">Latest</div>' + msgs
         + '<div class="files">' + files + '</div>'
-        + '<div class="bf"><span class="st ' + esc((b.st || [])[0] || 'ok') + '">' + esc((b.st || [])[1] || '') + '</span><span class="open" data-action="mail-box-open" data-id="' + esc(b.id) + '">Open &rsaquo;</span></div></div>';
+        + '<div class="bf"><span class="st ' + esc((b.st || [])[0] || 'ok') + '">' + esc((b.st || [])[1] || '') + '</span><span class="open" data-action="mail-box-open" data-id="' + esc(b.id) + '">Open</span></div></div>';
     }).join('');
     var tagBar = '<span class="lb">Tags</span>' + tagKeys.map(function (t) {
       return '<span class="t' + (tag === t ? ' on' : '') + '" data-action="mail-people-tag" data-tag="' + esc(t) + '">#' + esc(t) + '<em>' + tagCounts[t] + '</em></span>';
@@ -1895,26 +1907,22 @@
     wrap.innerHTML =
       '<div class="bar"><h1>Email</h1>'
       + '<div class="seg"><span data-action="mail-view" data-view="inbox">Inbox</span><span class="on" data-action="mail-view" data-view="people">People</span>'
-      + '<span class="' + (panel === 'tags' ? 'on' : '') + '" data-action="mail-people-panel" data-panel="tags">Tags <em id="tagOn">' + (tag ? '#' + esc(tag) : '') + '</em></span>'
-      + '<span class="' + (panel === 'stats' ? 'on' : '') + '" data-action="mail-people-panel" data-panel="stats">Stats</span></div>'
+      + '<span data-action="mail-view" data-view="sched">Scheduled</span></div>'
       + '<div class="r"><input class="search" data-action="mail-people-search" placeholder="Search names, companies, files or #tags" value="' + esc(q) + '">'
       + '<button class="btn" data-action="mail-closed-toggle">Closed boxes <b id="closedN" class="pill">' + closed.length + '</b></button>'
-      + '<button class="btn" data-action="mail-sort-menu" id="sortBtn">Sort: <span id="sortLbl">' + esc(sort) + '</span> &#9662;</button>'
+      + '<button class="btn" data-action="mail-sort-menu" id="sortBtn">Sort: <span id="sortLbl">' + esc(sort) + '</span></button>'
       + '<button class="btn pri" data-action="mail-box-new">+ New box</button></div></div>'
-      + '<div class="panel' + (panel === 'tags' ? ' on' : '') + '" id="tagsPanel"><div class="ph"><b>Tags</b><span class="s">click a tag to filter the grid &middot; click again to clear</span><span class="x" data-action="mail-people-panel" data-panel="tags">&times;</span></div><div class="tagbar" id="tagbar">' + tagBar + '</div></div>'
-      + '<div class="panel' + (panel === 'stats' ? ' on' : '') + '" id="statsPanel"><div class="ph"><b>Stats</b><span class="s">this week</span><span class="x" data-action="mail-people-panel" data-panel="stats">&times;</span></div><div class="stats" id="stats">'
-      + '<div><b>' + open.length + '</b><span>open boxes</span></div><div><b>' + closed.length + '</b><span>closed</span></div><div class="red"><b>' + owe + '</b><span>owe a reply</span></div><div class="amb"><b>' + wait + '</b><span>waiting on them</span></div><div><b>' + inWeek + '</b><span>emails in this week</span></div><div><b>' + (asList(data.loose).length + (Number(data.looseMore) || 0)) + '</b><span>not in a box</span></div></div></div>'
       + (looseHtml ? '<div class="loose"><h5>Not in a box yet<small>drag onto a box, or make one</small></h5><div class="row">' + looseHtml + '</div>'
         + (data.looseMore ? '<span class="hint">+ ' + esc(data.looseMore) + ' more</span>' : '') + '</div>' : '')
       + (!fixtureOn() && !data.stored && asList(S.contacts).some(function (c) { return c.email; })
         ? '<div class="loose"><h5>Boxes are built from your mail<small>one box per person who wrote to you</small></h5><button class="btn" data-action="mail-box-build">Build boxes from my Contacts</button></div>' : '')
       + '<div class="grid" id="grid">' + gridHtml + '<div class="newbx" id="newbx" data-action="mail-box-new">+ New box<small>A person, a company, or a deal. Mail from them lands here from now on.</small></div></div>'
-      + '<aside class="drawer' + (drawer ? ' on' : '') + '" id="drawer"><div class="dh"><h3>Closed boxes</h3><span class="s" id="dcount">' + closed.length + ' closed</span><span class="x" data-action="mail-closed-toggle" title="Close list">&times;</span></div>'
+      + '<aside class="drawer' + (drawer ? ' on' : '') + '" id="drawer"><div class="dh"><h3>Closed boxes</h3><span class="s" id="dcount">' + closed.length + ' closed</span><span class="x" data-action="mail-closed-toggle" title="Close list">Close</span></div>'
       + '<input class="dsearch" data-action="mail-closed-search" placeholder="Find a closed box" value="' + esc(S.mailClosedQ || '') + '">'
       + '<div class="dl" id="dl">' + (closedShown.map(function (b) {
         var unread = asList(b.m).some(function (row) { return row[3]; });
         return '<div class="di" data-action="mail-box-reopen" data-id="' + esc(b.id) + '"><span class="av" style="background:' + esc(b.c) + '">' + esc(peopleIni(b.n)) + '</span><div style="min-width:0"><b>' + esc(b.n) + (unread ? '<span class="n">new</span>' : '') + '</b><small>' + esc(b.o) + ' &middot; last ' + esc(b.last) + '</small><div class="tg">' + asList(b.tags).map(function (t) { return '<span>#' + esc(t) + '</span>'; }).join('') + '</div></div><em>Reopen</em></div>';
-      }).join('') || '<div class="dempty">Nothing closed.<br>Close a box with its &times; and it waits here.</div>') + '</div>'
+      }).join('') || '<div class="dempty">Nothing closed.<br>Close a box from More and it waits here.</div>') + '</div>'
       + '<div class="dfoot">Closed boxes keep collecting mail.<a data-action="mail-box-reopen-all">Reopen all</a></div></aside>'
       + '<div class="tab' + (closed.length && !drawer ? '' : ' off') + '" id="dtab" data-action="mail-closed-open">Closed boxes<b>' + closed.length + '</b></div>'
       + '<div class="menu' + (sortOpen ? ' on' : '') + '" id="sortMenu">'
@@ -1937,7 +1945,11 @@
     if (m.tag || (m.att && m.att.length) || filed.length) {
       fl = '<div class="fl">'
         + (m.tag ? '<span>' + esc(m.tag) + '</span>' : '')
-        + asList(m.att).map(function (a) { return '<span class="att">File: ' + esc(a) + '</span>'; }).join('')
+        + asList(m.att).map(function (a) {
+          var nm = typeof a === 'string' ? a : (a && (a.name || a.filename)) || 'file';
+          var aid = a && typeof a === 'object' ? (a.attachmentId || a.id || '') : '';
+          return '<span class="att" data-action="mail-att-open" data-mid="' + esc(m.messageId || m.id || '') + '" data-aid="' + esc(aid) + '" data-name="' + esc(nm) + '">File: ' + esc(nm) + '</span>';
+        }).join('')
         + filed.map(function (c) { return '<span style="background:' + esc(c.c) + '1a;color:' + esc(c.c) + '">Flag ' + esc(c.n) + '</span>'; }).join('')
         + '</div>';
     }
@@ -1958,7 +1970,11 @@
       var m = msgs.filter(function (x) { return String(x.id) === String(id); })[0];
       if (!m) return '';
       return '<div class="ce" draggable="true" data-kind="mail" data-action="mail-open"' + mailRowAttrs(m) + '><div class="h"><span class="av" style="background:' + esc(m.c) + '">' + esc(iniOf(m.f)) + '</span><b>' + esc(m.f) + '</b><em>' + esc(m.t) + '</em></div><div class="sj">' + esc(m.sj) + '</div>'
-        + asList(m.att).map(function (a) { return '<span class="at">File: ' + esc(a) + '</span>'; }).join('') + '</div>';
+        + asList(m.att).map(function (a) {
+          var nm = typeof a === 'string' ? a : (a && (a.name || a.filename)) || 'file';
+          var aid = a && typeof a === 'object' ? (a.attachmentId || a.id || '') : '';
+          return '<span class="at" data-action="mail-att-open" data-mid="' + esc(m.messageId || m.id || '') + '" data-aid="' + esc(aid) + '" data-name="' + esc(nm) + '">File: ' + esc(nm) + '</span>';
+        }).join('') + '</div>';
     }).join('');
     var fromChips = asList(c.from).length
       ? asList(c.from).map(function (f, i) { return '<span class="ch">' + esc(f) + '<em data-action="mail-rule-remove" data-col="' + esc(c.id) + '" data-rule="' + esc(asList(c.ruleIds)[i] || '') + '" data-email="' + esc(f) + '" title="Stop filing this sender here">&times;</em></span>'; }).join('')
@@ -1984,7 +2000,7 @@
     var when = th && th.at ? new Date(th.at).toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short', hour12: false }) : '';
     var attrs = ' data-id="' + esc(o.id) + '" data-thread="' + esc((th && th.threadId) || o.threadId || '') + '" data-mid="' + esc((th && th.messageId) || o.messageId || '') + '" data-email="' + esc(o.email) + '" data-from="' + esc(from) + '" data-subject="' + esc(o.subject) + '"';
     return '<aside class="reader open" id="reader"' + attrs + '><span class="grab"></span>'
-      + '<div class="rh"><span class="av" style="background:' + colorFor(o.email || from) + ';width:36px;height:36px">' + esc(iniOf(from)) + '</span><div><h2>' + esc(o.subject || '(no subject)') + '</h2></div><button class="btn x" id="close" data-action="mail-close">Close &times;</button></div>'
+      + '<div class="rh"><span class="av" style="background:' + colorFor(o.email || from) + ';width:36px;height:36px">' + esc(iniOf(from)) + '</span><div><h2>' + esc(o.subject || '(no subject)') + '</h2></div><button class="btn x" id="close" data-action="mail-close">Close</button></div>'
       + '<div class="rmeta">' + esc(from) + (o.email ? ' &lt;' + esc(o.email) + '&gt;' : '') + (th && th.to ? ' &middot; to ' + esc(th.to) : '') + (when ? ' &middot; ' + esc(when) : '') + '</div>'
       + '<div class="acts"><button class="p" data-action="mail-reply"' + attrs + '>Reply</button><button data-action="mail-forward"' + attrs + '>Forward</button><button data-action="mail-add-space"' + attrs + '>Add to Space</button><button data-action="mail-snooze"' + attrs + '>Snooze</button><button data-action="mail-trash"' + attrs + ' title="Move to Gmail Trash (undo for 30 days)">Delete</button></div>'
       + (atts ? '<div class="atts">' + atts + '</div>' : '')
@@ -2011,7 +2027,19 @@
     }
     if (P().applyPageCss) P().applyPageCss(wrap, 'mail');
     var tab = S.mailFeedTab || data.feedTab || 'everything';
-    var openCompose = /(?:^|[?&])compose=1(?:&|$)/.test(String(location.search || '')) || !!(S.composeOpen);
+    var openCompose = /(?:^|[?&])(?:compose=1|state=compose)(?:&|$)/.test(String(location.search || '')) || !!(S.composeOpen);
+    if (openCompose && fixtureOn() && !(S.composeDraft && S.composeDraft.body)) {
+      S.composeDraft = {
+        to: [{ name: 'Joe Canavan', email: 'joe@canavan.vc' }],
+        subject: 'Evidence standard for Canadian fintech — 15 minutes?',
+        body: 'Hi Joe,\n\nMost of your angel book is Canadian fintech — Wealthsimple, Borrowell, CapIntel, Homewise. All of them now have to prove a recommendation was suitable and understood, not just disclosed.\n\nThat record is what 4orm builds. We\'re closing a $250K friends-and-family round by Oct 30 and opening 4ormIQ to brokers on Oct 23.\n\nWould 15 minutes Thursday or Friday work? Here\'s my calendar: book.4ormfinance.com/chad\n\nChad',
+        typing: { to: 'neil' },
+        tone: 'warm',
+        nudge: true,
+        log: true,
+        attachments: [{ name: '4orm VC and Design Partner Resources.pdf' }, { name: 'Business Overview | 2026' }]
+      };
+    }
     var msgs = asList(data.messages);
     var cols = asList(data.cols);
     var isFix = fixtureOn();
@@ -2169,12 +2197,16 @@
           if (window.STATE.mailBoard) window.STATE.mailBoard.rules = d.rules;
         }
         if (key === 'reach' && d && Array.isArray(d.people)) window.STATE.reachOut = d.people;
-        if (key === 'boxes' && d && Array.isArray(d.boxes) && d.boxes.length) window.STATE.emailBoxes = d.boxes;
+        if (key === 'boxes' && d) {
+          if (Array.isArray(d.boxes) && d.boxes.length) window.STATE.emailBoxes = d.boxes;
+          if (Array.isArray(d.hidden)) window.STATE.emailBoxHidden = d.hidden;
+        }
+        if (key === 'prefs' && d && d.prefs) window.STATE.prefs = Object.assign({}, window.STATE.prefs || {}, d.prefs);
         if (desk === 'contacts' && (key === 'pipe' || key === 'reach')) { paintPipelineVisit.loading = false; paintPipelineLive(); }
         if (desk === 'work' && key === 'spaces') paintSpacesLive();
         if (desk === 'docs' && key === 'docs') paintDocumentsLive();
         if (desk === 'docs' && key === 'spaces') paintDocumentsLive();
-        if (desk === 'mail' && /^(mail|boxes|cols|rules)$/.test(key)) paintEmailLive();
+        if (desk === 'mail' && /^(mail|boxes|cols|rules|prefs)$/.test(key)) paintEmailLive();
         if (desk === 'links') paintLinksLive();
         console.info('[live-map] ' + url, d && typeof d === 'object' ? Object.keys(d) : typeof d);
       }).catch(function () {
@@ -2199,6 +2231,7 @@
       go('/api/mail/columns', 'cols');
       go('/api/mail/rules', 'rules');
       go('/api/mail/boxes', 'boxes');
+      go('/api/prefs', 'prefs');
     }
     if (desk === 'links') liveLog('links', { links: asList((window.STATE || {}).links).length });
   }

@@ -111,7 +111,7 @@
     t.innerHTML = esc(msg) + (undo ? ' <button type="button" data-action="toast-undo">Undo</button>' : '');
     t.classList.add('show');
     clearTimeout(toast.timer);
-    toast.timer = setTimeout(function () { t.classList.remove('show'); }, 4200);
+    toast.timer = setTimeout(function () { t.classList.remove('show'); }, Number(arguments[3]) || 4200);
   }
   function rootFor(id) { var h = document.getElementById(id); return h && h.shadowRoot; }
 
@@ -298,7 +298,7 @@
     var cold = '<section class="cold"><div class="coldh"><b>Going cold &mdash; reach out before the round closes</b><span>' + vm.coldCount + ' ' + (vm.coldCount === 1 ? 'person' : 'people') + ', no touch in ' + COLD_DAYS + '+ days</span>'
       + (vm.coldCount ? '<span class="lnk" data-action="people-cold-all">See all ' + vm.coldCount + '</span>' : '') + '</div>'
       + (vm.cold.length ? '<div class="cg">' + vm.cold.map(function (c) {
-        return '<div class="cc"><div class="t"><span class="av" style="background:' + esc(c.color) + '">' + esc(c.initials) + '</span><b data-action="people-open" data-id="' + esc(c.id) + '">' + esc(c.name) + '</b></div><div class="m">' + c.meta + '</div><div class="bar2"><i style="width:' + c.width + '%"></i></div><button type="button" data-action="people-email" data-id="' + esc(c.id) + '">Email via GHL</button></div>';
+        return '<div class="cc" data-action="people-open" data-id="' + esc(c.id) + '"><div class="t"><span class="av" style="background:' + esc(c.color) + '">' + esc(c.initials) + '</span><b>' + esc(c.name) + '</b></div><div class="m">' + c.meta + '</div><div class="bar2"><i style="width:' + c.width + '%"></i></div><button type="button" data-action="people-email" data-id="' + esc(c.id) + '">Email via GHL</button></div>';
       }).join('') + '</div>' : '<div class="coldnone">No one has gone ' + COLD_DAYS + ' days without a touch.</div>')
       + '</section>';
     var flt;
@@ -407,6 +407,13 @@
     'people-search': function () {},
     'people-email-subject': function () {},
     'people-email-body': function () {},
+    'people-add-email': function (el, root) {
+      var box = document.getElementById('cNext') || document.querySelector('#drawer input');
+      var mail = document.querySelector('#drawer a[href^="mailto:"], #drawer [data-action="people-add-email"]');
+      toast(root, 'Add an email on this card, then save');
+      if (mail && mail.focus) mail.focus();
+      else if (box) box.focus();
+    },
     'people-add': function (el, root) {
       if (!needLive(root)) return;
       if (typeof window.openAddContact === 'function') { window.openAddContact(); return; }
@@ -469,7 +476,36 @@
           toast(root, 'Could not delete ' + failed.length + ' of ' + ids.length);
           return;
         }
-        toast(root, ids.length + ' deleted');
+        toast(root, ids.length + ' deleted. Undo', function () {
+          Promise.all(ids.map(function (id) {
+            return api('/api/contacts/' + encodeURIComponent(id), { method: 'POST', body: { action: 'restore' } });
+          })).then(function () {
+            removed.forEach(function (c) { S().contacts.push(c); });
+            repaintPeople();
+          });
+        }, 6000);
+      });
+    },
+    'people-delete': function (el, root) {
+      if (!needLive(root)) return;
+      var id = attr(el, 'data-id');
+      var c = findContact(id);
+      if (!c) { toast(root, 'That contact is gone'); return; }
+      S().contacts = contacts().filter(function (row) { return String(row.id) !== String(id); });
+      if (typeof window.closeDrawer === 'function') window.closeDrawer();
+      repaintPeople();
+      api('/api/contacts/' + encodeURIComponent(id), { method: 'DELETE' }).then(function (r) {
+        if (!r || !r.ok) throw new Error('fail');
+        toast(root, 'Deleted ' + (c.name || 'contact') + '. Undo', function () {
+          api('/api/contacts/' + encodeURIComponent(id), { method: 'POST', body: { action: 'restore' } }).then(function () {
+            S().contacts.push(c);
+            repaintPeople();
+          });
+        }, 6000);
+      }).catch(function () {
+        S().contacts.push(c);
+        repaintPeople();
+        toast(root, 'Could not delete ' + (c.name || 'that contact'));
       });
     },
     'people-star': function (el, root) {
@@ -647,8 +683,8 @@
       : '<div class="empty">' + (unlocked ? esc(NA) : 'Unlock to see the model scenarios.') + '</div>';
     var sheet = has(f.sheetUrl)
       ? '<button type="button" class="btn" data-action="fin-sheet" data-url="' + esc(f.sheetUrl) + '">Open finance sheet</button>'
-      : '<button type="button" class="btn" disabled title="Set FINANCE_SHEET_URL to link the master finance sheet">Finance sheet not connected yet</button>';
-    return '<div class="bar"><h1>Financials</h1><span class="lock">' + (unlocked ? 'Unlocked &middot; locks again when you leave' : 'Locked') + '</span>'
+      : '';
+    return '<div class="bar"><h1>Financials</h1><span class="lock" data-action="fin-lock-hint">' + (unlocked ? 'Unlocked · locks again when you leave' : 'Locked — enter the code to open') + '</span>'
       + '<div class="r"><button type="button" class="btn" id="lockBtn" data-action="fin-lock">Lock now</button>' + sheet + '</div></div>'
       + '<div class="k4">' + kp('Cash', cash, f.cashSub || ('in the bank' + (has(f.asOf) ? ' &middot; ' + esc(f.asOf) : ''))) + kp('Burn', f.burnLabel, f.burnSub || 'per month')
       + kp('Runway', f.runwayLabel, 'at this cash', 'red') + kp(r.title || 'Raise', r.inLabel, raiseSub, '', !!r.title) + '</div>'
@@ -731,6 +767,9 @@
     'fin-sheet': function (el) {
       var url = attr(el, 'data-url');
       if (/^https:\/\//.test(url)) window.open(url, '_blank', 'noopener,noreferrer');
+    },
+    'fin-lock-hint': function (el, root) {
+      toast(root, 'Financials lock when you leave the page. Enter the code to unlock.');
     }
   };
   /* Leaving the page: switchView's lockFinance(true) posts the lock; reset the per-visit check here. */
@@ -743,6 +782,36 @@
   function register() {
     if (!window.deskActions) return false;
     Object.assign(window.deskActions, peopleActions, financeActions);
+    if (typeof window.openContactCard === 'function' && !window.openContactCard.__p6) {
+      var priorCard = window.openContactCard;
+      window.openContactCard = function (id) {
+        priorCard(id);
+        var del = document.getElementById('delOne');
+        if (del) {
+          del.setAttribute('data-action', 'people-delete');
+          del.setAttribute('data-id', id);
+          del.onclick = null;
+        }
+        var close = document.getElementById('dClose');
+        if (close) close.textContent = 'Close';
+        var c = findContact(id) || {};
+        Array.from(document.querySelectorAll('#drawer a[href^="mailto:"], #drawer a[href^="tel:"]')).forEach(function (a) {
+          var href = a.getAttribute('href') || '';
+          if (href === 'mailto:' || href === 'tel:' || href === 'mailto:undefined' || href === 'tel:undefined') {
+            if (/^mailto:/.test(href)) {
+              a.removeAttribute('href');
+              a.setAttribute('data-action', 'people-add-email');
+              a.setAttribute('data-id', id);
+              a.textContent = 'No email on file - Add one';
+            } else {
+              a.hidden = true;
+            }
+          }
+        });
+        void c;
+      };
+      window.openContactCard.__p6 = true;
+    }
     window.__deskInputExt = window.__deskInputExt || {};
     window.__deskKeyExt = window.__deskKeyExt || {};
     window.__deskRefreshExt = window.__deskRefreshExt || {};

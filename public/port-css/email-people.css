@@ -260,3 +260,6 @@
 .pbody .dir.in,.pc .dir.in,.pb .dir.in,.rd .dir.in{background:var(--blue50);color:var(--blue)}
 .pbody .dir.out,.pc .dir.out,.pb .dir.out,.rd .dir.out{background:var(--green50);color:var(--green)}
 .ty.pdf{background:#e0364f}.ty.ppt{background:#e2621d}.ty.doc{background:#2e6bf2}.ty.img{background:#6b4fd8}.ty.xls{background:#12a36a}
+
+.bh .m,.bh .x.rmv{width:auto;height:26px;padding:0 9px;font-size:12px;font-weight:750;border-radius:8px;display:inline-grid;place-items:center;color:var(--ink2);background:var(--soft);cursor:pointer}
+.bh .x.rmv:hover{color:#d6334e;background:#fce6ea}

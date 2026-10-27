@@ -68,7 +68,7 @@
       var meta = n.meta || {};
       function clean(v) {
         var t = String(v || '').replace(/^\s+/, '').split(/\n/)[0].trim();
-        if (!t || /^note$/i.test(t) || /^untitled/i.test(t) || /^\d+(\s*[x×]\s*\d+)?$/i.test(t)) return '';
+        if (!t || /^note$/i.test(t) || /^untitled/i.test(t) || /^\d+(\s*[xX]\s*\d+)?$/i.test(t)) return '';
         return t.slice(0, 60);
       }
       var t = clean(n.title || meta.title);
@@ -188,7 +188,7 @@
         var nw = n.w || 240, nh = n.hh || 180;
         var tyCls = n.t && n.t !== 'note' ? ' ' + esc(n.t) : '';
         var heading = String(n.h || '').trim();
-        if (!heading || /^\d+(\s*[x×]\s*\d+)?$/i.test(heading)) heading = String(n.p || '').replace(/^\s+/, '').split(/\n/)[0].trim().slice(0, 60) || 'Note';
+        if (!heading || /^\d+(\s*[xX]\s*\d+)?$/i.test(heading)) heading = String(n.p || '').replace(/^\s+/, '').split(/\n/)[0].trim().slice(0, 60) || 'Note';
         return '<div class="note ' + esc(n.k) + '" data-i="' + i + '" data-action="canvas-note" style="left:' + n.x + 'px;top:' + n.y + 'px;width:' + nw + 'px;height:' + nh + 'px"><span class="ty' + tyCls + '">' + esc(types[n.t] || 'Note') + '</span><h4>' + esc(heading) + '</h4><p>' + esc(n.p) + '</p><span class="sz">' + nw + ' x ' + nh + '</span><span class="nrz" data-action="canvas-note-rz"></span></div>';
       }).join('');
       world.querySelectorAll('.note .note').forEach(function (el) { el.parentNode.removeChild(el); });

@@ -1685,14 +1685,14 @@ async function main() {
     await page.waitForSelector('#recDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
     const recStart = await page.evaluate(() => {
       const root = document.getElementById('recDesk').shadowRoot;
-      const btn = root.querySelector('[data-action="rec-start"]');
-      const cols = root.querySelector('#cols .col');
-      return !!(btn && cols && /Do these first|Record meeting|Zoom/.test(root.textContent || ''));
+      const btn = root.querySelector('[data-action="rec-sheet"], [data-action="rec-open"]');
+      const list = root.querySelector('#list .rw, #list .empty');
+      return !!(btn && list && /Recordings|Record what you hear/.test(root.textContent || ''));
     });
     clicks.push({ page: 'Recordings', control: 'Record meeting + columns', dom: recStart, net: true, persist: true, pass: recStart });
     const recOpen = await page.evaluate(() => {
       const root = document.getElementById('recDesk').shadowRoot;
-      const card = root.querySelector('[data-action="rec-open"]');
+      const card = root.querySelector('.rw[data-action="rec-open"][data-id]');
       if (card) card.click();
       const dr = root.getElementById('dr');
       return !!(card && dr && dr.classList.contains('on') && /Add to a Space/.test(dr.textContent || ''));

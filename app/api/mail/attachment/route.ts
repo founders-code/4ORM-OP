@@ -13,10 +13,21 @@ const ATTACHMENT_ID = /^[A-Za-z0-9_-]{8,4096}$/;
 const MAX_BYTES = 25 * 1024 * 1024;
 
 /** A filename that is safe inside Content-Disposition (ASCII fallback plus RFC 5987 UTF-8 form). */
-function disposition(name: string) {
+function disposition(name: string, inline: boolean) {
   const clean = String(name || 'attachment').replace(/[\r\n"\\/]/g, ' ').trim().slice(0, 180) || 'attachment';
   const ascii = clean.replace(/[^\x20-\x7e]/g, '_');
-  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(clean)}`;
+  const kind = inline ? 'inline' : 'attachment';
+  return `${kind}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(clean)}`;
+}
+
+function inlineType(name: string) {
+  const n = String(name || '').toLowerCase();
+  if (n.endsWith('.pdf')) return 'application/pdf';
+  if (/\.png$/.test(n)) return 'image/png';
+  if (/\.jpe?g$/.test(n)) return 'image/jpeg';
+  if (/\.gif$/.test(n)) return 'image/gif';
+  if (/\.webp$/.test(n)) return 'image/webp';
+  return '';
 }
 
 /**
@@ -33,6 +44,7 @@ export async function GET(req: Request) {
     const mid = String(url.searchParams.get('mid') || '');
     const aid = String(url.searchParams.get('aid') || '');
     const name = String(url.searchParams.get('name') || 'attachment');
+    const wantInline = url.searchParams.get('inline') === '1' && !!inlineType(name);
     if (!MESSAGE_ID.test(mid) || !ATTACHMENT_ID.test(aid)) return NextResponse.json({ error: 'Bad request' }, { status: 400 });
     const creds = await loadCredsFor(session.userId);
     const bytes = await withCreds(creds, () => gmailAttachment(mid, aid)).catch((err) => {
@@ -44,8 +56,8 @@ export async function GET(req: Request) {
     return new NextResponse(new Uint8Array(bytes), {
       status: 200,
       headers: {
-        'content-type': 'application/octet-stream',
-        'content-disposition': disposition(name),
+        'content-type': wantInline ? inlineType(name) : 'application/octet-stream',
+        'content-disposition': disposition(name, wantInline),
         'content-length': String(bytes.length),
         'x-content-type-options': 'nosniff',
         'content-security-policy': "sandbox; default-src 'none'",

@@ -341,7 +341,7 @@ test('zoom crc and signature match the documented HMAC', () => {
 test('the open page polls /api/changes only while visible', () => {
   const live = readFileSync(new URL('../public/live-updates.js', import.meta.url), 'utf8');
   assert.equal(live.includes('/api/changes'), true);
-  assert.equal(live.includes('15000'), true);
+  assert.equal(live.includes('60000'), true);
   assert.equal(live.includes("document.visibilityState !== 'visible'"), true);
   assert.equal(live.includes('visibilitychange'), true);
 });

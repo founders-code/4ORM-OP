@@ -856,7 +856,7 @@
       det = '<div class="det">' + list.map(function (p) { return '<span>' + esc(p.label) + ' <b>' + esc(p.value) + '</b></span>'; }).join('')
         + (s.extra.length > 7 ? '<span data-action="int-more">' + (ig.more ? 'Show fewer' : '+ ' + (s.extra.length - 7) + ' more') + '</span>' : '') + '</div>';
     }
-    return '<div class="it"><span class="lg" style="background:' + esc(s.color) + '">' + esc(s.letter) + '</span>'
+    return '<div class="it" data-action="' + (s.group === 'connected' ? 'int-manage' : 'int-connect') + '" data-key="' + esc(s.key) + '"><span class="lg" style="background:' + esc(s.color) + '">' + esc(s.letter) + '</span>'
       + '<div><h4>' + esc(s.name) + '</h4><p>' + esc(s.what) + '</p>' + feeds + '</div>'
       + '<div class="st"><b class="' + cls + '"><i></i>' + esc(s.word) + '</b>' + (s.detail ? '<small>' + esc(s.detail) + '</small>' : '') + '</div>'
       + btn + det

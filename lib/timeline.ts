@@ -41,6 +41,8 @@ export async function ensureTimeline(sql: Sql) {
     one_move_id uuid,
     updated_at timestamptz NOT NULL DEFAULT now()
   )`;
+  await sql`ALTER TABLE timeline_prefs ADD COLUMN IF NOT EXISTS view text`;
+  await sql`ALTER TABLE timeline_prefs ADD COLUMN IF NOT EXISTS group_by text`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS timeline_items_seed ON timeline_items (owner_id, seed_key) WHERE seed_key IS NOT NULL`;
   try {
     await sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS plan_of uuid`;

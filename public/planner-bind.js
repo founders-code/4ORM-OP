@@ -1,4 +1,4 @@
-window.__plannerBody = '<div class="page">\n\n      \n      <div class="cmd">\n        <h1>Planner</h1>\n        <form class="capture capForm">\n          <input class="capText" placeholder="Capture a task or idea, so you don\'t lose focus" autocomplete="off" aria-label="Capture">\n          <select class="capPipe" aria-label="Where it goes"></select>\n          <button type="submit">Add</button>\n        </form>\n      </div>\n      <div class="focusbar">\n        <div class="fb move2">\n          <span class="k">One move</span>\n          <select class="movePick" aria-label="Today\'s one move"></select>\n          <button class="tgo" data-act="focus"><span class="flab">Start</span><span class="timerTxt">25:00</span></button>\n        </div>\n        <button class="fb" data-pop="due"><span class="k">Due 7 days</span><span class="n" id="nDue">0</span></button>\n        <button class="fb red" data-pop="red"><span class="k">Red</span><span class="n" id="nRed">0</span></button>\n        <button class="fb gold" id="nextGoal"><span class="k">Next milestone</span><b></b><span class="sm"></span></button>\n        <div class="pop" id="pop-due" hidden></div>\n        <div class="pop" id="pop-red" hidden></div>\n      </div>\n\n      <section class="card">\n        <div class="bhead">\n          <nav class="chips" id="chipsB" aria-label="Pipelines, drag to reorder"></nav>\n          <div class="bctrl">\n            <div class="seg" role="group" aria-label="Time span"><button data-zoom="3">3M</button><button data-zoom="6">6M</button><button data-zoom="9">9M</button></div>\n            <button class="lbtn" data-act="today">Today</button>\n            <button class="lbtn" data-pop="more">More</button>\n            <div class="pop" id="pop-more" hidden>\n              <div class="menu">\n                <button data-act="links" id="mLinks">Hide dependency lines</button>\n                <button data-act="open">Open all pipelines</button>\n                <button data-act="close">Close all pipelines</button>\n                              </div>\n              <div class="legend">\n                <span><i class="lg ink"></i>In motion</span><span><i class="lg pen"></i>Pencilled in</span><span><i class="lg fade"></i>Done</span><span><i class="lg red"></i>Overdue or slipping</span><span><i class="lg dmd"></i>Key date</span><span><i class="lg dmd" style="--c:var(--gold)"></i>Milestone</span>\n              </div>\n            </div>\n          </div>\n        </div>\n        <div class="scroller" id="scroller"><div class="canvas" id="canvas"></div></div>\n      </section>\n\n      <section class="card">\n        <div class="cardhead"><h2>List</h2><div class="legend">Every row is a bar above. Edit here, the timeline moves. Drag a pipeline to reorder.</div></div>\n        <p class="hint">Type dates as <b>MMDD</b>: 1030 is 30 Oct. Leave Start empty for a key date. Pick a <b>Milestone</b> on any row to make it feed that milestone. Try it: change <b>Speer MSA signed</b> to <b>1204</b> and watch the MVP milestone turn red.</p>\n        <div class="lwrap" id="list"></div>\n      </section>\n    </div>\n  \n<div id="scrim" hidden></div>\n<aside id="drawer" hidden aria-live="polite"></aside>\n';
+window.__plannerBody = "<div class=\"page\">\n\n      \n      <div class=\"cmd\">\n        <h1>Planner</h1>\n        <div class=\"vseg\" role=\"group\" aria-label=\"View\"><button data-view=\"lists\" aria-pressed=\"true\">Lists</button><button data-view=\"timeline\" aria-pressed=\"false\">Timeline</button></div>\n        <form class=\"capture capForm\">\n          <input class=\"capText\" placeholder=\"Capture a task or idea, so you don't lose focus\" autocomplete=\"off\" aria-label=\"Capture\">\n          <select class=\"capPipe\" aria-label=\"Where it goes\"></select>\n          <button type=\"submit\">Add</button>\n        </form>\n      </div>\n      <div class=\"focusbar\">\n        <div class=\"fb move2\">\n          <span class=\"k\">One move</span>\n          <select class=\"movePick\" aria-label=\"Today's one move\"></select>\n          <button class=\"tgo\" data-act=\"focus\"><span class=\"flab\">Start</span><span class=\"timerTxt\">25:00</span></button>\n        </div>\n        <button class=\"fb\" data-pop=\"due\"><span class=\"k\">Due 7 days</span><span class=\"n\" id=\"nDue\">0</span></button>\n        <button class=\"fb red\" data-pop=\"red\"><span class=\"k\">Red</span><span class=\"n\" id=\"nRed\">0</span></button>\n        <button class=\"fb gold\" id=\"nextGoal\"><span class=\"k\">Next milestone</span><b></b><span class=\"sm\"></span></button>\n        <div class=\"pop\" id=\"pop-due\" hidden></div>\n        <div class=\"pop\" id=\"pop-red\" hidden></div>\n      </div>\n\n      <section class=\"card\" id=\"boardCard\">\n        <div class=\"bhead\">\n          <nav class=\"chips\" id=\"chipsB\" aria-label=\"Pipelines, drag to reorder\"></nav>\n          <div class=\"bctrl\">\n            <div class=\"seg\" role=\"group\" aria-label=\"Time span\"><button data-zoom=\"3\">3M</button><button data-zoom=\"6\">6M</button><button data-zoom=\"9\">9M</button></div>\n            <button class=\"lbtn\" data-act=\"today\">Today</button>\n            <button class=\"lbtn\" data-view=\"lists\">Back to lists</button>\n            <button class=\"lbtn\" data-pop=\"more\">More</button>\n            <div class=\"pop\" id=\"pop-more\" hidden>\n              <div class=\"menu\">\n                <button data-act=\"links\" id=\"mLinks\">Hide dependency lines</button>\n                <button data-act=\"open\">Open all pipelines</button>\n                <button data-act=\"close\">Close all pipelines</button>\n                              </div>\n              <div class=\"legend\">\n                <span><i class=\"lg ink\"></i>In motion</span><span><i class=\"lg pen\"></i>Pencilled in</span><span><i class=\"lg fade\"></i>Done</span><span><i class=\"lg red\"></i>Overdue or slipping</span><span><i class=\"lg dmd\"></i>Key date</span><span><i class=\"lg dmd\" style=\"--c:var(--gold)\"></i>Milestone</span>\n              </div>\n            </div>\n          </div>\n        </div>\n        <div class=\"scroller\" id=\"scroller\"><div class=\"canvas\" id=\"canvas\"></div></div>\n      </section>\n\n      <section class=\"card\" id=\"listCard\">\n        <div class=\"cardhead\"><h2>Lists</h2><div class=\"gseg\" role=\"group\" aria-label=\"Group by\"><button data-group=\"pipe\" aria-pressed=\"true\">By pipeline</button><button data-group=\"date\" aria-pressed=\"false\">By date</button></div><div class=\"legend\">Every row is a bar on the Timeline. Edit here and the Timeline moves.</div></div>\n        <p class=\"hint\">Click any date to pick it from a calendar, or type <b>MMDD</b> (1030 is 30 Oct). Leave Start empty for a key date. Pick a <b>Milestone</b> on any row to make it feed that milestone. Try it: change <b>Speer MSA signed</b> to <b>1204</b> and watch the MVP milestone turn red.</p>\n        <div class=\"lwrap\" id=\"list\"></div>\n      </section>\n    </div>\n<div id=\"scrim\" hidden></div>\n<aside id=\"drawer\" hidden aria-live=\"polite\"></aside>\n<div class=\"dpk\" id=\"dp\" role=\"dialog\" aria-label=\"Pick a date\"><div class=\"dph\"><button data-dp=\"prev\">Prev</button><b id=\"dpM\"></b><button data-dp=\"next\">Next</button></div><div class=\"dpg\" id=\"dpG\"></div><div class=\"dpf\"><button data-dp=\"today\">Today</button><button data-dp=\"clear\" id=\"dpClear\">Clear</button><span class=\"lab\" id=\"dpL\"></span></div>";
 window.bindPlannerPage = function (root, liveItems) {
   if (!root) return;
   try {
@@ -10,6 +10,8 @@ window.bindPlannerPage = function (root, liveItems) {
   document.querySelector = qs;
   document.querySelectorAll = qsa;
   document.addEventListener = on;
+  root.__pageBound = true;
+
 
 (function(){
 const DAY=864e5;
@@ -25,7 +27,7 @@ const fmtY=d=>fmt(d)+' '+D(d).getUTCFullYear();
 const fmtW=d=>WD[D(d).getUTCDay()]+' '+fmt(d);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const rel=n=>n===0?'today':n===1?'tomorrow':n===-1?'yesterday':n>0?'in '+n+' days':Math.abs(n)+' days ago';
-// clock WD[now.getDay()]+', '+MON[now.getMonth()]+' '+now.getDate();
+(document.getElementById('clock')||{}).textContent=WD[now.getDay()]+', '+MON[now.getMonth()]+' '+now.getDate();
 const $$=s=>document.querySelectorAll(s);
 
 function monthly(day){const o=[];let y=2026,m=9;for(;;){const d=Math.round(Date.UTC(y,m,day)/DAY);if(d>END)break;if(d>=START)o.push(d);m++;if(m>11){m=0;y++}}return o}
@@ -94,13 +96,29 @@ function hydrate(){return RAW.map(r=>{const it={id:r.id,p:r.p,t:r.t||'',n:r.n,o:
 
 const KEY='4ormop-timeline-mock-v2';
 let ITEMS,state;
-function defaults(){return {hidden:[],open:['goals','capital','development'],zoom:'6',links:true,move:'',tx:{},order:PIPES.map(p=>p.id),top:'b'}}
+function defaults(){return {hidden:[],open:['goals','capital','development'],zoom:'6',links:true,move:'',tx:{},order:PIPES.map(p=>p.id),top:'b',view:'lists',group:'pipe'}}
 
 if(!ITEMS){ITEMS=(liveItems&&liveItems.length)?liveItems:hydrate();state=defaults()}
 state.hidden=new Set(state.hidden);state.open=new Set(state.open);
 PIPES.forEach(p=>{if(!state.order.includes(p.id))state.order.push(p.id)});
-function save(){/* live: persist via the API, see TIMELINE_BUILD_RULES control contract */}
+function isoOf(d){if(d==null||Number.isNaN(d))return '';const x=D(d);return x.getUTCFullYear()+'-'+String(x.getUTCMonth()+1).padStart(2,'0')+'-'+String(x.getUTCDate()).padStart(2,'0')}
+function liveOk(){try{return !/(?:^|[?&])fixture=mockup(?:&|$)/.test(String(location.search||'')) && typeof window.authFetch==='function'}catch(e){return false}}
+function save(){
+  if(!liveOk())return;
+  window.authFetch('/api/timeline/prefs',{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({
+    pipeline_order:state.order,hidden:[...state.hidden],open:[...state.open],zoom:state.zoom,show_links:!!state.links,one_move_id:state.move||null,view:state.view||'lists',group_by:state.group||'pipe'
+  })}).catch(function(){});
+}
+function persistItem(i){
+  if(!liveOk()||!i||!i.id||String(i.id).indexOf('n')===0&&String(i.id).length<20)return;
+  var body={n:i.n,o:i.o,st:i.st,start_date:i.kind==='ms'||i.kind==='goal'?'':isoOf(i.s),due_date:isoOf(i.e)};
+  window.authFetch('/api/timeline/items/'+encodeURIComponent(i.id),{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).catch(function(){});
+}
 const ordered=()=>state.order.map(id=>pipe(id)).filter(Boolean);
+/* View: Lists (default) or Timeline. Saved in prefs (view). Group: by date (default) or by pipeline. */
+function applyView(){const pg=document.querySelector('.page');if(!pg)return;const v=state.view==='timeline'?'timeline':'lists';pg.classList.toggle('v-lists',v==='lists');pg.classList.toggle('v-timeline',v==='timeline');pg.classList.toggle('g-date',(state.group||'pipe')==='date');
+  $$('[data-view]').forEach(b=>{if(b.closest('.vseg'))b.setAttribute('aria-pressed',String(b.dataset.view===v))});
+  $$('[data-group]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.group===(state.group||'pipe'))))}
 const visPipes=()=>ordered().filter(p=>!state.hidden.has(p.id));
 const GL=()=>ITEMS.filter(i=>i.kind==='goal').sort((a,b)=>a.e-b.e);
 const WORK=()=>ITEMS.filter(i=>i.kind!=='goal');
@@ -143,7 +161,7 @@ function renderControls(){
 }
 function dueItems(){const lim=TODAY+7;return ITEMS.filter(i=>(i.kind==='goal'||!state.hidden.has(i.p))&&i.kind!=='series'&&i.st!=='done'&&i.e<=lim).sort((a,b)=>a.e-b.e)}
 function redItems(){return ITEMS.filter(i=>(i.kind==='goal'||!state.hidden.has(i.p))&&attention(i)).sort((a,b)=>a.e-b.e)}
-function drow(i){const p=pipe(i.p);const late=i.e<TODAY&&i.st!=='done';const why=i.kind==='goal'&&risky(i)?`${lateFor(i).length} feeding items late`:badDeps(i).length?'Slipping':late?'Overdue':fmtW(i.e);
+function drow(i){const p=pipe(i.p);const late=i.e<TODAY&&i.st!=='done';const nLate=i.kind==='goal'?lateFor(i).length:0;const why=i.kind==='goal'&&risky(i)?`${nLate} feeding item${nLate===1?'':'s'} late`:badDeps(i).length?'Slipping':late?'Overdue':fmtW(i.e);
   return `<button class="drow" data-open="${i.id}" data-reveal="1" style="--c:var(${p.c})"><span class="w${late||risky(i)?' late':''}">${why}</span><b>${esc(i.n)}</b><span class="pp">${p.name}</span></button>`}
 function renderTop(){
   const vis=WORK().filter(i=>!state.hidden.has(i.p));
@@ -272,31 +290,13 @@ let armed=null;
 function renderGoals(){const gs=GL();const open=state.open.has('goals');
   let h=`<section class="lgroup goals"><div class="lghead"><button class="lgt" data-toggle="goals" aria-expanded="${open}"><b>Milestones</b><span class="lmeta">${gs.length} big goals${gs.filter(risky).length?` &middot; <em>${gs.filter(risky).length} at risk</em>`:''}</span><span class="oc">${open?'Hide':'Show'}</span></button></div>`;
   if(open){h+=`<div class="cols"><span>Milestone</span><span>Owner</span><span>Target</span><span>Status</span><span>Fed so far</span><span>Feeding it</span><span></span></div>`;
-    gs.forEach(g=>{const f=feeders(g);const late=lateFor(g);const pct=goalPct(g);
-      const st=g.st==='done'?'<span class="gst done">Done</span>':phase(g)==='overdue'?'<span class="gst risk">Missed</span>':late.length?`<span class="gst risk">At risk: ${late.length} late</span>`:'<span class="gst">On track</span>';
-      h+=`<div class="lrow" data-row="${g.id}" style="--c:var(--gold-ink)">
-        <div class="cname"><i class="kd ms" style="background:var(--gold)"></i><input class="fi nm" id="f-${g.id}-n" data-item="${g.id}" data-f="n" value="${esc(g.n)}" aria-label="Milestone name"></div>
-        <input class="fi" id="f-${g.id}-o" data-item="${g.id}" data-f="o" value="${esc(g.o)}" aria-label="Owner">
-        <input class="fi dt" id="f-${g.id}-e" data-item="${g.id}" data-f="e" value="${fmt(g.e)}" placeholder="MMDD" aria-label="Target date">
-        <div style="display:flex;gap:4px;min-width:0">${st}<button class="tbtn" data-gdone="${g.id}">${g.st==='done'?'Reopen':'Mark done'}</button></div>
-        <div class="gprog"><i><b style="width:${pct}%"></b></i>${pct}%</div>
-        <div class="feed">${f.length?f.map(i=>`<button class="dchip${late.includes(i)?' bad':''}" data-open="${i.id}" data-reveal="1" style="--c:var(${pc(i.p)})">${esc(i.n)}</button>`).join(''):'<span class="none">Nothing yet. Pick this milestone on any row below.</span>'}</div>
-        <button class="rm${armed===g.id?' arm':''}" data-rm="${g.id}">${armed===g.id?'Confirm':'Remove'}</button>
-      </div>`});
+    gs.forEach(g=>{h+=goalRowHTML(g)});
     h+=`<div class="addrow"><input id="f-add-goals" data-add="goals" placeholder="Add a milestone, press Return"></div>`}
   return h+'</section>'}
-function renderList(){
-  const vis=visPipes();let h=renderGoals();
-  vis.forEach(p=>{const its=ITEMS.filter(i=>i.p===p.id).sort((a,b)=>a.s-b.s||a.e-b.e);const open=state.open.has(p.id);
-    const att=its.filter(attention).length;
-    h+=`<section class="lgroup" style="--c:var(${p.c})"><div class="lghead" draggable="true" data-drag="${p.id}"><button class="lgt" data-toggle="${p.id}" aria-expanded="${open}"><b>${p.name}</b><span class="lmeta">${its.length} items${att?` &middot; <em>${att} red</em>`:''}</span><span class="oc">${open?'Hide':'Show'}</span></button><button class="mv" data-mv="${p.id}|-1" aria-label="Move ${p.name} up">Up</button><button class="mv" data-mv="${p.id}|1" aria-label="Move ${p.name} down">Down</button></div>`;
-    if(open){
-      h+=`<div class="cols"><span>Name</span><span>Stream</span><span>Owner</span><span>Start</span><span>Due</span><span>Status</span><span>Milestone</span><span>Waits on</span><span>Tasks</span><span></span></div>`;
-      h+=`<datalist id="dl-${p.id}">${tracksOf(p.id).map(t=>`<option value="${esc(t)}">`).join('')}</datalist>`;
-      its.forEach(i=>{const bd=badDeps(i);const nt=i.tasks.length,dt=i.tasks.filter(t=>t.d).length;const ser=i.kind==='series';
-        h+=`<div class="lrow" data-row="${i.id}">
-          <div class="cname"><i class="kd ${i.kind==='ms'?'ms':ser?'series':''}"></i><input class="fi nm" id="f-${i.id}-n" data-item="${i.id}" data-f="n" value="${esc(i.n)}" aria-label="Name"></div>
-          <input class="fi" id="f-${i.id}-t" data-item="${i.id}" data-f="t" value="${esc(i.t)}" list="dl-${p.id}" aria-label="Stream">
+function rowHTML(i,opt){opt=opt||{};let h='';const bd=badDeps(i);const nt=i.tasks.length,dt=i.tasks.filter(t=>t.d).length;const ser=i.kind==='series';
+        h+=`<div class="lrow${opt.dated?' drow2':''}" data-row="${i.id}" style="--c:var(${pc(i.p)})">
+          <div class="cname">${opt.dated?`<span class="ptag">${pipe(i.p).name}</span>`:''}<i class="kd ${i.kind==='ms'?'ms':ser?'series':''}"></i><input class="fi nm" id="f-${i.id}-n" data-item="${i.id}" data-f="n" value="${esc(i.n)}" aria-label="Name"></div>
+          <input class="fi" id="f-${i.id}-t" data-item="${i.id}" data-f="t" value="${esc(i.t)}" list="dl-${i.p}" aria-label="Stream">
           <input class="fi" id="f-${i.id}-o" data-item="${i.id}" data-f="o" value="${esc(i.o)}" aria-label="Owner">
           ${ser?`<span class="fixed">Every</span><span class="fixed">${i.n.includes('weekly')?'week':'month'}</span>`:
           `<input class="fi dt" id="f-${i.id}-s" data-item="${i.id}" data-f="s" value="${i.kind==='span'?fmt(i.s):''}" placeholder="${i.kind==='ms'?'Key date':'MMDD'}" aria-label="Start">
@@ -309,8 +309,49 @@ function renderList(){
           ${bd.length?`<div class="slipnote">Slipping: waits on ${bd.map(d=>`${esc(byId[d].n)} (${fmt(byId[d].e)})`).join(', ')}, which lands after this ${i.kind==='ms'?'date':'starts'} (${fmt(i.s)}).</div>`:''}
           ${i.g&&i.kind!=='series'&&i.st!=='done'&&i.e>byId[i.g].e?`<div class="slipnote">Lands ${fmt(i.e)}, after the ${esc(byId[i.g].n)} milestone (${fmt(byId[i.g].e)}).</div>`:''}
           ${state.tx[i.id]?`<div class="tasks">${i.tasks.map((t,ti)=>`<label class="${t.d?'dn':''}"><input type="checkbox" id="f-${i.id}-k${ti}" data-task="${i.id}|${ti}"${t.d?' checked':''}><span>${esc(t.n)}</span></label>`).join('')}<input class="addt" id="f-${i.id}-addt" data-addtask="${i.id}" placeholder="Add a task, press Return"></div>`:''}
-        </div>`});
-      h+=`<div class="addrow"><input id="f-add-${p.id}" data-add="${p.id}" placeholder="Add to ${p.name}, press Return"></div>`}
+        </div>`;return h}
+function goalRowHTML(g){let h='';const f=feeders(g);const late=lateFor(g);const pct=goalPct(g);
+      const st=g.st==='done'?'<span class="gst done">Done</span>':phase(g)==='overdue'?'<span class="gst risk">Missed</span>':late.length?`<span class="gst risk">At risk: ${late.length} late</span>`:'<span class="gst">On track</span>';
+      h+=`<div class="lrow" data-row="${g.id}" style="--c:var(--gold-ink)">
+        <div class="cname"><i class="kd ms" style="background:var(--gold)"></i><input class="fi nm" id="f-${g.id}-n" data-item="${g.id}" data-f="n" value="${esc(g.n)}" aria-label="Milestone name"></div>
+        <input class="fi" id="f-${g.id}-o" data-item="${g.id}" data-f="o" value="${esc(g.o)}" aria-label="Owner">
+        <input class="fi dt" id="f-${g.id}-e" data-item="${g.id}" data-f="e" value="${fmt(g.e)}" placeholder="MMDD" aria-label="Target date">
+        <div style="display:flex;gap:4px;min-width:0">${st}<button class="tbtn" data-gdone="${g.id}">${g.st==='done'?'Reopen':'Mark done'}</button></div>
+        <div class="gprog"><i><b style="width:${pct}%"></b></i>${pct}%</div>
+        <div class="feed">${f.length?f.map(i=>`<button class="dchip${late.includes(i)?' bad':''}" data-open="${i.id}" data-reveal="1" style="--c:var(${pc(i.p)})">${esc(i.n)}</button>`).join(''):'<span class="none">Nothing yet. Pick this milestone on any row below.</span>'}</div>
+        <button class="rm${armed===g.id?' arm':''}" data-rm="${g.id}">${armed===g.id?'Confirm':'Remove'}</button>
+      </div>`;return h}
+/* Lists, by date: real dates instead of Now / Week / Later. Overdue first, then each of the next 14 days,
+   then weeks, then months. Recurring items show their next date. Click a row to open it. */
+function dLabel(d){const x=D(d);return WD[x.getUTCDay()]+' '+x.getUTCDate()+' '+MON[x.getUTCMonth()]}
+function bucketOf(d){if(d<TODAY)return {k:'over',t:'Overdue',o:-1};const off=d-TODAY;
+  const wk0=TODAY-((D(TODAY).getUTCDay()+6)%7);if(d<wk0+14)return {k:'d'+d,t:off===0?'Today':off===1?'Tomorrow':dLabel(d),sub:off<2?dLabel(d):'',o:d,today:off===0};
+  if(off<63){const x=D(d);const mon=d-((x.getUTCDay()+6)%7);return {k:'w'+mon,t:'Week of '+dLabel(mon),o:mon}}
+  const x=D(d);return {k:'m'+x.getUTCFullYear()+'-'+x.getUTCMonth(),t:MON[x.getUTCMonth()]+' '+x.getUTCFullYear(),o:Date.UTC(x.getUTCFullYear(),x.getUTCMonth(),1)/864e5}}
+function renderByDate(){const vis=new Set(visPipes().map(p=>p.id).concat(['goals']));const rows=[];
+  ITEMS.forEach(i=>{if(!vis.has(i.p))return;let d=i.e;if(i.kind==='series'){d=nextOf(i);if(d==null)return}
+    if(i.st==='done'&&d<TODAY)return;const late=i.kind!=='series'&&i.st!=='done'&&d<TODAY;rows.push({i,d:late?d:d,b:bucketOf(late?d:(d<TODAY?TODAY:d))})});
+  const groups={};rows.forEach(r=>{(groups[r.b.k]=groups[r.b.k]||{b:r.b,rows:[]}).rows.push(r)});
+  const order=Object.values(groups).sort((a,b)=>a.b.o-b.b.o);
+  if(!order.length)return '<p class="hint">Nothing dated yet. Add an item above, or open the Timeline.</p>';
+  return order.map(g=>{g.rows.sort((a,b)=>a.d-b.d||(a.i.kind==='goal'?-1:1));
+    return `<div class="dgrp"><div class="dgh ${g.b.k==='over'?'dover':g.b.today?'dtdy':''}"><b>${g.b.t}</b><span>${g.b.sub?g.b.sub+' &middot; ':''}${g.rows.length} ${g.rows.length===1?'item':'items'}</span></div>`+
+    g.rows.map(({i,d})=>{const p=pipe(i.p);const ph=phase(i);const rk=attention(i);
+      const st=i.st==='done'?'<span class="dst done">Done</span>':rk?`<span class="dst red">${ph==='overdue'?'Overdue':'Slipping'}</span>`:ph==='active'?'<span class="dst go">In motion</span>':i.kind==='series'?'<span class="dst">Recurring</span>':i.kind==='goal'?'<span class="dst">Milestone</span>':'<span class="dst">Pencilled in</span>';
+      const span=i.kind==='span'?`${fmt(i.s)} to ${fmt(i.e)}`:i.kind==='series'?'repeats':i.kind==='goal'?'milestone':'key date';
+      const g=i.g&&byId[i.g]?`<span class="dgm">Feeds ${esc(byId[i.g].n)}</span>`:'';
+      return `<div class="drw${i.kind==='goal'?' dgl':''}${i.st==='done'?' ddone':''}" data-open="${i.id}" style="--c:var(${pc(i.p)})"><span class="ddt">${dLabel(d)}<small>${span}</small></span><span class="dmk${i.kind==='goal'||i.kind==='ms'?' dia2':''}"></span><span class="dnm">${esc(i.n)}<small>${[esc(i.t||''),g,i.tasks.length?i.tasks.filter(t=>t.d).length+'/'+i.tasks.length+' tasks':''].filter(Boolean).join(' &middot; ')}</small></span><span class="dpp">${p.name}</span><span class="dow">${esc(i.o||'')}</span>${st}</div>`}).join('')+'</div>'}).join('')}
+function renderList(){
+  if((state.group||'pipe')==='date'){document.getElementById('list').innerHTML=renderByDate();return}
+  const vis=visPipes();let h=renderGoals();
+  vis.forEach(p=>{const its=ITEMS.filter(i=>i.p===p.id).sort((a,b)=>a.s-b.s||a.e-b.e);const open=state.open.has(p.id);
+    const att=its.filter(attention).length;
+    h+=`<section class="lgroup" style="--c:var(${p.c})"><div class="lghead" draggable="true" data-drag="${p.id}"><button class="lgt" data-toggle="${p.id}" aria-expanded="${open}"><b>${p.name}</b><span class="lmeta">${its.length} items${att?` &middot; <em>${att} red</em>`:''}</span><span class="oc">${open?'Hide':'Show'}</span></button><button class="mv" data-mv="${p.id}|-1" aria-label="Move ${p.name} up">Up</button><button class="mv" data-mv="${p.id}|1" aria-label="Move ${p.name} down">Down</button></div>`;
+    if(open){
+      h+=`<div class="cols"><span>Name</span><span>Stream</span><span>Owner</span><span>Start</span><span>Due</span><span>Status</span><span>Milestone</span><span>Waits on</span><span>Tasks</span><span></span></div>`;
+      h+=`<datalist id="dl-${p.id}">${tracksOf(p.id).map(t=>`<option value="${esc(t)}">`).join('')}</datalist>`;
+      its.forEach(i=>{h+=rowHTML(i)});
+      h+=`<div class="addrow step"><input id="f-add-${p.id}" data-add="${p.id}" placeholder="New step in ${p.name}" aria-label="New step name"><input class="fi dt nd" id="f-add-${p.id}-s" data-newdate="s" placeholder="Start" aria-label="Start date"><input class="fi dt nd" id="f-add-${p.id}-e" data-newdate="e" placeholder="Due" aria-label="Due date"><button class="addbtn" data-addstep="${p.id}" data-action="tl-add-step">Add step</button></div>`}
     h+='</section>'});
   document.getElementById('list').innerHTML=h;
 }
@@ -341,21 +382,27 @@ document.getElementById('list').addEventListener('change',e=>{
     if(Number.isNaN(d)){t.classList.add('bad');setTimeout(()=>{t.classList.remove('bad');t.value=f==='s'?(i.kind==='span'?fmt(i.s):''):fmt(i.e)},1300);return}
     if(f==='s'){if(d===null){i.kind='ms';i.s=i.e}else{const len=i.kind==='span'?i.e-i.s:7;i.kind='span';i.s=d;if(i.e<d)i.e=Math.min(END,d+len)}}
     else{if(d===null){t.value=fmt(i.e);return}if(i.kind==='ms'||i.kind==='goal'){i.s=i.e=d}else{i.e=d;if(i.s>d)i.s=d}}}
-  save();rerender();
+  save();persistItem(i);rerender();
 });
 document.getElementById('list').addEventListener('keydown',e=>{
   const t=e.target;if(e.key!=='Enter'||t.tagName!=='INPUT')return;e.preventDefault();
-  if(t.dataset.add){const n=t.value.trim();if(!n)return;addItem(t.dataset.add,n,true);t.value='';return}
+  if(t.dataset.add){addStep(t.dataset.add);return}
   if(t.dataset.addtask){const n=t.value.trim();if(!n)return;byId[t.dataset.addtask].tasks.push({n,d:false});save();rerender();const el=document.getElementById(t.id);el&&el.focus();return}
   t.blur();
 });
-function addItem(pid,n,keepFocus){const id='n'+Date.now().toString(36);
-  if(pid==='goals')ITEMS.push({id,p:'goals',t:'',n,o:'Chad',note:'',dep:[],g:'',st:'',tasks:[],kind:'goal',s:Math.min(END,TODAY+30),e:Math.min(END,TODAY+30)});
-  else ITEMS.push({id,p:pid,t:'Inbox',n,o:'Chad',note:'',dep:[],g:'',st:'',tasks:[],kind:'span',s:TODAY,e:Math.min(END,TODAY+7)});
+function addItem(pid,n,keepFocus,dates){const id='n'+Date.now().toString(36);
+  const it=pid==='goals'?{id,p:'goals',t:'',n,o:'Chad',note:'',dep:[],g:'',st:'',tasks:[],kind:'goal',s:Math.min(END,TODAY+30),e:Math.min(END,TODAY+30)}
+    :{id,p:pid,t:'Inbox',n,o:'Chad',note:'',dep:[],g:'',st:'',tasks:[],kind:'span',s:TODAY,e:Math.min(END,TODAY+7)};
+  if(dates){if(typeof dates.e==='number'&&!Number.isNaN(dates.e)){it.e=dates.e;if(typeof dates.s==='number'&&!Number.isNaN(dates.s)){it.kind='span';it.s=Math.min(dates.s,dates.e)}else{it.kind='ms';it.s=dates.e}}
+    else if(typeof dates.s==='number'&&!Number.isNaN(dates.s)){it.kind='span';it.s=dates.s}}
+  ITEMS.push(it);
   state.hidden.delete(pid);state.open.add(pid);save();index();renderAll();
+  if(liveOk()){
+    window.authFetch('/api/timeline/items',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({title:n,pipeline:pid,kind:it.kind==='ms'?'key_date':'span',start_date:it.kind==='ms'?'':isoOf(it.s),due_date:isoOf(it.e)})}).then(function(r){return r&&r.ok?r.json():null}).then(function(row){if(row&&row.id){it.id=String(row.id);index();renderAll();}}).catch(function(){});
+  }
   if(keepFocus){const el=document.getElementById('f-add-'+pid);el&&el.focus()}
-  const row=document.querySelector(`[data-row="${id}"]`);row&&row.classList.add('flashrow');
-  return id}
+  const row=document.querySelector(`[data-row="${it.id}"]`);row&&row.classList.add('flashrow');
+  return it.id}
 
 /* Drawer */
 const drawer=document.getElementById('drawer'),scrim=document.getElementById('scrim');
@@ -426,8 +473,11 @@ function closePops(except){$$('.pop').forEach(p=>{if(p!==except)p.hidden=true})}
 document.addEventListener('click',e=>{if(!e.target.closest('.pop')&&!e.target.closest('[data-pop]'))closePops()});
 
 /* Clicks */
+document.addEventListener('click',e=>{const r=e.target.closest('.drw');if(r&&byId[r.dataset.open])openDrawer(r.dataset.open)});
 document.addEventListener('click',e=>{
   const t=e.target.closest('button');if(!t)return;const act=t.dataset.act;
+  if(t.dataset.view){state.view=t.dataset.view;save();applyView();window.scrollTo(0,0);if(state.view==='timeline'){renderBoard();drawLinks();goToday(false)}return}
+  if(t.dataset.group){state.group=t.dataset.group;save();renderList();applyView();return}
   if(t.dataset.pop){const p=document.getElementById('pop-'+t.dataset.pop);const show=p.hidden;closePops();p.hidden=!show;
     if(!p.hidden&&t.closest('.focusbar')){const fb=t.closest('.focusbar').getBoundingClientRect(),br=t.getBoundingClientRect();p.style.left=Math.max(0,Math.min(br.left-fb.left,fb.width-p.offsetWidth))+'px'}return}
   if(t.dataset.top){state.top=t.dataset.top;save();renderControls();requestAnimationFrame(drawLinks);return}
@@ -461,13 +511,49 @@ addEventListener('resize',()=>{const nl=innerWidth<640?150:252;if(nl!==LW)render
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(drawLinks);
 
 function goToday(smooth){const left=Math.max(0,x(TODAY)-Math.min(160,scroller.clientWidth*.18));smooth?scroller.scrollTo({left,behavior:'smooth'}):(scroller.scrollLeft=left)}
-function renderAll(){renderControls();renderTop();renderBoard();renderList()}
+function renderAll(){renderControls();renderTop();renderBoard();renderList();applyView()}
 index();renderAll();drawTimer();goToday(false);
-try {
-  var st = new URLSearchParams(location.search || '').get('state') || '';
-  if (st === 'item') openDrawer('msa');
-  if (st === 'milestone') openDrawer('g-mvp');
-} catch (e2) {}
+
+/* Date picker for every Start, Due and Target field (list rows, add-step row, drawer).
+   Picking a day writes the date and fires the field's change, so the bar moves on the Timeline at once. Typing MMDD still works. */
+(function(){const dp=document.getElementById('dp');let field=null,view=null;
+ const val=f=>{const v=parseDate(f.value||'');return (v===null||Number.isNaN(v))?null:v};
+ function draw(){const x=D(view);const y=x.getUTCFullYear(),m=x.getUTCMonth();document.getElementById('dpM').textContent=MON[m]+' '+y;
+  const first=Math.round(Date.UTC(y,m,1)/DAY);const lead=(D(first).getUTCDay()+6)%7;const sel=val(field);let h=['Mo','Tu','We','Th','Fr','Sa','Su'].map(d=>`<span>${d}</span>`).join('');
+  for(let k=0;k<42;k++){const d=first-lead+k;const dd=D(d);h+=`<button data-day="${d}" class="${dd.getUTCMonth()!==m?'out ':''}${d===TODAY?'tdy ':''}${d===sel?'sel':''}">${dd.getUTCDate()}</button>`}
+  document.getElementById('dpG').innerHTML=h;
+  const isStart=field.dataset.f==='s'||field.dataset.newdate==='s';document.getElementById('dpClear').textContent=isStart?'No start (key date)':'Clear';
+  document.getElementById('dpL').textContent=field.getAttribute('aria-label')||''}
+ function open(f){field=f;const v=val(f);const base=v==null?TODAY:v;const x=D(base);view=Math.round(Date.UTC(x.getUTCFullYear(),x.getUTCMonth(),1)/DAY);draw();
+  const r=f.getBoundingClientRect();dp.classList.add('on');const w=dp.offsetWidth,h=dp.offsetHeight;let left=r.left+window.scrollX,top=r.bottom+window.scrollY+6;
+  if(left+w>window.scrollX+window.innerWidth-12)left=window.scrollX+window.innerWidth-w-12;if(r.bottom+h+12>window.innerHeight)top=r.top+window.scrollY-h-6;dp.style.left=left+'px';dp.style.top=top+'px'}
+ function close(){dp.classList.remove('on');field=null}
+ function commit(text){const f=field;f.value=text;close();if(f.dataset.f){f.dispatchEvent(new Event('change',{bubbles:true}))}}
+ document.addEventListener('click',e=>{const f=e.target.closest('input.dt');if(f){open(f);return}
+  if(!dp.contains(e.target)){close();return}
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.day){const d=+b.dataset.day;commit(fmt(d));return}
+  const a=b.dataset.dp;const x=D(view);
+  if(a==='prev')view=Math.round(Date.UTC(x.getUTCFullYear(),x.getUTCMonth()-1,1)/DAY);
+  if(a==='next')view=Math.round(Date.UTC(x.getUTCFullYear(),x.getUTCMonth()+1,1)/DAY);
+  if(a==='today'){commit(fmt(TODAY));return}
+  if(a==='clear'){commit('');return}
+  draw()});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&field)close()});
 })();
+/* Add a step: name plus optional start and due. Lands in the pipeline, flashes, and shows on the Timeline. */
+function addStep(pid){const nm=document.getElementById('f-add-'+pid);const n=(nm.value||'').trim();if(!n){nm.focus();return}
+ const s=parseDate(document.getElementById('f-add-'+pid+'-s').value||''),e=parseDate(document.getElementById('f-add-'+pid+'-e').value||'');
+ addItem(pid,n,true,{s:s,e:e});const it=ITEMS[ITEMS.length-1];
+ const row=document.querySelector(`[data-row="${it.id}"]`);row&&row.classList.add('flashrow');const f=document.getElementById('f-add-'+pid);f&&f.focus()}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-addstep]');if(b)addStep(b.dataset.addstep)});
+try {
+  var qst = String(location.search || '');
+  if (/state=item/.test(qst)) openDrawer('msa');
+  if (/state=milestone/.test(qst)) openDrawer('g-mvp');
+} catch (eOpen) {}
+
+})();
+
   } catch (err) {}
 };

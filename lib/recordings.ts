@@ -2,7 +2,6 @@ import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { env } from './env.mjs';
 import { fail } from './log';
 import { ensureMeetingActions } from './meeting-actions';
-import { listZoomNotes } from './zoom-notes';
 
 type Sql = NeonQueryFunction<false, false>;
 
@@ -94,35 +93,7 @@ export async function listRecordings(sql: Sql, ownerId: string) {
       ORDER BY COALESCE(started_at, created_at) DESC
       LIMIT 200
     `;
-    const recs = (rows as Record<string, unknown>[]).map((row) => shapeRecording(row));
-    let zoom: ReturnType<typeof shapeRecording>[] = [];
-    try {
-      const notes = await listZoomNotes(sql, ownerId);
-      zoom = notes.slice(0, 80).map((n) => {
-        const id = String(n.id || n.noteId || '');
-        const others = Array.isArray(n.others) ? n.others.map(String) : [];
-        return {
-          id: 'zn-' + id,
-          type: 'zoom',
-          title: String(n.title || ''),
-          summary: others.slice(0, 3).join(' ') || String(n.title || ''),
-          people: Array.isArray(n.attendees) ? n.attendees.map(String) : [],
-          duration_s: 0,
-          started_at: String(n.date || ''),
-          audio_ref: '',
-          hasAudio: false,
-          transcript: [],
-          status: 'ready',
-          step: '',
-          fromZoom: true,
-        };
-      });
-    } catch (err) {
-      fail('recordings_zoom_list', err);
-    }
-    const recZoomTitles = new Set(recs.filter((r) => r.type === 'zoom').map((r) => r.title.toLowerCase()));
-    const extraZoom = zoom.filter((z) => !recZoomTitles.has(z.title.toLowerCase()));
-    return recs.concat(extraZoom);
+    return (rows as Record<string, unknown>[]).map((row) => shapeRecording(row));
   } catch (err) {
     fail('recordings_list', err);
     return [];
@@ -200,6 +171,9 @@ export async function patchRecording(sql: Sql, ownerId: string, id: string, inpu
   const type = input.type != null && TYPES.includes(String(input.type) as RecType) ? String(input.type) : null;
   const people = input.people != null ? JSON.stringify(peopleOf(input.people)) : null;
   const status = input.status != null ? String(input.status).slice(0, 40) : null;
+  if (status === 'ready' && input.restore) {
+    await sql`UPDATE recordings SET deleted_at = NULL, updated_at = now() WHERE id = ${id}::uuid AND owner_id = ${ownerId}`;
+  }
   const rows = await sql`
     UPDATE recordings SET
       title = CASE WHEN ${title}::text IS NULL THEN title ELSE ${title} END,
@@ -275,6 +249,10 @@ export async function processRecording(sql: Sql, ownerId: string, id: string) {
   const rows = await sql`SELECT audio_b64, people, title FROM recordings WHERE id = ${id}::uuid AND owner_id = ${ownerId} AND deleted_at IS NULL LIMIT 1`;
   const row = rows[0] as { audio_b64?: string; people?: unknown; title?: string } | undefined;
   if (!row) return null;
+  if (!env('OPENAI_API_KEY')) {
+    await sql`UPDATE recordings SET status = 'waiting', step = 'Waiting for transcription - add OPENAI_API_KEY in Vercel', updated_at = now() WHERE id = ${id}::uuid AND owner_id = ${ownerId}`;
+    return getRecording(sql, ownerId, id);
+  }
   await sql`UPDATE recordings SET status = 'transcribing', step = 'Transcribing', updated_at = now() WHERE id = ${id}::uuid AND owner_id = ${ownerId}`;
   const text = await transcribeB64(String(row.audio_b64 || ''));
   await sql`UPDATE recordings SET status = 'summarizing', step = 'Writing the title and summary', transcript = ${JSON.stringify([{ t: '00:00', who: '', text }])}::jsonb, updated_at = now() WHERE id = ${id}::uuid AND owner_id = ${ownerId}`;

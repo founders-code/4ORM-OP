@@ -46,7 +46,17 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
     if (!ID.test(params.id)) return NextResponse.json({ error: 'Unknown contact.' }, { status: 400 });
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
-    if (String(body?.action || '') !== 'email') return NextResponse.json({ error: 'Unknown action.' }, { status: 400 });
+    const act = String(body?.action || '');
+    if (act === 'restore') {
+      const back = await session.sql`
+        UPDATE contacts SET deleted_at = NULL
+        WHERE id = ${params.id} AND owner_id = ${session.userId} AND deleted_at IS NOT NULL
+        RETURNING id, name
+      `;
+      if (!back.length) return NextResponse.json({ error: 'That contact is gone.' }, { status: 404 });
+      return NextResponse.json({ ok: true, restored: true, id: String((back[0] as { id: string }).id) });
+    }
+    if (act !== 'email') return NextResponse.json({ error: 'Unknown action.' }, { status: 400 });
     const subject = String(body?.subject || '').trim().slice(0, 200);
     const text = String(body?.body || '').trim().slice(0, 8000);
     if (!subject || !text) return NextResponse.json({ error: 'Add a subject and a message.' }, { status: 400 });

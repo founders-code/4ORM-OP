@@ -2,7 +2,7 @@
 /* Layout: command row (title + capture), one focus bar, master timeline card (pipeline chips in its header), then the list that feeds it. Gold = milestones. */
 
 
-:host,:root{
+:root{
   --tl-ground:#0B1431; --gfg:#E9EEFA; --gmuted:#8E9AC2; --gline:#1E2B55;
   --surface:#FFFFFF; --raise:#EEF2F9; --band:#F0F3FA; --edge:#D6DDEC;
   --fg:#0C1430; --muted:#56618A; --faint:#8F9AB8; --on-c:#FFFFFF;
@@ -90,6 +90,40 @@ h1{font-size:clamp(30px,3.6vw,42px);font-weight:800;letter-spacing:-.03em;line-h
 
 /* Board (carried from the approved timeline) */
 .scroller{overflow:auto;max-height:72vh;position:relative;overscroll-behavior:contain;scrollbar-width:thin}
+/* Two views: Lists (default) and Timeline. Timeline runs the full length; the page scrolls. */
+.vseg{display:flex;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:3px;margin-left:auto}
+.vseg button{border:0;background:none;color:#cfd8ee;font:inherit;font-size:13.5px;font-weight:750;padding:7px 16px;border-radius:9px;cursor:pointer}
+.vseg button[aria-pressed="true"]{background:#fff;color:#101a33}
+.page.v-lists #boardCard{display:none}
+.page.v-timeline #listCard{display:none}
+.page.v-timeline .scroller{max-height:none;overflow-y:visible;overflow-x:auto}
+.page.v-timeline #boardCard{min-height:calc(100vh - 220px)}
+.gseg{display:flex;background:#f3f6fb;border:1px solid #e3e8f1;border-radius:10px;padding:2px}
+.gseg button{border:0;background:none;font:inherit;font-size:12.5px;font-weight:750;padding:5px 12px;border-radius:8px;color:#6a7690;cursor:pointer}
+.gseg button[aria-pressed="true"]{background:#fff;color:#101a33;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+/* By date list */
+.dgrp{margin:8px 10px 0}
+.dgh{display:flex;align-items:baseline;gap:10px;padding:10px 6px 6px;border-bottom:1px solid #e8ecf3}
+.dgh b{font-size:14px;font-weight:850;color:#101a33}
+.dgh span{font-size:12px;color:#7a86a0;font-weight:650}
+.dgh.dover b{color:#d6334e}
+.dgh.dtdy b{color:#2e6bf2}
+.drw{display:grid;grid-template-columns:96px 12px minmax(170px,1fr) 104px minmax(0,130px) 100px;gap:10px;align-items:center;padding:8px 6px;border-bottom:1px solid #f0f3f8;font-size:13.5px;cursor:pointer;border-radius:8px}
+.drw:hover{background:#f7f9fd}
+.drw .ddt{font-weight:800;font-variant-numeric:tabular-nums;color:#101a33}
+.drw .ddt small{display:block;font-size:11px;color:#7a86a0;font-weight:650}
+.drw .dmk{width:10px;height:10px;border-radius:3px;background:var(--c)}
+.drw .dmk.dia2{transform:rotate(45deg);border-radius:2px}
+.drw .dnm{font-weight:700;color:#101a33;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.drw .dnm small{display:block;font-size:11.5px;color:#7a86a0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drw .dpp{font-size:12px;font-weight:750;color:var(--c)}
+.drw .dow{font-size:12.5px;color:#4a5672;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drw .dst{font-size:11.5px;font-weight:800;border-radius:7px;padding:3px 8px;justify-self:start;background:#eef2f8;color:#4a5672}
+.drw .dst.red{background:#fce6ea;color:#d6334e}.drw .dst.done{background:#e3f6ee;color:#0e8a5f}.drw .dst.go{background:#eaf1fe;color:#2e6bf2}
+.drw .dgm{font-weight:800;color:#8a6a10}
+.drw.dgl{background:#fffaf0}
+.drw.ddone .dnm{text-decoration:line-through;color:#7a86a0}
+.page.g-date #listCard .hint{display:none}
 .canvas{position:relative;--lw:252px}
 .row{display:flex;position:relative;z-index:2}
 .lab{position:sticky;left:0;z-index:3;background:var(--surface);flex:none;width:var(--lw);padding:10px 16px;display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0}
@@ -245,7 +279,7 @@ svg.links{position:absolute;top:0;z-index:1;pointer-events:none;overflow:visible
 .none{color:var(--faint);font-size:13px}
 
 /* v2: gold milestones */
-:host,:root{--gold:#D4A017;--gold-ink:#7E5B07;--gold-soft:#FCF3DA}
+:root{--gold:#D4A017;--gold-ink:#7E5B07;--gold-soft:#FCF3DA}
 .gline{position:absolute;top:0;bottom:0;width:0;border-left:2px dashed color-mix(in srgb,var(--gold) 75%,transparent)}
 .goalrow .lab .ltitle{color:var(--gold-ink)}
 .goalrow .trk{background:color-mix(in srgb,var(--gold) 9%,transparent)}
@@ -347,3 +381,24 @@ main.main{font-variant-numeric:tabular-nums}
 select{appearance:none;-webkit-appearance:none;background-image:none}
 .page{color:var(--gfg)}
 
+
+/* Add a step: name, start, due, button. */
+.addrow.step{gap:8px;align-items:center}
+.addrow.step input.nd{flex:none;width:96px;border:1.5px dashed var(--edge);cursor:pointer}
+.addbtn{flex:none;height:36px;border:0;border-radius:9px;background:var(--accent);color:#fff;font:inherit;font-size:13px;font-weight:800;padding:0 16px;cursor:pointer}
+/* Date picker: opens on any date field. Typing MMDD still works. */
+.fi.dt{cursor:pointer}
+.dpk{position:absolute;z-index:80;width:272px;background:#fff;border:1px solid #e3e8f1;border-radius:14px;box-shadow:0 18px 50px rgba(16,32,64,.22);padding:12px;display:none;font-size:13px}
+.dpk.on{display:block}
+.dpk .dph{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.dpk .dph b{flex:1;text-align:center;font-weight:850;color:#101a33}
+.dpk .dph button,.dpk .dpf button{border:1px solid #e3e8f1;background:#f6f8fc;border-radius:8px;height:28px;padding:0 10px;font:inherit;font-size:12px;font-weight:750;color:#2b3550;cursor:pointer}
+.dpk .dpg{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.dpk .dpg span{font-size:11px;font-weight:750;color:#7a86a0;padding:4px 0}
+.dpk .dpg button{height:32px;border:0;background:none;border-radius:8px;font:inherit;font-size:13px;font-weight:650;color:#101a33;cursor:pointer;font-variant-numeric:tabular-nums}
+.dpk .dpg button:hover{background:#eaf1fe}
+.dpk .dpg button.out{color:#b3bccd}
+.dpk .dpg button.tdy{box-shadow:inset 0 0 0 1.5px #2e6bf2}
+.dpk .dpg button.sel{background:#2e6bf2;color:#fff}
+.dpk .dpf{display:flex;gap:6px;margin-top:8px}
+.dpk .dpf .lab{margin-left:auto;font-size:11.5px;color:#7a86a0;align-self:center}

@@ -217,7 +217,7 @@
     var linkedNew = linked.filter(function (row) { return row.unread; }).length;
     var kindWord = { message: 'sent you a message', inmail: 'sent you an InMail', invite: 'wants to connect', update: 'posted an update' };
     var linkedHtml = linked.length ? '<div class="lnx">' + linked.slice(0, 8).map(function (row, ix) {
-      return '<div class="ln' + (ix === 0 ? ' pin' : '') + (row.unread ? ' new' : '') + '"><span class="inb">in</span><div class="bd"><div class="su">' + esc(row.name || 'LinkedIn') + (row.kind === 'update' && /^linkedin$/i.test(row.name || '') ? '' : ' <span class="kd">' + esc(kindWord[row.kind] || kindWord.update) + '</span>') + '</div><div class="sn">' + esc(row.snippet || '') + '</div></div><div class="ra"><span class="age">' + esc(ageLabel(row.at)) + '</span><a class="lo" href="https://www.linkedin.com/messaging/" target="_blank" rel="noopener noreferrer">Open in LinkedIn &#8250;</a></div></div>';
+      return '<div class="ln' + (ix === 0 ? ' pin' : '') + (row.unread ? ' new' : '') + '"><span class="inb">in</span><div class="bd"><div class="su">' + esc(row.name || 'LinkedIn') + (row.kind === 'update' && /^linkedin$/i.test(row.name || '') ? '' : ' <span class="kd">' + esc(kindWord[row.kind] || kindWord.update) + '</span>') + '</div><div class="sn">' + esc(row.snippet || '') + '</div></div><div class="ra"><span class="age">' + esc(ageLabel(row.at)) + '</span><a class="lo" href="https://www.linkedin.com/messaging/" target="_blank" rel="noopener noreferrer">Open in LinkedIn</a></div></div>';
     }).join('') + '</div>' : '<div class="quiet">No LinkedIn notifications in the last 30 days. They arrive by email to the connected inbox.</div>';
     var queue = STATE.content;
     var content = queue && typeof queue.left === 'number' ? '<div class="runway-gauge"><div class="rbig">' + queue.left + '</div><div class="rbar"><div class="track"><i style="width:' + Math.min(100, (Number(queue.left) || 0) * 8) + '%"></i></div><div class="lab">posts left' + (queue.left ? ' - runs dry in about ' + Math.max(1, Math.round(queue.left / Math.max(queue.cadence || 1, 1))) + ' days' : '') + '</div></div></div><div class="cmini"><div class="r"><span>Scheduled / queued</span><b>' + queue.left + (queue.left === 1 ? ' post' : ' posts') + '</b></div><div class="r"><span>Posting cadence</span><b>~' + (queue.cadence || 0) + ' / day</b></div>' + (queue.newsletterDue ? '<div class="r"><span>Newsletter next due</span><b>' + esc(queue.newsletterDue) + '</b></div>' : '') + '</div>' : '<div class="quiet">GoHighLevel has not returned a content queue. Posts left and the day it runs dry show here when it does.</div>';
@@ -1256,7 +1256,7 @@
     function story(item) {
       var sum = newsSummary(item);
       var why = newsWhy(item);
-      return '<div class="card story" data-action="news-open" data-nw-i="' + idx(item) + '" role="button" tabindex="0">' + newsCover(item, false) + '<div class="b"><h3 class="hdline">' + esc(item.title || '') + '</h3>' + (sum ? '<div class="tk">' + esc(sum) + '</div>' : '') + (why ? '<div class="why"><b>Why it matters:</b> ' + esc(why) + '</div>' : '') + '<div class="foot"><span class="src">' + esc(newsSource(item)) + (newsWhen(item) ? ' · ' + newsWhen(item) : '') + '</span><button type="button" class="save" data-action="news-save" data-nw-save="' + idx(item) + '">Save ›</button></div></div></div>';
+      return '<div class="card story" data-action="news-open" data-nw-i="' + idx(item) + '" role="button" tabindex="0">' + newsCover(item, false) + '<div class="b"><h3 class="hdline">' + esc(item.title || '') + '</h3>' + (sum ? '<div class="tk">' + esc(sum) + '</div>' : '') + (why ? '<div class="why"><b>Why it matters:</b> ' + esc(why) + '</div>' : '') + '<div class="foot"><span class="src">' + esc(newsSource(item)) + (newsWhen(item) ? ' · ' + newsWhen(item) : '') + '</span><button type="button" class="save" data-action="news-save" data-nw-save="' + idx(item) + '">Save</button></div></div></div>';
     }
     var hero = '';
     if (top) {
@@ -2173,14 +2173,16 @@
     renderWar();
     renderDeskNotes();
     if (typeof renderNotes === 'function') renderNotes();
-    loadDeskFeeds();
-    loadReach();
-    loadMeetingActions();
-    loadStickies();
-    loadNotes();
-    if (typeof loadFinance === 'function') loadFinance();
-    if (STATE.desk === 'news') loadNews();
-    if (STATE.desk === 'contacts') loadInbox();
+    var deskNow = STATE.desk || '';
+    if (deskNow === 'war' || deskNow === 'room' || deskNow === 'planner' || !deskNow) {
+      loadDeskFeeds();
+      loadReach();
+      loadMeetingActions();
+    }
+    if (deskNow === 'notes') { loadStickies(); loadNotes(); }
+    if (deskNow === 'finance' && typeof loadFinance === 'function') loadFinance();
+    if (deskNow === 'news') loadNews();
+    if (deskNow === 'contacts') loadInbox();
   };
   var priorSwitch = switchView;
   switchView = function (v) {
@@ -2644,7 +2646,7 @@
       ? ((typeof fmtTime === 'function' ? fmtTime(ev.start) : ''))
       : soon(ev.start);
     if (withWhen) when = new Date(ev.start).toLocaleDateString(undefined, { weekday: 'short' }) + (when ? ' ' + when : '');
-    return '<div class="meet-row"><button type="button" class="mute-bell' + (muted ? ' on' : '') + '" data-mute-meet="' + esc(ev.id) + '" title="' + (muted ? 'Alarm off' : 'Silence this meeting') + '" aria-label="' + (muted ? 'Unmute alarm' : 'Mute alarm') + '">' + (muted ? '&#128263;' : '&#128276;') + '</button><span class="ttl">' + esc(ev.title || 'Meeting') + '</span><span class="mt">' + esc(when) + '</span></div>';
+    return '<div class="meet-row"><button type="button" class="mute-bell' + (muted ? ' on' : '') + '" data-mute-meet="' + esc(ev.id) + '" title="' + (muted ? 'Alarm off' : 'Silence this meeting') + '" aria-label="' + (muted ? 'Unmute alarm' : 'Mute alarm') + '">' + (muted ? 'Alarm off' : 'Alarm') + '</button><span class="ttl">' + esc(ev.title || 'Meeting') + '</span><span class="mt">' + esc(when) + '</span></div>';
   }
   function paintMeetViews() {
     if ((STATE.desk === 'room' || !STATE.desk) && typeof renderOpsDash === 'function') renderOpsDash();

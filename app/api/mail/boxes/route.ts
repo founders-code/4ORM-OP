@@ -35,6 +35,20 @@ async function ensureBoxes(sql: NonNullable<Awaited<ReturnType<typeof openBoard>
   )`;
   await sql`ALTER TABLE email_box_addresses ADD COLUMN IF NOT EXISTS deleted_at timestamptz`;
   await sql`ALTER TABLE email_box_tags ADD COLUMN IF NOT EXISTS deleted_at timestamptz`;
+  await sql`CREATE TABLE IF NOT EXISTS email_box_hidden (
+    owner_id text NOT NULL,
+    sender text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (owner_id, sender)
+  )`;
+  await sql`CREATE TABLE IF NOT EXISTS box_restore_log (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id text NOT NULL,
+    keys text NOT NULL DEFAULT '',
+    action text NOT NULL DEFAULT '',
+    payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`;
 }
 
 function asBoxes(raw: unknown): Record<string, unknown>[] {
@@ -88,7 +102,9 @@ export async function GET() {
         addrs: addrMap[String(r.key)] || extra.addrs || []
       });
     });
-    return NextResponse.json({ boxes });
+    const hiddenRows = await session.sql`SELECT sender FROM email_box_hidden WHERE owner_id = ${ownerId}`;
+    const hidden = (hiddenRows || []).map((r: { sender?: string }) => String(r.sender || '').toLowerCase()).filter(Boolean);
+    return NextResponse.json({ boxes, hidden });
   } catch (err) {
     fail('mail_boxes', err);
     return NextResponse.json({ boxes: [] }, { status: 500 });
@@ -137,7 +153,19 @@ export async function POST(req: Request) {
     if (!ownerId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     if (!session.sql) return NextResponse.json({ saved: false, error: 'Unavailable' }, { status: 503 });
-    if (!body || String(body.action || 'save') !== 'save') {
+    const action = String(body?.action || 'save');
+    if (action === 'hide' || action === 'unhide') {
+      await ensureBoxes(session.sql);
+      const sender = String(body?.sender || body?.address || '').trim().toLowerCase().slice(0, 120);
+      if (!sender) return NextResponse.json({ saved: false, error: 'Need a sender.' }, { status: 400 });
+      if (action === 'hide') {
+        await session.sql`INSERT INTO email_box_hidden (owner_id, sender) VALUES (${ownerId}, ${sender}) ON CONFLICT (owner_id, sender) DO NOTHING`;
+      } else {
+        await session.sql`DELETE FROM email_box_hidden WHERE owner_id = ${ownerId} AND sender = ${sender}`;
+      }
+      return NextResponse.json({ saved: true, hidden: action === 'hide', sender });
+    }
+    if (!body || action !== 'save') {
       return NextResponse.json({ saved: false, error: 'Unknown action.' }, { status: 400 });
     }
     const sql = session.sql;

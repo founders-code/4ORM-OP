@@ -22,8 +22,11 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
     const owner = body.owner_name != null || body.o != null ? String(body.owner_name || body.o) : null;
     const st = body.status_override != null || body.st != null ? String(body.status_override || body.st || '') : null;
     const pipeline = body.pipeline != null || body.p != null ? String(body.pipeline || body.p) : null;
-    const due = body.due_date != null ? String(body.due_date) : null;
-    const start = body.start_date != null ? String(body.start_date) : null;
+    const dueRaw = body.due_date != null ? String(body.due_date) : null;
+    const startRaw = body.start_date != null ? String(body.start_date) : null;
+    const due = dueRaw && /^\d{4}-\d{2}-\d{2}$/.test(dueRaw) ? dueRaw : null;
+    const start = startRaw === '' ? '' : (startRaw && /^\d{4}-\d{2}-\d{2}$/.test(startRaw) ? startRaw : null);
+    const clearStart = startRaw === '';
     await session.sql`
       UPDATE timeline_items
       SET title = CASE WHEN ${title != null} THEN ${title || ''} ELSE title END,
@@ -32,7 +35,7 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
           status_override = CASE WHEN ${st != null} THEN ${st || null} ELSE status_override END,
           pipeline = CASE WHEN ${pipeline != null} THEN ${pipeline === 'goals' ? 'milestones' : pipeline || 'corporate'} ELSE pipeline END,
           due_date = CASE WHEN ${due != null} THEN ${due}::date ELSE due_date END,
-          start_date = CASE WHEN ${start != null} THEN ${start}::date ELSE start_date END,
+          start_date = CASE WHEN ${clearStart} THEN NULL WHEN ${start != null && start !== ''} THEN ${start}::date ELSE start_date END,
           updated_at = now()
       WHERE id = ${ctx.params.id}::uuid AND owner_id = ${session.userId}
     `;

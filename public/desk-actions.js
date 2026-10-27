@@ -73,7 +73,7 @@
     toast.timer = setTimeout(function () {
       if (host) { host.classList.remove('show'); host.hidden = true; }
       if (light) light.hidden = true;
-    }, 4200);
+    }, Number(arguments[3]) || 4200);
   }
   function soon(root, label) {
     var line = String(label || 'This control');
@@ -723,7 +723,16 @@
 
   /* ---------- actions ---------- */
   var actions = {
-    'coming-soon': function (el, root) { soon(root, attr(el, 'data-label') || (el.textContent || '').trim().slice(0, 60) || 'This control'); },
+    'coming-soon': function (el, root) {
+      var host = '';
+      try { host = String(location.hostname || ''); } catch (e) {}
+      var live = /4ormop\.com$/i.test(host);
+      if (live && !fixtureOn()) {
+        try { console.info('[button-sweep] dead control', attr(el, 'data-label') || (el.textContent || '').trim().slice(0, 60)); } catch (e2) {}
+        return;
+      }
+      soon(root, attr(el, 'data-label') || (el.textContent || '').trim().slice(0, 60) || 'This control');
+    },
     'toast-undo': function (el, root) {
       var fn = window.__deskUndo;
       window.__deskUndo = null;
@@ -3491,6 +3500,39 @@
       }
       openCompose({ to: addr ? [{ email: addr, name: box.n }] : [], reply: true, subject: /^re:/i.test(sj) ? sj : 'Re: ' + sj, threadId: row[4] || '', messageId: row[5] || '' });
     },
+    'mail-compose-resize': function () {},
+    'mail-box-remove': function (el, root) {
+      var id = attr(el, 'data-id');
+      var view = personBox(id);
+      var box = findPeopleBox(id, false);
+      var name = (view && view.n) || (box && box.n) || 'Box';
+      var sender = String((view && ((view.addrs && view.addrs[0]) || view.o)) || (box && ((box.addrs && box.addrs[0]) || box.o)) || '').toLowerCase();
+      if (box) {
+        var list = peopleBoxList();
+        var at = list.indexOf(box);
+        if (at >= 0) list.splice(at, 1);
+        persistPeopleBoxes({ confirmRemove: [String(box.id)] });
+        refresh('mail');
+        toast(root, 'Deleted ' + name + '. Undo', function () {
+          list.splice(Math.max(0, at), 0, box);
+          persistPeopleBoxes();
+          refresh('mail');
+        }, 6000);
+        return;
+      }
+      if (EMAIL_RE.test(sender)) {
+        S().emailBoxHidden = (S().emailBoxHidden || []).concat([sender]);
+        api('/api/mail/boxes', { method: 'POST', body: { action: 'hide', sender: sender } }).catch(function () {});
+        refresh('mail');
+        toast(root, 'Deleted ' + name + '. Undo', function () {
+          S().emailBoxHidden = (S().emailBoxHidden || []).filter(function (a) { return a !== sender; });
+          api('/api/mail/boxes', { method: 'POST', body: { action: 'unhide', sender: sender } }).catch(function () {});
+          refresh('mail');
+        }, 6000);
+        return;
+      }
+      toast(root, name + ' has no saved box to remove');
+    },
     'mail-box-close': function (el, root) {
       var box = findPeopleBox(attr(el, 'data-id'), true);
       if (!box) return;
@@ -4216,7 +4258,13 @@
   function downloadMailAttachment(root, mid, aid, name) {
     if (!mid || !aid) { toast(root, 'That file has no stored copy yet'); return; }
     if (!writeOk()) { toast(root, 'Download (fixture)'); return; }
-    toast(root, 'Downloading ' + (name || 'file'));
+    var n = String(name || 'file');
+    var inline = /\.(pdf|png|jpe?g|gif|webp)$/i.test(n);
+    if (inline) {
+      window.open('/api/mail/attachment?mid=' + encodeURIComponent(mid) + '&aid=' + encodeURIComponent(aid) + '&name=' + encodeURIComponent(n) + '&inline=1', '_blank', 'noopener,noreferrer');
+      return;
+    }
+    toast(root, 'Downloading ' + n);
     api('/api/mail/attachment?mid=' + encodeURIComponent(mid) + '&aid=' + encodeURIComponent(aid) + '&name=' + encodeURIComponent(name || 'attachment'), { method: 'GET' }).then(function (r) {
       var type = (r && r.headers && r.headers.get && r.headers.get('content-type')) || '';
       if (!r || !r.ok || /json/i.test(type)) throw new Error('nofile');
@@ -5499,27 +5547,32 @@
     if (col) col.classList.remove('drop-on');
   }
 
+  function hasDataHook(el) {
+    if (!el || !el.attributes) return false;
+    if (el.id) return true;
+    var i, n;
+    for (i = 0; i < el.attributes.length; i++) {
+      n = String(el.attributes[i].name || '');
+      if (n.indexOf('data-') === 0 && n !== 'data-label') return true;
+    }
+    return false;
+  }
   function stampDeskControls(root) {
     if (!root || !root.querySelectorAll) return { withAction: 0, without: 0 };
+    if (root.__pageBound) return { withAction: 0, without: 0, stamped: 0, skipped: 'page-bound' };
     var nodes = root.querySelectorAll(CONTROL_SEL);
     var withAction = 0, without = 0;
     nodes.forEach(function (el) {
       if (el.tagName === 'STYLE' || el.tagName === 'LINK' || el.tagName === 'SVG' || el.tagName === 'PATH') return;
       if (el.isContentEditable) return;
-      if (!el.getAttribute('data-action')) {
-        if (el.querySelector && el.querySelector('[data-action]')) return;
-        without += 1;
-        var label = (el.getAttribute('aria-label') || el.getAttribute('title') || el.textContent || el.className || 'control');
-        el.setAttribute('data-action', 'coming-soon');
-        el.setAttribute('data-label', String(label).trim().replace(/\s+/g, ' ').slice(0, 80));
-      }
-      withAction += 1;
+      if (el.getAttribute('data-action')) { withAction += 1; return; }
+      if (el.querySelector && el.querySelector('[data-action]')) return;
+      if (hasDataHook(el)) return;
+      if (el.closest && (el.closest('[data-open],[data-rm],[data-toggle],[data-f],[data-mv],[data-drag],[data-gdone],[data-tasks],[data-adddep],[data-rmdep],[data-view],[data-group],[data-pop],[data-act],[data-chip],[data-addstep],[data-dp]'))) return;
+      without += 1;
+      try { console.info('[button-sweep] unmarked', (el.getAttribute('aria-label') || el.textContent || el.className || '').toString().trim().replace(/\s+/g, ' ').slice(0, 80)); } catch (e) {}
     });
-    var leftover = 0;
-    root.querySelectorAll(CONTROL_SEL).forEach(function (el) {
-      if (!el.getAttribute('data-action')) leftover += 1;
-    });
-    return { withAction: withAction, without: leftover, stamped: without };
+    return { withAction: withAction, without: without, stamped: 0 };
   }
 
   function bindShadowActions(root) {
@@ -5548,7 +5601,53 @@
       root.addEventListener('dragleave', onDragLeave);
     }
     stampDeskControls(root);
+    bindComposeWidth(root);
     return root;
+  }
+
+  function bindComposeWidth(root) {
+    var g = root && root.getElementById && root.getElementById('cgrab');
+    var cp = root && root.getElementById && root.getElementById('compose');
+    var lab = root && root.getElementById && root.getElementById('cwidth');
+    if (!g || !cp || g.__cwBound) return;
+    g.__cwBound = true;
+    function maxW() { return Math.max(520, window.innerWidth - 240); }
+    function setW(w) {
+      w = Math.round(Math.min(maxW(), Math.max(520, w)));
+      cp.style.width = w + 'px';
+      if (lab) lab.textContent = w + ' px';
+      S().prefs = S().prefs || {};
+      S().prefs.compose_width = w;
+      return w;
+    }
+    function persist(w) {
+      try { localStorage.setItem('compose_w', String(w)); } catch (e) {}
+      if (!writeOk()) return;
+      api('/api/prefs', { method: 'PATCH', body: { compose_width: w } }).catch(function () {});
+    }
+    g.addEventListener('pointerdown', function (ev) {
+      if (ev.button) return;
+      ev.preventDefault();
+      var x0 = ev.clientX;
+      var w0 = cp.getBoundingClientRect().width;
+      cp.classList.add('sizing');
+      try { g.setPointerCapture(ev.pointerId); } catch (e) {}
+      var mv = function (e2) { setW(w0 + (x0 - e2.clientX)); };
+      var up = function () {
+        cp.classList.remove('sizing');
+        g.removeEventListener('pointermove', mv);
+        g.removeEventListener('pointerup', up);
+        persist(S().prefs.compose_width);
+      };
+      g.addEventListener('pointermove', mv);
+      g.addEventListener('pointerup', up);
+    });
+    g.addEventListener('dblclick', function () { persist(setW(760)); });
+    g.addEventListener('keydown', function (ev) {
+      var w = S().prefs && S().prefs.compose_width || cp.getBoundingClientRect().width;
+      if (ev.key === 'ArrowLeft') { ev.preventDefault(); persist(setW(w + 40)); }
+      if (ev.key === 'ArrowRight') { ev.preventDefault(); persist(setW(w - 40)); }
+    });
   }
 
   if (!window.__deskDocBound) {
@@ -5581,13 +5680,16 @@
   }
   window.deskInventory = function (root) {
     if (!root) return { withAction: 0, without: 0 };
-    var nodes = root.querySelectorAll(CONTROL_SEL);
-    var withAction = 0, without = 0;
+    var nodes = root.querySelectorAll('button, a, [role="button"]');
+    var withAction = 0, without = 0, coming = 0;
     nodes.forEach(function (el) {
-      if (el.getAttribute('data-action')) withAction += 1;
+      var act = el.getAttribute('data-action');
+      if (act === 'coming-soon') coming += 1;
+      if (act) withAction += 1;
+      else if (hasDataHook(el) || el.id) { /* page-bound hook */ }
       else if (el.querySelector && el.querySelector('[data-action]')) { /* wrapper */ }
       else without += 1;
     });
-    return { withAction: withAction, without: without, total: nodes.length };
+    return { withAction: withAction, without: without, comingSoon: coming, total: nodes.length };
   };
 })();

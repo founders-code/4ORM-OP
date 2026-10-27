@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -47,6 +47,20 @@ for (const name of ['redesign-pages-d.js', 'redesign-pages-people.js', 'redesign
   if (!existsSync(file)) continue;
   const hits = iconHits(readFileSync(file, 'utf8'));
   if (hits.length) failures.push('public/' + name + ' has icons: ' + hits.join(', '));
+}
+function listedFiles(dir, ext) {
+  try { return readdirSync(dir).filter((n) => n.endsWith(ext)).map((n) => join(dir, n)); } catch { return []; }
+}
+const glyphRe = /[\u2190-\u21ff\u25b2-\u25bf\u00d7\u203a\u2039\u2316\u{1f300}-\u{1faff}]/u;
+const skipGlyph = /redesign-fixture|redesign-pages-c\.js/;
+for (const file of listedFiles(resolve(ROOT, 'public'), '.js').concat(listedFiles(resolve(ROOT, 'public/port-css'), '.css'))) {
+  const rel = file.replace(ROOT + '/', '');
+  if (skipGlyph.test(rel)) continue;
+  const text = readFileSync(file, 'utf8');
+  if (glyphRe.test(text) || /\p{Extended_Pictographic}/u.test(text)) {
+    if (failures.some((f) => f.indexOf(rel) >= 0)) continue;
+    failures.push(rel + ' has a banned glyph, caret, times sign or emoji');
+  }
 }
 if (!/hourCycle: 'h23'/.test(nav)) failures.push('public/shell-nav.js clock is not 24-hour');
 if (failures.length) {
