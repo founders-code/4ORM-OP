@@ -209,7 +209,7 @@ async function main() {
   const overflow1280 = [];
   let failed = 0;
   try {
-    const chosen = PAGES.filter((p) => !ONLY.length || ONLY.includes(p.page));
+    const chosen = process.env.VISUAL_P8 ? [] : PAGES.filter((p) => !ONLY.length || ONLY.includes(p.page));
     for (const spec of chosen.filter((p) => p.skip)) {
       rows.push({ page: spec.page, pct: 0, pass: true, pixels: 0, total: 0, overflow: 'no', reason: spec.reason || 'skipped' });
       console.log(`${spec.page.padEnd(16)} SKIP  ${spec.reason || ''}`);
@@ -248,29 +248,120 @@ async function main() {
       console.log(`${spec.page.padEnd(16)} ${p.toFixed(3)}%  overflow1440=${overflow ? 'yes' : 'no'}  overflow1280=${live1280 ? 'yes' : 'no'}  ${ok ? 'PASS' : 'FAIL'}  (${n}/${total})${band}`);
     }
     const P8 = [
-      { page: '09g-playbook-full-week', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 800 },
-      { page: '18j-planner-timeline-neon', live: 'planner?fixture=mockup', ready: '#warDesk[data-port-ready]', wait: 1000 },
-      { page: '13d-news-market', live: 'control-room.html?view=news&fixture=mockup', ready: '#v-news', wait: 1200 },
-      { page: '10d-calendar-week', live: 'control-room.html?view=calendar&fixture=mockup', ready: '#calDesk[data-port-ready]', wait: 800 },
-      { page: '12b-completed-neon', live: 'control-room.html?view=done&fixture=mockup', ready: '#doneDesk[data-port-ready]', wait: 600 },
-      { page: '17e-integrations-neon', live: 'control-room.html?view=int&fixture=mockup', ready: '#intDesk[data-port-ready]', wait: 800 },
-      { page: '17f-vault', live: 'control-room.html?view=vault&fixture=mockup', ready: '#vaultDesk[data-port-ready]', wait: 800 },
-      { page: '17f-control-room-top', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800 },
-      { page: '03d-notes-canvas', live: 'control-room.html?view=notes&fixture=mockup&canvas=1', ready: '#notesDesk[data-port-ready]', wait: 800 },
-      { page: '20-spaces-grid', live: 'control-room.html?view=work&fixture=mockup&cards=1', ready: '#spacesDesk[data-port-ready]', wait: 800 },
+      { page: '09g-playbook-full-week', design: '09g-playbook.html', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 800 },
+      { page: '09g-playbook-menu-hidden', design: '09g-playbook.html', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 800, act: 'navshut' },
+      { page: '09g-playbook-todo-popup', design: '09g-playbook.html', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 800, act: 'todo' },
+      { page: '09g-playbook-focus-today', design: '09g-playbook.html', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 800, act: 'focusday' },
+      { page: '09g-playbook-compact', design: '09g-playbook.html', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 800, act: 'compact' },
+      { page: '09g-playbook-edit-plays', design: '09g-playbook.html', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 800, act: 'editplays' },
+      { page: '18j-planner-lists', design: '18j-timeline-neon.html', live: 'planner?fixture=mockup', ready: '#warDesk[data-port-ready]', wait: 1000 },
+      { page: '18j-planner-timeline-neon', design: '18j-timeline-neon.html', live: 'planner?fixture=mockup&view=timeline', ready: '#warDesk[data-port-ready]', wait: 1000, act: 'timeline' },
+      { page: '18j-planner-timeline-needs-me', design: '18j-timeline-neon.html', live: 'planner?fixture=mockup&view=timeline', ready: '#warDesk[data-port-ready]', wait: 1000, act: 'needsme' },
+      { page: '13d-news-market', design: '13d-news-pulse-dark.html', live: 'control-room.html?view=news&fixture=mockup', ready: '#v-news', wait: 1200 },
+      { page: '13d-news-consumer', design: '13d-news-pulse-dark.html', live: 'control-room.html?view=news&fixture=mockup', ready: '#v-news', wait: 1200, act: 'consumer' },
+      { page: '10d-calendar-week', design: '10d-calendar-neon.html', live: 'control-room.html?view=calendar&fixture=mockup', ready: '#calDesk[data-port-ready]', wait: 800 },
+      { page: '10d-calendar-day', design: '10d-calendar-neon.html', live: 'control-room.html?view=calendar&fixture=mockup', ready: '#calDesk[data-port-ready]', wait: 800, act: 'calday' },
+      { page: '12b-completed-neon', design: '12b-completed-neon.html', live: 'control-room.html?view=done&fixture=mockup', ready: '#doneDesk[data-port-ready]', wait: 600 },
+      { page: '17e-integrations-neon', design: '17e-integrations-neon.html', live: 'control-room.html?view=int&fixture=mockup', ready: '#intDesk[data-port-ready]', wait: 800 },
+      { page: '17f-vault', design: '17f-vault-control-ops.html', live: 'control-room.html?view=vault&fixture=mockup', ready: '#vaultDesk[data-port-ready]', wait: 800 },
+      { page: '17f-vault-drawer', design: '17f-vault-control-ops.html', live: 'control-room.html?view=vault&fixture=mockup', ready: '#vaultDesk[data-port-ready]', wait: 800, act: 'vaultdrawer' },
+      { page: '17f-control-room-top', design: '17f-vault-control-ops.html', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800 },
+      { page: '17f-control-room-tape', design: '17f-vault-control-ops.html', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800, act: 'tape' },
+      { page: '17f-control-room-map', design: '17f-vault-control-ops.html', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800, act: 'map' },
+      { page: '17f-control-room-engages', design: '17f-vault-control-ops.html', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800, act: 'engages' },
+      { page: '17f-control-room-4ormiq', design: '17f-vault-control-ops.html', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800, act: 'iq' },
+      { page: '17f-control-room-apis', design: '17f-vault-control-ops.html', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800, act: 'apis' },
+      { page: '17f-control-room-chain', design: '17f-vault-control-ops.html', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800, act: 'chain' },
+      { page: '03d-notes-canvas', design: '03d-notes-canvas-open.html', live: 'control-room.html?view=notes&fixture=mockup&canvas=1', ready: '#notesDesk[data-port-ready]', wait: 800 },
+      { page: '20-spaces-grid', design: '05e-spaces-cards.html', live: 'control-room.html?view=work&fixture=mockup&cards=1', ready: '#spacesDesk[data-port-ready]', wait: 800 },
+      { page: '20-spaces-menu', design: '05g-spaces-menu.html', live: 'control-room.html?view=work&fixture=mockup&cards=1&menu=1', ready: '#spacesDesk[data-port-ready]', wait: 800, act: 'spacemenu' },
+      { page: '20-space-panel', design: '05c-space-panel.html', live: 'control-room.html?view=work&fixture=mockup&space=1', ready: '#spacesDesk[data-port-ready]', wait: 800 },
+      { page: '20-space-panel-from-spaces', design: '05f-spaces-card-open.html', live: 'control-room.html?view=work&fixture=mockup&space=open', ready: '#spacesDesk[data-port-ready]', wait: 800 },
+      { page: '20-contacts-lists', design: '20-outreach-lists.html', live: 'control-room.html?view=people&fixture=mockup&lists=1', ready: '#peopleDesk[data-port-ready]', wait: 800 },
+      { page: '20-pipeline-board-neon', design: '04-pipeline.html', live: 'control-room.html?view=contacts&fixture=mockup', ready: '#pipeDesk[data-port-ready]', wait: 800 },
+      { page: '20-pipeline-list', design: '04-pipeline.html', live: 'control-room.html?view=contacts&fixture=mockup&list=1', ready: '#pipeDesk[data-port-ready]', wait: 800 },
+      { page: '06c-documents-sheet', design: '06c-sheet-viewer.html', live: 'control-room.html?view=docs&fixture=mockup&sheet=1', ready: '#docsDesk[data-port-ready]', wait: 800 },
     ];
+    async function p8Act(page, spec, isLive) {
+      const act = spec.act;
+      if (!act) return;
+      await page.evaluate(({ act, isLive }) => {
+        const host = (id) => {
+          const el = document.getElementById(id);
+          return el && el.shadowRoot ? el.shadowRoot : el;
+        };
+        const click = (root, sel) => { const n = root && root.querySelector(sel); if (n) n.click(); return !!n; };
+        if (act === 'navshut') {
+          document.body.classList.add('navshut');
+          const tog = document.getElementById('navtog');
+          if (tog) tog.textContent = 'Menu';
+        }
+        if (act === 'todo') {
+          const r = isLive ? host('playDesk') : document;
+          click(r, '.ti .tt, .ti [data-open], .ti');
+        }
+        if (act === 'focusday') {
+          document.body.classList.add('focusday');
+          document.body.classList.remove('compact');
+          const r = isLive ? host('playDesk') : document;
+          const b = r && r.querySelector('[data-m="focusday"]');
+          if (b) b.click();
+        }
+        if (act === 'compact') {
+          document.body.classList.add('compact');
+          document.body.classList.remove('focusday');
+          const r = isLive ? host('playDesk') : document;
+          const b = r && r.querySelector('[data-m="compact"]');
+          if (b) b.click();
+        }
+        if (act === 'editplays') {
+          const r = isLive ? host('playDesk') : document;
+          click(r, '#editPlays, [data-action="play-edit"]');
+        }
+        if (act === 'timeline') {
+          const r = isLive ? host('warDesk') : document;
+          click(r, '[data-view="timeline"]');
+        }
+        if (act === 'needsme') {
+          const r = isLive ? host('warDesk') : document;
+          click(r, '[data-view="timeline"]');
+          click(r, '[data-filter="needs"], [data-act="needs"]');
+        }
+        if (act === 'consumer') {
+          const r = isLive ? (document.getElementById('v-news') && document.getElementById('v-news').shadowRoot) || document.getElementById('newsDesk') : document;
+          click(r, '[data-tab="consumer"], [data-v="consumer"]');
+        }
+        if (act === 'calday') {
+          const r = isLive ? host('calDesk') : document;
+          click(r, '[data-cal="day"], [data-view="day"]');
+        }
+        if (act === 'vaultdrawer') {
+          const r = isLive ? host('vaultDesk') : document;
+          click(r, '#vtab tr.row, .row[data-id]');
+        }
+        if (act === 'spacemenu') {
+          const r = isLive ? host('spacesDesk') : document;
+          click(r, '[data-action="space-menu"]');
+        }
+      }, { act, isLive });
+      await page.waitForTimeout(250);
+    }
     for (const spec of P8.filter((p) => !ONLY.length || ONLY.includes(p.page))) {
       const pageP8 = await context.newPage();
       await pageP8.setViewportSize({ width: 1440, height: 1000 });
+      await pageP8.goto(`http://127.0.0.1:${port}/design/${spec.design}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await pageP8.waitForTimeout(400);
+      await prepare(pageP8);
+      await p8Act(pageP8, spec, false);
+      const designBuf = await pageP8.screenshot({ type: 'png', fullPage: false });
       await pageP8.goto(`http://127.0.0.1:${port}/${spec.live}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await pageP8.waitForSelector(spec.ready, { timeout: 15000, state: 'attached' }).catch(() => {});
       await prepare(pageP8);
       if (spec.wait) await pageP8.waitForTimeout(spec.wait);
+      await p8Act(pageP8, spec, true);
       const liveBuf = await pageP8.screenshot({ type: 'png', fullPage: false });
       await pageP8.close();
-      const pngPath = join(ROOT, 'design-reference/redesign/shots-p8', `${spec.page}.png`);
-      let mock;
-      try { mock = PNG.sync.read(readFileSync(pngPath)); } catch { rows.push({ page: spec.page, pct: 100, pass: false, pixels: 0, total: 0, overflow: 'no', reason: 'missing shot' }); failed += 1; continue; }
+      const mock = PNG.sync.read(designBuf);
       const livePng = PNG.sync.read(liveBuf);
       const w = Math.min(mock.width, livePng.width);
       const h = Math.min(mock.height, livePng.height);
@@ -287,9 +378,12 @@ async function main() {
       writeFileSync(join(OUT, `${spec.page}-mockup.png`), PNG.sync.write(a));
       writeFileSync(join(OUT, `${spec.page}-live.png`), PNG.sync.write(b));
       writeFileSync(join(OUT, `${spec.page}.png`), PNG.sync.write(diff));
-      rows.push({ page: spec.page, pct: p, pass: ok, pixels: n, total, overflow: 'no', reason: ok ? '' : `${p.toFixed(3)}% vs shots-p8` });
+      rows.push({ page: spec.page, pct: p, pass: ok, pixels: n, total, overflow: 'no', reason: ok ? '' : `${p.toFixed(3)}% vs /design/${spec.design}` });
       console.log(`p8 ${spec.page.padEnd(28)} ${p.toFixed(3)}%  ${ok ? 'PASS' : 'FAIL'}`);
     }
+    if (process.env.VISUAL_P8) {
+      /* skip documents-frame when running the 33-shot Prompt 8 loop */
+    } else {
     const page = await context.newPage();
     async function docsFrame(url) {
       await page.goto(`http://127.0.0.1:${port}/${url}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -321,6 +415,7 @@ async function main() {
     if (!frameOk) failed += 1;
     rows.push({ page: 'documents-local-drive-frame', pct: fp, pass: frameOk, pixels: fn, total: fw * fh, overflow: 'no' });
     console.log(`documents-frame  ${fp.toFixed(3)}%  ${frameOk ? 'PASS' : 'FAIL'}  (${fn}/${fw * fh})`);
+    }
   } finally {
     await browser.close();
     server.close();

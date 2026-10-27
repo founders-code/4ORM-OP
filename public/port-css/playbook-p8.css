@@ -209,14 +209,14 @@ button{font:inherit;cursor:pointer}
 .ctr{display:flex;gap:4px;background:#0b1430;border:1px solid #2a3a72;border-radius:12px;padding:3px}
 .ctr button{border:0;background:none;color:#8fa0c8;font:inherit;font-size:12.5px;font-weight:800;padding:7px 12px;border-radius:9px;cursor:pointer}
 .ctr button.on{background:#2e6bf2;color:#fff}
-body.focusday .grid{grid-template-columns:250px 3.4fr repeat(6,.34fr) 90px}
-body.focusday .pad:not(.due){font-size:0}
-body.focusday .pad.due{height:44px;font-size:14px;letter-spacing:.04em}
-body.focusday .dh:not(.today){font-size:0}body.focusday .dh:not(.today) small{font-size:9px}
-body.compact .pad{height:20px;border-radius:7px;font-size:10px}
-body.compact .track .r,body.compact .track .new{display:none}
-body.compact .grid{row-gap:4px}
-body.compact .track .t{font-size:12.5px}
+:host-context(body.focusday), .port-body.focusday .grid{grid-template-columns:250px 3.4fr repeat(6,.34fr) 90px}
+:host-context(body.focusday), .port-body.focusday .pad:not(.due){font-size:0}
+:host-context(body.focusday), .port-body.focusday .pad.due{height:44px;font-size:14px;letter-spacing:.04em}
+:host-context(body.focusday), .port-body.focusday .dh:not(.today){font-size:0}:host-context(body.focusday), .port-body.focusday .dh:not(.today) small{font-size:9px}
+:host-context(body.compact), .port-body.compact .pad{height:20px;border-radius:7px;font-size:10px}
+:host-context(body.compact), .port-body.compact .track .r,:host-context(body.compact), .port-body.compact .track .new{display:none}
+:host-context(body.compact), .port-body.compact .grid{row-gap:4px}
+:host-context(body.compact), .port-body.compact .track .t{font-size:12.5px}
 .lh.fold{cursor:pointer;display:flex;align-items:center;gap:10px}
 .lh.fold::after{content:attr(data-st);font-size:10.5px;letter-spacing:.06em;color:#5b8cff}
 .folded{display:none!important}
@@ -227,60 +227,60 @@ body.compact .track .t{font-size:12.5px}
 .ti{--sc:#5b8cff;box-shadow:inset 3px 0 0 var(--sc)}
 .ti .src{color:var(--sc)}
 /* full week: a short list, one line each, up to 4 per column */
-body:not(.focusday) .ti .meta span:not(.src):not(.late){display:none}
-body:not(.focusday) .ti{padding:7px 10px;margin-bottom:5px}
-body:not(.focusday) .ti .tt{font-size:13px}
-body:not(.focusday) .ti .meta{display:inline-flex;grid-column:2}
-body:not(.focusday) .tdc{min-height:0}
-body:not(.focusday) .ti.more-hide{display:none}
+:host-context(body:not(.focusday)), .port-body:not(.focusday) .ti .meta span:not(.src):not(.late){display:none}
+:host-context(body:not(.focusday)), .port-body:not(.focusday) .ti{padding:7px 10px;margin-bottom:5px}
+:host-context(body:not(.focusday)), .port-body:not(.focusday) .ti .tt{font-size:13px}
+:host-context(body:not(.focusday)), .port-body:not(.focusday) .ti .meta{display:inline-flex;grid-column:2}
+:host-context(body:not(.focusday)), .port-body:not(.focusday) .tdc{min-height:0}
+:host-context(body:not(.focusday)), .port-body:not(.focusday) .ti.more-hide{display:none}
 .tmore{font-size:12px;font-weight:750;color:#7fb0ff;padding:2px 4px;cursor:pointer}
 /* focus today: the Today list leads, bigger, in colour */
-body.focusday .tdg{grid-template-columns:2fr 1fr 1fr}
-body.focusday .tdc[data-b="today"] .ti{padding:13px 14px;background:color-mix(in srgb,var(--sc) 16%,#1a2552);border-color:color-mix(in srgb,var(--sc) 45%,transparent)}
-body.focusday .tdc[data-b="today"] .ti .tt{font-size:16px}
-body.focusday .tdc[data-b="today"] h4{font-size:13px}
-body.focusday .td{border-color:rgba(255,90,110,.35);box-shadow:0 0 0 1px rgba(255,90,110,.15),0 20px 50px rgba(0,0,0,.35)}
-body.focusday .td .tdh h3{font-size:20px}
+:host-context(body.focusday), .port-body.focusday .tdg{grid-template-columns:2fr 1fr 1fr}
+:host-context(body.focusday), .port-body.focusday .tdc[data-b="today"] .ti{padding:13px 14px;background:color-mix(in srgb,var(--sc) 16%,#1a2552);border-color:color-mix(in srgb,var(--sc) 45%,transparent)}
+:host-context(body.focusday), .port-body.focusday .tdc[data-b="today"] .ti .tt{font-size:16px}
+:host-context(body.focusday), .port-body.focusday .tdc[data-b="today"] h4{font-size:13px}
+:host-context(body.focusday), .port-body.focusday .td{border-color:rgba(255,90,110,.35);box-shadow:0 0 0 1px rgba(255,90,110,.15),0 20px 50px rgba(0,0,0,.35)}
+:host-context(body.focusday), .port-body.focusday .td .tdh h3{font-size:20px}
 /* compact: the whole page on one screen, everything in one place */
-body.compact .pbwrap{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);column-gap:16px;align-items:start}
-body.compact .pbwrap>.head{grid-column:1/-1}
-body.compact .pbwrap>.seq{grid-column:1;grid-row:2/span 3}
-body.compact .pbwrap>#todo{grid-column:2;grid-row:2;margin:0 0 12px}
-body.compact .pbwrap>.lh{display:none}
-body.compact .pbwrap>.beats{grid-column:2;grid-row:3;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;margin-bottom:12px}
-body.compact .pbwrap>.vlog{grid-column:2;grid-row:4;display:block!important}
-body.compact .pbwrap>.vlog .vcard:not(.vrec){display:none}
-body.compact .pbwrap>.vlog .vrec{flex-direction:row!important;padding:10px 14px!important;gap:14px!important;justify-content:flex-start!important}
-body.compact .pbwrap>.vlog .vrec .recbtn{transform:scale(.55);margin:-18px}
-body.compact .pbwrap>.vlog .vrec .wave{display:none}
-body.compact .vhist{display:none}
-body.compact #todo .tdg{grid-template-columns:1fr;gap:8px}
-body.compact #todo .tdh .s,body.compact #todo .tdf{display:none}
-body.compact #todo .tdadd{max-width:none;flex-basis:100%;margin-left:0}
-body.compact .beat{padding:10px 12px!important}
-body.compact .beat .f{display:none}body.compact .beat .d{font-size:22px}
-body.compact .grid{grid-template-columns:200px repeat(7,1fr) 64px}
+:host-context(body.compact), .port-body.compact .pbwrap{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);column-gap:16px;align-items:start}
+:host-context(body.compact), .port-body.compact .pbwrap>.head{grid-column:1/-1}
+:host-context(body.compact), .port-body.compact .pbwrap>.seq{grid-column:1;grid-row:2/span 3}
+:host-context(body.compact), .port-body.compact .pbwrap>#todo{grid-column:2;grid-row:2;margin:0 0 12px}
+:host-context(body.compact), .port-body.compact .pbwrap>.lh{display:none}
+:host-context(body.compact), .port-body.compact .pbwrap>.beats{grid-column:2;grid-row:3;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;margin-bottom:12px}
+:host-context(body.compact), .port-body.compact .pbwrap>.vlog{grid-column:2;grid-row:4;display:block!important}
+:host-context(body.compact), .port-body.compact .pbwrap>.vlog .vcard:not(.vrec){display:none}
+:host-context(body.compact), .port-body.compact .pbwrap>.vlog .vrec{flex-direction:row!important;padding:10px 14px!important;gap:14px!important;justify-content:flex-start!important}
+:host-context(body.compact), .port-body.compact .pbwrap>.vlog .vrec .recbtn{transform:scale(.55);margin:-18px}
+:host-context(body.compact), .port-body.compact .pbwrap>.vlog .vrec .wave{display:none}
+:host-context(body.compact), .port-body.compact .vhist{display:none}
+:host-context(body.compact), .port-body.compact #todo .tdg{grid-template-columns:1fr;gap:8px}
+:host-context(body.compact), .port-body.compact #todo .tdh .s,:host-context(body.compact), .port-body.compact #todo .tdf{display:none}
+:host-context(body.compact), .port-body.compact #todo .tdadd{max-width:none;flex-basis:100%;margin-left:0}
+:host-context(body.compact), .port-body.compact .beat{padding:10px 12px!important}
+:host-context(body.compact), .port-body.compact .beat .f{display:none}:host-context(body.compact), .port-body.compact .beat .d{font-size:22px}
+:host-context(body.compact), .port-body.compact .grid{grid-template-columns:200px repeat(7,1fr) 64px}
 
-body:not(.focusday) .ti{grid-template-columns:20px minmax(0,1fr) auto;align-items:center;padding:6px 10px;gap:0 10px}
-body:not(.focusday) .ti .cb{width:18px;height:18px}
-body:not(.focusday) .ti .tt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-body:not(.focusday) .ti .meta{grid-column:3;grid-row:1;flex-wrap:nowrap;white-space:nowrap}
-body:not(.focusday) .ti .mv{grid-column:2/-1}
-body:not(.focusday) .tdc h4{margin-bottom:8px}
-body:not(.focusday) .tdf{display:none}
-body.compact .streak{white-space:nowrap;font-size:11px}
+:host-context(body:not(.focusday)), .port-body:not(.focusday) .ti{grid-template-columns:20px minmax(0,1fr) auto;align-items:center;padding:6px 10px;gap:0 10px}
+:host-context(body:not(.focusday)), .port-body:not(.focusday) .ti .cb{width:18px;height:18px}
+:host-context(body:not(.focusday)), .port-body:not(.focusday) .ti .tt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+:host-context(body:not(.focusday)), .port-body:not(.focusday) .ti .meta{grid-column:3;grid-row:1;flex-wrap:nowrap;white-space:nowrap}
+:host-context(body:not(.focusday)), .port-body:not(.focusday) .ti .mv{grid-column:2/-1}
+:host-context(body:not(.focusday)), .port-body:not(.focusday) .tdc h4{margin-bottom:8px}
+:host-context(body:not(.focusday)), .port-body:not(.focusday) .tdf{display:none}
+:host-context(body.compact), .port-body.compact .streak{white-space:nowrap;font-size:11px}
 
 /* ===== 09f ===== */
 .beatlh{margin:0 0 10px}
 .pbwrap>.beats{margin-bottom:18px}
 .beat .btop{display:flex;align-items:flex-start;justify-content:space-between}.beat .d{font-size:28px;line-height:1;display:flex;flex-direction:column;align-items:flex-end;text-align:right}.beat .d small{display:block;font-size:10.5px;font-weight:750;color:#8fa0c8;margin:3px 0 0;letter-spacing:.04em;white-space:nowrap}
 .beat .btop{gap:10px}.beat .btop .n{font-size:14px;flex:1;min-width:0}.beat .d{white-space:nowrap;flex:none}
-body.focusday .pbwrap>.seq,body.focusday .pbwrap>.beats,body.focusday .pbwrap>.beatlh{display:none}
-body.focusday #todo{margin-top:0}
-body.compact .pbwrap>.beatlh{display:none}
-body.compact .pbwrap>.beats{grid-column:1/-1;grid-row:2;grid-template-columns:repeat(6,minmax(0,1fr))!important}
-body.compact .pbwrap>.seq{grid-column:1;grid-row:3}
-body.compact .pbwrap>#todo{grid-column:2;grid-row:3}
+:host-context(body.focusday), .port-body.focusday .pbwrap>.seq,:host-context(body.focusday), .port-body.focusday .pbwrap>.beats,:host-context(body.focusday), .port-body.focusday .pbwrap>.beatlh{display:none}
+:host-context(body.focusday), .port-body.focusday #todo{margin-top:0}
+:host-context(body.compact), .port-body.compact .pbwrap>.beatlh{display:none}
+:host-context(body.compact), .port-body.compact .pbwrap>.beats{grid-column:1/-1;grid-row:2;grid-template-columns:repeat(6,minmax(0,1fr))!important}
+:host-context(body.compact), .port-body.compact .pbwrap>.seq{grid-column:1;grid-row:3}
+:host-context(body.compact), .port-body.compact .pbwrap>#todo{grid-column:2;grid-row:3}
 .ti .tt{cursor:pointer}.ti .tt:hover{text-decoration:underline;text-decoration-color:#5b8cff}
 .ti .hasn{font-size:10.5px;font-weight:800;color:#8fa0c8;margin-left:6px;letter-spacing:.04em}
 /* popup */
@@ -309,7 +309,7 @@ body.compact .pbwrap>#todo{grid-column:2;grid-row:3}
 .peadd{display:flex;gap:6px;margin-top:10px}.peadd input{flex:1;background:#0b1430;border:1px solid #2a3a72;border-radius:8px;color:#fff;font:inherit;font-size:13px;padding:8px}
 
 .vfocus{display:none;margin-top:14px;border-top:1px solid #1e2b55;padding-top:14px}
-body.focusday .vfocus{display:block}
+:host-context(body.focusday), .port-body.focusday .vfocus{display:block}
 .vrow2{display:grid;grid-template-columns:72px minmax(0,1.4fr) minmax(300px,1fr);gap:14px;align-items:start}
 .recbtn.sm{width:56px;height:56px;box-shadow:0 0 0 5px rgba(255,84,112,.14);margin-top:6px}
 .recbtn.sm i{width:18px;height:18px}
@@ -331,17 +331,11 @@ body.focusday .vfocus{display:block}
 /* ===== 09g ===== */
 .ti{background:#1a2552!important;box-shadow:none!important;border:1px solid transparent!important}
 .ti:hover{border-color:#2f4180!important}
-body.focusday .tdc[data-b="today"] .ti{background:#1a2552!important;border-color:transparent!important}
-body.focusday .tdc[data-b="today"] .ti:hover{border-color:#2f4180!important}
+:host-context(body.focusday), .port-body.focusday .tdc[data-b="today"] .ti{background:#1a2552!important;border-color:transparent!important}
+:host-context(body.focusday), .port-body.focusday .tdc[data-b="today"] .ti:hover{border-color:#2f4180!important}
 .ti .src{color:#9aa8d0}.ti .late{color:#ff6b7d}
 .ti .mv{display:none!important}
 .side{transition:width .2s;overflow:hidden}
 body.navshut{grid-template-columns:0 minmax(0,1fr)}
 body.navshut .side{width:0;padding:0;border:0}
 .navtog{height:32px;border:1px solid var(--line);background:#fff;border-radius:9px;padding:0 12px;font-size:12.5px;font-weight:700;color:var(--ink);cursor:pointer;margin-right:4px}
-
-.beats{grid-template-columns:1.6fr repeat(5,1fr)!important}
-.beat .btop{display:flex;flex-direction:column;align-items:flex-start!important}
-.beat .btop .n{display:block;width:100%;white-space:normal;overflow:visible;word-break:break-word}
-.beat .d{align-items:flex-start!important;text-align:left!important;margin-top:6px}
-body.compact .pbwrap>.beats{grid-template-columns:1.6fr repeat(5,1fr)!important}

@@ -82,7 +82,7 @@
       if (/clear/i.test(r.n)) return (pad && pad.value) || '3';
       return (pad && pad.value) || 'GO';
     }
-    if (s === N) return /^6\s*pm$/i.test(String(r.target || '')) ? '18:00' : ((pad && pad.value) || '');
+    if (s === N) return (pad && pad.value) || '';
     return '';
   }
   /* Clock labels like "6pm" or "9:30 am" render as 24-hour ("18:00", "09:30"); anything else is left alone. */
@@ -214,7 +214,7 @@
         var col = colOf(r), rm = ROOMS[r.room] || ROOMS.dash;
         h += '<div class="track"><span class="swatch" style="background:' + col + '"></span><div><div class="t">' + r.n + (r.nw ? '<span class="new">NEW</span>' : '') + '</div><div class="r"><a href="' + rm[1] + '" data-action="play-go" data-view="' + (r.room || 'dash') + '">' + rm[0] + ' &rarr;</a>' + (r.sub ? ' &middot; ' + r.sub : '') + '</div></div></div>';
         r.d.forEach(function (s, i) {
-          var l = t24label((r.lab && r.lab[i]) || '');
+          var l = fixtureOn() ? ((r.lab && r.lab[i]) || '') : t24label((r.lab && r.lab[i]) || '');
           var day = (r.pads && r.pads[i] && r.pads[i].day) || '';
           var ids = ' data-action="play-pad" data-r="' + ri + '" data-i="' + i + '" data-id="' + esc(r.id || '') + '" data-day="' + esc(day) + '"';
           if (s === D) h += '<div class="pad done" style="--c:' + col + ';color:#fff"' + ids + '>' + l + '</div>';

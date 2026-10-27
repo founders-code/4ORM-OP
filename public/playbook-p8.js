@@ -125,10 +125,18 @@
       }
     });
     var ctr = $('ctr');
+    function modeHost() {
+      return (root.querySelector && root.querySelector('.port-body')) || root.host || document.body;
+    }
     if (ctr) ctr.querySelectorAll('button').forEach(function (x) {
       x.addEventListener('click', function () {
         document.body.classList.remove('focusday', 'compact');
-        if (x.getAttribute('data-m') !== 'full') document.body.classList.add(x.getAttribute('data-m'));
+        var port = modeHost();
+        if (port && port.classList) port.classList.remove('focusday', 'compact');
+        if (x.getAttribute('data-m') !== 'full') {
+          document.body.classList.add(x.getAttribute('data-m'));
+          if (port && port.classList) port.classList.add(x.getAttribute('data-m'));
+        }
         ctr.querySelectorAll('button').forEach(function (y) { y.classList.toggle('on', y === x); });
         render();
       });
@@ -163,5 +171,18 @@
     window.tdRender = render;
     window.TDL = TD;
     render();
+    try {
+      var lhs = root.querySelectorAll ? root.querySelectorAll('.lh') : [];
+      lhs.forEach(function (h) {
+        var nx = h.nextElementSibling;
+        if (!nx) return;
+        h.classList.add('fold');
+        h.dataset.st = 'Close';
+        h.onclick = function () {
+          nx.classList.toggle('folded');
+          h.dataset.st = nx.classList.contains('folded') ? 'Open' : 'Close';
+        };
+      });
+    } catch (eFold) {}
   };
 })();

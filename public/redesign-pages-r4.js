@@ -309,13 +309,22 @@
       cn.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); cn.blur(); } });
     }
     if (!root.__canvasBound) {
-    root.addEventListener('wheel', function (e) {
-      if (!e.target.closest || !e.target.closest('#stage')) return;
+    function onStageWheel(e) {
+      stage = root.querySelector('#stage') || stage;
+      world = root.querySelector('#world') || world;
+      if (!stage || !world) return;
+      var hit = e.target;
+      if (hit && hit.nodeType === 3) hit = hit.parentNode;
+      if (!hit || !hit.closest || !(hit.closest('#stage') || hit.closest('.stage') || hit === stage)) return;
       e.preventDefault();
       var p = pan();
-      if (e.ctrlKey || e.metaKey) zoomAt(Math.exp(-e.deltaY * 0.0025), e.clientX, e.clientY);
-      else { setPan(p.z, p.ox - e.deltaX, p.oy - e.deltaY); apply(); }
-    }, { passive: false, capture: true });
+      var dx = Number(e.deltaX) || 0;
+      var dy = Number(e.deltaY) || 0;
+      if (e.ctrlKey || e.metaKey) zoomAt(Math.exp(-dy * 0.0025), e.clientX, e.clientY);
+      else { setPan(p.z, p.ox - dx, p.oy - dy); apply(); }
+    }
+    root.addEventListener('wheel', onStageWheel, { passive: false, capture: true });
+    stage.addEventListener('wheel', onStageWheel, { passive: false });
     root.addEventListener('pointerdown', function (e) {
       stage = root.querySelector('#stage') || stage;
       world = root.querySelector('#world') || world;

@@ -532,11 +532,25 @@ function zoomTo(np,clientX){const r=scroller.getBoundingClientRect();const px=(c
   const day=(scroller.scrollLeft+px)/ppd;state.zoom=String(Math.min(ZMAX,Math.max(ZMIN,np)));renderControls();renderBoard();scroller.scrollLeft=Math.max(0,day*ppd-px)}
 let zq=null,zpend=null;function zoomSoon(np,cx){zpend=[np,cx];if(zq)return;zq=requestAnimationFrame(()=>{zq=null;const [a,b]=zpend;zoomTo(a,b);saveSoon()})}
 let stz;function saveSoon(){clearTimeout(stz);stz=setTimeout(save,400)}
+var ctrlHeld=false;
+addEventListener('keydown',e=>{if(e.key==='Control'||e.key==='Meta')ctrlHeld=true},true);
+addEventListener('keyup',e=>{if(e.key==='Control'||e.key==='Meta')ctrlHeld=false},true);
+function zoomWheel(e){
+  if(!(e.ctrlKey||e.metaKey||ctrlHeld))return;
+  e.preventDefault();
+  zoomSoon(ppdOf(state.zoom)*Math.exp(-e.deltaY*0.008),e.clientX);
+}
 scroller.addEventListener('wheel',e=>{
-  if(e.ctrlKey){e.preventDefault();zoomSoon(ppdOf(state.zoom)*Math.exp(-e.deltaY*0.008),e.clientX);return}
+  if(e.ctrlKey||e.metaKey||ctrlHeld){zoomWheel(e);return}
   if(Math.abs(e.deltaX)>Math.abs(e.deltaY))return;
   if(e.shiftKey)return;
 },{passive:false});
+root.addEventListener('wheel',e=>{
+  if(!(e.ctrlKey||e.metaKey||ctrlHeld))return;
+  var t=e.target&&e.target.closest&&e.target.closest('#scroller,.scroller,#canvas,.canvas');
+  if(!t)return;
+  zoomWheel(e);
+},{passive:false,capture:true});
 let gs0=null;scroller.addEventListener('gesturestart',e=>{e.preventDefault();gs0=ppdOf(state.zoom)});
 scroller.addEventListener('gesturechange',e=>{e.preventDefault();if(gs0)zoomSoon(gs0*e.scale,e.clientX)});
 scroller.addEventListener('gestureend',e=>{e.preventDefault();gs0=null});
@@ -544,10 +558,19 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-zlv]');if(
 scroller.tabIndex=0;scroller.addEventListener('keydown',e=>{if(e.key==='+'||e.key==='='){zoomTo(ppdOf(state.zoom)*1.4,null);save()}if(e.key==='-'){zoomTo(ppdOf(state.zoom)/1.4,null);save()}});
 let sq;scroller.addEventListener('scroll',()=>{if(ppd<18)return;clearTimeout(sq);sq=setTimeout(()=>{const l=scroller.scrollLeft;renderBoard();scroller.scrollLeft=l},90)});
 let dg=null;
-canvas.addEventListener('pointerdown',e=>{const trk=e.target.closest('.trk.can-add');if(!trk||(e.target!==trk&&!e.target.classList.contains('range'))||e.button!==0)return;
-  const row=trk.closest('.row');const r=trk.getBoundingClientRect();const d0=START+Math.floor((e.clientX-r.left)/ppd);
+function startDragAdd(e){
+  if(dg)return;
+  const t=e.target;if(!t||!t.closest)return;
+  const trk=t.closest('.trk.can-add');if(!trk||(t!==trk&&!(t.classList&&t.classList.contains('range')))||(e.button!=null&&e.button!==0))return;
+  const row=trk.closest('.row');if(!row)return;
+  const r=trk.getBoundingClientRect();const d0=START+Math.floor((e.clientX-r.left)/ppd);
   const g=document.createElement('div');g.className='ghost';g.style.setProperty('--c',getComputedStyle(row).getPropertyValue('--c'));g.style.top=Math.max(6,e.clientY-r.top-13)+'px';trk.appendChild(g);
-  dg={trk,row,r,d0,d1:d0,g};updG();trk.setPointerCapture(e.pointerId);e.preventDefault()});
+  dg={trk,row,r,d0,d1:d0,g};updG();
+  try{trk.setPointerCapture(e.pointerId)}catch(err){}
+  e.preventDefault();
+}
+canvas.addEventListener('pointerdown',startDragAdd);
+root.addEventListener('pointerdown',startDragAdd,true);
 function updG(){const a=Math.min(dg.d0,dg.d1),b=Math.max(dg.d0,dg.d1);dg.g.style.left=x(a)+'px';dg.g.style.width=Math.max(ppd,(b-a+1)*ppd)+'px';dg.g.innerHTML=`<b>${a===b?'Key date '+fmt(a):fmt(a)+' to '+fmt(b)}</b>`}
 canvas.addEventListener('pointermove',e=>{if(!dg)return;dg.d1=Math.max(START,Math.min(END,START+Math.floor((e.clientX-dg.r.left)/ppd)));updG()});
 canvas.addEventListener('pointerup',e=>{if(!dg)return;const a=Math.min(dg.d0,dg.d1),b=Math.max(dg.d0,dg.d1);const {row,g,trk}=dg;dg=null;askName(row,trk,g,a,b)});

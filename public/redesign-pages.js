@@ -48,7 +48,7 @@
     links: '/port-css/links.css?v=5', mail: '/port-css/email.css?v=8', mailPeople: '/port-css/email-people.css?v=7',
     playbook: '/port-css/playbook.css?v=3', calendar: '/port-css/calendar.css?v=5', zoom: '/port-css/zoom.css?v=2',
     completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=3',
-    neon: '/port-css/neon.css?v=1', playbookP8: '/port-css/playbook-p8.css?v=2', plannerNeon: '/port-css/planner-neon.css?v=1',
+    neon: '/port-css/neon.css?v=1', playbookP8: '/port-css/playbook-p8.css?v=3', plannerNeon: '/port-css/planner-neon.css?v=1',
     calendarNeon: '/port-css/calendar-neon.css?v=1', completedNeon: '/port-css/completed-neon.css?v=2',
     intNeon: '/port-css/integrations-neon.css?v=2', vaultOps: '/port-css/vault-ops.css?v=2',
     sheetViewer: '/port-css/sheet-viewer.css?v=1', notesCanvasP8: '/port-css/notes-canvas-p8.css?v=1',
