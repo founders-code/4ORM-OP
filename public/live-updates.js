@@ -83,7 +83,8 @@
      (redesign-pages.js warEditState/warRestore). Other pages are skipped while
      an editor or drawer is open so a 15 s poll never wipes what Chad is typing. */
   function paintRoom() {
-    if (typeof window.paintRedesignWar === 'function' && (!desk() || desk() === 'war' || desk() === 'room')) window.paintRedesignWar();
+    if (desk() === 'planner' && typeof window.paintRedesignPlanner === 'function') window.paintRedesignPlanner();
+    else if (typeof window.paintRedesignWar === 'function' && (!desk() || desk() === 'war' || desk() === 'room')) window.paintRedesignWar();
   }
   function shadowOf(id) {
     var host = document.getElementById(id);

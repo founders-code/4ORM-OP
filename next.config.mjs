@@ -34,7 +34,6 @@ const nextConfig = {
   // /control-room rewrites to the Control Room prototype.
   async redirects() {
     return [
-      { source: '/war-room', destination: '/planner', permanent: false },
       { source: '/timeline', destination: '/planner', permanent: false },
       { source: '/drive', destination: '/documents?source=drive', permanent: false },
     ];

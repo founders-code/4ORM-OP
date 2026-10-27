@@ -17,20 +17,77 @@ const APIS = [
   { key: 'vercel', name: 'Vercel', endpoint: 'https://api.vercel.com' },
 ];
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const url = new URL(req.url);
+    const key = String(url.searchParams.get('key') || '');
+    const logs = url.searchParams.get('logs') === '1';
+    if (logs) {
+      if (!key) return NextResponse.json({ calls: [], reason: 'no api key' }, { status: 400 });
+      if (!session.sql) return NextResponse.json({ calls: [], reason: 'no database url' });
+      const calls = await session.sql`
+        SELECT api, path, code, ms, at FROM api_calls
+        WHERE api = ${key}
+        ORDER BY at DESC LIMIT 40
+      `;
+      return NextResponse.json({
+        calls: calls || [],
+        reason: !calls || !calls.length ? 'no calls logged for this service yet' : '',
+      });
+    }
+    type Agg = { ms: number | null; callsToday: number; errors24h: number };
+    const agg = new Map<string, Agg>();
+    if (session.sql) {
+      try {
+        const last = await session.sql`
+          SELECT DISTINCT ON (api) api, ms FROM api_calls ORDER BY api, at DESC
+        `;
+        const today = await session.sql`
+          SELECT api, count(*)::int AS n FROM api_calls
+          WHERE at >= (timezone('America/Vancouver', now()))::date
+          GROUP BY api
+        `;
+        const errs = await session.sql`
+          SELECT api, count(*)::int AS n FROM api_calls
+          WHERE at > now() - interval '24 hours' AND (code = 0 OR code >= 400)
+          GROUP BY api
+        `;
+        for (const a of APIS) agg.set(a.key, { ms: null, callsToday: 0, errors24h: 0 });
+        for (const r of last || []) {
+          const cur = agg.get(String(r.api)) || { ms: null, callsToday: 0, errors24h: 0 };
+          cur.ms = r.ms == null ? null : Number(r.ms);
+          agg.set(String(r.api), cur);
+        }
+        for (const r of today || []) {
+          const cur = agg.get(String(r.api)) || { ms: null, callsToday: 0, errors24h: 0 };
+          cur.callsToday = Number(r.n) || 0;
+          agg.set(String(r.api), cur);
+        }
+        for (const r of errs || []) {
+          const cur = agg.get(String(r.api)) || { ms: null, callsToday: 0, errors24h: 0 };
+          cur.errors24h = Number(r.n) || 0;
+          agg.set(String(r.api), cur);
+        }
+      } catch {
+        /* no samples */
+      }
+    }
     return NextResponse.json({
-      apis: APIS.map((a) => ({
-        ...a,
-        status: 'LIVE',
-        ms: null,
-        callsToday: 0,
-        errors24h: 0,
-        keyValid: a.key === 'openai' ? !!process.env.OPENAI_API_KEY : true,
-      })),
+      apis: APIS.map((a) => {
+        const s = agg.get(a.key) || { ms: null, callsToday: 0, errors24h: 0 };
+        return {
+          ...a,
+          status: a.key === 'openai' && !process.env.OPENAI_API_KEY ? 'DOWN' : 'LIVE',
+          ms: s.ms,
+          callsToday: s.callsToday,
+          errors24h: s.errors24h,
+          keyValid: a.key === 'openai' ? !!process.env.OPENAI_API_KEY : true,
+          reason: s.ms == null ? 'no sample yet' : '',
+        };
+      }),
     });
   } catch (err) {
     fail('ops_apis', err);
@@ -58,8 +115,11 @@ export async function POST(req: Request) {
     const t0 = Date.now();
     let code = 0;
     try {
-      if (hit.endpoint.startsWith('http')) {
-        const r = await fetch(hit.endpoint, { method: 'HEAD' }).catch(() => null);
+      if (hit.key === 'neon' && session.sql) {
+        await session.sql`SELECT 1`;
+        code = 200;
+      } else if (hit.endpoint.startsWith('http')) {
+        const r = await fetch(hit.endpoint, { method: 'HEAD', cache: 'no-store' }).catch(() => null);
         code = r ? r.status : 0;
       }
     } catch {
@@ -68,6 +128,8 @@ export async function POST(req: Request) {
     const ms = Date.now() - t0;
     if (session.sql) {
       await session.sql`INSERT INTO api_calls (api, path, code, ms) VALUES (${key}, ${hit.endpoint}, ${code}, ${ms})`;
+      const msg = hit.name + (code ? ' answered in ' + ms + ' ms' : ' no answer in ' + ms + ' ms');
+      await session.sql`INSERT INTO ops_events (level, source, message) VALUES (${code && code < 400 ? 'ok' : 'err'}, ${key}, ${msg})`;
     }
     return NextResponse.json({ ok: true, ms, code });
   } catch (err) {

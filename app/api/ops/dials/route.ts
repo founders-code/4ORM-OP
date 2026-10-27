@@ -20,7 +20,26 @@ export async function GET() {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    const dials = DIALS.map((d) => ({ ...d, value: null, note: d.note + ' · no sample yet' }));
+    let latest = new Map<string, number>();
+    if (session.sql) {
+      try {
+        const rows = await session.sql`
+          SELECT DISTINCT ON (key) key, value
+          FROM ops_metrics
+          ORDER BY key, taken_at DESC
+        `;
+        for (const r of rows || []) {
+          if (r && r.key != null && r.value != null) latest.set(String(r.key), Number(r.value));
+        }
+      } catch {
+        /* table may be empty */
+      }
+    }
+    const dials = DIALS.map((d) => {
+      const has = latest.has(d.key);
+      const value = has ? latest.get(d.key) : null;
+      return { ...d, value: value == null || Number.isNaN(value) ? null : value, note: has ? d.note : d.note + ' · no sample yet' };
+    });
     return NextResponse.json({ dials, window: '5m' });
   } catch (err) {
     fail('ops_dials', err);

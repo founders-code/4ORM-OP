@@ -14,7 +14,8 @@
     '.pad', '.add', '.calbtn', '.day', '.ev', '.views span', '.c-nav span', '.dest em',
     '.b1', '.b2', '.cals label', '.ar span', '.ok b', '.beat', '.recbtn', '.gobtn',
     '.ib', '.op', '.mc', '.pill', '.nt', '.cdot', '.nx',
-    '.stp .s', '.stp .addst', '.stp a', '.nbig .ntools span', '.nbig .cols i', '.nbig .nb', '.car'
+    '.stp .s', '.stp .addst', '.stp a', '.nbig .ntools span', '.nbig .cols i', '.nbig .nb', '.car',
+    '.hx', '.wk', '.tl', '.pads span', '.li', '.today'
   ].join(',');
   var FOCUS_MS = 25 * 60 * 1000;
   var RING_C = 2 * Math.PI * 48;
@@ -4353,6 +4354,10 @@
       toast(root, 'Print / save as PDF');
     },
     'done-investor': function (el, root) { soon(root, 'Add to investor update'); },
+    'done-stat': function () {},
+    'done-tile': function () {},
+    'done-pad': function () {},
+    'done-voice': function () {},
     'news-span': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-span', el, root); },
     'news-refresh': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-refresh', el, root); },
     'news-search': function () {},

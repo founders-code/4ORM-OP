@@ -1466,8 +1466,12 @@
   var plannerCache = { items: null, inflight: null, painted: 0 };
   function paintPlannerLive(opts) {
     opts = opts || {};
-    var wrap = wrapOf('warDesk');
-    if (!wrap) { markReady('warDesk'); return; }
+    var host = document.getElementById('plannerDesk');
+    if (host) { host.hidden = false; host.style.display = 'block'; }
+    var view = document.getElementById('v-planner');
+    if (view) view.hidden = false;
+    var wrap = wrapOf('plannerDesk');
+    if (!wrap) { markReady('plannerDesk'); return; }
     if (P().applyPageCss) P().applyPageCss(wrap, 'planner');
     function go(items) {
       wrap.innerHTML = window.__plannerBody || '<div class="page"><h1>Planner</h1></div>';
@@ -1482,12 +1486,12 @@
         wrap.setAttribute('data-planner-err', String((err && err.message) || err));
       }
       if (P().finishPaint) P().finishPaint(wrap);
-      markReady('warDesk');
+      markReady('plannerDesk');
       plannerCache.painted = Date.now();
     }
     function fail() {
       wrap.innerHTML = '<div class="page"><h1>Planner</h1><div class="card" style="padding:24px">Couldn\'t load - <span class="lnk" data-action="planner-retry">Retry</span></div></div>';
-      markReady('warDesk');
+      markReady('plannerDesk');
     }
     if (fixtureOn() || !window.authFetch) { go(null); return; }
     if (!opts.force && plannerCache.items && wrap.querySelector('.page') && Date.now() - plannerCache.painted < 14000) {
@@ -1515,9 +1519,10 @@
     });
   }
   window.__plannerRetry = function () { paintPlannerLive({ force: true }); };
+  window.paintRedesignPlanner = function () { whenCss(function () { paintPlannerLive({ force: true }); }); };
   var _paintWar = window.paintRedesignWar;
   window.paintRedesignWar = function () {
-    if (plannerMode()) { whenCss(function () { paintPlannerLive({ force: plannerCache.painted && (Date.now() - plannerCache.painted > 14000) }); }); return; }
+    if (plannerMode()) { window.paintRedesignPlanner(); return; }
     if (typeof _paintWar === 'function') _paintWar();
   };
   if (plannerMode()) whenCss(function () { paintPlannerLive({ force: true }); });

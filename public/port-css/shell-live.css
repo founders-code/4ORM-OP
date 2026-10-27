@@ -72,8 +72,8 @@ body.arranging .nav{cursor:grab}
 .arr-reset{background:transparent;border:0;color:#8fa0c8;font-size:11px;font-weight:600;padding:0;cursor:pointer;display:none}
 body.arranging .arr-reset{display:inline}
 #v-room,#v-war,#v-notes{min-width:0}
-#opsDash,#warDesk,#notesDesk{display:block;min-width:0}
-#opsDash:empty,#warDesk:empty,#notesDesk:empty{min-height:40px}
+#opsDash,#warDesk,#notesDesk,#playDesk,#plannerDesk,#vaultDesk,#opsDesk,#doneDesk{display:block;min-width:0}
+#opsDash:empty,#warDesk:empty,#notesDesk:empty,#playDesk:empty,#plannerDesk:empty{min-height:40px}
 .mic,.heard{display:none}
 body > .scrim,body > .drawer,body > .modal,body > .emx-reader,body > .docview,body > .plan-scrim,body > .sigpanel,body > #sigHost{grid-column:1/-1}
 #sigHost{position:fixed;inset:0;width:auto;top:0;right:0;background:transparent;border:0;box-shadow:none;overflow:visible;display:none;z-index:80;pointer-events:none}

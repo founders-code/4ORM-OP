@@ -48,19 +48,19 @@
     links: '/port-css/links.css?v=5', mail: '/port-css/email.css?v=8', mailPeople: '/port-css/email-people.css?v=7',
     playbook: '/port-css/playbook.css?v=3', calendar: '/port-css/calendar.css?v=5', zoom: '/port-css/zoom.css?v=2',
     completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=3',
-    neon: '/port-css/neon.css?v=1', playbookP8: '/port-css/playbook-p8.css?v=3', plannerNeon: '/port-css/planner-neon.css?v=1',
+    neon: '/port-css/neon.css?v=1', playbookP8: '/port-css/playbook-p8.css?v=4', plannerNeon: '/port-css/planner-neon.css?v=1',
     calendarNeon: '/port-css/calendar-neon.css?v=1', completedNeon: '/port-css/completed-neon.css?v=2',
-    intNeon: '/port-css/integrations-neon.css?v=2',     vaultOps: '/port-css/vault-ops.css?v=3',
+    intNeon: '/port-css/integrations-neon.css?v=2',     vaultOps: '/port-css/vault-ops.css?v=4',
     sheetViewer: '/port-css/sheet-viewer.css?v=2', notesCanvasP8: '/port-css/notes-canvas-p8.css?v=1',
     outreach: '/port-css/outreach-lists.css?v=2',
-    vault: '/port-css/vault-ops.css?v=3',
-    ops: '/port-css/vault-ops.css?v=3'
+    vault: '/port-css/vault-ops.css?v=4',
+    ops: '/port-css/vault-ops.css?v=4'
   };
   var HOSTS = {
     opsDash: 'room', warDesk: 'war', notesDesk: 'notes',
     pipeDesk: 'contacts', spacesDesk: 'work', docsDesk: 'docs', linksDesk: 'links', mailDesk: 'mail',
     playDesk: 'playbook', calDesk: 'calendar', zoomDesk: 'zoom', doneDesk: 'completed', recDesk: 'rec',
-    vaultDesk: 'vault', opsDesk: 'ops', intDesk: 'int'
+    vaultDesk: 'vault', opsDesk: 'ops', intDesk: 'int', plannerDesk: 'planner'
   };
   var NEON_KEYS = { playbook: 1, planner: 1, calendar: 1, contacts: 1, completed: 1, docs: 1, vault: 1, ops: 1, int: 1, war: 1 };
   var cssText = {};
@@ -116,7 +116,7 @@
   function findHost(hostId) {
     var host = document.getElementById(hostId);
     if (host) return host;
-    var views = ['v-playbook', 'v-calendar', 'v-znotes', 'v-done', 'v-news'];
+    var views = ['v-playbook', 'v-calendar', 'v-znotes', 'v-done', 'v-news', 'v-planner'];
     for (var i = 0; i < views.length; i++) {
       var v = document.getElementById(views[i]);
       if (v && v.shadowRoot && v.shadowRoot.getElementById) {
@@ -999,7 +999,19 @@
     }
   }
 
+  function plannerPath() {
+    try {
+      var path = location.pathname || '';
+      var q = new URLSearchParams(location.search || '');
+      if (q.get('view') === 'war' || q.get('steps') === '1' || q.get('signals') === '1' || q.get('select') === '1' || q.get('sigdetail') === '1') return false;
+      if (q.get('view') === 'planner' || q.get('view') === 'timeline') return true;
+      if (/\/(planner|timeline)/.test(path)) return true;
+    } catch (e) {}
+    return false;
+  }
+  window.__plannerPath = plannerPath;
   function paintWarLive() {
+    if (plannerPath() || (window.STATE && window.STATE.desk === 'planner')) return;
     var desk = (window.STATE && window.STATE.desk) || '';
     if (desk && desk !== 'war' && desk !== 'room') {
       var hold = document.getElementById('v-war');

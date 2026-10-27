@@ -3,7 +3,7 @@
     ['Today'],
     ['News', '', '', 'news', '/news'],
     ['Playbook', '', '', 'playbook', '/playbook'],
-    ['Planner', '', '', 'war', '/planner'],
+    ['Planner', '', '', 'planner', '/planner'],
     ['Calendar', '', '', 'calendar', '/calendar'],
     ['Email', '', '', 'mail', '/email'],
     ['People'],

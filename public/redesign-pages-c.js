@@ -597,6 +597,10 @@
   }
 
   function paintPlaybookLive() {
+    var host = document.getElementById('playDesk');
+    if (host) { host.hidden = false; host.style.display = 'block'; }
+    var view = document.getElementById('v-playbook');
+    if (view) view.hidden = false;
     var wrap = wrapOf('playDesk');
     if (!wrap) { markReady('playDesk'); return; }
     if (P().applyPageCss) P().applyPageCss(wrap, 'playbook');
@@ -1312,28 +1316,32 @@
           : (onRate < 0.8 ? 'On-time rate has room to move. Finish due items on the day they land.'
             : 'On-time rate is holding. Keep the same Friday review.'))
     ];
-    var statsHtml = '<div class="house"><div class="hx"><b>' + onPct + '</b><span>On time</span><em>' + (thin || !prevDated.length ? '' : 'vs prior 30 days ' + pctN(prevOn.length, prevDated.length) + '%') + '</em></div>'
-      + '<div class="hx"><b>' + cons + '</b><span>Consistency</span><em>' + (thin ? '' : 'days with at least one item done') + '</em></div>'
-      + '<div class="hx"><b>' + fallTxt + '</b><span>Fall-off</span><em>overdue never done, or dropped</em></div>'
-      + '<div class="hx"><b>' + thru + '</b><span>Throughput</span><div class="bars">' + bars + '</div></div>'
-      + '<div class="hx wide"><b>Slipping by area</b><span>' + (slip.map(function (s) { return esc(s[0]) + ' ' + s[1]; }).join(' · ') || '-') + '</span></div>'
-      + '<div class="hx wide"><b>What to improve</b>' + tips.slice(0, 3).map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') + '</div></div>';
+    var statsHtml = '<div class="house"><div class="hx" data-action="done-stat" data-k="ontime"><b>' + onPct + '</b><span>On time</span><em>' + (thin || !prevDated.length ? '' : 'vs prior 30 days ' + pctN(prevOn.length, prevDated.length) + '%') + '</em></div>'
+      + '<div class="hx" data-action="done-stat" data-k="cons"><b>' + cons + '</b><span>Consistency</span><em>' + (thin ? '' : 'days with at least one item done') + '</em></div>'
+      + '<div class="hx" data-action="done-stat" data-k="fall"><b>' + fallTxt + '</b><span>Fall-off</span><em>overdue never done, or dropped</em></div>'
+      + '<div class="hx" data-action="done-stat" data-k="thru"><b>' + thru + '</b><span>Throughput</span><div class="bars">' + bars + '</div></div>'
+      + '<div class="hx wide" data-action="done-stat" data-k="slip"><b>Slipping by area</b><span>' + (slip.map(function (s) { return esc(s[0]) + ' ' + s[1]; }).join(' · ') || '-') + '</span></div>'
+      + '<div class="hx wide" data-action="done-stat" data-k="tips"><b>What to improve</b>' + tips.slice(0, 3).map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') + '</div></div>';
     wrap.innerHTML = '<div class="bar"><h1>Completed</h1><span class="sub">A snapshot of every day, saved at 23:55 — what moved, who you met, what you owe</span><div class="r"><button class="btn" type="button" data-action="done-search">Search days</button><button class="btn pri" type="button" id="snapNowLive" data-action="done-snap">Snapshot now</button></div></div>'
       + '<div class="lay"><section class="card">' + statsHtml + '<div class="today"><span class="pulse"></span>Today is being recorded — snapshot at 23:55</div>' + list + '</section>'
       + '<section class="card det"><div class="dh"><div><h2>' + esc(title) + '</h2><div class="meta">' + (cur.date && cur.date >= vancouverTodayIso() ? 'Recording - not yet saved' : 'Snapshot saved · read-only') + '</div></div><div class="r2"><button class="btn" type="button" data-action="done-export">Export PDF</button><button class="btn" type="button" data-action="done-investor" data-date="' + esc(cur.date || '') + '" data-headline="' + esc(headline) + '">Add to investor update</button></div></div>'
       + '<div class="moved"><b>What moved today</b><p>' + esc(headline) + '</p></div>'
       + '<div class="tiles">'
-      + '<div class="tl"><b>' + (counts.tasks || 0) + '</b><span>tasks done</span></div>'
-      + '<div class="tl"><b>' + (counts.meetings || 0) + '</b><span>meeting</span></div>'
-      + '<div class="tl"><b>' + (counts.sent || 0) + '</b><span>emails sent</span></div>'
-      + '<div class="tl' + (counts.replies ? ' g' : '') + '"><b>' + (counts.replies || 0) + '</b><span>reply in</span></div>'
-      + '<div class="tl"><b>' + (counts.pipeline || 0) + '</b><span>pipeline moves</span></div>'
-      + '<div class="tl"><b>' + (counts.news || 0) + '</b><span>news saved</span></div>'
+      + '<div class="tl" data-action="done-tile" data-k="tasks"><b>' + (counts.tasks || 0) + '</b><span>tasks done</span></div>'
+      + '<div class="tl" data-action="done-tile" data-k="meetings"><b>' + (counts.meetings || 0) + '</b><span>meeting</span></div>'
+      + '<div class="tl" data-action="done-tile" data-k="sent"><b>' + (counts.sent || 0) + '</b><span>emails sent</span></div>'
+      + '<div class="tl' + (counts.replies ? ' g' : '') + '" data-action="done-tile" data-k="replies"><b>' + (counts.replies || 0) + '</b><span>reply in</span></div>'
+      + '<div class="tl" data-action="done-tile" data-k="pipeline"><b>' + (counts.pipeline || 0) + '</b><span>pipeline moves</span></div>'
+      + '<div class="tl" data-action="done-tile" data-k="raised"><b>' + (counts.raised != null ? counts.raised : '$0') + '</b><span>raised today</span></div>'
       + '</div>'
       + '<div class="cols">'
       + '<div class="sec"><div class="sh"><b>Done</b><span>' + asList(det.tasks).length + ' tasks</span></div>' + (lines(det.tasks) || '<div class="emp">No tasks captured.</div>') + '</div>'
       + '<div class="sec"><div class="sh"><b>Meetings &amp; commitments</b><span>' + asList(det.meetings).length + ' meeting</span></div>' + (lines(det.meetings, 'Zoom') + lines(det.commitments, 'You said') || '<div class="emp">Nothing captured yet.</div>') + '</div>'
       + '<div class="sec"><div class="sh"><b>Email</b><span>' + (counts.replies || 0) + ' in &middot; ' + (counts.sent || 0) + ' out</span></div>' + (mailLines(det.replies, 'In') + mailLines(det.sent, 'Out') || '<div class="emp">No mail captured.</div>') + '</div>'
+      + '<div class="sec"><div class="sh"><b>Playbook</b><span>' + asList(det.plays).length + ' of 6 lit</span></div>'
+      + '<div class="pads">' + (asList(det.plays).length ? asList(det.plays).map(function (p) { return '<span data-action="done-pad">' + esc(typeof p === 'string' ? p : (p.title || p.name || 'play')) + '</span>'; }).join('') : '<span class="off" data-action="done-pad">-</span>') + '</div></div>'
+      + '<div class="sec"><div class="sh"><b>Voice log</b><span>' + (det.voice ? '1 entry' : '0') + '</span></div>'
+      + '<div class="quote" data-action="done-voice">' + esc(det.voice || det.quote || '-') + '</div></div>'
       + '<div class="sec"><div class="sh"><b>News saved</b><span>' + asList(det.news).length + '</span></div>' + (lines(det.news, 'News') || '<div class="emp">No news saved.</div>') + '</div>'
       + '</div></section></div>';
     liveLog('completed', { snaps: snaps.length, open: openDate });
