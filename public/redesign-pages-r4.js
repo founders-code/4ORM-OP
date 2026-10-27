@@ -1477,7 +1477,7 @@
       var h1 = wrap.querySelector('h1');
       if (h1) h1.textContent = 'Planner';
       try {
-        if (typeof window.bindPlannerPage === 'function') window.bindPlannerPage(wrap, items || null);
+        if (typeof window.bindPlannerPage === 'function') window.bindPlannerPage(wrap, items || null, plannerCache.prefs || null);
       } catch (err) {
         wrap.setAttribute('data-planner-err', String((err && err.message) || err));
       }
@@ -1503,6 +1503,7 @@
       return r.json();
     }).then(function (d) {
       plannerCache.items = (d && d.items) || [];
+      plannerCache.prefs = (d && d.prefs) || {};
       if (window.STATE) window.STATE.timeline = plannerCache.items;
       plannerCache.inflight = null;
       go(plannerCache.items);
