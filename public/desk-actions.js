@@ -2838,6 +2838,43 @@
       if (!S().docOpen) return;
       withSpaces(function () { openPop(root, el, spacePickHtml('open')); });
     },
+    'docs-sheet-tab': function (el) {
+      S().docSheetTab = Number(attr(el, 'data-i') || 0);
+      refresh('docs');
+    },
+    'docs-sheet-book': function (el) {
+      S().docSheetBook = Number(attr(el, 'data-i') || 0);
+      S().docSheetTab = 0;
+      S().docOpen = S().docOpen || {};
+      S().docOpen.name = attr(el, 'data-name') || S().docOpen.name;
+      S().docOpen.type = 'xls';
+      refresh('docs');
+    },
+    'docs-sheet-search': function (el) {
+      S().docSheetQ = el.value || '';
+      refresh('docs');
+    },
+    'docs-sheet-make': function () {
+      S().docSheetModal = true;
+      refresh('docs');
+    },
+    'docs-sheet-modal-close': function () {
+      S().docSheetModal = false;
+      refresh('docs');
+    },
+    'docs-sheet-make-go': function (el, root) {
+      S().docSheetModal = false;
+      refresh('docs');
+      toast(root, 'List made from this sheet');
+    },
+    'docs-sheet-google': function (el, root) {
+      var d = S().docOpen || {};
+      if (d.drive) {
+        window.open('https://docs.google.com/spreadsheets/d/' + encodeURIComponent(d.drive), '_blank', 'noopener');
+        return;
+      }
+      toast(root, 'Open in Google Sheets needs a Drive copy');
+    },
     'docs-bulk-space': function (el, root) {
       if (!docPicked().length) { toast(root, 'Tick the files first'); return; }
       withSpaces(function () { openPop(root, el, spacePickHtml('pick')); });

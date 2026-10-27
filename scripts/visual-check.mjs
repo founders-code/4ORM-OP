@@ -265,21 +265,21 @@ async function main() {
       { page: '17e-integrations-neon', design: '17e-integrations-neon.html', live: 'control-room.html?view=int&fixture=mockup', ready: '#intDesk[data-port-ready]', wait: 800 },
       { page: '17f-vault', design: '17f-vault-control-ops.html', live: 'control-room.html?view=vault&fixture=mockup', ready: '#vaultDesk[data-port-ready]', wait: 800 },
       { page: '17f-vault-drawer', design: '17f-vault-control-ops.html', live: 'control-room.html?view=vault&fixture=mockup', ready: '#vaultDesk[data-port-ready]', wait: 800, act: 'vaultdrawer' },
-      { page: '17f-control-room-top', design: '17f-vault-control-ops.html', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800 },
-      { page: '17f-control-room-tape', design: '17f-vault-control-ops.html', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800, act: 'tape' },
-      { page: '17f-control-room-map', design: '17f-vault-control-ops.html', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800, act: 'map' },
-      { page: '17f-control-room-engages', design: '17f-vault-control-ops.html', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800, act: 'engages' },
-      { page: '17f-control-room-4ormiq', design: '17f-vault-control-ops.html', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800, act: 'iq' },
-      { page: '17f-control-room-apis', design: '17f-vault-control-ops.html', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800, act: 'apis' },
-      { page: '17f-control-room-chain', design: '17f-vault-control-ops.html', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800, act: 'chain' },
+      { page: '17f-control-room-top', design: '17f-vault-control-ops.html#control', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800 },
+      { page: '17f-control-room-tape', design: '17f-vault-control-ops.html#control', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800, act: 'tape' },
+      { page: '17f-control-room-map', design: '17f-vault-control-ops.html#control', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800, act: 'map' },
+      { page: '17f-control-room-engages', design: '17f-vault-control-ops.html#control', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800, act: 'engages' },
+      { page: '17f-control-room-4ormiq', design: '17f-vault-control-ops.html#control', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800, act: 'iq' },
+      { page: '17f-control-room-apis', design: '17f-vault-control-ops.html#control', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800, act: 'apis' },
+      { page: '17f-control-room-chain', design: '17f-vault-control-ops.html#control', live: 'control-room.html?view=ops&fixture=mockup', ready: '#opsDesk[data-port-ready]', wait: 800, act: 'chain' },
       { page: '03d-notes-canvas', design: '03d-notes-canvas-open.html', live: 'control-room.html?view=notes&fixture=mockup&canvas=1', ready: '#notesDesk[data-port-ready]', wait: 800 },
       { page: '20-spaces-grid', design: '05e-spaces-cards.html', live: 'control-room.html?view=work&fixture=mockup&cards=1', ready: '#spacesDesk[data-port-ready]', wait: 800 },
       { page: '20-spaces-menu', design: '05g-spaces-menu.html', live: 'control-room.html?view=work&fixture=mockup&cards=1&menu=1', ready: '#spacesDesk[data-port-ready]', wait: 800, act: 'spacemenu' },
       { page: '20-space-panel', design: '05c-space-panel.html', live: 'control-room.html?view=work&fixture=mockup&space=1', ready: '#spacesDesk[data-port-ready]', wait: 800 },
       { page: '20-space-panel-from-spaces', design: '05f-spaces-card-open.html', live: 'control-room.html?view=work&fixture=mockup&space=open', ready: '#spacesDesk[data-port-ready]', wait: 800 },
       { page: '20-contacts-lists', design: '20-outreach-lists.html', live: 'control-room.html?view=people&fixture=mockup&lists=1', ready: '#peopleDesk[data-port-ready]', wait: 800 },
-      { page: '20-pipeline-board-neon', design: '04-pipeline.html', live: 'control-room.html?view=contacts&fixture=mockup', ready: '#pipeDesk[data-port-ready]', wait: 800 },
-      { page: '20-pipeline-list', design: '04-pipeline.html', live: 'control-room.html?view=contacts&fixture=mockup&list=1', ready: '#pipeDesk[data-port-ready]', wait: 800 },
+      { page: '20-pipeline-board-neon', design: '20-outreach-lists.html#pipeline', live: 'control-room.html?view=contacts&fixture=mockup', ready: '#pipeDesk[data-port-ready]', wait: 800 },
+      { page: '20-pipeline-list', design: '20-outreach-lists.html#pipeline', live: 'control-room.html?view=contacts&fixture=mockup&list=1', ready: '#pipeDesk[data-port-ready]', wait: 800, act: 'pipelist' },
       { page: '06c-documents-sheet', design: '06c-sheet-viewer.html', live: 'control-room.html?view=docs&fixture=mockup&sheet=1', ready: '#docsDesk[data-port-ready]', wait: 800 },
     ];
     async function p8Act(page, spec, isLive) {
@@ -334,6 +334,40 @@ async function main() {
         if (act === 'calday') {
           const r = isLive ? host('calDesk') : document;
           click(r, '[data-cal="day"], [data-view="day"]');
+        }
+        if (act === 'tape') {
+          const r = isLive ? host('opsDesk') : document;
+          const n = r && r.querySelector('#tape, .tape');
+          if (n && n.scrollIntoView) n.scrollIntoView();
+        }
+        if (act === 'map') {
+          const r = isLive ? host('opsDesk') : document;
+          click(r, '#iseg [data-v="map"]');
+          const n = r && r.querySelector('#sysmap, .crwrap');
+          if (n && n.scrollIntoView) n.scrollIntoView();
+        }
+        if (act === 'engages') {
+          const r = isLive ? host('opsDesk') : document;
+          const n = r && r.querySelector('#engs');
+          if (n && n.scrollIntoView) n.scrollIntoView();
+        }
+        if (act === 'iq') {
+          const r = isLive ? host('opsDesk') : document;
+          click(r, '#iseg [data-v="ledger"]');
+        }
+        if (act === 'apis') {
+          const r = isLive ? host('opsDesk') : document;
+          const n = r && r.querySelector('#apis');
+          if (n && n.scrollIntoView) n.scrollIntoView();
+        }
+        if (act === 'chain') {
+          const r = isLive ? host('opsDesk') : document;
+          const n = r && r.querySelector('#sysmap');
+          if (n && n.scrollIntoView) n.scrollIntoView();
+        }
+        if (act === 'pipelist') {
+          const r = isLive ? host('pipeDesk') : document;
+          click(r, '#pseg [data-v="list"], [data-action="pipe-view"][data-view="list"]');
         }
         if (act === 'vaultdrawer') {
           const r = isLive ? host('vaultDesk') : document;

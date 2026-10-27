@@ -1,3 +1,14 @@
+/* ===== 17f header / segmented control ===== */
+.bar{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.bar h1{margin:0;font-size:24px;font-weight:850;color:#fff;letter-spacing:-.02em}
+.bar .sub{color:#aebbe0;font-size:13px;font-weight:600}
+.bar .r{margin-left:auto;display:flex;gap:10px;align-items:center}
+.seg{display:inline-flex;background:rgba(255,255,255,.1);border-radius:10px;padding:3px}
+.seg span{padding:6px 14px;border-radius:8px;color:#d6def3;font-size:12.5px;font-weight:700;cursor:pointer}
+.seg span.on{background:#fff;color:#101a33}
+.search{height:34px;width:250px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;padding:0 12px;font:inherit;font-size:13px}
+.search::placeholder{color:#9fb0d6}
+
 /* ===== CONTROL ROOM: the operations console ===== */
 .crwrap{display:grid;gap:14px}
 .con{background:#080c1f;border:1px solid rgba(120,150,255,.14);border-radius:16px;box-shadow:0 14px 40px rgba(0,0,0,.45);color:#e9eefa}
@@ -302,7 +313,6 @@ table.v tr.gh td{background:#f3f6fc;font-weight:800;font-size:12.5px;padding:8px
 
 
 /* ===== 17d: Vault, Control room and Integrations in Neon ===== */
-.port-
 .port-body .card{background:#080c1f;border:1px solid rgba(120,150,255,.14);box-shadow:0 14px 40px rgba(0,0,0,.4)}
 .port-body .bar .sub{color:#8fa0c8}
 .vside h3{color:#6f7fa6}

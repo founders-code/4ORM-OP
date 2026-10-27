@@ -13,7 +13,7 @@
     if (!wrap) { mark('vaultDesk'); return; }
     if (P().applyPageCss) P().applyPageCss(wrap, 'vault');
     wrap.classList.add('neon');
-    loadSnip('/vault-snippet.html?v=2', function (html) {
+    loadSnip('/vault-snippet.html?v=3', function (html) {
       wrap.innerHTML = html || '<p>Vault did not load.</p>';
       if (typeof window.bind17fPage === 'function') window.bind17fPage(wrap, 'vault');
       stamp17f(wrap);
@@ -27,7 +27,7 @@
     if (!wrap) { mark('opsDesk'); return; }
     if (P().applyPageCss) P().applyPageCss(wrap, 'ops');
     wrap.classList.add('neon');
-    loadSnip('/ops-snippet.html?v=2', function (html) {
+    loadSnip('/ops-snippet.html?v=3', function (html) {
       wrap.innerHTML = html || '<p>Control room did not load.</p>';
       if (typeof window.bind17fPage === 'function') window.bind17fPage(wrap, 'ops');
       stamp17f(wrap);

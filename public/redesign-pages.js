@@ -50,11 +50,11 @@
     completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=3',
     neon: '/port-css/neon.css?v=1', playbookP8: '/port-css/playbook-p8.css?v=3', plannerNeon: '/port-css/planner-neon.css?v=1',
     calendarNeon: '/port-css/calendar-neon.css?v=1', completedNeon: '/port-css/completed-neon.css?v=2',
-    intNeon: '/port-css/integrations-neon.css?v=2', vaultOps: '/port-css/vault-ops.css?v=2',
-    sheetViewer: '/port-css/sheet-viewer.css?v=1', notesCanvasP8: '/port-css/notes-canvas-p8.css?v=1',
+    intNeon: '/port-css/integrations-neon.css?v=2',     vaultOps: '/port-css/vault-ops.css?v=3',
+    sheetViewer: '/port-css/sheet-viewer.css?v=2', notesCanvasP8: '/port-css/notes-canvas-p8.css?v=1',
     outreach: '/port-css/outreach-lists.css?v=2',
-    vault: '/port-css/vault-ops.css?v=2',
-    ops: '/port-css/vault-ops.css?v=2'
+    vault: '/port-css/vault-ops.css?v=3',
+    ops: '/port-css/vault-ops.css?v=3'
   };
   var HOSTS = {
     opsDash: 'room', warDesk: 'war', notesDesk: 'notes',
@@ -1000,6 +1000,12 @@
   }
 
   function paintWarLive() {
+    var desk = (window.STATE && window.STATE.desk) || '';
+    if (desk && desk !== 'war' && desk !== 'room') {
+      var hold = document.getElementById('v-war');
+      if (hold) hold.hidden = true;
+      return;
+    }
     var wrap = wrapOf('warDesk');
     if (!wrap) return;
     warLoadsOnce();
@@ -1340,7 +1346,7 @@
         paintNotesLive();
         return;
       }
-      var warView = /\/war-room\/?$/.test(path) || /(?:^|[?&])view=war(?:&|$)/.test(q) || /\/control-room/.test(path) || path === '/' || path === '/control-room.html';
+      var warView = /\/planner\/?$/.test(path) || /\/timeline\/?$/.test(path) || /\/war-room\/?$/.test(path) || /(?:^|[?&])view=war(?:&|$)/.test(q);
       var other = /(?:^|[?&])view=/.test(q) && !/(?:^|[?&])view=war(?:&|$)/.test(q) && !/(?:^|[?&])view=room(?:&|$)/.test(q);
       if (warView && !other) {
         var vw = document.getElementById('v-war');

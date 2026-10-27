@@ -769,7 +769,10 @@
     if (!wrap) return;
     var S = window.STATE || {};
     /* Board is the default; the legacy STATE.pipeView 'dash' (old Dashboard tab) is not a view here. */
-    var view = S.pipeView === 'table' || S.pipeView === 'funnel' ? S.pipeView : 'board';
+    var view = S.pipeView === 'table' || S.pipeView === 'list' || S.pipeView === 'funnel' ? (S.pipeView === 'list' ? 'table' : S.pipeView) : 'board';
+    try {
+      if (new URLSearchParams(String(location.search || '')).get('list') === '1') view = 'table';
+    } catch (e0) {}
     var data = pipelineData();
     var catLabel = (!S.pipeType || S.pipeType === 'all') ? 'All' : S.pipeType;
     var ST = data.funnel || [];
@@ -859,6 +862,8 @@
         + '<div class="cvn">Conversion shown under each stage = share of the previous stage that moved forward. Storage is the holding pen and is not counted.</div></section>';
     }
     wrap.innerHTML += '<div class="pick-ov" id="contactOv" hidden data-action="pipe-close"><div class="pick-box" data-action="note-keep"><h3 id="contactHd">Contact</h3><div id="contactBody"></div><div class="pick-acts"><button class="pri" id="contactFollow" data-action="pipe-follow">Follow up</button><button data-action="pipe-close">Close</button></div></div></div>';
+    if (P().applyPageCss) P().applyPageCss(wrap, 'contacts');
+    if (wrap.classList) wrap.classList.add('neon');
     if (P().finishPaint) P().finishPaint(wrap);
     else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
     markReady('pipeDesk');
@@ -1173,9 +1178,127 @@
     } catch (e) { return new Date(t).toISOString().slice(0, 16).replace('T', ' '); }
   }
 
+  function sheetBooks() {
+    return asList((window.REDESIGN_FIXTURE_C || {}).SHEET_BOOKS);
+  }
+  function isSheetFile(od) {
+    var blob = [od && od.name, od && od.type, od && od.mime, od && od.kind].join(' ');
+    return /xls|xlsx|csv|spreadsheet|sheet/i.test(blob);
+  }
+  function loadSheetJs(cb) {
+    if (window.XLSX) { cb(window.XLSX); return; }
+    if (window.__xlsxWait) { window.__xlsxWait.push(cb); return; }
+    window.__xlsxWait = [cb];
+    var s = document.createElement('script');
+    s.src = '/vendor/xlsx.full.min.js';
+    s.onload = function () {
+      var q = window.__xlsxWait || [];
+      window.__xlsxWait = null;
+      q.forEach(function (fn) { try { fn(window.XLSX); } catch (e1) {} });
+    };
+    s.onerror = function () {
+      var q = window.__xlsxWait || [];
+      window.__xlsxWait = null;
+      q.forEach(function (fn) { try { fn(null); } catch (e2) {} });
+    };
+    document.head.appendChild(s);
+  }
+  function bookFromXlsx(wb, name) {
+    return {
+      name: name || 'Workbook.xlsx',
+      sheets: (wb.SheetNames || []).map(function (nm) {
+        var aoa = window.XLSX.utils.sheet_to_json(wb.Sheets[nm], { header: 1, defval: '', raw: false }) || [];
+        return { name: nm, title: [], hdr: aoa[0] || [], rows: aoa.slice(1) };
+      })
+    };
+  }
+  function paintSheetViewer(wrap, od) {
+    var S = window.STATE || (window.STATE = {});
+    var booksShow = sheetBooks().slice();
+    if (S.docSheetLive && S.docSheetLive.name) {
+      var found = false;
+      booksShow = booksShow.map(function (b) {
+        if (b.name === S.docSheetLive.name) { found = true; return S.docSheetLive; }
+        return b;
+      });
+      if (!found) booksShow.unshift(S.docSheetLive);
+    }
+    if (!booksShow.length) booksShow = [{ name: (od && od.name) || 'Sheet.xlsx', sheets: [{ name: 'Sheet1', title: [], hdr: [], rows: [] }] }];
+    var bi = Number(S.docSheetBook) || 0;
+    if (od && od.name) {
+      booksShow.forEach(function (b, i) { if (String(b.name) === String(od.name)) bi = i; });
+    }
+    bi = Math.max(0, Math.min(bi, booksShow.length - 1));
+    var book = booksShow[bi] || booksShow[0];
+    var si = Number(S.docSheetTab) || 0;
+    var sheets = book.sheets || [];
+    si = Math.max(0, Math.min(si, Math.max(0, sheets.length - 1)));
+    var sh = sheets[si] || { name: 'Sheet', title: [], hdr: [], rows: [] };
+    var q = String(S.docSheetQ || '').toLowerCase();
+    var rows = (sh.rows || []).filter(function (r) {
+      return !q || String((r || []).join(' ')).toLowerCase().indexOf(q) >= 0;
+    });
+    var hdr = sh.hdr || [];
+    var titleLines = asList(sh.title);
+    var files = booksShow.map(function (b, i) {
+      var n = (b.sheets || []).length;
+      return '<div class="file' + (i === bi ? ' on' : '') + '" data-action="docs-sheet-book" data-i="' + i + '" data-name="' + esc(b.name) + '">' + esc(b.name) + '<small>' + n + ' sheet' + (n === 1 ? '' : 's') + '</small></div>';
+    }).join('');
+    var tabs = sheets.map(function (s, i) {
+      return '<span class="' + (i === si ? 'on' : '') + '" data-action="docs-sheet-tab" data-i="' + i + '">' + esc(s.name) + '</span>';
+    }).join('');
+    var th = '<tr>' + hdr.map(function (h, i) {
+      return '<th' + (i === 0 ? ' class="key"' : '') + '>' + esc(h) + '</th>';
+    }).join('') + '</tr>';
+    var tb = rows.map(function (r) {
+      return '<tr>' + hdr.map(function (_, i) {
+        var raw = r[i] == null ? '' : String(r[i]);
+        var inner = /https?:\/\//i.test(raw)
+          ? '<a href="' + esc(raw) + '" target="_blank" rel="noopener">' + esc(raw) + '</a>'
+          : esc(raw);
+        return '<td' + (i === 0 ? ' class="key"' : '') + '>' + inner + '</td>';
+      }).join('') + '</tr>';
+    }).join('');
+    var modal = S.docSheetModal
+      ? '<div class="modal open" id="sheetModal"><div class="mbox"><h3>Make a list from “' + esc(sh.name) + '”</h3><p>Each of the ' + (sh.rows || []).length + ' rows becomes a contact (matched to GoHighLevel by email or name), gets its own Space with every column from the sheet, and lands in a new list under Contacts. Rows already in GoHighLevel are updated, not duplicated.</p><input value="' + esc(sh.name) + '"><select><option>Add to pipeline: Storage</option><option>Do not add to a pipeline</option></select><div class="row"><button class="btn" data-action="docs-sheet-modal-close">Cancel</button><button class="btn pri" data-action="docs-sheet-make-go">Make the list</button></div></div></div>'
+      : '';
+    wrap.innerHTML =
+      '<div class="bar"><h1>Documents</h1><span class="sub">sheets open right here, no Google sign-in</span><div class="r"><input class="search" data-action="docs-sheet-search" placeholder="Search this sheet" value="' + esc(S.docSheetQ || '') + '"></div></div>'
+      + '<div class="files" id="files">' + files + '</div>'
+      + '<section class="card doc">'
+      + '<div class="dh"><span class="kind">SHEET</span><h2>' + esc(book.name) + '</h2><span style="font-size:12px;color:var(--ink3);font-weight:650">' + sheets.length + ' tabs · ' + (sh.rows || []).length + ' rows</span>'
+      + '<div class="r"><button class="btn" data-action="doc-download">Download .xlsx</button><button class="btn" data-action="docs-sheet-google">Open in Google Sheets</button><button class="btn pri" data-action="docs-sheet-make">Make a list from this sheet</button><button class="btn" data-action="doc-add-space">Add to a Space</button><button class="btn" data-action="doc-close">Close</button></div></div>'
+      + '<div class="tabs">' + tabs + '</div>'
+      + '<div class="sttl">' + (titleLines[0] ? '<b>' + esc(titleLines[0]) + '</b>' : '') + (titleLines[1] ? '<br>' + esc(titleLines[1]) : '') + '</div>'
+      + '<div class="grid"><table class="sg">' + th + tb + '</table></div></section>'
+      + modal;
+    if (P().applyPageCss) P().applyPageCss(wrap, 'docs');
+    if (!fixtureOn() && od && !S.docSheetLive) {
+      var key = String(od.id || od.drive || od.name || '');
+      S.docSheetTried = S.docSheetTried || {};
+      if (key && !S.docSheetTried[key]) {
+        S.docSheetTried[key] = true;
+        loadSheetJs(function (X) {
+          if (!X) return;
+          var src = od.drive
+            ? '/api/drive/file?id=' + encodeURIComponent(od.drive)
+            : (/^[0-9a-f-]{36}$/i.test(String(od.id || '')) ? '/api/documents/file?id=' + encodeURIComponent(od.id) : '');
+          if (!src) return;
+          fetch(src, { credentials: 'include' }).then(function (r) { return r.ok ? r.arrayBuffer() : null; }).then(function (buf) {
+            if (!buf) return;
+            var wb = X.read(new Uint8Array(buf), { type: 'array' });
+            S.docSheetLive = bookFromXlsx(wb, od.name);
+            paintDocumentsLive();
+          }).catch(function () {});
+        });
+      }
+    }
+  }
+
   function paintDocumentsLive() {
     var wrap = wrapOf('docsDesk');
     if (!wrap) return;
+    if (P().applyPageCss) P().applyPageCss(wrap, 'docs');
     var S = window.STATE || {};
     var view = S.docsView || 'grid';
     var source = S.docSource === 'drive' ? 'drive' : 'local';
@@ -1238,7 +1361,29 @@
     try {
       var qd = new URLSearchParams(String(location.search || ''));
       if (qd.get('doc') === '1') wantDoc = true;
+      if (qd.get('sheet') === '1') {
+        if (!S.docOpen) {
+          var xls = (data.files || []).filter(function (f) { return f[0] === 'xls'; })[0];
+          var books0 = sheetBooks();
+          S.docOpen = {
+            name: (books0[0] && books0[0].name) || (xls && xls[1]) || 'Sheet.xlsx',
+            type: 'xls',
+            id: xls && xls[6],
+            url: xls && xls[5],
+            drive: xls && xls[7],
+            mime: (xls && xls[9]) || 'application/vnd.ms-excel'
+          };
+        }
+        wantDoc = true;
+      }
     } catch (e) {}
+    if (wantDoc && isSheetFile(S.docOpen || {})) {
+      paintSheetViewer(wrap, S.docOpen || {});
+      if (P().finishPaint) P().finishPaint(wrap);
+      else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
+      markReady('docsDesk');
+      return;
+    }
     if (wantDoc) {
       var od = S.docOpen || {};
       var meta = od.meta || {};
