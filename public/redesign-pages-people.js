@@ -94,6 +94,8 @@
     try { if (keep) { a = active.selectionStart; b = active.selectionEnd; } } catch (e) {}
     wrap.innerHTML = html;
     if (typeof window.bindShadowActions === 'function') window.bindShadowActions(root);
+    var host = root.host;
+    if (host && host.setAttribute) host.setAttribute('data-port-ready', '1');
     if (keep) {
       var again = root.querySelector('[data-action="' + keep + '"]');
       if (again && again.focus) { again.focus(); try { again.setSelectionRange(a, b); } catch (e) {} }
