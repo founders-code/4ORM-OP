@@ -1,4 +1,5 @@
 import type { Sql } from './db';
+import { outbound } from './outbound';
 
 const REGS = ['FINTRAC', 'OSFI', 'FSRA', 'BCFSA', 'CSA', 'AMF', 'FCAC', 'CIRO', 'Bank of Canada'];
 const MARKET_GAUGES = [
@@ -158,7 +159,7 @@ function regulatorOf(it: Item) {
 
 async function valetSeries(id: string) {
   const url = `https://www.bankofcanada.ca/valet/observations/${encodeURIComponent(id)}/json?recent=30`;
-  const res = await fetch(url, { headers: { accept: 'application/json' }, cache: 'no-store' });
+  const res = await outbound(url, { headers: { accept: 'application/json' }, cache: 'no-store' });
   if (!res.ok) return { v: '-', d: '-', dir: 'fl', s: [] as number[] };
   const json = await res.json() as { observations?: Array<Record<string, { v?: string } | string>> };
   const nums = (json.observations || []).map((row) => {

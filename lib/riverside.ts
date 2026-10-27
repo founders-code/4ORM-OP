@@ -2,6 +2,7 @@ import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { env } from './env.mjs';
 import { markSource, saveRecordNote, vanDay } from './integrations-records';
 import { fail } from './log';
+import { outbound } from './outbound';
 
 type Sql = NeonQueryFunction<false, false>;
 
@@ -32,7 +33,7 @@ class RiversideError extends Error {
 }
 
 async function call(path: string, asText = false) {
-  const res = await fetch(`${base()}/api/v3${path}`, {
+  const res = await outbound(`${base()}/api/v3${path}`, {
     headers: { authorization: `Bearer ${env('RIVERSIDE_API_KEY')}`, accept: asText ? 'text/plain' : 'application/json' },
     signal: AbortSignal.timeout(15000),
     cache: 'no-store',

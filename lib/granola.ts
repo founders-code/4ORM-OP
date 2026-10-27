@@ -2,6 +2,7 @@ import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { env } from './env.mjs';
 import { lastSourceSync, markSource, saveRecordNote, vanDay } from './integrations-records';
 import { fail } from './log';
+import { outbound } from './outbound';
 import { riversideConfigured, syncRiverside } from './riverside';
 
 type Sql = NeonQueryFunction<false, false>;
@@ -45,7 +46,7 @@ class GranolaError extends Error {
 }
 
 async function call(path: string) {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await outbound(`${BASE}${path}`, {
     headers: { authorization: `Bearer ${env('GRANOLA_API_KEY')}`, accept: 'application/json' },
     signal: AbortSignal.timeout(12000),
     cache: 'no-store',

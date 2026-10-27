@@ -72,7 +72,7 @@
   }
   function padLabel(r, pad, i, todayIdx) {
     var s = padClass(pad && pad.state);
-    if (s === M) return '×';
+    if (s === M) return '';
     if (s === D) return i === todayIdx ? '✓' : ((pad && pad.value) || '');
     if (s === U) {
       if (r.target === '5' && /reach/i.test(r.n)) return ((pad && pad.value) || '2') + '/5';
@@ -218,7 +218,7 @@
           var day = (r.pads && r.pads[i] && r.pads[i].day) || '';
           var ids = ' data-action="play-pad" data-r="' + ri + '" data-i="' + i + '" data-id="' + esc(r.id || '') + '" data-day="' + esc(day) + '"';
           if (s === D) h += '<div class="pad done" style="--c:' + col + ';color:#fff"' + ids + '>' + l + '</div>';
-          else if (s === M) h += '<div class="pad miss" data-action="play-pad-off">&times;</div>';
+          else if (s === M) h += '<div class="pad miss" data-action="play-pad-off"></div>';
           else if (s === U) h += '<div class="pad due" style="--c:' + col + ';color:#0b0d12"' + ids + '>' + l + '</div>';
           else if (s === N) h += '<div class="pad next" style="--c:' + col + '"' + ids + '>' + l + '</div>';
           else h += '<div class="pad off" data-action="play-pad-off"></div>';

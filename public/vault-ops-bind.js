@@ -209,6 +209,25 @@
       var box = $(root, '#dials'); if (!box) return;
       box.innerHTML = (dials || []).map(dialHTML).join('') || '<div class="dial"><div class="val">-</div><div class="lab">no sample yet</div></div>';
     }
+    function sparkSVG(vals, st) {
+      var h = (vals || []).map(Number).filter(function (n) { return isFinite(n); });
+      var mx = 1;
+      h.forEach(function (v) { if (v > mx) mx = v; });
+      var pts = '';
+      if (h.length) {
+        pts = h.map(function (v, i) {
+          var x = h.length === 1 ? 110 : i * (220 / (h.length - 1));
+          var y = 36 - (v / mx) * 30;
+          return x.toFixed(1) + ',' + y.toFixed(1);
+        }).join(' ');
+      }
+      var c = st === 'DOWN' ? '#ff4d6d' : (st === 'SLOW' ? '#ffb547' : '#3b82ff');
+      var g = '';
+      for (var i = 1; i < 4; i++) g += '<line x1="0" y1="' + (i * 9) + '" x2="220" y2="' + (i * 9) + '" stroke="#141c3d" stroke-width="1"/>';
+      return '<svg class="spark" viewBox="0 0 220 38" preserveAspectRatio="none">' + g
+        + (pts ? '<polyline points="' + pts + '" fill="none" stroke="' + c + '" stroke-width="1.8"></polyline>' : '')
+        + '</svg>';
+    }
     function apiHTML(a) {
       var ms = dash(a.ms, a.reason || 'no sample yet');
       var calls = a.callsToday != null ? a.callsToday : 0;
@@ -216,7 +235,7 @@
       var chip = a.status === 'DOWN' ? 'DOWN' : (a.ms == null ? 'NO SAMPLE' : 'LIVE');
       return '<div class="api" data-a="' + a.key + '">'
         + '<div class="apih"><i class="lmp"></i><b>' + a.name + '</b><span class="ep">' + (a.endpoint || '') + '</span><span class="ch">' + chip + '</span></div>'
-        + '<div class="apim"><div class="rd"><b>' + ms.text + '</b><small>MS</small></div></div>'
+        + '<div class="apim">' + sparkSVG(a.spark || [], chip) + '<div class="rd"><b>' + ms.text + '</b><small>MS</small></div></div>'
         + '<div class="met"><span>Calls today</span><div class="vv"><span class="mono">' + calls + '</span></div></div>'
         + '<div class="met"><span>Errors 24 h</span><div class="vv"><span class="mono">' + err + '</span></div></div>'
         + '<div class="met"><span>Key</span><div class="vv"><span>' + (a.keyValid === false ? 'NOT SET' : 'present') + '</span></div></div>'

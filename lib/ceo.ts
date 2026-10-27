@@ -3,6 +3,7 @@ import { join } from 'path';
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { allowArea, allowPriority, allowStatus, parseDue } from './guard.mjs';
 import { env } from './env.mjs';
+import { outbound } from './outbound';
 import { fail } from './log';
 import { listPipelines } from './ghl';
 import { listMeetingActions } from './meeting-actions';
@@ -474,7 +475,7 @@ async function dailyBrainJson(system: string, prompt: string) {
   const openaiKey = env('OPENAI_API_KEY');
   const model = env('CEO_MODEL');
   if (anthropicKey) {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await outbound('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -494,7 +495,7 @@ async function dailyBrainJson(system: string, prompt: string) {
     return (body.content || []).filter((block) => block.type === 'text').map((block) => block.text || '').join('\n');
   }
   if (openaiKey) {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await outbound('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${openaiKey}` },
       body: JSON.stringify({
@@ -889,7 +890,7 @@ const TOOLS = [
 ];
 
 async function anthropicTurn(key: string, model: string, system: string, messages: unknown[]) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await outbound('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -908,7 +909,7 @@ async function openaiTurn(key: string, model: string, system: string, messages: 
     type: 'function',
     function: { name: tool.name, description: tool.description, parameters: tool.input_schema },
   }));
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+  const res = await outbound('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
     body: JSON.stringify({ model, max_tokens: 900, messages: [{ role: 'system', content: system }, ...messages], tools }),

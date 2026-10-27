@@ -1,5 +1,6 @@
 import { currentCreds } from './creds';
 import { env } from './env.mjs';
+import { outbound } from './outbound';
 
 const BASE = 'https://services.leadconnectorhq.com';
 
@@ -22,7 +23,7 @@ function locationId() {
 async function ghl(path: string, init?: { method?: string; body?: string }) {
   if (!configured() || !locationId()) return null;
   try {
-    const res = await fetch(`${BASE}${path}`, {
+    const res = await outbound(`${BASE}${path}`, {
       method: init?.method || 'GET',
       headers: {
         authorization: `Bearer ${key()}`,
@@ -282,7 +283,7 @@ export async function moveOpportunityStage(input: { opportunityId: string; pipel
   }
   if (!pipelineId || !stageId) return { ok: false, status: 409, note: 'That stage is not in this pipeline in GoHighLevel.' };
   try {
-    const res = await fetch(`${BASE}/opportunities/${encodeURIComponent(oppId)}`, {
+    const res = await outbound(`${BASE}/opportunities/${encodeURIComponent(oppId)}`, {
       method: 'PUT',
       headers: {
         authorization: `Bearer ${key()}`,
@@ -539,7 +540,7 @@ const TEST_PIPE_NAME = '4orm TEST';
 async function ghlAny(path: string, init?: { method?: string; body?: string }) {
   if (!configured() || !locationId()) return { ok: false, json: null as unknown, status: 0 };
   try {
-    const res = await fetch(`${BASE}${path}`, {
+    const res = await outbound(`${BASE}${path}`, {
       method: init?.method || 'GET',
       headers: {
         authorization: `Bearer ${key()}`,

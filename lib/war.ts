@@ -1,5 +1,6 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { env } from './env.mjs';
+import { outbound } from './outbound';
 import { fail } from './log';
 import { allowArea, allowPriority, parseDue } from './guard.mjs';
 import { NEWS_CATEGORIES, asNeeds, asSteps, extractCommitments, fallbackPlan, todayKey } from './war-core.mjs';
@@ -289,7 +290,7 @@ export async function saveNewsCategories(sql: Sql, ownerId: string, categories: 
 async function modelPlan(system: string, user: string) {
   const anthropic = env('ANTHROPIC_API_KEY');
   if (anthropic) {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await outbound('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -310,7 +311,7 @@ async function modelPlan(system: string, user: string) {
   }
   const openai = env('OPENAI_API_KEY');
   if (!openai) return '';
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+  const res = await outbound('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: `Bearer ${openai}` },
     body: JSON.stringify({

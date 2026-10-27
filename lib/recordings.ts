@@ -1,5 +1,6 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { env } from './env.mjs';
+import { outbound } from './outbound';
 import { fail } from './log';
 import { ensureMeetingActions } from './meeting-actions';
 
@@ -199,7 +200,7 @@ async function transcribeB64(b64: string) {
   const form = new FormData();
   form.append('file', new Blob([bytes], { type: 'audio/webm' }), 'recording.webm');
   form.append('model', 'gpt-4o-transcribe');
-  const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+  const res = await outbound('https://api.openai.com/v1/audio/transcriptions', {
     method: 'POST',
     headers: { authorization: `Bearer ${key}` },
     body: form,
@@ -214,7 +215,7 @@ async function summarizeTranscript(transcript: string, people: string[]) {
   if (!key || !transcript.trim()) {
     return { title: '', summary: '', people, action_items: [] as Array<{ text: string; due: string }> };
   }
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+  const res = await outbound('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
     body: JSON.stringify({

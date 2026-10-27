@@ -1,4 +1,5 @@
 import { env } from './env.mjs';
+import { outbound } from './outbound';
 
 /**
  * Perplexity Agent API (docs.perplexity.ai, "Migrate from Sonar"): POST https://api.perplexity.ai/v1/agent
@@ -64,7 +65,7 @@ export async function research(question: string, context = ''): Promise<Research
   if (!q) return { ok: false, status: 400, error: 'Nothing to research.' };
   const input = context ? `${q}\n\nContext from 4orm (do not cite this, it is not a source):\n${String(context).slice(0, 2000)}` : q;
   try {
-    const res = await fetch(URL_AGENT, {
+    const res = await outbound(URL_AGENT, {
       method: 'POST',
       headers: { authorization: `Bearer ${env('PERPLEXITY_API_KEY')}`, 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify({ effort: 'fast', instructions: INSTRUCTIONS, input, tools: [{ type: 'web_search' }] }),

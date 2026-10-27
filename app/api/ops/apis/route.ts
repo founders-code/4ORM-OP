@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
+import { outbound, recordCall, tape } from '@/lib/outbound';
 import { openBoard, sessionOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -75,6 +76,26 @@ export async function GET(req: Request) {
         /* no samples */
       }
     }
+    const spark = new Map<string, number[]>();
+    if (session.sql) {
+      try {
+        const hist = await session.sql`
+          SELECT api, ms FROM api_calls WHERE ms IS NOT NULL ORDER BY at DESC LIMIT 800
+        `;
+        for (const r of hist || []) {
+          const k = String(r.api || '');
+          const ms = r.ms == null ? null : Number(r.ms);
+          if (!k || ms == null || !Number.isFinite(ms)) continue;
+          const list = spark.get(k) || [];
+          if (list.length >= 40) continue;
+          list.push(ms);
+          spark.set(k, list);
+        }
+        for (const [k, list] of spark) spark.set(k, list.slice().reverse());
+      } catch {
+        /* no history */
+      }
+    }
     return NextResponse.json({
       apis: APIS.map((a) => {
         const s = agg.get(a.key) || { ms: null, callsToday: 0, errors24h: 0 };
@@ -82,6 +103,7 @@ export async function GET(req: Request) {
           ...a,
           status: a.key === 'openai' && !process.env.OPENAI_API_KEY ? 'DOWN' : 'LIVE',
           ms: s.ms,
+          spark: spark.get(a.key) || [],
           callsToday: s.callsToday,
           errors24h: s.errors24h,
           keyValid: a.key === 'openai' ? !!process.env.OPENAI_API_KEY : true,
@@ -110,6 +132,7 @@ export async function POST(req: Request) {
         await session.sql`INSERT INTO ops_switches (key, on_state, changed_by) VALUES (${'api_' + key}, false, ${session.userId})
           ON CONFLICT (key) DO UPDATE SET on_state = false, changed_at = now()`;
       }
+      await tape('warn', key, hit.name + ' paused');
       return NextResponse.json({ ok: true, paused: true });
     }
     const t0 = Date.now();
@@ -118,19 +141,16 @@ export async function POST(req: Request) {
       if (hit.key === 'neon' && session.sql) {
         await session.sql`SELECT 1`;
         code = 200;
+        await recordCall('neon', 'SELECT 1', 200, Date.now() - t0);
       } else if (hit.endpoint.startsWith('http')) {
-        const r = await fetch(hit.endpoint, { method: 'HEAD', cache: 'no-store' }).catch(() => null);
+        const r = await outbound(hit.endpoint, { method: 'HEAD', cache: 'no-store', signal: AbortSignal.timeout(8000) }).catch(() => null);
         code = r ? r.status : 0;
       }
     } catch {
       code = 0;
     }
     const ms = Date.now() - t0;
-    if (session.sql) {
-      await session.sql`INSERT INTO api_calls (api, path, code, ms) VALUES (${key}, ${hit.endpoint}, ${code}, ${ms})`;
-      const msg = hit.name + (code ? ' answered in ' + ms + ' ms' : ' no answer in ' + ms + ' ms');
-      await session.sql`INSERT INTO ops_events (level, source, message) VALUES (${code && code < 400 ? 'ok' : 'err'}, ${key}, ${msg})`;
-    }
+    await tape(code && code < 400 ? 'ok' : 'err', key, hit.name + (code ? ' answered in ' + ms + ' ms' : ' no answer in ' + ms + ' ms'));
     return NextResponse.json({ ok: true, ms, code });
   } catch (err) {
     fail('ops_apis_post', err);

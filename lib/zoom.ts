@@ -1,6 +1,7 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { fail } from './log';
 import type { ZoomMail } from './google';
+import { outbound } from './outbound';
 
 type Sql = NeonQueryFunction<false, false>;
 
@@ -32,7 +33,7 @@ async function zoomToken() {
   const id = process.env.ZOOM_CLIENT_ID || '';
   const secret = process.env.ZOOM_CLIENT_SECRET || '';
   const account = process.env.ZOOM_ACCOUNT_ID || '';
-  const res = await fetch(`https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${encodeURIComponent(account)}`, {
+  const res = await outbound(`https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${encodeURIComponent(account)}`, {
     method: 'POST',
     headers: { authorization: `Basic ${Buffer.from(`${id}:${secret}`).toString('base64')}` },
     signal: AbortSignal.timeout(8000),
@@ -45,7 +46,7 @@ async function zoomToken() {
 }
 
 async function zget<T>(token: string, path: string): Promise<T | null> {
-  const res = await fetch(`https://api.zoom.us/v2${path}`, {
+  const res = await outbound(`https://api.zoom.us/v2${path}`, {
     headers: { authorization: `Bearer ${token}` },
     signal: AbortSignal.timeout(9000),
   }).catch(() => null);
@@ -61,7 +62,7 @@ export async function createZoomMeeting(startIso: string, durMin: number, topic:
   if (!zoomConfigured()) return null;
   const token = await zoomToken();
   if (!token) return null;
-  const res = await fetch(`https://api.zoom.us/v2/users/${zoomUser()}/meetings`, {
+  const res = await outbound(`https://api.zoom.us/v2/users/${zoomUser()}/meetings`, {
     method: 'POST',
     headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -159,7 +160,7 @@ async function meetingNote(token: string, meeting: Meeting, self: Set<string>): 
   const transcript = (meeting.recording_files || []).find((file) => file.file_type === 'TRANSCRIPT' && file.download_url);
   let turns: { who: string; text: string }[] = [];
   if (transcript?.download_url) {
-    const res = await fetch(transcript.download_url, {
+    const res = await outbound(transcript.download_url, {
       headers: { authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(9000),
     }).catch(() => null);

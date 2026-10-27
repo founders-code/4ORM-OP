@@ -8,7 +8,7 @@ export type Sql = NeonQueryFunction<false, false>;
 let ready: Promise<Sql> | null = null;
 
 /** Bump when migrate() gains a new step so cold starts skip the full IF NOT EXISTS pass. */
-const SCHEMA_VERSION = '2026-10-27-prompt8';
+const SCHEMA_VERSION = '2026-10-27-ops-feed';
 
 export async function databaseUrl() {
   const envUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
@@ -1136,6 +1136,8 @@ async function migrateWar(sql: Sql) {
       hash text,
       PRIMARY KEY (fact_key, place)
     )`],
+    ['db_vault_docs_doc_uq', () => sql`CREATE UNIQUE INDEX IF NOT EXISTS vault_docs_owner_doc_uq
+      ON vault_docs (owner_id, doc_id) WHERE doc_id IS NOT NULL AND doc_id <> ''`],
     ['db_sheet_cache', () => sql`CREATE TABLE IF NOT EXISTS sheet_cache (
       file_id text PRIMARY KEY,
       version text,

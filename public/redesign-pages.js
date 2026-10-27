@@ -558,8 +558,10 @@
           email: m.email, threadId: m.threadId, messageId: m.messageId
         };
       }),
-      meetings: meetings.map(function (ev, i) {
-        return { when: soon(ev.start), title: ev.title, kind: (i === 0 || ev.join) ? 'join' : 'bell', url: ev.join || '' };
+      meetings: meetings.map(function (ev) {
+        var url = String(ev.join || ev.url || '');
+        var canJoin = /^https?:\/\//i.test(url);
+        return { when: soon(ev.start), title: ev.title, kind: canJoin ? 'join' : 'bell', url: canJoin ? url : '' };
       }),
       moves: movers.map(function (move) {
         var zone = String(move.zone || move.area || 'Raise');
@@ -826,7 +828,7 @@
       return '<div class="mail"><span class="av" style="background:' + esc(m.color || '#2e6bf2') + '">' + esc(av) + '</span><div style="min-width:0"><div class="mn"><span>' + esc(m.from) + '</span>' + (m.flag ? '<em class="flag ' + m.flag + '" style="font-style:normal">' + FL[m.flag] + '</em>' : '') + '</div><div class="ms">' + esc(m.subject) + '</div><div class="mp">' + esc(m.preview) + '</div></div><div class="mr"><span class="age">' + esc(m.age) + '</span><button class="rb" data-action="mail-reply" data-idx="' + ix + '" data-email="' + esc(m.email || '') + '" data-thread="' + esc(m.threadId || '') + '" data-mid="' + esc(m.messageId || '') + '" data-subject="' + esc(m.subject || '') + '" data-from="' + esc(m.from || '') + '" data-preview="' + esc(m.preview || '') + '">Reply</button><button class="more" data-action="mail-more" data-email="' + esc(m.email || '') + '" title="More: not a person, snooze, file">&middot;&middot;&middot;</button></div></div>';
     }).join('') : '<div class="mail"><div class="mp">No person-to-person mail waiting.</div></div>';
     var meetHtml = meetings.length ? meetings.map(function (ev) {
-      var trail = ev.kind === 'join'
+      var trail = ev.kind === 'join' && /^https?:\/\//i.test(ev.url || '')
         ? '<span class="join" data-action="meet-join" data-url="' + esc(ev.url || '') + '">Join</span>'
         : '<span class="bell" data-action="meet-bell" data-title="' + esc(ev.title || '') + '"' + (ev.kind === 'bell-on' ? ' title="Alarm on"' : '') + '>' + BELL + '</span>';
       return '<div class="meet"><span class="tm">' + esc(ev.when) + '</span><span class="nm">' + esc(ev.title) + '</span>' + trail + '</div>';
@@ -1049,7 +1051,7 @@
       '<section class="ribbon thin">'
       + '<span class="ri"><b class="red">' + esc(data.runway || '-') + '</b> runway</span><span class="rsep"></span>'
       + '<span class="ri"><b>' + toGo + '</b> to go &middot; <b>' + esc(days) + ' days</b></span><span class="rsep"></span>'
-      + '<span class="ri">Next: <b>' + esc(next.title || '-') + '</b> ' + esc(next.when || '') + (next.url ? ' <span class="lnk" data-action="meet-join" data-url="' + esc(next.url) + '">Join</span>' : '') + '</span><span class="rsep"></span>'
+      + '<span class="ri">Next: <b>' + esc(next.title || '-') + '</b> ' + esc(next.when || '') + (/^https?:\/\//i.test(next.url || '') ? ' <span class="lnk" data-action="meet-join" data-url="' + esc(next.url) + '">Join</span>' : '') + '</span><span class="rsep"></span>'
       + '<span class="ri"><b>' + esc(lights) + '</b> lights left today</span>'
       + '<span class="sp"></span>'
       + '<span class="ri sig" id="sigBtn" data-action="signals-open">Signals <b class="n">' + esc(data.sigCount != null ? data.sigCount : 0) + '</b></span>'

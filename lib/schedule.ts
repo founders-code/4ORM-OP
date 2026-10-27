@@ -253,7 +253,11 @@ export async function sendDueMail(sql: Sql, ownerId: string) {
       },
       finish: (row: Record<string, unknown>, move: 'sent' | 'fail', why: string) => finishRow(sql, String(row.id), move, why),
     });
-    if (result.sent || result.failed) note('scheduled_mail', `sent=${result.sent} failed=${result.failed}`);
+    if (result.sent || result.failed) {
+      note('scheduled_mail', `sent=${result.sent} failed=${result.failed}`);
+      const { tape } = await import('./outbound');
+      await tape(result.failed ? 'warn' : 'ok', 'send', `scheduled mail sent=${result.sent} failed=${result.failed}`);
+    }
     return { sent: result.sent, failed: result.failed, sentIds: result.ids as string[] };
   } catch (err) {
     fail('scheduled_mail', err);

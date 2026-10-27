@@ -52,6 +52,8 @@ export async function POST(req: Request) {
       ON CONFLICT (key) DO UPDATE SET on_state = EXCLUDED.on_state, changed_at = now(), changed_by = EXCLUDED.changed_by
     `;
     await session.sql`INSERT INTO ops_switch_log (key, on_state, by_user) VALUES (${key}, ${on}, ${session.userId})`;
+    const { tape } = await import('@/lib/outbound');
+    await tape('ok', 'switch', `${key} ${on ? 'on' : 'off'}`);
     return NextResponse.json({ saved: true, key, on });
   } catch (err) {
     fail('ops_switches_post', err);

@@ -11,6 +11,11 @@ export async function GET() {
     const ownerId = await sessionOwner(session);
     if (!ownerId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ docs: [], reason: 'no database url' });
+    const empty = await session.sql`SELECT 1 FROM vault_docs WHERE owner_id = ${ownerId} LIMIT 1`;
+    if (!empty.length) {
+      const { seedVaultDocs } = await import('@/lib/vault-seed');
+      await seedVaultDocs(session.sql, ownerId);
+    }
     const docs = await session.sql`
       SELECT id, org, kind, doc_id, name, version, status, verified_at, owner, note, source_url, drive_id, json_path
       FROM vault_docs WHERE owner_id = ${ownerId} ORDER BY name

@@ -342,6 +342,8 @@ export async function safetySweep(sql: Sql, ownerId: string, origin = '') {
   const newItems = (mail.added || 0) + (mail.linkedin || 0) + (zoom.added || 0);
   if (newItems > 0) await runIntel(sql, ownerId, `sweep mail=${mail.added} zoom=${zoom.added}`);
   note('cron_live', `mail=${mail.added} linkedin=${mail.linkedin || 0} zoom=${zoom.added || 0} origin=${origin ? 'yes' : 'no'}`);
+  const { tape } = await import('./outbound');
+  await tape('ok', 'cron', `mail=${mail.added} linkedin=${mail.linkedin || 0} zoom=${zoom.added || 0}`);
   return { mail: mail.added, linkedin: mail.linkedin || 0, zoom: zoom.added || 0 };
 }
 

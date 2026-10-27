@@ -1,6 +1,7 @@
 import { createHash } from 'crypto';
 import { currentCreds } from './creds';
 import { env } from './env.mjs';
+import { outbound } from './outbound';
 
 type Token = { access: string; exp: number };
 const tokens = new Map<string, Token>();
@@ -31,7 +32,7 @@ async function accessToken() {
     refresh_token: refresh,
     grant_type: 'refresh_token',
   });
-  const res = await fetch('https://oauth2.googleapis.com/token', {
+  const res = await outbound('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
     body,
@@ -49,7 +50,7 @@ async function gfetch(url: string, init?: RequestInit & { timeoutMs?: number }) 
   if (!access) return null;
   const timeoutMs = Number(init?.timeoutMs) || 8000;
   const headers = { authorization: `Bearer ${access}`, 'content-type': 'application/json', ...(init?.headers || {}) };
-  const res = await fetch(url, {
+  const res = await outbound(url, {
     method: init?.method,
     headers,
     body: init?.body,
@@ -63,7 +64,7 @@ async function gcall(url: string, init?: RequestInit & { timeoutMs?: number }) {
   const access = await accessToken();
   if (!access) return { ok: false, status: 0, json: null as unknown };
   const timeoutMs = Number(init?.timeoutMs) || 12000;
-  const res = await fetch(url, {
+  const res = await outbound(url, {
     method: init?.method,
     headers: { authorization: `Bearer ${access}`, 'content-type': 'application/json', ...(init?.headers || {}) },
     body: init?.body,
@@ -303,7 +304,7 @@ const OFFICE_AS_GOOGLE: Record<string, string> = {
 };
 
 async function pdfBytes(access: string, fileId: string) {
-  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application%2Fpdf`, {
+  const res = await outbound(`https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application%2Fpdf`, {
     headers: { authorization: `Bearer ${access}` },
   });
   if (!res.ok) return null;
@@ -337,7 +338,7 @@ export async function exportDriveFile(fileId: string) {
       const bytes = await pdfBytes(access, copyId);
       return bytes ? { name, type: 'application/pdf', bytes } : null;
     } finally {
-      await fetch(`https://www.googleapis.com/drive/v3/files/${copyId}?supportsAllDrives=true`, {
+      await outbound(`https://www.googleapis.com/drive/v3/files/${copyId}?supportsAllDrives=true`, {
         method: 'DELETE',
         headers: { authorization: `Bearer ${access}` },
       }).catch(() => null);
@@ -345,7 +346,7 @@ export async function exportDriveFile(fileId: string) {
   }
   const direct = googleType.startsWith('image/') || googleType === 'application/pdf' || googleType.startsWith('text/');
   if (!direct) return null;
-  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`, {
+  const res = await outbound(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`, {
     headers: { authorization: `Bearer ${access}` },
   });
   if (!res.ok) return null;
@@ -691,7 +692,7 @@ export async function uploadDriveBytes(name: string, mime: string, parentId: str
     `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: ${type}\r\n\r\n`,
   );
   const tail = Buffer.from(`\r\n--${boundary}--`);
-  const res = await fetch(
+  const res = await outbound(
     'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,name,webViewLink',
     {
       method: 'POST',
@@ -1373,7 +1374,7 @@ async function gmailUpload(url: string, meta: Record<string, unknown>, mime: str
     Buffer.from(mime, 'utf8'),
     Buffer.from(`\r\n--${boundary}--`, 'utf8'),
   ]);
-  const res = await fetch(url, {
+  const res = await outbound(url, {
     method: 'POST',
     headers: { authorization: `Bearer ${access}`, 'content-type': `multipart/related; boundary=${boundary}` },
     body,
@@ -1400,7 +1401,7 @@ export async function driveFileBytes(fileId: string): Promise<MailFile | null> {
     return bytes ? { name: /\.pdf$/i.test(name) ? name : `${name}.pdf`, type: 'application/pdf', bytes } : null;
   }
   if (Number(meta.size || 0) > 20 * 1024 * 1024) return null;
-  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`, {
+  const res = await outbound(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`, {
     headers: { authorization: `Bearer ${access}` },
     signal: AbortSignal.timeout(30000),
   });

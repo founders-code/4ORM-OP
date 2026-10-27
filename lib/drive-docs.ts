@@ -2,6 +2,7 @@
  *  and a resumable upload relayed through our server in chunks (so files are not capped by the
  *  serverless request body limit). All calls run under the caller's withCreds(). */
 import { googleAccessToken, googleConfigured } from './google';
+import { outbound } from './outbound';
 
 const DRIVE_ID = /^[\w-]{8,200}$/;
 const UPLOAD_PREFIX = 'https://www.googleapis.com/upload/drive/v3/files';
@@ -16,7 +17,7 @@ async function token() {
 }
 
 async function getJson(url: string, access: string) {
-  const res = await fetch(url, { headers: { authorization: `Bearer ${access}` }, signal: AbortSignal.timeout(10000) });
+  const res = await outbound(url, { headers: { authorization: `Bearer ${access}` }, signal: AbortSignal.timeout(10000) });
   if (!res.ok) return null;
   return res.json().catch(() => null);
 }
@@ -68,7 +69,7 @@ export async function driveThumbnail(fileId: string, size = 400) {
   let link = String(json?.thumbnailLink || '');
   if (!/^https:\/\/[\w.-]+\.(googleusercontent|google)\.com\//.test(link)) return null;
   link = link.replace(/=s\d+$/, `=s${Math.max(120, Math.min(800, size))}`);
-  const res = await fetch(link, { headers: { authorization: `Bearer ${access}` }, signal: AbortSignal.timeout(10000) });
+  const res = await outbound(link, { headers: { authorization: `Bearer ${access}` }, signal: AbortSignal.timeout(10000) });
   if (!res.ok) return null;
   const type = String(res.headers.get('content-type') || '');
   if (!/^image\/(png|jpe?g|gif|webp)/.test(type)) return null;
@@ -111,7 +112,7 @@ export async function startResumable(name: string, mime: string, size: number, p
   if (!driveIdOk(parentId) || !(size > 0)) return null;
   const access = await token();
   if (!access) return null;
-  const res = await fetch(`${UPLOAD_PREFIX}?uploadType=resumable&supportsAllDrives=true&fields=id,name,webViewLink`, {
+  const res = await outbound(`${UPLOAD_PREFIX}?uploadType=resumable&supportsAllDrives=true&fields=id,name,webViewLink`, {
     method: 'POST',
     headers: {
       authorization: `Bearer ${access}`,
@@ -133,7 +134,7 @@ export async function putChunk(sessionUrl: string, bytes: Buffer, offset: number
   const access = await token();
   if (!access) return null;
   const end = offset + bytes.length - 1;
-  const res = await fetch(sessionUrl, {
+  const res = await outbound(sessionUrl, {
     method: 'PUT',
     headers: {
       authorization: `Bearer ${access}`,

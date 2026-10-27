@@ -1,5 +1,6 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { fail } from './log';
+import { outbound } from './outbound';
 import {
   FALLBACK as SEED,
   NEWS_CHIPS,
@@ -236,7 +237,7 @@ async function enrichWithLlm(stories: Row[]) {
     url: String(story.url || ''),
   }));
   try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await outbound('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
       body: JSON.stringify({
