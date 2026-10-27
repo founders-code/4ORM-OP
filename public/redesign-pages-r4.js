@@ -1449,8 +1449,10 @@
       if (q.get('view') === 'war' || q.get('steps') === '1' || q.get('signals') === '1' || q.get('select') === '1' || q.get('sigdetail') === '1') return false;
       if (q.get('view') === 'planner' || q.get('view') === 'timeline') return true;
       if (/\/(planner|timeline)/.test(location.pathname || '')) return true;
+      var desk = (window.STATE && window.STATE.desk) || '';
+      if (desk === 'war' && /\/(planner|timeline)/.test(location.pathname || '')) return true;
     } catch (e) {}
-    return !fixtureOn();
+    return false;
   }
   var plannerCache = { items: null, inflight: null, painted: 0 };
   function paintPlannerLive(opts) {

@@ -745,6 +745,7 @@
 
   /* ---------- actions ---------- */
   var actions = {
+    '17f-live': function () {},
     'coming-soon': function (el, root) {
       var host = '';
       try { host = String(location.hostname || ''); } catch (e) {}

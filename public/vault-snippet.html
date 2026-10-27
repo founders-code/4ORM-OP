@@ -1,0 +1,16 @@
+<div class="bar" id="barVault"><h1>Vault</h1><span class="sub">every audit, register and important document, with its version and owner</span><div class="r"><input class="search" id="vq" placeholder="Search the vault"></div></div>
+ <div class="bar" id="barControl" style="display:none"><h1>Control room</h1><span class="sub">the system map for 4ormop, plus the other control rooms mapped in</span><div class="r"><div class="seg" id="iseg"><span class="on" data-v="map">4ormop system</span><span data-v="ledger">4ormIQ</span><span data-v="more">+ Map another</span></div></div></div>
+<section id="pg-vault"><div class="vwrap">
+  <div class="card vside"><h3>VAULT</h3><div id="vnav"></div><div class="newl" id="vadd">+ Add a document</div></div>
+  <div class="card" id="vmain">
+   <div class="vhead"><h2 id="vt"></h2><span class="st" id="vst"></span><div class="r"><button class="btn" id="vexp">Export register</button><button class="btn pri" id="vaudit">Run an audit</button></div></div>
+   <div class="kp" id="vkp"></div>
+   <div style="overflow:auto"><table class="v" id="vtab"></table></div>
+  </div>
+ </div></section>
+
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" style="width:min(760px,96vw)"><div class="dtop"><span class="bc" id="dbc"></span><div class="r"><button class="btn" id="dclose">Close</button></div></div><div class="dbody vd" id="dbody"></div><div class="dfoot" id="dfoot"></div></aside>
+<div class="modal" id="modal"><div class="mbox" id="mbox"></div></div>
+<div class="toast" id="toast"><span id="tmsg"></span><b id="tundo" style="display:none"></b></div>

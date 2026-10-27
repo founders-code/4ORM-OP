@@ -1,34 +1,3 @@
-
-
-/* ===== SHELL (shared by every page) ===== */
-:root{--ground:#0b1430;--ground2:#13224a;--side:#08102a;--card:#fff;--ink:#101a33;--ink2:#4a5672;--ink3:#7a86a0;--line:#e8ecf3;--soft:#f5f7fb;
---blue:#2e6bf2;--blue50:#eaf1fe;--green:#12a36a;--green50:#e4f6ee;--amber:#c98408;--amber50:#fff4e0;--red:#e0364f;--red50:#fde9ec;--violet:#6b4fd8;
-font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}
-*{box-sizing:border-box}html,body{margin:0}html{background:#0d1838}
-body{background:linear-gradient(165deg,var(--ground),var(--ground2)) fixed;color:var(--ink);min-height:100vh;display:grid;grid-template-columns:224px minmax(0,1fr);grid-template-rows:56px auto}
-button{font:inherit;cursor:pointer}
-.top{grid-column:1/-1;height:56px;background:#fff;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid var(--line)}
-.logo{display:flex;align-items:center;gap:10px}.logo b{font-size:20px;font-weight:850;letter-spacing:-.03em;color:var(--ink)}.logo b i{font-style:normal;color:var(--blue)}
-.crumb{font-size:14px;font-weight:700;color:var(--ink);padding-left:12px;border-left:1px solid var(--line)}
-.top .r{margin-left:auto;display:flex;align-items:center;gap:8px}
-.tb{height:32px;border:1px solid var(--line);background:#fff;border-radius:9px;padding:0 12px;font-size:12.5px;font-weight:650;color:var(--ink);display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
-.tb .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
-.clock{font-size:12.5px;color:var(--ink3);font-weight:600;white-space:nowrap;margin-left:6px}
-.side{background:var(--side);padding:14px 10px;display:flex;flex-direction:column;gap:2px;min-height:calc(100vh - 56px)}
-.grp{font-size:13.5px;font-weight:850;color:#5b8cff;padding:16px 12px 6px;margin-top:6px;border-top:1px solid rgba(255,255,255,.08);letter-spacing:-.01em}.side .grp:first-child{border-top:none;margin-top:0;padding-top:4px}.side .nav{padding-left:16px}
-.nav{display:flex;align-items:center;gap:11px;padding:8px 12px;border-radius:9px;color:#cfd8ee;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
-.nav svg{width:17px;height:17px;flex:none;stroke:#8fa0c8;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.nav:hover{background:rgba(255,255,255,.05)}
-.nav.on{background:rgba(46,107,242,.22);color:#fff}.nav.on svg{stroke:#9db9ff}
-.nav .n{margin-left:auto;font-size:11px;font-weight:700;color:#b9c6e6;background:rgba(255,255,255,.08);border-radius:999px;padding:1px 8px}
-.main{padding:20px 24px 40px;min-width:0}
-.card{background:var(--card);border-radius:16px;box-shadow:0 10px 30px rgba(3,10,30,.22);min-width:0}
-.ch{display:flex;align-items:center;gap:8px;padding:14px 16px 10px}
-.ch h3{margin:0;font-size:14px;font-weight:800}.ch .s{margin-left:auto;font-size:12px;color:var(--ink3);font-weight:600;white-space:nowrap}
-.lnk{color:var(--blue);font-weight:700;font-size:12.5px;white-space:nowrap;cursor:pointer}
-.foot{padding:10px 16px 14px;font-size:12.5px;color:var(--ink3);border-top:1px solid var(--line)}
-.av{color:#fff!important;font-size:11.5px!important;font-weight:800!important}/*av-fix*/
-
 /* ===== INTEGRATIONS ===== */
 .bar{display:flex;align-items:center;gap:12px;margin-bottom:14px}
 .bar h1{margin:0;font-size:24px;font-weight:850;color:#fff;letter-spacing:-.02em}
@@ -50,3 +19,19 @@ button{font:inherit;cursor:pointer}
 .det span{font-size:11.5px;font-weight:700;border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--ink2);white-space:nowrap}.det span b{color:var(--ink)}
 .why{grid-column:2/-1;background:var(--amber50);color:#8a5d00;border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:600}
 .eyeT,.bellT{font-size:11px;font-weight:800;color:#4a5672;background:#f5f7fb;border-radius:6px;padding:2px 7px;cursor:pointer;white-space:nowrap}.eye{border:none;background:none;padding:0}
+
+/* ===== 17e: Integrations in Neon ===== */
+.port-body{--card:#080c1f;--ink:#e9eefa;--ink2:#aebbe0;--ink3:#7f8db5;--line:#1a2450;--soft:#0e1430;--blue50:#13204a;--green50:#0f2e24;--amber50:#2a2112;--red50:#2a1424;color:#e9eefa}
+.port-body .card{background:#080c1f;border:1px solid rgba(120,150,255,.14);box-shadow:0 14px 40px rgba(0,0,0,.4)}
+.port-body .bar .sub,.port-body .sub{color:#8fa0c8}
+.port-body h2,.port-body h3,.port-body h4,.port-body b{color:#fff}
+.port-body .btn,.port-body button{background:#0e1430;border-color:#2a3a72;color:#e9eefa}
+.port-body .btn.pri,.port-body button.pri{background:#2e6bf2;border-color:#2e6bf2;color:#fff;box-shadow:0 0 14px rgba(46,107,242,.45)}
+.port-body input,.port-body select{background:#0b1430;border-color:#2a3a72;color:#fff}
+.port-body .tile,.port-body .row,.port-body .it,.port-body .conn{background:#0e1430;border-color:rgba(255,255,255,.07)}
+.port-body .tile:hover,.port-body .row:hover{background:#13204a}
+.port-body .ok,.port-body .on{color:#2ee59d}.port-body .off,.port-body .bad{color:#ff6b7d}
+.port-body .pill,.port-body .tag{background:#13204a;color:#9db9ff}
+.port-body .mut,.port-body small{color:#8fa0c8}
+.port-body table th{background:#0b1026;color:#7f8db5;border-bottom-color:#1a2450}
+.port-body table td{border-bottom-color:#141c3c;color:#e9eefa}

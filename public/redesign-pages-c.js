@@ -331,7 +331,7 @@
           var days = Math.max(0, Math.round((t1 - t0) / 86400000));
           var pct = Math.max(3, Math.min(100, Math.round(100 - (days / 60) * 100)));
           var label = new Date(t1).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-          return '<div class="beat" data-action="play-beat"><div class="btop"><span class="n">' + esc(m.title) + '</span><span class="d">' + days + '<small>d</small></span></div><div class="bar"><i style="width:' + pct + '%;background:' + mcol(m) + '"></i></div><div class="f"><span>due ' + esc(label) + '</span><span>' + esc(m.area || 'roadmap') + '</span></div></div>';
+          return '<div class="beat" data-action="play-beat"><div class="btop"><span class="n">' + esc(m.title) + '</span><span class="d">' + days + '<small>days left</small></span></div><div class="bar"><i style="width:' + pct + '%;background:' + mcol(m) + '"></i></div><div class="f"><span>due ' + esc(label) + '</span><span>' + esc(m.area || 'roadmap') + '</span></div></div>';
         }).join('');
         beats.style.display = '';
         if (beatsHead) beatsHead.style.display = '';
@@ -1328,6 +1328,7 @@
       + '<div class="tl"><b>' + (counts.sent || 0) + '</b><span>emails sent</span></div>'
       + '<div class="tl' + (counts.replies ? ' g' : '') + '"><b>' + (counts.replies || 0) + '</b><span>reply in</span></div>'
       + '<div class="tl"><b>' + (counts.pipeline || 0) + '</b><span>pipeline moves</span></div>'
+      + '<div class="tl"><b>' + (counts.news || 0) + '</b><span>news saved</span></div>'
       + '</div>'
       + '<div class="cols">'
       + '<div class="sec"><div class="sh"><b>Done</b><span>' + asList(det.tasks).length + ' tasks</span></div>' + (lines(det.tasks) || '<div class="emp">No tasks captured.</div>') + '</div>'

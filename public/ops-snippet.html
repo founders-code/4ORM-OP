@@ -1,0 +1,99 @@
+<div class="bar" id="barVault" style="display:none"><h1>Vault</h1><span class="sub">every audit, register and important document, with its version and owner</span><div class="r"><input class="search" id="vq" placeholder="Search the vault"></div></div>
+ <div class="bar" id="barControl" style="display:none"><h1>Control room</h1><span class="sub">the system map for 4ormop, plus the other control rooms mapped in</span><div class="r"><div class="seg" id="iseg"><span class="on" data-v="map">4ormop system</span><span data-v="ledger">4ormIQ</span><span data-v="more">+ Map another</span></div></div></div>
+<section id="pg-vault"><div class="vwrap">
+  <div class="card vside"><h3>VAULT</h3><div id="vnav"></div><div class="newl" id="vadd">+ Add a document</div></div>
+  <div class="card" id="vmain">
+   <div class="vhead"><h2 id="vt"></h2><span class="st" id="vst"></span><div class="r"><button class="btn" id="vexp">Export register</button><button class="btn pri" id="vaudit">Run an audit</button></div></div>
+   <div class="kp" id="vkp"></div>
+   <div style="overflow:auto"><table class="v" id="vtab"></table></div>
+  </div>
+ </div></section>
+
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" style="width:min(760px,96vw)"><div class="dtop"><span class="bc" id="dbc"></span><div class="r"><button class="btn" id="dclose">Close</button></div></div><div class="dbody vd" id="dbody"></div><div class="dfoot" id="dfoot"></div></aside>
+<div class="modal" id="modal"><div class="mbox" id="mbox"></div></div>
+<div class="toast" id="toast"><span id="tmsg"></span><b id="tundo" style="display:none"></b></div>
+<div class="bar" id="barControl" ><h1>Control room</h1><span class="sub">the system map for 4ormop, plus the other control rooms mapped in</span><div class="r"><div class="seg" id="iseg"><span class="on" data-v="map">4ormop system</span><span data-v="ledger">4ormIQ</span><span data-v="more">+ Map another</span></div></div></div>
+<section id="pg-ledger">
+ <div class="lgrid">
+  <div class="card"><div class="vhead"><h2>4ormIQ control room</h2><span class="st">mapped in by API, every 5 minutes</span><div class="r"><span class="pill p-green">Live · updated 09:12</span><button class="btn">Open 4ormIQ</button></div></div>
+   <div class="rooms">
+    <div class="room" style="--rc:#19d38a"><h4><i></i>Operations</h4><div class="big">1,240</div><div class="s">checks run this week · 0 errors · p95 1.8 s</div></div>
+    <div class="room" style="--rc:#3b82ff"><h4><i></i>Source health</h4><div class="big">11 / 12</div><div class="s">registers answering · CAFC feed slow (14 s)</div></div>
+    <div class="room" style="--rc:#ffb547"><h4><i></i>Alerts</h4><div class="big">2</div><div class="s">derived from current state, never a stored feed</div><div class="fb">Privacy Officer still unappointed · SEC-001 draft</div></div>
+    <div class="room" style="--rc:#a173ff"><h4><i></i>Compliance risk</h4><div class="big">CR-001 v0.1</div><div class="s">rebuild to v1.0 due · 6 rows with no owner</div></div>
+    <div class="room" style="--rc:#22d3c5"><h4><i></i>Code sweep</h4><div class="big">F10 open</div><div class="s">compliance gate not in repo · 34 orphan scripts</div></div>
+    <div class="room" style="--rc:#ff5fa8"><h4><i></i>Documents</h4><div class="big">14</div><div class="s">controlled · 4 launch blockers in draft</div></div>
+    <div class="room" style="--rc:#f5c443"><h4><i></i>Legal authority</h4><div class="big">LR-001</div><div class="s">every CR row cites an LR row · 0 uncited</div></div>
+    <div class="room" style="--rc:#7f8db5"><h4><i></i>Endpoint</h4><div class="endp" style="background:#0b1430;color:#cfd8ee">GET https://4ormiq.com/api/control-room → rooms[], alerts[], docs[], generated_at · bearer key in Vercel · 4ormop caches 5 min, shows a red "fallback" banner if it does not answer</div></div>
+   </div>
+  </div>
+  <div class="card"><div class="vhead"><h2>Canonical ledger</h2><span class="st">one row per fact that must stay true</span><div class="r"><button class="btn">Export</button></div></div>
+   <div style="padding:0 6px 12px">
+    <div class="led"><span class="h">ID</span><span class="h">Fact</span><span class="h">Hash</span><span class="h">Check</span></div>
+    <div class="led"><b class="id">L-001</b><span>Slogan: "Major financial decisions. Easier to understand. Easier to explain."<br><small>used on landing, data room, deck p1</small></span><span class="hash">a3f9…c21e</span><span class="ch p-cur">match</span></div>
+    <div class="led"><b class="id">L-002</b><span>Tagline: People · Trust · Clear Outcomes<br><small>every deck and one-pager</small></span><span class="hash">7b10…88d4</span><span class="ch p-cur">match</span></div>
+    <div class="led"><b class="id">L-003</b><span>Base case: C$94.7M 2031 revenue (28 Sep 2026 model)<br><small>pro forma, investor summary, deck</small></span><span class="hash">e5c2…0a7f</span><span class="ch p-cur">match</span></div>
+    <div class="led"><b class="id">L-004</b><span>Pre-seed: $2.05M, SAFEs at $15M / $18M / $20M<br><small>v15r workbook, deck, data room</small></span><span class="hash">91ad…3b60</span><span class="ch p-due">deck p14 differs</span></div>
+    <div class="led"><b class="id">L-005</b><span>Canonical "what we do" paragraph (2 Oct 2026)<br><small>4ormfinance.com and data room only</small></span><span class="hash">c0de…f117</span><span class="ch p-cur">match</span></div>
+    <div class="led"><b class="id">L-006</b><span>4ormIQ status: designed and built; the 4orm platform is not built<br><small>every public page</small></span><span class="hash">55e1…9ab2</span><span class="ch p-cur">match</span></div>
+    <div class="led"><b class="id">L-007</b><span>Team: Chad, Kevin, Zahiruddin, Michael Stephens, Matt Mozaffari (technology lead seat)<br><small>team page, decks</small></span><span class="hash">d8f3…41c9</span><span class="ch p-dr">1 page unchecked</span></div>
+    <div class="led"><b class="id">L-008</b><span>Standing Zoom: us06web.zoom.us/j/7783632424<br><small>calendar, email signature</small></span><span class="hash">0b77…e3e3</span><span class="ch p-cur">match</span></div>
+   </div>
+   <div style="padding:0 18px 18px;font-size:12.5px;color:var(--ink3);font-weight:650">Each fact has a canonical value and a list of places it appears. The nightly check hashes every place and flags any drift. Change the canonical value here and it re-flags everywhere until each copy is fixed.</div>
+  </div>
+ </div>
+</section>
+<section id="pg-map"><div class="crwrap">
+
+<div class="con rail" id="rail">
+ <div class="master warn" id="master"><i></i><div><b>DEGRADED</b><small id="msub">1 down &middot; 2 warnings &middot; since 09:14</small></div></div>
+ <div class="lamps" id="lamps"></div>
+ <div class="railr">
+  <span class="upt">UPTIME <b id="upt">42 d 06:11</b></span>
+  <span class="upt">LAST SWEEP <b id="lastsweep">10:27:04</b></span>
+  <button class="cbtn pri" id="sweepNow">Sweep now</button>
+ </div>
+</div>
+
+<div class="con">
+ <div class="conh"><h2>Dials</h2><span class="st">live readings &middot; red past the line means look at it</span>
+  <div class="r"><span class="upt">REFRESH <b id="tick">5 s</b></span><button class="cbtn" id="freeze">Freeze</button><button class="cbtn" id="dialRange">Last hour</button></div></div>
+ <div class="dials" id="dials"></div>
+</div>
+
+<div class="con">
+ <div class="conh"><h2>Engages</h2><span class="st">what is switched on right now &middot; every flip is logged in the Vault</span>
+  <div class="r"><button class="cbtn" id="engLog">Change log</button><button class="cbtn dg" id="safeAll">Everything to safe</button></div></div>
+ <div class="engs" id="engs"></div>
+ <div style="padding:0 18px 16px">
+  <div class="kill"><div><b>MASTER SEND STOP</b><small>Stops every outgoing mail, GoHighLevel included, until you turn it back on. Nothing queued is lost.</small></div>
+   <div class="r"><button class="cbtn dg" id="stopSends">Stop all sends</button><button class="cbtn go" id="resume" disabled>Resume</button></div></div>
+ </div>
+</div>
+
+<div class="con">
+ <div class="conh"><h2>APIs</h2><span class="st">every connection, what it costs, and what it is doing right now</span>
+  <div class="r"><span class="upt">SPEND TODAY <b id="spend">$6.41</b></span><button class="cbtn" id="pingAll">Ping every API</button><button class="cbtn" id="apiLogs">All logs</button></div></div>
+ <div class="apis" id="apis"></div>
+</div>
+
+<div class="con">
+ <div class="conh"><h2>System map</h2><span class="st">every part of 4ormop and what it depends on &middot; click a box to light its chain and run its test</span>
+  <div class="r"><span class="pill p-red" id="mapSum">1 down &middot; 2 warnings</span><button class="cbtn" id="clearSel">Clear</button><button class="cbtn pri" id="runAll">Run every test</button></div></div>
+ <div class="mlegend"><span><i style="background:#19d38a;box-shadow:0 0 8px rgba(25,211,138,.7)"></i>OK</span><span><i style="background:#ffb547;box-shadow:0 0 8px rgba(255,181,71,.7)"></i>Warning</span><span><i style="background:#ff4d6d;box-shadow:0 0 8px rgba(255,77,109,.8)"></i>Down</span><span><i style="background:#3b82ff"></i>Moving data</span><span><i style="background:#ff4d8d"></i>Selected chain</span></div>
+ <div class="mapgrid"><div class="mapwrap"><svg viewBox="0 0 1180 560" id="sysmap"></svg></div></div>
+ <div class="botgrid">
+  <div class="panel"><h4>Tests<span class="r"><button id="onlyBad">Only problems</button></span></h4><div id="tlist" style="max-height:420px;overflow:auto"></div></div>
+  <div class="panel"><h4>Open items<span class="r"><button id="newInc">+ New</button></span></h4><div class="inc" id="incs"></div></div>
+  <div class="panel"><h4>Live tape<span class="r"><button id="tapePause">Pause</button><button id="tapeClear">Clear</button></span></h4><div class="tape" id="tape"></div></div>
+ </div>
+</div>
+
+</div></section>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" style="width:min(760px,96vw)"><div class="dtop"><span class="bc" id="dbc"></span><div class="r"><button class="btn" id="dclose">Close</button></div></div><div class="dbody vd" id="dbody"></div><div class="dfoot" id="dfoot"></div></aside>
+<div class="modal" id="modal"><div class="mbox" id="mbox"></div></div>
+<div class="toast" id="toast"><span id="tmsg"></span><b id="tundo" style="display:none"></b></div>

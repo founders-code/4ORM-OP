@@ -20,7 +20,7 @@
     + '.av{color:#fff;font-weight:800;font-size:11px}'
     + '.desk-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:95;background:#142036;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;display:none;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(3,10,30,.28)}'
     + '.desk-toast.show{display:flex}.desk-toast button{background:#fff;color:#142036;border:0;border-radius:8px;padding:4px 10px;font-weight:800}';
-  var CSS = { drive: '/port-css/drive.css?v=2', int: '/port-css/integrations.css?v=2', neon: '/port-css/neon.css?v=1', intNeon: '/port-css/integrations-neon.css?v=1' };
+  var CSS = { drive: '/port-css/drive.css?v=2', int: '/port-css/integrations.css?v=2', neon: '/port-css/neon.css?v=1', intNeon: '/port-css/integrations-neon.css?v=2' };
   var cssText = {};
   var PAGE_ROWS = 12;
   var TOP_DRIVES = 14;
@@ -80,7 +80,7 @@
     var st = root.querySelector('style');
     if (st && cssText[key] != null && st.getAttribute('data-css') !== key) {
       var extra = key === 'int' ? ((cssText.neon || '') + (cssText.intNeon || '')) : '';
-      st.textContent = TOKEN + extra + cssText[key];
+      st.textContent = TOKEN + cssText[key] + extra;
       st.setAttribute('data-css', key);
       var wrap = root.querySelector('.port-body');
       if (wrap && key === 'int') wrap.classList.add('neon');
