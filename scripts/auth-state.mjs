@@ -177,6 +177,15 @@ export async function signInAsChad(page, origin = LIVE_ORIGIN) {
 
   await page.goto(origin + '/planner', { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForSelector('#warDesk', { timeout: 20000, state: 'attached' });
+  await page.waitForFunction(() => {
+    const clerkObj = window.Clerk || window.__clerk;
+    const user = clerkObj && clerkObj.user;
+    if (!user) return false;
+    const email = (user.primaryEmailAddress && user.primaryEmailAddress.emailAddress) ||
+      (Array.isArray(user.emailAddresses) && user.emailAddresses[0] && (user.emailAddresses[0].emailAddress || user.emailAddresses[0].email_address)) ||
+      '';
+    return !!email;
+  }, { timeout: 20000 }).catch(() => {});
   const who = await page.evaluate(() => {
     const clerkObj = window.Clerk || window.__clerk;
     const user = clerkObj && clerkObj.user;

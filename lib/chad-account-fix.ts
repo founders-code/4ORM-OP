@@ -30,7 +30,8 @@ export async function listDeletedBoxes(sql: Sql, ownerId: string) {
     FROM email_boxes b
     WHERE b.owner_id = ${ownerId}
       AND b.deleted_at IS NOT NULL
-      AND b.deleted_at::date = DATE '2026-10-26'
+      AND b.deleted_at >= TIMESTAMPTZ '2026-10-26 00:00:00+00'
+      AND b.key <> 'n1793051997159'
     ORDER BY b.deleted_at, b.name
   `;
 }
@@ -82,10 +83,15 @@ export async function applyChadAccountFix(sql: Sql, ownerIds: string[]) {
       SELECT id, x, y, w, h, canvas_x, canvas_y FROM sticky_notes
       WHERE owner_id = ${ownerId} AND deleted_at IS NULL
     `;
-    const laidNotes = tidyLayout(notes as { id: unknown; canvas_w?: unknown; canvas_h?: unknown }[]);
-    const laidStick = tidyLayout((stickies as { id: unknown; w?: unknown; h?: unknown }[]).map((n) => ({
-      id: n.id, canvas_w: n.w, canvas_h: n.h, w: n.w, h: n.h,
-    })));
+    const combined = (notes as { id: unknown; canvas_w?: unknown; canvas_h?: unknown }[]).concat(
+      (stickies as { id: unknown; w?: unknown; h?: unknown }[]).map((n) => ({
+        id: n.id, canvas_w: n.w, canvas_h: n.h, w: n.w, h: n.h,
+      }))
+    );
+    const laidAll = tidyLayout(combined);
+    const noteIds = new Set((notes as { id?: string }[]).map((n) => String(n.id)));
+    const laidNotes = laidAll.filter((n) => noteIds.has(n.id));
+    const laidStick = laidAll.filter((n) => !noteIds.has(n.id));
     for (const n of laidNotes) {
       await sql`
         UPDATE notes SET canvas_x = ${n.x}, canvas_y = ${n.y}, canvas_w = ${n.w}, canvas_h = ${n.h}

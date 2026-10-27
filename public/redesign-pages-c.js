@@ -928,9 +928,17 @@
     return months[start.getMonth()] + ' ' + start.getDate() + ' – ' + months[end.getMonth()] + ' ' + end.getDate();
   }
   function ymdOf(raw) {
+    if (typeof raw === 'number' && Number.isFinite(raw)) {
+      var epoch = raw > 1e12 ? raw : (raw > 20000 ? raw * 86400000 : NaN);
+      var dn = new Date(epoch);
+      if (Number.isFinite(dn.getTime())) {
+        return dn.getUTCFullYear() + '-' + String(dn.getUTCMonth() + 1).padStart(2, '0') + '-' + String(dn.getUTCDate()).padStart(2, '0');
+      }
+    }
     var s = String(raw || '');
     var m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
     if (m) return m[1] + '-' + m[2] + '-' + m[3];
+    if (/^\d+$/.test(s)) return ymdOf(Number(s));
     var d = new Date(s);
     if (!Number.isFinite(d.getTime())) return '';
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -1245,11 +1253,11 @@
       var due = dueMs(it);
       return due && due < d30 && due >= d60;
     });
-    var thin = dayN < 7;
+    var thin = dayN < 7 && done30.length < 7;
     function pctN(a, b) { return b ? Math.round(100 * a / b) : 0; }
     var onPct = !datedDone.length ? '-' : (pctN(onTime.length, datedDone.length) + '%');
-    var cons = thin ? '-' : (dayN + ' / 30');
-    var fallTxt = thin ? '-' : (fall.length + ' · ' + pctN(fall.length, itemsAll.length) + '%');
+    var cons = (dayN || done30.length) ? (dayN + ' / 30') : '-';
+    var fallTxt = fall.length + ' · ' + pctN(fall.length, itemsAll.length) + '%';
     var weeks = [];
     for (var w = 7; w >= 0; w--) {
       var from = now - (w + 1) * 7 * 86400000, to = now - w * 7 * 86400000;
@@ -1280,7 +1288,7 @@
     var statsHtml = '<div class="house"><div class="hx"><b>' + onPct + '</b><span>On time</span><em>' + (thin || !prevDated.length ? '' : 'vs prior 30 days ' + pctN(prevOn.length, prevDated.length) + '%') + '</em></div>'
       + '<div class="hx"><b>' + cons + '</b><span>Consistency</span><em>' + (thin ? '' : 'days with at least one item done') + '</em></div>'
       + '<div class="hx"><b>' + fallTxt + '</b><span>Fall-off</span><em>overdue never done, or dropped</em></div>'
-      + '<div class="hx"><b>' + (thin ? '-' : thru) + '</b><span>Throughput</span><div class="bars">' + bars + '</div></div>'
+      + '<div class="hx"><b>' + thru + '</b><span>Throughput</span><div class="bars">' + bars + '</div></div>'
       + '<div class="hx wide"><b>Slipping by area</b><span>' + (slip.map(function (s) { return esc(s[0]) + ' ' + s[1]; }).join(' · ') || '-') + '</span></div>'
       + '<div class="hx wide"><b>What to improve</b>' + tips.slice(0, 3).map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') + '</div></div>';
     wrap.innerHTML = '<div class="bar"><h1>Completed</h1><span class="sub">A snapshot of every day, saved at 23:55 — what moved, who you met, what you owe</span><div class="r"><button class="btn" type="button" data-action="done-search">Search days</button><button class="btn pri" type="button" id="snapNowLive" data-action="done-snap">Snapshot now</button></div></div>'
