@@ -10,6 +10,8 @@ window.bindPlannerPage = function (root, liveItems) {
   document.querySelector = qs;
   document.querySelectorAll = qsa;
   document.addEventListener = on;
+  document.createElement = function (t) { return window.document.createElement(t); };
+  document.createTextNode = function (t) { return window.document.createTextNode(t); };
   root.__pageBound = true;
 
 
