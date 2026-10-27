@@ -1346,7 +1346,7 @@
         paintNotesLive();
         return;
       }
-      var warView = /\/planner\/?$/.test(path) || /\/timeline\/?$/.test(path) || /\/war-room\/?$/.test(path) || /(?:^|[?&])view=war(?:&|$)/.test(q);
+      var warView = /\/war-room\/?$/.test(path) || /(?:^|[?&])view=war(?:&|$)/.test(q);
       var other = /(?:^|[?&])view=/.test(q) && !/(?:^|[?&])view=war(?:&|$)/.test(q) && !/(?:^|[?&])view=room(?:&|$)/.test(q);
       if (warView && !other) {
         var vw = document.getElementById('v-war');
