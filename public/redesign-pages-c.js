@@ -26,7 +26,7 @@
   var D = 'done', M = 'miss', O = 'off', U = 'due', N = 'next';
   /* [label, real route]. Rooms without a page of their own point at the page
      where that work happens. */
-  var ROOMS = { war: ['War Room', '/war-room'], studio: ['War Room', '/war-room'], li: ['Contacts', '/control-room?view=people'], pipe: ['Pipeline', '/pipeline'], spaces: ['Spaces', '/spaces'], msg: ['Email', '/email'], news: ['News', '/news'], iq: ['4ormIQ', 'https://4ormiq.com'], done: ['Completed', '/completed'], contacts: ['Contacts', '/control-room?view=people'], team: ['Email', '/email'], dash: ['War Room', '/war-room'] };
+  var ROOMS = { war: ['Planner', '/planner'], studio: ['LinkedIn', '/messages?ch=linkedin'], li: ['LinkedIn', '/messages?ch=linkedin'], pipe: ['Pipeline', '/pipeline'], spaces: ['Spaces', '/spaces'], msg: ['Email', '/email'], news: ['News', '/news'], iq: ['4ormIQ', '/4ormiq'], done: ['Completed', '/completed'], contacts: ['Contacts', '/contacts'], team: ['Email', '/email'], dash: ['Completed', '/completed'], fin: ['Financials', '/financials'] };
   var ZC = ['#2E6BF2', '#0E8A5F', '#C9962B', '#6B4FD8', '#D6334E', '#0f9fb5', '#e2702b'];
   function ini(n) { return String(n || '').split(' ').map(function (x) { return x[0] || ''; }).join('').slice(0, 2).toUpperCase(); }
   function zcol(n) { return ZC[String(n || '').split('').reduce(function (a, c) { return a + c.charCodeAt(0); }, 0) % ZC.length]; }
@@ -41,17 +41,19 @@
   }
   function roomOf(route) {
     var r = String(route || '');
+    if (r === 'fin' || /financ/.test(r)) return 'fin';
     if (/war/.test(r)) return 'war';
-    if (/studio|clip|video/.test(r)) return 'studio';
-    if (/link|li|linkedin/.test(r)) return 'li';
+    if (r === 'studio' || /studio|video/.test(r)) return 'studio';
+    if (r === 'li' || /linkedin/.test(r)) return 'li';
     if (/pipe/.test(r)) return 'pipe';
     if (/space/.test(r)) return 'spaces';
     if (/mail|msg|inbox/.test(r)) return 'msg';
     if (/news/.test(r)) return 'news';
     if (/iq|4ormiq/.test(r)) return 'iq';
-    if (/done|complete|snap/.test(r)) return 'done';
+    if (/done|complete/.test(r)) return 'done';
     if (/contact|people/.test(r)) return 'contacts';
     if (/team/.test(r)) return 'team';
+    if (r === 'dash') return 'dash';
     return 'dash';
   }
   function colorVar(c) {
@@ -462,7 +464,7 @@
     function parse() {
       var items = [
         { c: 'var(--pink)', t: 'Post today’s clip', k: 'play done', cls: 'g', r: 2 },
-        { c: 'var(--green)', t: 'Reach out 5', k: '3 / 5', cls: 'g', r: 4, v: '3/5' },
+        { c: 'var(--green)', t: 'Reach out to 5', k: '3 / 5', cls: 'g', r: 4, v: '3/5' },
         { c: 'var(--sky)', t: 'Engage 10 min', k: '4 / 5', cls: 'g', r: 3, v: '4/5' },
         { c: 'var(--blue)', t: 'Send Kevin the GTM deck', k: '+ Execution · Tue', cls: 'b' },
         { c: 'var(--amber)', t: 'Newsletter: RPAA deadline angle', k: 'note → Newsletter', cls: 'a' }
@@ -614,7 +616,7 @@
       markReady('playDesk');
       return;
     }
-    loadSnip('/pbwrap-snippet.html?v=2', function (html) {
+    loadSnip('/pbwrap-snippet.html?v=3', function (html) {
       try {
         wrap.innerHTML = html || '<div class="pbwrap"></div>';
         if (!fixtureOn()) {

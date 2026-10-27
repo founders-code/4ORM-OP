@@ -19,6 +19,7 @@ const PAGES = {
     { name: 'Signals detail', live: 'control-room.html?view=war&fixture=mockup&sigdetail=1', ready: '#warDesk[data-port-ready]', host: 'warDesk' },
     { name: 'Links', live: 'control-room.html?view=links&fixture=mockup', ready: '#linksDesk[data-port-ready]', host: 'linksDesk' },
     { name: 'Recordings', live: 'control-room.html?view=rec&fixture=mockup', ready: '#recDesk[data-port-ready]', host: 'recDesk' },
+    { name: 'Playbook wording', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', host: 'playDesk' },
     { name: 'News', live: 'control-room.html?view=news', ready: '#v-news', host: 'v-news', waitCards: true },
     { name: 'Financials', live: 'control-room.html?view=finance', ready: '#v-finance', host: 'v-finance', waitCards: true },
   ],
@@ -54,7 +55,7 @@ function serve() {
       const url = new URL(req.url, 'http://127.0.0.1');
       let pathName = decodeURIComponent(url.pathname);
       if (pathName === '/') pathName = '/index.html';
-      if (/^\/(control-room|war-room|planner|timeline|notes|links|pipeline|spaces|documents|email|playbook|calendar|zoom|completed|people|recordings|news|financials|finance)$/.test(pathName)) pathName = '/control-room.html';
+      if (/^\/(control-room|war-room|planner|timeline|notes|links|pipeline|spaces|documents|email|playbook|calendar|zoom|completed|people|recordings|news|financials|finance|contacts|messages|4ormiq)$/.test(pathName)) pathName = '/control-room.html';
       const tries = [join(ROOT, 'public', pathName), join(ROOT, 'design-reference', pathName)];
       let body = null;
       let used = '';
@@ -796,6 +797,62 @@ async function main() {
       if (!pass) failed = true;
       rows.push({ page: spec.name, withAction: inv.withAction, without: inv.without, comingSoon: coming, pass });
       console.log(`A  ${spec.name.padEnd(16)} with=${inv.withAction}  without=${inv.without}  comingSoon=${coming}  ${pass ? 'PASS' : 'FAIL'}`);
+    }
+
+    if (STEP === '1') {
+      await page.goto(`http://127.0.0.1:${port}/control-room.html?view=playbook&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#playDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+      const want = [
+        ['One move', 'Planner', '/planner', 'war', 'v-war'],
+        ['Record 30-min video', 'LinkedIn', '/messages?ch=linkedin', 'studio', 'linkedin'],
+        ['Post today’s clip', 'LinkedIn', '/messages?ch=linkedin', 'li', 'linkedin'],
+        ['Engage 10 min', 'LinkedIn', '/messages?ch=linkedin', 'li', 'linkedin'],
+        ['Reach out to 5', 'Pipeline', '/pipeline', 'pipe', 'v-contacts'],
+        ['Investor touch', 'Spaces', '/spaces', 'spaces', 'v-work'],
+        ['Inbox zero', 'Email', '/email', 'msg', 'v-mail'],
+        ['Clear commitments', 'Planner', '/planner', 'war', 'v-war'],
+        ['Check 4ormIQ', '4ormIQ', '/4ormiq', 'iq', 'iq'],
+        ['News sweep', 'News', '/news', 'news', 'v-news'],
+        ['Shutdown + snapshot', 'Completed', '/completed', 'done', 'v-done'],
+        ['Schedule clips', 'LinkedIn', '/messages?ch=linkedin', 'studio', 'linkedin'],
+        ['Chase cold contacts', 'Contacts', '/contacts', 'contacts', 'v-people'],
+        ['Speer sync', 'Email', '/email', 'team', 'v-mail'],
+        ['Metrics snapshot', 'Financials', '/financials', 'fin', 'v-finance'],
+        ['Weekly review', 'Completed', '/completed', 'dash', 'v-done']
+      ];
+      const listed = await page.evaluate(() => {
+        const root = document.getElementById('playDesk').shadowRoot;
+        return [...root.querySelectorAll('.track')].map((el) => {
+          const t = el.querySelector('.t');
+          const name = t ? String(t.childNodes[0] && t.childNodes[0].textContent || t.textContent || '').replace(/\s*NEW\s*$/, '').trim() : '';
+          const a = el.querySelector('a[data-action="play-go"]');
+          return { name, link: a ? (a.textContent || '').replace(/\s*→\s*$/, '').replace(/\s*&rarr;\s*$/, '').trim() : '', href: a ? a.getAttribute('href') : '', view: a ? a.getAttribute('data-view') : '' };
+        });
+      });
+      const listOk = listed.length === want.length && want.every((w, i) => listed[i] && listed[i].name === w[0] && listed[i].link.replace(/\s+/g, ' ').indexOf(w[1]) === 0 && listed[i].href === w[2]);
+      clicks.push({ page: 'Playbook', control: '16 row names + links', dom: listOk, net: true, persist: true, pass: listOk });
+      if (!listOk) console.log('Playbook rows', JSON.stringify(listed));
+      page.on('popup', (p) => p.close().catch(() => {}));
+      for (let i = 0; i < want.length; i += 1) {
+        await page.goto(`http://127.0.0.1:${port}/control-room.html?view=playbook&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+        await page.waitForSelector('#playDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+        const dest = want[i][4];
+        const opened = await page.evaluate((idx) => {
+          const root = document.getElementById('playDesk').shadowRoot;
+          const links = [...root.querySelectorAll('a[data-action="play-go"]')];
+          const a = links[idx];
+          if (!a) return { ok: false };
+          a.click();
+          const view = a.getAttribute('data-view');
+          if (view === 'iq' || view === 'studio' || view === 'li') return { ok: true, ext: true };
+          const id = ({ war: 'v-war', pipe: 'v-contacts', spaces: 'v-work', msg: 'v-mail', news: 'v-news', done: 'v-done', contacts: 'v-people', team: 'v-mail', dash: 'v-done', fin: 'v-finance' })[view];
+          const el = id && document.getElementById(id);
+          return { ok: !!(el && !el.hidden), id };
+        }, i);
+        const pass = !!(opened && opened.ok);
+        if (!pass) failed = true;
+        clicks.push({ page: 'Playbook', control: want[i][0] + ' → ' + want[i][1], dom: pass, net: true, persist: true, pass });
+      }
     }
 
     if (STEP === '2') {

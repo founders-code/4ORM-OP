@@ -3656,10 +3656,11 @@
     },
     'play-go': function (el, root) {
       var room = attr(el, 'data-view') || 'war';
-      var map = { war: 'war', studio: 'war', li: 'people', pipe: 'contacts', spaces: 'work', msg: 'mail', news: 'news', done: 'done', contacts: 'people', team: 'mail', dash: 'war' };
+      var map = { war: 'war', pipe: 'contacts', spaces: 'work', msg: 'mail', news: 'news', done: 'done', contacts: 'people', team: 'mail', dash: 'done', fin: 'finance' };
       var M = window.__playMount;
       if (M && M.pop) M.pop.classList.remove('show');
       if (room === 'iq') { window.open('https://4ormiq.com', '_blank', 'noopener'); return; }
+      if (room === 'studio' || room === 'li') { window.open('https://www.linkedin.com/', '_blank', 'noopener'); return; }
       go(map[room] || 'war');
       toast(root, 'Opening that desk');
     },
@@ -3670,7 +3671,10 @@
       var idx = M.todayIdx || 0;
       var due = M.rows.filter(function (r) { return r.d && (r.d[idx] === 'due' || r.d[idx] === 'next'); })[0];
       var rm = due && due.room ? due.room : 'war';
-      go(rm === 'dash' ? 'room' : rm);
+      if (rm === 'iq') { window.open('https://4ormiq.com', '_blank', 'noopener'); return; }
+      if (rm === 'studio' || rm === 'li') { window.open('https://www.linkedin.com/', '_blank', 'noopener'); return; }
+      var runMap = { war: 'war', pipe: 'contacts', spaces: 'work', msg: 'mail', news: 'news', done: 'done', contacts: 'people', team: 'mail', dash: 'done', fin: 'finance' };
+      go(runMap[rm] || 'war');
       toast(root, due ? ('Running ' + due.n) : "Today's plays");
     },
     'play-done': function (el, root) {

@@ -8,23 +8,31 @@ type Sql = NeonQueryFunction<false, false>;
 const DOW = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 export const SEED_RHYTHMS = [
-  { name: 'One move', color: '--blue', route: 'war', sub: '', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 1, nw: 0 },
-  { name: '30-min video', color: '--red', route: 'studio', sub: 'Mon-Fri', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 2, nw: 0 },
-  { name: 'Post today\'s clip', color: '--pink', route: 'li', sub: '', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 3, nw: 1 },
-  { name: 'Engage 10 min', color: '--sky', route: 'li', sub: 'comment on 5', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '5', sort: 4, nw: 1 },
-  { name: 'Reach out 5', color: '--green', route: 'pipe', sub: '', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '5', sort: 5, nw: 0 },
-  { name: 'Raise touch', color: '--gold', route: 'spaces', sub: 'one cheque closer', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 6, nw: 1 },
+  { name: 'One move', color: '--blue', route: 'war', sub: 'your top step today', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 1, nw: 0 },
+  { name: 'Record 30-min video', color: '--red', route: 'studio', sub: 'the source of the week’s clips', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 2, nw: 0 },
+  { name: 'Post today’s clip', color: '--pink', route: 'li', sub: 'one clip from the video', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 3, nw: 1 },
+  { name: 'Engage 10 min', color: '--sky', route: 'li', sub: 'comment on 5 posts', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '5', sort: 4, nw: 1 },
+  { name: 'Reach out to 5', color: '--green', route: 'pipe', sub: 'brokers and partners', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '5', sort: 5, nw: 0 },
+  { name: 'Investor touch', color: '--gold', route: 'spaces', sub: 'one cheque closer', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 6, nw: 1 },
   { name: 'Inbox zero', color: '--violet', route: 'msg', sub: '', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat'], target: '', sort: 7, nw: 0 },
-  { name: 'Clear commitments', color: '--orange', route: 'war', sub: 'after calls', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 8, nw: 1 },
+  { name: 'Clear commitments', color: '--orange', route: 'war', sub: 'what you promised on calls', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 8, nw: 1 },
   { name: 'Check 4ormIQ', color: '--lime', route: 'iq', sub: 'launch prep → users', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 9, nw: 1 },
   { name: 'News sweep', color: '--teal', route: 'news', sub: '', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 10, nw: 0 },
-  { name: 'Shutdown + snapshot', color: '--slate', route: 'done', sub: '5 min', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '6pm', sort: 11, nw: 1 },
-  { name: 'Schedule clips', color: '--pink', route: 'studio', sub: 'Mon', grp: 'Weekly', schedule: ['mon'], target: '', sort: 12, nw: 0 },
-  { name: 'Chase cold', color: '--amber', route: 'contacts', sub: 'Tue', grp: 'Weekly', schedule: ['tue'], target: '', sort: 13, nw: 0 },
+  { name: 'Shutdown + snapshot', color: '--slate', route: 'done', sub: '5 min, end of day', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '6pm', sort: 11, nw: 1 },
+  { name: 'Schedule clips', color: '--pink', route: 'studio', sub: 'Mon, the week’s 5 clips', grp: 'Weekly', schedule: ['mon'], target: '', sort: 12, nw: 0 },
+  { name: 'Chase cold contacts', color: '--amber', route: 'contacts', sub: 'Tue', grp: 'Weekly', schedule: ['tue'], target: '', sort: 13, nw: 0 },
   { name: 'Speer sync', color: '--teal', route: 'team', sub: 'Wed', grp: 'Weekly', schedule: ['wed'], target: '', sort: 14, nw: 1 },
-  { name: 'Metrics snapshot', color: '--sky', route: 'dash', sub: 'Thu', grp: 'Weekly', schedule: ['thu'], target: '', sort: 15, nw: 1 },
+  { name: 'Metrics snapshot', color: '--sky', route: 'fin', sub: 'Thu', grp: 'Weekly', schedule: ['thu'], target: '', sort: 15, nw: 1 },
   { name: 'Weekly review', color: '--white', route: 'dash', sub: 'Fri', grp: 'Weekly', schedule: ['fri'], target: '', sort: 16, nw: 0 },
 ];
+
+const RHYTHM_ALIASES: Record<string, string[]> = {
+  'Record 30-min video': ['30-min video'],
+  'Post today’s clip': ["Post today's clip"],
+  'Reach out to 5': ['Reach out 5'],
+  'Investor touch': ['Raise touch'],
+  'Chase cold contacts': ['Chase cold'],
+};
 
 function weekdayOf(day: string) {
   const [y, m, d] = String(day).split('-').map(Number);
@@ -103,10 +111,28 @@ function padState(opts: {
 export async function seedRhythms(sql: Sql, ownerId: string) {
   for (const row of SEED_RHYTHMS) {
     try {
+      const aliases = RHYTHM_ALIASES[row.name] || [];
+      for (const old of aliases) {
+        await sql`
+          UPDATE playbook_rhythms
+          SET name = ${row.name}
+          WHERE owner_id = ${ownerId} AND name = ${old}
+        `;
+      }
+      await sql`
+        UPDATE playbook_rhythms
+        SET name = ${row.name}, route = ${row.route}, sub = ${row.sub}, grp = ${row.grp}
+        WHERE owner_id = ${ownerId} AND sort = ${row.sort} AND cadence IS NULL
+      `;
       await sql`
         INSERT INTO playbook_rhythms (owner_id, name, color, route, schedule, target, sort, active, sub, grp)
         VALUES (${ownerId}, ${row.name}, ${row.color}, ${row.route}, ${JSON.stringify(row.schedule)}::jsonb, ${row.target}, ${row.sort}, true, ${row.sub}, ${row.grp})
         ON CONFLICT (owner_id, name) DO NOTHING
+      `;
+      await sql`
+        UPDATE playbook_rhythms
+        SET route = ${row.route}, sub = ${row.sub}, grp = ${row.grp}
+        WHERE owner_id = ${ownerId} AND name = ${row.name} AND cadence IS NULL
       `;
       await sql`
         UPDATE playbook_rhythms

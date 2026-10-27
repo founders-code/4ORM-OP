@@ -4,22 +4,22 @@
   var D = 'done', M = 'miss', O = 'off', U = 'due', N = 'next';
   var PB_ROWS = [
     { s: 'Daily' },
-    { n: 'One move', room: 'war', c: '--blue', d: [U, N, N, N, N, O, O], lab: ['GO'], st: '<b>2</b> days' },
-    { n: '30-min video', room: 'studio', sub: 'Mon-Fri', c: '--red', d: [U, N, N, N, N, O, O], lab: ['GO'], st: '<b>3</b> / 5' },
-    { n: "Post today’s clip", room: 'li', c: '--pink', d: [U, N, N, N, N, O, O], lab: ['GO'], st: '<b>4</b> / 5', nw: 1 },
-    { n: 'Engage 10 min', room: 'li', sub: 'comment on 5', c: '--sky', d: [U, N, N, N, N, O, O], lab: ['0/5'], st: '<b>3</b> / 5', nw: 1 },
-    { n: 'Reach out 5', room: 'pipe', c: '--green', d: [U, N, N, N, N, O, O], lab: ['2/5'], st: '<b>21</b> sent' },
-    { n: 'Raise touch', room: 'spaces', sub: 'one cheque closer', c: '--gold', d: [U, N, N, N, N, O, O], lab: ['GO'], st: '<b>$170K</b> to go', nw: 1 },
+    { n: 'One move', room: 'war', sub: 'your top step today', c: '--blue', d: [U, N, N, N, N, O, O], lab: ['GO'], st: '<b>2</b> days' },
+    { n: 'Record 30-min video', room: 'studio', sub: 'the source of the week’s clips', c: '--red', d: [U, N, N, N, N, O, O], lab: ['GO'], st: '<b>3</b> / 5' },
+    { n: 'Post today’s clip', room: 'li', sub: 'one clip from the video', c: '--pink', d: [U, N, N, N, N, O, O], lab: ['GO'], st: '<b>4</b> / 5', nw: 1 },
+    { n: 'Engage 10 min', room: 'li', sub: 'comment on 5 posts', c: '--sky', d: [U, N, N, N, N, O, O], lab: ['0/5'], st: '<b>3</b> / 5', nw: 1 },
+    { n: 'Reach out to 5', room: 'pipe', sub: 'brokers and partners', c: '--green', d: [U, N, N, N, N, O, O], lab: ['2/5'], st: '<b>21</b> sent' },
+    { n: 'Investor touch', room: 'spaces', sub: 'one cheque closer', c: '--gold', d: [U, N, N, N, N, O, O], lab: ['GO'], st: '<b>$170K</b> to go', nw: 1 },
     { n: 'Inbox zero', room: 'msg', c: '--violet', d: [U, N, N, N, N, N, O], lab: ['5'], st: '<b>4</b> days' },
-    { n: 'Clear commitments', room: 'war', sub: 'after calls', c: '--orange', d: [U, N, N, N, N, O, O], lab: ['3'], st: '<b>3</b> open', nw: 1 },
+    { n: 'Clear commitments', room: 'war', sub: 'what you promised on calls', c: '--orange', d: [U, N, N, N, N, O, O], lab: ['3'], st: '<b>3</b> open', nw: 1 },
     { n: 'Check 4ormIQ', room: 'iq', sub: 'launch prep → users', c: '--lime', d: [U, N, N, N, N, O, O], lab: ['7d'], st: '<b>0</b> / 1,000', nw: 1 },
     { n: 'News sweep', room: 'news', c: '--teal', d: [U, N, N, N, N, O, O], lab: ['GO'], st: '<b>9</b> days' },
-    { n: 'Shutdown + snapshot', room: 'done', sub: '5 min', c: '--slate', d: [U, N, N, N, N, O, O], lab: ['6pm'], st: '<b>4</b> days', nw: 1 },
+    { n: 'Shutdown + snapshot', room: 'done', sub: '5 min, end of day', c: '--slate', d: [U, N, N, N, N, O, O], lab: ['6pm'], st: '<b>4</b> days', nw: 1 },
     { s: 'Weekly' },
-    { n: 'Schedule clips', room: 'studio', sub: 'Mon', c: '--pink', d: [U, O, O, O, O, O, O], lab: ['GO'], st: 'weekly' },
-    { n: 'Chase cold', room: 'contacts', sub: 'Tue', c: '--amber', d: [O, N, O, O, O, O, O], lab: ['GO'], st: 'weekly' },
+    { n: 'Schedule clips', room: 'studio', sub: 'Mon, the week’s 5 clips', c: '--pink', d: [U, O, O, O, O, O, O], lab: ['GO'], st: 'weekly' },
+    { n: 'Chase cold contacts', room: 'contacts', sub: 'Tue', c: '--amber', d: [O, N, O, O, O, O, O], lab: ['GO'], st: 'weekly' },
     { n: 'Speer sync', room: 'team', sub: 'Wed', c: '--teal', d: [O, O, N, O, O, O, O], lab: ['GO'], st: 'weekly', nw: 1 },
-    { n: 'Metrics snapshot', room: 'dash', sub: 'Thu', c: '--sky', d: [O, O, O, N, O, O, O], lab: ['GO'], st: 'weekly', nw: 1 },
+    { n: 'Metrics snapshot', room: 'fin', sub: 'Thu', c: '--sky', d: [O, O, O, N, O, O, O], lab: ['GO'], st: 'weekly', nw: 1 },
     { n: 'Weekly review', room: 'dash', sub: 'Fri', c: '--white', d: [O, O, O, O, N, O, O], lab: ['GO'], st: 'weekly' }
   ];
   var ZOOM_M = [
