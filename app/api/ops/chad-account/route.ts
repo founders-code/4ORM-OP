@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { applyChadAccountFix, archiveClaudeTestItems, chadDoneCounts, listDeletedBoxes, restoreDeletedBoxes, searchBoxesElsewhere } from '@/lib/chad-account-fix';
+import { applyChadAccountFix, archiveClaudeTestItems, archiveJunkBox, chadDoneCounts, importSnapshotBoxes, listDeletedBoxes, listRestoreLogs, restoreDeletedBoxes, searchBoxesElsewhere } from '@/lib/chad-account-fix';
 import { getSql } from '@/lib/db';
 import { fail } from '@/lib/log';
 import { isRoomEmail, openBoard, roomOwner, sessionEmail } from '@/lib/session';
@@ -43,9 +43,15 @@ export async function GET() {
         ORDER BY name
       `;
       const counts = await chadDoneCounts(sql, ownerId);
-      boxes.push({ ownerId, deleted, live, allBoxes, elsewhere, done: counts });
+      const restoreLogs = await listRestoreLogs(sql, ownerId);
+      boxes.push({ ownerId, deleted, live, allBoxes, elsewhere, restoreLogs, done: counts });
     }
-    return NextResponse.json({ ok: true, readOnly: true, owners, boxes });
+    const pitr = {
+      neonProject: process.env.NEON_PROJECT_ID ? 'set' : 'missing',
+      neonApiKey: process.env.NEON_API_KEY || process.env.NEON_API_TOKEN ? 'set' : 'missing',
+      note: 'A read-only PITR branch needs NEON_API_KEY. It is not in Vercel env; DATABASE_URL is Sensitive and cannot be pulled locally.',
+    };
+    return NextResponse.json({ ok: true, readOnly: true, owners, boxes, pitr });
   } catch (err) {
     fail('chad_account_get', err);
     return NextResponse.json({ error: 'Could not list Chad account rows.' }, { status: 500 });
@@ -56,13 +62,23 @@ export async function POST(req: Request) {
   try {
     const gate = await chadOnly();
     if ('error' in gate && gate.error) return gate.error;
-    const body = (await req.json().catch(() => null)) as { apply?: boolean; restoreBoxes?: boolean; archiveClaudeTests?: boolean } | null;
-    if (!body?.apply && !body?.restoreBoxes && !body?.archiveClaudeTests) return NextResponse.json({ error: 'Send { apply: true } or { restoreBoxes: true }.' }, { status: 400 });
+    const body = (await req.json().catch(() => null)) as { apply?: boolean; restoreBoxes?: boolean; archiveClaudeTests?: boolean; archiveJunkBox?: boolean; importBoxes?: unknown[] } | null;
+    if (!body?.apply && !body?.restoreBoxes && !body?.archiveClaudeTests && !body?.archiveJunkBox && !body?.importBoxes) return NextResponse.json({ error: 'Send { apply: true } or { restoreBoxes: true }.' }, { status: 400 });
     const { sql, owners } = gate as { sql: NonNullable<Awaited<ReturnType<typeof getSql>>>; owners: string[] };
     if (body.restoreBoxes) {
       const restored = [];
       for (const ownerId of owners) restored.push({ ownerId, ...(await restoreDeletedBoxes(sql, ownerId)) });
       return NextResponse.json({ ok: true, restoreBoxes: true, restored });
+    }
+    if (body.archiveJunkBox) {
+      const archived = [];
+      for (const ownerId of owners) archived.push({ ownerId, ...(await archiveJunkBox(sql, ownerId)) });
+      return NextResponse.json({ ok: true, archiveJunkBox: true, archived });
+    }
+    if (Array.isArray(body.importBoxes)) {
+      const imported = [];
+      for (const ownerId of owners) imported.push({ ownerId, ...(await importSnapshotBoxes(sql, ownerId, body.importBoxes as Record<string, unknown>[])) });
+      return NextResponse.json({ ok: true, importBoxes: true, imported });
     }
     if (body.archiveClaudeTests) {
       const archived = [];

@@ -47,7 +47,7 @@
     contacts: '/port-css/pipeline.css?v=5', work: '/port-css/spaces.css?v=9', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css?v=3',
     links: '/port-css/links.css?v=5', mail: '/port-css/email.css?v=8', mailPeople: '/port-css/email-people.css?v=6',
     playbook: '/port-css/playbook.css?v=2', calendar: '/port-css/calendar.css?v=5', zoom: '/port-css/zoom.css?v=2',
-    completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=2'
+    completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=3'
   };
   var HOSTS = {
     opsDash: 'room', warDesk: 'war', notesDesk: 'notes',

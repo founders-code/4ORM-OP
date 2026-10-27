@@ -137,7 +137,8 @@
     "page": "Email compose panel",
     "route": "/email (Compose open)",
     "bytes": 54399,
-    "sha256": "f58d3e508a8b295f"
+    "sha256": "f58d3e508a8b295f",
+    "superseded_by": "08i-email-compose-resize.html"
   },
   {
     "file": "redesign/08c-email-people.html",
@@ -158,7 +159,8 @@
     "page": "Email - People grid (boxes, tags, closed-box drawer)",
     "route": "/email?view=people",
     "bytes": 74730,
-    "sha256": "f35357c8d14a0d6c"
+    "sha256": "f35357c8d14a0d6c",
+    "superseded_by": "08h-email-people-remove.html"
   },
   {
     "file": "redesign/08f-email-person-open.html",
@@ -249,7 +251,8 @@
     "page": "Recordings",
     "route": "/recordings?fixture=mockup",
     "bytes": 23345,
-    "sha256": "177c57009f7e0b43"
+    "sha256": "177c57009f7e0b43",
+    "superseded_by": "15b-recordings-capture.html"
   },
   {
     "file": "redesign/16-financials.html",

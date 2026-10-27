@@ -180,6 +180,106 @@ const CLAUDE_TEST_ITEMS = [
   '40720c50-b448-4a49-9c4a-5b2bd4b4bf41',
 ];
 
+const JUNK_BOX_KEY = 'n1793051997159';
+
+export async function archiveJunkBox(sql: Sql, ownerId: string) {
+  await sql`CREATE TABLE IF NOT EXISTS box_restore_log (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id text NOT NULL,
+    keys text NOT NULL DEFAULT '',
+    action text NOT NULL DEFAULT '',
+    payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`;
+  const prior = await sql`
+    SELECT key, name, org, deleted_at,
+      (SELECT count(*)::int FROM email_box_addresses a WHERE a.owner_id = email_boxes.owner_id AND a.box_key = email_boxes.key AND a.deleted_at IS NULL) AS addr_n
+    FROM email_boxes
+    WHERE owner_id = ${ownerId} AND key = ${JUNK_BOX_KEY}
+  `;
+  if (!prior.length) return { archived: 0, prior };
+  await sql`
+    UPDATE email_boxes SET deleted_at = now()
+    WHERE owner_id = ${ownerId} AND key = ${JUNK_BOX_KEY} AND deleted_at IS NULL
+  `;
+  await sql`
+    INSERT INTO box_restore_log (owner_id, keys, action, payload)
+    VALUES (
+      ${ownerId}, ${JUNK_BOX_KEY}, 'archive-junk-j',
+      ${JSON.stringify({ action: 'archive-junk-j', prior })}::jsonb
+    )
+  `;
+  return { archived: 1, prior };
+}
+
+export async function importSnapshotBoxes(sql: Sql, ownerId: string, rows: Record<string, unknown>[]) {
+  await sql`CREATE TABLE IF NOT EXISTS box_restore_log (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id text NOT NULL,
+    keys text NOT NULL DEFAULT '',
+    action text NOT NULL DEFAULT '',
+    payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`;
+  const keys: string[] = [];
+  for (const raw of rows) {
+    const key = String(raw.key || raw.id || '').slice(0, 40);
+    if (!key || key === JUNK_BOX_KEY) continue;
+    const name = String(raw.name || raw.n || 'Box').slice(0, 80);
+    const org = String(raw.org || raw.o || raw.group || '').slice(0, 120);
+    const color = String(raw.color || raw.c || '#2e6bf2').slice(0, 16);
+    const extra = JSON.stringify(raw.extra && typeof raw.extra === 'object' ? raw.extra : raw);
+    const addrs = Array.isArray(raw.addrs) ? raw.addrs.map((e) => String(e || '').toLowerCase()).filter(Boolean) : [];
+    const tags = Array.isArray(raw.tags) ? raw.tags.map((t) => String(t || '').toLowerCase()).filter(Boolean) : [];
+    keys.push(key);
+    await sql`
+      INSERT INTO email_boxes (owner_id, key, name, org, color, closed, position, extra)
+      VALUES (${ownerId}, ${key}, ${name}, ${org}, ${color}, ${!!raw.closed}, ${Number(raw.position) || 0}, ${extra}::jsonb)
+      ON CONFLICT (owner_id, key) DO UPDATE SET
+        name = EXCLUDED.name, org = EXCLUDED.org, color = EXCLUDED.color,
+        extra = EXCLUDED.extra, deleted_at = NULL
+    `;
+    if (addrs.length) {
+      await sql`
+        INSERT INTO email_box_addresses (owner_id, box_key, email)
+        SELECT ${ownerId}, ${key}, e FROM unnest(${addrs}::text[]) AS e
+        ON CONFLICT (owner_id, box_key, email) DO UPDATE SET deleted_at = NULL
+      `;
+    }
+    if (tags.length) {
+      await sql`
+        INSERT INTO email_box_tags (owner_id, box_key, tag)
+        SELECT ${ownerId}, ${key}, t FROM unnest(${tags}::text[]) AS t
+        ON CONFLICT (owner_id, box_key, tag) DO UPDATE SET deleted_at = NULL
+      `;
+    }
+  }
+  await sql`
+    UPDATE email_boxes SET org = 'Team'
+    WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND name ILIKE '%Bruce Fair%' AND (org IS NULL OR org = '' OR org = 'Other')
+  `;
+  await sql`
+    UPDATE email_boxes SET org = 'Legal'
+    WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND name ILIKE '%James Atherton%' AND (org IS NULL OR org = '' OR org = 'Other')
+  `;
+  await sql`
+    INSERT INTO box_restore_log (owner_id, keys, action, payload)
+    VALUES (
+      ${ownerId}, ${keys.join(',')}, 'import-pitr',
+      ${JSON.stringify({ action: 'import-pitr', keys, n: keys.length })}::jsonb
+    )
+  `;
+  return { imported: keys.length, keys };
+}
+
+export async function listRestoreLogs(sql: Sql, ownerId: string) {
+  return sql`
+    SELECT action, keys, created_at, payload
+    FROM box_restore_log WHERE owner_id = ${ownerId}
+    ORDER BY created_at DESC LIMIT 20
+  `.catch(() => []);
+}
+
 export async function archiveClaudeTestItems(sql: Sql, ownerId: string) {
   const prior = await sql`
     SELECT id, title, status FROM items

@@ -2,7 +2,7 @@
 /* Layout: command row (title + capture), one focus bar, master timeline card (pipeline chips in its header), then the list that feeds it. Gold = milestones. */
 
 
-:root{
+:host,:root{
   --tl-ground:#0B1431; --gfg:#E9EEFA; --gmuted:#8E9AC2; --gline:#1E2B55;
   --surface:#FFFFFF; --raise:#EEF2F9; --band:#F0F3FA; --edge:#D6DDEC;
   --fg:#0C1430; --muted:#56618A; --faint:#8F9AB8; --on-c:#FFFFFF;
@@ -279,7 +279,7 @@ svg.links{position:absolute;top:0;z-index:1;pointer-events:none;overflow:visible
 .none{color:var(--faint);font-size:13px}
 
 /* v2: gold milestones */
-:root{--gold:#D4A017;--gold-ink:#7E5B07;--gold-soft:#FCF3DA}
+:host,:root{--gold:#D4A017;--gold-ink:#7E5B07;--gold-soft:#FCF3DA}
 .gline{position:absolute;top:0;bottom:0;width:0;border-left:2px dashed color-mix(in srgb,var(--gold) 75%,transparent)}
 .goalrow .lab .ltitle{color:var(--gold-ink)}
 .goalrow .trk{background:color-mix(in srgb,var(--gold) 9%,transparent)}

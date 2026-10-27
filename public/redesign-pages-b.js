@@ -1626,7 +1626,7 @@
       var addrs = asList(sb.addrs);
       var n = String(sb.n || sb.name || '').trim();
       if (!addrs.length && /@/.test(String(sb.o || ''))) addrs = [String(sb.o)];
-      if (!addrs.length && (!n || /^box$/i.test(n))) return false;
+      if (!addrs.length && (!n || /^box$/i.test(n) || /^j$/i.test(n) || n.length <= 1)) return false;
       return !!(n || addrs.length);
     });
   }
@@ -1646,8 +1646,8 @@
       });
       return box;
     });
-    /* B59: once Chad has boxes of his own, senders not in any box wait in the "Not in a box yet" strip
-       (drag one onto a box to add the address). With no stored boxes yet, every sender still gets a box. */
+    /* Saved boxes keep their names and groups. Senders with 2+ mails in 30 days still get a generated
+       box alongside them — a leftover empty saved box must not hide the rest of the People grid. */
     var stored = out.length;
     var loose = [];
     var cut = Date.now() - 30 * 86400000;
@@ -1657,12 +1657,14 @@
       var recent = asList(box.m).filter(function (row) { return (row[7] || 0) >= cut; }).length;
       var hidden = asList(S.emailBoxHidden).map(function (a) { return String(a).toLowerCase(); });
       if (hidden.indexOf(k) >= 0 || hidden.indexOf(String(box.o || '').toLowerCase()) >= 0) return;
-      if (!stored) {
-        if (recent >= 2) out.push(box);
+      if (recent >= 2) {
+        if (/bruce\s+fair/i.test(String(box.n || ''))) box.o = 'Team';
+        else if (/james\s+atherton/i.test(String(box.n || ''))) box.o = 'Legal';
+        out.push(box);
         return;
       }
-      if (/@/.test(k)) loose.push(box);
-      else out.push(box);
+      if (stored && /@/.test(k)) loose.push(box);
+      else if (!stored) out.push(box);
     });
     out.forEach(function (b) {
       b.m.sort(function (x, y) { return (y[7] || 0) - (x[7] || 0); });

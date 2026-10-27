@@ -24,9 +24,9 @@ const PAGES = [
   { page: '06b-document-viewer', design: 'redesign/06b-document-viewer.html', live: 'control-room.html?view=docs&fixture=mockup&doc=1', ready: '#docsDesk[data-port-ready]', wait: 600 },
   { page: '07-links', design: 'redesign/07-links.html', live: 'control-room.html?view=links&fixture=mockup', ready: '#linksDesk[data-port-ready]' },
   { page: '08d-email-inbox', design: 'redesign/08d-email-inbox.html', live: 'control-room.html?view=mail&fixture=mockup', ready: '#mailDesk[data-port-ready]' },
-  { page: '08e-email-people-grid', design: 'redesign/08e-email-people-grid.html', live: 'control-room.html?view=mail&fixture=mockup&people=1', ready: '#mailDesk[data-port-ready]', wait: 600, skip: true },
+  { page: '08e-email-people-grid', design: 'redesign/08e-email-people-grid.html', live: 'control-room.html?view=mail&fixture=mockup&people=1', ready: '#mailDesk[data-port-ready]', wait: 600, skip: true, reason: 'superseded by 08h-email-people-remove' },
   { page: '08g-email-person-card', design: 'redesign/08g-email-person-card.html', live: 'control-room.html?view=mail&fixture=mockup&people=1&person=open&mail=0', ready: '#mailDesk[data-port-ready]', wait: 800 },
-  { page: '08b-email-compose', design: 'redesign/08b-email-compose.html', live: 'control-room.html?view=mail&fixture=mockup&compose=1', ready: '#mailDesk[data-port-ready]', wait: 800, skip: true },
+  { page: '08b-email-compose', design: 'redesign/08b-email-compose.html', live: 'control-room.html?view=mail&fixture=mockup&compose=1', ready: '#mailDesk[data-port-ready]', wait: 800, skip: true, reason: 'superseded by 08i-email-compose-resize' },
   { page: '09-playbook', design: 'redesign/09-playbook.html', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 600 },
   { page: '10-calendar', design: 'redesign/10-calendar.html', live: 'control-room.html?view=calendar&fixture=mockup', ready: '#calDesk[data-port-ready]', wait: 800 },
   { page: '10b-calendar-rail-closed', design: 'redesign/10b-calendar-rail-closed.html', live: 'control-room.html?view=calendar&fixture=mockup&rail=0', ready: '#calDesk[data-port-ready]', wait: 800 },
@@ -36,15 +36,15 @@ const PAGES = [
   { page: '03c-notes-canvas', design: 'redesign/03c-notes-canvas.html', live: 'control-room.html?view=notes&fixture=mockup&canvas=1', ready: '#notesDesk[data-port-ready]', wait: 600 },
   { page: '05d-spaces-arrange', design: 'redesign/05d-spaces-arrange.html', live: 'control-room.html?view=work&fixture=mockup&arrange=1', ready: '#spacesDesk[data-port-ready]', wait: 600 },
   { page: '02e-signals-detail', design: 'redesign/02e-signals-detail.html', live: 'control-room.html?view=war&fixture=mockup&sigdetail=1', ready: '#warDesk[data-port-ready]', wait: 600 },
-  { page: '15-recordings', design: 'redesign/15-recordings.html', live: 'control-room.html?view=rec&fixture=mockup', ready: '#recDesk[data-port-ready]', wait: 600, skip: true },
+  { page: '15-recordings', design: 'redesign/15-recordings.html', live: 'control-room.html?view=rec&fixture=mockup', ready: '#recDesk[data-port-ready]', wait: 600, skip: true, reason: 'superseded by 15b-recordings-capture' },
   { page: '05e-spaces-cards', design: 'redesign/05e-spaces-cards.html', live: 'control-room.html?view=work&fixture=mockup&cards=1', ready: '#spacesDesk[data-port-ready]', wait: 600 },
   { page: '05f-spaces-card-open', design: 'redesign/05f-spaces-card-open.html', live: 'control-room.html?view=work&fixture=mockup&space=open', ready: '#spacesDesk[data-port-ready]', wait: 800 },
   { page: '08h-email-people-remove', design: 'redesign/08h-email-people-remove.html', live: 'control-room.html?view=mail&fixture=mockup&people=1', ready: '#mailDesk[data-port-ready]', wait: 800 },
-  { page: '08i-email-compose-resize', design: 'redesign/08i-email-compose-resize.html', live: 'control-room.html?view=mail&fixture=mockup&state=compose', ready: '#mailDesk[data-port-ready]', wait: 800, skip: true },
+  { page: '08i-email-compose-resize', design: 'redesign/08i-email-compose-resize.html', live: 'email?fixture=mockup&state=compose', ready: '#mailDesk[data-port-ready]', wait: 800, named: '08i mockup is the 08 command-board inbox with To-autocomplete open; live compose opens on the 08d feed. Diff is the left inbox chrome, the To popover, and the compose side cards.' },
   { page: '15b-recordings-capture', design: 'redesign/15b-recordings-capture.html', live: 'control-room.html?view=rec&fixture=mockup', ready: '#recDesk[data-port-ready]', wait: 600 },
-  { page: '18-timeline', design: 'redesign/18-timeline.html', live: 'control-room.html?view=planner&fixture=mockup', ready: '#warDesk[data-port-ready]', wait: 1200, skip: true },
-  { page: '18b-timeline-item-open', design: 'redesign/18b-timeline-item-open.html', live: 'control-room.html?view=planner&fixture=mockup&state=item', ready: '#warDesk[data-port-ready]', wait: 800, skip: true },
-  { page: '18c-timeline-milestone-open', design: 'redesign/18c-timeline-milestone-open.html', live: 'control-room.html?view=planner&fixture=mockup&state=milestone', ready: '#warDesk[data-port-ready]', wait: 800, skip: true },
+  { page: '18-timeline', design: 'redesign/18-timeline.html', live: 'planner?fixture=mockup', ready: '#warDesk[data-port-ready]', wait: 1200, named: '18-timeline command bar and feeding-it chips still antialias vs the HTML mockup (under 1%). Layout, Lists, Add, Start, gold Milestones header match.' },
+  { page: '18b-timeline-item-open', design: 'redesign/18b-timeline-item-open.html', live: 'planner?fixture=mockup&view=timeline&state=item', ready: '#warDesk[data-port-ready]', wait: 1000, named: '18b was drawn on the old Timeline list (title Timeline, no Lists/Timeline toggle). Live paints the new 18-timeline page with the item drawer over it. Diff is the board behind the drawer plus drawer chrome (Edit in list, Key date card, wait chips).' },
+  { page: '18c-timeline-milestone-open', design: 'redesign/18c-timeline-milestone-open.html', live: 'planner?fixture=mockup&view=timeline&state=milestone', ready: '#warDesk[data-port-ready]', wait: 1000, named: '18c was drawn on the old Timeline list. Live paints the new 18-timeline page with the milestone drawer over it. Diff is the board behind the drawer plus the milestone drawer body.' },
 ];
 const INTER = '<link rel="preconnect" href="https://fonts.googleapis.com"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>';
 
@@ -113,6 +113,26 @@ function pct(diff, total) {
   return total ? (100 * diff) / total : 0;
 }
 
+function mismatchBand(diffPng) {
+  const { width, height, data } = diffPng;
+  let y0 = -1;
+  let y1 = -1;
+  for (let y = 0; y < height; y += 1) {
+    let hits = 0;
+    for (let x = 0; x < width; x += 1) {
+      const i = (y * width + x) * 4;
+      if (data[i] > 40 || data[i + 1] > 40) hits += 1;
+    }
+    if (hits > width * 0.01) {
+      if (y0 < 0) y0 = y;
+      y1 = y;
+    }
+  }
+  if (y0 < 0) return '';
+  const top = y0 < height * 0.33 ? 'top third (chrome / command bar)' : y0 < height * 0.66 ? 'middle third (lists / timeline / compose)' : 'bottom third';
+  return ` mismatch y=${y0}-${y1} ${top}`;
+}
+
 async function prepare(page) {
   await page.evaluate(() => {
     const css = '.clock,.sndtog,.side,.logo,img[alt="4orm Finance"]{visibility:hidden!important}.pc,.rd,.scrim,.compose,#compose,#composeSide{transition:none!important}';
@@ -174,7 +194,12 @@ async function main() {
   const overflow1280 = [];
   let failed = 0;
   try {
-    for (const spec of PAGES.filter((p) => !p.skip && (!ONLY.length || ONLY.includes(p.page)))) {
+    const chosen = PAGES.filter((p) => !ONLY.length || ONLY.includes(p.page));
+    for (const spec of chosen.filter((p) => p.skip)) {
+      rows.push({ page: spec.page, pct: 0, pass: true, pixels: 0, total: 0, overflow: 'no', reason: spec.reason || 'skipped' });
+      console.log(`${spec.page.padEnd(16)} SKIP  ${spec.reason || ''}`);
+    }
+    for (const spec of chosen.filter((p) => !p.skip)) {
       const page = await context.newPage();
       const designUrl = `http://127.0.0.1:${port}/design/${spec.page}`;
       const liveUrl = `http://127.0.0.1:${port}/${spec.live}`;
@@ -197,13 +222,15 @@ async function main() {
       const p = pct(n, total);
       const overflow = design.overflow || live.overflow;
       const ok = p < PASS && !overflow && !live1280;
+      const band = (!ok && (spec.page.startsWith('18') || spec.page.startsWith('08i'))) ? mismatchBand(diff) : '';
+      const reason = ok ? '' : (spec.named || `${p.toFixed(3)}% diff${overflow ? ' overflow1440' : ''}${live1280 ? ' overflow1280' : ''}${band}`);
       if (!ok) failed += 1;
       writeFileSync(join(OUT, `${spec.page}-mockup.png`), PNG.sync.write(a));
       writeFileSync(join(OUT, `${spec.page}-live.png`), PNG.sync.write(b));
       writeFileSync(join(OUT, `${spec.page}.png`), PNG.sync.write(diff));
-      rows.push({ page: spec.page, pct: p, pass: ok, pixels: n, total, overflow: overflow ? 'yes' : 'no' });
+      rows.push({ page: spec.page, pct: p, pass: ok, pixels: n, total, overflow: overflow ? 'yes' : 'no', reason });
       overflow1280.push({ page: spec.page, live: live1280 ? 'yes' : 'no', design: design1280 ? 'yes' : 'no' });
-      console.log(`${spec.page.padEnd(16)} ${p.toFixed(3)}%  overflow1440=${overflow ? 'yes' : 'no'}  overflow1280=${live1280 ? 'yes' : 'no'}  ${ok ? 'PASS' : 'FAIL'}  (${n}/${total})`);
+      console.log(`${spec.page.padEnd(16)} ${p.toFixed(3)}%  overflow1440=${overflow ? 'yes' : 'no'}  overflow1280=${live1280 ? 'yes' : 'no'}  ${ok ? 'PASS' : 'FAIL'}  (${n}/${total})${band}`);
     }
     const page = await context.newPage();
     async function docsFrame(url) {
@@ -240,7 +267,7 @@ async function main() {
     await browser.close();
     server.close();
   }
-  const table = ['page\t% diff\toverflow\tpass/fail'].concat(rows.map((r) => `${r.page}\t${r.pct.toFixed(3)}\t${r.overflow}\t${r.pass ? 'PASS' : 'FAIL'}`)).join('\n');
+  const table = ['page\t% diff\toverflow\tpass/fail\treason'].concat(rows.map((r) => `${r.page}\t${r.pct.toFixed(3)}\t${r.overflow}\t${r.pass ? (r.reason && r.reason.startsWith('superseded') ? 'SKIP' : 'PASS') : 'FAIL'}\t${r.reason || ''}`)).join('\n');
   const table1280 = ['page\tlive 1280 overflow\tdesign 1280 overflow'].concat(overflow1280.map((r) => `${r.page}\t${r.live}\t${r.design}`)).join('\n');
   writeFileSync(join(OUT, 'results.txt'), table + '\n\n' + table1280 + '\n');
   console.log('\n' + table);

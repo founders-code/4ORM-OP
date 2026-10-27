@@ -549,6 +549,12 @@ function addStep(pid){const nm=document.getElementById('f-add-'+pid);const n=(nm
 document.addEventListener('click',e=>{const b=e.target.closest('[data-addstep]');if(b)addStep(b.dataset.addstep)});
 try {
   var qst = String(location.search || '');
+  if (/[?&]view=timeline(?:&|$)/.test(qst) || /\/timeline\/?$/.test(String(location.pathname || ''))) {
+    state.view = 'timeline';
+    applyView();
+    renderBoard();
+    drawLinks();
+  }
   if (/state=item/.test(qst)) openDrawer('msa');
   if (/state=milestone/.test(qst)) openDrawer('g-mvp');
 } catch (eOpen) {}

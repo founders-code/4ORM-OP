@@ -416,6 +416,11 @@
       if (mail && mail.focus) mail.focus();
       else if (box) box.focus();
     },
+    'people-add-phone': function (el, root) {
+      var box = document.getElementById('cPhone') || document.querySelector('#drawer input[aria-label="Phone"], #drawer input[placeholder*="hone" i]');
+      toast(root, 'Add a phone on this card, then save');
+      if (box && box.focus) box.focus();
+    },
     'people-add': function (el, root) {
       if (!needLive(root)) return;
       if (typeof window.openAddContact === 'function') { window.openAddContact(); return; }
@@ -806,7 +811,11 @@
               a.setAttribute('data-id', id);
               a.textContent = 'No email on file - Add one';
             } else {
-              a.hidden = true;
+              a.removeAttribute('href');
+              a.setAttribute('data-action', 'people-add-phone');
+              a.setAttribute('data-id', id);
+              a.hidden = false;
+              a.textContent = 'No phone on file - Add one';
             }
           }
         });

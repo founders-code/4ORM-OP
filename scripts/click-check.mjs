@@ -19,6 +19,8 @@ const PAGES = {
     { name: 'Signals detail', live: 'control-room.html?view=war&fixture=mockup&sigdetail=1', ready: '#warDesk[data-port-ready]', host: 'warDesk' },
     { name: 'Links', live: 'control-room.html?view=links&fixture=mockup', ready: '#linksDesk[data-port-ready]', host: 'linksDesk' },
     { name: 'Recordings', live: 'control-room.html?view=rec&fixture=mockup', ready: '#recDesk[data-port-ready]', host: 'recDesk' },
+    { name: 'News', live: 'control-room.html?view=news', ready: '#v-news', host: 'v-news', waitCards: true },
+    { name: 'Financials', live: 'control-room.html?view=finance', ready: '#v-finance', host: 'v-finance', waitCards: true },
   ],
   2: [
     { name: 'Pipeline', live: 'control-room.html?view=contacts&fixture=mockup', ready: '#pipeDesk[data-port-ready]', host: 'pipeDesk' },
@@ -52,7 +54,7 @@ function serve() {
       const url = new URL(req.url, 'http://127.0.0.1');
       let pathName = decodeURIComponent(url.pathname);
       if (pathName === '/') pathName = '/index.html';
-      if (/^\/(control-room|war-room|planner|timeline|notes|links|pipeline|spaces|documents|email|playbook|calendar|zoom|completed|people|recordings)$/.test(pathName)) pathName = '/control-room.html';
+      if (/^\/(control-room|war-room|planner|timeline|notes|links|pipeline|spaces|documents|email|playbook|calendar|zoom|completed|people|recordings|news|financials|finance)$/.test(pathName)) pathName = '/control-room.html';
       const tries = [join(ROOT, 'public', pathName), join(ROOT, 'design-reference', pathName)];
       let body = null;
       let used = '';
@@ -70,10 +72,10 @@ function serve() {
 function inventory(page, hostId) {
   return page.evaluate((id) => {
     const host = document.getElementById(id);
-    const root = host && host.shadowRoot;
-    if (!root) return { error: 'no shadow', withAction: 0, without: -1 };
+    const root = (host && host.shadowRoot) || host;
+    if (!root) return { error: 'no host', withAction: 0, without: -1, comingSoon: -1 };
     if (typeof window.stampDeskControls === 'function') window.stampDeskControls(root);
-    return typeof window.deskInventory === 'function' ? window.deskInventory(root) : { withAction: 0, without: -1 };
+    return typeof window.deskInventory === 'function' ? window.deskInventory(root) : { withAction: 0, without: -1, comingSoon: -1 };
   }, hostId);
 }
 
@@ -759,6 +761,15 @@ async function main() {
       await page.goto(`http://127.0.0.1:${port}/${spec.live}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForSelector(spec.ready, { timeout: 15000, state: 'attached' });
       await page.waitForTimeout(300);
+      if (spec.waitCards) {
+        await page.waitForFunction((id) => {
+          const host = document.getElementById(id);
+          const root = (host && host.shadowRoot) || host;
+          if (!root) return false;
+          return !!(root.querySelector('.news, [data-sec="news"], .fin, .card, article') || (root.textContent || '').length > 240);
+        }, spec.host, { timeout: 20000 }).catch(() => {});
+        await page.waitForTimeout(400);
+      }
       if (spec.host === 'v-news') {
         await page.waitForTimeout(400);
         await page.evaluate(() => {
@@ -780,10 +791,11 @@ async function main() {
         });
       }
       const inv = await inventory(page, spec.host);
-      const pass = inv.without === 0;
+      const coming = Number(inv.comingSoon == null ? -1 : inv.comingSoon);
+      const pass = spec.waitCards ? coming === 0 : inv.without === 0;
       if (!pass) failed = true;
-      rows.push({ page: spec.name, withAction: inv.withAction, without: inv.without, pass });
-      console.log(`A  ${spec.name.padEnd(12)} with=${inv.withAction}  without=${inv.without}  ${pass ? 'PASS' : 'FAIL'}`);
+      rows.push({ page: spec.name, withAction: inv.withAction, without: inv.without, comingSoon: coming, pass });
+      console.log(`A  ${spec.name.padEnd(16)} with=${inv.withAction}  without=${inv.without}  comingSoon=${coming}  ${pass ? 'PASS' : 'FAIL'}`);
     }
 
     if (STEP === '2') {
