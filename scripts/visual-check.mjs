@@ -29,10 +29,10 @@ const PAGES = [
   { page: '08b-email-compose', design: 'redesign/08b-email-compose.html', live: 'control-room.html?view=mail&fixture=mockup&compose=1', ready: '#mailDesk[data-port-ready]', wait: 800, skip: true, reason: 'superseded by 08i-email-compose-resize' },
   { page: '09-playbook', design: 'redesign/09-playbook.html', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 600, skip: true, reason: 'layout spec; wording checked as 09b-playbook-wording' },
   { page: '09b-playbook-wording', design: 'redesign/09b-playbook-wording.html', live: 'playbook?fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 600 },
-  { page: '10-calendar', design: 'redesign/10-calendar.html', live: 'control-room.html?view=calendar&fixture=mockup', ready: '#calDesk[data-port-ready]', wait: 800 },
-  { page: '10b-calendar-rail-closed', design: 'redesign/10b-calendar-rail-closed.html', live: 'control-room.html?view=calendar&fixture=mockup&rail=0', ready: '#calDesk[data-port-ready]', wait: 800 },
-  { page: '10c-calendar-event-editor', design: 'redesign/10c-calendar-event-editor.html', live: 'control-room.html?view=calendar&fixture=mockup&event=1', ready: '#calDesk[data-port-ready]', wait: 800 },
-  { page: '11-zoom', design: 'redesign/11-zoom.html', live: 'control-room.html?view=znotes&fixture=mockup', ready: '#zoomDesk[data-port-ready]', wait: 500 },
+  { page: '10-calendar', design: 'redesign/10-calendar.html', live: 'control-room.html?view=calendar&fixture=mockup', ready: '#calDesk[data-port-ready]', wait: 800, named: 'Suggested blocks drawn at opacity 0.5 vs the original mockup at full strength. Real events match.' },
+  { page: '10b-calendar-rail-closed', design: 'redesign/10b-calendar-rail-closed.html', live: 'control-room.html?view=calendar&fixture=mockup&rail=0', ready: '#calDesk[data-port-ready]', wait: 800, named: 'Suggested blocks at half brightness vs 10b mockup. Rail-closed layout matches.' },
+  { page: '10c-calendar-event-editor', design: 'redesign/10c-calendar-event-editor.html', live: 'control-room.html?view=calendar&fixture=mockup&event=1', ready: '#calDesk[data-port-ready]', wait: 800, named: 'Suggested blocks at half brightness behind the event editor vs 10c mockup.' },
+  { page: '11-zoom', design: 'redesign/11-zoom.html', live: 'control-room.html?view=znotes&fixture=mockup', ready: '#zoomDesk[data-port-ready]', wait: 500, named: 'Date line is sentence-case plus a green ago chip vs the mockup OCT 7, 2026 line. Cards and reader otherwise match.' },
   { page: '12-completed', design: 'redesign/12-completed.html', live: 'control-room.html?view=done&fixture=mockup', ready: '#doneDesk[data-port-ready]', wait: 400 },
   { page: '03c-notes-canvas', design: 'redesign/03c-notes-canvas.html', live: 'control-room.html?view=notes&fixture=mockup&canvas=1', ready: '#notesDesk[data-port-ready]', wait: 600 },
   { page: '05d-spaces-arrange', design: 'redesign/05d-spaces-arrange.html', live: 'control-room.html?view=work&fixture=mockup&arrange=1', ready: '#spacesDesk[data-port-ready]', wait: 600 },
@@ -40,7 +40,10 @@ const PAGES = [
   { page: '15-recordings', design: 'redesign/15-recordings.html', live: 'control-room.html?view=rec&fixture=mockup', ready: '#recDesk[data-port-ready]', wait: 600, skip: true, reason: 'superseded by 15b-recordings-capture' },
   { page: '05e-spaces-cards', design: 'redesign/05e-spaces-cards.html', live: 'control-room.html?view=work&fixture=mockup&cards=1', ready: '#spacesDesk[data-port-ready]', wait: 600 },
   { page: '05f-spaces-card-open', design: 'redesign/05f-spaces-card-open.html', live: 'control-room.html?view=work&fixture=mockup&space=open', ready: '#spacesDesk[data-port-ready]', wait: 800 },
-  { page: '08h-email-people-remove', design: 'redesign/08h-email-people-remove.html', live: 'control-room.html?view=mail&fixture=mockup&people=1', ready: '#mailDesk[data-port-ready]', wait: 800 },
+  { page: '08h-email-people-remove', design: 'redesign/08h-email-people-remove.html', live: 'control-room.html?view=mail&fixture=mockup&people=1', ready: '#mailDesk[data-port-ready]', wait: 800, skip: true, reason: 'superseded by 08j-email-people-folders' },
+  { page: '08j-email-people-folders', design: 'redesign/08j-email-people-folders.html', live: 'control-room.html?view=mail&fixture=mockup&people=1', ready: '#mailDesk[data-port-ready]', wait: 800, named: '08j live uses the 08h People boxes (Bruce Fair, tags, closed tab) plus the folder strip. Diff is the mockup\'s compact 08j cards vs live 08h cards; folders Main / Investors / Regulators match.' },
+  { page: '05g-spaces-menu', design: 'redesign/05g-spaces-menu.html', live: 'control-room.html?view=work&fixture=mockup&cards=1&menu=1', ready: '#spacesDesk[data-port-ready]', wait: 800, named: '05g mockup is a cropped Spaces page with the menu open. Live is the full 05e cards grid with the same menu under the dots.' },
+  { page: '13c-news-pulse', design: 'redesign/13c-news-pulse.html', live: 'control-room.html?view=news&fixture=mockup', ready: '#v-news[data-port-ready], #newsDesk[data-port-ready]', wait: 1400, named: '13c pulse gauges, radar, market numbers and top-release photo match. Remaining diff is live sweep copy and briefing counts vs the static mockup.' },
   { page: '08i-email-compose-resize', design: 'redesign/08i-email-compose-resize.html', live: 'email?fixture=mockup&state=compose', ready: '#mailDesk[data-port-ready]', wait: 800, named: '08i mockup is the 08 command-board inbox with To-autocomplete open; live compose opens on the 08d feed. Diff is the left inbox chrome, the To popover, and the compose side cards.' },
   { page: '15b-recordings-capture', design: 'redesign/15b-recordings-capture.html', live: 'control-room.html?view=rec&fixture=mockup', ready: '#recDesk[data-port-ready]', wait: 600 },
   { page: '18-timeline', design: 'redesign/18-timeline.html', live: 'planner?fixture=mockup', ready: '#warDesk[data-port-ready]', wait: 1200, named: '18-timeline command bar and feeding-it chips still antialias vs the HTML mockup (under 1%). Layout, Lists, Add, Start, gold Milestones header match.' },
@@ -67,7 +70,7 @@ function serve() {
       const url = new URL(req.url, 'http://127.0.0.1');
       let pathName = decodeURIComponent(url.pathname);
       if (pathName === '/') pathName = '/index.html';
-      if (pathName === '/control-room' || pathName === '/war-room' || pathName === '/planner' || pathName === '/timeline' || pathName === '/notes' || pathName === '/pipeline' || pathName === '/spaces' || pathName === '/documents' || pathName === '/links' || pathName === '/email' || pathName === '/email-board' || pathName === '/playbook' || pathName === '/calendar' || pathName === '/zoom' || pathName === '/completed') {
+      if (pathName === '/control-room' || pathName === '/war-room' || pathName === '/planner' || pathName === '/timeline' || pathName === '/notes' || pathName === '/pipeline' || pathName === '/spaces' || pathName === '/documents' || pathName === '/links' || pathName === '/email' || pathName === '/email-board' || pathName === '/playbook' || pathName === '/calendar' || pathName === '/zoom' || pathName === '/completed' || pathName === '/news' || pathName === '/recordings' || pathName === '/people' || pathName === '/financials') {
         pathName = '/control-room.html';
       }
       const tries = [];
@@ -76,6 +79,9 @@ function serve() {
         tries.push(join(ROOT, 'design-reference', rest));
         tries.push(join(ROOT, 'design-reference/redesign', rest.endsWith('.html') ? rest : `${rest}.html`));
         tries.push(join(ROOT, 'design-reference/redesign', rest));
+      }
+      if (pathName.startsWith('/news-images/')) {
+        tries.push(join(ROOT, 'design-reference/redesign', pathName.replace(/^\//, '')));
       }
       tries.push(join(ROOT, 'public', pathName));
       tries.push(join(ROOT, 'design-reference', pathName));
@@ -181,6 +187,14 @@ async function shot(page, url, ready, extraWait) {
   }
   await prepare(page);
   if (extraWait) await page.waitForTimeout(extraWait);
+  if (url.includes('menu=1') && url.includes('work')) {
+    await page.evaluate(() => {
+      const root = document.getElementById('spacesDesk') && document.getElementById('spacesDesk').shadowRoot;
+      const dots = root && root.querySelector('[data-action="space-menu"]');
+      if (dots) dots.click();
+    }).catch(() => {});
+    await page.waitForTimeout(200);
+  }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   const buf = await page.screenshot({ type: 'png', fullPage: false });
   return { buf, overflow };
@@ -223,7 +237,7 @@ async function main() {
       const p = pct(n, total);
       const overflow = design.overflow || live.overflow;
       const ok = p < PASS && !overflow && !live1280;
-      const band = (!ok && (spec.page.startsWith('18') || spec.page.startsWith('08i'))) ? mismatchBand(diff) : '';
+      const band = (!ok && (spec.page.startsWith('18') || spec.page.startsWith('08i') || spec.page.startsWith('10') || spec.page === '11-zoom' || spec.page === '13c-news-pulse' || spec.page === '08j-email-people-folders' || spec.page === '05g-spaces-menu')) ? mismatchBand(diff) : '';
       const reason = ok ? '' : (spec.named || `${p.toFixed(3)}% diff${overflow ? ' overflow1440' : ''}${live1280 ? ' overflow1280' : ''}${band}`);
       if (!ok) failed += 1;
       writeFileSync(join(OUT, `${spec.page}-mockup.png`), PNG.sync.write(a));

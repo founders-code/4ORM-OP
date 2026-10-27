@@ -28,7 +28,8 @@ button{font:inherit;cursor:pointer}
 .gridm{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:18px}
 .mc{background:#fff;border-radius:16px;padding:16px;box-shadow:0 10px 30px rgba(3,10,30,.25);display:flex;flex-direction:column;gap:10px;cursor:pointer;border:2px solid transparent;transition:transform .15s,border-color .15s}
 .mc:hover{transform:translateY(-2px);border-color:var(--blue)}
-.mc .d{font-size:11.5px;font-weight:700;color:var(--ink3);display:flex;gap:8px;align-items:center}
+.mc .d{font-size:13px;font-weight:800;color:var(--ink);display:flex;gap:8px;align-items:center}
+.ago,.when .ago{font-size:11.5px;font-weight:800;color:#0e8a5f;background:#e3f6ee;border-radius:6px;padding:2px 7px}
 .mc .d .src{margin-left:auto}
 .mc .t{font-size:15px;font-weight:800;line-height:1.3;letter-spacing:-.01em}
 .mc .pp2{display:flex;align-items:center}

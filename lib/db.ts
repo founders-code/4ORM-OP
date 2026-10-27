@@ -8,7 +8,7 @@ export type Sql = NeonQueryFunction<false, false>;
 let ready: Promise<Sql> | null = null;
 
 /** Bump when migrate() gains a new step so cold starts skip the full IF NOT EXISTS pass. */
-const SCHEMA_VERSION = '2026-10-26-prompt3-canvas-planner';
+const SCHEMA_VERSION = '2026-10-26-prompt7-pulse-folders';
 
 export async function databaseUrl() {
   const envUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
@@ -956,6 +956,24 @@ async function migrateWar(sql: Sql) {
       updated_at timestamptz NOT NULL DEFAULT now()
     )`],
     ['db_items_plan_of', () => sql`ALTER TABLE items ADD COLUMN IF NOT EXISTS plan_of uuid`],
+    ['db_email_box_folders', () => sql`CREATE TABLE IF NOT EXISTS email_box_folders (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL,
+      name text NOT NULL,
+      position int NOT NULL DEFAULT 0,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`],
+    ['db_email_boxes_folder_id', () => sql`ALTER TABLE email_boxes ADD COLUMN IF NOT EXISTS folder_id uuid`],
+    ['db_ops_figures', () => sql`CREATE TABLE IF NOT EXISTS ops_figures (
+      owner_id text NOT NULL,
+      key text NOT NULL,
+      label text NOT NULL DEFAULT '',
+      value text NOT NULL DEFAULT '',
+      source text NOT NULL DEFAULT '',
+      as_of date,
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (owner_id, key)
+    )`],
   ];
   for (const [code, run] of steps) {
     try {

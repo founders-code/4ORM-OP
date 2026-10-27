@@ -1087,7 +1087,7 @@
   }
 
   /* NEWS:BEGIN - scripts/check-icons.mjs scans this region: no svg markup, no emoji, no icon glyphs. */
-  var NEWS_CHIPS = ['Compliance', 'AI & governance', 'Mortgage/brokerage', 'Automation/regtech', 'Fraud', 'Payments/FINTRAC', 'Competitors', 'Housing market'];
+    var NEWS_CHIPS = ['Compliance', 'AI & governance', 'Mortgage / brokerage', 'Automation / regtech', 'Fraud', 'Payments / FINTRAC', 'Competitors', 'Housing market'];
   var NEWS_OLD = { 'AI': 'AI & governance', 'Counseling': 'Compliance', 'Fintech & regulation': 'Compliance', 'Mortgage': 'Mortgage/brokerage', 'Fraud & scams': 'Fraud', 'Grants': 'Compliance', 'Payments / FINTRAC': 'Payments/FINTRAC', 'Competitors (Drata/Vanta/Aveni)': 'Competitors', 'Design-partner targets (Century 21/Remax)': 'Mortgage/brokerage', 'Fundraising / VC': 'Compliance' };
   var NEWS_RIVALS = ['Vanta', 'Drata', 'Secureframe', 'Aveni', 'Thoropass', 'ComplyAdvantage'];
   var NEWS_TOPICS = ['RPAA', 'safeguarding', 'suitability', 'AML', 'AI governance', 'mortgage compliance', 'non-dilutive', 'fraud'];
@@ -1168,7 +1168,7 @@
   function newsCover(item, hero) {
     var cat = newsCat(item);
     var img = String(item.image || item.image_url || '');
-    var ok = /^\/api\/news\/(?:image|thumb)\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(img);
+    var ok = /^\/api\/news\/(?:image|thumb)\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(img) || /^\/?(design\/)?news-images\//.test(img) || /^\/news-images\//.test(img);
     var failed = !!item._noimg;
     var kick = '<span class="cat">' + esc(cat) + '</span>';
     if (!ok && failed) {
@@ -1264,8 +1264,7 @@
       var host = newsHost(top.url || '');
       var srcLine = [esc(newsSource(top)), top.publishedAt ? new Date(newsTs(top)).toLocaleDateString('en-CA') : '', NEWS_PRIMARY.test(host) ? 'credibility: primary source' : 'credibility: reported'].filter(Boolean).join(' &middot; ');
       var sum = newsSummary(top);
-      var spanLab = newsWhen(top) === 'today' ? 'today' : ('this ' + (STATE.newsSpan === 'week' ? 'week' : 'month'));
-      hero = '<div class="card hero"><div data-action="news-open" data-nw-i="' + i + '" class="hero-open" role="button" tabindex="0">' + newsCover(top, true) + '</div><div class="b"><div class="ntop">Top release ' + spanLab + '</div><h2>' + esc(top.title || '') + '</h2>' + (sum ? '<div class="sum">' + esc(sum) + '</div>' : '') + '<div class="take"><b>Why it matters to 4orm:</b> ' + esc(newsWhy(top)) + '</div><div class="src">' + srcLine + '</div><div class="acts"><button type="button" class="a pri" data-action="news-act" data-nw-act="post" data-nw-at="' + i + '">Draft a LinkedIn post</button><button type="button" class="a" data-action="news-act" data-nw-act="letter" data-nw-at="' + i + '">Add to investor newsletter</button><button type="button" class="a" data-action="news-act" data-nw-act="vc" data-nw-at="' + i + '">Cite to a VC</button><button type="button" class="a" data-action="news-save" data-nw-save="' + i + '">Save to&hellip;</button><button type="button" class="a" data-action="news-act" data-nw-act="open" data-nw-at="' + i + '">Open source</button></div></div></div>';
+      hero = '<div class="card hero"><div data-action="news-open" data-nw-i="' + i + '" class="hero-open" role="button" tabindex="0">' + newsCover(top, true) + '</div><div class="b"><div class="ntop">Top release today</div><h2>' + esc(top.title || '') + '</h2>' + (sum ? '<div class="sum">' + esc(sum) + '</div>' : '') + '<div class="take"><b>Why it matters to 4orm:</b> ' + esc(newsWhy(top)) + '</div><div class="src">' + srcLine + '</div><div class="acts"><button type="button" class="a pri" data-action="news-act" data-nw-act="post" data-nw-at="' + i + '">Draft a LinkedIn post</button><button type="button" class="a" data-action="news-act" data-nw-act="letter" data-nw-at="' + i + '">Add to investor newsletter</button><button type="button" class="a" data-action="news-act" data-nw-act="vc" data-nw-at="' + i + '">Cite to a VC</button><button type="button" class="a" data-action="news-save" data-nw-save="' + i + '">Save to&hellip;</button><button type="button" class="a" data-action="news-act" data-nw-act="open" data-nw-at="' + i + '">Open source</button></div></div></div>';
     }
     var briefRows = (top ? [top] : []).concat(rest).slice(0, 4);
     var brief = briefRows.map(function (item, n) { return '<button type="button" class="r" data-action="news-open" data-nw-i="' + idx(item) + '"><span class="n">' + (n + 1) + '</span><span>' + esc(String(item.title || '').slice(0, 110)) + '</span></button>'; }).join('') || '<div class="r">The 8am sweep fills the briefing.</div>';
@@ -1295,14 +1294,28 @@
     var swept = STATE.newsSweptAt ? new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Vancouver', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(STATE.newsSweptAt)) : '';
     var NS = window.__newsSaved;
     var savedMode = STATE.newsMode === 'saved' && NS && typeof NS.html === 'function';
-    var modeSeg = NS ? '<div class="seg" id="newsMode"><button type="button" data-action="news-mode" data-mode="feed"' + (savedMode ? '' : ' class="on"') + '>Feed</button><button type="button" data-action="news-mode" data-mode="saved"' + (savedMode ? ' class="on"' : '') + '>Saved &middot; ' + esc(String(NS.count ? NS.count() : 0)) + '</button></div>' : '';
+    var fxNews = !!(window.fixtureMockup || (typeof fixtureOn === 'function' && fixtureOn()));
+    var modeSeg = (!fxNews && NS) ? '<div class="seg" id="newsMode"><button type="button" data-action="news-mode" data-mode="feed"' + (savedMode ? '' : ' class="on"') + '>Feed</button><button type="button" data-action="news-mode" data-mode="saved"' + (savedMode ? ' class="on"' : '') + '>Saved &middot; ' + esc(String(NS.count ? NS.count() : 0)) + '</button></div>' : '';
     var body = loading ? '<div class="card nw-empty">Loading the sweep...</div>' : (rows.length ? hero + '<div class="grid">' + rest.map(story).join('') + '</div>' : '<div class="card nw-empty">No stories yet - press Refresh to run the sweep.</div>');
     if (savedMode) {
       el.innerHTML = '<div class="nwx"><div class="top"><span class="t">News</span>' + modeSeg + '<div class="right"><input class="search" id="newsSearch" type="text" data-action="news-search" placeholder="Search saved stories and your notes..." value="' + esc(STATE.newsQ || '') + '"/></div></div>' + NS.html(all, q) + '</div>';
       if (el.setAttribute) el.setAttribute('data-port-ready', '1');
       return;
     }
-    el.innerHTML = '<div class="nwx"><div class="top"><span class="t">News</span>' + modeSeg + '<div class="seg" id="newsSpan"><button type="button" data-action="news-span" data-span="today"' + (span === 'today' ? ' class="on"' : '') + '>Today</button><button type="button" data-action="news-span" data-span="week"' + (span === 'week' ? ' class="on"' : '') + '>Last week</button><button type="button" data-action="news-span" data-span="month"' + (span === 'month' ? ' class="on"' : '') + '>Last month</button></div><button class="btn" id="newsRefresh" type="button" data-action="news-refresh"' + (STATE.newsBusy ? ' disabled' : '') + '>' + (STATE.newsBusy ? 'Sweeping...' : 'Refresh') + '</button><div class="right"><input class="search" id="newsSearch" type="text" data-action="news-search" placeholder="Search news..." value="' + esc(STATE.newsQ || '') + '"/><span class="sweeps">Sweeps at 08:00 and 11:00' + (swept ? ' &middot; last ' + esc(swept) : '') + '</span></div></div><div class="chips">' + chips + '</div><div class="wrap"><div class="main">' + (miss ? '<div class="nw-miss">' + miss + '</div>' : '') + body + '</div><div class="rail"><div class="card"><div class="ch"><span class="mk">4</span><span class="t">Your briefing</span><span class="s">' + briefRows.length + ' things ' + (span === 'today' ? 'today' : 'this ' + span) + '</span></div><div class="brief">' + brief + '</div></div><div class="card"><div class="ch"><span class="t">Competitor watch</span><span class="s">' + NEWS_RIVALS.length + ' tracked</span></div><div class="comp">' + comps + '</div></div><div class="card"><div class="ch"><span class="t">Trending for 4orm</span></div><div class="trend">' + trend + '</div></div><div class="card"><div class="ch"><span class="t">What this means - priority</span></div><div class="prio">' + pri + '</div></div></div></div></div>';
+    var pulseHtml = (typeof window.newsPulseBandHtml === 'function') ? window.newsPulseBandHtml(!!(window.fixtureMockup || (typeof fixtureOn === 'function' && fixtureOn()))) : '';
+    el.innerHTML = '<div class="nwx"><div class="top"><span class="t">News</span>' + modeSeg + '<div class="seg" id="newsSpan"><button type="button" data-action="news-span" data-span="today"' + (span === 'today' ? ' class="on"' : '') + '>Today</button><button type="button" data-action="news-span" data-span="week"' + (span === 'week' ? ' class="on"' : '') + '>Last week</button><button type="button" data-action="news-span" data-span="month"' + (span === 'month' ? ' class="on"' : '') + '>Last month</button></div><button class="btn" id="newsRefresh" type="button" data-action="news-refresh"' + (STATE.newsBusy ? ' disabled' : '') + '>' + (STATE.newsBusy ? 'Sweeping...' : 'Refresh') + '</button><div class="right"><input class="search" id="newsSearch" type="text" data-action="news-search" placeholder="Search news..." value="' + esc(STATE.newsQ || '') + '"/><span class="sweeps">Sweeps at 08:00 and 11:00' + (swept ? ' &middot; last ' + esc(swept) : '') + '</span></div></div><div class="chips">' + chips + '</div>' + pulseHtml + '<div class="wrap"><div class="main">' + (miss ? '<div class="nw-miss">' + miss + '</div>' : '') + body + '</div><div class="rail"><div class="card"><div class="ch"><span class="mk">4</span><span class="t">Your briefing</span><span class="s">' + briefRows.length + ' things ' + (span === 'today' ? 'today' : 'this ' + span) + '</span></div><div class="brief">' + brief + '</div></div><div class="card"><div class="ch"><span class="t">Competitor watch</span><span class="s">' + NEWS_RIVALS.length + ' tracked</span></div><div class="comp">' + comps + '</div></div><div class="card"><div class="ch"><span class="t">Trending for 4orm</span></div><div class="trend">' + trend + '</div></div><div class="card"><div class="ch"><span class="t">What this means - priority</span></div><div class="prio">' + pri + '</div></div></div></div></div>';
+    if (typeof window.bindNewsPulse === 'function') {
+      var fxNews = !!(window.fixtureMockup || (typeof fixtureOn === 'function' && fixtureOn()));
+      var pulseData = fxNews ? window.__NEWS_PULSE_FIXTURE : (STATE.newsPulse || window.__NEWS_PULSE_FIXTURE);
+      window.bindNewsPulse(el, pulseData);
+      if (!fxNews && !STATE.newsPulseBusy) {
+        STATE.newsPulseBusy = true;
+        authFetch('/api/news/pulse?view=' + (STATE.newsPulseView || 'market')).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {
+          STATE.newsPulseBusy = false;
+          if (d && (d.gauges || d.consumer)) { STATE.newsPulse = d; window.bindNewsPulse(el, d); }
+        }).catch(function () { STATE.newsPulseBusy = false; });
+      }
+    }
     if (el.setAttribute) el.setAttribute('data-port-ready', '1');
     el.querySelectorAll('img.ph').forEach(function (img) {
       var box = img.closest('.img');
@@ -1430,6 +1443,29 @@
   }
 
   function loadNews() {
+    if (window.fixtureMockup || (typeof fixtureOn === 'function' && fixtureOn())) {
+      var P = window.__NEWS_PULSE_FIXTURE || {};
+      STATE.newsLoaded = true;
+      STATE.news = (P.gauges || []).map(function (g, i) {
+        var s = g.story || {};
+        return {
+          id: 'fx-' + g.k,
+          title: s.h,
+          summary: s.dek,
+          category: s.chip,
+          impact: s.imp === 'reg' ? 'Regulatory' : s.imp === 'opp' ? 'Opportunity' : 'Threat',
+          image: s.img,
+          why_it_matters: s.wim,
+          url: 'https://www.canadianmortgagetrends.com/',
+          source: (g.why && g.why[0]) || 'News',
+          publishedAt: Date.now() - i * 3600000,
+          isTop: i === 0
+        };
+      });
+      renderNews(STATE.news);
+      bindNewsDesk();
+      return;
+    }
     renderNews(STATE.news || []);
     bindNewsDesk();
     authFetch('/api/news?span=month', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (data) {
@@ -2202,6 +2238,12 @@
     if (v === 'done' && typeof loadSnapshots === 'function') loadSnapshots();
     if (v === 'finance' && typeof loadFinance === 'function') loadFinance();
   };
+  window.loadNews = loadNews;
+  try {
+    if ((window.STATE && window.STATE.desk === 'news') || /(?:^|[?&])view=news(?:&|$)/.test(String(location.search || '')) || /\/news\/?$/.test(String(location.pathname || ''))) {
+      loadNews();
+    }
+  } catch (eNews) {}
 
   var brand = document.querySelector('.brand');
   if (brand) brand.addEventListener('click', function () { setNav(document.body.classList.contains('nav-collapsed')); });

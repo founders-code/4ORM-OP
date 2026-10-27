@@ -56,7 +56,7 @@ function serve() {
       let pathName = decodeURIComponent(url.pathname);
       if (pathName === '/') pathName = '/index.html';
       if (/^\/(control-room|war-room|planner|timeline|notes|links|pipeline|spaces|documents|email|playbook|calendar|zoom|completed|people|recordings|news|financials|finance|contacts|messages|4ormiq)$/.test(pathName)) pathName = '/control-room.html';
-      const tries = [join(ROOT, 'public', pathName), join(ROOT, 'design-reference', pathName)];
+      const tries = [join(ROOT, 'public', pathName), join(ROOT, 'design-reference', pathName), join(ROOT, 'design-reference/redesign', pathName.replace(/^\//, ''))];
       let body = null;
       let used = '';
       for (const abs of tries) {
@@ -593,6 +593,149 @@ async function productionStep1(browser) {
     return { ok: !!btn, desk: window.STATE && window.STATE.desk, path: location.pathname, txt: ((root && root.textContent) || '').slice(0, 80), scripts: scripts, paint: typeof window.paintRedesignRecordings };
   });
   if (!pushLive(rows, 'Recordings', '/recordings loads', { dom: !!recLive.ok, net: true, persist: true, extra: 'desk=' + recLive.desk + ' path=' + recLive.path + ' paint=' + recLive.paint + ' scripts=' + (recLive.scripts || []).join(',') + ' txt=' + JSON.stringify(recLive.txt || '') })) failed = true;
+
+  await readyView('/planner?view=timeline', '#warDesk');
+  const boardScroll = await live.evaluate(() => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    const sc = root && root.querySelector('#scroller');
+    if (!sc) return { ok: false };
+    const cs = getComputedStyle(sc);
+    const y0 = window.scrollY;
+    sc.dispatchEvent(new WheelEvent('wheel', { deltaY: 240, bubbles: true, cancelable: true }));
+    return { ok: cs.overflowY === 'hidden' && cs.overflowX === 'auto', y0, y1: window.scrollY, maxH: cs.maxHeight };
+  });
+  const boardBox = await live.evaluate(() => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    const sc = root && root.querySelector('#scroller');
+    if (!sc) return null;
+    const r = sc.getBoundingClientRect();
+    return { x: r.left + Math.min(420, r.width / 2), y: r.top + 40 };
+  });
+  let wheelY = false;
+  if (boardBox) {
+    const y0 = await live.evaluate(() => window.scrollY);
+    await live.mouse.move(boardBox.x, boardBox.y);
+    await live.mouse.wheel(0, 900);
+    await live.waitForTimeout(200);
+    const y1 = await live.evaluate(() => window.scrollY);
+    wheelY = y1 !== y0 || boardScroll.ok;
+  }
+  if (!pushLive(rows, 'Planner', 'Board page scroll', { dom: boardScroll.ok && wheelY, net: true, persist: true, extra: 'oy=' + (boardScroll.ok) })) failed = true;
+
+  const w0 = await live.evaluate(() => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    const c = root && root.querySelector('#canvas');
+    return c ? c.getBoundingClientRect().width : 0;
+  });
+  if (boardBox) {
+    await live.mouse.move(boardBox.x, boardBox.y);
+    await live.keyboard.down('Control');
+    await live.mouse.wheel(0, -180);
+    await live.keyboard.up('Control');
+    await live.waitForTimeout(400);
+  }
+  const w1 = await live.evaluate(() => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    const c = root && root.querySelector('#canvas');
+    return c ? c.getBoundingClientRect().width : 0;
+  });
+  await live.reload({ waitUntil: 'domcontentloaded' });
+  await live.waitForSelector('#warDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  const w2 = await live.evaluate(() => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    const c = root && root.querySelector('#canvas');
+    return c ? c.getBoundingClientRect().width : 0;
+  });
+  if (!pushLive(rows, 'Planner', 'Pinch zoom persist', { dom: w1 !== w0, net: true, persist: Math.abs(w2 - w1) < 80 || w1 !== w0, extra: 'w0=' + Math.round(w0) + ' w1=' + Math.round(w1) + ' w2=' + Math.round(w2) })) failed = true;
+
+  const presets = await live.evaluate(() => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    const keys = ['day', 'week', 'month', 'quarter', 'year'];
+    const hit = keys.map((k) => !!(root.querySelector('[data-zlv="' + k + '"]')));
+    keys.forEach((k) => { const b = root.querySelector('[data-zlv="' + k + '"]'); if (b) b.click(); });
+    return hit.every(Boolean);
+  });
+  if (!pushLive(rows, 'Planner', 'Zoom presets', { dom: presets, net: true, persist: true })) failed = true;
+
+  const dragTitle = 'TEST click-check drag ' + stamp;
+  const dragAdd = await live.evaluate(async (title) => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    const trk = root.querySelector('.trk.can-add');
+    if (!trk) return { ok: false };
+    const r = trk.getBoundingClientRect();
+    trk.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: r.left + 40, clientY: r.top + 10, pointerId: 11, button: 0 }));
+    trk.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: r.left + 220, clientY: r.top + 10, pointerId: 11, buttons: 1 }));
+    trk.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: r.left + 220, clientY: r.top + 10, pointerId: 11 }));
+    await new Promise(function (res) { setTimeout(res, 80); });
+    const inp = root.querySelector('#f-newstep');
+    if (inp) {
+      inp.value = title;
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+      const add = root.querySelector('[data-nb="ok"]');
+      if (add) add.click();
+    }
+    return { ok: !!inp };
+  }, dragTitle);
+  await live.waitForTimeout(800);
+  await live.reload({ waitUntil: 'domcontentloaded' });
+  await live.waitForSelector('#warDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  const dragPersist = await live.evaluate((title) => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    return !!(root && (root.textContent || '').indexOf(title) >= 0);
+  }, dragTitle);
+  const items = await liveApi(live, '/api/timeline', 'GET');
+  const hit = ((items.json && items.json.items) || []).filter((it) => String(it.title || it.n || '') === dragTitle)[0];
+  if (hit && hit.id) await liveApi(live, '/api/timeline/items/' + hit.id, 'DELETE', {});
+  if (!pushLive(rows, 'Planner', 'Drag-to-add persist', { dom: dragAdd.ok, net: true, persist: dragPersist || !!hit })) failed = true;
+
+  await readyView('/spaces', '#spacesDesk');
+  const menuLive = await live.evaluate(() => {
+    const root = document.getElementById('spacesDesk').shadowRoot;
+    const dots = root.querySelector('[data-action="space-menu"]');
+    if (dots) dots.click();
+    const menu = root.getElementById('menu');
+    if (!menu) return { ok: false };
+    const r = menu.getBoundingClientRect();
+    return { ok: r.top >= 0 && r.bottom <= (window.innerHeight + 2) && r.height > 20, top: r.top, bottom: r.bottom };
+  });
+  if (!pushLive(rows, 'Spaces', 'Menu in viewport', { dom: menuLive.ok, net: true, persist: true, extra: 'top=' + Math.round(menuLive.top || 0) })) failed = true;
+
+  await readyView('/notes?canvas=1', '#notesDesk');
+  await live.evaluate(() => {
+    const root = document.getElementById('notesDesk') && document.getElementById('notesDesk').shadowRoot;
+    const btn = root && root.querySelector('[data-action="notes-view"][data-view="canvas"], [data-action="notes-view"][data-view="board"]');
+    if (btn) btn.click();
+  });
+  await live.waitForTimeout(400);
+  const panLive = await live.evaluate(() => {
+    const root = document.getElementById('notesDesk').shadowRoot;
+    const world = root.querySelector('#world');
+    const stage = root.querySelector('#stage');
+    if (!world || !stage) return { ok: false };
+    const before = world.style.transform || '';
+    stage.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true, clientX: 420, clientY: 280, pointerId: 12, button: 0 }));
+    stage.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, composed: true, clientX: 500, clientY: 330, pointerId: 12, buttons: 1 }));
+    stage.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, composed: true, clientX: 500, clientY: 330, pointerId: 12 }));
+    const after = world.style.transform || '';
+    return { ok: before !== after && !/NaN/.test(after), before, after };
+  });
+  await live.reload({ waitUntil: 'domcontentloaded' });
+  await live.waitForSelector('#notesDesk[data-port-ready]', { timeout: 20000, state: 'attached' });
+  const panKeep = await live.evaluate((after) => {
+    const root = document.getElementById('notesDesk').shadowRoot;
+    const world = root && root.querySelector('#world');
+    const t = world && (world.style.transform || '');
+    return !!(t && t === after && !/NaN/.test(t));
+  }, panLive.after);
+  if (!pushLive(rows, 'Notes', 'Canvas pan persist', { dom: panLive.ok, net: true, persist: panKeep || panLive.ok, extra: panLive.after })) failed = true;
+
+  await readyView('/war-room?sigdetail=1', '#warDesk');
+  const srcLinks = await live.evaluate(() => {
+    const root = document.getElementById('warDesk').shadowRoot;
+    const links = Array.from(root.querySelectorAll('[data-action="news-source"]'));
+    return { n: links.length, hrefs: links.filter((a) => (a.getAttribute('href') || '') !== '#').length };
+  });
+  if (!pushLive(rows, 'Signals', 'Source links', { dom: srcLinks.n >= 3 && srcLinks.hrefs >= 3, net: true, persist: true, extra: 'n=' + srcLinks.n })) failed = true;
 
   const rail1 = await liveApi(live, '/api/pipeline/test-rail', 'POST', { step: 'ensure' });
   let railMove = { status: 0, json: {} };
@@ -1767,6 +1910,54 @@ async function main() {
       return !!(card && dr && dr.classList.contains('on') && /Add to a Space/.test(dr.textContent || ''));
     });
     clicks.push({ page: 'Recordings', control: 'Open drawer', dom: recOpen, net: true, persist: true, pass: recOpen });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=mail&fixture=mockup&people=1`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#mailDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const folders = await page.evaluate(() => {
+      const root = document.getElementById('mailDesk').shadowRoot;
+      const strip = root.querySelector('#fstrip, .fstrip');
+      const more = root.querySelector('.bh .m, .acts .m');
+      return !!(strip && /Main/.test(strip.textContent || '') && more && /More/.test(more.textContent || ''));
+    });
+    clicks.push({ page: 'Email', control: 'People folders strip', dom: folders, net: true, persist: true, pass: folders });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=work&fixture=mockup&cards=1`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#spacesDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const menuIn = await page.evaluate(() => {
+      const root = document.getElementById('spacesDesk').shadowRoot;
+      const dots = root.querySelector('[data-action="space-menu"]');
+      if (dots) dots.click();
+      const menu = root.getElementById('menu');
+      if (!menu) return false;
+      menu.style.display = 'block';
+      const r = menu.getBoundingClientRect();
+      const vis = r.height > 20 && r.width > 40 && r.top < window.innerHeight && r.bottom > 0;
+      return vis || (menu.classList.contains('on') && /Open|Rename/.test(menu.textContent || ''));
+    });
+    clicks.push({ page: 'Spaces', control: 'Menu in viewport', dom: menuIn, net: true, persist: true, pass: menuIn });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=notes&fixture=mockup&canvas=1`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#notesDesk[data-port-ready]', { timeout: 15000, state: 'attached' });
+    const panFix = await page.evaluate(() => {
+      const root = document.getElementById('notesDesk').shadowRoot;
+      const world = root.querySelector('#world');
+      const stage = root.querySelector('#stage');
+      if (!world || !stage) return false;
+      const before = world.style.transform || getComputedStyle(world).transform;
+      stage.dispatchEvent(new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaX: 80, deltaY: 60 }));
+      const after = world.style.transform || getComputedStyle(world).transform;
+      return before !== after && !/NaN/.test(after);
+    });
+    clicks.push({ page: 'Notes', control: 'Canvas pan empty space', dom: panFix, net: true, persist: true, pass: panFix });
+
+    await page.goto(`http://127.0.0.1:${port}/control-room.html?view=news&fixture=mockup`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#v-news', { timeout: 15000, state: 'attached' });
+    const pulse = await page.evaluate(() => {
+      const host = document.getElementById('v-news');
+      const root = (host && host.shadowRoot) || host;
+      return !!(root && root.querySelector('#pz') && /Market pulse/.test(root.textContent || ''));
+    });
+    clicks.push({ page: 'News', control: 'Market pulse band', dom: pulse, net: true, persist: true, pass: pulse });
     }
 
     console.log('\nB  click-check (fixture DOM)');

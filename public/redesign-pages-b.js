@@ -1092,7 +1092,7 @@
       + '<div class="stats">' + (data.stats || []).map(function (s) {
         return '<div class="sx ' + esc(s.cls || '') + '"><b>' + esc(s.n) + '</b><span>' + esc(s.label) + '</span></div>';
       }).join('') + '</div>';
-    var menu = '<div class="menu" id="menu"><div class="lbl">Move to</div><div data-action="space-move-group" data-group="General">General</div><div data-action="space-move-group" data-group="Venture Capital">Venture Capital</div><div data-action="space-move-group" data-group="Business">Business</div><div data-action="space-move-group" data-group="Regulators">Regulators</div><div data-action="space-rename">Rename</div><div class="del" data-action="space-archive">Delete</div></div>';
+    var menu = '<div class="smenu menu" id="menu" role="menu"></div>';
     function cardHtml(g, s) {
       var na = NA[s[3]] || NA.docs;
       var id = esc(s[4] || ('fx-' + String(s[0] || 'space').replace(/\s+/g, '-')));
@@ -1799,7 +1799,20 @@
       var hay = (b.n + ' ' + b.o + ' ' + asList(b.tags).join(' ') + ' ' + asList(b.files).map(function (f) { return f[1] || f; }).join(' ')).toLowerCase();
       return (!tag || asList(b.tags).indexOf(tag) >= 0) && (!qn || hay.indexOf(qn) >= 0);
     }
+    var folders = asList(S.emailFolders);
+    if (fixtureOn() && !folders.length) folders = [{ id: 'Investors', name: 'Investors' }, { id: 'Regulators', name: 'Regulators' }];
+    var folder = S.mailFolder || '';
     var open = boxes.filter(function (b) { return !b.closed; });
+    open = open.filter(function (b) {
+      var f = String(b.folder_id || b.folder || '');
+      if (fixtureOn() && !f) {
+        if (/mike gardner/i.test(b.n || '')) f = 'Investors';
+        if (/clhia/i.test(b.n || '')) f = 'Regulators';
+      }
+      b.folder = f;
+      if (!folder) return !f;
+      return f === String(folder);
+    });
     var closed = boxes.filter(function (b) { return b.closed; });
     var owe = boxes.filter(function (b) { return (b.st || [])[0] === 'rep'; }).length;
     var wait = boxes.filter(function (b) { return (b.st || [])[0] === 'wait'; }).length;
@@ -1843,7 +1856,7 @@
         var latest = asList(b.m).slice(0, 3).map(function (row) {
           return '<div class="em"><b>' + esc(row[1]) + '</b><span>' + esc(row[2]) + '</span></div>';
         }).join('');
-        return '<div class="pb' + hide + '" draggable="true" data-action="mail-box-open" data-id="' + esc(b.id) + '" style="--c:' + esc(b.c || '#2e6bf2') + ';--cbg:#eaf1fe">'
+        return '<div class="pb' + hide + '" draggable="true" data-action="mail-box-drag" data-kind="box" data-id="' + esc(b.id) + '" style="--c:' + esc(b.c || '#2e6bf2') + ';--cbg:#eaf1fe">'
           + '<div class="h"><span class="av" style="background:' + esc(b.c) + '">' + esc(peopleIni(b.n)) + '</span><div style="min-width:0"><h4>' + esc(b.n) + '</h4><div class="org">' + esc(b.o) + '</div></div><span class="cat">' + esc(tag0) + '</span><span class="acts"><span class="m" data-action="mail-box-menu" data-id="' + esc(b.id) + '">More</span><span class="x rmv" data-action="mail-box-remove" data-id="' + esc(b.id) + '">Remove</span></span></div>'
           + '<div class="nums"><div><b>' + esc(b.in) + '</b><small>from them</small></div><div><b>' + esc(b.out) + '</b><small>from you</small></div><div><b>' + (fileN + linkN) + '</b><small>files, links</small></div><div class="' + ((b.st || [])[0] === 'rep' ? 'hot' : '') + '"><b>' + esc(b.last) + '</b><small>last</small></div></div>'
           + '<div class="lt">Latest</div>' + latest
@@ -1916,7 +1929,17 @@
         + (data.looseMore ? '<span class="hint">+ ' + esc(data.looseMore) + ' more</span>' : '') + '</div>' : '')
       + (!fixtureOn() && !data.stored && asList(S.contacts).some(function (c) { return c.email; })
         ? '<div class="loose"><h5>Boxes are built from your mail<small>one box per person who wrote to you</small></h5><button class="btn" data-action="mail-box-build">Build boxes from my Contacts</button></div>' : '')
-      + '<div class="grid" id="grid">' + gridHtml + '<div class="newbx" id="newbx" data-action="mail-box-new">+ New box<small>A person, a company, or a deal. Mail from them lands here from now on.</small></div></div>'
+      + '<div class="fstrip" id="fstrip"><span class="lbl">Folders</span>'
+      + '<span class="fd' + (!folder ? ' on' : '') + '" data-folder="" data-action="mail-folder-open">Main<b>' + boxes.filter(function (b) { return !b.closed && !String(b.folder_id || b.folder || ''); }).length + '</b></span>'
+      + folders.slice(0, 9).map(function (f) {
+        var fid = f.id || f.name, nm = f.name || f.id;
+        var n = boxes.filter(function (b) { return !b.closed && String(b.folder_id || b.folder || '') === String(fid); }).length;
+        return '<span class="fd' + (String(folder) === String(fid) ? ' on' : '') + '" data-folder="' + esc(fid) + '" data-action="mail-folder-open">' + esc(nm) + '<b>' + n + '</b></span>';
+      }).join('')
+      + (folders.length < 9 ? '<span class="fd newf" data-action="mail-folder-new">+ Folder</span>' : '')
+      + '<span class="fhint">Drag a box onto a folder to file it</span></div>'
+      + (folder ? '<div class="fhead">' + esc((folders.filter(function (f) { return String(f.id || f.name) === String(folder); })[0] || {}).name || folder) + '<span class="back" data-folder="" data-action="mail-folder-open">Back to Main</span></div>' : '')
+      + '<div class="grid" id="grid">' + (gridHtml || '<div class="empty2">' + (folder ? 'Nothing in this folder yet. Drag a box onto this folder to file it here.' : 'Everything is filed. Your folders are above.') + '</div>') + '<div class="newbx" id="newbx" data-action="mail-box-new">+ New box<small>A person, a company, or a deal. Mail from them lands here from now on.</small></div></div>'
       + '<aside class="drawer' + (drawer ? ' on' : '') + '" id="drawer"><div class="dh"><h3>Closed boxes</h3><span class="s" id="dcount">' + closed.length + ' closed</span><span class="x" data-action="mail-closed-toggle" title="Close list">Close</span></div>'
       + '<input class="dsearch" data-action="mail-closed-search" placeholder="Find a closed box" value="' + esc(S.mailClosedQ || '') + '">'
       + '<div class="dl" id="dl">' + (closedShown.map(function (b) {
@@ -1930,7 +1953,12 @@
         return '<div data-action="mail-sort" data-s="' + esc(row[0]) + '"' + (sort === row[0] ? ' class="on"' : '') + '>' + esc(row[1]) + '</div>';
       }).join('') + '</div>'
       + '<div class="menu' + (boxMenuOpen ? ' on' : '') + '" id="boxMenu">'
-      + '<div data-action="mail-box-act" data-a="open">Open</div><div data-action="mail-box-act" data-a="rename">Rename</div><div data-action="mail-box-act" data-a="addr">Add an email address</div><div data-action="mail-box-act" data-a="tag">Add a tag</div><div data-action="mail-box-act" data-a="pipeline">Open in Pipeline</div><div data-action="mail-box-act" data-a="space">Open the Space</div><hr><div data-action="mail-box-act" data-a="close">Close box</div><div data-action="mail-box-act" data-a="remove" class="red">Remove box (mail stays in Inbox)</div></div>'
+      + '<div data-action="mail-box-act" data-a="open">Open</div><div data-action="mail-box-act" data-a="rename">Rename</div><div data-action="mail-box-act" data-a="addr">Add an email address</div><div data-action="mail-box-act" data-a="tag">Add a tag</div>'
+      + '<div class="lb">Move to a folder</div><div data-action="mail-box-act" data-a="folder" data-folder="">Main</div>'
+      + folders.slice(0, 9).map(function (f) {
+        return '<div data-action="mail-box-act" data-a="folder" data-folder="' + esc(f.id || f.name) + '">' + esc(f.name || f.id) + '</div>';
+      }).join('')
+      + '<div data-action="mail-box-act" data-a="pipeline">Open in Pipeline</div><div data-action="mail-box-act" data-a="space">Open the Space</div><hr><div data-action="mail-box-act" data-a="close">Close box</div><div data-action="mail-box-act" data-a="remove" class="red">Remove box (mail stays in Inbox)</div></div>'
       + '<div class="scrim' + (person ? ' on' : '') + '" id="scrim" data-action="mail-pp-close"></div>'
       + '<aside class="pp' + (person ? ' on' : '') + '" id="pp">' + ppHtml + '</aside>';
     if (P().finishPaint) P().finishPaint(wrap);
@@ -2198,15 +2226,16 @@
         }
         if (key === 'reach' && d && Array.isArray(d.people)) window.STATE.reachOut = d.people;
         if (key === 'boxes' && d) {
-          if (Array.isArray(d.boxes) && d.boxes.length) window.STATE.emailBoxes = d.boxes;
+          if (Array.isArray(d.boxes)) window.STATE.emailBoxes = d.boxes;
           if (Array.isArray(d.hidden)) window.STATE.emailBoxHidden = d.hidden;
         }
+        if (key === 'folders' && d && Array.isArray(d.folders)) window.STATE.emailFolders = d.folders;
         if (key === 'prefs' && d && d.prefs) window.STATE.prefs = Object.assign({}, window.STATE.prefs || {}, d.prefs);
         if (desk === 'contacts' && (key === 'pipe' || key === 'reach')) { paintPipelineVisit.loading = false; paintPipelineLive(); }
         if (desk === 'work' && key === 'spaces') paintSpacesLive();
         if (desk === 'docs' && key === 'docs') paintDocumentsLive();
         if (desk === 'docs' && key === 'spaces') paintDocumentsLive();
-        if (desk === 'mail' && /^(mail|boxes|cols|rules|prefs)$/.test(key)) paintEmailLive();
+        if (desk === 'mail' && /^(mail|boxes|cols|rules|prefs|folders)$/.test(key)) paintEmailLive();
         if (desk === 'links') paintLinksLive();
         console.info('[live-map] ' + url, d && typeof d === 'object' ? Object.keys(d) : typeof d);
       }).catch(function () {
@@ -2231,6 +2260,7 @@
       go('/api/mail/columns', 'cols');
       go('/api/mail/rules', 'rules');
       go('/api/mail/boxes', 'boxes');
+      go('/api/mail/folders', 'folders');
       go('/api/prefs', 'prefs');
     }
     if (desk === 'links') liveLog('links', { links: asList((window.STATE || {}).links).length });

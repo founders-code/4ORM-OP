@@ -35,8 +35,22 @@
   function fmtWhen(iso) {
     if (!iso) return '';
     try {
-      return new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Vancouver', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(iso));
+      var d = new Date(iso);
+      var day = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Vancouver', day: 'numeric' }).format(d);
+      var mon = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Vancouver', month: 'short' }).format(d);
+      var year = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Vancouver', year: 'numeric' }).format(d);
+      return day + ' ' + mon + ' ' + year;
     } catch (e) { return String(iso).slice(0, 16); }
+  }
+  function agoChipIso(iso) {
+    if (!iso) return '';
+    var t = new Date(iso);
+    var now = new Date();
+    var a = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    var b = Date.UTC(t.getFullYear(), t.getMonth(), t.getDate());
+    var days = Math.round((a - b) / 86400000);
+    var text = days <= 0 ? 'Today' : days === 1 ? 'Yesterday' : days < 7 ? days + ' days ago' : days < 14 ? '1 week ago' : days < 28 ? Math.round(days / 7) + ' weeks ago' : (Math.max(1, Math.round(days / 30)) + (Math.round(days / 30) === 1 ? ' month ago' : ' months ago'));
+    return '<span class="ago">' + text + '</span>';
   }
   function weekOf(iso) {
     if (!iso) return 'Earlier';
@@ -145,11 +159,11 @@
   }
   function card(r) {
     if (r.proc || r.status === 'transcribing' || r.status === 'summarizing') {
-      return '<div class="rc proc" data-action="rec-open" data-id="' + esc(r.id) + '"><div class="k"><span class="tag ' + esc(r.type) + '">' + esc(TYPES[r.type] || r.type) + '</span><span class="when">' + esc(r.when || r.step || '') + '</span></div><h4>' + esc(r.step || 'Transcribing') + '</h4><p>' + esc(fmtDur(r.duration_s)) + ' recorded. The title, summary and actions appear here when it\'s done.</p><div class="prog"><i style="width:' + (r.pct || 35) + '%"></i></div></div>';
+      return '<div class="rc proc" data-action="rec-open" data-id="' + esc(r.id) + '"><div class="k"><span class="tag ' + esc(r.type) + '">' + esc(TYPES[r.type] || r.type) + '</span><span class="when">' + esc(r.when || r.step || '') + ' ' + agoChipIso(r.started_at) + '</span></div><h4>' + esc(r.step || 'Transcribing') + '</h4><p>' + esc(fmtDur(r.duration_s)) + ' recorded. The title, summary and actions appear here when it\'s done.</p><div class="prog"><i style="width:' + (r.pct || 35) + '%"></i></div></div>';
     }
     var owed = (r.acts || []).filter(function (a) { return a[1] !== 'done'; }).length;
     var ppl = (r.people || []).filter(function (p) { return !/^chad$/i.test(p); }).join(', ') || 'Just you';
-    return '<div class="rc" data-action="rec-open" data-id="' + esc(r.id) + '"><div class="k"><span class="tag ' + esc(r.type) + '">' + esc(TYPES[r.type] || r.type) + '</span><span class="when">' + esc(r.when || '') + '</span></div><h4>' + esc(r.title || 'Recording') + '</h4><p>' + esc(r.summary || '') + '</p><div class="ft"><span>' + esc(fmtDur(r.duration_s)) + '</span><span class="pp">' + esc(ppl) + '</span>' + (owed ? '<span class="ow">' + owed + ' owed</span>' : '') + '</div></div>';
+    return '<div class="rc" data-action="rec-open" data-id="' + esc(r.id) + '"><div class="k"><span class="tag ' + esc(r.type) + '">' + esc(TYPES[r.type] || r.type) + '</span><span class="when">' + esc(r.when || '') + ' ' + agoChipIso(r.started_at) + '</span></div><h4>' + esc(r.title || 'Recording') + '</h4><p>' + esc(r.summary || '') + '</p><div class="ft"><span>' + esc(fmtDur(r.duration_s)) + '</span><span class="pp">' + esc(ppl) + '</span>' + (owed ? '<span class="ow">' + owed + ' owed</span>' : '') + '</div></div>';
   }
   function dayOf(r) {
     if (r.day) return r.day;
@@ -193,7 +207,7 @@
         var hit = [r.title, r.summary].concat((r.transcript || []).map(function (t) { return t.text || ''; })).find(function (x) { return String(x).toLowerCase().indexOf(q) >= 0; });
         if (hit && String(r.title).toLowerCase().indexOf(q) < 0) line = hit;
       }
-      h += '<div class="rw" data-action="rec-open" data-id="' + esc(r.id) + '"><span class="t">' + esc(timeOf(r)) + '</span><div style="min-width:0"><h4>' + esc(r.title) + '</h4><p>' + esc(line) + '</p></div><span class="src' + (src === 'mic' ? ' mic' : '') + '">' + (src === 'mic' ? 'Mic' : 'Computer and mic') + '</span><span class="d">' + mins + ' m</span></div>';
+      h += '<div class="rw" data-action="rec-open" data-id="' + esc(r.id) + '"><span class="t">' + esc(timeOf(r)) + '</span><div style="min-width:0"><h4>' + esc(r.title) + '</h4><p>' + esc(line) + '</p></div><span class="src' + (src === 'mic' ? ' mic' : '') + '">' + (src === 'mic' ? 'Mic' : 'Computer and mic') + '</span><span class="d">' + mins + ' m ' + agoChipIso(r.started_at) + '</span></div>';
     });
     box.innerHTML = h;
   }

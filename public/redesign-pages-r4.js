@@ -171,13 +171,24 @@
     var world = root.getElementById ? root.getElementById('world') : root.querySelector('#world');
     var stage = root.getElementById ? root.getElementById('stage') : root.querySelector('#stage');
     if (!world || !stage) return;
-    var z = 1, ox = -60, oy = -40, drag = null, sel = new Set(), undoPos = null;
+    var savedPan = null;
+    try { savedPan = JSON.parse(localStorage.getItem('cr_notes_pan') || 'null'); } catch (e) { savedPan = null; }
+    var z = (savedPan && Number.isFinite(+savedPan.z) && +savedPan.z > 0) ? +savedPan.z : 1;
+    var ox = (savedPan && Number.isFinite(+savedPan.ox)) ? +savedPan.ox : -60;
+    var oy = (savedPan && Number.isFinite(+savedPan.oy)) ? +savedPan.oy : -40;
+    var drag = null, sel = new Set(), undoPos = null;
+    if (root.__canvasPan) { z = root.__canvasPan.z; ox = root.__canvasPan.ox; oy = root.__canvasPan.oy; }
     var types = TY();
     function apply() {
+      if (!Number.isFinite(z) || z <= 0) z = 1;
+      if (!Number.isFinite(ox)) ox = -60;
+      if (!Number.isFinite(oy)) oy = -40;
       world.style.transform = 'translate(' + ox + 'px,' + oy + 'px) scale(' + z + ')';
       world.classList.toggle('far', z < 0.55);
       var zl = root.getElementById ? root.getElementById('zLbl') : root.querySelector('#zLbl');
-      if (zl) zl.textContent = (Number.isFinite(z) ? Math.round(z * 100) : 100) + '%';
+      if (zl) zl.textContent = Math.round(z * 100) + '%';
+      root.__canvasPan = { z: z, ox: ox, oy: oy };
+      try { localStorage.setItem('cr_notes_pan', JSON.stringify(root.__canvasPan)); } catch (e) {}
       mini();
     }
     function render() {
@@ -272,7 +283,12 @@
         return '<i style="left:' + (n.x * s) + 'px;top:' + (n.y * s) + 'px;width:8px;height:6px;background:#fff;opacity:.9"></i>';
       }).join('');
       var r = stage.getBoundingClientRect();
-      h += '<span class="vp" style="left:' + ((-ox / z) * s) + 'px;top:' + ((-oy / z) * s) + 'px;width:' + ((r.width / z) * s) + 'px;height:' + ((r.height / z) * s) + 'px"></span>';
+      var zz = (Number.isFinite(z) && z > 0) ? z : 1;
+      var left = Number.isFinite((-ox / zz) * s) ? ((-ox / zz) * s) : 0;
+      var top = Number.isFinite((-oy / zz) * s) ? ((-oy / zz) * s) : 0;
+      var vw = Number.isFinite((r.width / zz) * s) ? ((r.width / zz) * s) : 40;
+      var vh = Number.isFinite((r.height / zz) * s) ? ((r.height / zz) * s) : 24;
+      h += '<span class="vp" style="left:' + left + 'px;top:' + top + 'px;width:' + vw + 'px;height:' + vh + 'px"></span>';
       m.innerHTML = h;
     }
     function rename(id) {
@@ -294,6 +310,7 @@
       cn.addEventListener('blur', done, { once: true });
       cn.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); cn.blur(); } });
     }
+    if (!root.__canvasBound) {
     stage.addEventListener('wheel', function (e) {
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) zoomAt(Math.exp(-e.deltaY * 0.0025), e.clientX, e.clientY);
@@ -478,11 +495,34 @@
       z = 1.1; ox = r.width / 2 - (NOTES[i].x + 110) * z; oy = r.height / 2 - (NOTES[i].y + 60) * z;
       sel = new Set([i]); apply(); markSel();
     });
+    var miniEl = root.getElementById ? root.getElementById('mini') : root.querySelector('#mini');
+    if (miniEl) {
+      miniEl.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        drag = { type: 'mini', sx: e.clientX, sy: e.clientY, ox: ox, oy: oy };
+        try { miniEl.setPointerCapture(e.pointerId); } catch (err) {}
+        var box = miniEl.getBoundingClientRect(), s = 180 / 2200, sr = stage.getBoundingClientRect();
+        ox = sr.width / 2 - ((e.clientX - box.left) / s) * z;
+        oy = sr.height / 2 - ((e.clientY - box.top) / s) * z;
+        apply();
+      });
+      miniEl.addEventListener('pointermove', function (e) {
+        if (!drag || drag.type !== 'mini') return;
+        var box = miniEl.getBoundingClientRect(), s = 180 / 2200, sr = stage.getBoundingClientRect();
+        ox = sr.width / 2 - ((e.clientX - box.left) / s) * z;
+        oy = sr.height / 2 - ((e.clientY - box.top) / s) * z;
+        apply();
+      });
+      miniEl.addEventListener('pointerup', function () { if (drag && drag.type === 'mini') drag = null; });
+    }
+    root.__canvasBound = true;
+    }
     render();
     if (fixtureOn()) {
       fit();
       requestAnimationFrame(function () { requestAnimationFrame(function () { fit(); }); });
-    } else centerLatest();
+    } else if (!savedPan && !root.__didCenter) { root.__didCenter = true; centerLatest(); }
+    else apply();
   }
 
   /* ---------- Spaces arrange ---------- */

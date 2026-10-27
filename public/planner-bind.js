@@ -1,4 +1,4 @@
-window.__plannerBody = "<div class=\"page\">\n\n      \n      <div class=\"cmd\">\n        <h1>Planner</h1>\n        <div class=\"vseg\" role=\"group\" aria-label=\"View\"><button data-view=\"lists\" aria-pressed=\"true\">Lists</button><button data-view=\"timeline\" aria-pressed=\"false\">Timeline</button></div>\n        <form class=\"capture capForm\">\n          <input class=\"capText\" placeholder=\"Capture a task or idea, so you don't lose focus\" autocomplete=\"off\" aria-label=\"Capture\">\n          <select class=\"capPipe\" aria-label=\"Where it goes\"></select>\n          <button type=\"submit\">Add</button>\n        </form>\n      </div>\n      <div class=\"focusbar\">\n        <div class=\"fb move2\">\n          <span class=\"k\">One move</span>\n          <select class=\"movePick\" aria-label=\"Today's one move\"></select>\n          <button class=\"tgo\" data-act=\"focus\"><span class=\"flab\">Start</span><span class=\"timerTxt\">25:00</span></button>\n        </div>\n        <button class=\"fb\" data-pop=\"due\"><span class=\"k\">Due 7 days</span><span class=\"n\" id=\"nDue\">0</span></button>\n        <button class=\"fb red\" data-pop=\"red\"><span class=\"k\">Red</span><span class=\"n\" id=\"nRed\">0</span></button>\n        <button class=\"fb gold\" id=\"nextGoal\"><span class=\"k\">Next milestone</span><b></b><span class=\"sm\"></span></button>\n        <div class=\"pop\" id=\"pop-due\" hidden></div>\n        <div class=\"pop\" id=\"pop-red\" hidden></div>\n      </div>\n\n      <section class=\"card\" id=\"boardCard\">\n        <div class=\"bhead\">\n          <nav class=\"chips\" id=\"chipsB\" aria-label=\"Pipelines, drag to reorder\"></nav>\n          <div class=\"bctrl\">\n            <div class=\"seg\" role=\"group\" aria-label=\"Time span\"><button data-zoom=\"3\">3M</button><button data-zoom=\"6\">6M</button><button data-zoom=\"9\">9M</button></div>\n            <button class=\"lbtn\" data-act=\"today\">Today</button>\n            <button class=\"lbtn\" data-view=\"lists\">Back to lists</button>\n            <button class=\"lbtn\" data-pop=\"more\">More</button>\n            <div class=\"pop\" id=\"pop-more\" hidden>\n              <div class=\"menu\">\n                <button data-act=\"links\" id=\"mLinks\">Hide dependency lines</button>\n                <button data-act=\"open\">Open all pipelines</button>\n                <button data-act=\"close\">Close all pipelines</button>\n                              </div>\n              <div class=\"legend\">\n                <span><i class=\"lg ink\"></i>In motion</span><span><i class=\"lg pen\"></i>Pencilled in</span><span><i class=\"lg fade\"></i>Done</span><span><i class=\"lg red\"></i>Overdue or slipping</span><span><i class=\"lg dmd\"></i>Key date</span><span><i class=\"lg dmd\" style=\"--c:var(--gold)\"></i>Milestone</span>\n              </div>\n            </div>\n          </div>\n        </div>\n        <div class=\"scroller\" id=\"scroller\"><div class=\"canvas\" id=\"canvas\"></div></div>\n      </section>\n\n      <section class=\"card\" id=\"listCard\">\n        <div class=\"cardhead\"><h2>Lists</h2><div class=\"gseg\" role=\"group\" aria-label=\"Group by\"><button data-group=\"pipe\" aria-pressed=\"true\">By pipeline</button><button data-group=\"date\" aria-pressed=\"false\">By date</button></div><div class=\"legend\">Every row is a bar on the Timeline. Edit here and the Timeline moves.</div></div>\n        <p class=\"hint\">Click any date to pick it from a calendar, or type <b>MMDD</b> (1030 is 30 Oct). Leave Start empty for a key date. Pick a <b>Milestone</b> on any row to make it feed that milestone. Try it: change <b>Speer MSA signed</b> to <b>1204</b> and watch the MVP milestone turn red.</p>\n        <div class=\"lwrap\" id=\"list\"></div>\n      </section>\n    </div>\n<div id=\"scrim\" hidden></div>\n<aside id=\"drawer\" hidden aria-live=\"polite\"></aside>\n<div class=\"dpk\" id=\"dp\" role=\"dialog\" aria-label=\"Pick a date\"><div class=\"dph\"><button data-dp=\"prev\">Prev</button><b id=\"dpM\"></b><button data-dp=\"next\">Next</button></div><div class=\"dpg\" id=\"dpG\"></div><div class=\"dpf\"><button data-dp=\"today\">Today</button><button data-dp=\"clear\" id=\"dpClear\">Clear</button><span class=\"lab\" id=\"dpL\"></span></div>";
+window.__plannerBody = "<div class=\"page\">\n\n      \n      <div class=\"cmd\">\n        <h1>Planner</h1>\n        <div class=\"vseg\" role=\"group\" aria-label=\"View\"><button data-view=\"lists\" aria-pressed=\"true\">Lists</button><button data-view=\"timeline\" aria-pressed=\"false\">Timeline</button></div>\n        <form class=\"capture capForm\">\n          <input class=\"capText\" placeholder=\"Capture a task or idea, so you don't lose focus\" autocomplete=\"off\" aria-label=\"Capture\">\n          <select class=\"capPipe\" aria-label=\"Where it goes\"></select>\n          <button type=\"submit\">Add</button>\n        </form>\n      </div>\n      <div class=\"focusbar\">\n        <div class=\"fb move2\">\n          <span class=\"k\">One move</span>\n          <select class=\"movePick\" aria-label=\"Today's one move\"></select>\n          <button class=\"tgo\" data-act=\"focus\"><span class=\"flab\">Start</span><span class=\"timerTxt\">25:00</span></button>\n        </div>\n        <button class=\"fb\" data-pop=\"due\"><span class=\"k\">Due 7 days</span><span class=\"n\" id=\"nDue\">0</span></button>\n        <button class=\"fb red\" data-pop=\"red\"><span class=\"k\">Red</span><span class=\"n\" id=\"nRed\">0</span></button>\n        <button class=\"fb gold\" id=\"nextGoal\"><span class=\"k\">Next milestone</span><b></b><span class=\"sm\"></span></button>\n        <div class=\"pop\" id=\"pop-due\" hidden></div>\n        <div class=\"pop\" id=\"pop-red\" hidden></div>\n      </div>\n\n      <section class=\"card\" id=\"boardCard\">\n        <div class=\"bhead\">\n          <nav class=\"chips\" id=\"chipsB\" aria-label=\"Pipelines, drag to reorder\"></nav>\n          <div class=\"bctrl\">\n            <div class=\"seg zseg\" role=\"group\" aria-label=\"Zoom\"><button data-zlv=\"day\">Day</button><button data-zlv=\"week\">Week</button><button data-zlv=\"month\">Month</button><button data-zlv=\"quarter\">Quarter</button><button data-zlv=\"year\">Year</button></div><span class=\"zhint\">Pinch to zoom</span>\n            <button class=\"lbtn\" data-act=\"today\">Today</button>\n            <button class=\"lbtn\" data-view=\"lists\">Back to lists</button>\n            <button class=\"lbtn\" data-pop=\"more\">More</button>\n            <div class=\"pop\" id=\"pop-more\" hidden>\n              <div class=\"menu\">\n                <button data-act=\"links\" id=\"mLinks\">Hide dependency lines</button>\n                <button data-act=\"open\">Open all pipelines</button>\n                <button data-act=\"close\">Close all pipelines</button>\n                              </div>\n              <div class=\"legend\">\n                <span><i class=\"lg ink\"></i>In motion</span><span><i class=\"lg pen\"></i>Pencilled in</span><span><i class=\"lg fade\"></i>Done</span><span><i class=\"lg red\"></i>Overdue or slipping</span><span><i class=\"lg dmd\"></i>Key date</span><span><i class=\"lg dmd\" style=\"--c:var(--gold)\"></i>Milestone</span>\n              </div>\n            </div>\n          </div>\n        </div>\n        <div class=\"addtip\">Pinch to zoom from hours to a year. Drag across an empty part of any pipeline to add a step with those dates; click once for a key date.</div>\n        <div class=\"scroller\" id=\"scroller\"><div class=\"canvas\" id=\"canvas\"></div></div>\n      </section>\n\n      <section class=\"card\" id=\"listCard\">\n        <div class=\"cardhead\"><h2>Lists</h2><div class=\"gseg\" role=\"group\" aria-label=\"Group by\"><button data-group=\"pipe\" aria-pressed=\"true\">By pipeline</button><button data-group=\"date\" aria-pressed=\"false\">By date</button></div><div class=\"legend\">Every row is a bar on the Timeline. Edit here and the Timeline moves.</div></div>\n        <p class=\"hint\">Click any date to pick it from a calendar, or type <b>MMDD</b> (1030 is 30 Oct). Leave Start empty for a key date. Pick a <b>Milestone</b> on any row to make it feed that milestone. Try it: change <b>Speer MSA signed</b> to <b>1204</b> and watch the MVP milestone turn red.</p>\n        <div class=\"lwrap\" id=\"list\"></div>\n      </section>\n    </div>\n<div id=\"scrim\" hidden></div>\n<aside id=\"drawer\" hidden aria-live=\"polite\"></aside>\n<div class=\"dpk\" id=\"dp\" role=\"dialog\" aria-label=\"Pick a date\"><div class=\"dph\"><button data-dp=\"prev\">Prev</button><b id=\"dpM\"></b><button data-dp=\"next\">Next</button></div><div class=\"dpg\" id=\"dpG\"></div><div class=\"dpf\"><button data-dp=\"today\">Today</button><button data-dp=\"clear\" id=\"dpClear\">Clear</button><span class=\"lab\" id=\"dpL\"></span></div>";
 window.bindPlannerPage = function (root, liveItems) {
   if (!root) return;
   try {
@@ -18,7 +18,7 @@ const DAY=864e5;
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const dn=s=>{const[a,b,c]=s.split('-').map(Number);return Math.round(Date.UTC(a,b-1,c)/DAY)};
-const START=dn('2026-10-01'), END=dn('2027-06-30'), DAYS=END-START+1;
+const START=dn('2026-10-01'); let END=dn('2027-06-30'); let DAYS=END-START+1;
 const now=new Date();
 const TODAY=Math.round(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate())/DAY);
 const D=d=>new Date(d*DAY);
@@ -96,7 +96,7 @@ function hydrate(){return RAW.map(r=>{const it={id:r.id,p:r.p,t:r.t||'',n:r.n,o:
 
 const KEY='4ormop-timeline-mock-v2';
 let ITEMS,state;
-function defaults(){return {hidden:[],open:['goals','capital','development'],zoom:'6',links:true,move:'',tx:{},order:PIPES.map(p=>p.id),top:'b',view:'lists',group:'pipe'}}
+function defaults(){return {hidden:[],open:['goals','capital','development'],zoom:'11',links:true,move:'',tx:{},order:PIPES.map(p=>p.id),top:'b',view:'lists',group:'pipe'}}
 
 if(!ITEMS){ITEMS=(liveItems&&liveItems.length)?liveItems:hydrate();state=defaults()}
 state.hidden=new Set(state.hidden);state.open=new Set(state.open);
@@ -115,7 +115,7 @@ function persistItem(i){
   window.authFetch('/api/timeline/items/'+encodeURIComponent(i.id),{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).catch(function(){});
 }
 const ordered=()=>state.order.map(id=>pipe(id)).filter(Boolean);
-/* View: Lists (default) or Timeline. Saved in prefs (view). Group: by date (default) or by pipeline. */
+/* View: Lists (default) or Timeline. Saved in prefs (view). Group: by pipeline (default) or by date. */
 function applyView(){const pg=document.querySelector('.page');if(!pg)return;const v=state.view==='timeline'?'timeline':'lists';pg.classList.toggle('v-lists',v==='lists');pg.classList.toggle('v-timeline',v==='timeline');pg.classList.toggle('g-date',(state.group||'pipe')==='date');
   $$('[data-view]').forEach(b=>{if(b.closest('.vseg'))b.setAttribute('aria-pressed',String(b.dataset.view===v))});
   $$('[data-group]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.group===(state.group||'pipe'))))}
@@ -153,7 +153,7 @@ function chipsHtml(){let c=`<button class="chip" data-all="1">All<span class="ct
 function renderControls(){
   
   $$('[data-top]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.top===state.top));
-  $$('[data-zoom]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.zoom===state.zoom));
+  $$('[data-zlv]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.zlv===levelName())));
   $$('[data-act="links"]').forEach(b=>b.setAttribute('aria-pressed',state.links));
   document.getElementById('mLinks').textContent=state.links?'Hide dependency lines':'Show dependency lines';
   const ch=chipsHtml();(document.getElementById('chipsA')||{}).innerHTML=ch;document.getElementById('chipsB').innerHTML=ch;
@@ -184,11 +184,18 @@ function renderTop(){
 }
 
 /* Board */
+function ppdOf(z){const n=Number(z);if(Number.isFinite(n)&&n>0.4)return n;return ZOOM[z]||11}
+function trackW(){return Math.max(400,(scroller.clientWidth||1100)-LW)}
+const LV={day:()=>trackW()/1.2,week:()=>trackW()/8,month:()=>trackW()/32,quarter:()=>trackW()/95,year:()=>trackW()/370};
+function levelName(){const p=ppdOf(state.zoom);let best='month',bd=1e9;for(const k in LV){const d=Math.abs(Math.log(p/LV[k]()));if(d<bd){bd=d;best=k}}return best}
+function extendYear(){DAYS=END-START+1; if(ppdOf(state.zoom)<=LV.year()*1.2){const need=START+370; if(END<need){END=need;DAYS=END-START+1}}}
 function renderBoard(){
-  ppd=ZOOM[state.zoom];W=DAYS*ppd;LW=innerWidth<640?150:252;
+  extendYear();
+  ppd=ppdOf(state.zoom);W=DAYS*ppd;LW=innerWidth<640?150:252;
   const vis=visPipes();
   let h=`<div class="bands" style="left:${LW}px;width:${W}px">`;
   months().forEach((m,k)=>{h+=`<div class="band${k%2?' alt':''}" style="left:${x(m.s)}px;width:${(m.e-m.s+1)*ppd}px"></div>`});
+  if(ppd>=34){const v0=Math.floor((scroller.scrollLeft||0)/ppd)+START-3,v1=v0+Math.ceil(trackW()/ppd)+6;for(let d=Math.max(START,v0);d<=Math.min(END,v1);d++){h+=`<div class="hl d" style="left:${x(d)}px"></div>`;if(ppd>=320){const st=ppd>=1600?1:ppd>=700?2:6;for(let q=st;q<24;q+=st)h+=`<div class="hl" style="left:${x(d)+q/24*ppd}px"></div>`}}}
   GL().forEach(g=>{h+=`<div class="gline" style="left:${x(g.e)+ppd/2-1}px"></div>`});
   if(TODAY>=START&&TODAY<=END)h+=`<div class="today" style="left:${x(TODAY)+ppd/2-1}px"></div>`;
   h+=`</div><svg class="links" id="links" style="left:${LW}px" width="${W}" height="10"></svg>`;
@@ -200,10 +207,14 @@ function renderBoard(){
   canvas.innerHTML=h;
   requestAnimationFrame(()=>{drawLinks();if(pinned)applyFocus(pinned)});
 }
-function hdrRow(){let t='';
-  months().forEach((m,k)=>{t+=`<div class="mo" style="left:${x(m.s)}px">${MON[m.m]}${(k===0||m.m===0)?`<span>${m.y}</span>`:''}</div>`});
-  let d=START;while(D(d).getUTCDay()!==1)d++;
-  for(;d<=END;d+=7)t+=`<span class="wk" style="left:${x(d)}px">${D(d).getUTCDate()}</span>`;
+function hdrRow(){let t='';const vis0=Math.floor((scroller.scrollLeft||0)/ppd)+START-3,vis1=vis0+Math.ceil(trackW()/ppd)+6;
+  if(ppd<4){months().forEach((m,k)=>{t+=`<div class="mo" style="left:${x(m.s)}px">${m.m%3===0?'Q'+(m.m/3+1)+' ':''}${MON[m.m]}${(k===0||m.m===0)?`<span>${m.y}</span>`:''}</div>`})}
+  else{months().forEach((m,k)=>{t+=`<div class="mo" style="left:${x(m.s)}px">${MON[m.m]}${(k===0||m.m===0)?`<span>${m.y}</span>`:''}</div>`})}
+  if(ppd>=4&&ppd<18){let d=START;while(D(d).getUTCDay()!==1)d++;for(;d<=END;d+=7)t+=`<span class="wk" style="left:${x(d)}px">${D(d).getUTCDate()}</span>`}
+  if(ppd>=18&&ppd<140){for(let d=Math.max(START,vis0);d<=Math.min(END,vis1);d++){const w=D(d).getUTCDay();if(ppd<34&&w!==1)continue;t+=`<span class="hh${w===1?' dy':''}" style="left:${x(d)}px">${ppd>=60?WD[w]+' ':''}${D(d).getUTCDate()}</span>`}}
+  if(ppd>=140){const step=ppd>=1600?1:ppd>=700?2:ppd>=320?6:12;
+    for(let d=Math.max(START,vis0);d<=Math.min(END,vis1);d++){t+=`<span class="hh dy" style="left:${x(d)}px;bottom:24px">${WD[D(d).getUTCDay()]} ${D(d).getUTCDate()} ${MON[D(d).getUTCMonth()]}</span>`;
+      for(let q=step;q<24;q+=step)t+=`<span class="hh" style="left:${x(d)+q/24*ppd}px">${q}:00</span>`}}
   if(TODAY>=START&&TODAY<=END)t+=`<span class="todaytag" style="left:${x(TODAY)+ppd/2}px">Today ${fmt(TODAY)}</span>`;
   return `<div class="row hdr"><div class="lab corner"><span class="kick">Pipeline</span></div><div class="trk" style="width:${W}px">${t}</div></div>`}
 function goalRow(){const gs=GL();const lv=[];let o='';
@@ -241,7 +252,7 @@ function laneRow(p){
     ent.forEach(e=>{const tp=top+e.L*29;
       trk+=e.i.kind==='ms'?`<button class="msi sm ${cls(e.i)}" data-id="${e.i.id}" data-open="${e.i.id}" style="left:${e.x0}px;top:${tp}px"><i class="dia anchor"></i>${esc(e.i.n)}</button>`
         :`<button class="bar sm ${cls(e.i)}${e.nar?' narrow':''} anchor" data-id="${e.i.id}" data-open="${e.i.id}" style="left:${e.x0}px;top:${tp}px;width:${e.w}px;--p:${e.pr.toFixed(1)}%"><span>${esc(e.i.n)}</span></button>`})}
-  return `<div class="row lane" style="--c:var(${p.c})"><div class="lab" draggable="true" data-drag="${p.id}"><button class="lanebtn" data-toggle="${p.id}" aria-expanded="${open}"><span class="l1"><span class="nm">${p.name}</span><span class="oc">${open?'Close':'Open'}</span></span><span class="lmeta">${its.length} items &middot; ${act} in motion${att?` &middot; <em>${att} red</em>`:''}</span>${nx?`<span class="nx">Next: <b>${esc(nx.n)}</b> ${fmt(nx.s)}</span>`:''}</button><button class="solo" data-solo="${p.id}">Show only ${p.name}</button></div><div class="trk" style="width:${W}px;height:${H}px">${trk}</div></div>`}
+  return `<div class="row lane" data-pipe="${p.id}" style="--c:var(${p.c})"><div class="lab" draggable="true" data-drag="${p.id}"><button class="lanebtn" data-toggle="${p.id}" aria-expanded="${open}"><span class="l1"><span class="nm">${p.name}</span><span class="oc">${open?'Close':'Open'}</span></span><span class="lmeta">${its.length} items &middot; ${act} in motion${att?` &middot; <em>${att} red</em>`:''}</span>${nx?`<span class="nx">Next: <b>${esc(nx.n)}</b> ${fmt(nx.s)}</span>`:''}</button><button class="solo" data-solo="${p.id}">Show only ${p.name}</button></div><div class="trk can-add" style="width:${W}px;height:${H}px">${trk}</div></div>`}
 function tracksOf(pid){const t=[];ITEMS.forEach(i=>{if(i.p===pid&&!t.includes(i.t))t.push(i.t)});return t}
 function trackRows(p){
   return tracksOf(p.id).map((t,k)=>{
@@ -253,7 +264,7 @@ function trackRows(p){
         o+=`<button class="msi ${cls(i)}" data-id="${i.id}" data-open="${i.id}" style="left:${x0}px;top:${12+L*38}px"><i class="dia anchor"></i>${esc(i.n)}<small>${fmt(i.s)}</small></button>`}
       else{const bx=x(s),bw=Math.max((i.e-s+1)*ppd,8),w2=tw(i.n),nar=bw<w2;const L=pack(lv,bx,nar?bx+bw+7+w2:bx+bw,6);
         o+=`<button class="bar ${cls(i)}${nar?' narrow':''} anchor" data-id="${i.id}" data-open="${i.id}" style="left:${bx}px;top:${12+L*38}px;width:${bw}px;--p:${prog(i,s).toFixed(1)}%"><span>${esc(i.n)}</span></button>`}});
-    return `<div class="row trackrow" style="--c:var(${p.c});animation-delay:${k*45}ms"><div class="lab"><span class="tn">${esc(t)}</span><small>${its.length} item${its.length===1?'':'s'}</small></div><div class="trk" style="width:${W}px;height:${Math.max(56,18+lv.length*38)}px">${o}</div></div>`}).join('')}
+    return `<div class="row trackrow" data-pipe="${p.id}" data-stream="${esc(t)}" style="--c:var(${p.c});animation-delay:${k*45}ms"><div class="lab"><span class="tn">${esc(t)}</span><small>${its.length} item${its.length===1?'':'s'}</small></div><div class="trk can-add" style="width:${W}px;height:${Math.max(56,18+lv.length*38)}px">${o}</div></div>`}).join('')}
 function anchor(id){const el=canvas.querySelector(`[data-id="${id}"]`);if(!el)return null;return el.classList.contains('anchor')?el:el.querySelector('.anchor')}
 function drawLinks(){
   const svg=document.getElementById('links');if(!svg)return;svg.setAttribute('height',canvas.scrollHeight);
@@ -513,6 +524,42 @@ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(drawLinks);
 function goToday(smooth){const left=Math.max(0,x(TODAY)-Math.min(160,scroller.clientWidth*.18));smooth?scroller.scrollTo({left,behavior:'smooth'}):(scroller.scrollLeft=left)}
 function renderAll(){renderControls();renderTop();renderBoard();renderList();applyView()}
 index();renderAll();drawTimer();goToday(false);
+
+
+/* ===== Zoom, scroll and drag-to-add (18) ===== */
+const ZMIN=2,ZMAX=2400;
+function zoomTo(np,clientX){const r=scroller.getBoundingClientRect();const px=(clientX==null?r.left+LW+trackW()/2:clientX)-r.left-LW;
+  const day=(scroller.scrollLeft+px)/ppd;state.zoom=String(Math.min(ZMAX,Math.max(ZMIN,np)));renderControls();renderBoard();scroller.scrollLeft=Math.max(0,day*ppd-px)}
+let zq=null,zpend=null;function zoomSoon(np,cx){zpend=[np,cx];if(zq)return;zq=requestAnimationFrame(()=>{zq=null;const [a,b]=zpend;zoomTo(a,b);saveSoon()})}
+let stz;function saveSoon(){clearTimeout(stz);stz=setTimeout(save,400)}
+scroller.addEventListener('wheel',e=>{
+  if(e.ctrlKey){e.preventDefault();zoomSoon(ppdOf(state.zoom)*Math.exp(-e.deltaY*0.008),e.clientX);return}
+  if(Math.abs(e.deltaX)>Math.abs(e.deltaY))return;
+  if(e.shiftKey)return;
+},{passive:false});
+let gs0=null;scroller.addEventListener('gesturestart',e=>{e.preventDefault();gs0=ppdOf(state.zoom)});
+scroller.addEventListener('gesturechange',e=>{e.preventDefault();if(gs0)zoomSoon(gs0*e.scale,e.clientX)});
+scroller.addEventListener('gestureend',e=>{e.preventDefault();gs0=null});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-zlv]');if(!b)return;zoomTo(LV[b.dataset.zlv](),null);save()});
+scroller.tabIndex=0;scroller.addEventListener('keydown',e=>{if(e.key==='+'||e.key==='='){zoomTo(ppdOf(state.zoom)*1.4,null);save()}if(e.key==='-'){zoomTo(ppdOf(state.zoom)/1.4,null);save()}});
+let sq;scroller.addEventListener('scroll',()=>{if(ppd<18)return;clearTimeout(sq);sq=setTimeout(()=>{const l=scroller.scrollLeft;renderBoard();scroller.scrollLeft=l},90)});
+let dg=null;
+canvas.addEventListener('pointerdown',e=>{const trk=e.target.closest('.trk.can-add');if(!trk||(e.target!==trk&&!e.target.classList.contains('range'))||e.button!==0)return;
+  const row=trk.closest('.row');const r=trk.getBoundingClientRect();const d0=START+Math.floor((e.clientX-r.left)/ppd);
+  const g=document.createElement('div');g.className='ghost';g.style.setProperty('--c',getComputedStyle(row).getPropertyValue('--c'));g.style.top=Math.max(6,e.clientY-r.top-13)+'px';trk.appendChild(g);
+  dg={trk,row,r,d0,d1:d0,g};updG();trk.setPointerCapture(e.pointerId);e.preventDefault()});
+function updG(){const a=Math.min(dg.d0,dg.d1),b=Math.max(dg.d0,dg.d1);dg.g.style.left=x(a)+'px';dg.g.style.width=Math.max(ppd,(b-a+1)*ppd)+'px';dg.g.innerHTML=`<b>${a===b?'Key date '+fmt(a):fmt(a)+' to '+fmt(b)}</b>`}
+canvas.addEventListener('pointermove',e=>{if(!dg)return;dg.d1=Math.max(START,Math.min(END,START+Math.floor((e.clientX-dg.r.left)/ppd)));updG()});
+canvas.addEventListener('pointerup',e=>{if(!dg)return;const a=Math.min(dg.d0,dg.d1),b=Math.max(dg.d0,dg.d1);const {row,g,trk}=dg;dg=null;askName(row,trk,g,a,b)});
+function askName(row,trk,g,a,b){const pid=row.dataset.pipe||row.getAttribute('data-pipe'),stream=row.dataset.stream||row.getAttribute('data-stream')||'Inbox';const P=pipe(pid)||{name:'Pipeline'};
+  const box=document.createElement('div');box.className='newbox';box.style.left=Math.min(parseFloat(g.style.left)||0,W-460)+'px';box.style.top=((parseFloat(g.style.top)||0)+32)+'px';
+  box.innerHTML=`<input id="f-newstep" placeholder="Name this step, press Return"><small>${P.name} · ${a===b?fmt(a):fmt(a)+' to '+fmt(b)}</small><button data-nb="ok">Add</button><button class="x2" data-nb="x">Cancel</button>`;
+  trk.appendChild(box);const inp=box.querySelector('input');inp.focus();
+  const done=ok=>{const n=inp.value.trim();box.remove();g.remove();if(!ok||!n)return;
+    const id=addItem(pid,n,false,{s:a,e:b});const it=byId[id]||ITEMS[ITEMS.length-1];it.t=stream;if(a===b){it.kind='ms';it.s=it.e=a}else{it.kind='span';it.s=a;it.e=b}
+    save();index();renderAll();const bar=canvas.querySelector(`[data-id="${it.id}"]`);bar&&bar.classList.add('flash')};
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();done(true)}if(e.key==='Escape')done(false)});
+  box.addEventListener('click',e=>{const t=e.target.closest('[data-nb]');if(t)done(t.dataset.nb==='ok')})}
 
 /* Date picker for every Start, Due and Target field (list rows, add-step row, drawer).
    Picking a day writes the date and fires the field's change, so the bar moves on the Timeline at once. Typing MMDD still works. */

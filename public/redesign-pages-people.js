@@ -804,7 +804,7 @@
         var c = findContact(id) || {};
         Array.from(document.querySelectorAll('#drawer a[href^="mailto:"], #drawer a[href^="tel:"]')).forEach(function (a) {
           var href = a.getAttribute('href') || '';
-          if (href === 'mailto:' || href === 'tel:' || href === 'mailto:undefined' || href === 'tel:undefined') {
+          if (href === 'mailto:' || href === 'tel:' || href === 'mailto:undefined' || href === 'tel:undefined' || href === 'tel:null' || /^tel:\s*$/.test(href) || (href.indexOf('tel:') === 0 && !/\d/.test(href))) {
             if (/^mailto:/.test(href)) {
               a.removeAttribute('href');
               a.setAttribute('data-action', 'people-add-email');

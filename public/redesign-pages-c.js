@@ -1020,6 +1020,22 @@
     return { meetings: meetings, meta: notes.length + ' meetings' };
   }
 
+  function fmtMeetingDay(ymd) {
+    if (!ymd) return '';
+    var d = new Date(ymd + 'T12:00:00');
+    var mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()];
+    return d.getDate() + ' ' + mon + ' ' + d.getFullYear();
+  }
+  function agoChip(ymd) {
+    if (!ymd) return '';
+    var t = new Date(ymd + 'T12:00:00');
+    var now = new Date();
+    var a = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    var b = Date.UTC(t.getFullYear(), t.getMonth(), t.getDate());
+    var days = Math.round((a - b) / 86400000);
+    var text = days <= 0 ? 'Today' : days === 1 ? 'Yesterday' : days < 7 ? days + ' days ago' : days < 14 ? '1 week ago' : days < 28 ? Math.round(days / 7) + ' weeks ago' : (Math.max(1, Math.round(days / 30)) + (Math.round(days / 30) === 1 ? ' month ago' : ' months ago'));
+    return '<span class="ago">' + text + '</span>';
+  }
   function paintZoomLive() {
     var wrap = wrapOf('zoomDesk');
     if (!wrap) { markReady('zoomDesk'); return; }
@@ -1051,7 +1067,7 @@
         var people = asList(x.p).filter(function (p) { return !isChad(p); });
         var who = people.length ? people.slice(0, 2).join(', ') + (people.length > 2 ? ' +' + (people.length - 2) : '') : 'Just you';
         var leadName = people[0] ? people[0].split(' ')[0] : '';
-        h += '<div class="mc" data-action="zoom-open" data-i="' + i + '" data-id="' + esc(x.id || '') + '"><div class="d">' + esc(x.m) + ' ' + x.d + (x.y ? ', ' + x.y : '') + '<span class="src">' + esc(x.src) + '</span></div><div class="t">' + esc(x.t) + '</div>'
+        h += '<div class="mc" data-action="zoom-open" data-i="' + i + '" data-id="' + esc(x.id || '') + '"><div class="d">' + esc(fmtMeetingDay(x.ymd)) + ' ' + agoChip(x.ymd) + '<span class="src">' + esc(x.src) + '</span></div><div class="t">' + esc(x.t) + '</div>'
           + '<div class="pp2">' + (people.map(function (n) { return '<span class="av" style="background:' + zcol(n) + '">' + esc(ini(n)) + '</span>'; }).join('') || '<span class="av" style="background:#8a96ad;margin:0">CJ</span>') + '<span class="n">' + esc(who) + '</span></div>'
           + '<div class="sn' + (x.solo ? ' self' : '') + '">' + (x.solo ? '<b style="color:#46556E">Note to self:</b> ' : (leadName ? '<b>' + esc(leadName) + ':</b> ' : '')) + esc(stripLead(x.s, x.p)) + '</div>'
           + '<div class="ft">' + (x.solo ? '<span class="tag solo">Solo</span>' : x.owe ? '<span class="tag owe">You owe ' + x.owe + '</span>' : '<span class="tag solo">Nothing owed</span>') + '<span class="op" data-action="zoom-open" data-i="' + i + '" data-id="' + esc(x.id || '') + '">Open</span><span class="ib" title="Edit" data-action="zoom-edit" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">Edit</span><span class="ib" title="Delete" data-action="zoom-archive" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">Delete</span></div></div>';
@@ -1069,7 +1085,7 @@
         var said = {};
         if (p.length && x.s) said[p[0]] = [x.s];
         var owe = asList(x.actions);
-        var whenTxt = x.ymd ? new Date(x.ymd + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : '';
+        var whenTxt = fmtMeetingDay(x.ymd);
         return { when: whenTxt, roles: x.roles || {}, said: x.said || (x.solo ? {} : said), summary: x.aiSummary || (x.solo ? String(x.s || '').replace(/^Note to self:\s*/i, '') : x.s), improve: asList(x.improve), owe: owe, quotes: asList(x.quotes), decided: asList(x.decided) };
       }
       function reader(i) {
@@ -1077,7 +1093,7 @@
         function av(n) { return '<span class="av" style="background:' + zcol(n) + '">' + esc(ini(n)) + '</span>'; }
         var people = asList(x.p);
         return '<div class="rh" style="margin-top:-6px"><h2>' + esc(x.t) + '</h2><div class="ic"><span class="ib" title="Edit" data-action="zoom-edit" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">Edit</span><span class="ib" title="Delete" data-action="zoom-archive" data-id="' + esc(x.id || '') + '" data-title="' + esc(x.t || '') + '">Delete</span></div></div>'
-          + '<div class="when">' + esc(r.when) + ' &middot; ' + esc(x.src) + ' notes' + (x.src === 'Zoom' ? ' + recording + transcript' : '') + '</div>'
+          + '<div class="when">' + esc(r.when) + ' ' + agoChip(x.ymd) + ' &middot; ' + esc(x.src) + ' notes' + (x.src === 'Zoom' ? ' + recording + transcript' : '') + '</div>'
           + '<div class="ppl">' + people.map(function (n) { return '<span class="pp">' + av(n) + esc(n) + (r.roles[n] ? ' <em>&middot; ' + esc(r.roles[n]) + '</em>' : '') + '</span>'; }).join('') + '<span class="pp"><span class="av" style="background:#8a96ad">CJ</span>You</span></div>'
           + '<div class="acts">' + (x.transcript ? '<button class="btn sm pri" data-action="zoom-transcript" data-i="' + i + '">Open transcript</button>' : '') + (x.recordingUrl ? '<button class="btn sm" data-action="zoom-play" data-url="' + esc(x.recordingUrl) + '">Play recording</button>' : '') + '<button class="btn sm" data-action="zoom-follow" data-name="' + esc(people[0] || '') + '">Draft follow-up email</button><button class="btn sm" data-action="zoom-space" data-i="' + i + '" data-id="' + esc(x.id || '') + '">Add to a Space</button>' + (people[0] ? '<button class="btn sm" data-action="zoom-contact" data-name="' + esc(people[0]) + '">Open ' + esc(people[0].split(' ')[0]) + ' in Contacts</button>' : '') + '</div>'
           + '<div class="ai"><div class="sh"><b>4orm Intelligence on this meeting</b><span>summary</span></div><p>' + esc(r.summary) + '</p><div class="ask"><input placeholder="Ask about this meeting" data-action="zoom-ask-input"><button class="btn sm pri" data-action="zoom-ask">Ask</button></div></div>'

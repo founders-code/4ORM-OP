@@ -41,6 +41,14 @@ async function ensureBoxes(sql: NonNullable<Awaited<ReturnType<typeof openBoard>
     created_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (owner_id, sender)
   )`;
+  await sql`CREATE TABLE IF NOT EXISTS email_box_folders (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id text NOT NULL,
+    name text NOT NULL,
+    position int NOT NULL DEFAULT 0,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`;
+  await sql`ALTER TABLE email_boxes ADD COLUMN IF NOT EXISTS folder_id uuid`;
   await sql`CREATE TABLE IF NOT EXISTS box_restore_log (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id text NOT NULL,
@@ -65,7 +73,7 @@ export async function GET() {
     if (!session.sql) return NextResponse.json({ boxes: [] });
     await ensureBoxes(session.sql);
     const rows = await session.sql`
-      SELECT key, name, org, color, closed, position, extra
+      SELECT key, name, org, color, closed, position, extra, folder_id
       FROM email_boxes
       WHERE owner_id = ${ownerId} AND deleted_at IS NULL
       ORDER BY position ASC, created_at ASC
@@ -90,7 +98,7 @@ export async function GET() {
       addrMap[k] = addrMap[k] || [];
       addrMap[k].push(String(a.email || ''));
     });
-    const boxes = (rows || []).map((r: { key?: string; name?: string; org?: string; color?: string; closed?: boolean; extra?: Record<string, unknown> }) => {
+    const boxes = (rows || []).map((r: { key?: string; name?: string; org?: string; color?: string; closed?: boolean; extra?: Record<string, unknown>; folder_id?: string }) => {
       const extra = (r.extra && typeof r.extra === 'object') ? r.extra : {};
       return Object.assign({}, extra, {
         id: r.key,
@@ -98,6 +106,7 @@ export async function GET() {
         o: r.org,
         c: r.color,
         closed: !!r.closed,
+        folder_id: r.folder_id || extra.folder_id || '',
         tags: tagMap[String(r.key)] || extra.tags || [],
         addrs: addrMap[String(r.key)] || extra.addrs || []
       });

@@ -183,7 +183,7 @@
     if (!promote || typeof window.__peopleState !== 'function') return null;
     var live = (window.__peopleState().boxes || []).filter(function (b) { return String(b.id) === String(id); })[0];
     if (!live) return null;
-    var copy = { id: live.id, n: live.n, o: live.o, c: live.c, tags: (live.tags || []).slice(), addrs: (live.addrs || []).slice(), closed: !!live.closed };
+    var copy = { id: live.id, n: live.n, o: live.o, c: live.c, tags: (live.tags || []).slice(), addrs: (live.addrs || []).slice(), closed: !!live.closed, folder_id: live.folder_id || live.folder || '' };
     list.push(copy);
     return copy;
   }
@@ -192,7 +192,7 @@
     var list = peopleBoxList();
     if (fixtureOn()) return;
     var clean = list.map(function (b) {
-      return { id: b.id, n: b.n, o: b.o || '', c: b.c || '#2e6bf2', tags: b.tags || [], addrs: b.addrs || [], closed: !!b.closed };
+      return { id: b.id, n: b.n, o: b.o || '', c: b.c || '#2e6bf2', tags: b.tags || [], addrs: b.addrs || [], closed: !!b.closed, folder_id: b.folder_id || b.folder || '' };
     });
     S().emailBoxes = list;
     try { localStorage.setItem('cr_email_boxes', JSON.stringify(clean)); } catch (e) {}
@@ -200,6 +200,28 @@
     var body = { action: 'save', boxes: clean };
     if (opts && Array.isArray(opts.confirmRemove) && opts.confirmRemove.length) body.confirmRemove = opts.confirmRemove.map(String);
     api('/api/mail/boxes', { method: 'POST', body: body }).catch(function () {});
+  }
+  function fileBoxInFolder(id, folderId, root) {
+    var box = findPeopleBox(id, true);
+    var view = personBox(id);
+    var prev = box ? (box.folder_id || box.folder || '') : '';
+    if (!box && view) box = findPeopleBox(id, true);
+    if (!box) return;
+    box.folder_id = folderId || '';
+    box.folder = folderId || '';
+    persistPeopleBoxes();
+    if (writeOk() && box.id) {
+      api('/api/mail/boxes/' + encodeURIComponent(box.id), { method: 'PATCH', body: { folder_id: folderId || null, n: box.n, o: box.o, c: box.c, addrs: box.addrs } }).catch(function () {});
+    }
+    refresh('mail');
+    var fname = folderId ? ((S().emailFolders || []).filter(function (f) { return String(f.id) === String(folderId) || f.name === folderId; })[0] || {}).name || folderId : 'Main';
+    toast(root, 'Filed in ' + fname, function () {
+      box.folder_id = prev;
+      box.folder = prev;
+      persistPeopleBoxes();
+      if (writeOk()) api('/api/mail/boxes/' + encodeURIComponent(box.id), { method: 'PATCH', body: { folder_id: prev || null } }).catch(function () {});
+      refresh('mail');
+    }, 6000);
   }
 
   /* ---------- focus timer ---------- */
@@ -2460,11 +2482,79 @@
     'space-menu': function (el, root) {
       var menu = root.getElementById && root.getElementById('menu');
       if (!menu) { soon(root, 'Space menu'); return; }
-      var r = el.getBoundingClientRect();
-      menu.style.left = (r.right - 200) + 'px';
-      menu.style.top = (r.bottom + 6) + 'px';
+      var id = attr(el, 'data-id') || '';
+      var hit = (S().packages || []).filter(function (p) { return String(p.id) === id; })[0] || {};
+      var docs = (hit.docs && hit.docs.length) || Number(hit.docCount) || 0;
+      var groups = ['General', 'Venture Capital', 'Business', 'Regulators'];
+      var cur = hit.spaceCategory || hit.category || '';
+      var pin = !!(hit.pin || hit.pinned);
+      menu.innerHTML = '<div class="it" data-action="space-open" data-id="' + esc(id) + '" data-space="' + esc(id) + '">Open<small>Return</small></div>'
+        + '<div class="it" data-action="space-rename-inline" data-id="' + esc(id) + '">Rename</div>'
+        + '<div class="lb">Move to group</div><div class="grp">' + groups.map(function (g) {
+          return '<span data-action="space-move-group" data-group="' + esc(g) + '" class="' + (g === cur ? 'cur' : '') + '">' + esc(g) + '</span>';
+        }).join('') + '</div>'
+        + '<hr><div class="it" data-action="space-pin" data-id="' + esc(id) + '">' + (pin ? 'Unpin' : 'Pin to top') + '</div>'
+        + '<div class="it" data-action="space-people" data-id="' + esc(id) + '">Add people</div>'
+        + '<div class="it" data-action="space-copy-link" data-id="' + esc(id) + '">Copy link</div>'
+        + '<div class="it" data-action="space-drive" data-id="' + esc(id) + '">Move to Drive<small>' + docs + ' docs</small></div>'
+        + '<hr><div class="it red del" data-action="space-archive" data-id="' + esc(id) + '">Delete space</div>';
+      menu.setAttribute('data-id', id);
+      menu.style.position = 'fixed';
       menu.style.display = 'block';
-      menu.setAttribute('data-id', attr(el, 'data-id') || '');
+      menu.classList.add('on', 'smenu');
+      var r = el.getBoundingClientRect();
+      var mh = menu.offsetHeight || 280, mw = menu.offsetWidth || 236;
+      var top = r.bottom + 6;
+      if (top + mh > window.innerHeight - 8) top = Math.max(8, r.top - mh - 6);
+      var left = Math.min(Math.max(8, r.right - mw), window.innerWidth - mw - 8);
+      menu.style.left = left + 'px';
+      menu.style.top = top + 'px';
+      menu.style.right = 'auto';
+      menu.style.bottom = 'auto';
+      menu.style.zIndex = '80';
+    },
+    'space-rename-inline': function (el, root) {
+      var menu = root.getElementById && root.getElementById('menu');
+      var id = (menu && attr(menu, 'data-id')) || attr(el, 'data-id');
+      var hit = (S().packages || []).filter(function (p) { return String(p.id) === id; })[0];
+      if (!menu || !id) return;
+      menu.innerHTML = '<div class="ren"><input id="renIn" value="' + esc((hit && hit.name) || '') + '"><button type="button" class="btn" data-action="space-rename-save">Save</button></div>';
+      var inp = menu.querySelector('#renIn');
+      if (inp) { inp.focus(); inp.select(); inp.onkeydown = function (k) { if (k.key === 'Enter') { k.preventDefault(); actions['space-rename-save'](inp, root); } if (k.key === 'Escape' && menu) { menu.style.display = 'none'; menu.classList.remove('on'); } }; }
+    },
+    'space-rename-save': function (el, root) {
+      var menu = root.getElementById && root.getElementById('menu');
+      var id = menu && attr(menu, 'data-id');
+      var inp = menu && menu.querySelector('#renIn');
+      var next = inp && String(inp.value || '').trim();
+      if (menu) menu.style.display = 'none';
+      if (!id || !next) return;
+      var hit = (S().packages || []).filter(function (p) { return String(p.id) === id; })[0];
+      if (hit) hit.name = next;
+      refresh('spaces');
+      if (!writeOk()) { toast(root, 'Renamed (fixture)'); return; }
+      api('/api/spaces/' + encodeURIComponent(id), { method: 'PATCH', body: { name: next } }).then(ok).then(function () { toast(root, 'Renamed'); }).catch(function () { toast(root, 'Could not rename that space'); });
+    },
+    'space-pin': function (el, root) {
+      var id = attr(el, 'data-id') || (root.getElementById && root.getElementById('menu') && attr(root.getElementById('menu'), 'data-id'));
+      var menu = root.getElementById && root.getElementById('menu');
+      if (menu) menu.style.display = 'none';
+      var hit = (S().packages || []).filter(function (p) { return String(p.id) === id; })[0];
+      if (hit) hit.pin = !hit.pin;
+      if (hit && hit.pin) {
+        S().packages = [hit].concat((S().packages || []).filter(function (p) { return String(p.id) !== id; }));
+      }
+      refresh('spaces');
+      toast(root, hit && hit.pin ? 'Pinned to top' : 'Unpinned');
+      if (writeOk() && id) api('/api/spaces/' + encodeURIComponent(id), { method: 'PATCH', body: { pin: !!(hit && hit.pin) } }).catch(function () {});
+    },
+    'space-copy-link': function (el, root) {
+      var id = attr(el, 'data-id') || (root.getElementById && root.getElementById('menu') && attr(root.getElementById('menu'), 'data-id'));
+      var menu = root.getElementById && root.getElementById('menu');
+      if (menu) menu.style.display = 'none';
+      var url = location.origin + '/spaces?space=' + encodeURIComponent(id || '');
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).catch(function () {});
+      toast(root, 'Link copied');
     },
     'space-move-group': function (el, root) {
       var menu = root.getElementById && root.getElementById('menu');
@@ -2513,7 +2603,7 @@
         if (writeOk() && UUID_RE.test(String(id))) {
           api('/api/spaces/' + encodeURIComponent(id), { method: 'POST', body: { action: 'restore' } }).catch(function () {});
         }
-      });
+      }, 6000);
       if (!writeOk() || !UUID_RE.test(String(id))) return;
       api('/api/spaces/' + encodeURIComponent(id), { method: 'DELETE' }).then(ok).then(json).then(function (d) {
         if (d && d.ok === false) throw new Error('not deleted');
@@ -3501,6 +3591,31 @@
       openCompose({ to: addr ? [{ email: addr, name: box.n }] : [], reply: true, subject: /^re:/i.test(sj) ? sj : 'Re: ' + sj, threadId: row[4] || '', messageId: row[5] || '' });
     },
     'mail-compose-resize': function () {},
+    'mail-folder-open': function (el) {
+      S().mailFolder = attr(el, 'data-folder') || '';
+      refresh('mail');
+    },
+    'mail-folder-new': function (el, root) {
+      var name = String(window.prompt('Folder name') || '').trim().slice(0, 40);
+      if (!name || /^main$/i.test(name)) return;
+      var folders = S().emailFolders || [];
+      if (folders.length >= 9) { toast(root, 'Nine folders is the cap'); return; }
+      if (fixtureOn()) {
+        folders.push({ id: name, name: name });
+        S().emailFolders = folders;
+        refresh('mail');
+        return;
+      }
+      api('/api/mail/folders', { method: 'POST', body: { name: name } }).then(ok).then(json).then(function (d) {
+        if (d && d.folder) folders.push(d.folder);
+        else folders.push({ id: name, name: name });
+        S().emailFolders = folders;
+        refresh('mail');
+      }).catch(function () { toast(root, 'Could not add that folder'); });
+    },
+    'mail-box-folder': function (el, root) {
+      fileBoxInFolder(attr(el, 'data-id') || S().mailPeopleMenu, attr(el, 'data-folder') || '', root);
+    },
     'mail-box-remove': function (el, root) {
       var id = attr(el, 'data-id');
       var view = personBox(id);
@@ -3634,8 +3749,11 @@
       } else if (a === 'tag') {
         var t = window.prompt('Add a tag');
         if (t) { box.tags = box.tags || []; box.tags.push(String(t).toLowerCase().replace(/^#/, '')); persistPeopleBoxes(); }
-      } else if (a === 'close') {
+      } else       if (a === 'close') {
         box.closed = true; S().mailPeopleDrawer = true; persistPeopleBoxes(); toast(root, box.n + ' closed');
+      } else if (a === 'folder') {
+        fileBoxInFolder(box.id, attr(el, 'data-folder') || '', root);
+        return;
       }
       refresh('mail');
     },
@@ -4137,12 +4255,19 @@
       if (window.__newsHandle) window.__newsHandle('news-save', el, root);
       else toast(root, 'Added to a Space');
     },
-    'news-source': function () {},
+    'news-source': function (el) {
+      var href = attr(el, 'href');
+      if (href && href !== '#') window.open(href, '_blank', 'noopener,noreferrer');
+    },
     'owed-today': function (el, root) { go('war'); toast(root, 'Added to Today'); },
     'owed-done': function (el, root) { toast(root, 'Marked done'); },
     'pipe-reach': function () { go('contacts'); },
     'news-act': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-act', el, root); },
     'news-topic': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-topic', el, root); },
+    'news-pulse-view': function () {},
+    'news-heat-focus': function () {},
+    'news-heat-clear': function () {},
+    'news-reg-week': function () {},
     'news-url': function (el, root) { if (window.__newsHandle) window.__newsHandle('news-url', el, root); }
   };
 
@@ -5462,6 +5587,12 @@
       if (!writeOk()) { toast(root, 'Filed (fixture)'); return; }
       fileMail(root, id, column, false, payload.email);
       return;
+    }
+    if (act === 'mail-folder-open') {
+      if (payload.kind === 'box') {
+        fileBoxInFolder(payload.id, attr(col, 'data-folder') || '', root);
+        return;
+      }
     }
     if (act === 'mail-box-drag') {
       /* B59: a loose sender dropped on a box adds that address to the box (saved). */
