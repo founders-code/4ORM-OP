@@ -34,8 +34,19 @@ for (const name of htmlOnDisk) {
 
 for (const item of entries) {
   const name = item.file.replace(/^redesign\//, '');
-  if (!htmlOnDisk.includes(name)) {
+  const bufPath = join(REDESIGN, name);
+  let buf;
+  try {
+    buf = readFileSync(bufPath);
+  } catch {
     failures.push(`${item.file} is in MANIFEST.json but missing on disk`);
+    continue;
+  }
+  if (name.endsWith('.html')) continue;
+  const bytes = buf.length;
+  const hash = sha16(buf);
+  if (bytes !== item.bytes || hash !== item.sha256) {
+    failures.push(`${name} changed without a MANIFEST update (got ${bytes} ${hash}, manifest ${item.bytes} ${item.sha256})`);
   }
 }
 
