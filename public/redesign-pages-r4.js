@@ -178,6 +178,13 @@
     var oy = (savedPan && Number.isFinite(+savedPan.oy)) ? +savedPan.oy : -40;
     var drag = null, sel = new Set(), undoPos = null;
     if (root.__canvasPan) { z = root.__canvasPan.z; ox = root.__canvasPan.ox; oy = root.__canvasPan.oy; }
+    function pan() { return root.__canvasPan || (root.__canvasPan = { z: z, ox: ox, oy: oy }); }
+    function setPan(nz, nx, ny) {
+      if (Number.isFinite(nz) && nz > 0) z = nz;
+      if (Number.isFinite(nx)) ox = nx;
+      if (Number.isFinite(ny)) oy = ny;
+      root.__canvasPan = { z: z, ox: ox, oy: oy };
+    }
     var types = TY();
     function apply() {
       if (!Number.isFinite(z) || z <= 0) z = 1;
@@ -311,12 +318,17 @@
       cn.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); cn.blur(); } });
     }
     if (!root.__canvasBound) {
-    stage.addEventListener('wheel', function (e) {
+    root.addEventListener('wheel', function (e) {
+      if (!e.target.closest || !e.target.closest('#stage')) return;
       e.preventDefault();
+      var p = pan();
       if (e.ctrlKey || e.metaKey) zoomAt(Math.exp(-e.deltaY * 0.0025), e.clientX, e.clientY);
-      else { ox -= e.deltaX; oy -= e.deltaY; apply(); }
-    }, { passive: false });
-    stage.addEventListener('pointerdown', function (e) {
+      else { setPan(p.z, p.ox - e.deltaX, p.oy - e.deltaY); apply(); }
+    }, { passive: false, capture: true });
+    root.addEventListener('pointerdown', function (e) {
+      stage = root.querySelector('#stage') || stage;
+      world = root.querySelector('#world') || world;
+      if (!stage || !(e.target.closest && e.target.closest('#stage'))) return;
       var note = e.target.closest('.note'), cn = e.target.closest('.cn'), rz = e.target.closest('.rz');
       if (cn && cn.isContentEditable) return;
       var w = toWorld(e.clientX, e.clientY), wx = w[0], wy = w[1];
@@ -340,7 +352,9 @@
       else { drag = { type: 'pan', sx: e.clientX, sy: e.clientY, ox: ox, oy: oy }; stage.classList.add('pan'); sel.clear(); markSel(); }
       try { stage.setPointerCapture(e.pointerId); } catch (err) {}
     });
-    stage.addEventListener('pointermove', function (e) {
+    root.addEventListener('pointermove', function (e) {
+      stage = root.querySelector('#stage') || stage;
+      world = root.querySelector('#world') || world;
       if (!drag) return;
       var w = toWorld(e.clientX, e.clientY), wx = w[0], wy = w[1];
       if (drag.type === 'pan') { ox = drag.ox + e.clientX - drag.sx; oy = drag.oy + e.clientY - drag.sy; apply(); return; }
@@ -380,7 +394,9 @@
         }
       }
     });
-    stage.addEventListener('pointerup', function (e) {
+    root.addEventListener('pointerup', function (e) {
+      stage = root.querySelector('#stage') || stage;
+      world = root.querySelector('#world') || world;
       if (!drag) return;
       stage.classList.remove('pan');
       if (drag.type === 'note') {
@@ -495,26 +511,17 @@
       z = 1.1; ox = r.width / 2 - (NOTES[i].x + 110) * z; oy = r.height / 2 - (NOTES[i].y + 60) * z;
       sel = new Set([i]); apply(); markSel();
     });
-    var miniEl = root.getElementById ? root.getElementById('mini') : root.querySelector('#mini');
-    if (miniEl) {
-      miniEl.addEventListener('pointerdown', function (e) {
-        e.preventDefault();
-        drag = { type: 'mini', sx: e.clientX, sy: e.clientY, ox: ox, oy: oy };
-        try { miniEl.setPointerCapture(e.pointerId); } catch (err) {}
-        var box = miniEl.getBoundingClientRect(), s = 180 / 2200, sr = stage.getBoundingClientRect();
-        ox = sr.width / 2 - ((e.clientX - box.left) / s) * z;
-        oy = sr.height / 2 - ((e.clientY - box.top) / s) * z;
-        apply();
-      });
-      miniEl.addEventListener('pointermove', function (e) {
-        if (!drag || drag.type !== 'mini') return;
-        var box = miniEl.getBoundingClientRect(), s = 180 / 2200, sr = stage.getBoundingClientRect();
-        ox = sr.width / 2 - ((e.clientX - box.left) / s) * z;
-        oy = sr.height / 2 - ((e.clientY - box.top) / s) * z;
-        apply();
-      });
-      miniEl.addEventListener('pointerup', function () { if (drag && drag.type === 'mini') drag = null; });
-    }
+    root.addEventListener('pointerdown', function (e) {
+      var miniEl = root.querySelector('#mini');
+      if (!miniEl || !(e.target.closest && e.target.closest('#mini'))) return;
+      stage = root.querySelector('#stage') || stage;
+      e.preventDefault();
+      drag = { type: 'mini', sx: e.clientX, sy: e.clientY, ox: ox, oy: oy };
+      var box = miniEl.getBoundingClientRect(), s = 180 / 2200, sr = stage.getBoundingClientRect();
+      ox = sr.width / 2 - ((e.clientX - box.left) / s) * z;
+      oy = sr.height / 2 - ((e.clientY - box.top) / s) * z;
+      apply();
+    }, true);
     root.__canvasBound = true;
     }
     render();
