@@ -184,6 +184,13 @@
     "sha256": "1e6f5a882d528914"
   },
   {
+    "file": "redesign/09b-playbook-wording.html",
+    "page": "Playbook wording (names, links, lines). 09-playbook.html stays the layout spec.",
+    "route": "/playbook?fixture=mockup",
+    "bytes": 79248,
+    "sha256": "b022b28a6a7757b0"
+  },
+  {
     "file": "redesign/10-calendar.html",
     "page": "Calendar",
     "route": "/calendar",
