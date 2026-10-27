@@ -105,6 +105,13 @@
     "sha256": "a8989a6f191470c2"
   },
   {
+    "file": "redesign/05g-spaces-menu.html",
+    "page": "Spaces three-dot card menu, fixed under the dots",
+    "route": "/spaces?fixture=mockup&menu=1",
+    "bytes": 30239,
+    "sha256": "2fbdfb2de9b9ba22"
+  },
+  {
     "file": "redesign/06-documents.html",
     "page": "Documents",
     "route": "/documents",
@@ -160,7 +167,7 @@
     "route": "/email?view=people",
     "bytes": 74730,
     "sha256": "f35357c8d14a0d6c",
-    "superseded_by": "08h-email-people-remove.html"
+    "superseded_by": "08j-email-people-folders.html"
   },
   {
     "file": "redesign/08f-email-person-open.html",
@@ -240,6 +247,13 @@
     "sha256": "c20ffac42e2304b8"
   },
   {
+    "file": "redesign/13c-news-pulse.html",
+    "page": "News Market pulse band between chips and top release",
+    "route": "/news?fixture=mockup",
+    "bytes": 72798,
+    "sha256": "08fd9a5ef42bdce7"
+  },
+  {
     "file": "redesign/14-drive.html",
     "page": "Drive",
     "route": "/drive",
@@ -277,10 +291,10 @@
   },
   {
     "file": "redesign/18-timeline.html",
-    "page": "Planner at rest: Lists view, By pipeline (editable), date picker on every date, Add step row per pipeline",
+    "page": "Planner: Lists default, timeline pinch zoom, scroll trap, drag-to-add",
     "route": "/planner?fixture=mockup",
-    "bytes": 119491,
-    "sha256": "7d9322d0d0088b87"
+    "bytes": 127779,
+    "sha256": "c72d8ec50ffa8639"
   },
   {
     "file": "redesign/18b-timeline-item-open.html",
@@ -308,7 +322,15 @@
     "page": "Email People: Inbox | People | Scheduled, Remove on every box with Undo, no Tags or Stats",
     "route": "/email?view=people&fixture=mockup",
     "bytes": 74178,
-    "sha256": "cdc34bea3f06c2e4"
+    "sha256": "cdc34bea3f06c2e4",
+    "superseded_by": "08j-email-people-folders.html"
+  },
+  {
+    "file": "redesign/08j-email-people-folders.html",
+    "page": "Email People folders: Main + up to 9 folders, More and Remove as hover buttons",
+    "route": "/email?view=people&fixture=mockup",
+    "bytes": 79465,
+    "sha256": "1d1bc3006b83c37f"
   },
   {
     "file": "redesign/08i-email-compose-resize.html",
