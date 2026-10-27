@@ -4,6 +4,7 @@ import { LIVE_ORIGIN, signInAsChad } from './auth-state.mjs';
 
 loadLocalEnv();
 const APPLY = process.argv.includes('--apply');
+const SKIP_BACKFILL = process.argv.includes('--no-backfill');
 const origin = LIVE_ORIGIN;
 
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
@@ -30,6 +31,10 @@ async function main() {
       console.log([row.key, JSON.stringify(row.name), row.deleted_at, 'addrs=' + row.addr_n, 'tags=' + row.tag_n].join('\t'));
     });
     console.log('live', (block.live || []).map((r) => r.key + ':' + JSON.stringify(r.name)).join(' | '));
+    console.log('all_boxes', (block.allBoxes || []).length);
+    (block.allBoxes || []).forEach((row) => {
+      console.log(['all', row.key, JSON.stringify(row.name), row.deleted_at || 'live', row.created_at].join('\t'));
+    });
   });
   if (listed.status !== 200) console.log('list_status', listed.status, listed.body);
 
@@ -46,6 +51,9 @@ async function main() {
   }
 
   let report = { ok: 0, letter: 0, failed: 0, n: 0 };
+  if (SKIP_BACKFILL) {
+    console.log('\n=== FAULT C backfill skipped ===');
+  } else
   for (let offset = 0; offset < 80; offset += 8) {
     const slice = await page.evaluate(async (off) => {
       const r = await fetch('/api/links/preview?backfill=all&offset=' + off, { credentials: 'include' });
@@ -146,7 +154,9 @@ async function main() {
     const red = (txt.match(/(\d+)\s+overdue or slipping/i) || [])[1];
     const fpfHtml = fpf.map((el) => el.className + '|' + (el.textContent || '').replace(/\s+/g, ' ').slice(0, 80));
     const overdue = [...r.querySelectorAll('.drow .w.late, .bar.overdue, .msi.overdue')].map((el) => (el.closest('[data-open]') || el).textContent.replace(/\s+/g, ' ').trim().slice(0, 80));
-    return { red, fpf: fpfHtml.slice(0, 4), overdue: overdue.slice(0, 8), hasDone: /done/i.test(fpfHtml.join(' ')) };
+    const stats = (r.querySelector('#stats') && r.querySelector('#stats').textContent || '').replace(/\s+/g, ' ').trim();
+    const redRows = [...r.querySelectorAll('.drow')].filter((el) => el.querySelector('.w.late')).map((el) => (el.textContent || '').replace(/\s+/g, ' ').trim());
+    return { red, stats, redRows, fpf: fpfHtml.slice(0, 4), overdue: overdue.slice(0, 8), hasDone: /done/i.test(fpfHtml.join(' ')) };
   });
   console.log('PROOF E', JSON.stringify(planner));
 

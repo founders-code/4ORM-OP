@@ -28,6 +28,11 @@ export async function GET() {
     const boxes = [];
     for (const ownerId of owners) {
       const deleted = await listDeletedBoxes(sql, ownerId);
+      const allBoxes = await sql`
+        SELECT key, name, deleted_at, created_at
+        FROM email_boxes WHERE owner_id = ${ownerId}
+        ORDER BY deleted_at NULLS FIRST, name
+      `;
       const live = await sql`
         SELECT key, name, deleted_at,
           (SELECT count(*)::int FROM email_box_addresses a WHERE a.owner_id = email_boxes.owner_id AND a.box_key = email_boxes.key AND a.deleted_at IS NULL) AS addr_n,
@@ -37,7 +42,7 @@ export async function GET() {
         ORDER BY name
       `;
       const counts = await chadDoneCounts(sql, ownerId);
-      boxes.push({ ownerId, deleted, live, done: counts });
+      boxes.push({ ownerId, deleted, live, allBoxes, done: counts });
     }
     return NextResponse.json({ ok: true, readOnly: true, owners, boxes });
   } catch (err) {
