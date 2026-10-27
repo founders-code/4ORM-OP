@@ -267,10 +267,10 @@
   },
   {
     "file": "redesign/18-timeline.html",
-    "page": "Timeline (replaces War Room, landing page)",
-    "route": "/timeline (also /, /war-room, /control-room redirect here)",
-    "bytes": 106133,
-    "sha256": "4c45b43dde155134"
+    "page": "Planner at rest: Lists view, By pipeline (editable), date picker on every date, Add step row per pipeline",
+    "route": "/planner?fixture=mockup",
+    "bytes": 119491,
+    "sha256": "7d9322d0d0088b87"
   },
   {
     "file": "redesign/18b-timeline-item-open.html",
@@ -285,5 +285,33 @@
     "route": "/timeline?fixture=mockup&state=milestone",
     "bytes": 106303,
     "sha256": "cb83d856a4d6f312"
+  },
+  {
+    "file": "redesign/_nav.js",
+    "page": "Shared menu (War Room renamed Timeline)",
+    "route": "every page",
+    "bytes": 1222,
+    "sha256": "51d2af58faa348d2"
+  },
+  {
+    "file": "redesign/08h-email-people-remove.html",
+    "page": "Email People: Inbox | People | Scheduled, Remove on every box with Undo, no Tags or Stats",
+    "route": "/email?view=people&fixture=mockup",
+    "bytes": 74178,
+    "sha256": "cdc34bea3f06c2e4"
+  },
+  {
+    "file": "redesign/08i-email-compose-resize.html",
+    "page": "Email compose open, left edge drags to resize, width saved",
+    "route": "/email?fixture=mockup&state=compose",
+    "bytes": 56661,
+    "sha256": "3b420e3629847f9d"
+  },
+  {
+    "file": "redesign/15b-recordings-capture.html",
+    "page": "Recordings: record computer sound + mic, one searchable list, no Zoom notes",
+    "route": "/recordings?fixture=mockup",
+    "bytes": 23908,
+    "sha256": "d127f76f79e0152a"
   }
 ]

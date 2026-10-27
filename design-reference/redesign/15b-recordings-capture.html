@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recordings - 4orm Ops</title>
+<style>
+/* ===== SHELL (shared by every page) ===== */
+:root{--ground:#0b1430;--ground2:#13224a;--side:#08102a;--card:#fff;--ink:#101a33;--ink2:#4a5672;--ink3:#7a86a0;--line:#e8ecf3;--soft:#f5f7fb;
+--blue:#2e6bf2;--blue50:#eaf1fe;--green:#12a36a;--green50:#e4f6ee;--amber:#c98408;--amber50:#fff4e0;--red:#e0364f;--red50:#fde9ec;--violet:#6b4fd8;
+font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}html,body{margin:0}html{background:#0d1838}
+body{background:linear-gradient(165deg,var(--ground),var(--ground2)) fixed;color:var(--ink);min-height:100vh;display:grid;grid-template-columns:224px minmax(0,1fr);grid-template-rows:56px auto}
+button{font:inherit;cursor:pointer}
+.top{grid-column:1/-1;height:56px;background:#fff;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid var(--line)}
+.logo img{height:30px;display:block}
+.crumb{font-size:14px;font-weight:700;color:var(--ink);padding-left:12px;border-left:1px solid var(--line)}
+.top .r{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tb{height:32px;border:1px solid var(--line);background:#fff;border-radius:9px;padding:0 12px;font-size:12.5px;font-weight:650;color:var(--ink);display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.tb .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.clock{font-size:12.5px;color:var(--ink3);font-weight:600;white-space:nowrap;margin-left:6px}
+.side{background:var(--side);padding:14px 10px;display:flex;flex-direction:column;gap:2px;min-height:calc(100vh - 56px)}
+.grp{font-size:13.5px;font-weight:850;color:#5b8cff;padding:16px 12px 6px;margin-top:6px;border-top:1px solid rgba(255,255,255,.08);letter-spacing:-.01em}.side .grp:first-child{border-top:none;margin-top:0;padding-top:4px}.side .nav{padding-left:16px}
+.nav{display:flex;align-items:center;gap:11px;padding:8px 12px;border-radius:9px;color:#cfd8ee;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.nav:hover{background:rgba(255,255,255,.05)}.nav.on{background:rgba(46,107,242,.22);color:#fff}
+.nav .n{margin-left:auto;font-size:11px;font-weight:700;color:#b9c6e6;background:rgba(255,255,255,.08);border-radius:999px;padding:1px 8px}
+.nav .new{margin-left:auto;font-size:10.5px;font-weight:800;color:#0b1430;background:#9db9ff;border-radius:999px;padding:1px 7px}
+.main{padding:20px 24px 40px;min-width:0}
+
+/* ===== RECORDINGS ===== */
+/* One job: record anything you hear and say, then find it again. Zoom cloud notes live on the Zoom page, not here. */
+.bar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.bar h1{margin:0;font-size:24px;font-weight:850;color:#fff;letter-spacing:-.02em}
+.bar .sub{font-size:13px;color:#9fb0d0;font-weight:500}
+.bar .r{margin-left:auto;display:flex;gap:8px;align-items:center}
+.stats{display:flex;gap:8px}.stats span{font-size:12.5px;font-weight:700;color:#dbe4fb;background:rgba(255,255,255,.08);border-radius:999px;padding:4px 11px}.stats b{color:#fff}
+.btn{height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:13px;font-weight:700;padding:0 13px;white-space:nowrap}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.rec{background:var(--red);border-color:var(--red);color:#fff;height:38px;padding:0 18px;font-size:14px}
+.btn.sm{height:30px;font-size:12.5px;padding:0 10px}
+.btn.red{color:var(--red)}
+/* start sheet */
+.start{display:none;background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 14px 34px rgba(3,10,30,.35)}
+.start.on{display:block}
+.start h3{margin:0 0 4px;font-size:16px;font-weight:850}
+.start .hint{font-size:12.5px;color:var(--ink3);margin:0 0 12px}
+.srcs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.srcs label{display:block;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer}
+.srcs label.on{border-color:var(--blue);background:var(--blue50)}
+.srcs b{display:block;font-size:14px;font-weight:800;margin-bottom:3px}
+.srcs span{font-size:12.5px;color:var(--ink2);line-height:1.45}
+.srcs input{position:absolute;opacity:0;pointer-events:none}
+.start .row{display:flex;gap:8px;align-items:center;margin-top:12px}
+.start .row input{flex:1;height:36px;border:1px solid var(--line);border-radius:9px;padding:0 11px;font:inherit;font-size:13px}
+.start .note{font-size:12px;color:var(--ink3);margin-top:8px}
+/* live bar */
+.recbar{display:none;align-items:center;gap:16px;background:#fff;border-radius:14px;padding:12px 14px;margin-bottom:14px;box-shadow:0 14px 34px rgba(3,10,30,.35);border:2px solid var(--red);flex-wrap:wrap}
+.recbar.on{display:flex}
+.recbar .live{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:850;color:var(--red)}
+.recbar .live i{width:10px;height:10px;border-radius:50%;background:var(--red);animation:blink 1.2s infinite}
+.recbar.paused .live{color:var(--amber)}.recbar.paused .live i{animation:none;background:var(--amber)}
+@keyframes blink{50%{opacity:.25}}
+.recbar .tm{font-size:22px;font-weight:850;font-variant-numeric:tabular-nums;min-width:86px}
+.lv{display:grid;grid-template-columns:70px 120px;gap:4px 8px;align-items:center;font-size:12px;font-weight:700;color:var(--ink2)}
+.lv i{display:block;height:8px;border-radius:999px;background:#e3e9f4;overflow:hidden}.lv i b{display:block;height:100%;width:0;background:var(--green);transition:width .15s}
+.recbar .warn{flex-basis:100%;font-size:12.5px;color:var(--amber);font-weight:700;display:none}
+.recbar .warn.on{display:block}
+.recbar .ttl{flex:1;min-width:200px;height:34px;border:1px solid var(--line);border-radius:9px;padding:0 11px;font:inherit;font-size:13px}
+@media (prefers-reduced-motion:reduce){.recbar .live i{animation:none}}
+/* search + list */
+.tools{display:flex;align-items:center;gap:10px;background:#fff;border-radius:14px;padding:9px 10px;box-shadow:0 10px 30px rgba(3,10,30,.22);margin-bottom:14px}
+.search{flex:1;height:36px;border:1px solid var(--line);border-radius:9px;padding:0 12px;font:inherit;font-size:13.5px;background:var(--soft);outline:none}
+.search:focus{border-color:var(--blue);background:#fff}
+.tools .cnt{font-size:12.5px;color:var(--ink3);font-weight:700;white-space:nowrap}
+.list{background:#fff;border-radius:16px;box-shadow:0 10px 30px rgba(3,10,30,.22);overflow:hidden}
+.day{font-size:12.5px;font-weight:850;color:var(--ink3);padding:12px 16px 6px;background:var(--soft);border-bottom:1px solid var(--line)}
+.rw{display:grid;grid-template-columns:56px minmax(0,1fr) 130px 64px;gap:14px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+.rw:hover{background:#f7f9fd}
+.rw .t{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
+.rw h4{margin:0;font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rw p{margin:3px 0 0;font-size:12.5px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rw p mark{background:#fff2b8;color:inherit;border-radius:3px;padding:0 2px}
+.rw .src{font-size:11.5px;font-weight:800;border-radius:7px;padding:3px 8px;background:var(--blue50);color:var(--blue);justify-self:start;white-space:nowrap}
+.rw .src.mic{background:var(--green50);color:var(--green)}
+.rw .d{font-size:12.5px;color:var(--ink3);font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.rw.proc{cursor:default;background:#f8faff}.rw.proc h4{color:var(--ink3)}
+.prog{height:5px;border-radius:999px;background:#e3e9f4;overflow:hidden;margin-top:6px;max-width:280px}.prog i{display:block;height:100%;background:var(--blue);transition:width .4s}
+.empty{padding:28px 16px;text-align:center;color:var(--ink3);font-size:13px}
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(5,10,28,.45);display:none;z-index:40}.scrim.on{display:block}
+.dr{position:fixed;top:0;right:0;bottom:0;width:min(640px,96vw);background:#fff;z-index:50;display:none;flex-direction:column;box-shadow:-30px 0 80px rgba(3,10,30,.5)}
+.dr.on{display:flex}
+.dh{display:flex;align-items:flex-start;gap:10px;padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+.dh h2{margin:0;font-size:19px;font-weight:850;outline:none;border-radius:6px}.dh h2:focus{box-shadow:0 0 0 2px var(--blue)}
+.dh .m{font-size:12.5px;color:var(--ink3);margin-top:4px}
+.dh .r{margin-left:auto;display:flex;gap:6px}
+.db{overflow:auto;flex:1;padding:6px 18px 18px}
+.sec{font-size:13px;font-weight:850;color:var(--ink);margin:16px 0 8px}
+.sum{font-size:14px;line-height:1.6;background:var(--soft);border-radius:12px;padding:12px 14px}
+.player{display:flex;align-items:center;gap:10px;background:var(--soft);border-radius:12px;padding:10px 12px}
+.player .tl{flex:1;height:6px;border-radius:999px;background:#dfe6f2;position:relative;cursor:pointer}.player .tl i{position:absolute;left:0;top:0;bottom:0;background:var(--blue);border-radius:999px;width:0}
+.player .tt{font-size:12px;font-weight:750;color:var(--ink2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ai{display:grid;grid-template-columns:20px minmax(0,1fr);gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.ai .cb{width:18px;height:18px;border-radius:6px;border:2px solid #c3cde0;cursor:pointer}.ai.done .cb{background:var(--green);border-color:var(--green)}.ai.done span{text-decoration:line-through;color:var(--ink3)}
+.tr p{margin:0 0 9px;font-size:13.5px;line-height:1.55;color:var(--ink2)}.tr p b{color:var(--ink)}.tr p a{font-size:11.5px;font-weight:800;color:var(--blue);cursor:pointer;margin-right:6px;font-variant-numeric:tabular-nums}
+.tr p mark{background:#fff2b8;color:inherit}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;display:none;z-index:90}.toast.show{display:block}
+.toast a{color:#9cc0ff;font-weight:800;margin-left:10px;cursor:pointer}
+</style></head>
+<body>
+<header class="top">
+  <div class="logo"><img src="../assets/logo-finance.png" alt="4orm Finance"></div><span class="crumb">Recordings</span>
+  <div class="r"><span class="tb">Today</span><span class="tb">Calendar</span><span class="tb"><span class="dot"></span>Signals</span><span class="tb">Sound on</span><span class="clock">Mon, Oct 26 &middot; 19:30 Pacific</span></div>
+</header>
+<nav class="side" id="side"></nav>
+<main class="main">
+  <div class="bar"><h1>Recordings</h1><span class="sub">Record what you hear and say: calls, Zoom, videos. Every recording is transcribed, summed up and searchable.</span>
+    <div class="r"><div class="stats"><span><b id="nRec">0</b> recordings</span><span><b id="nHrs">0 m</b> this month</span></div><button class="btn rec" id="recBtn" data-action="rec-open">Record</button></div></div>
+
+  <div class="start" id="start">
+    <h3>What should it hear?</h3>
+    <p class="hint">Pick once. The site remembers your choice.</p>
+    <div class="srcs" id="srcs">
+      <label class="on" data-src="both"><input type="radio" name="src" checked><b>My computer's sound and my mic</b><span>For Zoom, Teams, phone calls through the computer, or a video. Your browser asks which screen or tab to listen to: pick it and tick Share audio.</span></label>
+      <label data-src="mic"><input type="radio" name="src"><b>Just my mic</b><span>For a meeting in the room or a voice note.</span></label>
+    </div>
+    <div class="row"><input id="recTitle" placeholder="Name it now, or leave it blank and the title is written for you"><button class="btn" id="cancelStart" data-action="rec-cancel">Cancel</button><button class="btn pri" id="goRec" data-action="rec-start">Start recording</button></div>
+    <div class="note">Let people know you are recording. Audio and transcripts stay private to your account.</div>
+  </div>
+
+  <div class="recbar" id="recbar">
+    <span class="live"><i></i><span id="liveTxt">Recording</span></span>
+    <span class="tm" id="tm">00:00</span>
+    <div class="lv"><span>Computer</span><i><b id="lvC"></b></i><span>Mic</span><i><b id="lvM"></b></i></div>
+    <input class="ttl" id="liveTitle" placeholder="Title (optional)">
+    <button class="btn sm" id="pauseBtn" data-action="rec-pause">Pause</button>
+    <button class="btn sm pri" id="stopBtn" data-action="rec-stop">Stop and save</button>
+    <button class="btn sm" id="discardBtn" data-action="rec-discard">Discard</button>
+    <div class="warn" id="warnC">No sound from the computer yet. If the other people are silent, that is fine. If they are talking, stop and start again, and tick Share audio in the browser window.</div>
+  </div>
+
+  <div class="tools"><input class="search" id="q" data-action="rec-search" placeholder="Search everything that was said: titles, summaries and transcripts"><span class="cnt" id="cnt"></span></div>
+  <div class="list" id="list"></div>
+</main>
+
+<div class="scrim" id="scrim" data-action="rec-close"></div>
+<aside class="dr" id="dr" role="dialog" aria-label="Recording">
+  <div class="dh"><div style="min-width:0"><h2 id="dTitle" contenteditable="true" spellcheck="false" data-action="rec-rename"></h2><div class="m" id="dMeta"></div></div>
+    <div class="r"><button class="btn sm" id="toSpace" data-action="rec-space">Add to a Space</button><button class="btn sm red" id="delRec" data-action="rec-delete">Delete</button><button class="btn sm" id="dClose" data-action="rec-close">Close</button></div></div>
+  <div class="db">
+    <div class="player"><button class="btn sm" id="play" data-action="rec-play">Play</button><div class="tl" id="tl" data-action="rec-seek"><i id="tlI"></i></div><span class="tt" id="dDur"></span></div>
+    <div class="sec">Summary</div><div class="sum" id="dSum"></div>
+    <div class="sec">Action items</div><div id="dAi"></div>
+    <div class="sec">Transcript</div><div class="tr" id="dTr"></div>
+  </div>
+</aside>
+<div class="toast" id="toast"></div>
+
+<script>
+const NAV=[["Today"],["News"],["Playbook"],["Planner"],["Calendar"],["Email",0,"16"],["People"],["Contacts",0,"53"],["Spaces"],["Pipeline",0,"215"],["Library"],["Links"],["Notes"],["Documents"],["Recordings"],["Zoom"],["Signals"],["Completed"],["Financials"],["Integrations"]];
+const GROUPS=["Today","People","Library","Signals"];
+document.getElementById('side').innerHTML=NAV.map(n=>GROUPS.includes(n[0])?`<div class="grp">${n[0]}</div>`:`<div class="nav${n[0]=='Recordings'?' on':''}">${n[0]}${n[2]?`<span class="n">${n[2]}</span>`:''}</div>`).join('');
+const $=id=>document.getElementById(id);
+let tT=null;const T=(t,undo)=>{const e=$('toast');e.innerHTML=t+(undo?'<a id="tUndo">Undo</a>':'');e.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>e.classList.remove('show'),undo?6000:2000);if(undo)$('tUndo').onclick=()=>{undo();e.classList.remove('show')}};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* Sample data for the design only. Live: GET /api/recordings?source=recorder (never Zoom notes). */
+let REC=[
+ {id:'r1',day:'Today',time:'16:10',src:'both',dur:38,title:'Bruce and Chad - deck order and the two-pager',sum:'Agreed to lead with the counselling demo, then the evidence record. Bruce sends the revised two-pager by Wednesday.',acts:[['Send revised two-pager','Bruce',0],['Book Kevin for Thursday','Chad',0]],tr:[['00:00','Chad','Thanks for jumping on. I want to settle the order of the deck before Thursday.'],['00:31','Bruce','I think the demo has to come first. People get it once they see the conversation.'],['01:12','Chad','Agreed. Then the evidence record, then the market.']]},
+ {id:'r2',day:'Today',time:'11:02',src:'both',dur:24,title:'Webinar - OSFI E-23 model risk guideline',sum:'Notes from the OSFI webinar. E-23 takes effect 1 May 2027; firms must keep an inventory of models and show oversight.',acts:[],tr:[['00:00','Speaker','Welcome to today\'s session on guideline E-23.'],['04:20','Speaker','Institutions are expected to maintain a model inventory.']]},
+ {id:'r3',day:'Sun 25 Oct',time:'07:52',src:'mic',dur:3,title:'Idea - credit union one-pager',sum:'One page for credit union boards: what changes for members, what it costs, and the FINTRAC angle.',acts:[['Draft the credit union one-pager','Chad',0]],tr:[['00:00','Chad','Quick idea for the credit union one-pager.']]},
+ {id:'r4',day:'Thu 22 Oct',time:'10:00',src:'both',dur:55,title:'Bow Valley CU - requirements walkthrough',sum:'Their compliance lead needs the requirements list before the board meeting. Pricing goes in a separate page.',acts:[['Send the requirements list','Chad',1]],tr:[['00:00','Chad','Thanks for making time.'],['00:42','Bow Valley','The main thing is seeing the record a member would get.']]},
+];
+let q='';
+function hl(s){if(!q)return esc(s);const i=s.toLowerCase().indexOf(q);if(i<0)return esc(s);return esc(s.slice(0,i))+'<mark>'+esc(s.slice(i,i+q.length))+'</mark>'+esc(s.slice(i+q.length))}
+function hit(r){if(!q)return {ok:true,line:r.sum};const all=[r.title,r.sum].concat(r.tr.map(x=>x[2]));const f=all.find(x=>x.toLowerCase().includes(q));return {ok:!!f,line:f&&!r.title.toLowerCase().includes(q)?f:r.sum}}
+function render(){const shown=REC.filter(r=>r.proc||hit(r).ok);
+ $('nRec').textContent=REC.filter(r=>!r.proc).length;const m=REC.reduce((a,r)=>a+(r.dur||0),0);$('nHrs').textContent=m>=60?Math.floor(m/60)+' h '+(m%60)+' m':m+' m';
+ $('cnt').textContent=q?shown.length+(shown.length===1?' match':' matches'):'';
+ if(!shown.length){$('list').innerHTML=`<div class="empty">${q?'Nothing said matches "'+esc(q)+'". Try a name, a company or a word from the call.':'No recordings yet. Press Record before your next call.'}</div>`;return}
+ let h='',last='';shown.forEach(r=>{if(r.day!==last){last=r.day;h+=`<div class="day">${r.day}</div>`}
+  if(r.proc){h+=`<div class="rw proc"><span class="t">${r.time}</span><div style="min-width:0"><h4>${esc(r.step)}</h4><div class="prog"><i style="width:${r.pct}%"></i></div></div><span class="src${r.src==='mic'?' mic':''}">${r.src==='mic'?'Mic':'Computer and mic'}</span><span class="d">${r.dur} m</span></div>`;return}
+  const k=hit(r);h+=`<div class="rw" data-id="${r.id}" data-action="rec-open-one"><span class="t">${r.time}</span><div style="min-width:0"><h4>${hl(r.title)}</h4><p>${hl(k.line)}</p></div><span class="src${r.src==='mic'?' mic':''}">${r.src==='mic'?'Mic':'Computer and mic'}</span><span class="d">${r.dur} m</span></div>`});
+ $('list').innerHTML=h}
+render();
+$('q').oninput=e=>{q=e.target.value.trim().toLowerCase();render()};
+
+/* Start sheet */
+let SRC='both';
+$('srcs').onclick=e=>{const l=e.target.closest('label');if(!l)return;SRC=l.dataset.src;document.querySelectorAll('#srcs label').forEach(x=>x.classList.toggle('on',x===l))};
+$('recBtn').onclick=()=>{if($('recbar').classList.contains('on'))return;$('start').classList.add('on');$('recTitle').focus()};
+$('cancelStart').onclick=()=>$('start').classList.remove('on');
+
+/* Recording. Live: getDisplayMedia({audio:true,video:true}) for computer sound (video track dropped), getUserMedia for the mic,
+   mixed in an AudioContext, MediaRecorder uploads 10-second chunks so nothing is lost if the tab closes. */
+let sec=0,tick=null,paused=false,quietC=0;
+const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+$('goRec').onclick=()=>{$('start').classList.remove('on');sec=0;paused=false;quietC=0;$('tm').textContent='00:00';$('liveTitle').value=$('recTitle').value;$('recbar').classList.add('on');$('recbar').classList.remove('paused');$('liveTxt').textContent='Recording';$('pauseBtn').textContent='Pause';$('warnC').classList.remove('on');
+ $('lvC').parentElement.parentElement.style.opacity=SRC==='mic'?.35:1;
+ tick=setInterval(()=>{if(paused)return;sec++;$('tm').textContent=fmt(sec);const c=SRC==='mic'?0:(sec%7<5?20+Math.random()*70:0),mm=10+Math.random()*60;$('lvC').style.width=c+'%';$('lvM').style.width=mm+'%';
+  if(SRC!=='mic'){quietC=c<2?quietC+1:0;$('warnC').classList.toggle('on',quietC>=8)}},1000);T('Recording. Keep this tab open.')};
+$('pauseBtn').onclick=e=>{paused=!paused;$('recbar').classList.toggle('paused',paused);$('liveTxt').textContent=paused?'Paused':'Recording';e.target.textContent=paused?'Resume':'Pause'};
+$('discardBtn').onclick=()=>{clearInterval(tick);$('recbar').classList.remove('on');T('Discarded. Nothing was saved.')};
+$('stopBtn').onclick=()=>{clearInterval(tick);$('recbar').classList.remove('on');const dur=Math.max(1,Math.round(sec/60));
+ const r={id:'n'+Date.now(),day:'Today',time:'19:30',src:SRC,dur,proc:true,step:'Saved. Transcribing',pct:20,title:$('liveTitle').value.trim(),sum:'',acts:[],tr:[]};REC.unshift(r);render();T('Saved. Transcribing now.');
+ [['Transcribing',50],['Writing the title and summary',80]].forEach((s,i)=>setTimeout(()=>{r.step=s[0];r.pct=s[1];render()},900*(i+1)));
+ setTimeout(()=>{Object.assign(r,{proc:false,title:r.title||'Kevin Wong - Thursday investor list',sum:'Kevin confirmed six names for Thursday. Chad sends the two-pager tonight.',acts:[['Send the two-pager to Kevin','Chad',0]],tr:[['00:00','Chad','Can you read me the six names?'],['00:20','Kevin','Sure, starting with the two in Calgary.']]});render();T('Ready: '+r.title)},2900)};
+
+/* Drawer */
+let cur=null;
+$('list').onclick=e=>{const w=e.target.closest('.rw[data-id]');if(w)openRec(REC.find(r=>r.id===w.dataset.id))};
+function openRec(r){cur=r;$('dTitle').textContent=r.title;$('dMeta').textContent=`${r.day} · ${r.time} · ${r.dur} m · ${r.src==='mic'?'Mic':'Computer and mic'} · click the title to rename`;$('dDur').textContent='00:00 / '+fmt(r.dur*60);$('tlI').style.width='0';$('play').textContent='Play';
+ $('dSum').textContent=r.sum;
+ $('dAi').innerHTML=r.acts.length?r.acts.map((a,i)=>`<div class="ai${a[2]?' done':''}" data-i="${i}"><span class="cb" data-action="rec-act"></span><span>${esc(a[0])} <small style="color:var(--ink3)">· ${esc(a[1])}</small></span></div>`).join(''):'<div style="font-size:13px;color:var(--ink3)">No actions in this one.</div>';
+ $('dTr').innerHTML=r.tr.map(x=>`<p><a data-at="${x[0]}" data-action="rec-jump">${x[0]}</a><b>${esc(x[1])}:</b> ${hl(x[2])}</p>`).join('');
+ $('dr').classList.add('on');$('scrim').classList.add('on')}
+const closeDr=()=>{$('dr').classList.remove('on');$('scrim').classList.remove('on')};
+$('dClose').onclick=closeDr;$('scrim').onclick=closeDr;document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDr();$('start').classList.remove('on')}});
+$('dTitle').addEventListener('blur',e=>{const v=e.target.textContent.trim();if(cur&&v&&v!==cur.title){cur.title=v;render();T('Title saved')}});
+$('dTitle').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur()}});
+$('dAi').onclick=e=>{const row=e.target.closest('.ai');if(!row||!e.target.classList.contains('cb'))return;const a=cur.acts[+row.dataset.i];a[2]=a[2]?0:1;row.classList.toggle('done',!!a[2]);T(a[2]?'Marked done':'Reopened')};
+$('dTr').onclick=e=>{const a=e.target.closest('a[data-at]');if(!a)return;const [m,s]=a.dataset.at.split(':').map(Number);$('dDur').textContent=a.dataset.at+' / '+fmt(cur.dur*60);$('tlI').style.width=Math.min(100,(m*60+s)/(cur.dur*60)*100)+'%';$('play').textContent='Pause'};
+$('play').onclick=e=>{e.target.textContent=e.target.textContent==='Play'?'Pause':'Play'};
+$('tl').onclick=e=>{const r=e.currentTarget.getBoundingClientRect();const p=(e.clientX-r.left)/r.width;$('tlI').style.width=p*100+'%';$('dDur').textContent=fmt(Math.round(p*cur.dur*60))+' / '+fmt(cur.dur*60)};
+$('toSpace').onclick=()=>T('Pick a Space. The summary and actions go in; the audio stays here.');
+$('delRec').onclick=()=>{const r=cur,i=REC.indexOf(r);REC.splice(i,1);closeDr();render();T('Recording deleted.',()=>{REC.splice(i,0,r);render();T('Restored')})};
+</script>
+</body></html>
