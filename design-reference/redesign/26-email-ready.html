@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Space Email Ready</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060918;--card:#080c1f;--blk:#0a0f26;--ln:rgba(120,150,255,.14);--ln2:rgba(120,150,255,.24);--tx:#e9eefa;--t2:#c8d1ea;--t3:#a3b0d2;--ok:#19d38a;--amb:#ffb547;--blue:#3b82ff;--vio:#a173ff;--pink:#ff4d8d;
+/* text on WHITE surfaces */--wt:#101a33;--wt2:#3a4560;--wt3:#5b6678;--wln:#e3e8f1}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:500 14px/1.45 Inter,system-ui,sans-serif;padding:24px}
+h1{font-size:20px;margin:0 0 4px}.sub{color:var(--t3);margin:0 0 18px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.tabs button{font:inherit;font-weight:700;background:var(--blk);color:var(--t2);border:1px solid var(--ln);border-radius:999px;padding:7px 14px;cursor:pointer}
+.tabs button[aria-pressed=true]{background:var(--pink);color:#160308;border-color:var(--pink)}
+.view{display:none}.view.on{display:block}
+.panel{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:18px;max-width:1080px}
+.bh{display:flex;align-items:center;gap:8px;font-weight:800;letter-spacing:.06em;font-size:12.5px;margin-bottom:12px}.dot{width:8px;height:8px;border-radius:50%;background:var(--pink)}.bh .cnt{margin-left:auto;color:var(--ok);letter-spacing:0}
+/* the envelope */
+.env{background:var(--blk);border:1px solid var(--ln);border-radius:12px;overflow:hidden}
+.row{display:grid;grid-template-columns:96px 1fr auto;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--ln)}
+.row .k{color:var(--t3);font-weight:700;font-size:12.5px}
+.row .v{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:26px}
+.row .st{font-size:12px;font-weight:700}.ok{color:var(--ok)}.miss{color:var(--amb)}
+.chipp{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.05);border:1px solid var(--ln2);border-radius:999px;padding:3px 10px 3px 4px;font-weight:650;color:var(--tx)}
+.av{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:9.5px;font-weight:800;color:#fff;background:#1d4fd8}
+.chipp small{color:var(--t3);font-weight:600}
+.add{border:1px dashed rgba(255,181,71,.55);color:var(--amb);background:rgba(255,181,71,.07);border-radius:999px;padding:3px 11px;font-weight:700;font-size:12.5px;cursor:pointer}
+.subj{font-weight:750;color:#fff;font-size:15px}
+.att{display:flex;gap:8px;flex-wrap:wrap}
+.file{display:flex;gap:9px;align-items:center;background:rgba(255,255,255,.04);border:1px solid var(--ln2);border-radius:9px;padding:5px 10px 5px 5px}
+.th{width:34px;height:42px;border-radius:4px;background:#fff;position:relative;overflow:hidden}.th i{position:absolute;left:5px;right:5px;height:3px;background:#d7deea;border-radius:2px}
+.file b{display:block;font-size:12.5px;color:var(--tx)}.file small{color:var(--t3);font-size:11.5px}
+.body{padding:14px 16px 16px;display:grid;gap:10px}
+.para{border-left:3px solid var(--ok);padding:2px 0 2px 12px}.para.m{border-color:var(--amb)}
+.para .lab{font-size:11.5px;font-weight:800;letter-spacing:.06em;color:var(--t3);margin-bottom:2px}
+.para p{margin:0;color:var(--t2)}.para p u{text-decoration-color:var(--vio);text-decoration-thickness:2px;text-underline-offset:3px;color:var(--tx)}
+.para.m p{color:var(--amb)}
+.foot{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+.btn{font:inherit;font-weight:750;border-radius:10px;padding:9px 16px;border:1px solid var(--ln2);background:rgba(255,255,255,.05);color:var(--tx);cursor:pointer}.btn.p{background:var(--blue);border-color:var(--blue);color:#fff}
+.foot .note{color:var(--t3);font-size:12.5px}
+/* white surfaces */
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;max-width:1080px}
+.w{background:#fff;border-radius:14px;padding:14px;color:var(--wt)}
+.w h4{margin:0 0 10px;font-size:12px;letter-spacing:.06em;color:var(--wt3)}
+.em{display:grid;grid-template-columns:34px 1fr auto;gap:10px;padding:10px 4px;border-bottom:1px solid var(--wln)}
+.em .n{font-weight:750;color:var(--wt)}.em .n span{font-weight:500;color:var(--wt3);margin-left:6px}.em .s{font-weight:650;color:var(--wt)}.em .p{color:var(--wt2)}.em .d{color:var(--wt3);font-weight:700;font-size:12.5px}
+.tag{display:inline-block;font-size:11.5px;font-weight:700;color:#1d3f9e;background:#eaf1fe;border-radius:6px;padding:1px 7px;margin:4px 4px 0 0}
+.sp .hd{display:flex;gap:10px;align-items:center}.sp .nm{font-weight:800;color:var(--wt)}.sp .ty{color:var(--wt3);font-size:12.5px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--wln);border-radius:10px;margin:12px 0}.stats div{padding:8px 10px}.stats div+div{border-left:1px solid var(--wln)}.stats b{display:block;color:var(--wt)}.stats small{color:var(--wt3)}
+.ap{background:#8a5300;color:#fff;border-radius:999px;padding:3px 11px;font-weight:750;font-size:12.5px}
+.menu div{padding:6px 10px;border-radius:7px;color:var(--wt);font-weight:600;display:flex;justify-content:space-between}.menu div small{color:var(--wt3);font-weight:700}.menu .on{background:#eaf1fe;color:#1d3f9e}
+.pop p{color:var(--wt2);margin:6px 0 12px}.pop .em2{font-weight:750;color:var(--wt)}
+.rule{max-width:1080px;margin-top:16px;color:var(--t2)}.rule code{background:var(--blk);border:1px solid var(--ln);border-radius:6px;padding:1px 6px;color:var(--tx)}
+/* playbook today */
+.pb{display:grid;grid-template-columns:150px repeat(7,1fr);gap:6px;position:relative}
+.pb .h{text-align:center;font-weight:800;font-size:11.5px;color:var(--t3);padding:6px 0;border-radius:7px}.pb .h b{display:block;color:var(--t2);font-size:11px}
+.pb .h.today{background:rgba(255,77,141,.10);box-shadow:inset 0 0 0 1px rgba(255,77,141,.45);color:#fff}.pb .h.today b{color:#fff}
+.pb .lab{font-weight:700;color:var(--tx);padding:6px 0}
+.pb .c{height:22px;border-radius:6px;border:1px solid var(--ln)}
+.pb .c.t{background:var(--blue);border-color:var(--blue);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center}
+.pb .col{background:rgba(255,77,141,.055)}
+/* link preview fallback */
+.lk{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;max-width:1080px}
+.lc{background:var(--card);border:1px solid var(--ln);border-radius:12px;overflow:hidden}
+.shot{height:120px;background:#fff;position:relative;overflow:hidden;border-bottom:1px solid var(--ln)}
+.shot .bar{height:16px;background:#f1f3f8;border-bottom:1px solid #e3e8f1}
+.shot .hero{position:absolute;left:12px;top:28px;right:12px}.shot .hero b{display:block;height:10px;width:70%;background:#1b2a55;border-radius:3px;margin-bottom:7px}.shot .hero i{display:block;height:6px;background:#d7deea;border-radius:3px;margin-bottom:5px}
+.shot .badge{position:absolute;right:8px;bottom:8px;font-size:10.5px;font-weight:800;background:rgba(8,12,31,.85);color:#fff;border-radius:6px;padding:2px 7px}
+.lc .tx{padding:10px 12px}.lc .tx b{display:block}.lc .tx small{color:var(--t3)}.lc .tx a{display:block;margin-top:6px;color:#8dbaff;font-weight:700;font-size:12.5px}
+@media(max-width:640px){body{padding:16px}.row{grid-template-columns:70px 1fr}.row .st{grid-column:2}.pb{grid-template-columns:90px repeat(7,1fr)}}
+</style></head><body>
+<h1>Space, email and the white cards</h1>
+<p class="sub">Four fixes. Tab 1 replaces the "Ready for email" grid in the space with an email you can read top to bottom.</p>
+<div class="tabs">
+<button data-v="a" aria-pressed="true">1 Ready for email as an email</button>
+<button data-v="b" aria-pressed="false">2 Text on white cards</button>
+<button data-v="c" aria-pressed="false">3 Playbook today</button>
+<button data-v="d" aria-pressed="false">4 Link previews for websites</button>
+</div>
+
+<section class="view on" id="a">
+<div class="panel">
+<div class="bh"><span class="dot"></span>READY FOR EMAIL<span class="cnt">5 of 8 ready</span></div>
+<div class="env">
+<div class="row"><span class="k">From</span><span class="v"><span class="chipp"><span class="av">CJ</span>Chad Johnston <small>chad@4ormfinance.com</small></span></span><span class="st ok">set</span></div>
+<div class="row"><span class="k">To</span><span class="v"><span class="add">+ Add a person from Contacts or Pipeline</span></span><span class="st miss">missing</span></div>
+<div class="row"><span class="k">Cc</span><span class="v"><span class="chipp"><span class="av" style="background:#0f9fb5">BF</span>Bruce Fair <small>warm intro</small></span></span><span class="st ok">set</span></div>
+<div class="row"><span class="k">Subject</span><span class="v"><span class="subj">RPAA safeguarding: how PSPs can show consumers understood</span></span><span class="st ok">from template</span></div>
+<div class="row"><span class="k">Attach</span><span class="v att">
+<span class="file"><span class="th"><i style="top:7px"></i><i style="top:13px"></i><i style="top:19px;right:12px"></i><i style="top:27px"></i></span><span><b>4orm 2-page overview.pdf</b><small>goes out · 2 pages</small></span></span>
+<span class="add">+ Mark a document "goes out"</span></span><span class="st ok">1 file</span></div>
+<div class="body">
+<div class="para"><div class="lab">OPENING</div><p>Bruce Fair suggested I reach out. <u>You supervise payment service providers under the RPAA</u>, and registration and safeguarding are now live.</p></div>
+<div class="para m"><div class="lab">THE ANGLE</div><p>Not written yet. Add one line in Notes and it lands here.</p></div>
+<div class="para"><div class="lab">THE ASK</div><p>Could we take <u>20 minutes</u> next week to walk you through it?</p></div>
+<div class="para"><div class="lab">SIGN-OFF</div><p>Chad Johnston · 4orm Finance</p></div>
+</div>
+</div>
+<div class="foot"><button class="btn p">Move to email</button><button class="btn">Send me a test</button><span class="note">Template: RPAA registration readiness · picked from who they are. Underlined words come from this space.</span></div>
+</div>
+<p class="rule">Every line is a real email field. Green on the right when it is filled, amber when it is missing, and the amber line says what to do. "Move to email" opens the composer with exactly this, written out.</p>
+</section>
+
+<section class="view" id="b">
+<div class="grid2">
+<div class="w"><h4>EMAIL ROW</h4>
+<div class="em"><span class="av" style="background:#0f9fb5;width:30px;height:30px">BF</span><span><div class="n">bruce fair<span>menchcapital@telus.net</span></div><div class="s">4orm Finance - Business Overview Deck</div><div class="p">fYI Best regards, Bruce 604-838-6060...</div><span class="tag">VC</span><span class="tag">Needs reply</span></span><span class="d">3d</span></div>
+<div class="em" style="border:0"><span class="av" style="background:#e11d48;width:30px;height:30px">BF</span><span><div class="n">Bruce Fair<span>bruce@4ormfinance.com</span></div><div class="s">Edit to slide # 2 in the Business Overview Deck</div><div class="p">(no preview text)</div></span><span class="d">4d</span></div>
+</div>
+<div class="w sp"><h4>SPACE CARD</h4>
+<div class="hd"><span class="av" style="background:#2563eb;width:34px;height:34px;border-radius:9px">F</span><span><div class="nm">FINTRAC</div><div class="ty">Regulator</div></span></div>
+<div class="stats"><div><b>5 Oct</b><small>last contact</small></div><div><b>0</b><small>emails</small></div><div><b>new</b><small>pipeline stage</small></div></div>
+<span class="ap">Add person</span> <span style="color:var(--wt3);font-weight:600;margin-left:8px">0 docs · 0 links</span>
+</div>
+<div class="w menu"><h4>LINKS MENU</h4>
+<div class="on">All links<small>74</small></div><div>AI<small>8</small></div><div>Company<small>6</small></div><div>Fund raising<small>4</small></div><div>Regulation<small>2</small></div>
+</div>
+<div class="w pop"><h4>PIPELINE CARD POP-UP</h4>
+<div class="em2">info@greenbirch.ca</div>
+<p>Open this person, then follow up in Chad's voice. Nothing sends until you confirm.</p>
+<button class="btn p">Follow up</button> <button class="btn" style="color:var(--wt);border-color:var(--wln);background:#fff">Close</button>
+</div>
+</div>
+<p class="rule">The rule: text colour follows the surface it sits on, never the page. On white: <code>#101a33</code> names and titles, <code>#3a4560</code> body, <code>#5b6678</code> quiet. On dark: <code>#e9eefa</code>, <code>#c8d1ea</code>, <code>#a3b0d2</code>. On pink: <code>#160308</code>.</p>
+</section>
+
+<section class="view" id="c">
+<div class="panel">
+<div class="pb">
+<span></span><div class="h">MON<b>26</b></div><div class="h">TUE<b>27</b></div><div class="h today">WED<b>28</b></div><div class="h">THU<b>29</b></div><div class="h">FRI<b>30</b></div><div class="h">SAT<b>31</b></div><div class="h">SUN<b>1</b></div>
+<span class="lab">One move</span><div class="c"></div><div class="c"></div><div class="c t col">GO</div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div>
+<span class="lab">Engage 10 min</span><div class="c"></div><div class="c"></div><div class="c t col">0/5</div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div>
+<span class="lab">Reach out to 5</span><div class="c"></div><div class="c"></div><div class="c t col">2/5</div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div>
+</div>
+</div>
+<p class="rule">Live, the tall "TODAY" band sits over Friday and Saturday while the pink header is on Wednesday. One today: the header gets a soft pink tint with white letters, and the band is under that same column. Both come from one date, America/Vancouver. The Contacts list shows "Tue 27 Oct · today" on Wednesday, so it is the same bug there.</p>
+</section>
+
+<section class="view" id="d">
+<div class="lk">
+<div class="lc"><div class="shot"><div class="bar"></div><div class="hero"><b></b><i></i><i style="width:80%"></i><i style="width:60%"></i></div><span class="badge">page shot</span></div><div class="tx"><b>SKOOL</b><small>skool.com</small><a>Add a note</a></div></div>
+<div class="lc"><div class="shot"><div class="bar"></div><div class="hero"><b style="width:85%"></b><i></i><i style="width:70%"></i></div><span class="badge">page shot</span></div><div class="tx"><b>Suitability - FSRA</b><small>fsrao.ca</small><a>Add a note</a></div></div>
+<div class="lc"><div class="shot"><div class="bar"></div><div class="hero"><b style="width:60%"></b><i style="width:90%"></i><i></i></div><span class="badge">page shot</span></div><div class="tx"><b>National Financial Literacy Strategy</b><small>canada.ca</small><a>Add a note</a></div></div>
+</div>
+<p class="rule">When a site has no preview image, take a picture of the page itself (top of the page, 1200 by 630), store it, and show that. The letter tile is only for a link that cannot be loaded at all, and it says so.</p>
+</section>
+
+<script>
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id===b.dataset.v))});
+</script>
+</body></html>

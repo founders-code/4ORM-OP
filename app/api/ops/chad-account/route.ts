@@ -40,8 +40,11 @@ export async function GET(req: Request) {
         let cluster: Record<string, unknown> | null = null;
         try {
           const cl = await sql`
-            SELECT id::text, name, to_char(created_at AT TIME ZONE 'America/Vancouver', 'YYYY-MM-DD HH24:MI:SS') AS created_van
-            FROM note_clusters WHERE id = ${CLUSTER}::uuid AND owner_id = ${ownerId}
+            SELECT id::text, name, owner_id::text AS owner_id, deleted_at IS NOT NULL AS del,
+              to_char(created_at AT TIME ZONE 'America/Vancouver', 'YYYY-MM-DD HH24:MI:SS') AS created_van,
+              to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created_utc
+            FROM note_clusters WHERE id = ${CLUSTER}::uuid
+            LIMIT 1
           `;
           cluster = (cl[0] as Record<string, unknown>) || null;
         } catch {
@@ -59,10 +62,27 @@ export async function GET(req: Request) {
         notes.push({ ownerId, live: -1, deleted: -1, titles: [], cluster: null, error: String((err as Error)?.message || err) });
       }
     }
+    let clusterAny: Record<string, unknown> | null = null;
+    try {
+      const cl = await sql`
+        SELECT id::text, name, owner_id::text AS owner_id, deleted_at IS NOT NULL AS del,
+          to_char(created_at AT TIME ZONE 'America/Vancouver', 'YYYY-MM-DD HH24:MI:SS') AS created_van,
+          to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created_utc
+        FROM note_clusters WHERE id = ${CLUSTER}::uuid LIMIT 1
+      `;
+      clusterAny = (cl[0] as Record<string, unknown>) || null;
+    } catch { /* ignore */ }
+    let notesOnCluster = 0;
+    try {
+      const n = await sql`SELECT count(*)::int AS n FROM notes WHERE cluster_id = ${CLUSTER}::uuid`;
+      notesOnCluster = Number(n[0]?.n || 0);
+    } catch { /* ignore */ }
     const pitr = {
       neonProject: process.env.NEON_PROJECT_ID ? 'set' : 'missing',
       neonApiKey: process.env.NEON_API_KEY || process.env.NEON_API_TOKEN ? 'set' : 'missing',
       note: 'A read-only PITR branch needs NEON_API_KEY. It is not in Vercel env; DATABASE_URL is Sensitive and cannot be pulled locally.',
+      cluster: clusterAny,
+      notesOnCluster,
     };
     if (onlyNotes) return NextResponse.json({ ok: true, readOnly: true, owners, notes, pitr });
     const boxes = [];
