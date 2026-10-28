@@ -1227,14 +1227,28 @@ export async function saveEmail(
   const toneKey = /^(voss|ury|cialdini|plain)$/i.test(String(tone || ''))
     ? String(tone).toLowerCase()
     : 'voss';
-  await sql`
-    INSERT INTO space_email (space_id, owner_id, subject, body, tone)
-    VALUES (${spaceId}, ${ownerId}, ${cleanSubject}, ${cleanBody}, ${toneKey})
-    ON CONFLICT (space_id) DO UPDATE SET
-      subject = EXCLUDED.subject,
-      body = EXCLUDED.body,
-      tone = EXCLUDED.tone
-  `;
+  try {
+    await sql`
+      INSERT INTO space_email (space_id, owner_id, subject, body, tone)
+      VALUES (${spaceId}, ${ownerId}, ${cleanSubject}, ${cleanBody}, ${toneKey})
+      ON CONFLICT (space_id) DO UPDATE SET
+        subject = EXCLUDED.subject,
+        body = EXCLUDED.body,
+        tone = EXCLUDED.tone
+    `;
+  } catch (err) {
+    /* Additive: older DBs may not have tone yet. */
+    fail('space_email_tone', err);
+    await sql`ALTER TABLE space_email ADD COLUMN IF NOT EXISTS tone text`;
+    await sql`
+      INSERT INTO space_email (space_id, owner_id, subject, body, tone)
+      VALUES (${spaceId}, ${ownerId}, ${cleanSubject}, ${cleanBody}, ${toneKey})
+      ON CONFLICT (space_id) DO UPDATE SET
+        subject = EXCLUDED.subject,
+        body = EXCLUDED.body,
+        tone = EXCLUDED.tone
+    `;
+  }
   return readSpace(sql, ownerId, spaceId);
 }
 

@@ -26,6 +26,7 @@ function size(n: number, fallback: number) {
 
 export async function listDocsLayout(sql: Sql, ownerId: string): Promise<DocLayout[]> {
   try {
+    await ensureDocsLayoutTable(sql);
     const rows = await sql`
       SELECT doc_id, x, y, w, h FROM docs_layout WHERE owner_id = ${ownerId}
     `;
@@ -42,10 +43,28 @@ export async function listDocsLayout(sql: Sql, ownerId: string): Promise<DocLayo
   }
 }
 
+async function ensureDocsLayoutTable(sql: Sql) {
+  await sql`CREATE TABLE IF NOT EXISTS docs_layout (
+    owner_id text NOT NULL,
+    doc_id text NOT NULL,
+    x int NOT NULL DEFAULT 0,
+    y int NOT NULL DEFAULT 0,
+    w int NOT NULL DEFAULT 168,
+    h int NOT NULL DEFAULT 210,
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (owner_id, doc_id)
+  )`;
+}
+
 export async function saveDocsLayout(sql: Sql, ownerId: string, items: Array<Partial<DocLayout>>) {
+  try {
+    await ensureDocsLayoutTable(sql);
+  } catch (err) {
+    fail('docs_layout_ensure', err);
+  }
   const out: DocLayout[] = [];
   for (const raw of (items || []).slice(0, 400)) {
-    const docId = String(raw.docId || '').slice(0, 80);
+    const docId = String(raw.docId || (raw as { id?: string }).id || '').slice(0, 80);
     if (!docId) continue;
     const row: DocLayout = {
       docId,
