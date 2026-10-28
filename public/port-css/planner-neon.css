@@ -473,8 +473,8 @@ select{appearance:none;-webkit-appearance:none;background-image:none}
 .fnone{font-size:12px;color:#7a86a0;font-style:italic;padding:4px 2px}
 .fmore{font-size:12px;font-weight:750;color:#2e6bf2;cursor:pointer;padding:2px}
 
-/* ===== 18h: Planner in the Playbook dark style ===== */
-:root{--surface:#111a3a;--raise:#1a2552;--band:#16214a;--edge:#2a3a72;--fg:#eef2fc;--muted:#c8d1ea;--faint:#a3b0d2;--gold:#f5c443;--gold-ink:#f5c443;--gold-soft:#2b2612;
+/* ===== 18h / 18k: Planner in the Playbook dark style (shadow :host, not document :root) ===== */
+:host,.port-body,:root{--surface:#111a3a;--raise:#1a2552;--band:#16214a;--edge:#2a3a72;--fg:#eef2fc;--muted:#c8d1ea;--faint:#a3b0d2;--gold:#f5c443;--gold-ink:#f5c443;--gold-soft:#2b2612;
  --p1:#7d8bff;--p2:#3b82ff;--p3:#19d38a;--p4:#ff5fa8;--p5:#a173ff;--p6:#ffb547;--p7:#22d3c5;--p8:#ff6b4a;--bad:#ff5a6e;--good:#2ee59d;color-scheme:dark}
 .card{background:var(--surface);color:var(--fg);border:1px solid rgba(120,150,255,.14)}
 .capture{background:#111a3a;color:var(--fg);border:1px solid rgba(120,150,255,.14)}
