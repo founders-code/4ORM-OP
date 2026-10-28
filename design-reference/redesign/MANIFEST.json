@@ -474,5 +474,19 @@
     "route": "several",
     "bytes": 31051,
     "sha256": "0d1aa7ba8a9e6b38"
+  },
+  {
+    "file": "redesign/28-calllist.html",
+    "page": "Call list and Contacts rows: stage, Callback, Email, Open/Start space, Delete, side panel; to-dos from Send package and Book meeting; months scroll; compact News dials",
+    "route": "/contacts",
+    "bytes": 27580,
+    "sha256": "ef57170f4c6b1499"
+  },
+  {
+    "file": "redesign/shots-p14/09g-focus-today.png",
+    "page": "09g Focus today reference for prompt 14",
+    "route": "/playbook",
+    "bytes": 404608,
+    "sha256": "1d3661eb673b60db"
   }
 ]
