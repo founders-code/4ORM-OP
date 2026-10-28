@@ -131,6 +131,8 @@ function persistItem(i){
   if(!liveOk()||!i||!i.id||String(i.id).indexOf('n')===0&&String(i.id).length<20)return;
   var body={n:i.n,o:i.o,st:i.st,start_date:i.kind==='ms'?'':i.kind==='goal'?(i.s<i.e?isoOf(i.s):''):isoOf(i.s),due_date:isoOf(i.e)};
   if(i.kind==='goal')body.plan_date=i.ps!=null?isoOf(i.ps):'';
+  if(i.kind!=='goal'){body.t=i.t||'';body.g=i.g||''}
+  body.note=i.note||'';
   window.authFetch('/api/timeline/items/'+encodeURIComponent(i.id),{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).catch(function(){});
 }
 const ordered=()=>state.order.map(id=>pipe(id)).filter(Boolean);
@@ -488,9 +490,9 @@ function openDrawer(id){const i=byId[id];if(!i)return;const p=pipe(i.p);const ph
     sub=`${rel(i.e-TODAY)} · ${pct}% of the work feeding it is done`;pg=`<div class="prog"><i style="width:${pct}%;background:var(--gold)"></i></div>`;
     extra=`<h3>Feeding this milestone</h3>`+(f.length?f.map(j=>linkBtn(j.id,late.includes(j))).join(''):'<p class="none">Nothing yet. In the list, pick this milestone on any row.</p>');
     drawer.style.setProperty('--c','var(--gold-ink)');
-    drawer.innerHTML=`<div class="dtop"><button class="ed" data-edit="${id}">Edit in list</button><button id="dClose">Close</button></div><div class="dp">Milestone</div><h2>${esc(i.n)}</h2><div class="dd">${when}</div>
+    drawer.innerHTML=`<div class="dtop"><button class="ed" data-dsave="${id}">Save changes</button><button id="dClose">Close</button></div><div class="dp">Milestone</div><h2>${esc(i.n)}</h2><div class="dd">${when}</div>
       <div class="stbig${late.length||ph==='overdue'?' bad':''}" style="${late.length?'':'background:var(--gold-soft)'}"><b>${big}</b><span>${sub}</span>${pg}</div>
-      <dl class="facts"><dt>Owner</dt><dd>${esc(i.o||'Unassigned')}</dd></dl>${i.note?`<p class="note">${esc(i.note)}</p>`:''}<div class="dlist">${extra}</div>`;
+      ${drawEdit(i)}<div class="dlist">${extra}</div>`;
     drawer.hidden=false;scrim.hidden=false;pinned=id;applyFocus(id);return}
   if(i.kind==='ms'){when=fmtW(i.s)+' '+D(i.s).getUTCFullYear();big=ph==='done'?'Key date done':ph==='overdue'?'Key date missed':'Key date';sub=rel(i.s-TODAY)}
   else if(i.kind==='series'){const n=nextOf(i);when=i.n.includes('weekly')?'Every week':'Every month';big='Recurring';sub=n!=null?'Next on '+fmtW(n)+', '+rel(n-TODAY):'No more dates in this plan'}
@@ -501,15 +503,42 @@ function openDrawer(id){const i=byId[id];if(!i)return;const p=pipe(i.p);const ph
     if(ph==='active'||i.tasks.length)pg=`<div class="prog"><i style="width:${prog(i,Math.max(i.s,START)).toFixed(1)}%"></i></div>`}
   if(bd.length){big='Slipping';sub=`Waits on something that lands after ${fmt(i.s)}`}
   drawer.style.setProperty('--c',`var(${p.c})`);
-  drawer.innerHTML=`<div class="dtop"><button class="ed" data-edit="${id}">Edit in list</button><button id="dClose">Close</button></div>
+  drawer.innerHTML=`<div class="dtop"><button class="ed" data-dsave="${id}">Save changes</button><button id="dClose">Close</button></div>
    <div class="dp">${p.name} &middot; ${esc(i.t)}</div><h2>${esc(i.n)}</h2><div class="dd">${when}</div>
    <div class="stbig${bd.length||ph==='overdue'?' bad':''}"><b>${big}</b><span>${sub}</span>${pg}</div>
-   <dl class="facts"><dt>Owner</dt><dd>${esc(i.o||'Unassigned')}</dd><dt>Stream</dt><dd>${esc(i.t)}</dd><dt>Milestone</dt><dd>${i.g?`<span style="color:var(--gold-ink)">${esc(byId[i.g].n)}</span>`:'None'}</dd></dl>
-   ${i.note?`<p class="note">${esc(i.note)}</p>`:''}
+   ${drawEdit(i)}
    <div class="dlist">${i.tasks.length?`<h3>Tasks ${i.tasks.filter(t=>t.d).length}/${i.tasks.length}</h3>`+i.tasks.map(t=>`<div class="dtask${t.d?' dn':''}">${esc(t.n)}</div>`).join(''):''}
    <h3>Waits on</h3>${i.dep.length?i.dep.map(d=>linkBtn(d,bd.includes(d))).join(''):'<p class="none">Nothing. This can move on its own.</p>'}
    <h3>Unlocks</h3>${(rev[id]||[]).length?rev[id].map(d=>linkBtn(d)).join(''):'<p class="none">Nothing downstream yet.</p>'}</div>`;
   drawer.hidden=false;scrim.hidden=false;pinned=id;applyFocus(id)}
+/* Edit right in the drawer: name, owner, stream, dates, status, milestone and notes. Save writes it everywhere. */
+function drawEdit(i){const g=i.kind==='goal',ser=i.kind==='series';
+  const f=(lab,html)=>`<label class="def"><span>${lab}</span>${html}</label>`;
+  const inp=(k,v,ph)=>`<input class="fi" data-de="${k}" data-orig="${esc(v==null?'':v)}" value="${esc(v==null?'':v)}" placeholder="${ph||''}">`;
+  let h=`<div class="dedit">`+f('Name',inp('n',i.n))+`<div class="dgrid">`+f('Owner',inp('o',i.o,'Who'));
+  if(!g)h+=f('Stream',inp('t',i.t,'Stream'));
+  if(g)h+=f('Planning from',inp('ps',fmt(gPlan(i)),'MMDD'))+f('Start',inp('gs',fmt(gStart(i)),'MMDD'))+f('Complete by',inp('e',fmt(i.e),'MMDD'));
+  else if(!ser)h+=f(i.kind==='ms'?'Key date':'Start',inp('s',i.kind==='span'?fmt(i.s):fmt(i.e),'MMDD'))+(i.kind==='span'?f('Due',inp('e',fmt(i.e),'MMDD')):'');
+  h+=f('Status',`<select class="fi" data-de="st"><option value=""${!i.st?' selected':''}>Automatic</option><option value="risk"${i.st==='risk'?' selected':''}>At risk</option><option value="done"${i.st==='done'?' selected':''}>Done</option></select>`);
+  if(!g)h+=f('Feeds milestone',`<select class="fi" data-de="g"><option value="">None</option>${GL().map(m=>`<option value="${m.id}"${i.g===m.id?' selected':''}>${esc(m.n)}</option>`).join('')}</select>`);
+  h+=`</div>`+f('Notes',`<textarea class="fi" data-de="note" rows="3" placeholder="What this is, what was agreed">${esc(i.note||'')}</textarea>`)+`<div class="derr" id="deErr"></div></div>`;
+  return h}
+function saveDrawer(id){const i=byId[id];if(!i)return;const v={};
+  /* Dates are only re-read when they were changed, so an untouched date keeps its exact year. */
+  drawer.querySelectorAll('[data-de]').forEach(el=>{const k=el.dataset.de;const dateKey=/^(s|e|ps|gs)$/.test(k);v[k]=dateKey&&el.value===el.getAttribute('data-orig')?null:el.value});
+  const bad=m=>{const e=document.getElementById('deErr');if(e)e.textContent=m};
+  const pd=s=>{if(s==null||!String(s).trim())return null;const d=parseDate(String(s));return Number.isNaN(d)?NaN:d};
+  if(!String(v.n||'').trim())return bad('Give it a name.');
+  i.n=String(v.n).trim();i.o=String(v.o||'').trim();if(v.t!=null)i.t=String(v.t).trim()||'General';
+  i.st=v.st||'';if(v.g!=null)i.g=v.g||'';i.note=String(v.note||'');
+  if(i.kind==='goal'){const ps=pd(v.ps),gs=pd(v.gs),e=pd(v.e);if([ps,gs,e].some(Number.isNaN))return bad('Dates are MMDD, like 1030, or 30 Oct.');
+    if(e!=null)i.e=e;if(gs!=null)i.s=Math.min(gs,i.e);if(ps!=null)i.ps=Math.min(ps,gStart(i))}
+  else if(i.kind==='ms'){const d=pd(v.s);if(Number.isNaN(d))return bad('Dates are MMDD, like 1030, or 30 Oct.');if(d!=null){i.s=i.e=d}}
+  else if(i.kind==='span'){const s0=pd(v.s),e0=pd(v.e);if(Number.isNaN(s0)||Number.isNaN(e0))return bad('Dates are MMDD, like 1030, or 30 Oct.');
+    if(s0!=null)i.s=s0;if(e0!=null)i.e=e0;if(i.e<i.s)i.e=i.s}
+  save();persistItem(i);rerender();openDrawer(id);
+  const b=drawer.querySelector('[data-dsave]');if(b){b.textContent='Saved';setTimeout(()=>{if(b.isConnected)b.textContent='Save changes'},1400)}}
+drawer.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches&&e.target.matches('input[data-de]')){e.preventDefault();const b=drawer.querySelector('[data-dsave]');if(b)saveDrawer(b.dataset.dsave)}});
 function closeDrawer(){drawer.hidden=true;scrim.hidden=true;pinned=null;clearFocus()}
 function reveal(id){const i=byId[id];let ch=false;
   if(i.kind!=='goal'){if(state.hidden.has(i.p)){state.hidden.delete(i.p);ch=true}if(!state.open.has(i.p)){state.open.add(i.p);ch=true}}
@@ -557,6 +586,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.top){state.top=t.dataset.top;save();renderControls();requestAnimationFrame(drawLinks);return}
   if(t.id==='dClose'){closeDrawer();return}
   if(t.dataset.edit){editInList(t.dataset.edit);return}
+  if(t.dataset.dsave){saveDrawer(t.dataset.dsave);return}
   if(t.dataset.open){const id=t.dataset.open;closePops();if(t.dataset.reveal)reveal(id);openDrawer(id);return}
   if(t.dataset.toggle){const id=t.dataset.toggle;state.open.has(id)?state.open.delete(id):state.open.add(id);save();renderAll();return}
   if(t.dataset.solo){state.hidden=new Set(PIPES.filter(p=>p.id!==t.dataset.solo).map(p=>p.id));state.open.add(t.dataset.solo);save();renderAll();return}

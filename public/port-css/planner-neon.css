@@ -667,3 +667,13 @@ body.th-neon .main{color:#eef2fc}
 .goals .cols,.goals .lrow{grid-template-columns:minmax(190px,2fr) 96px 214px 150px 140px minmax(180px,2fr) 66px}
 .g3d .fi{min-width:0;padding-left:6px;padding-right:6px;text-align:center}
 .lgroup{overflow-x:auto}
+/* Drawer editor: everything editable in place. */
+#drawer .dedit{margin:14px 0 6px;display:flex;flex-direction:column;gap:10px}
+#drawer .dedit .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#drawer .def{display:flex;flex-direction:column;gap:4px;min-width:0}
+#drawer .def span{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#4a5672}
+#drawer .dedit .fi{width:100%;box-sizing:border-box;font:inherit;font-size:13.5px;font-weight:650;color:#101a33!important;background:#f5f7fb!important;border:1px solid #d5dbe8!important;border-radius:9px;padding:7px 10px;min-height:36px}
+#drawer .dedit textarea.fi{resize:vertical;min-height:70px;line-height:1.45}
+#drawer .dedit .fi:focus{outline:2px solid #2e6bf2;outline-offset:0;background:#fff!important}
+#drawer .derr{color:#c0263e;font-size:12.5px;font-weight:700;min-height:0}
+#drawer .dtop .ed{background:#2e6bf2!important;color:#fff!important;border-color:#2e6bf2!important}

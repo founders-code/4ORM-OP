@@ -43,6 +43,17 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
           updated_at = now()
       WHERE id = ${ctx.params.id}::uuid AND owner_id = ${session.userId}
     `;
+    /* Stream and the milestone a step feeds (sent by the Planner drawer and list). */
+    if (body.t != null) {
+      await session.sql`UPDATE timeline_items SET stream = ${String(body.t || '').slice(0, 80)}, updated_at = now()
+        WHERE id = ${ctx.params.id}::uuid AND owner_id = ${session.userId}`;
+    }
+    if (body.g != null) {
+      const g = String(body.g || '');
+      const gid = /^[0-9a-f-]{36}$/i.test(g) ? g : null;
+      await session.sql`UPDATE timeline_items SET milestone_id = ${gid}::uuid, updated_at = now()
+        WHERE id = ${ctx.params.id}::uuid AND owner_id = ${session.userId}`;
+    }
     if (planRaw != null) {
       await session.sql`UPDATE timeline_items SET plan_date = CASE WHEN ${clearPlan} THEN NULL ELSE ${plan}::date END
         WHERE id = ${ctx.params.id}::uuid AND owner_id = ${session.userId}`;
