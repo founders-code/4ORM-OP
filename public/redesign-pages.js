@@ -56,7 +56,7 @@
   var CSS = {
     room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=8', notes: '/port-css/notes.css?v=4',
     notesCanvas: '/port-css/notes-canvas.css?v=9', spacesArrange: '/port-css/spaces-arrange.css?v=1', spacesCards: '/port-css/spaces-cards.css?v=11', signalsDetail: '/port-css/signals-detail.css?v=4', rec: '/port-css/recordings.css?v=2',
-    contacts: '/port-css/pipeline.css?v=6', work: '/port-css/spaces.css?v=13', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css?v=7',
+    contacts: '/port-css/pipeline.css?v=6', work: '/port-css/spaces.css?v=14', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css?v=7',
     links: '/port-css/links.css?v=9', mail: '/port-css/email.css?v=8', mailPeople: '/port-css/email-people.css?v=8',
     playbook: '/port-css/playbook.css?v=10', calendar: '/port-css/calendar.css?v=7', zoom: '/port-css/zoom.css?v=2',
     completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=4',

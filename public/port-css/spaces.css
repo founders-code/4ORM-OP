@@ -215,3 +215,58 @@
 .toast2{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#0f1a3a;color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;display:none;z-index:90}.toast2.show{display:block}.toast2 a{color:#9cc0ff;margin-left:10px;cursor:pointer}
 
 .menu.smenu,.smenu{position:fixed;z-index:80}
+
+/* ===== Space panel in white (trial, 28 Oct). Remove this block to go back to dark. ===== */
+.spanel,.spanel.space-detail,.spanel .ws{background:#ffffff!important;color:#101a33}
+.spanel{box-shadow:-24px 0 60px rgba(3,10,30,.35)}
+.spanel .wh{background:#ffffff!important;border-bottom-color:#e3e8f1!important}
+.spanel .wh h1{color:#101a33!important}
+.spanel .wh .sub{color:#5b6678!important}.spanel .wh .sub a.xl{color:#1d4fd8!important}
+.spanel .ghost,.spanel .ib{background:#fff!important;border-color:#d5dceb!important;color:#3a4560!important}
+.spanel .ghost:hover,.spanel .ib:hover{border-color:#1d4fd8!important;color:#101a33!important}
+.spanel .ghost.close{background:#101a33!important;color:#fff!important;border-color:#101a33!important}
+.spanel .adder,.spanel .outs{background:#f6f8fc!important;border-color:#e3e8f1!important}
+.spanel .adder .in{background:#fff!important;border-color:#d5dceb!important;color:#5b6678!important}
+.spanel .adder .q{background:#fff!important;border-color:#d5dceb!important;color:#3a4560!important}
+.spanel .adder .q:hover{border-color:#1d4fd8!important;color:#101a33!important}
+.spanel .blk{background:#ffffff!important;border-color:#e3e8f1!important;box-shadow:0 1px 2px rgba(16,26,51,.05)}
+.spanel .bh{border-bottom-color:#eef1f7!important}.spanel .bh b{color:#101a33!important}
+.spanel .bh .c{background:#eef1f7!important;color:#5b6678!important}
+.spanel .bh .a{color:#1d4fd8!important}.spanel .bh .a.ok{color:#0c8a5a!important}
+.spanel .it{background:#f6f8fc!important;border-color:#e3e8f1!important}
+.spanel .it b{color:#101a33!important}.spanel .it span{color:#5b6678!important}
+.spanel .it b.ok{color:#0c8a5a!important}.spanel .it b.miss{color:#a35d00!important}
+.spanel .drop{border-color:#cfd7e6!important;color:#5b6678!important}.spanel .drop b,.spanel .drop.over{color:#1d4fd8!important}
+.spanel .nt{background:#fff8e1!important;border-color:#f3dfa0!important;color:#3a3220!important}
+.spanel .nt small,.spanel .nt .saved{color:#8a6a08!important}
+.spanel .angle{background:#f6f8fc!important;border-color:#e3e8f1!important;color:#101a33!important}
+.spanel .hooks span{border-color:#d5dceb!important;color:#3a4560!important}
+.spanel .ai{color:#6d3fd6!important}
+.spanel .tk,.spanel .td{color:#101a33}
+.spanel .tk i,.spanel .td i{border-color:#b8c3d9!important}
+.spanel .tk.d span,.spanel .td.d span{color:#8a93a8!important}
+.spanel .tk em,.spanel .td em{color:#5b6678!important}
+.spanel .tl-row{border-top-color:#eef1f7!important}.spanel .tl-row span{color:#5b6678!important}.spanel .tl-row b{color:#101a33!important}
+.spanel .firsttouch{background:#eaf1fe!important;border-color:#c9dafc!important;color:#1d3f9e!important}
+.spanel .ready-hint{color:#5b6678!important}.spanel .ready-hint b{color:#101a33!important}
+.spanel .env{background:#fff!important;border-color:#e3e8f1!important}
+.spanel .env-row,.spanel .env .tone,.spanel .env .tdesc{border-color:#e3e8f1!important}
+.spanel .env-row .k,.spanel .env .tone span,.spanel .env .tdesc,.spanel .env .para .lab,.spanel .env .edbar small{color:#5b6678!important}
+.spanel .env-row .st.ok{color:#0c8a5a!important}.spanel .env-row .st.miss{color:#a35d00!important}
+.spanel .env .chipp{background:#f6f8fc!important;border-color:#d5dceb!important;color:#101a33!important}.spanel .env .chipp small{color:#5b6678!important}
+.spanel .env .add{color:#a35d00!important;border-color:#e8b45c!important;background:#fff7e6!important}
+.spanel .env .subj,.spanel .env .subj-in{color:#101a33!important}
+.spanel .env .file{background:#f6f8fc!important;border-color:#d5dceb!important}.spanel .env .file b{color:#101a33!important}.spanel .env .file small{color:#5b6678!important}
+.spanel .env .para p{color:#3a4560!important}.spanel .env .para p u{color:#101a33!important}.spanel .env .para.m p{color:#a35d00!important}
+.spanel .env .tone button{background:#fff!important;border-color:#d5dceb!important;color:#3a4560!important}
+.spanel .env .tone button.on{background:#efe8ff!important;border-color:#a173ff!important;color:#4b2aa8!important}
+.spanel .env .ed textarea{background:#fff!important;border-color:#d5dceb!important;color:#101a33!important}
+.spanel .facts{border-color:#e3e8f1!important}.spanel .facts div{border-left-color:#e3e8f1!important}
+.spanel .facts b{color:#101a33!important}.spanel .facts span{color:#5b6678!important}
+.spanel .outs .lb{color:#5b6678!important}
+.spanel .ob,.spanel .outs .hb,.spanel .outs .btn{background:#fff!important;border-color:#d5dceb!important;color:#101a33!important}
+.spanel .ob:hover,.spanel .outs .hb:hover,.spanel .outs .btn:hover{border-color:#1d4fd8!important}
+.spanel .ob.p,.spanel .outs .hb.pri,.spanel .outs .btn.pri{background:#1d4fd8!important;border-color:#1d4fd8!important;color:#fff!important;box-shadow:none!important}
+.spanel .eyeT,.spanel .bellT{background:#eef1f7!important;color:#5b6678!important}
+.spanel h1.editing,.spanel .sub.editing{background:#eaf1fe!important;color:#101a33!important}
+.spanel [style*="color:#5b6a94"]{color:#5b6678!important}.spanel u[style*="#7fb0ff"]{color:#1d4fd8!important}
