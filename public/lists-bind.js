@@ -77,13 +77,14 @@
 
     function api(path, opts) {
       opts = opts || {};
-      var init = { credentials: 'include', headers: {} };
+      var init = { credentials: 'include', headers: {}, quiet: true };
       if (opts.method) init.method = opts.method;
       if (opts.body) {
         init.headers['content-type'] = 'application/json';
         init.body = JSON.stringify(opts.body);
       }
-      return fetch(path, init).then(function (r) { return r.json().catch(function () { return null; }).then(function (d) { return { ok: r.ok, status: r.status, data: d }; }); });
+      var fn = typeof window.authFetch === 'function' ? window.authFetch : fetch;
+      return fn(path, init).then(function (r) { return r.json().catch(function () { return null; }).then(function (d) { return { ok: r.ok, status: r.status, data: d }; }); });
     }
 
     function openSpace(person) {
@@ -223,6 +224,15 @@
     }
 
     function load() {
+      var cached = (window.STATE && window.STATE.peopleLists) || [];
+      if (cached.length && !state.lists.length) {
+        state.lists = cached;
+        state.cur = cached[0] || null;
+        render();
+      } else {
+        var nav = $('#listnav');
+        if (nav && !state.lists.length) nav.innerHTML = '<div class="lc"><b>Loading lists</b><span>from GoHighLevel and your sheets</span></div>';
+      }
       return api('/api/reach-out?lists=1').then(function (r) {
         var lists = (r.data && r.data.lists) || [];
         state.lists = lists;
@@ -231,9 +241,9 @@
         render();
         return lists;
       }).catch(function () {
-        state.lists = [];
+        if (!state.lists.length) state.lists = [];
         render();
-        return [];
+        return state.lists;
       });
     }
 

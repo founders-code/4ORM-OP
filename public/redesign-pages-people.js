@@ -338,7 +338,7 @@
     var tab = S().peopleTab === 'lists' ? 'lists' : 'contacts';
     var tabs = '<div class="vseg" style="display:inline-flex;gap:12px;margin:0 16px 0 0"><button type="button" data-action="people-tab" data-tab="contacts" class="' + (tab === 'contacts' ? 'on' : '') + '" style="background:none;border:0;border-bottom:2px solid ' + (tab === 'contacts' ? '#5b8cff' : 'transparent') + ';color:' + (tab === 'contacts' ? '#e9eefa' : '#aebbe0') + ';font-weight:750;padding:6px 0">Contacts</button><button type="button" data-action="people-tab" data-tab="lists" class="' + (tab === 'lists' ? 'on' : '') + '" style="background:none;border:0;border-bottom:2px solid ' + (tab === 'lists' ? '#5b8cff' : 'transparent') + ';color:' + (tab === 'lists' ? '#e9eefa' : '#aebbe0') + ';font-weight:750;padding:6px 0">Lists</button></div>';
     if (tab === 'lists') {
-      return '<div data-lists-host="1"></div>';
+      return '<div class="bar"><h1>Contacts</h1>' + tabs + '<span class="sub">your lists · synced with GoHighLevel · ' + esc((typeof window.vancouverTodayLabel === 'function' && window.vancouverTodayLabel()) || '') + ' · today</span></div><div data-lists-host="1"></div>';
     }
     return '<div class="bar"><h1>Contacts</h1>' + tabs + '<span class="sub">Everyone you know &mdash; warmth from real email, calls and GoHighLevel</span>'
       + '<div class="r"><input class="search" placeholder="Search name, company, tag" aria-label="Search contacts" data-action="people-search" data-ext-field value="' + esc(vm.q) + '"><button type="button" class="btn pri" data-action="people-add">+ Add contact</button></div></div>'
@@ -365,7 +365,11 @@
         if (st) st.textContent = TOKEN + (cssText.contacts || '') + (cssText.outreach || '') + (cssText.neon || '') + (cssText.contrastP10 || '');
         var wrap = root.querySelector('.port-body');
         if (wrap) wrap.classList.add('neon', 'lists');
-          fetch('/lists-snippet.html?v=3').then(function (r) { return r.ok ? r.text() : ''; }).then(function (html) {
+        var listsToken = String(Date.now());
+        S().__listsPaint = listsToken;
+        fetch('/lists-snippet.html?v=4').then(function (r) { return r.ok ? r.text() : ''; }).then(function (html) {
+          if (S().__listsPaint !== listsToken) return;
+          if (!html) return;
           var host = root.querySelector('[data-lists-host]');
           if (host) host.outerHTML = html;
           else if (wrap) wrap.innerHTML = html;
