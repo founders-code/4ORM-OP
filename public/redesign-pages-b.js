@@ -1003,6 +1003,20 @@
       }()),
       notes: p.notes || p.description || '',
       saved: 'Saved',
+      stage: p.stage || p.status || '',
+      created: (function () {
+        var raw = p.createdAt || p.created_at || p.created || '';
+        if (!raw) return '';
+        try {
+          var at = new Date(raw);
+          if (Number.isFinite(at.getTime())) {
+            return at.toLocaleDateString('en-CA', { timeZone: 'America/Vancouver', day: 'numeric', month: 'short' });
+          }
+        } catch (e) {}
+        return String(raw);
+      }()),
+      template: p.template || p.emailTemplate || (p.email && p.email.template) || p.emailSubject || (p.email && p.email.subject) || p.subject || '',
+      ask: p.ask || p.emailAsk || (p.email && p.email.ask) || '',
       /* History from the server (GET /api/spaces/:id): files, links, notes, people, sends, meetings, mail. */
       history: asList(p.history).map(function (h) {
         var lab = { file: ['f', 'F'], link: ['f', 'L'], sent: ['f', 'S'], note: ['n', 'N'], created: ['n', 'C'], person: ['p', 'P'], meeting: ['p', 'M'], email: ['p', 'E'] }[h.kind] || ['n', 'N'];
@@ -1023,82 +1037,155 @@
       S.pkg = { id: open.id || 'fixture', name: open.name || 'Space', notes: open.notes || '', docs: [], recipients: [] };
     }
     var d = spaceOpenData();
-    var files = asList(d.files).map(function (f) {
-      var inner = f.thumb
-        ? '<img data-thumb="1" alt="" loading="lazy" src="' + esc(f.thumb) + '">'
-        : (f.inner === 'sl' ? '<div class="sl">' + esc(f.sl || f.name) + '</div>' : '<div class="pg"><i></i><i></i><i></i><i></i></div>');
-      return '<div class="ft' + (f.sug ? ' sug' : '') + '"><div class="th" style="background:' + esc(f.bg) + '">' + inner + '</div><span class="ty" style="background:' + esc(f.color) + '">' + esc(f.kind) + '</span>' + (f.sug ? '<span class="add">+ Add</span>' : '') + '<div class="nm">' + esc(f.name) + (f.sub ? '<small>' + esc(f.sub) + '</small>' : '') + '</div></div>';
-    }).join('');
-    var people = asList(d.people).map(function (p) {
-      return '<div class="pp"><span class="av" style="background:linear-gradient(140deg,#ffb86b,#e0364f)">' + esc(p.ini) + '</span><div><b>' + esc(p.name) + '</b><span>' + esc(p.meta) + '</span></div><span class="role">' + esc(p.role || 'Lead') + '</span></div>';
-    }).join('');
-    var todos = asList(d.todos).map(function (t) {
+    var peopleList = asList(d.people);
+    var fileList = asList(d.files);
+    var linkList = asList(d.heroLinks);
+    var todoList = asList(d.todos);
+    var stepList = asList(d.steps);
+    var histList = asList(d.history);
+    var doneN = todoList.filter(function (t) { return t.d; }).length;
+    var todos = todoList.map(function (t) {
       return '<div class="td' + (t.d ? ' d' : '') + '" data-action="space-todo-toggle" data-id="' + esc(d.id) + '"><i>' + (t.d ? '&#10003;' : '') + '</i><span>' + esc(t.t) + '</span>' + (t.em ? '<em>' + esc(t.em) + '</em>' : '') + '</div>';
     }).join('');
-    var hist = asList(d.history).map(function (h) {
-      return '<div class="ev"><span class="ic ' + esc(h.ic) + '">' + esc(h.label || (h.ic === 'n' ? 'N' : 'F')) + '</span><span>' + esc(h.t) + '</span><small>' + esc(h.when) + '</small></div>';
+    if (!todoList.length) {
+      todos = stepList.map(function (s) {
+        return '<div class="td' + (s[0] === 'd' ? ' d' : '') + '" data-action="space-todo-toggle" data-id="' + esc(d.id) + '"><i>' + (s[0] === 'd' ? '&#10003;' : '') + '</i><span>' + esc(s[1]) + '</span></div>';
+      }).join('');
+      doneN = stepList.filter(function (s) { return s[0] === 'd'; }).length;
+    }
+    var taskTotal = Math.max(todoList.length, stepList.length);
+    var hist = histList.map(function (h) {
+      return '<div class="tl-row"><span>' + esc(h.when || '') + '</span><b>' + esc(h.t) + '</b></div>';
     }).join('');
-    var touched = asList(d.history).some(function (h) { return h.kind === 'email' || h.kind === 'meeting' || h.kind === 'sent'; });
+    var touched = histList.some(function (h) { return h.kind === 'email' || h.kind === 'meeting' || h.kind === 'sent'; });
     var facts = asList(d.facts).map(function (f) {
       return '<div><b>' + esc(f[0]) + '</b><span>' + esc(f[1]) + '</span></div>';
     }).join('');
-    var doneN = asList(d.todos).filter(function (t) { return t.d; }).length;
-    if (!asList(d.todos).length) {
-      todos = asList(d.steps).map(function (s) {
-        return '<div class="td' + (s[0] === 'd' ? ' d' : '') + '" data-action="space-todo-toggle" data-id="' + esc(d.id) + '"><i>' + (s[0] === 'd' ? '&#10003;' : '') + '</i><span>' + esc(s[1]) + '</span></div>';
-      }).join('');
-      doneN = asList(d.steps).filter(function (s) { return s[0] === 'd'; }).length;
+    function thClass(kind) {
+      var k = String(kind || 'DOC').toLowerCase();
+      if (k.indexOf('pdf') === 0) return 'pdf';
+      if (k.indexOf('xls') === 0 || k.indexOf('csv') === 0) return 'xls';
+      if (k.indexOf('ppt') === 0 || k.indexOf('sl') === 0) return 'ppt';
+      if (k.indexOf('img') === 0 || k.indexOf('png') === 0 || k.indexOf('jpg') === 0) return 'img';
+      return 'doc';
     }
-    var first = String((asList(d.people)[0] || {}).name || '').split(/[\s@]/)[0] || 'them';
+    var docsHtml = fileList.map(function (f) {
+      var kind = String(f.kind || 'DOC');
+      var th = f.thumb
+        ? '<div class="th ' + thClass(kind) + '"><img data-thumb="1" alt="" loading="lazy" src="' + esc(f.thumb) + '"></div>'
+        : '<div class="th ' + thClass(kind) + '">' + esc(kind.slice(0, 3).toUpperCase()) + '</div>';
+      return '<div class="it' + (f.sug ? ' sug' : '') + '">' + th + '<div><b>' + esc(f.name) + '</b><span>' + esc(f.sub || (f.sug ? 'suggested' : 'in the space')) + '</span></div></div>';
+    }).join('');
+    var linksHtml = linkList.map(function (l) {
+      var host = String(l.url || l.label || '').replace(/^https?:\/\//, '').split('/')[0] || 'WEB';
+      var isIn = /linkedin/i.test(host + ' ' + (l.label || ''));
+      var thumb = l.thumb || l.preview || l.image || '';
+      var th = thumb
+        ? '<div class="th lnk"><img data-thumb="1" alt="" loading="lazy" src="' + esc(thumb) + '"></div>'
+        : '<div class="th lnk">' + esc(isIn ? 'IN' : 'WEB') + '</div>';
+      return '<div class="it">' + th + '<div><b>' + esc(l.label || host) + '</b><span>' + esc(host) + '</span></div></div>';
+    }).join('');
+    if (d.link && !linkList.length) {
+      linksHtml = '<div class="it"><div class="th lnk">WEB</div><div><b>' + esc(d.link.host) + '</b><span>' + esc(d.link.label) + '</span></div></div>';
+    }
+    var peopleHtml = peopleList.map(function (p) {
+      return '<div class="it"><div class="th p">' + esc(p.ini) + '</div><div><b>' + esc(p.name) + '</b><span>' + esc((p.role ? p.role + ' · ' : '') + (p.meta || '')) + '</span></div></div>';
+    }).join('');
+    var lead = peopleList[0] || {};
+    var ccPeople = peopleList.slice(1);
+    var stage = '';
+    asList(d.tags).forEach(function (t) {
+      var lab = Array.isArray(t) ? t[1] : t;
+      if (/pipeline|cold|storage|contact|stage/i.test(String(lab))) stage = String(lab).replace(/^Pipeline:\s*/i, '');
+    });
+    if (!stage && asList(d.facts).length) {
+      asList(d.facts).forEach(function (f) { if (/stage/i.test(String(f[1] || ''))) stage = String(f[0] || ''); });
+    }
+    var created = d.created || '';
+    if (!created) {
+      histList.forEach(function (h) {
+        if (!created && (/created/i.test(String(h.t || '')) || h.kind === 'created')) created = h.when || '';
+      });
+    }
+    var attN = fileList.filter(function (f) { return !f.sug; }).length || fileList.length;
+    var angleText = String(d.angle || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    var askText = String(d.ask || '').trim();
+    if (!askText) {
+      asList(d.hooks).forEach(function (h) {
+        if (!askText && /ask|20 min|minutes/i.test(String(h))) askText = String(h).replace(/^\+\s*/, '');
+      });
+    }
+    var templateLabel = String(d.template || d.subject || '').trim();
+    var readyItems = [
+      { ok: !!(lead.name || lead.meta) && !/^Add a person/i.test(String(d.to || '')), title: lead.name ? ('To · ' + lead.name) : 'To', sub: lead.meta || d.to || 'add a person' },
+      { ok: ccPeople.length > 0, title: ccPeople.length ? ('Cc · ' + ccPeople.map(function (p) { return p.name; }).join(', ')) : 'Cc', sub: ccPeople.length ? 'from People' : 'not set' },
+      { ok: attN > 0, title: attN ? (attN + ' attachment' + (attN === 1 ? '' : 's')) : 'Attachments', sub: attN ? 'from Documents' : 'none marked' },
+      { ok: !!angleText, title: 'The angle', sub: angleText ? angleText.slice(0, 48) : 'not written' },
+      { ok: !!templateLabel, title: templateLabel ? ('Template · ' + templateLabel.slice(0, 28)) : 'Template', sub: templateLabel ? 'chosen for this send' : 'not set' },
+      { ok: !!askText && !/not set|defaults/i.test(askText), title: 'The ask', sub: askText || 'not set · defaults to 20 min' }
+    ];
+    var readyOk = readyItems.filter(function (r) { return r.ok; }).length;
+    var readyHtml = readyItems.map(function (r) {
+      return '<div class="it flat"><div><b class="' + (r.ok ? 'ok' : 'miss') + '">' + esc(r.title) + '</b><span>' + esc(r.sub) + '</span></div></div>';
+    }).join('');
     var gated = !fixtureOn();
     try {
       var sentMap = JSON.parse(localStorage.getItem('cr_space_test') || '{}');
       if (sentMap && sentMap[d.id]) gated = false;
       if (fixtureOn()) gated = false;
     } catch (e) { gated = !fixtureOn(); }
-    var readyN = String(d.ready || '0/5').split('/')[0] || '0';
+    var whoLine = whoHtml(d);
+    var subBits = [];
+    if (whoLine) subBits.push(whoLine);
+    if (stage) subBits.push(esc(stage));
+    if (created) subBits.push('created ' + esc(created));
+    else if (d.group) subBits.push(esc(d.group));
     wrap.insertAdjacentHTML('beforeend',
-      '<aside class="spanel space-detail" data-id="' + esc(d.id) + '">'
-      + '<div class="crumbs"><a data-action="space-back">&larr; All spaces</a><span>/</span><span>' + esc(d.group) + '</span><span>/</span><span style="color:#fff">' + esc(d.name) + '</span>'
+      '<aside class="spanel space-detail" data-id="' + esc(d.id) + '"><div class="ws">'
+      + '<div class="wh"><div class="mk">' + esc(d.ini || 'SP') + '</div>'
+      + '<div style="min-width:0"><h1 contenteditable="true" spellcheck="false" data-action="space-card-name" data-id="' + esc(d.id) + '">' + esc(d.name) + '</h1>'
+      + '<div class="sub" contenteditable="true" spellcheck="false" data-action="space-card-desc" data-id="' + esc(d.id) + '">' + subBits.join(' · ') + '</div></div>'
       + '<div class="r"><button class="ghost" data-action="space-prev">&lsaquo; Prev</button><button class="ghost" data-action="space-next">Next &rsaquo;</button><button class="ghost" data-action="space-menu" data-id="' + esc(d.id) + '">&middot;&middot;&middot;</button><button class="ghost close" data-action="space-back" title="Close (Esc)">Close</button></div></div>'
-      + '<section class="hero"><div class="bav">' + esc(d.ini) + '</div>'
-      + '<div style="position:relative;z-index:1;min-width:0"><div class="tags">' + asList(d.tags).map(function (t) {
-        return '<span' + (t[0] === 'vc' ? ' class="vc"' : '') + '>' + esc(t[1]) + '</span>';
-      }).join('') + '</div>'
-      + '<h1 contenteditable="true" spellcheck="false" data-action="space-card-name" data-id="' + esc(d.id) + '">' + esc(d.name) + '</h1><div class="who" contenteditable="true" spellcheck="false" data-action="space-card-desc" data-id="' + esc(d.id) + '">' + whoHtml(d) + '</div>'
-      + '<div class="facts2">' + asList(d.heroLinks).map(function (l) {
-        return '<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.label) + '</a>';
-      }).join('') + '<span class="src">' + (d.source ? esc('Source: ' + d.source) + ' &middot; ' : '') + '<u data-action="space-hero-link" data-id="' + esc(d.id) + '">+ Add a link or article</u></span></div></div>'
-      + '<div class="ready"><div class="rring"><svg viewBox="0 0 96 96" width="96" height="96"><circle cx="48" cy="48" r="40" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9"/><circle id="rg" cx="48" cy="48" r="40" fill="none" stroke="#2fe08b" stroke-width="9" stroke-linecap="round" stroke-dasharray="' + esc(d.readyDash || '100.5 251.3') + '" transform="rotate(-90 48 48)"/></svg><b id="rn">' + esc(d.ready) + '</b></div>'
-      + '<div class="lbl">ready to send</div><div class="steps" id="steps">' + asList(d.steps).map(function (s) {
-        return '<span class="' + esc(s[0]) + '"><i>' + (s[0] === 'd' ? '&#10003;' : '') + '</i>' + esc(s[1]) + '</span>';
-      }).join('') + '</div></div></section>'
-      + '<div class="cols"><div>'
-      + '<section class="card"><div class="ch"><h3>The angle</h3><span class="ai">4orm Intelligence</span><span class="lnk" data-action="space-rewrite" data-id="' + esc(d.id) + '" title="Rewrite the angle and suggest hooks with 4orm Intelligence">Rewrite</span><span class="lnk" style="margin-left:10px" data-action="space-research" data-id="' + esc(d.id) + '" title="Research this angle with Perplexity, with sources">Research</span></div>'
+      + '<div class="adder"><div class="in">Drop a file, paste a link, or type a note — it goes in the right place</div>'
+      + '<button class="q" type="button" data-action="space-docs" data-id="' + esc(d.id) + '">+ Document</button>'
+      + '<button class="q" type="button" data-action="space-link" data-id="' + esc(d.id) + '">+ Link</button>'
+      + '<button class="q" type="button" data-action="space-notes" data-id="' + esc(d.id) + '">+ Note</button>'
+      + '<button class="q" type="button" data-action="space-people" data-id="' + esc(d.id) + '">+ Person</button>'
+      + '<button class="q" type="button">+ Task</button></div>'
+      + '<div class="ws-grid">'
+      + '<div class="blk"><div class="bh"><span class="dot" style="background:#3b82ff"></span><b>DOCUMENTS</b><span class="c">' + fileList.length + '</span><span class="a" data-action="space-docs" data-id="' + esc(d.id) + '">+ Add</span></div><div class="bb" id="files">'
+      + docsHtml
+      + '<div class="drop" data-action="space-docs" data-id="' + esc(d.id) + '">Drop files here · every file keeps its first-page preview</div></div></div>'
+      + '<div class="blk"><div class="bh"><span class="dot" style="background:#a173ff"></span><b>LINKS</b><span class="c">' + Math.max(linkList.length, d.link ? 1 : 0) + '</span><span class="a" data-action="space-link" data-id="' + esc(d.id) + '">+ Add</span></div><div class="bb">'
+      + linksHtml
+      + '<div class="drop" data-action="space-link" data-id="' + esc(d.id) + '">Paste a link</div>'
+      + (asList(d.heroLinks).length || d.link ? '' : '')
+      + '<div style="font-size:10.5px;color:#5b6a94;font-weight:650"><u data-action="space-hero-link" data-id="' + esc(d.id) + '" style="color:#7fb0ff;cursor:pointer">+ Add a link or article</u>' + (d.source ? ' · Source: ' + esc(d.source) : '') + '</div></div></div>'
+      + '<div class="blk"><div class="bh"><span class="dot" style="background:#ffb547"></span><b>PEOPLE</b><span class="c">' + peopleList.length + '</span><span class="a" data-action="space-people" data-id="' + esc(d.id) + '">+ Add</span></div><div class="bb">'
+      + peopleHtml
+      + '<div class="drop" data-action="space-people" data-id="' + esc(d.id) + '">From Contacts or Pipeline</div>'
+      + (facts ? '<div class="facts">' + facts + '</div>' : '') + '</div></div>'
+      + '<div class="blk wide"><div class="bh"><span class="dot" style="background:#f5c443"></span><b>NOTES</b><span class="c ai">4orm Intelligence</span><span class="a" data-action="space-rewrite" data-id="' + esc(d.id) + '" title="Rewrite the angle and suggest hooks with 4orm Intelligence">Rewrite</span><span class="a" style="margin-left:8px" data-action="space-research" data-id="' + esc(d.id) + '" title="Research this angle with Perplexity, with sources">Research</span></div><div class="bb">'
       + '<div class="angle" contenteditable="true" data-action="space-angle" data-id="' + esc(d.id) + '" data-placeholder="Add the angle for this send.">' + (fixtureOn() ? (d.angle || '') : esc(d.angle || '')) + '</div>'
-      + '<div class="hooks">' + asList(d.hooks).map(function (h) { return '<span data-action="space-hook" data-id="' + esc(d.id) + '" title="Put this hook at the top of the intro">' + esc(h) + '</span>'; }).join('') + '</div></section>'
-      + '<section class="card"><div class="ch"><h3>Notes</h3><span class="s">saves as you type</span></div>'
-      + '<div class="sticky" contenteditable="true" id="note" data-action="space-notes" data-id="' + esc(d.id) + '">' + esc(d.notes) + '<span class="saved" contenteditable="false">' + esc(d.saved || 'Saved') + '</span></div></section></div>'
-      + '<div><section class="card"><div class="ch"><h3>People</h3><span class="s">who this is for</span></div>' + people
-      + '<div class="pp addp" data-action="space-people" data-id="' + esc(d.id) + '"><i>+</i>Add people from Contacts or Pipeline</div>'
-      + '<div class="facts">' + facts + '</div></section>'
-      + '<section class="card"><div class="ch"><h3>Next steps</h3><span class="s" id="tdc">' + doneN + ' of ' + Math.max(asList(d.todos).length, asList(d.steps).length) + ' done</span></div><div class="todo" id="todo">' + todos + '</div></section>'
-      + '<section class="card"><div class="ch"><h3>History</h3><span class="s">emails, meetings, files</span></div>'
+      + '<div class="hooks">' + asList(d.hooks).map(function (h) { return '<span data-action="space-hook" data-id="' + esc(d.id) + '" title="Put this hook at the top of the intro">' + esc(h) + '</span>'; }).join('') + '</div>'
+      + '<div class="nt" contenteditable="true" id="note" data-action="space-notes" data-id="' + esc(d.id) + '">' + esc(d.notes) + '<span class="saved" contenteditable="false">' + esc(d.saved || 'Saved') + '</span></div></div></div>'
+      + '<div class="blk"><div class="bh"><span class="dot" style="background:#19d38a"></span><b>TASKS</b><span class="c" id="tdc">' + doneN + ' of ' + taskTotal + '</span><span class="a">+ Add</span></div><div class="bb todo" id="todo">'
+      + todos
+      + '<div class="drop">These land on the Planner</div></div></div>'
+      + '<div class="blk wide"><div class="bh"><span class="dot" style="background:#ff4d8d"></span><b>READY FOR EMAIL</b><span class="a ok">' + readyOk + ' of 6</span></div><div class="bb">'
+      + '<div class="ready-grid">' + readyHtml + '</div>'
+      + '<div class="ready-hint">Press <b>Move to email</b> and everything above goes into a written email in the Email page. No email body is written here.</div></div></div>'
+      + '<div class="blk"><div class="bh"><span class="dot" style="background:#22d3c5"></span><b>HISTORY</b></div><div class="bb">'
       + (touched ? '' : '<div class="firsttouch">No contact yet. This bundle will be the first touch.</div>')
-      + '<div class="tl">' + hist + '</div></section></div></div>'
-      + '<div class="pact"><span class="pst"><b id="pactN">' + esc(d.ready || (readyN + '/5')) + '</b> ready to send &middot; attach the docs and the link, approve the intro</span><div class="r">'
-      + '<button class="hb" data-action="space-drive" data-id="' + esc(d.id) + '">Move to Drive</button>'
-      + '<button class="hb" data-action="space-book" data-id="' + esc(d.id) + '">Book 20 min</button>'
-      + '<button class="hb" data-action="space-email" data-id="' + esc(d.id) + '">Email ' + esc(first) + '</button>'
-      + '<button class="hb pri" data-action="space-send" data-id="' + esc(d.id) + '"' + (gated ? ' disabled' : '') + '>Send bundle</button></div></div>'
-      + '<section class="bundle"><div class="ch"><h3>The bundle</h3><span class="s">what ' + esc(first) + ' receives &middot; builds as you add</span><span class="lnk" data-action="space-compose" data-id="' + esc(d.id) + '">Open full composer</span></div>'
-      + '<div class="bgrid"><div class="bl"><div class="mail"><div class="row"><label>To</label><b>' + esc(d.to) + '</b></div><div class="row"><label>Subject</label><b contenteditable="true" data-action="space-subject" data-id="' + esc(d.id) + '">' + esc(d.subject) + '</b></div>'
-      + '<div class="bodyt" contenteditable="true" id="intro" data-action="space-intro" data-id="' + esc(d.id) + '">' + esc(d.intro) + '</div></div></div><div class="br">'
-      + '<div class="files" id="files">' + files + '</div>'
-      + (d.link ? '<div class="lk"><span class="fv" style="background:#0b1430">4</span><div><b>' + esc(d.link.host) + '</b><span>' + esc(d.link.label) + '</span></div><em class="lkadd" style="color:var(--blue);cursor:pointer" data-action="space-link" data-id="' + esc(d.id) + '">+ Add a saved link</em></div>'
-        : '<div class="lk"><em class="lkadd" style="color:var(--blue);cursor:pointer" data-action="space-link" data-id="' + esc(d.id) + '">+ Add a saved link</em></div>')
-      + '<div class="drop" data-action="space-docs" data-id="' + esc(d.id) + '">Drop files here, or pick from <b>Documents</b> / <b>Drive</b> &middot; every file shows a first-page preview</div>'
-      + '</div></div><div class="sendbar"><span class="via">Sends through <b>GoHighLevel</b> &middot; test copy to chad@4ormfinance.com first</span><div class="r"><button class="btn" data-action="space-send-test" data-id="' + esc(d.id) + '">Send me a test</button><button class="btn pri" data-action="space-send" data-id="' + esc(d.id) + '"' + (gated ? ' disabled' : '') + '>Send to ' + esc(first) + '</button></div></div></section></aside>');
+      + hist + '</div></div>'
+      + '</div>'
+      + '<div class="outs"><span class="lb">WHEN IT IS READY</span>'
+      + '<button class="ob p" data-action="space-compose" data-id="' + esc(d.id) + '">Move to email</button>'
+      + '<button class="ob" data-action="space-book" data-id="' + esc(d.id) + '">Book 20 min</button>'
+      + '<button class="ob" data-action="space-drive" data-id="' + esc(d.id) + '">Move to Drive</button>'
+      + '<button class="ob" data-action="space-send-test" data-id="' + esc(d.id) + '">Send me a test</button>'
+      + '<button class="ob" data-action="space-send" data-id="' + esc(d.id) + '"' + (gated ? ' disabled' : '') + '>Send bundle</button></div>'
+      + '</div></aside>');
   }
   function paintSpacesLive() {
     var spaceQ = '';
@@ -1106,8 +1193,9 @@
     var cardsOn = false;
     try { cardsOn = new URLSearchParams(location.search || '').get('cards') === '1'; } catch (e) {}
     var panelWanted = spaceOpenWanted();
-    if (typeof window.paintSpacesCardsPage === 'function' && (spaceQ === 'open' || cardsOn || !fixtureOn() || (panelWanted && !fixtureOn()))) {
-      window.paintSpacesCardsPage(spaceQ === 'open' || (!fixtureOn() && panelWanted));
+    /* Open panel uses the neon workbench (paintSpaceOpen). Cards page is the list/board only. */
+    if (typeof window.paintSpacesCardsPage === 'function' && !panelWanted && (spaceQ === 'open' || cardsOn || !fixtureOn())) {
+      window.paintSpacesCardsPage(false);
       return;
     }
     var arrangeOn = (typeof window.paintSpacesArrangePage === 'function') && (!fixtureOn() || (function () { try { return new URLSearchParams(location.search || '').get('arrange') === '1'; } catch (e) { return false; } })());

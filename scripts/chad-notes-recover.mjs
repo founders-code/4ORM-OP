@@ -18,9 +18,9 @@ async function main() {
     });
     console.log('GET /api/notes', notes);
     const probe = await page.evaluate(async () => {
-      const r = await (window.authFetch || fetch)('/api/ops/chad-account', { credentials: 'same-origin' });
+      const r = await (window.authFetch || fetch)('/api/ops/chad-account?notes=1', { credentials: 'same-origin' });
       const j = await r.json().catch(() => ({}));
-      return { status: r.status, notes: j.notes, pitr: j.pitr };
+      return { status: r.status, notes: j.notes, pitr: j.pitr, error: j.error, detail: j.detail };
     });
     console.log('chad-account notes', JSON.stringify(probe, null, 2));
     if (!APPLY) {

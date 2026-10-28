@@ -85,7 +85,7 @@
     "st": "Current",
     "dt": "4 Sep 2026",
     "own": "Chad",
-    "note": "Privacy Officer not appointed"
+    "note": "Privacy Officer not appointed. How 4ormIQ collects, seals and releases consumer data. needs SEC-001"
   },
   {
     "org": "4ormIQ",
@@ -96,7 +96,7 @@
     "st": "Current",
     "dt": "4 Sep 2026",
     "own": "Claude",
-    "note": "F10 open: gate not in repo"
+    "note": "F10 open: gate not in repo. Sweep of the live repo; 34 orphan scripts. needs CR-001"
   },
   {
     "org": "4ormIQ",
@@ -107,7 +107,7 @@
     "st": "Current",
     "dt": "4 Sep 2026",
     "own": "Chad",
-    "note": ""
+    "note": "Protected grounds are never collected or used in ranking. needs DR-001"
   },
   {
     "org": "4ormIQ",
@@ -118,7 +118,7 @@
     "st": "Draft",
     "dt": "",
     "own": "Unassigned",
-    "note": "Launch blocker"
+    "note": "Launch blocker. Threat model for the evidence store and the result page. needs PIA-001"
   },
   {
     "org": "4ormIQ",
@@ -129,7 +129,7 @@
     "st": "Draft",
     "dt": "",
     "own": "Unassigned",
-    "note": "Launch blocker"
+    "note": "Launch blocker. What is kept, for how long, and when it is destroyed, by record type. needs PIA-001"
   },
   {
     "org": "4ormIQ",
@@ -140,7 +140,7 @@
     "st": "Draft",
     "dt": "",
     "own": "Unassigned",
-    "note": "Launch blocker"
+    "note": "Launch blocker. Who is called, in what order, and what is logged when something goes wrong. needs SEC-001"
   },
   {
     "org": "4ormIQ",
@@ -151,7 +151,7 @@
     "st": "Draft",
     "dt": "",
     "own": "Unassigned",
-    "note": "Launch blocker"
+    "note": "Launch blocker. Every third party that touches consumer data, what it sees, and its contract status. needs PIA-001"
   },
   {
     "org": "4ormIQ",
@@ -162,7 +162,7 @@
     "st": "Current",
     "dt": "4 Sep 2026",
     "own": "Chad",
-    "note": "Every CR row cites an LR row"
+    "note": "Every CR row cites an LR row. Every compliance row cites a legal authority; zero uncited."
   },
   {
     "org": "4ormIQ",
@@ -173,18 +173,18 @@
     "st": "Rebuild due",
     "dt": "",
     "own": "Chad",
-    "note": "Rebuild as v1.0 from the finished set"
+    "note": "Rebuild as v1.0 from the finished set. Every rule 4orm must meet, mapped to the control that meets it. needs LR-001"
   },
   {
     "org": "4ormIQ",
     "kind": "Registers",
     "id": "DR-001",
-    "n": "Document register",
+    "n": "Register of registers",
     "v": "v1.0",
     "st": "Current",
     "dt": "4 Sep 2026",
     "own": "Claude",
-    "note": "14 controlled documents"
+    "note": "The register of every register: what exists, who owns it, and when it was last verified. 14 controlled documents."
   },
   {
     "org": "4ormIQ",

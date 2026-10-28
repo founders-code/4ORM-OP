@@ -31,8 +31,8 @@ const LISTS=[
  {id:'ent-w',name:'Enterprise BC · this week',sub:'#26–50 · 5 a day',k:'ent',f:x=>x.k=='ent'&&x.rank>25},
  {id:'ent-p',name:'Enterprise BC · protected',sub:'#1–25 · after we learn',k:'ent',f:x=>x.k=='ent'&&x.rank<=25}];
 const COLS={
- inv:[['rank','#',1],['name','Fund',1],['route','Reach by',1],['stage','Stage',1],['day','Day',1],['cheque','First cheque',1],['base','Base',0],['sector','Sector fit',0],['recent','Most recent deal',0],['email','Email',0]],
- ent:[['rank','#',1],['name','Company',1],['route','Reach by',1],['stage','Stage',1],['day','Day',1],['segment','Segment',1],['foot','B.C. footprint',0],['scale','Scale',0],['phone','Phone',0],['email','Email',0]]};
+ inv:[['rank','#',1],['name','Fund',1],['reach','Phone and email',1],['route','Reach by',1],['stage','Stage',1],['day','Day',1],['cheque','First cheque',1],['base','Base',0],['sector','Sector fit',0],['recent','Most recent deal',0]],
+ ent:[['rank','#',1],['name','Company',1],['reach','Phone and email',1],['route','Reach by',1],['stage','Stage',1],['day','Day',1],['segment','Segment',1],['foot','B.C. footprint',0],['scale','Scale',0]]};
 let curList=LISTS[0],group='day',filt='all',q='';
 const $=s=>document.querySelector(s);
 const fact=(x,k)=>((x.facts.find(f=>f[0]==k)||[])[1])||'-';
@@ -50,7 +50,8 @@ function cell(x,c){
  case'foot':return '<td class="mut">'+fact(x,'B.C. footprint')+'</td>';
  case'scale':return '<td class="mut">'+fact(x,'Scale')+'</td>';
  case'phone':return '<td class="mut">'+fact(x,'Phone')+'</td>';
- case'email':return '<td class="mut">'+(x.em||'-')+'</td>';}}
+ case'email':return '<td class="mut">'+(x.em||'-')+'</td>';
+ case'reach':return '<td class="reach"><div class="ph">'+(fact(x,'Phone')||'-')+'</div><div class="em">'+(x.em||'-')+'</div></td>';}}
 function routePill(x){const m={Email:'p-blue',Form:'p-violet',Apply:'p-violet',Intro:'p-amber',Call:'p-green','Find contact':'p-red'};return '<span class="pill '+(m[x.r]||'p-gray')+'">'+x.r+'</span>';}
 function stCls(s){return /Storage/.test(s)?'p-gray':/Cold/.test(s)?'p-blue':/reach out|Send/.test(s)?'p-amber':/Lost|Pass|Not now/.test(s)?'p-red':'p-green';}
 function renderNav(){

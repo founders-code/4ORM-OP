@@ -86,6 +86,52 @@
     function stp(s) {
       return s === 'Current' ? 'p-cur' : s === 'Draft' ? 'p-dr' : s === 'Live' ? 'p-live' : /due|Scheduled/i.test(s) ? 'p-due' : 'p-sch';
     }
+    function edgeClass(s) {
+      if (s === 'Current' || s === 'Live' || s === 'Written') return 'cur';
+      if (s === 'Draft') return 'dr';
+      if (/due|Scheduled|Rebuild/i.test(s || '')) return 'due';
+      return 'dr';
+    }
+    function esc(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function previewOf(x) {
+      var note = String(x.note || '').trim();
+      if (note) return note.replace(/\s*needs\s+[A-Z0-9-]+\s*$/i, '').trim() || note;
+      return x.n || '';
+    }
+    function depOf(x) {
+      var m = String(x.note || '').match(/\bneeds\s+([A-Z0-9-]+)/i);
+      return m ? m[0] : '';
+    }
+    function verStrip(v) {
+      var m = String(v || '').match(/(\d+)/);
+      var filled = m ? Math.min(6, Math.max(1, parseInt(m[1], 10))) : (v ? 1 : 0);
+      var total = Math.max(4, filled);
+      var h = '';
+      var i;
+      for (i = 0; i < total; i++) h += '<i' + (i < filled ? ' class="f"' : '') + '></i>';
+      return '<div class="ver">' + h + '</div>';
+    }
+    function cardHTML(x) {
+      var own = (!x.own || x.own === '-' || x.own === 'Unassigned') ? 'Unassigned' : x.own;
+      var none = own === 'Unassigned';
+      var dep = depOf(x);
+      var meta = '';
+      if (x.dt) meta += '<span>verified ' + esc(x.dt) + '</span>';
+      else if (/due|Rebuild/i.test(x.st || '')) meta += '<span>' + esc(String(x.st).toLowerCase()) + '</span>';
+      else if (/Draft/i.test(x.st || '')) meta += '<span>draft</span>';
+      if (dep) meta += '<span class="dep">' + esc(dep) + '</span>';
+      return '<div class="dc ' + edgeClass(x.st) + '" data-id="' + esc(x.id) + '">'
+        + '<div class="id">' + esc(x.id) + '</div>'
+        + '<b>' + esc(x.n) + '</b>'
+        + '<div class="pv">' + esc(previewOf(x)) + '</div>'
+        + verStrip(x.v)
+        + (meta ? '<div class="meta2">' + meta + '</div>' : '')
+        + '<div class="m"><span class="ow' + (none ? ' none' : '') + '">' + esc(own) + '</span>'
+        + '<span class="v">' + esc(x.v || '-') + '</span></div></div>';
+    }
     function nav() {
       var h = '<div class="vs' + (org === 'all' ? ' on' : '') + '" data-o="all">Everything<span class="c">' + docs.length + '</span></div>';
       ORGS.forEach(function (o) {
@@ -113,16 +159,39 @@
       var un = rows.filter(function (r) { return r.own === 'Unassigned' || r.own === '-'; }).length;
       var kp = $(root, '#vkp');
       if (kp) kp.innerHTML = '<div class="kt g"><b>' + (docs.length ? cur : '-') + '</b><span>current or live</span></div><div class="kt a"><b>' + (docs.length ? dr : '-') + '</b><span>drafts</span></div><div class="kt r"><b>' + (docs.length ? due : '-') + '</b><span>due or scheduled</span></div><div class="kt r"><b>' + (docs.length ? un : '-') + '</b><span>with no owner</span></div>';
-      var h = '<tr><th>ID</th><th>Document</th><th>Version</th><th>Status</th><th>Verified</th><th>Owner</th><th>Note</th></tr>';
+      var KIND_ORDER = ['Audits', 'Registers', 'Corporate', 'Agreements', 'Capital'];
+      var groups = [];
+      var seen = {};
+      rows.forEach(function (r) {
+        var key = r.org + '\0' + r.kind;
+        if (!seen[key]) {
+          seen[key] = { org: r.org, kind: r.kind, items: [] };
+          groups.push(seen[key]);
+        }
+        seen[key].items.push(r);
+      });
+      groups.sort(function (a, b) {
+        var oa = ORGS.indexOf(a.org); var ob = ORGS.indexOf(b.org);
+        if (oa < 0) oa = 99; if (ob < 0) ob = 99;
+        if (oa !== ob) return oa - ob;
+        var ka = KIND_ORDER.indexOf(a.kind); var kb = KIND_ORDER.indexOf(b.kind);
+        if (ka < 0) ka = 99; if (kb < 0) kb = 99;
+        return ka - kb;
+      });
+      var h = '';
       if (!rows.length) {
-        h += '<tr class="row"><td colspan="7">' + reason + '</td></tr>';
+        h = '<div class="col"><div class="ch"><div><b>Vault</b></div><span class="c">0</span></div><div class="cb"><div class="pv" style="padding:8px">' + esc(reason) + '</div><div class="addc" data-add="1">+ Add</div></div></div>';
       } else {
-        rows.forEach(function (x) {
-          h += '<tr class="row" data-id="' + x.id + '"><td class="id">' + x.id + '</td><td class="nm"><b>' + x.n + '</b><small>' + x.org + ' · ' + x.kind + '</small></td><td class="mut">' + (x.v || '-') + '</td><td><span class="pill ' + stp(x.st) + '">' + x.st + '</span></td><td class="mut">' + (x.dt || '-') + '</td><td class="mut">' + x.own + '</td><td class="mut">' + (x.note || '-') + '</td></tr>';
+        groups.forEach(function (g) {
+          var missing = g.items.some(function (x) { return !x.own || x.own === '-' || x.own === 'Unassigned'; });
+          h += '<div class="col"><div class="ch"><div><div class="o">' + esc(g.org) + '</div><b>' + esc(g.kind) + '</b></div>'
+            + '<span class="c' + (missing ? ' r' : '') + '">' + g.items.length + '</span></div><div class="cb">';
+          g.items.forEach(function (x) { h += cardHTML(x); });
+          h += '<div class="addc" data-o="' + esc(g.org) + '" data-k="' + esc(g.kind) + '">+ Add</div></div></div>';
         });
       }
-      var tab = $(root, '#vtab'); if (tab) tab.innerHTML = h;
-      $$(root, '#vtab tr.row').forEach(function (e) {
+      var board = $(root, '#vboard'); if (board) board.innerHTML = h;
+      $$(root, '#vboard .dc').forEach(function (e) {
         e.onclick = function () { openDoc(e.getAttribute('data-id')); };
       });
     }

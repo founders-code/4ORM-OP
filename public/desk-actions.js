@@ -2372,8 +2372,7 @@
     'space-email': function (el, root) {
       var pkg = spaceById(attr(el, 'data-id')) || S().pkg;
       if (!pkg) { toast(root, 'Open a Space first'); return; }
-      var d = spaceDraft(pkg);
-      openCompose({ to: d.to });
+      openCompose(spaceDraft(pkg));
     },
     'space-compose': function (el, root) {
       var pkg = spaceById(attr(el, 'data-id')) || S().pkg;
@@ -5328,10 +5327,15 @@
     return (S().packages || []).filter(function (p) { return String(p.id) === String(id); })[0] || (S().pkg && String(S().pkg.id) === String(id) ? S().pkg : null);
   }
   function spaceDraft(pkg) {
-    var first = (pkg.recipients || pkg.people || [])[0] || {};
+    var people = pkg.recipients || pkg.people || [];
+    var first = people[0] || {};
     var mail = pkg.email || {};
+    var cc = people.slice(1).filter(function (p) { return p && p.email; }).map(function (p) {
+      return { email: String(p.email).toLowerCase(), name: p.name || '' };
+    });
     return {
       to: first.email ? [{ email: String(first.email).toLowerCase(), name: first.name || '' }] : [],
+      cc: cc,
       subject: pkg.emailSubject || mail.subject || pkg.subject || '',
       body: pkg.emailBody || mail.body || pkg.intro || '',
       attachments: (pkg.docs || pkg.items || []).filter(function (d) { return d && d.kind !== 'link' && d.kind !== 'note' && d.kind !== 'folder'; }),
