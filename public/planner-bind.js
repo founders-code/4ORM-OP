@@ -581,6 +581,8 @@ document.addEventListener('click',e=>{if(!e.target.closest('.pop')&&!e.target.cl
 
 /* Clicks */
 document.addEventListener('click',e=>{const r=e.target.closest('.drw');if(r&&byId[r.dataset.open])openDrawer(r.dataset.open)});
+/* The big milestones open their own drawer (plan, start and complete dates, name, notes). */
+document.addEventListener('click',e=>{const g=e.target.closest('.gspan[data-open]');if(g&&byId[g.dataset.open])openDrawer(g.dataset.open)});
 document.addEventListener('click',e=>{
   const t=e.target.closest('button');if(!t)return;const act=t.dataset.act;
   if(t.dataset.view){state.view=t.dataset.view;save();applyView();window.scrollTo(0,0);if(state.view==='timeline'){renderBoard();drawLinks();goToday(false)}return}

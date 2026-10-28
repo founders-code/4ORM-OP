@@ -722,7 +722,7 @@
     });
     api('/api/ops/production').then(function (r) { return r && r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (d) {
       var el = $(root, '#t4pl'); if (!el || !d || !d.days) return;
-      el.textContent = (d.days[0] ? d.days[0].entries.length : 0) + ' entries today';
+      var c = d.days[0] ? d.days[0].entries.length : 0; el.textContent = c + (c === 1 ? ' entry' : ' entries') + ' today';
     });
     api('/api/ops/sites').then(function (r) { return r && r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (d) {
       var el = $(root, '#t4ss'); if (!el || !d) return;
