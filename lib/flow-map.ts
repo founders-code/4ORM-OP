@@ -62,6 +62,7 @@ export async function buildFlowMap(sql: Sql | null, ownerId: string, userId: str
   const [db, api, sync, watch, scrape, news, brief, ceo, snap, rec, voice, visits, growth, contacts, items, tl, docs, vault, fin, mail, cal, zoomSync, sched, events] = await Promise.all([
     Q(() => sql!`SELECT 1 AS ok`),
     sql ? sql`SELECT api, count(*)::int AS n, count(*) FILTER (WHERE code = 0 OR code >= 400)::int AS bad, max(at) AS last, max(at) FILTER (WHERE code = 0 OR code >= 400) AS lastbad,
+        count(*) FILTER (WHERE at > now() - interval '1 hour')::int AS n1, count(*) FILTER (WHERE at > now() - interval '1 hour' AND (code = 0 OR code >= 400))::int AS bad1,
         (array_agg(ms ORDER BY at DESC))[1] AS ms FROM api_calls WHERE at > now() - interval '24 hours' GROUP BY api`.catch(() => [] as Row[]) : none,
     sql ? sql`SELECT source, status, detail, synced_at FROM sync_state WHERE owner_id = ANY(${ids})`.catch(() => [] as Row[]) : none,
     sql ? sql`SELECT source, expiration FROM watch_channels WHERE owner_id = ANY(${ids})`.catch(() => [] as Row[]) : none,
@@ -85,7 +86,7 @@ export async function buildFlowMap(sql: Sql | null, ownerId: string, userId: str
     Q(() => sql!`SELECT max(fetched_at) AS t FROM calendar_cache WHERE owner_id = ANY(${ids})`),
     Q(() => sql!`SELECT max(synced_at) AS t FROM zoom_syncs WHERE owner_id = ANY(${ids})`),
     Q(() => sql!`SELECT count(*) FILTER (WHERE status = 'failed')::int AS bad, count(*) FILTER (WHERE status = 'sent' AND send_at > now() - interval '7 days')::int AS sent FROM scheduled_mail WHERE owner_id = ANY(${ids})`),
-    Q(() => sql!`SELECT count(*) FILTER (WHERE level = 'err' AND at > now() - interval '24 hours')::int AS bad FROM ops_events`),
+    Q(() => sql!`SELECT count(*) FILTER (WHERE level = 'err' AND at > now() - interval '24 hours')::int AS bad, count(*) FILTER (WHERE level = 'err' AND at > now() - interval '1 hour')::int AS bad1 FROM ops_events`),
   ]);
   const dbMs = Date.now() - t0;
   const svc = sql ? await integrationStatus(sql, userId).catch(() => ({ services: [] as Array<{ key: string; group: string; word: string; detail: string }> })) : { services: [] };
@@ -101,8 +102,15 @@ export async function buildFlowMap(sql: Sql | null, ownerId: string, userId: str
     const a = A.get(apiKey);
     const calls = n(a || null);
     const bad = n(a || null, 'bad');
-    const callTxt = calls ? `${calls} calls in 24 h${bad ? `, ${bad} failed (last ${ago(a?.lastbad)})` : ', none failed'}` : 'no calls in 24 h';
-    let state: FlowState = calls ? (bad === 0 ? 'ok' : bad / calls > 0.3 && bad >= 3 ? 'down' : 'warn') : 'idle';
+    const callTxt = calls ? `${calls} calls in 24 h${bad ? `, ${bad} failed (last ${ago(a?.lastbad)})` : ', none failed'} · last hour ${n(a || null, 'n1')} calls, ${n(a || null, 'bad1')} failed` : 'no calls in 24 h';
+    /* The lamp reads the last hour, so a problem that has been fixed goes green within the hour.
+       A few failed calls among thousands is normal traffic, not a warning: amber starts at 5 per cent. */
+    const n1 = n(a || null, 'n1');
+    const bad1 = n(a || null, 'bad1');
+    const rate = (b: number, t: number) => (t ? b / t : 0);
+    let state: FlowState = !calls ? 'idle'
+      : n1 ? (rate(bad1, n1) > 0.3 && bad1 >= 3 ? 'down' : rate(bad1, n1) > 0.05 ? 'warn' : 'ok')
+        : (rate(bad, calls) > 0.05 ? 'warn' : 'ok');
     if (s && s.group === 'available') state = 'idle';
     if (s && s.group === 'attention') state = worst(state, 'warn');
     const conn = s ? `${s.word}${s.detail ? ` · ${s.detail}` : ''}` : '';
@@ -122,7 +130,7 @@ export async function buildFlowMap(sql: Sql | null, ownerId: string, userId: str
     const left = w.expiration ? (new Date(String(w.expiration)).getTime() - Date.now()) / 3600000 : -1;
     return left > 12 ? { state: 'ok', detail: `Push channel open, renews in ${Math.round(left)} h` }
       : left > 0 ? { state: 'warn', detail: `Push channel expires in ${Math.round(left)} h` }
-        : { state: 'warn', detail: 'Push channel expired; the 5-minute live sync still covers it' };
+        : { state: 'idle', detail: 'Push channel expired; the 5-minute live sync still covers it' };
   };
 
   const g = service('gmail', 'google', 'gmail');
@@ -175,7 +183,7 @@ export async function buildFlowMap(sql: Sql | null, ownerId: string, userId: str
     { id: 'kp-ai', lane: 2, name: 'AI', sub: 'OpenAI, Anthropic, Perplexity', state: worst(oai.state === 'idle' ? 'warn' : oai.state, ant.state === 'down' ? 'down' : 'ok', ppx.state === 'down' ? 'down' : 'ok'), detail: `OpenAI: ${oai.detail} | Anthropic: ${ant.detail} | Perplexity: ${ppx.detail}` },
     { id: 'kp-vault', lane: 2, name: 'Vault', sub: 'keys, audits, registers', state: vault ? 'ok' : 'down', detail: `${n(vault)} documents · logins sealed` },
     { id: 'kp-fin', lane: 2, name: 'Finance', sub: 'figures, SaaS bills', state: fin ? 'ok' : 'warn', detail: `${n(fin)} recurring bills tracked` },
-    { id: 'kp-ops', lane: 2, name: 'Ops log', sub: 'API calls, events', state: n(events, 'bad') > 20 ? 'warn' : 'ok', detail: `${n(events, 'bad')} errors logged in 24 h` },
+    { id: 'kp-ops', lane: 2, name: 'Ops log', sub: 'API calls, events', state: n(events, 'bad1') > 20 ? 'warn' : 'ok', detail: `${n(events, 'bad1')} errors in the last hour · ${n(events, 'bad')} in 24 h` },
     { id: 'kp-db', lane: 2, name: 'Neon Postgres', sub: 'holds every store', state: db ? (dbMs > 2500 ? 'warn' : 'ok') : 'down', detail: db ? `Answered all ${24} reads in ${dbMs} ms` : 'Database did not answer', ms: dbMs },
 
     { id: 'pg-today', lane: 3, name: 'Today', sub: 'brief, CEO chat', state: 'ok', detail: '' },
@@ -211,7 +219,9 @@ export async function buildFlowMap(sql: Sql | null, ownerId: string, userId: str
   for (const p of nodes.filter((x) => x.lane === 3)) {
     const feeds = FLOW_EDGES.filter((e) => e[1] === p.id).map((e) => byId.get(e[0])).filter(Boolean) as FlowNode[];
     const bad = feeds.filter((f) => f.state === 'down' || f.state === 'warn');
-    p.state = feeds.length ? feeds.map((f) => (f.state === 'idle' ? 'ok' : f.state)).reduce((a, b) => worst(a, b), 'ok' as FlowState) : 'ok';
+    /* A page goes red when something feeding it is down. An amber upstream is named in the detail but
+       does not repaint every page below it, or one gap would light half the map. */
+    p.state = feeds.some((f) => f.state === 'down') ? 'down' : 'ok';
     p.detail = `Fed by ${feeds.map((f) => f.name).join(', ')}${bad.length ? ` · check ${bad.map((f) => f.name).join(', ')}` : ''}`;
   }
   return {
