@@ -236,7 +236,8 @@ button{font:inherit;cursor:pointer}
 .nowline{background:#ff4d8d!important;box-shadow:0 0 10px #ff4d8d}.nowline::before{background:#ff4d8d!important;box-shadow:0 0 10px #ff4d8d}
 .ev.real{color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.35);border-radius:6px!important;box-shadow:0 0 14px var(--glow,rgba(59,130,255,.55)),inset 0 0 0 1px rgba(255,255,255,.35)!important;filter:saturate(1.15) brightness(.72)}
 .ev.real .tt,.ev.real .tm{color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.35)}
-.ev.sug{border-style:solid!important;opacity:.55}
+.ev.sug{border-style:solid!important;opacity:.55;color:#fff!important}
+.ev.sug .tt,.ev.sug .tm,.ev.sug .tt::before{color:#fff!important;text-shadow:0 1px 0 rgba(0,0,0,.35)!important;opacity:1!important;font-weight:700!important}
 .ev.sug:hover{opacity:1}
 .allday .pill{box-shadow:0 0 10px color-mix(in srgb,currentColor 40%,transparent)}
 .mini .d.today,.mini .d.sel{background:#ff4d8d!important;color:#fff!important;box-shadow:0 0 12px #ff4d8d}

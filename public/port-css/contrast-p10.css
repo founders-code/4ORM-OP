@@ -17,6 +17,18 @@
 .port-body .nx.amb,.port-body .na-docs,.port-body .p-amber{color:#7a5200!important}
 .port-body .clock,.port-body .ro,.port-body .more3,.port-body .lnk{color:#5b6678!important}
 .port-body.neon .clock,.port-body.neon .ro{color:#aebbe0!important}
+/* Documents: folder + file names on dark */
+.port-body.neon .fd,.port-body.neon .fd b,.port-body .fd{color:#e9eefa!important}
+.port-body.neon .fl,.port-body.neon .fl .nm,.port-body .fl .nm{color:#e9eefa!important}
+.port-body.neon .fl{background:#0a0f26!important;border-color:rgba(120,150,255,.12)!important}
+.port-body.neon .bar .sub,.port-body .bar .sub{color:#aebbe0!important}
+/* Segmented toggles on dark pages — never #000 / #101a33 on dark */
+.port-body .seg span,.port-body.neon .seg span{color:#aebbe0!important}
+.port-body .seg span.on,.port-body.neon .seg span.on{background:#ff4d8d!important;color:#160308!important}
+.port-body .seg span:not(.on){color:#aebbe0!important}
+/* Integrations / Contacts / Links white-on-white strips */
+.port-body .stat,.port-body .sx b,.port-body .kpi b,.port-body .tiles .sx b{color:#e9eefa!important}
+.port-body .stat span,.port-body .sx span{color:#aebbe0!important}
 .port-body .gprog{color:#f5c443!important}
 .port-body .fixed{color:#aebbe0!important}
 .port-body .tbtn.has{color:#e9eefa!important}

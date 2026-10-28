@@ -1434,7 +1434,16 @@
     var pick = S.docPick || {};
     var L = { img: ['t-img', 'IMG'], ppt: ['t-ppt', 'PPT'], pdf: ['t-pdf', 'PDF'], doc: ['t-doc', 'DOC'], xls: ['t-xls', 'XLS'] };
     var TYPE_CHIPS = [['all', 'All'], ['pdf', 'PDF'], ['ppt', 'Slides'], ['doc', 'Docs'], ['xls', 'Sheets'], ['img', 'Images'], ['space', 'In a Space'], ['drive', 'From Drive']];
-    var files = (data.files || []).map(function (f) {
+    var orderPref = (S.prefs && S.prefs.docs_prefs && S.prefs.docs_prefs.order) || [];
+    var fileRows = (data.files || []).slice().sort(function (a, b) {
+      var ia = orderPref.indexOf(String(a[6] || ''));
+      var ib = orderPref.indexOf(String(b[6] || ''));
+      if (ia < 0 && ib < 0) return 0;
+      if (ia < 0) return 1;
+      if (ib < 0) return -1;
+      return ia - ib;
+    });
+    var files = fileRows.map(function (f) {
       var inner = (f[0] === 'ppt' || f[0] === 'img') ? '<div class="sl" style="background:linear-gradient(135deg,#1b2f66,#2e6bf2)">' + esc(String(f[1]).split('|')[0]) + '</div>' : '<div class="pg"><i class="h"></i><i></i><i></i><i style="width:80%"></i><i></i><i style="width:60%"></i></div>';
       if (f[10]) inner = '<img data-thumb="1" alt="" loading="lazy" src="' + esc(f[10]) + '" style="width:100%;height:100%;object-fit:cover;object-position:top;display:block">';
       else if (f[11]) inner = '<iframe src="' + esc(f[11]) + '#page=1&toolbar=0&navpanes=0&view=FitH" loading="lazy" tabindex="-1" title="" aria-hidden="true" style="width:100%;height:100%;border:0;pointer-events:none;background:#fff;display:block"></iframe>';
@@ -1472,9 +1481,15 @@
         return '<button class="chip' + (typeOn === c[0] ? ' on' : '') + '" data-action="docs-type" data-type="' + c[0] + '">' + c[1] + '</button>';
       }).join('') + '</div></section>'
       + '<section class="card ctr"><div class="ch"><h3>' + esc(data.title || 'All documents') + '</h3><span class="s">' + (data.files || []).length + ' files &middot; hover a file to select it, then drop it on a Space</span>'
-      + '<span class="sizer">Size <input type="range" min="120" max="280" value="' + (Number((window.STATE && window.STATE.prefs && window.STATE.prefs.docs_prefs && window.STATE.prefs.docs_prefs.size) || 168)) + '" data-action="docs-size"></span></div>'
+      + '<span class="sizer">Size <input type="range" min="120" max="280" value="' + (function () {
+        var raw = Number((window.STATE && window.STATE.prefs && window.STATE.prefs.docs_prefs && window.STATE.prefs.docs_prefs.size) || 168);
+        return Math.max(120, Math.min(220, raw || 168));
+      })() + '" data-action="docs-size"></span></div>'
       + bulk
-      + '<div class="files' + (view === 'list' ? ' list' : '') + '" id="files" style="--dw:' + (Number((window.STATE && window.STATE.prefs && window.STATE.prefs.docs_prefs && window.STATE.prefs.docs_prefs.size) || 168)) + 'px">' + (files || empty) + '</div>'
+      + '<div class="files' + (view === 'list' ? ' list' : '') + '" id="files" style="--dw:' + (function () {
+        var raw = Number((window.STATE && window.STATE.prefs && window.STATE.prefs.docs_prefs && window.STATE.prefs.docs_prefs.size) || 168);
+        return Math.max(120, Math.min(220, raw || 168));
+      })() + 'px">' + (files || empty) + '</div>'
       + '<div class="drop">Drop files here, <span class="lnk" data-action="docs-upload">upload</span> or <span class="lnk" data-action="docs-drive">pull from Drive</span> &mdash; <b>first-page previews</b> appear automatically.</div></section>'
       + '<div class="rs"><section class="card"><div class="ch"><h3>Drop into a Space</h3><span class="s">drag a file here</span></div>'
       + ((data.drops || []).length ? (data.drops || []).map(function (d) {
@@ -1603,6 +1618,41 @@
     if (wantDoc) {
       try { history.pushState({ doc: 1 }, ''); } catch (e) {}
     }
+    (function bindDocsPinch() {
+      var filesEl = wrap.querySelector('#files');
+      var range = wrap.querySelector('[data-action="docs-size"]');
+      if (!filesEl || filesEl._docsPinch) return;
+      filesEl._docsPinch = 1;
+      function applySize(size) {
+        var avail = filesEl.clientWidth || 900;
+        var maxTwo = Math.max(120, Math.floor((avail - 11) / 2));
+        size = Math.max(120, Math.min(Math.min(280, maxTwo), Math.round(size)));
+        filesEl.style.setProperty('--dw', size + 'px');
+        if (range) { range.value = String(size); if (range.max != null) range.max = String(Math.min(280, maxTwo)); }
+        window.STATE = window.STATE || {};
+        window.STATE.prefs = window.STATE.prefs || {};
+        window.STATE.prefs.docs_prefs = Object.assign({}, window.STATE.prefs.docs_prefs || {}, { size: size });
+        if (typeof window.authFetch === 'function') {
+          window.authFetch('/api/prefs', { method: 'PATCH', credentials: 'same-origin', quiet: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ docs_prefs: { size: size } }) }).catch(function () {});
+        }
+      }
+      var acc = 0;
+      filesEl.addEventListener('wheel', function (e) {
+        if (!(e.ctrlKey || e.metaKey)) return;
+        e.preventDefault();
+        acc += e.deltaY;
+        if (Math.abs(acc) < 30) return;
+        var cur = Number((window.STATE && window.STATE.prefs && window.STATE.prefs.docs_prefs && window.STATE.prefs.docs_prefs.size) || range && range.value || 168);
+        applySize(cur + (acc > 0 ? 12 : -12));
+        acc = 0;
+      }, { passive: false });
+      filesEl.addEventListener('gesturechange', function (e) {
+        e.preventDefault();
+        var cur = Number((window.STATE && window.STATE.prefs && window.STATE.prefs.docs_prefs && window.STATE.prefs.docs_prefs.size) || range && range.value || 168);
+        if (e.scale > 1.06) applySize(cur - 12);
+        else if (e.scale < 0.94) applySize(cur + 12);
+      });
+    })();
     markReady('docsDesk');
   }
 

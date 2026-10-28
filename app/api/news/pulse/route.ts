@@ -13,7 +13,9 @@ export async function GET(req: Request) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const ownerId = await sessionOwner(session);
     if (!ownerId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    const view = new URL(req.url).searchParams.get('view') === 'consumer' ? 'consumer' : 'market';
+    const url = new URL(req.url);
+    const view = url.searchParams.get('view') === 'consumer' ? 'consumer' : 'market';
+    const rebuild = url.searchParams.get('rebuild') === '1' || url.searchParams.get('force') === '1';
     if (!session.sql) return NextResponse.json({ view, gauges: [], consumer: [], fear: [], cmkt: [], weeks: [], regs: [], mkt: [] });
     await ensureNewsTables(session.sql).catch(() => {});
     await session.sql`CREATE TABLE IF NOT EXISTS news_pulse_cache (
@@ -23,11 +25,13 @@ export async function GET(req: Request) {
       updated_at timestamptz NOT NULL DEFAULT now(),
       PRIMARY KEY (owner_id, view)
     )`.catch(() => {});
-    const stored = await loadPulse(session.sql, ownerId, view);
-    if (stored) return NextResponse.json(Object.assign({ view }, stored));
+    if (!rebuild) {
+      const stored = await loadPulse(session.sql, ownerId, view);
+      if (stored) return NextResponse.json(Object.assign({ view }, stored));
+    }
     const pulse = await buildPulse(session.sql, ownerId, view);
     await savePulse(session.sql, ownerId, view, pulse);
-    return NextResponse.json(Object.assign({ view }, pulse));
+    return NextResponse.json(Object.assign({ view, rebuilt: rebuild || undefined }, pulse));
   } catch (err) {
     fail('news_pulse', err);
     return NextResponse.json({ error: 'Unavailable' }, { status: 500 });

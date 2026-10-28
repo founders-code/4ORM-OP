@@ -855,7 +855,8 @@
     if (!wrap) { markReady('calDesk'); return; }
     if (P().applyPageCss) P().applyPageCss(wrap, 'calendar');
     var keepView = window.__redesignCal && window.__redesignCal.root === wrap.getRootNode() && window.__redesignCal.view ? window.__redesignCal.view() : '';
-    var keepFocus = focusDate || (window.__redesignCal && window.__redesignCal.root === wrap.getRootNode() && window.__redesignCal.focusYmd ? new Date(window.__redesignCal.focusYmd() + 'T12:00') : null);
+    /* Opening from the sidebar always lands on today unless a focusDate was passed. */
+    var keepFocus = focusDate || null;
     if (!wrap.querySelector('.calwrap')) wrap.innerHTML = '<div class="card" style="padding:28px 24px">Loading&hellip;</div>';
     loadSnip('/calwrap-snippet.html?v=2', function (html) {
       var live = !fixtureOn();
@@ -865,12 +866,13 @@
           var calEl = wrap.querySelector('.calwrap');
           if (live && calEl) calEl.classList.add('live-align');
           var root = wrap.getRootNode();
+          var today = live ? new Date() : new Date(2026, 9, 19);
           if (typeof window.mountRedesignCalendar === 'function') {
             window.mountRedesignCalendar(root, {
               fixture: !live,
               live: live,
-              today: live ? new Date() : new Date(2026, 9, 19),
-              focus: keepFocus || undefined,
+              today: today,
+              focus: keepFocus || today,
               view: keepView || undefined,
               events: live ? events : null,
               write: calWrite,

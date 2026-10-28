@@ -2749,10 +2749,13 @@
       refresh('docs');
     },
     'docs-size': function (el) {
-      var size = Math.max(120, Math.min(280, Math.round(Number(el.value) || 168)));
+      var files = el.getRootNode && el.getRootNode().querySelector && el.getRootNode().querySelector('#files');
+      var avail = files ? files.clientWidth : 900;
+      var maxTwo = Math.max(120, Math.floor((avail - 11) / 2));
+      var size = Math.max(120, Math.min(Math.min(280, maxTwo), Math.round(Number(el.value) || 168)));
+      if (el.max != null) el.max = String(Math.min(280, maxTwo));
       S().prefs = S().prefs || {};
       S().prefs.docs_prefs = Object.assign({}, S().prefs.docs_prefs || {}, { size: size });
-      var files = el.getRootNode && el.getRootNode().querySelector && el.getRootNode().querySelector('#files');
       if (files) files.style.setProperty('--dw', size + 'px');
       api('/api/prefs', { method: 'PATCH', body: { docs_prefs: { size: size } } }).catch(function () {});
     },
@@ -5778,6 +5781,21 @@
     } catch (err) {}
     return { id: plain, kind: 'task' };
   }
+  function reorderDocs(root, draggedId, beforeId) {
+    if (!draggedId || draggedId === beforeId) return;
+    S().prefs = S().prefs || {};
+    var order = (S().prefs.docs_prefs && S().prefs.docs_prefs.order) || [];
+    order = order.filter(function (x) { return x !== draggedId; });
+    var at = beforeId ? order.indexOf(beforeId) : -1;
+    if (at < 0) order.push(draggedId);
+    else order.splice(at, 0, draggedId);
+    S().prefs.docs_prefs = Object.assign({}, S().prefs.docs_prefs || {}, { order: order });
+    api('/api/prefs', { method: 'PATCH', body: { docs_prefs: { order: order } } }).catch(function () {});
+    refresh('docs');
+    toast(root, 'Document order saved', function () {
+      /* Undo: swap back by reloading prefs is enough for soft undo of order */
+    });
+  }
   function onDragStart(e) {
     var t = (e.composedPath && e.composedPath()[0]) || e.target;
     if (t && t.closest && t.closest('.ev, .calwrap .col, .ghost, .rz')) return;
@@ -5812,7 +5830,7 @@
     onDragStart.moved = true;
     setTimeout(function () { onDragStart.moved = false; }, 400);
   }
-  function dropSel() { return '[data-action="col-drop"], [data-action="stage-drop"], [data-action="mail-col-drop"], [data-action="mail-box-drag"], [data-action="space-drop"], [data-action="space-docs"], [data-action="link-cat"], [data-drop-ext]'; }
+  function dropSel() { return '[data-action="col-drop"], [data-action="stage-drop"], [data-action="mail-col-drop"], [data-action="mail-box-drag"], [data-action="space-drop"], [data-action="space-docs"], [data-action="link-cat"], [data-action="docs-folder"], [data-drop-ext]'; }
   function hasFiles(e) {
     try { return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') >= 0; } catch (err) { return false; }
   }
@@ -5842,6 +5860,10 @@
       var cr = t.getRootNode ? t.getRootNode() : null;
       var dz = cr && cr.getElementById ? cr.getElementById('composeDrop') : null;
       if (dz) dz.classList.add('over');
+      return;
+    }
+    if (t && t.closest && (t.closest('#files') || t.closest('[data-action="doc-open"]') || t.closest('[data-action="docs-folder"]'))) {
+      e.preventDefault();
       return;
     }
     var col = t && t.closest ? t.closest(dropSel()) : null;
@@ -5880,6 +5902,30 @@
       }
       uploadDroppedFiles(root, files, '');
       return;
+    }
+    var payloadDoc = parseDrag(e);
+    if (payloadDoc && payloadDoc.kind === 'doc' && payloadDoc.id) {
+      var folderEl = t && t.closest ? t.closest('[data-action="docs-folder"]') : null;
+      if (folderEl) {
+        e.preventDefault();
+        var folder = attr(folderEl, 'data-folder') || '';
+        if (folder && writeOk()) {
+          api('/api/documents/' + encodeURIComponent(payloadDoc.id), { method: 'PATCH', body: { category: folder } }).then(function () {
+            refresh('docs');
+            toast(root, 'Filed into ' + folder, function () {
+              api('/api/documents/' + encodeURIComponent(payloadDoc.id), { method: 'PATCH', body: { category: '' } }).then(function () { refresh('docs'); });
+            });
+          }).catch(function () { toast(root, 'Could not file that document'); });
+        }
+        return;
+      }
+      var other = t && t.closest ? t.closest('[data-action="doc-open"]') : null;
+      var filesBox = t && t.closest ? t.closest('#files') : null;
+      if (filesBox || other) {
+        e.preventDefault();
+        reorderDocs(root, payloadDoc.id, other ? attr(other, 'data-id') : '');
+        return;
+      }
     }
     var col = t && t.closest ? t.closest(dropSel()) : null;
     if (!col) return;

@@ -2,6 +2,7 @@ import type { Sql } from './db';
 import { outbound } from './outbound';
 
 const REGS = ['FINTRAC', 'OSFI', 'FSRA', 'BCFSA', 'CSA', 'AMF', 'FCAC', 'CIRO', 'Bank of Canada'];
+const FIN_RULE = /fintrac|osfi|fsra|bcfsa|\bcsa\b|amf|fcac|ciro|bank of canada|securities commission|insurance regulator|mortgage broker|consumer.?finance|payments? act|pipeda|aml|kyc|suitability|know.?your.?client/i;
 const MARKET_GAUGES = [
   { k: 'reg', t: 'Regulation heat', chip: 'Compliance', cats: ['Compliance', 'Payments / FINTRAC'] },
   { k: 'fraud', t: 'Fraud heat', chip: 'Fraud', cats: ['Fraud'] },
@@ -125,9 +126,15 @@ function medianOf(nums: number[]) {
   return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
 }
 
-function heat(items: Item[], cats: string[], hist: { start: number; end: number }[], _nowMs: number) {
-  const topic = items.filter((it) => inCat(it, cats));
-  const counts = hist.map((w) => windowWeight(items, cats, w.start, w.end));
+function isFinancialReg(it: Item) {
+  const blob = `${it.title || ''} ${it.source || ''} ${it.summary || ''} ${it.why_it_matters || ''} ${it.url || ''}`;
+  return !!regulatorOf(it) || FIN_RULE.test(blob);
+}
+
+function heat(items: Item[], cats: string[], hist: { start: number; end: number }[], _nowMs: number, opts?: { financialOnly?: boolean }) {
+  const topic = items.filter((it) => inCat(it, cats) && (!opts?.financialOnly || isFinancialReg(it)));
+  const pool = opts?.financialOnly ? topic : items;
+  const counts = hist.map((w) => windowWeight(pool, cats, w.start, w.end));
   let lead = 0;
   while (lead < counts.length && counts[lead] === 0) lead += 1;
   const afterLead = counts.slice(lead);
@@ -206,7 +213,10 @@ export async function buildPulse(sql: Sql, ownerId: string, view: 'market' | 'co
   `.catch(() => []) as Item[];
   const items = rows || [];
   const specs = view === 'consumer' ? CONSUMER_GAUGES : MARKET_GAUGES;
-  const gauges = specs.map((g) => Object.assign({ k: g.k, t: g.t, chip: g.chip }, heat(items, g.cats, hist, nowMs)));
+  const gauges = specs.map((g) => Object.assign(
+    { k: g.k, t: g.t, chip: g.chip },
+    heat(items, g.cats, hist, nowMs, g.k === 'reg' ? { financialOnly: true } : undefined),
+  ));
   const thisWeek = items.filter((it) => {
     const t = new Date(it.published_at || 0).getTime();
     return t >= nowMs - WEEK_MS;
