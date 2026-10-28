@@ -2,16 +2,21 @@
 (function () {
   var SC = { Zoom: '#a173ff', 'Bruce asked': '#a173ff', Email: '#3b82ff', 'Voice log': '#ff5fa8', 'Outreach list': '#19d38a', Typed: '#ffb547' };
   var LINK = { Zoom: 'Open the Zoom notes', 'Bruce asked': 'Open the Zoom notes', Email: 'Open the email', 'Voice log': 'Play the voice note', 'Outreach list': "Open the Pre-seed list", Typed: '' };
+  /* Exact 09g To-do seed (design-reference/redesign/09g-playbook.html). */
   function seed() {
     return [
-      { id: 1, t: 'Call Kevin about the investor list for Bruce', src: 'Bruce asked', from: 'Zoom with Bruce, 26 Oct', who: 'Kevin', n: 'Bruce wants the investor list split by who Kevin already knows.', b: 'today', w: 0 },
+      { id: 1, t: 'Call Kevin about the investor list for Bruce', src: 'Bruce asked', from: 'Zoom with Bruce, 26 Oct', who: 'Kevin', n: 'Bruce wants the investor list split by who Kevin already knows. Ask Kevin which of the 25 funds he has a warm path to, and which he would rather Bruce opens.', b: 'today', w: 0 },
       { id: 2, t: "Send today's 5 pre-seed emails", src: 'Outreach list', from: 'Contacts · Pre-seed investors', b: 'today', w: 0 },
-      { id: 3, t: 'Send Kevin the GTM deck', src: 'Voice log', from: 'you said "by Tuesday"', who: 'Kevin', b: 'today', w: 2 },
-      { id: 4, t: 'Reply to Bruce Fair about the 2-pager', src: 'Email', from: 'you owe a reply, 9h', who: 'Bruce', b: 'today', w: 0 },
-      { id: 5, t: 'Send Bruce the pilot outline', src: 'Voice log', from: 'Thu 16:40 note', who: 'Bruce', b: 'week', w: 4 },
+      { id: 3, t: 'Send Kevin the GTM deck', src: 'Voice log', from: 'you said "by Tuesday"', who: 'Kevin', n: 'The GTM deck is the October version. Kevin needs the pricing slide and the broker funnel numbers.', b: 'today', w: 2 },
+      { id: 4, t: 'Reply to Bruce Fair about the 2-pager', src: 'Email', from: 'you owe a reply, 9h', who: 'Bruce', n: 'Bruce sent the 2-pager with edits on page 2. Reply with the fixed version or a time to go through it.', b: 'today', w: 0 },
+      { id: 5, t: 'Send Bruce the pilot outline', src: 'Voice log', from: 'Thu 4:40 pm note', who: 'Bruce', n: 'Pilot outline: scope, 30 days, success measures. Bruce takes it to the brokerage on Friday.', b: 'week', w: 4 },
       { id: 6, t: 'Set the OpenAI key in Vercel for Recordings', src: 'Typed', from: 'Integrations shows it missing', b: 'week', w: 0 },
       { id: 7, t: 'Book the Speer architecture review', src: 'Zoom', from: 'Speer sync, 22 Oct', who: 'Mathew', b: 'week', w: 0 },
-      { id: 8, t: 'Newsletter: RPAA deadline angle', src: 'Voice log', from: 'idea from today', b: 'next', w: 0 }
+      { id: 8, t: 'Newsletter: RPAA deadline angle', src: 'Voice log', from: 'idea from today', b: 'next', w: 0 },
+      { id: 9, t: 'Run Prompt 7c', src: 'Typed', from: 'Spaces menu and pulse fix', b: 'today', w: 0 },
+      { id: 10, t: 'Send Mike Stevens the regulator intro note', src: 'Zoom', from: 'call with Mike, 21 Oct', who: 'Mike', n: 'Mike offered intros to BCFSA and FSRA. Send the short note and the one-pager so he can forward it.', b: 'today', w: 5 },
+      { id: 11, t: 'Pick the Timeline look', src: 'Typed', from: 'design page', b: 'week', w: 0 },
+      { id: 12, t: 'Draft the November investor update', src: 'Voice log', from: 'monthly beat', b: 'next', w: 0 }
     ];
   }
   window.bindPlaybookP8 = function (root) {
@@ -38,7 +43,8 @@
         if (cnt) cnt.textContent = r.filter(function (x) { return !x.done; }).length;
         var host = $('b-' + b);
         if (!host) return;
-        var focus = document.body.classList.contains('focusday');
+        var port = (root.querySelector && root.querySelector('.port-body')) || root.host || document.body;
+        var focus = document.body.classList.contains('focusday') || (port && port.classList && port.classList.contains('focusday'));
         host.innerHTML = r.map(function (x, k) {
           return '<div class="ti' + (x.done ? ' done' : '') + (k >= 4 && !focus ? ' more-hide' : '') + '" style="--sc:' + (SC[x.src] || '#5b8cff') + '" draggable="true" data-id="' + x.id + '"><span class="cb" data-ck="' + x.id + '">' + (x.done ? 'Y' : '') + '</span><div class="tt" data-open="' + x.id + '">' + x.t + (x.n ? '<span class="hasn">NOTES</span>' : '') + '</div>'
             + '<div class="meta"><span class="src">' + x.src + '</span><span>' + (x.from || '') + '</span>' + (x.who ? '<span>with ' + x.who + '</span>' : '') + (x.w ? '<span class="late">waiting ' + x.w + ' day' + (x.w > 1 ? 's' : '') + '</span>' : '') + '</div></div>';
@@ -139,6 +145,16 @@
         }
         ctr.querySelectorAll('button').forEach(function (y) { y.classList.toggle('on', y === x); });
         render();
+        /* 09g: re-place the TODAY band for the 0.5s grid column transition. */
+        var t0 = performance.now();
+        (function tick() {
+          try {
+            var m = window.__playMount;
+            if (m && typeof m.place === 'function') m.place();
+            else window.dispatchEvent(new Event('resize'));
+          } catch (err) {}
+          if (performance.now() - t0 < 650) requestAnimationFrame(tick);
+        })();
       });
     });
     var apply = $('vSave');

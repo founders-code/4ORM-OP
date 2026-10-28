@@ -206,10 +206,8 @@
     var g = gid('g');
     function todayCol() { return (Number(todayIdx) || 0) + 2; /* col 1 = labels; days start at 2 */ }
     function render() {
-      /* Band is a grid child on today's column so Full week / Focus / Compact and
-         every width keep it under the pink header (prompt 13). */
-      var col = todayCol();
-      var h = '<div class="ph" id="ph" style="grid-column:' + col + ' / ' + (col + 1) + ';grid-row:1 / -1"></div><div></div>';
+      /* Band sits in .seq (09g); place() lines it up with today's header column. */
+      var h = '<div></div>';
       ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].forEach(function (x, i) {
         h += '<div class="dh' + (i === todayIdx ? ' today" id="fri' : '"') + '">' + x + '<small>' + dates[i] + '</small></div>';
       });
@@ -224,7 +222,7 @@
           var ids = ' data-action="play-pad" data-r="' + ri + '" data-i="' + i + '" data-id="' + esc(r.id || '') + '" data-day="' + esc(day) + '"';
           if (s === D) h += '<div class="pad done" style="--c:' + c + ';color:#fff"' + ids + '>' + l + '</div>';
           else if (s === M) h += '<div class="pad miss" data-action="play-pad-off"></div>';
-          else if (s === U) h += '<div class="pad due" style="--c:' + c + ';color:#0b0d12"' + ids + '>' + l + '</div>';
+          else if (s === U) h += '<div class="pad due" style="--c:' + c + ';color:#160308"' + ids + '>' + l + '</div>';
           else if (s === N) h += '<div class="pad next" style="--c:' + c + '"' + ids + '>' + l + '</div>';
           else h += '<div class="pad off" data-action="play-pad-off"></div>';
         });
@@ -234,10 +232,18 @@
       if (g) { g.innerHTML = h; place(); count(); }
     }
     function place() {
-      var ph = gid('ph'); if (!ph || !g) return;
-      var col = todayCol();
-      ph.style.gridColumn = col + ' / ' + (col + 1);
-      ph.style.gridRow = '1 / -1';
+      /* 09g place(): band is absolute in .seq, width locked to today's header
+         so it stays in that column at every width (prompt 13 intent). */
+      var f = gid('fri'); var ph = gid('ph');
+      if (!f || !ph || !g) return;
+      ph.style.left = (g.offsetLeft + f.offsetLeft - 4) + 'px';
+      ph.style.width = (f.offsetWidth + 8) + 'px';
+      ph.style.top = '8px';
+      ph.style.bottom = '8px';
+      ph.style.height = 'auto';
+      ph.style.right = 'auto';
+      ph.style.gridColumn = '';
+      ph.style.gridRow = '';
     }
     function count() {
       var left = 0;
@@ -276,7 +282,7 @@
       });
     }
     function toast(t) { var x = gid('toast'); if (!x) return; x.textContent = t; x.classList.add('show'); setTimeout(function () { x.classList.remove('show'); }, 1800); }
-    window.__playMount = { rows: rows, render: render, count: count, toast: toast, root: root, todayIdx: todayIdx, pop: pop, openPop: openPop, get cur() { return cur; }, set cur(v) { cur = v; } };
+    window.__playMount = { rows: rows, render: render, place: place, count: count, toast: toast, root: root, todayIdx: todayIdx, pop: pop, openPop: openPop, get cur() { return cur; }, set cur(v) { cur = v; } };
     render();
     if (fixtureOn()) {
       mountMonths(root, rows);
@@ -626,7 +632,7 @@
       markReady('playDesk');
       return;
     }
-    loadSnip('/pbwrap-snippet.html?v=5', function (html) {
+    loadSnip('/pbwrap-snippet.html?v=6', function (html) {
       try {
         wrap.innerHTML = html || '<div class="pbwrap"></div>';
         if (!fixtureOn()) {

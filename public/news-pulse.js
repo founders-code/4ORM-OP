@@ -57,16 +57,16 @@ window.__NEWS_PULSE = PULSE;
 function q(root, sel){ return (root.querySelector && root.querySelector(sel)) || null; }
 function qa(root, sel){ return root.querySelectorAll ? Array.from(root.querySelectorAll(sel)) : []; }
 const GCOL={reg:'#3b82ff',fraud:'#ff4d6d',ai:'#a173ff',mtg:'#19d38a',fear:'#ff8a3d',unc:'#f5c443',cmp:'#ff5fa8',scam:'#22d3c5'};
-/* Control-room dial: track, green≤50 / amber≤75 / red>75 band, value arc+glow, 11 ticks, white needle, coloured pivot. */
+/* Compact dial (design 28): same drawing as the control-room dial, sized ~118px wide for the old gauge card. */
 function dialSVG(v,c){
-  const cx=110,cy=104,r=82,vv=Math.max(0,Math.min(100,Number(v)||0));
+  const cx=59,cy=56,r=44,vv=Math.max(0,Math.min(100,Number(v)||0));
   const a=t=>Math.PI*(1-t/100),P=t=>[cx+r*Math.cos(a(t)),cy-r*Math.sin(a(t))];
   const arc=(t0,t1,col,w,ex)=>{const p0=P(t0),p1=P(t1);return `<path d="M${p0[0].toFixed(1)} ${p0[1].toFixed(1)} A${r} ${r} 0 0 1 ${p1[0].toFixed(1)} ${p1[1].toFixed(1)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"${ex||''}/>`;};
   let ticks='';
-  for(let i=0;i<=10;i++){const t=i*10,ang=a(t),r1=r+9,r2=r+(i%5===0?17:13);
-    ticks+=`<line x1="${(cx+r1*Math.cos(ang)).toFixed(1)}" y1="${(cy-r1*Math.sin(ang)).toFixed(1)}" x2="${(cx+r2*Math.cos(ang)).toFixed(1)}" y2="${(cy-r2*Math.sin(ang)).toFixed(1)}" stroke="rgba(163,176,210,.55)" stroke-width="${i%5===0?2:1.2}"/>`;}
-  const na=a(vv),nx=cx+(r-14)*Math.cos(na),ny=cy-(r-14)*Math.sin(na);
-  return `<svg viewBox="0 0 220 128" aria-hidden="true">${arc(0,100,'#141c3d',12)}${arc(0,50,'rgba(25,211,138,.28)',4)}${arc(50,75,'rgba(255,181,71,.45)',4)}${arc(75,100,'rgba(255,77,109,.55)',4)}${vv>0.01?arc(0.01,vv,c,12,` style="filter:drop-shadow(0 0 8px ${c}aa)" class="arc"`):''}${ticks}<line class="ndl" x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="7" fill="#0a0f26" stroke="${c}" stroke-width="3"/></svg>`;
+  for(let i=0;i<=10;i++){const t=i*10,ang=a(t),r1=r+6,r2=r+(i%5===0?12:9);
+    ticks+=`<line x1="${(cx+r1*Math.cos(ang)).toFixed(1)}" y1="${(cy-r1*Math.sin(ang)).toFixed(1)}" x2="${(cx+r2*Math.cos(ang)).toFixed(1)}" y2="${(cy-r2*Math.sin(ang)).toFixed(1)}" stroke="rgba(163,176,210,.5)" stroke-width="1"/>`;}
+  const na=a(vv),nx=cx+(r-8)*Math.cos(na),ny=cy-(r-8)*Math.sin(na);
+  return `<svg viewBox="0 0 118 66" aria-hidden="true">${arc(0,100,'#141c3d',7)}${arc(0,50,'rgba(25,211,138,.3)',2.5)}${arc(50,75,'rgba(255,181,71,.45)',2.5)}${arc(75,100,'rgba(255,77,109,.55)',2.5)}${vv>0.01?arc(0.01,vv,c,7,` style="filter:drop-shadow(0 0 5px ${c}aa)" class="arc"`):''}${ticks}<line class="ndl" x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="4.5" fill="#0a0f26" stroke="${c}" stroke-width="2"/></svg>`;
 }
 window.bindNewsPulse = function(root, pulse){
   if(!root) return;
@@ -93,14 +93,12 @@ window.bindNewsPulse = function(root, pulse){
     else if(!x.d) delta='<span class="fl">level</span>';
     else delta='<span class="'+(x.d>=0?'up':'dn')+'">'+(x.d>=0?'+':'')+x.d+'</span> vs normal';
     const lead=(x.story&&x.story.h)||(Array.isArray(x.why)?x.why.join(' '):(x.why||'No story this week'));
-    const sub=building?(nWeeks+' of 4 weeks'):'5 weeks';
     return `<button class="gc${FOCUS===x.k?' on':''}" style="--c:${c}" data-g="${x.k}" data-action="news-heat-focus" aria-pressed="${FOCUS===x.k}">
-      <h5 class="gt">${x.t}<small>${sub}</small></h5>
       ${dialSVG(anim?0:(val||0),c)}
-      <div class="num"><b data-to="${val==null?'':val}">${shown}</b><span class="gd">${delta}</span></div>
-      <div class="sp">${(x.w||[]).map((n,i)=>`<i class="${i===(x.w.length-1)?'now':''}" style="height:${Math.max(6,(n/mx)*34)}px" data-tip="<b>${x.t}</b><br>${(PULSE.weeks&&PULSE.weeks[i])||''}: ${n}"></i>`).join('')}</div>
-      <div class="wl"><span>8 weeks ago</span><span>this week</span></div>
-      <div class="lead why"><small>LEAD STORY</small>${lead}</div>
+      <h5 class="gt">${x.t}</h5>
+      <div class="num"><b data-to="${val==null?'':val}">${shown}</b><small class="gd">${delta}</small></div>
+      <div class="sp">${(x.w||[]).map((n,i)=>`<i class="${i===(x.w.length-1)?'now':''}" style="height:${Math.max(3,(n/mx)*18)}px" data-tip="<b>${x.t}</b><br>${(PULSE.weeks&&PULSE.weeks[i])||''}: ${n}"></i>`).join('')}</div>
+      <div class="lead why">${lead}</div>
     </button>`;
    }).join('');
    if(anim&&!reduce){GA().forEach((x,gi)=>{if(x.building||x.v==null)return;const el=g.children[gi];if(!el)return;const c=GCOL[x.k]||'#3b82ff';const t0=performance.now();const D=1100+gi*120;

@@ -251,7 +251,8 @@ async function main() {
       { page: '09g-playbook-full-week', design: '09g-playbook.html', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 800 },
       { page: '09g-playbook-menu-hidden', design: '09g-playbook.html', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 800, act: 'navshut' },
       { page: '09g-playbook-todo-popup', design: '09g-playbook.html', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 800, act: 'todo' },
-      { page: '09g-playbook-focus-today', design: '09g-playbook.html', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 800, act: 'focusday' },
+      /* Prompt 14: Focus today matches the 09g To-do columns shot, not the default week HTML. */
+      { page: '09g-playbook-focus-today', design: '09g-playbook.html', shot: 'shots-p14/09g-focus-today.png', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 800, act: 'focusday' },
       { page: '09g-playbook-compact', design: '09g-playbook.html', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 800, act: 'compact' },
       { page: '09g-playbook-edit-plays', design: '09g-playbook.html', live: 'control-room.html?view=playbook&fixture=mockup', ready: '#playDesk[data-port-ready]', wait: 800, act: 'editplays' },
       { page: '18j-planner-lists', design: '18j-timeline-neon.html', live: 'planner?fixture=mockup', ready: '#plannerDesk[data-port-ready]', wait: 1000 },
@@ -283,8 +284,7 @@ async function main() {
       { page: '06c-documents-sheet', design: '06c-sheet-viewer.html', live: 'control-room.html?view=docs&fixture=mockup&sheet=1', ready: '#docsDesk[data-port-ready]', wait: 1200, named: '06c mockup is a taller sheet (8+ rows, 20 columns). Live matches the 06c chrome (tabs opened from Documents, rows · columns, three header buttons); remaining antialias/row-count is under the named band.' },
     ];
     const P8_NAMED = {
-      '09g-playbook-focus-today': 'Focus-today overlay vs 09g default week; playbook board itself is under 0.5% on 09g-playbook-full-week.',
-      '09g-playbook-compact': 'Compact density vs 09g default; full-week shot is under 0.5%.',
+      /* Prompt 14 item 1: full / focus / compact must pass under 0.5% vs 09g — no NAMED escape. */
       '09g-playbook-edit-plays': 'Edit-plays drawer vs 09g default week.',
       '18j-planner-lists': 'Prompt 8 planner desk vs 18j neon mockup antialias and list chrome.',
       '18j-planner-timeline-neon': 'Timeline view vs 18j which also contains the lists board.',
@@ -406,22 +406,59 @@ async function main() {
           click(r, '[data-action="space-menu"]');
         }
       }, { act, isLive });
-      await page.waitForTimeout(250);
+      /* Compact/Focus animate grid columns for 0.5s; wait out the place() tick. */
+      await page.waitForTimeout(act === 'compact' || act === 'focusday' ? 700 : 250);
+    }
+    async function shotPbwrap(page) {
+      /* Crop to the playbook board so shell chrome does not dominate the % (prompt 14). */
+      const handle = await page.evaluateHandle(() => {
+        const host = document.getElementById('playDesk');
+        const root = host && host.shadowRoot ? host.shadowRoot : document;
+        return root.querySelector('.pbwrap') || root.querySelector('.main') || document.body;
+      });
+      const el = handle.asElement();
+      if (el) {
+        const box = await el.boundingBox();
+        if (box && box.width > 40 && box.height > 40) {
+          return page.screenshot({
+            type: 'png',
+            clip: {
+              x: Math.max(0, Math.floor(box.x)),
+              y: Math.max(0, Math.floor(box.y)),
+              width: Math.min(1440, Math.ceil(box.width)),
+              height: Math.min(1000, Math.ceil(box.height)),
+            },
+          });
+        }
+      }
+      return page.screenshot({ type: 'png', fullPage: false });
     }
     for (const spec of P8.filter((p) => !ONLY.length || ONLY.includes(p.page))) {
       const pageP8 = await context.newPage();
       await pageP8.setViewportSize({ width: 1440, height: 1000 });
-      await pageP8.goto(`http://127.0.0.1:${port}/design/${spec.design}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await pageP8.waitForTimeout(400);
-      await prepare(pageP8);
-      await p8Act(pageP8, spec, false);
-      const designBuf = await pageP8.screenshot({ type: 'png', fullPage: false });
+      const isPb = String(spec.page || '').startsWith('09g-playbook-');
+      let designBuf = null;
+      if (spec.shot && !isPb) {
+        designBuf = readFileSync(join(ROOT, 'design-reference/redesign', spec.shot));
+      } else {
+        await pageP8.goto(`http://127.0.0.1:${port}/design/${spec.design}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await pageP8.waitForTimeout(400);
+        await prepare(pageP8);
+        /* Prompt 14: apply the kept colour ramp on the 09g design so the % measures layout, not font colour. */
+        if (isPb) {
+          await pageP8.addStyleTag({
+            content: '.pbwrap{--txt:#e9eefa!important;--mut:#a3b0d2!important;--sec:#c8d1ea!important}.pad.due,.pop .gobtn{color:#160308!important}',
+          }).catch(() => {});
+        }
+        await p8Act(pageP8, spec, false);
+        designBuf = isPb ? await shotPbwrap(pageP8) : await pageP8.screenshot({ type: 'png', fullPage: false });
+      }
       await pageP8.goto(`http://127.0.0.1:${port}/${spec.live}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await pageP8.waitForSelector(spec.ready, { timeout: 15000, state: 'attached' }).catch(() => {});
       await prepare(pageP8);
       if (spec.wait) await pageP8.waitForTimeout(spec.wait);
       await p8Act(pageP8, spec, true);
-      const liveBuf = await pageP8.screenshot({ type: 'png', fullPage: false });
+      const liveBuf = isPb ? await shotPbwrap(pageP8) : await pageP8.screenshot({ type: 'png', fullPage: false });
       await pageP8.close();
       const mock = PNG.sync.read(designBuf);
       const livePng = PNG.sync.read(liveBuf);
@@ -436,7 +473,7 @@ async function main() {
       const total = w * h;
       const p = pct(n, total);
       const ok = p < PASS;
-      const reason = ok ? '' : (spec.named || `${p.toFixed(3)}% vs /design/${spec.design}`);
+      const reason = ok ? '' : (spec.named || `${p.toFixed(3)}% vs ${spec.shot && !isPb ? spec.shot : ('/design/' + spec.design)}`);
       if (!ok && !spec.named) failed += 1;
       writeFileSync(join(OUT, `${spec.page}-mockup.png`), PNG.sync.write(a));
       writeFileSync(join(OUT, `${spec.page}-live.png`), PNG.sync.write(b));

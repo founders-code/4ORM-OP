@@ -5,8 +5,10 @@
 .search{width:300px;height:34px;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:0 12px;font:inherit;font-size:13px;background:rgba(255,255,255,.08);color:#fff;outline:none}.search::placeholder{color:#9fb0d0}
 .seg{display:flex;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:3px}.seg span{font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:8px;color:#b9c6e6;cursor:pointer}.seg span.on{background:#fff;color:var(--ink)}
 .btn{height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:13px;font-weight:700;padding:0 13px;white-space:nowrap}.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
-.lay{display:grid;grid-template-columns:250px minmax(480px,1fr) 290px;gap:16px;align-items:start}
+.lay{display:grid;grid-template-columns:250px minmax(480px,1fr) 290px;gap:16px;align-items:stretch}
 .lay > *{min-width:0}
+.lay > .card.ctr{min-width:0;max-height:calc(100vh - 140px);overflow:auto;display:flex;flex-direction:column}
+.lay > .card.ctr .board,.lay > .card.ctr .files{flex:1 1 auto;min-height:0}
 @media (max-width:1279px){
   .lay{grid-template-columns:250px minmax(480px,1fr)}
   .lay > :last-child{grid-column:1/-1}
@@ -27,8 +29,8 @@
 .files.list{display:flex;flex-direction:column}
 .files.list .fl{display:grid;grid-template-columns:88px minmax(0,1fr);align-items:center}
 .sel.on{opacity:1;background:var(--blue);border-color:var(--blue)}
-/* Prompt 13 free board */
-.board{position:relative;min-height:520px;height:620px;margin:10px 16px 8px;background:#0a0f26;border:1px solid rgba(120,150,255,.14);border-radius:12px;overflow:hidden;background-image:radial-gradient(rgba(120,150,255,.12) 1px,transparent 1px);background-size:24px 24px}
+/* Prompt 13 free board — scrolls so every document is reachable */
+.board{position:relative;min-height:520px;height:620px;margin:10px 16px 8px;background:#0a0f26;border:1px solid rgba(120,150,255,.14);border-radius:12px;overflow:auto;background-image:radial-gradient(rgba(120,150,255,.12) 1px,transparent 1px);background-size:24px 24px}
 .board .board-doc{position:absolute;display:flex;flex-direction:column;cursor:grab;user-select:none;touch-action:none;margin:0;transform:none!important}
 .board .board-doc.drag{cursor:grabbing;box-shadow:0 0 0 2px #3b82ff,0 18px 50px rgba(0,0,0,.6);z-index:5}
 .board .board-doc .th{flex:1;min-height:0;aspect-ratio:auto;height:auto}

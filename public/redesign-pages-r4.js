@@ -925,16 +925,32 @@
         });
       });
     }
+    function nxPillAction(label) {
+      if (label === 'Add person') return 'space-people';
+      if (label === 'Add docs' || label === 'Attach sample') return 'space-docs';
+      if (label === 'Add the link') return 'space-link';
+      return '';
+    }
     function cardHtml(s, ci, si) {
       var k = pctOf(s), c = ringColor(k), nx = nextChip(s);
+      var pillAct = nxPillAction(nx[0]);
+      var pillAttrs = pillAct
+        ? ' data-action="' + pillAct + '" data-id="' + esc(s.id || '') + '"'
+        : '';
+      var chk = '<div class="chk" data-action="spaces-card-chk">'
+        + CARD_STEPS.map(function (name, i) {
+          return '<div class="' + ((s.d || [])[i] ? 'y' : '') + '"><i></i>' + esc(name) + '</div>';
+        }).join('')
+        + '</div>';
       return '<div class="sp" draggable="true" data-action="spaces-card-open" data-c="' + ci + '" data-s="' + si + '"' + (s.id ? ' data-id="' + esc(s.id) + '"' : '') + '>'
         + '<div class="hd"><span class="av" style="background:' + CARD_COL[(ci * 3 + si) % 6] + '">' + esc(iniOf(s.n)) + '</span><div style="min-width:0"><h4>' + esc(s.n) + '</h4><div class="org">' + esc(s.o) + '</div></div>'
         + '<span class="ms" title="More" data-action="space-menu" data-id="' + esc(s.id || '') + '">&middot;&middot;&middot;</span>'
-        + '<span class="ring" style="--p:' + (k * 20) + '%;--c:' + c + '"><span>' + k + '/5</span></span></div>'
+        + '<span class="ring" style="--p:' + (k * 20) + '%;--c:' + c + '" data-action="spaces-card-ring" data-c="' + ci + '" data-s="' + si + '"><span>' + k + '/5</span></span></div>'
+        + chk
         + '<p class="why">' + (s.why ? esc(s.why) : '<span data-action="spaces-card-open" data-c="' + ci + '" data-s="' + si + '">Add an angle</span>') + '</p>'
         + '<div class="facts"><div><b>' + esc(s.last) + '</b><small>last contact</small></div><div><b>' + esc(s.em) + '</b><small>emails</small></div><div><b>' + esc(s.stage) + '</b><small>pipeline stage</small></div></div>'
         + '<div class="steps">' + (s.d || []).map(function (x) { return '<i class="' + (x ? 'd' : '') + '"></i>'; }).join('') + '</div>'
-        + '<div class="ft"><span class="nx ' + esc(nx[1]) + '">' + esc(nx[0]) + '</span><span class="bund">' + (s.docs || 0) + ' docs &middot; ' + (s.links || 0) + ' links</span><span class="go">Open</span></div></div>';
+        + '<div class="ft"><span class="nx ' + esc(nx[1]) + '"' + pillAttrs + '>' + esc(nx[0]) + '</span><span class="bund">' + (s.docs || 0) + ' docs &middot; ' + (s.links || 0) + ' links</span><span class="go">Open</span></div></div>';
     }
     function renderGroups() {
       var qEl = root.getElementById ? root.getElementById('q') : root.querySelector('#q');
@@ -1079,10 +1095,14 @@
       i = (i + d + f.length) % f.length;
       openCard(f[i].ci, f[i].si);
     }
+    function closeRingChk() {
+      root.querySelectorAll('.sp .chk.on').forEach(function (n) { n.classList.remove('on'); });
+    }
     root.addEventListener('click', function (e) {
       var t = e.target.closest && e.target.closest('[data-action]');
+      var a = t && t.getAttribute('data-action');
+      if (!t || (a !== 'spaces-card-ring' && a !== 'spaces-card-chk')) closeRingChk();
       if (!t) return;
-      var a = t.getAttribute('data-action');
       if (a === 'spaces-arr-view') {
         var v = t.getAttribute('data-v');
         root.querySelectorAll('#seg span').forEach(function (s) { s.classList.toggle('on', s.getAttribute('data-v') === v); });
@@ -1097,6 +1117,26 @@
       if (a === 'spaces-arr-tg') {
         var c = CATS[+t.getAttribute('data-tg')];
         if (c) { c.min = !c.min; render(); }
+      }
+      if (a === 'spaces-card-ring') {
+        e.stopPropagation();
+        e.preventDefault();
+        var card = t.closest('.sp');
+        var pop = card && card.querySelector('.chk');
+        var wasOn = pop && pop.classList.contains('on');
+        closeRingChk();
+        if (pop && !wasOn) pop.classList.add('on');
+        return;
+      }
+      if (a === 'spaces-card-chk') {
+        e.stopPropagation();
+        e.preventDefault();
+        return;
+      }
+      /* Pills keep their own action and must not open the space. */
+      if (a === 'space-people' || a === 'space-docs' || a === 'space-link' || a === 'space-menu') {
+        e.stopPropagation();
+        return;
       }
       if (a === 'spaces-card-open') {
         e.stopPropagation();

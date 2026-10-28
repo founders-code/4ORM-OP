@@ -192,7 +192,21 @@ td.reach .em{font-size:11.5px;color:#7fb0ff;font-weight:650;margin-top:3px;overf
 .reach-lists tr.done{opacity:.45}
 .reach-lists td a{color:#8dbaff;text-decoration:none;font-weight:650}
 .reach-lists .stg{display:inline-block;font-size:11.5px;font-weight:800;border-radius:6px;padding:2px 8px;background:rgba(59,130,255,.16);color:#a9c8ff}
+.reach-lists .stg2{font:inherit;font-size:12.5px;font-weight:800;border:0;border-radius:8px;padding:5px 10px;cursor:pointer;text-align:left;white-space:nowrap}.reach-lists .stg2 small{display:block;font-size:10.5px;font-weight:700;opacity:.8}
 .reach-lists .nt{color:#c8d1ea;max-width:220px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.reach-lists .prog{flex:1;min-width:120px;max-width:220px;height:6px;border-radius:4px;background:#141c3d;overflow:hidden}.reach-lists .prog i{display:block;height:100%;background:#19d38a;width:0}
+.reach-lists .flt{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}.reach-lists .flt button{font:inherit;font-size:12.5px;font-weight:700;background:none;border:1px solid rgba(120,150,255,.26);color:#c8d1ea;border-radius:999px;padding:4px 11px;cursor:pointer}.reach-lists .flt button.on{background:rgba(59,130,255,.18);color:#fff;border-color:#3b82ff}
+.reach-lists .pills{display:flex;gap:6px;flex-wrap:wrap}
+.reach-lists .pl{font:inherit;font-size:12px;font-weight:750;border-radius:999px;padding:4px 10px;border:1px solid rgba(120,150,255,.26);background:rgba(255,255,255,.04);color:#c8d1ea;cursor:pointer;white-space:nowrap}
+.reach-lists .pl:hover{border-color:#3b82ff;color:#fff}.reach-lists .pl.cbk{border-color:rgba(255,181,71,.5);color:#ffd08a}.reach-lists .pl.del{border-color:rgba(255,77,109,.45);color:#ff9fb0}.reach-lists .pl.go{background:#3b82ff;border-color:#3b82ff;color:#fff}
+.reach-lists .cb{font-size:12px;font-weight:750;color:#ffd08a;display:block;margin-top:3px}
+.reach-lists .sp{font-size:12px;font-weight:750;border-radius:6px;padding:2px 8px;display:inline-block;margin-top:4px}.reach-lists .sp.has{background:rgba(59,130,255,.16);color:#a9c8ff}
+.reach-lists .mini{position:fixed;z-index:100;background:#0e1430;border:1px solid rgba(120,150,255,.26);border-radius:12px;padding:10px;box-shadow:0 16px 40px rgba(0,0,0,.55);display:none;width:230px}
+.reach-lists .mini.on{display:block}.reach-lists .mini b{display:block;margin-bottom:6px;color:#e9eefa}.reach-lists .mini button{display:block;width:100%;text-align:left;font:inherit;font-weight:650;background:none;border:0;color:#c8d1ea;padding:6px 8px;border-radius:7px;cursor:pointer}.reach-lists .mini button:hover{background:rgba(255,255,255,.06);color:#fff}.reach-lists .mini small{color:#a3b0d2;font-weight:600;font-size:11px}
+.reach-lists .fld{display:grid;grid-template-columns:70px 1fr;gap:6px 10px;align-items:center;margin-bottom:12px}.reach-lists .fld label{color:#a3b0d2;font-weight:700;font-size:12.5px}.reach-lists .fld input{font:inherit;background:#070b1d;border:1px solid rgba(120,150,255,.26);border-radius:8px;color:#e9eefa;padding:6px 9px}
+.reach-lists textarea{width:100%;min-height:70px;font:inherit;color:#e9eefa;background:#070b1d;border:1px solid rgba(120,150,255,.26);border-radius:9px;padding:9px 11px;resize:vertical;margin-bottom:12px}
+.reach-lists .hd .search{margin-left:0;width:min(220px,100%)}
+.reach-lists table{min-width:1040px}
 .reach-lists .pop{position:fixed;inset:0;background:rgba(3,5,14,.6);display:none;align-items:center;justify-content:center;z-index:90;padding:16px}
 .reach-lists .pop.on{display:flex}
 .reach-lists .pop .box{background:#080c1f;border:1px solid rgba(120,150,255,.26);border-radius:14px;padding:18px;width:min(460px,100%);box-shadow:0 20px 60px rgba(0,0,0,.6);color:#e9eefa}

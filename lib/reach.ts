@@ -1,4 +1,6 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
+import { withCreds } from './creds';
+import { moveOpportunityStage } from './ghl';
 import { fail } from './log';
 import {
   buildCallLists,
@@ -12,6 +14,7 @@ import {
   type ReachList,
   type UploadRow,
 } from './reach-lists';
+import { loadCredsFor } from './vault';
 
 type Sql = NeonQueryFunction<false, false>;
 
@@ -143,6 +146,77 @@ export async function patchReach(
       };
     }
   }
+  const setStage = Object.prototype.hasOwnProperty.call(input, 'stage');
+  const setCallback = Object.prototype.hasOwnProperty.call(input, 'callback');
+  const stageVal = clip(input.stage, 80);
+  const callbackVal = clip(input.callback, 80);
+  /* Composite list row ids (listKey:n) and GHL-backed rows go through tick + stage upsert. */
+  if ((setStage || setCallback) && (id.includes(':') || opts?.userId)) {
+    try {
+      const tick = await tickReachPerson(
+        sql,
+        ownerId,
+        opts?.userId || ownerId,
+        id,
+        setStage && /contacted|emailed|meeting|package|book/i.test(stageVal) && !/^reach out$/i.test(stageVal),
+        opts?.email || '',
+      );
+      if (tick) {
+        if (setStage) {
+          await sql`
+            UPDATE reach_out SET stage = ${stageVal || 'Reach out'},
+              next_action = CASE WHEN ${setCallback} THEN ${callbackVal ? 'Call back ' + callbackVal : tick.nextStep} ELSE next_action END
+            WHERE owner_id = ${ownerId} AND deleted_at IS NULL
+              AND (
+                id::text = ${id}
+                OR (ghl_opportunity_id IS NOT NULL AND ghl_opportunity_id = ${tick.opportunityId || '__'})
+                OR (list_key = ${tick.listKey} AND contact_id = ${tick.contactId || id})
+              )
+          `;
+          if (tick.opportunityId && stageVal) {
+            try {
+              const creds = await loadCredsFor(opts?.userId || ownerId);
+              await withCreds(creds, () => moveOpportunityStage({
+                opportunityId: tick.opportunityId,
+                stage: stageVal,
+              }));
+            } catch (err) {
+              fail('reach_stage_ghl', err);
+            }
+          }
+        } else if (setCallback) {
+          await sql`
+            UPDATE reach_out SET next_action = ${callbackVal ? 'Call back ' + callbackVal : tick.nextStep}
+            WHERE owner_id = ${ownerId} AND deleted_at IS NULL
+              AND (
+                id::text = ${id}
+                OR (list_key = ${tick.listKey} AND contact_id = ${tick.contactId || id})
+              )
+          `;
+        }
+        return {
+          id: tick.id,
+          contactId: tick.contactId,
+          name: tick.name,
+          company: tick.company,
+          kind: kindOf(tick.listKey === 'design-partners' ? 'design' : tick.listKey === 'regulators' ? 'regulator' : 'corporate'),
+          nextAction: callbackVal ? 'Call back ' + callbackVal : tick.nextStep,
+          done: tick.done,
+          phone: tick.phone,
+          email: tick.email,
+          spaceId: tick.spaceId,
+          opportunityId: tick.opportunityId,
+          listKey: tick.listKey,
+          stage: stageVal || tick.stage,
+          day: tick.day,
+          callback: callbackVal || '',
+          ghl: tick.ghl,
+        };
+      }
+    } catch (err) {
+      fail('reach_stage_patch', err);
+    }
+  }
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
   const setAction = Object.prototype.hasOwnProperty.call(input, 'nextAction') || Object.prototype.hasOwnProperty.call(input, 'next_action');
   const setKind = Object.prototype.hasOwnProperty.call(input, 'kind');
@@ -163,8 +237,13 @@ export async function patchReach(
     const rows = await sql`
       UPDATE reach_out SET
         done = CASE WHEN ${setDone} THEN ${done} ELSE done END,
-        next_action = CASE WHEN ${setAction} THEN ${nextAction} ELSE next_action END,
-        kind = CASE WHEN ${setKind} THEN ${kind} ELSE kind END
+        next_action = CASE
+          WHEN ${setCallback} THEN ${callbackVal ? 'Call back ' + callbackVal : nextAction}
+          WHEN ${setAction} THEN ${nextAction}
+          ELSE next_action
+        END,
+        kind = CASE WHEN ${setKind} THEN ${kind} ELSE kind END,
+        stage = CASE WHEN ${setStage} THEN ${stageVal || 'Reach out'} ELSE stage END
       WHERE id = ${id} AND owner_id = ${ownerId} AND deleted_at IS NULL
       RETURNING id, contact_id, name, company, kind, next_action, done, phone, email, space_id, ghl_opportunity_id, list_key, day, stage
     `;

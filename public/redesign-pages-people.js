@@ -32,7 +32,7 @@
     + '.pbox textarea{min-height:150px;resize:vertical}.pbox .er{color:var(--red);font-size:12.5px;font-weight:700;min-height:16px}'
     + '.pbox .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}'
     + '.btn[disabled]{opacity:.55;cursor:default}';
-  var CSS = { contacts: '/port-css/contacts.css?v=2', finance: '/port-css/financials.css?v=1', outreach: '/port-css/outreach-lists.css?v=5', neon: '/port-css/neon.css?v=1', contrastP10: '/port-css/contrast-p10.css?v=4' };
+  var CSS = { contacts: '/port-css/contacts.css?v=2', finance: '/port-css/financials.css?v=1', outreach: '/port-css/outreach-lists.css?v=7', neon: '/port-css/neon.css?v=1', contrastP10: '/port-css/contrast-p10.css?v=4' };
   var cssText = {};
   var NA = 'Fills in from the master finance sheet once it\'s connected';
   var COLD_DAYS = 21;
@@ -251,6 +251,7 @@
     }
     return {
       total: all.length, counts: counts, filter: filter, q: s.peopleQ || '', sort: key,
+      loading: !window.__boardApplied && !all.length,
       coldCount: coldAll.length,
       cold: coldAll.slice(0, 4).map(function (c, i) {
         var w = warmth(c);
@@ -337,17 +338,11 @@
       : 'Showing ' + vm.rows.length + ' of ' + vm.matched + (vm.showAll && vm.matched > PAGE_ROWS ? ' &middot; <span class="lnk" data-action="people-show-all">Show fewer</span>' : '');
     var tab = S().peopleTab === 'lists' ? 'lists' : 'contacts';
     var tabs = '<div class="vseg" style="display:inline-flex;gap:12px;margin:0 16px 0 0"><button type="button" data-action="people-tab" data-tab="contacts" class="' + (tab === 'contacts' ? 'on' : '') + '" style="background:none;border:0;border-bottom:2px solid ' + (tab === 'contacts' ? '#5b8cff' : 'transparent') + ';color:' + (tab === 'contacts' ? '#e9eefa' : '#aebbe0') + ';font-weight:750;padding:6px 0">Contacts</button><button type="button" data-action="people-tab" data-tab="lists" class="' + (tab === 'lists' ? 'on' : '') + '" style="background:none;border:0;border-bottom:2px solid ' + (tab === 'lists' ? '#5b8cff' : 'transparent') + ';color:' + (tab === 'lists' ? '#e9eefa' : '#aebbe0') + ';font-weight:750;padding:6px 0">Lists</button></div>';
-    if (tab === 'lists') {
-      return '<div class="bar"><h1>Contacts</h1>' + tabs + '<span class="sub">your lists · synced with GoHighLevel · ' + esc((typeof window.vancouverTodayLabel === 'function' && window.vancouverTodayLabel()) || '') + ' · today</span></div><div data-lists-host="1"></div>';
-    }
-    return '<div class="bar"><h1>Contacts</h1>' + tabs + '<span class="sub">Everyone you know &mdash; warmth from real email, calls and GoHighLevel</span>'
-      + '<div class="r"><input class="search" placeholder="Search name, company, tag" aria-label="Search contacts" data-action="people-search" data-ext-field value="' + esc(vm.q) + '"><button type="button" class="btn pri" data-action="people-add">+ Add contact</button></div></div>'
-      + '<div class="lay"><section class="card">' + rail + '</section><div style="min-width:0">' + cold
-      + '<section class="card">' + flt
-      + '<table class="tbl"><colgroup><col style="width:26%"><col style="width:12%"><col style="width:14%"><col style="width:12%"><col style="width:26%"><col style="width:10%"></colgroup>'
-      + '<tr><th>Person</th><th>Role</th><th>Warmth</th><th>Last touch</th><th>Next step</th><th></th></tr><tbody id="rows">' + body + '</tbody></table>'
-      + (vm.rows.length ? '' : '<div class="nomatch">' + (vm.total ? 'No contacts match.' : 'No contacts yet. Add one, or connect GoHighLevel on Integrations.') + '</div>')
-      + '<div class="foot">' + foot + '</div></section></div></div>';
+    /* Design 28: one header + Contacts/Lists switch; both modes share the call-list rows. */
+    var sub = tab === 'lists'
+      ? ('your lists · synced with GoHighLevel · ' + esc((typeof window.vancouverTodayLabel === 'function' && window.vancouverTodayLabel()) || '') + ' · today')
+      : 'everyone you know · from email, calls and GoHighLevel';
+    return '<div class="bar"><h1>Contacts</h1>' + tabs + '<span class="sub">' + sub + '</span></div><div data-lists-host="1"></div>';
   }
 
   function paintContacts() {
@@ -360,30 +355,21 @@
       var vm = fixtureOn() ? fixtureContactsVm() : liveContactsVm();
       paintInto(root, contactsHtml(vm) + composeHtml());
       watchDrawer();
-      if (S().peopleTab === 'lists') {
-        var st = root.querySelector('style');
-        if (st) st.textContent = TOKEN + (cssText.contacts || '') + (cssText.outreach || '') + (cssText.neon || '') + (cssText.contrastP10 || '');
-        var wrap = root.querySelector('.port-body');
-        if (wrap) wrap.classList.add('neon', 'lists');
-        var listsToken = String(Date.now());
-        S().__listsPaint = listsToken;
-        fetch('/lists-snippet.html?v=5').then(function (r) { return r.ok ? r.text() : ''; }).then(function (html) {
-          if (S().__listsPaint !== listsToken) return;
-          if (!html) return;
-          var host = root.querySelector('[data-lists-host]');
-          if (host) host.outerHTML = html;
-          else if (wrap) wrap.innerHTML = html;
-          root.querySelectorAll('#cseg span').forEach(function (s) {
-            s.addEventListener('click', function () {
-              if (s.getAttribute('data-v') === 'contacts') {
-                S().peopleTab = 'contacts';
-                paintContacts();
-              }
-            });
-          });
-          if (typeof window.bindOutreachLists === 'function') window.bindOutreachLists(root);
-        });
-      }
+      var st = root.querySelector('style');
+      if (st) st.textContent = TOKEN + (cssText.contacts || '') + (cssText.outreach || '') + (cssText.neon || '') + (cssText.contrastP10 || '');
+      var wrap = root.querySelector('.port-body');
+      if (wrap) wrap.classList.add('neon', 'lists');
+      var listsToken = String(Date.now());
+      S().__listsPaint = listsToken;
+      var mode = S().peopleTab === 'lists' ? 'lists' : 'contacts';
+      fetch('/lists-snippet.html?v=8').then(function (r) { return r.ok ? r.text() : ''; }).then(function (html) {
+        if (S().__listsPaint !== listsToken) return;
+        if (!html) return;
+        var host = root.querySelector('[data-lists-host]');
+        if (host) host.outerHTML = html;
+        else if (wrap) wrap.insertAdjacentHTML('beforeend', html);
+        if (typeof window.bindOutreachLists === 'function') window.bindOutreachLists(root, { mode: mode });
+      });
     }); });
     loadContactExtras(false);
     if (!S().peopleLists && typeof api === 'function') {

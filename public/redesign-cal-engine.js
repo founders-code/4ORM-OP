@@ -173,23 +173,48 @@ function render(){
   const k=ymd(d);const items=[...E.filter(x=>x.d==k&&!x.all&&visible(x)).map(x=>({...x,col:C[x.c],real:1})),...(HIDE.plays?[]:S.filter(x=>x.d==k).map(x=>({...x,col:x.c})))].sort((a,b)=>a.s-b.s);
   body.innerHTML=`<div class="wk dayw"><div>${timeGrid([d],true)}</div><div class="c-side"><h3>Day plan</h3><div class="c-s">${items.filter(i=>i.real).length} meetings &middot; ${items.filter(i=>!i.real).length} plays fitted around them</div>${items.map(i=>`<div class="gap"><span class="tm">${fmt(i.s)} - ${fmt(i.e)}</span><em style="background:${i.col};${i.real?'':'outline:1.5px dashed '+i.col+';background:transparent'}"></em><span style="${i.real?'font-weight:700':''}">${i.real?'':'Play · '}${escH(i.t)}</span></div>`).join('')}</div></div>`;
   const grid=body.querySelector('.tgrid');body.scrollTop=(grid?grid.offsetTop:0)+firstHour([k])*PX-40;}
- if(view=='month'||view=='quarter'){
-  const q=view=='quarter';const qm=Math.floor(focus.getMonth()/3)*3;
-  const m0=q?new Date(focus.getFullYear(),qm,1):new Date(focus.getFullYear(),focus.getMonth(),1);
-  const end=q?new Date(focus.getFullYear(),qm+3,0):new Date(focus.getFullYear(),focus.getMonth()+1,0);
-  title.innerHTML=q?`Q${qm/3+1} <span>${m0.getFullYear()}</span> &nbsp;<span style="color:var(--mut);font-size:15px;font-weight:600">${MON[qm].slice(0,3)} - ${MON[qm+2].slice(0,3)}</span>`:`${MON[m0.getMonth()]} <span>${m0.getFullYear()}</span>`;
+ if(view=='month'){
+  /* Continuous months: month after month, each name sticky while you scroll it. Grid look unchanged. */
+  const startMo=new Date(focus.getFullYear(),focus.getMonth()-1,1);
+  function monthBlock(m0){
+   const end=new Date(m0.getFullYear(),m0.getMonth()+1,0);
+   let s=add(m0,-m0.getDay());
+   let block=`<div class="mo" data-m="${MON[m0.getMonth()]}" data-y="${m0.getFullYear()}" data-k="${ymd(m0)}"><h4>${MON[m0.getMonth()]} ${m0.getFullYear()}</h4><div class="qhead"><div></div>${DOW.map(x=>`<div>${x}</div>`).join('')}</div>`;
+   while(s<=end){block+=`<div class="qrow"><div class="cwl">CW ${isoWeek(add(s,1))}</div>`;
+    for(let i=0;i<7;i++){const d=add(s,i),k=ymd(d);const oth=d.getMonth()!=m0.getMonth();const first=d.getDate()==1;
+     const alls=E.filter(x=>x.d==k&&x.all&&visible(x)),tim=E.filter(x=>x.d==k&&!x.all&&visible(x)).sort((a,b)=>a.s-b.s);
+     const lbl=first?`<span>${MON[d.getMonth()].slice(0,3)} 1</span>`:(same(d,TODAY)?`<span>${MON[d.getMonth()].slice(0,3)} ${d.getDate()}</span>`:d.getDate());
+     block+=`<div class="qc mc${oth?' oth':''}${first?' first':''}${same(d,TODAY)?' td':''}" data-action="cal-cell" data-d="${k}"><div class="c-n">${lbl}</div>`;
+     const items=[...alls.map(x=>`<div class="mp ad" style="color:${C[x.c]}">${escH(x.t)}</div>`),...tim.map(x=>`<div class="mp"><em style="background:${C[x.c]}"></em>${escH(x.t)}<span class="tm">${fmt(x.s)}</span></div>`)];
+     block+=items.slice(0,4).join('')+(items.length>4?`<div class="more" data-action="cal-more" data-d="${k}">${items.length-4} more...</div>`:'');
+     block+=`</div>`;}
+    block+=`</div>`;s=add(s,7);}
+   return block+'</div>';
+  }
+  let h='<div class="q months-scroll">';
+  for(let mi=0;mi<12;mi++) h+=monthBlock(new Date(startMo.getFullYear(),startMo.getMonth()+mi,1));
+  body.innerHTML=h+'</div>';
+  const focusKey=ymd(new Date(focus.getFullYear(),focus.getMonth(),1));
+  const tgt=body.querySelector(`.mo[data-k="${focusKey}"]`);
+  if(tgt) body.scrollTop=Math.max(0,tgt.offsetTop-8);
+  const updMo=()=>{const ms=[...body.querySelectorAll('.mo')];let cur=ms[0];ms.forEach(m=>{if(m.offsetTop-40<=body.scrollTop)cur=m});if(cur)title.innerHTML=`${cur.dataset.m} <span>${cur.dataset.y}</span>`;};
+  body.onscroll=updMo;updMo();
+ }
+ if(view=='quarter'){
+  const qm=Math.floor(focus.getMonth()/3)*3;
+  const m0=new Date(focus.getFullYear(),qm,1);
+  const end=new Date(focus.getFullYear(),qm+3,0);
+  title.innerHTML=`Q${qm/3+1} <span>${m0.getFullYear()}</span> &nbsp;<span style="color:var(--mut);font-size:15px;font-weight:600">${MON[qm].slice(0,3)} - ${MON[qm+2].slice(0,3)}</span>`;
   let s=add(m0,-m0.getDay());let h=`<div class="q"><div class="qhead"><div></div>${DOW.map(x=>`<div>${x}</div>`).join('')}</div>`;
   while(s<=end){h+=`<div class="qrow"><div class="cwl">CW ${isoWeek(add(s,1))}</div>`;
-   for(let i=0;i<7;i++){const d=add(s,i),k=ymd(d);const oth=q?(d<m0||d>end):d.getMonth()!=m0.getMonth();const first=d.getDate()==1;
+   for(let i=0;i<7;i++){const d=add(s,i),k=ymd(d);const oth=d<m0||d>end;const first=d.getDate()==1;
     const alls=E.filter(x=>x.d==k&&x.all&&visible(x)),tim=E.filter(x=>x.d==k&&!x.all&&visible(x)).sort((a,b)=>a.s-b.s);
     const lbl=first?`<span>${MON[d.getMonth()].slice(0,3)} 1</span>`:(same(d,TODAY)?`<span>${MON[d.getMonth()].slice(0,3)} ${d.getDate()}</span>`:d.getDate());
-    h+=`<div class="qc${q?'':' mc'}${oth?' oth':''}${first?' first':''}${same(d,TODAY)?' td':''}" data-action="cal-cell" data-d="${k}"><div class="c-n">${lbl}</div>`;
-    if(q){h+=alls.map(x=>`<div class="stripe" style="background:${C[x.c]}"></div>`).join('');h+=`<div class="dots">${tim.map(x=>`<b style="background:${C[x.c]}"></b>`).join('')}</div>`;}
-    else{const items=[...alls.map(x=>`<div class="mp ad" style="color:${C[x.c]}">${escH(x.t)}</div>`),...tim.map(x=>`<div class="mp"><em style="background:${C[x.c]}"></em>${escH(x.t)}<span class="tm">${fmt(x.s)}</span></div>`)];
-     h+=items.slice(0,4).join('')+(items.length>4?`<div class="more" data-action="cal-more" data-d="${k}">${items.length-4} more...</div>`:'');}
+    h+=`<div class="qc${oth?' oth':''}${first?' first':''}${same(d,TODAY)?' td':''}" data-action="cal-cell" data-d="${k}"><div class="c-n">${lbl}</div>`;
+    h+=alls.map(x=>`<div class="stripe" style="background:${C[x.c]}"></div>`).join('');h+=`<div class="dots">${tim.map(x=>`<b style="background:${C[x.c]}"></b>`).join('')}</div>`;
     h+=`</div>`;}
    h+=`</div>`;s=add(s,7);}
-  body.innerHTML=h+(q?`<div style="padding:0 20px 20px;font-size:11px;color:var(--mut)">Stripes = all-day &middot; dots = meetings.</div>`:'')+'</div>';}
+  body.innerHTML=h+`<div style="padding:0 20px 20px;font-size:11px;color:var(--mut)">Stripes = all-day &middot; dots = meetings.</div></div>`;}
  if(view=='year'){const Y=focus.getFullYear();title.innerHTML=`<span>${Y}</span>`;let h='<div class="yr">';
   for(let mo=0;mo<12;mo++){const f=new Date(Y,mo,1);let g=DOW.map(x=>`<div class="h">${x[0]}</div>`).join('');for(let i=0;i<f.getDay();i++)g+='<div></div>';
    const dim=new Date(Y,mo+1,0).getDate();

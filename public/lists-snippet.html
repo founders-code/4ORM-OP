@@ -1,25 +1,48 @@
 <section id="pg-contacts" class="reach-lists">
- <div class="bar"><h1>Contacts</h1><span class="sub">your lists · synced with GoHighLevel</span>
-  <div class="r"><div class="seg" id="cseg"><span data-v="contacts">Contacts</span><span class="on" data-v="lists">Lists</span></div><input class="search" id="lsearch" placeholder="Search this list" aria-label="Search this list"></div></div>
  <div class="lists">
-  <div class="ll"><h6>LISTS</h6><div id="listnav"></div><button type="button" class="up" id="uploadList">+ Upload a list (CSV)</button></div>
+  <div class="ll" id="llists"><h6>LISTS</h6><div id="listnav"></div><button type="button" class="up" id="uploadList">+ Upload a list (CSV)</button></div>
+  <div class="ll" id="lroles" style="display:none"><h6>PEOPLE</h6><div id="rolenav"></div></div>
   <div class="tbl">
    <div class="hd"><h3 id="lname"></h3><span id="lstat"></span>
-    <select id="lsel" aria-label="Switch list"></select></div>
-   <table><thead><tr><th>PERSON</th><th>PHONE</th><th>EMAIL</th><th>NOTES</th><th>STAGE</th><th>LAST TOUCH</th></tr></thead>
-   <tbody id="lbody"></tbody></table>
+    <div class="prog"><i id="lprog"></i></div>
+    <div class="flt" id="lfilt">
+      <button type="button" class="on" data-f="all">All</button>
+      <button type="button" data-f="s0">Reach out</button>
+      <button type="button" data-f="cb">Callbacks</button>
+      <button type="button" data-f="prog">In progress</button>
+      <button type="button" data-f="s5">Meeting booked</button>
+    </div>
+    <input class="search" id="lsearch" placeholder="Search this list" aria-label="Search this list">
+   </div>
+   <table><thead><tr><th>PERSON</th><th>PHONE</th><th>EMAIL</th><th>NOTES</th><th>STAGE</th><th>ACTIONS</th></tr></thead>
+    <tbody id="lbody"></tbody></table>
   </div>
  </div>
  <div class="pop" id="pop"><div class="box">
   <h4 id="pn"></h4><div class="meta" id="pm"></div>
   <div class="row" id="pc"></div>
+  <div class="fld">
+    <label>Name</label><input id="en" aria-label="Name">
+    <label>Company</label><input id="ec" aria-label="Company">
+    <label>Phone</label><input id="ep" aria-label="Phone">
+    <label>Email</label><input id="ee" aria-label="Email">
+  </div>
   <div class="nb" id="pnotes"></div>
+  <textarea id="pnoteAdd" placeholder="Add a note, press Return to save" aria-label="Add a note"></textarea>
   <div class="acts">
    <button type="button" class="btn p" id="popen">Open space</button>
-   <button type="button" class="btn" id="pmark">Mark called</button>
+   <button type="button" class="btn" id="pemail">Email</button>
    <button type="button" class="btn" id="px">Close</button>
   </div>
  </div></div>
+ <div class="mini" id="smenu"></div>
+ <div class="mini" id="cbmini"><b>Call back</b>
+   <button type="button" data-when="in 2 hours">In 2 hours</button>
+   <button type="button" data-when="tomorrow 09:00">Tomorrow 09:00</button>
+   <button type="button" data-when="Friday 10:00">Friday 10:00</button>
+   <button type="button" data-when="next week">Next week</button>
+   <button type="button" data-when="pick">Pick a date and time</button>
+ </div>
  <input type="file" id="csvFile" accept=".csv,text/csv" hidden>
  <div class="toast" id="toast"><span id="tmsg"></span><b id="tundo" style="display:none"></b></div>
  <div class="modal" id="modal"><div class="mbox" id="mbox"></div></div>

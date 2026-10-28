@@ -1798,6 +1798,14 @@
     var MIN = 120;
     var saveTimer = 0;
     function snap(n) { return Math.max(0, Math.round(Number(n) / SNAP) * SNAP); }
+    /* Grow the board so absolutely placed docs are inside the scrollable height. */
+    function sizeBoard() {
+      var bottom = 520;
+      board.querySelectorAll('.board-doc').forEach(function (el) {
+        bottom = Math.max(bottom, (el.offsetTop || 0) + (el.offsetHeight || 0) + 24);
+      });
+      board.style.height = bottom + 'px';
+    }
     function collect() {
       return Array.prototype.slice.call(board.querySelectorAll('.board-doc')).map(function (el) {
         return {
@@ -1810,6 +1818,7 @@
       }).filter(function (r) { return r.docId; });
     }
     function persist() {
+      sizeBoard();
       var items = collect();
       if (window.STATE) window.STATE.docsLayout = items;
       try { localStorage.setItem('cr_docs_layout', JSON.stringify(items)); } catch (e) {}
@@ -1871,6 +1880,7 @@
       });
       persist();
     };
+    sizeBoard();
   }
 
   function paintLinksLive() {

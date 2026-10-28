@@ -2231,9 +2231,14 @@
     'canvas-mini': function () {},
     'canvas-cluster': function () {},
     'canvas-cluster-name': function () {},
-    'spaces-card-open': function (el, root) {
-      if (el && window.__openSpacePanel) window.__openSpacePanel(el, root);
-    },
+    /* Cards page (paintSpacesCardsPage) owns open / ring checklist / ticks. Do not steal those clicks. */
+    'spaces-card-open': function () {},
+    'spaces-card-ring': function () {},
+    'spaces-card-chk': function () {},
+    'spaces-card-close': function () {},
+    'spaces-card-prev': function () {},
+    'spaces-card-next': function () {},
+    'spaces-card-tick': function () {},
     'spaces-card-full': function (el, root) {
       if (el && window.__openSpacePanel) window.__openSpacePanel(el, root);
     },
