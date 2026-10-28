@@ -73,6 +73,10 @@ table.t tr.gh.today td{background:#eaf1fe}
 .ck{width:20px;height:20px;border-radius:6px;border:2px solid #c9d2e3;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;cursor:pointer}
 .ck.on{background:var(--green);border-color:var(--green)}
 .empty{padding:14px 12px;color:var(--ink3);font-size:12.5px;font-style:italic}
+td.reach .ph{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;font-weight:700;color:#ffd38a}
+td.reach .em{font-size:11.5px;color:#7fb0ff;font-weight:650;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.port-body:not(.neon) td.reach .ph{color:#8a5a00}
+.port-body:not(.neon) td.reach .em{color:var(--blue)}
 .colmenu{position:absolute;right:0;top:38px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 40px rgba(3,10,30,.18);padding:8px;z-index:30;width:220px;display:none}
 .colmenu.open{display:block}
 .colmenu label{display:flex;gap:8px;align-items:center;padding:6px 8px;font-size:13px;font-weight:600;border-radius:7px;cursor:pointer}.colmenu label:hover{background:var(--soft)}

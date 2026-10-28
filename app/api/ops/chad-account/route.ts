@@ -109,35 +109,54 @@ export async function POST(req: Request) {
       const CLUSTER = 'd1fa61d7-8f49-48d1-b62d-3ffd8bb976fa';
       const recovered = [];
       for (const ownerId of owners) {
-        const beforeLive = await sql`SELECT count(*)::int AS n FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NULL`;
-        const beforeGone = await sql`SELECT count(*)::int AS n FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NOT NULL`;
-        const cl = await sql`
-          SELECT to_char(created_at AT TIME ZONE 'America/Vancouver', 'YYYY-MM-DD HH24:MI:SS') AS created_van
-          FROM note_clusters WHERE id = ${CLUSTER}::uuid LIMIT 1
-        `;
-        const back = await sql`
-          UPDATE notes SET deleted_at = NULL, updated_at = now()
-          WHERE owner_id = ${ownerId} AND deleted_at IS NOT NULL
-          RETURNING id::text, title
-        `;
-        const sticky = await sql`
-          UPDATE sticky_notes SET deleted_at = NULL
-          WHERE owner_id = ${ownerId} AND deleted_at IS NOT NULL
-          RETURNING id::text
-        `;
-        const afterLive = await sql`SELECT count(*)::int AS n FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NULL`;
-        const titles = await sql`SELECT title FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 80`;
-        recovered.push({
-          ownerId,
-          clusterCreatedVan: cl[0]?.created_van || null,
-          before: { live: Number(beforeLive[0]?.n || 0), deleted: Number(beforeGone[0]?.n || 0) },
-          restoredNotes: (back as { id?: string; title?: string }[]).map((r) => r.title || r.id),
-          restoredSticky: sticky.length,
-          afterLive: Number(afterLive[0]?.n || 0),
-          liveTitles: (titles as { title?: string }[]).map((t) => t.title || ''),
-          needPitr: Number(beforeGone[0]?.n || 0) === 0 && Number(beforeLive[0]?.n || 0) <= 2,
-          neonApiKey: process.env.NEON_API_KEY || process.env.NEON_API_TOKEN ? 'set' : 'missing',
-        });
+        try {
+          const beforeLive = await sql`SELECT count(*)::int AS n FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NULL`;
+          const beforeGone = await sql`SELECT count(*)::int AS n FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NOT NULL`;
+          let clusterCreatedVan: string | null = null;
+          try {
+            const cl = await sql`
+              SELECT to_char(created_at AT TIME ZONE 'America/Vancouver', 'YYYY-MM-DD HH24:MI:SS') AS created_van
+              FROM note_clusters WHERE id = ${CLUSTER}::uuid LIMIT 1
+            `;
+            clusterCreatedVan = (cl[0]?.created_van as string) || null;
+          } catch { /* cluster missing */ }
+          const back = await sql`
+            UPDATE notes SET deleted_at = NULL, updated_at = now()
+            WHERE owner_id = ${ownerId} AND deleted_at IS NOT NULL
+            RETURNING id::text, title
+          `;
+          let stickyN = 0;
+          try {
+            const sticky = await sql`
+              UPDATE sticky_notes SET deleted_at = NULL
+              WHERE owner_id = ${ownerId} AND deleted_at IS NOT NULL
+              RETURNING id::text
+            `;
+            stickyN = sticky.length;
+          } catch { /* sticky_notes may not exist */ }
+          const afterLive = await sql`SELECT count(*)::int AS n FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NULL`;
+          const titles = await sql`SELECT title FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 80`;
+          const liveN = Number(beforeLive[0]?.n || 0);
+          const goneN = Number(beforeGone[0]?.n || 0);
+          recovered.push({
+            ownerId,
+            clusterCreatedVan,
+            before: { live: liveN, deleted: goneN },
+            restoredNotes: (back as { id?: string; title?: string }[]).map((r) => r.title || r.id),
+            restoredSticky: stickyN,
+            afterLive: Number(afterLive[0]?.n || 0),
+            liveTitles: (titles as { title?: string }[]).map((t) => t.title || ''),
+            needPitr: goneN === 0 && liveN <= 5,
+            neonApiKey: process.env.NEON_API_KEY || process.env.NEON_API_TOKEN ? 'set' : 'missing',
+            pitrBlocked: !(process.env.NEON_API_KEY || process.env.NEON_API_TOKEN),
+            plain: goneN === 0
+              ? 'No soft-deleted notes remain. Rows were hard-deleted or never soft-deleted. Neon PITR needs NEON_API_KEY in Vercel (missing).'
+              : null,
+          });
+        } catch (err) {
+          fail('chad_recover_notes', err);
+          recovered.push({ ownerId, error: String((err as Error)?.message || err) });
+        }
       }
       return NextResponse.json({ ok: true, recoverNotes: true, recovered });
     }
