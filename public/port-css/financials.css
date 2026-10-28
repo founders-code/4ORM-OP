@@ -36,3 +36,4 @@
 .gbox .er{color:var(--red);font-size:12.5px;font-weight:700;margin-top:8px;min-height:16px}
 .shake{animation:sh .35s}@keyframes sh{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
 .eyeT,.bellT{font-size:11px;font-weight:800;color:#4a5672;background:#f5f7fb;border-radius:6px;padding:2px 7px;cursor:pointer;white-space:nowrap}.eye{border:none;background:none;padding:0}
+.kp span{color:#4a5672!important}.kp small{color:#5b6678!important}.kp b{color:#101a33}

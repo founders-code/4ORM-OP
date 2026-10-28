@@ -9,6 +9,7 @@ import {
   financeUnlocked,
 } from '@/lib/finance';
 import { listExpenses } from '@/lib/expenses';
+import { getFigures } from '@/lib/finance-figures';
 import { fail } from '@/lib/log';
 import { takeRateLimit } from '@/lib/rate-limit';
 import { openBoard, sessionOwner } from '@/lib/session';
@@ -43,6 +44,41 @@ export async function GET() {
     if (gate.session.sql) {
       try {
         const list = await listExpenses(gate.session.sql, gate.ownerId);
+        /* Burn = every recurring bill as a monthly figure. Cash, raised and target are the figures Chad sets. */
+        const burn = Math.round(list.reduce((a, e) => a + (e.freq === 'y' ? e.amount / 12 : e.amount), 0) * 100) / 100;
+        const money = (n: number) => '$' + Math.round(n).toLocaleString('en-US');
+        desk.burnMonthly = burn as never;
+        desk.burnLabel = money(burn) as never;
+        const fig = await getFigures(gate.session.sql, gate.ownerId).catch(() => null);
+        if (fig) {
+          (desk as Record<string, unknown>).figures = fig;
+          if (fig.cash != null) {
+            desk.cash = fig.cash as never;
+            desk.cashLabel = money(fig.cash) as never;
+            desk.asOf = (fig.updatedAt ? new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Vancouver', day: 'numeric', month: 'short' }).format(new Date(fig.updatedAt)) : null) as never;
+            if (burn > 0) {
+              const months = fig.cash / burn;
+              desk.runwayDays = Math.round(months * 30.4) as never;
+              desk.runwayLabel = (months >= 24 ? `${Math.round(months / 12)} years` : `${months.toFixed(1)} months`) as never;
+            }
+          }
+          if (fig.raiseIn != null || fig.raiseTarget != null) {
+            const inn = fig.raiseIn || 0;
+            const tgt = fig.raiseTarget || 0;
+            const toGo = Math.max(0, tgt - inn);
+            let pace: string | null = null;
+            if (fig.closeDate && toGo > 0) {
+              const days = Math.max(1, Math.ceil((Date.parse(fig.closeDate + 'T12:00:00') - Date.now()) / 86400000));
+              pace = money(toGo / Math.max(1, days / 7)) + ' a week';
+            }
+            desk.raise = Object.assign({}, desk.raise, {
+              in: inn, target: tgt || null, inLabel: money(inn), targetLabel: tgt ? money(tgt) : null,
+              toGoLabel: tgt ? money(toGo) : null, closeDate: fig.closeDate, pace,
+            }) as never;
+          }
+          desk.connected = (fig.cash != null) as never;
+          desk.note = 'Cash, raised and target are set with Edit figures. Burn comes from the monthly expenses list.' as never;
+        }
         desk.expenses = list
           .map((e) => ({ name: e.name + (e.freq === 'y' ? ' (yearly / 12)' : ''), amount: Math.round((e.freq === 'y' ? e.amount / 12 : e.amount) * 100) / 100 }))
           .sort((a, b) => b.amount - a.amount)

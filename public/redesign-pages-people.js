@@ -32,7 +32,7 @@
     + '.pbox textarea{min-height:150px;resize:vertical}.pbox .er{color:var(--red);font-size:12.5px;font-weight:700;min-height:16px}'
     + '.pbox .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}'
     + '.btn[disabled]{opacity:.55;cursor:default}';
-  var CSS = { contacts: '/port-css/contacts.css?v=2', finance: '/port-css/financials.css?v=1', outreach: '/port-css/outreach-lists.css?v=9', neon: '/port-css/neon.css?v=1', contrastP10: '/port-css/contrast-p10.css?v=5' };
+  var CSS = { contacts: '/port-css/contacts.css?v=2', finance: '/port-css/financials.css?v=2', outreach: '/port-css/outreach-lists.css?v=9', neon: '/port-css/neon.css?v=1', contrastP10: '/port-css/contrast-p10.css?v=5' };
   var cssText = {};
   var NA = 'Fills in from the master finance sheet once it\'s connected';
   var COLD_DAYS = 21;
@@ -715,7 +715,7 @@
     var r = f.raise || {};
     var cash = has(f.cashLabel) ? f.cashLabel : (has(f.cash) ? money(f.cash) : null);
     function kp(label, val, sub, cls, rawLabel) {
-      return '<div class="kp' + (cls && has(val) ? ' ' + cls : '') + '"><span>' + (rawLabel ? label : esc(label)) + '</span><b>' + (has(val) ? esc(val) : '&mdash;') + '</b><small>' + (has(val) ? sub : 'reads from the master finance sheet') + '</small></div>';
+      return '<div class="kp' + (cls && has(val) ? ' ' + cls : '') + '"><span>' + (rawLabel ? label : esc(label)) + '</span><b>' + (has(val) ? esc(val) : '&mdash;') + '</b><small>' + (has(val) ? sub : 'set it with Edit figures') + '</small></div>';
     }
     var raiseSub = r.sub || [has(r.targetLabel) ? 'of ' + esc(r.targetLabel) : '', has(r.closeDate) ? 'closes ' + esc(shortDate(r.closeDate)) : ''].filter(Boolean).join(' &middot; ') || 'raised to date';
     var stateWord = { in: 'In', pending: 'Pending', pd: 'Pending', open: 'Open', op: 'Open' };
@@ -746,7 +746,8 @@
       ? '<button type="button" class="btn" data-action="fin-sheet" data-url="' + esc(f.sheetUrl) + '">Open finance sheet</button>'
       : '';
     return '<div class="bar"><h1>Financials</h1><span class="lock" data-action="fin-lock-hint">' + (unlocked ? 'Unlocked · locks again when you leave' : 'Locked — enter the code to open') + '</span>'
-      + '<div class="r"><button type="button" class="btn" id="lockBtn" data-action="fin-lock">Lock now</button>' + sheet + '</div></div>'
+      + '<div class="r">' + (unlocked ? '<button type="button" class="btn" data-action="fin-figs">Edit figures</button>' : '') + '<button type="button" class="btn" id="lockBtn" data-action="fin-lock">Lock now</button>' + sheet + '</div></div>'
+      + (unlocked && S().finFigEdit ? figsForm(f.figures || {}) : '')
       + '<div class="k4">' + kp('Cash', cash, f.cashSub || ('in the bank' + (has(f.asOf) ? ' &middot; ' + esc(f.asOf) : ''))) + kp('Burn', f.burnLabel, f.burnSub || 'per month')
       + kp('Runway', f.runwayLabel, 'at this cash', 'red') + kp(r.title || 'Raise', r.inLabel, raiseSub, '', !!r.title) + '</div>'
       + '<div class="g2"><section class="card"><div class="ch"><h3>Raise detail</h3><span class="s">' + ((f.cheques || []).length ? (f.cheques.length + ' cheques') : 'cheques') + '</span></div>'
@@ -755,6 +756,21 @@
       + (has(r.paceNote) ? '<div class="pace">' + r.paceNote + '</div>' : '')
       + '</section><section class="card"><div class="ch"><h3>Where the money goes</h3><span class="s">monthly burn by line</span></div>' + lines + '</section></div>'
       + '<section class="card"><div class="ch"><h3>Model scenarios</h3><span class="s">' + esc((model && model.metric) || '2031 revenue') + (model && model.date ? ' &middot; ' + esc(model.date) + ' model' : '') + '</span></div>' + sc + '</section>';
+  }
+  /* Edit figures: the four numbers kept by hand. Burn comes from Monthly expenses below. */
+  function figsForm(fg) {
+    function v(x) { return x == null ? '' : String(x); }
+    return '<section class="card figs"><style>.figs .fg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:10px;align-items:end;padding:4px 16px 16px}'
+      + '.figs label{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;color:#4a5672;margin-bottom:4px}'
+      + '.figs input{width:100%;box-sizing:border-box;font:inherit;font-size:14px;font-weight:700;color:#101a33;background:#fff;border:1px solid #d5dbe8;border-radius:9px;padding:8px 10px}'
+      + '.figs .er{color:#c0263e;font-size:12.5px;padding:0 16px 12px}@media(max-width:900px){.figs .fg{grid-template-columns:1fr 1fr}}</style>'
+      + '<div class="ch"><h3>Edit figures</h3><span class="s">burn and runway work themselves out from these and the expenses list</span></div>'
+      + '<div class="fg"><div><label>CASH IN THE BANK</label><input data-fig="cash" inputmode="decimal" placeholder="e.g. 42000" value="' + esc(v(fg.cash)) + '"></div>'
+      + '<div><label>RAISED SO FAR</label><input data-fig="raiseIn" inputmode="decimal" placeholder="e.g. 80000" value="' + esc(v(fg.raiseIn)) + '"></div>'
+      + '<div><label>RAISE TARGET</label><input data-fig="raiseTarget" inputmode="decimal" placeholder="e.g. 250000" value="' + esc(v(fg.raiseTarget)) + '"></div>'
+      + '<div><label>CLOSE DATE</label><input data-fig="closeDate" type="date" value="' + esc(v(fg.closeDate)) + '"></div>'
+      + '<div style="display:flex;gap:8px"><button type="button" class="btn" data-action="fin-figs">Cancel</button><button type="button" class="btn pri" data-action="fin-figs-save">Save</button></div></div>'
+      + (S().finFigErr ? '<div class="er">' + esc(S().finFigErr) + '</div>' : '') + '</section>';
   }
   /* Monthly expenses and spend (back end only; the calendar shows these only when its $ switch is on). */
   var MONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -916,6 +932,29 @@
       api('/api/finance', { method: 'POST', body: { lock: true } }).then(function (r) {
         if (!r || !r.ok) toast(root, 'Locked here; the server lock did not confirm');
       }).catch(function () { toast(root, 'Locked here; the server lock did not confirm'); });
+    },
+    'fin-figs': function () {
+      var s = S();
+      s.finFigEdit = !s.finFigEdit;
+      s.finFigErr = '';
+      paintFinance();
+    },
+    'fin-figs-save': function (el, root) {
+      var s = S();
+      var body = {};
+      root.querySelectorAll('[data-fig]').forEach(function (i) { body[i.getAttribute('data-fig')] = i.value; });
+      api('/api/finance/figures', { method: 'PATCH', body: body }).then(function (r) {
+        return r ? r.json().then(function (d) { return { ok: r.ok, d: d }; }) : { ok: false, d: {} };
+      }).then(function (x) {
+        if (!x.ok) { s.finFigErr = (x.d && x.d.error) || 'Could not save.'; paintFinance(); return; }
+        s.finFigEdit = false;
+        s.finFigErr = '';
+        return api('/api/finance').then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {
+          if (d && d.locked === false) s.finance = d;
+          paintFinance();
+          toast(root, 'Figures saved');
+        });
+      }).catch(function () { s.finFigErr = 'Could not save.'; paintFinance(); });
     },
     'fin-sheet': function (el) {
       var url = attr(el, 'data-url');

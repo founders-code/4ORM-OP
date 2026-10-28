@@ -466,3 +466,4 @@ table.v td.mut{color:#aebbe0}
 .ssc.off b{font-size:13px;color:#ffd08a;font-weight:800}
 .sslog{margin-top:12px}
 .iqmap{margin-bottom:16px;overflow:hidden}
+.port-body .btn{font:inherit;font-size:13px;font-weight:750;border-width:1px;border-style:solid;border-radius:10px;padding:7px 13px;cursor:pointer;line-height:1.2}
