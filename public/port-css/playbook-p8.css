@@ -214,7 +214,7 @@ button{font:inherit;cursor:pointer}
 .ctr{display:flex;gap:4px;background:#0b1430;border:1px solid #2a3a72;border-radius:12px;padding:3px}
 .ctr button{border:0;background:none;color:#8fa0c8;font:inherit;font-size:12.5px;font-weight:800;padding:7px 12px;border-radius:9px;cursor:pointer}
 .ctr button.on{background:#2e6bf2;color:#fff}
-:host-context(body.focusday) .grid, .port-body.focusday .grid{grid-template-columns:250px 3.4fr repeat(6,.34fr) 90px}
+:host-context(body.focusday) .grid, .port-body.focusday .grid{grid-template-columns:250px repeat(7,minmax(0,1fr)) 90px}
 :host-context(body.focusday) .pad:not(.due), .port-body.focusday .pad:not(.due){font-size:0}
 :host-context(body.focusday) .pad.due, .port-body.focusday .pad.due{height:44px;font-size:14px;letter-spacing:.04em}
 :host-context(body.focusday) .dh:not(.today), .port-body.focusday .dh:not(.today){font-size:0}:host-context(body.focusday) .dh:not(.today) small, .port-body.focusday .dh:not(.today) small{font-size:9px}
@@ -280,8 +280,8 @@ button{font:inherit;cursor:pointer}
 .pbwrap>.beats{margin-bottom:18px}
 .beat .btop{display:flex;align-items:flex-start;justify-content:space-between}.beat .d{font-size:28px;line-height:1;display:flex;flex-direction:column;align-items:flex-end;text-align:right}.beat .d small{display:block;font-size:10.5px;font-weight:750;color:#8fa0c8;margin:3px 0 0;letter-spacing:.04em;white-space:nowrap}
 .beat .btop{gap:10px}.beat .btop .n{font-size:14px;flex:1;min-width:0}.beat .d{white-space:nowrap;flex:none}
-/* Focus today keeps the week grid (and TODAY band) visible; only the sequence rail hides (prompt 13 / design 27). */
-:host-context(body.focusday) .pbwrap>.seq, .port-body.focusday .pbwrap>.seq{display:none}
+/* Focus today keeps .seq (the week grid + TODAY band) visible (prompt 13 / design 27). */
+:host-context(body.focusday) .pbwrap>.seq .legend, .port-body.focusday .pbwrap>.seq .legend{display:none}
 :host-context(body.focusday) #todo, .port-body.focusday #todo{margin-top:0}
 :host-context(body.compact) .pbwrap>.beatlh, .port-body.compact .pbwrap>.beatlh{display:none}
 :host-context(body.compact) .pbwrap>.beats, .port-body.compact .pbwrap>.beats{grid-column:1/-1;grid-row:2;grid-template-columns:repeat(6,minmax(0,1fr))!important}
