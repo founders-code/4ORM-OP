@@ -2318,9 +2318,11 @@
     },
     'space-card-name': function () {},
     'space-card-desc': function () {},
-    'space-open': function (el, root) {
+    'space-open': function (el, root, ev) {
+      if (ev && ev.stopPropagation) ev.stopPropagation();
       var card = el.closest && el.closest('.sp, tr.row, .pb, .pipe-card');
       var id = attr(el, 'data-id') || attr(el, 'data-space') || (card && attr(card, 'data-id')) || '';
+      if (id && S().pkg && String(S().pkg.id) === String(id)) return;
       var name = (card && card.querySelector('h4') && card.querySelector('h4').textContent) || 'Space';
       var intel = (card && card.querySelector('p') && card.querySelector('p').textContent) || '';
       if (!id && !name) { soon(root, 'Open space'); return; }
@@ -4077,6 +4079,95 @@
       var day = (cur.r.pads && cur.r.pads[cur.i] && cur.r.pads[cur.i].day) || '';
       if (!id || !day || !writeOk()) return;
       api('/api/playbook', { method: 'POST', body: { rhythmId: id, day: day, status: 'snoozed' } }).catch(function () {});
+    },
+    'play-edit-plays': function (el, root) {
+      var m = root.getElementById && root.getElementById('tdm');
+      var box = root.getElementById && root.getElementById('tdbox');
+      if (!m || !box) { toast(root, 'Edit plays panel missing'); return; }
+      var rows = ((S().playbook && S().playbook.rows) || []).slice();
+      function daysLabel(sch) {
+        var s = (sch || []).map(function (x) { return String(x).slice(0, 3).toLowerCase(); });
+        if (s.length === 7) return 'Every day';
+        if (s.join() === 'mon,tue,wed,thu,fri') return 'Mon-Fri';
+        if (s.length === 1) return s[0].charAt(0).toUpperCase() + s[0].slice(1);
+        return 'Mon-Fri';
+      }
+      function daysValue(lab) {
+        var t = String(lab || '').toLowerCase();
+        if (t === 'every day') return ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        if (t === 'mon-fri') return ['mon', 'tue', 'wed', 'thu', 'fri'];
+        var one = { mon: 'mon', tue: 'tue', wed: 'wed', thu: 'thu', fri: 'fri', sat: 'sat', sun: 'sun' };
+        if (one[t]) return [one[t]];
+        return ['mon', 'tue', 'wed', 'thu', 'fri'];
+      }
+      function persist(r, extra) {
+        if (!r || !r.id || !writeOk()) return;
+        var body = { action: 'edit', rhythmId: r.id, name: r.n || r.name, schedule: r.schedule || r.d, grp: r.grp };
+        if (extra) Object.keys(extra).forEach(function (k) { body[k] = extra[k]; });
+        api('/api/playbook', { method: 'POST', body: body }).then(ok).then(json).then(function (d) {
+          if (d && Array.isArray(d.rows) && window.STATE) window.STATE.playbook = d;
+        }).catch(function () {});
+      }
+      function draw() {
+        box.style.setProperty('--sc', '#5b8cff');
+        box.innerHTML = '<div class="k">Your plays</div><h3 style="margin:4px 0 10px;font-size:19px">Rename, change the days, delete or add</h3>'
+          + rows.map(function (r, i) {
+            if (r.s) return '<div style="font-size:10.5px;font-weight:850;letter-spacing:.14em;color:#6f7fa6;padding:10px 0 4px">' + esc(String(r.s).toUpperCase()) + '</div>';
+            var n = r.n || r.name || '';
+            var opts = ['Mon-Fri', 'Every day', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(function (o) {
+              return '<option' + (daysLabel(r.schedule) === o ? ' selected' : '') + '>' + o + '</option>';
+            }).join('');
+            var auto = /clip/i.test(n) ? '<span class="auto">GoHighLevel posts</span>' : (/News sweep|snapshot/i.test(n) ? '<span class="auto">one click</span>' : '<span></span>');
+            return '<div class="pe"><i></i><input data-pn="' + i + '" value="' + esc(n).replace(/"/g, '&quot;') + '"><select data-pd="' + i + '">' + opts + '</select>' + auto + '<button type="button" data-pdel="' + i + '">Delete</button></div>';
+          }).join('')
+          + '<div class="peadd"><input id="peNew" placeholder="New play, for example Call one regulator"><button class="editp" id="peAdd" type="button" style="margin:0">Add</button></div><div class="acts"><button class="pri" id="peDone" type="button">Done</button></div>';
+        box.querySelectorAll('[data-pn]').forEach(function (x) {
+          x.oninput = function () {
+            var r = rows[+x.getAttribute('data-pn')];
+            if (!r) return;
+            r.n = x.value;
+            persist(r);
+          };
+        });
+        box.querySelectorAll('[data-pd]').forEach(function (x) {
+          x.onchange = function () {
+            var r = rows[+x.getAttribute('data-pd')];
+            if (!r) return;
+            r.schedule = daysValue(x.value);
+            r.grp = String(x.value).toLowerCase() === 'sat' || /weekly/i.test(r.grp || '') ? (x.value === 'Sat' ? 'Weekly' : r.grp) : r.grp;
+            persist(r, { schedule: r.schedule, grp: r.grp });
+          };
+        });
+        box.querySelectorAll('[data-pdel]').forEach(function (x) {
+          x.onclick = function () {
+            var i = +x.getAttribute('data-pdel');
+            var r = rows[i];
+            if (!r) return;
+            if (r.id && writeOk()) persist(r, { active: false });
+            rows.splice(i, 1);
+            draw();
+            toast(root, 'Play hidden', function () {
+              if (r && r.id && writeOk()) persist(r, { active: true });
+            });
+          };
+        });
+        var add = box.querySelector('#peAdd');
+        if (add) add.onclick = function () {
+          var v = (box.querySelector('#peNew') && box.querySelector('#peNew').value || '').trim();
+          if (!v) return;
+          if (!writeOk()) { toast(root, 'Play (fixture)'); return; }
+          api('/api/playbook', { method: 'POST', body: { name: v, schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], grp: 'Daily' } }).then(ok).then(json).then(function (d) {
+            if (d && Array.isArray(d.rows) && window.STATE) window.STATE.playbook = d;
+            rows = d.rows.slice();
+            draw();
+            toast(root, 'Play added');
+          }).catch(function () { toast(root, 'Could not add that play'); });
+        };
+        var done = box.querySelector('#peDone');
+        if (done) done.onclick = function () { m.classList.remove('open'); refresh('play'); };
+      }
+      draw();
+      m.classList.add('open');
     },
     'play-add': function (el, root) {
       var name = window.prompt('Rhythm name');

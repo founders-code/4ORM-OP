@@ -474,7 +474,7 @@ select{appearance:none;-webkit-appearance:none;background-image:none}
 .fmore{font-size:12px;font-weight:750;color:#2e6bf2;cursor:pointer;padding:2px}
 
 /* ===== 18h: Planner in the Playbook dark style ===== */
-:root{--surface:#111a3a;--raise:#1a2552;--band:#16214a;--edge:#2a3a72;--fg:#E9EEFA;--muted:#9aa8d0;--faint:#6f7fa6;--gold:#f5c443;--gold-ink:#f5c443;--gold-soft:#2b2612;
+:root{--surface:#111a3a;--raise:#1a2552;--band:#16214a;--edge:#2a3a72;--fg:#eef2fc;--muted:#c8d1ea;--faint:#a3b0d2;--gold:#f5c443;--gold-ink:#f5c443;--gold-soft:#2b2612;
  --p1:#7d8bff;--p2:#3b82ff;--p3:#19d38a;--p4:#ff5fa8;--p5:#a173ff;--p6:#ffb547;--p7:#22d3c5;--p8:#ff6b4a;--bad:#ff5a6e;--good:#2ee59d;color-scheme:dark}
 .card{background:var(--surface);color:var(--fg);border:1px solid rgba(120,150,255,.14)}
 .capture{background:#111a3a;color:var(--fg);border:1px solid rgba(120,150,255,.14)}
@@ -539,8 +539,8 @@ body.th-neon .trk{background:transparent}
 body.th-neon .bar{border-radius:6px;box-shadow:0 0 14px color-mix(in srgb,var(--c) 55%,transparent),inset 0 0 0 1px color-mix(in srgb,var(--c) 80%,#fff)}
 body.th-neon .bar.planned{background:color-mix(in srgb,var(--c) 16%,transparent)!important;color:#fff;box-shadow:inset 0 0 0 1.5px var(--c),0 0 10px color-mix(in srgb,var(--c) 35%,transparent)}
 body.th-neon .bar.active{background:linear-gradient(90deg,var(--c) var(--p),color-mix(in srgb,var(--c) 25%,#080c1f) var(--p))!important;color:#fff}
-body.th-neon .today{background:#ff4d8d;box-shadow:0 0 12px 2px #ff4d8d}
-body.th-neon .todaytag{background:#ff4d8d}
+body.th-neon .today{background:#ff4d8d;box-shadow:0 0 12px 2px #ff4d8d;color:#160308}
+body.th-neon .todaytag{background:#ff4d8d;color:#160308}
 body.th-neon .dia{box-shadow:0 0 10px currentColor}
 body.th-neon .lanebtn .nm{text-shadow:0 0 12px color-mix(in srgb,var(--c) 70%,transparent);color:var(--c)}
 /* AURORA: violet to navy sky, rounded gradient bars */
@@ -597,7 +597,7 @@ body.th-pb .trackrow .lab .tn{color:#e9eefa}
 /* noise filter */
 .nz{display:flex;gap:4px;background:#0b1430;border:1px solid #2a3a72;border-radius:10px;padding:3px;margin-left:8px}
 .nz button{border:0;background:none;color:#8fa0c8;font:inherit;font-size:12.5px;font-weight:750;padding:6px 11px;border-radius:8px;cursor:pointer;white-space:nowrap}
-.nz button[aria-pressed="true"]{background:#ff4d8d;color:#fff;box-shadow:0 0 12px rgba(255,77,141,.45)}
+.nz button[aria-pressed="true"]{background:#ff4d8d;color:#160308;box-shadow:0 0 12px rgba(255,77,141,.45)}
 body.nz-motion .canvas .bar.planned,body.nz-motion .canvas .msi.planned,body.nz-motion .canvas .bar.done,body.nz-motion .canvas .msi.done{opacity:.12;filter:grayscale(.6)}
 body.nz-need .canvas .bar:not(.risk):not(.overdue),body.nz-need .canvas .msi:not(.risk):not(.overdue){opacity:.1;filter:grayscale(.8)}
 body.nz-need .canvas .bar.overdue,body.nz-need .canvas .bar.risk,body.nz-need .canvas .msi.overdue,body.nz-need .canvas .msi.risk{box-shadow:0 0 18px #ff5a6e,inset 0 0 0 1.5px #ff5a6e!important}
@@ -605,3 +605,12 @@ body.nz-dates .canvas .bar{opacity:.1}body.nz-dates .canvas .msi,body.nz-dates .
 body.nz-nodone .canvas .bar.done,body.nz-nodone .canvas .msi.done{display:none}
 body.nz-month .canvas .bar.planned.far,body.nz-month .canvas .msi.planned.far{opacity:.1}
 .canvas .bar,.canvas .msi{transition:opacity .2s,filter .2s}
+/* Prompt 11 / 18k: Planner text on dark, brightened. Body #eef2fc, secondary #c8d1ea, quiet #a3b0d2. Pure white only for headings. */
+body.th-neon .main{color:#eef2fc}
+.fmore,.ltitle,.kick{color:#8dbaff!important}
+.fnone{color:#c8d1ea!important}
+.dz{color:#a3b0d2!important}
+.k{color:#a3b0d2!important}
+.tl.soon{color:#1a1200!important}
+.nz button[aria-pressed="true"],body.th-neon .today,body.th-neon .todaytag{color:#160308!important;text-shadow:none!important}
+.clock{color:#5b6678!important}

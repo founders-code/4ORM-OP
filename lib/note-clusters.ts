@@ -64,6 +64,15 @@ export async function createCluster(sql: Sql, ownerId: string, body: Record<stri
     VALUES (${ownerId}, ${name}, ${color}, ${x}, ${y}, ${w}, ${h})
     RETURNING id, name, color, x, y, w, h, position
   `;
+  const made = rows[0] as { id?: string } | undefined;
+  const rawIds = Array.isArray(body.noteIds) ? body.noteIds : Array.isArray(body.ids) ? body.ids : [];
+  const noteIds = rawIds.map((x) => String(x)).filter((id) => ID.test(id));
+  if (made?.id && noteIds.length) {
+    await sql`
+      UPDATE notes SET cluster_id = ${String(made.id)}::uuid, updated_at = now()
+      WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND id = ANY(${noteIds}::uuid[])
+    `;
+  }
   return rows[0] || null;
 }
 
@@ -98,6 +107,10 @@ export async function softDeleteCluster(sql: Sql, ownerId: string, id: string) {
   await sql`
     UPDATE note_clusters SET deleted_at = now()
     WHERE id = ${id} AND owner_id = ${ownerId} AND deleted_at IS NULL
+  `;
+  await sql`
+    UPDATE notes SET cluster_id = NULL, updated_at = now()
+    WHERE owner_id = ${ownerId} AND cluster_id = ${id}::uuid AND deleted_at IS NULL
   `;
   return true;
 }

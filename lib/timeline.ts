@@ -242,6 +242,8 @@ export async function readTimeline(sql: Sql, ownerId: string) {
       zoom: String(prefs.zoom || '6'),
       show_links: prefs.show_links !== false,
       one_move_id: prefs.one_move_id || null,
+      view: String(prefs.view || 'timeline'),
+      group_by: String(prefs.group_by || prefs.group || 'pipe'),
     },
     items: shaped,
     deps,

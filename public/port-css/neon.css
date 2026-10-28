@@ -12,8 +12,8 @@
 .port-body.neon .bar{border-radius:6px;box-shadow:0 0 14px color-mix(in srgb,var(--c) 55%,transparent),inset 0 0 0 1px color-mix(in srgb,var(--c) 80%,#fff)}
 .port-body.neon .bar.planned{background:color-mix(in srgb,var(--c) 16%,transparent)!important;color:#fff;box-shadow:inset 0 0 0 1.5px var(--c),0 0 10px color-mix(in srgb,var(--c) 35%,transparent)}
 .port-body.neon .bar.active{background:linear-gradient(90deg,var(--c) var(--p),color-mix(in srgb,var(--c) 25%,#080c1f) var(--p))!important;color:#fff}
-.port-body.neon .today{background:#ff4d8d;box-shadow:0 0 12px 2px #ff4d8d}
-.port-body.neon .todaytag{background:#ff4d8d}
+.port-body.neon .today{background:#ff4d8d;box-shadow:0 0 12px 2px #ff4d8d;color:#160308}
+.port-body.neon .todaytag{background:#ff4d8d;color:#160308}
 .port-body.neon .dia{box-shadow:0 0 10px currentColor}
 .port-body.neon .lanebtn .nm{text-shadow:0 0 12px color-mix(in srgb,var(--c) 70%,transparent);color:var(--c)}
 .port-body.neon .grid-line,.port-body.neon .hdr .trk{border-color:rgba(255,255,255,.05)}

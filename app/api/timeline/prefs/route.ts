@@ -23,7 +23,7 @@ export async function PATCH(req: Request) {
         ${String(body.zoom || '6')},
         ${body.show_links !== false},
         ${body.one_move_id ? String(body.one_move_id) : null},
-        ${body.view != null ? String(body.view) : 'lists'},
+        ${body.view != null ? String(body.view) : 'timeline'},
         ${body.group_by != null ? String(body.group_by) : 'pipe'},
         now()
       )
@@ -34,7 +34,7 @@ export async function PATCH(req: Request) {
         zoom = CASE WHEN ${body.zoom != null} THEN ${String(body.zoom || '6')} ELSE timeline_prefs.zoom END,
         show_links = CASE WHEN ${body.show_links != null} THEN ${body.show_links !== false} ELSE timeline_prefs.show_links END,
         one_move_id = CASE WHEN ${body.one_move_id !== undefined} THEN ${body.one_move_id ? String(body.one_move_id) : null} ELSE timeline_prefs.one_move_id END,
-        view = CASE WHEN ${body.view != null} THEN ${String(body.view || 'lists')} ELSE timeline_prefs.view END,
+        view = CASE WHEN ${body.view != null} THEN ${String(body.view || 'timeline')} ELSE timeline_prefs.view END,
         group_by = CASE WHEN ${body.group_by != null} THEN ${String(body.group_by || 'pipe')} ELSE timeline_prefs.group_by END,
         updated_at = now()
     `;

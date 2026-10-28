@@ -9,8 +9,8 @@ const DOW = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 export const SEED_RHYTHMS = [
   { name: 'One move', color: '--blue', route: 'war', sub: 'your top step today', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 1, nw: 0 },
-  { name: 'Record 30-min video', color: '--red', route: 'studio', sub: 'the source of the week’s clips', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 2, nw: 0 },
-  { name: 'Post today’s clip', color: '--pink', route: 'li', sub: 'one clip from the video', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 3, nw: 1 },
+  { name: 'Record a 2-minute video', color: '--red', route: 'studio', sub: 'weekend clip that posts itself', grp: 'Weekly', schedule: ['sat'], target: '', sort: 2, nw: 0 },
+  { name: 'Post today’s clip', color: '--pink', route: 'li', sub: 'one clip from the video, LinkedIn', grp: 'Weekly', schedule: ['mon'], target: '', sort: 3, nw: 1 },
   { name: 'Engage 10 min', color: '--sky', route: 'li', sub: 'comment on 5 posts', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '5', sort: 4, nw: 1 },
   { name: 'Reach out to 5', color: '--green', route: 'pipe', sub: 'brokers and partners', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '5', sort: 5, nw: 0 },
   { name: 'Investor touch', color: '--gold', route: 'spaces', sub: 'one cheque closer', grp: 'Daily', schedule: ['mon', 'tue', 'wed', 'thu', 'fri'], target: '', sort: 6, nw: 1 },
@@ -27,7 +27,7 @@ export const SEED_RHYTHMS = [
 ];
 
 const RHYTHM_ALIASES: Record<string, string[]> = {
-  'Record 30-min video': ['30-min video'],
+  'Record a 2-minute video': ['Record 30-min video', '30-min video'],
   'Post today’s clip': ["Post today's clip"],
   'Reach out to 5': ['Reach out 5'],
   'Investor touch': ['Raise touch'],
@@ -147,6 +147,13 @@ export async function seedRhythms(sql: Sql, ownerId: string) {
         WHERE owner_id = ${ownerId} AND name = ${row.name}
           AND (schedule IS NULL OR jsonb_typeof(schedule) <> 'array' OR jsonb_array_length(schedule) = 0)
       `;
+      if (row.name === 'Record a 2-minute video' || row.name === 'Post today’s clip') {
+        await sql`
+          UPDATE playbook_rhythms
+          SET schedule = ${JSON.stringify(row.schedule)}::jsonb, sub = ${row.sub}, grp = ${row.grp}, route = ${row.route}
+          WHERE owner_id = ${ownerId} AND name = ${row.name}
+        `;
+      }
     } catch (err) {
       fail('playbook_seed', err);
     }
@@ -290,6 +297,23 @@ function labelRange(start: string) {
   return `${fmt(a)} - ${fmt(b)}`;
 }
 
+export async function patchRhythm(sql: Sql, ownerId: string, rhythmId: string, input: { name?: string; schedule?: string[]; active?: boolean; grp?: string }) {
+  if (!/^[0-9a-f-]{36}$/i.test(rhythmId)) return listPlaybook(sql, ownerId);
+  const name = input.name != null ? String(input.name).trim().slice(0, 80) : null;
+  const schedule = Array.isArray(input.schedule) ? input.schedule.map((x) => String(x).slice(0, 8)) : null;
+  const grp = input.grp != null ? String(input.grp).slice(0, 20) : null;
+  const active = input.active === false ? false : input.active === true ? true : null;
+  await sql`
+    UPDATE playbook_rhythms SET
+      name = COALESCE(${name}, name),
+      schedule = CASE WHEN ${schedule != null} THEN ${JSON.stringify(schedule || [])}::jsonb ELSE schedule END,
+      grp = COALESCE(${grp}, grp),
+      active = CASE WHEN ${active != null} THEN ${active === true} ELSE active END
+    WHERE id = ${rhythmId}::uuid AND owner_id = ${ownerId}
+  `;
+  return listPlaybook(sql, ownerId);
+}
+
 export async function logPlay(sql: Sql, ownerId: string, rhythmId: string, day: string, status: string, value = '') {
   const next = status === 'done' || status === 'snoozed' || status === 'missed' || status === 'open' ? status : 'done';
   if (next === 'open') {
@@ -303,7 +327,24 @@ export async function logPlay(sql: Sql, ownerId: string, rhythmId: string, day: 
     ON CONFLICT (owner_id, rhythm_id, day)
     DO UPDATE SET status = EXCLUDED.status, value = EXCLUDED.value, deleted_at = NULL
   `;
+  if (next === 'done') {
+    const named = await sql`SELECT name FROM playbook_rhythms WHERE id = ${rhythmId}::uuid AND owner_id = ${ownerId} LIMIT 1`;
+    const title = String(named[0]?.name || '');
+    if (/2-minute video/i.test(title)) {
+      const posted = await postClipThroughGhl(sql, ownerId, day);
+      if (!posted.ok) {
+        await sql`UPDATE playbook_log SET deleted_at = now(), value = ${String(posted.error || 'GoHighLevel post failed').slice(0, 80)}
+          WHERE owner_id = ${ownerId} AND rhythm_id = ${rhythmId}::uuid AND day = ${day}::date`;
+      }
+    }
+  }
   return listPlaybook(sql, ownerId);
+}
+
+async function postClipThroughGhl(_sql: Sql, _ownerId: string, _day: string): Promise<{ ok: boolean; error?: string }> {
+  const key = process.env.GHL_API_KEY || process.env.GOHIGHLEVEL_API_KEY || '';
+  if (!key) return { ok: false, error: 'GoHighLevel is not linked, so the clip stayed open.' };
+  return { ok: false, error: 'GoHighLevel social planner is not wired for auto-ghl yet.' };
 }
 
 export async function addRhythm(sql: Sql, ownerId: string, input: { name: string; color?: string; route?: string; schedule?: string[]; target?: string; sub?: string; grp?: string }) {

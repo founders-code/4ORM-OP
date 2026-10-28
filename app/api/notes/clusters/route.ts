@@ -13,7 +13,11 @@ export async function GET() {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ clusters: [] });
-    const clusters = await listClusters(session.sql, session.userId);
+    const ownerId = (await sessionOwner(session)) || session.userId;
+    const a = await listClusters(session.sql, session.userId);
+    const b = ownerId !== session.userId ? await listClusters(session.sql, ownerId) : [];
+    const seen = new Set(a.map((c) => String(c.id)));
+    const clusters = a.concat(b.filter((c) => !seen.has(String(c.id))));
     return NextResponse.json({ clusters });
   } catch (err) {
     fail('note_clusters_list', err);

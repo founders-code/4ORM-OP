@@ -13,6 +13,10 @@ function clean(value: unknown, max: number) {
   return String(value || '').trim().slice(0, max);
 }
 
+function noteOwners(session: { userId: string }, ownerId: string) {
+  return Array.from(new Set([session.userId, ownerId].filter(Boolean)));
+}
+
 function noteShape(row: Record<string, unknown>) {
   return {
     id: String(row.id),
@@ -53,9 +57,10 @@ export async function GET() {
     if (!session.sql) return NextResponse.json({ notes: [] });
     await ensureNoteCanvas(session.sql);
     const ownerId = await sessionOwner(session);
+    const owners = noteOwners(session, ownerId || session.userId);
     const rows = await session.sql`
       SELECT id, cat_id, title, body, color, pinned, updated_at, canvas_x, canvas_y, canvas_w, canvas_h, cluster_id
-      FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NULL
+      FROM notes WHERE owner_id = ANY(${owners}) AND deleted_at IS NULL
       ORDER BY updated_at DESC
       LIMIT 400
     `;
@@ -205,7 +210,12 @@ export async function DELETE(req: Request) {
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const body = await req.json().catch(() => null);
-    const id = String(body?.id || '');
+    const extra = Array.isArray(body?.ids) ? body.ids.map((x: unknown) => String(x)) : [];
+    if (extra.length > 1) {
+      fail('notes_count_guard', extra.length);
+      return NextResponse.json({ error: 'Cannot drop more than one note in a single request.' }, { status: 409 });
+    }
+    const id = String(body?.id || extra[0] || '');
     const kind = String(body?.kind || '');
     if (!ID.test(id) || (kind !== 'note' && kind !== 'category')) {
       return NextResponse.json({ error: 'Unavailable' }, { status: 400 });

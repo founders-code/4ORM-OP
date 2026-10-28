@@ -492,7 +492,7 @@
         var ids = Array.from(sel), xs = ids.map(function (i) { return NOTES[i].x; }), ys = ids.map(function (i) { return NOTES[i].y; });
         var c = { id: 'c' + Date.now(), name: 'New cluster', color: '#e0364f', x: Math.min.apply(null, xs) - 30, y: Math.min.apply(null, ys) - 40, w: Math.max.apply(null, xs) - Math.min.apply(null, xs) + 280, h: Math.max.apply(null, ys) - Math.min.apply(null, ys) + 210 };
         if (writeOk()) {
-          api('/api/notes/clusters', { method: 'POST', body: c }).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (row) {
+          api('/api/notes/clusters', { method: 'POST', body: { name: c.name, color: c.color, x: c.x, y: c.y, w: c.w, h: c.h, noteIds: ids.map(function (i) { return NOTES[i].id; }).filter(Boolean) } }).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (row) {
             if (row && row.id) c.id = row.id;
             CL.push(c); ids.forEach(function (i) { NOTES[i].c = c.id; saveNotePos(NOTES[i]); });
             sel.clear(); render(); markSel(); rename(c.id);

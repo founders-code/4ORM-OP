@@ -46,12 +46,30 @@ export async function GET() {
       const restoreLogs = await listRestoreLogs(sql, ownerId);
       boxes.push({ ownerId, deleted, live, allBoxes, elsewhere, restoreLogs, done: counts });
     }
+    const CLUSTER = 'd1fa61d7-8f49-48d1-b62d-3ffd8bb976fa';
+    const notes = [];
+    for (const ownerId of owners) {
+      const live = await sql`SELECT count(*)::int AS n FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NULL`;
+      const gone = await sql`SELECT count(*)::int AS n FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NOT NULL`;
+      const titles = await sql`SELECT title, deleted_at IS NOT NULL AS del FROM notes WHERE owner_id = ${ownerId} ORDER BY updated_at DESC NULLS LAST LIMIT 80`;
+      const cl = await sql`
+        SELECT id::text, name, to_char(created_at AT TIME ZONE 'America/Vancouver', 'YYYY-MM-DD HH24:MI:SS') AS created_van
+        FROM note_clusters WHERE id = ${CLUSTER}::uuid AND owner_id = ${ownerId}
+      `;
+      notes.push({
+        ownerId,
+        live: Number(live[0]?.n || 0),
+        deleted: Number(gone[0]?.n || 0),
+        titles: (titles as { title?: string; del?: boolean }[]).map((t) => ({ title: t.title || '', del: !!t.del })),
+        cluster: cl[0] || null,
+      });
+    }
     const pitr = {
       neonProject: process.env.NEON_PROJECT_ID ? 'set' : 'missing',
       neonApiKey: process.env.NEON_API_KEY || process.env.NEON_API_TOKEN ? 'set' : 'missing',
       note: 'A read-only PITR branch needs NEON_API_KEY. It is not in Vercel env; DATABASE_URL is Sensitive and cannot be pulled locally.',
     };
-    return NextResponse.json({ ok: true, readOnly: true, owners, boxes, pitr });
+    return NextResponse.json({ ok: true, readOnly: true, owners, boxes, notes, pitr });
   } catch (err) {
     fail('chad_account_get', err);
     return NextResponse.json({ error: 'Could not list Chad account rows.' }, { status: 500 });
@@ -62,9 +80,45 @@ export async function POST(req: Request) {
   try {
     const gate = await chadOnly();
     if ('error' in gate && gate.error) return gate.error;
-    const body = (await req.json().catch(() => null)) as { apply?: boolean; restoreBoxes?: boolean; archiveClaudeTests?: boolean; archiveJunkBox?: boolean; importBoxes?: unknown[] } | null;
-    if (!body?.apply && !body?.restoreBoxes && !body?.archiveClaudeTests && !body?.archiveJunkBox && !body?.importBoxes) return NextResponse.json({ error: 'Send { apply: true } or { restoreBoxes: true }.' }, { status: 400 });
+    const body = (await req.json().catch(() => null)) as { apply?: boolean; restoreBoxes?: boolean; archiveClaudeTests?: boolean; archiveJunkBox?: boolean; importBoxes?: unknown[]; recoverNotes?: boolean } | null;
+    if (!body?.apply && !body?.restoreBoxes && !body?.archiveClaudeTests && !body?.archiveJunkBox && !body?.importBoxes && !body?.recoverNotes) return NextResponse.json({ error: 'Send { apply: true } or { restoreBoxes: true } or { recoverNotes: true }.' }, { status: 400 });
     const { sql, owners } = gate as { sql: NonNullable<Awaited<ReturnType<typeof getSql>>>; owners: string[] };
+    if (body.recoverNotes) {
+      const CLUSTER = 'd1fa61d7-8f49-48d1-b62d-3ffd8bb976fa';
+      const recovered = [];
+      for (const ownerId of owners) {
+        const beforeLive = await sql`SELECT count(*)::int AS n FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NULL`;
+        const beforeGone = await sql`SELECT count(*)::int AS n FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NOT NULL`;
+        const cl = await sql`
+          SELECT to_char(created_at AT TIME ZONE 'America/Vancouver', 'YYYY-MM-DD HH24:MI:SS') AS created_van
+          FROM note_clusters WHERE id = ${CLUSTER}::uuid LIMIT 1
+        `;
+        const back = await sql`
+          UPDATE notes SET deleted_at = NULL, updated_at = now()
+          WHERE owner_id = ${ownerId} AND deleted_at IS NOT NULL
+          RETURNING id::text, title
+        `;
+        const sticky = await sql`
+          UPDATE sticky_notes SET deleted_at = NULL
+          WHERE owner_id = ${ownerId} AND deleted_at IS NOT NULL
+          RETURNING id::text
+        `;
+        const afterLive = await sql`SELECT count(*)::int AS n FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NULL`;
+        const titles = await sql`SELECT title FROM notes WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 80`;
+        recovered.push({
+          ownerId,
+          clusterCreatedVan: cl[0]?.created_van || null,
+          before: { live: Number(beforeLive[0]?.n || 0), deleted: Number(beforeGone[0]?.n || 0) },
+          restoredNotes: (back as { id?: string; title?: string }[]).map((r) => r.title || r.id),
+          restoredSticky: sticky.length,
+          afterLive: Number(afterLive[0]?.n || 0),
+          liveTitles: (titles as { title?: string }[]).map((t) => t.title || ''),
+          needPitr: Number(beforeGone[0]?.n || 0) === 0 && Number(beforeLive[0]?.n || 0) <= 2,
+          neonApiKey: process.env.NEON_API_KEY || process.env.NEON_API_TOKEN ? 'set' : 'missing',
+        });
+      }
+      return NextResponse.json({ ok: true, recoverNotes: true, recovered });
+    }
     if (body.restoreBoxes) {
       const restored = [];
       for (const ownerId of owners) restored.push({ ownerId, ...(await restoreDeletedBoxes(sql, ownerId)) });

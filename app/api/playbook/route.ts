@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
-import { addRhythm, listPlaybook, logPlay } from '@/lib/playbook';
+import { addRhythm, listPlaybook, logPlay, patchRhythm } from '@/lib/playbook';
 import { openBoard, sessionOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -30,6 +30,16 @@ export async function POST(req: Request) {
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ error: 'Playbook could not be updated.' }, { status: 400 });
     const body = await req.json().catch(() => null) as Record<string, unknown> | null;
+    if (String(body?.action || '') === 'edit') {
+      const rhythmId = String(body?.rhythmId || '');
+      const desk = await patchRhythm(session.sql, session.userId, rhythmId, {
+        name: body?.name != null ? String(body.name) : undefined,
+        schedule: Array.isArray(body?.schedule) ? body.schedule.map((x) => String(x)) : undefined,
+        active: body?.active === false ? false : body?.active === true ? true : undefined,
+        grp: body?.grp != null ? String(body.grp) : undefined,
+      });
+      return NextResponse.json(desk);
+    }
     if (body?.name) {
       const desk = await addRhythm(session.sql, session.userId, {
         name: String(body.name),

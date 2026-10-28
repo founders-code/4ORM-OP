@@ -8,7 +8,7 @@ export type Sql = NeonQueryFunction<false, false>;
 let ready: Promise<Sql> | null = null;
 
 /** Bump when migrate() gains a new step so cold starts skip the full IF NOT EXISTS pass. */
-const SCHEMA_VERSION = '2026-10-27-ops-feed';
+const SCHEMA_VERSION = '2026-10-27-p10-notes';
 
 export async function databaseUrl() {
   const envUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || '';
@@ -1145,6 +1145,19 @@ async function migrateWar(sql: Sql) {
       updated_at timestamptz NOT NULL DEFAULT now()
     )`],
     ['db_timeline_prefs_filter', () => sql`ALTER TABLE timeline_prefs ADD COLUMN IF NOT EXISTS filter text`],
+    ['db_notes_undelete_p10', async () => {
+      /* Soft-restore only: notes tied to the Prompt 10 lost cluster (or its owner). Hard deletes need Neon PITR. */
+      const CLUSTER = 'd1fa61d7-8f49-48d1-b62d-3ffd8bb976fa';
+      await sql`
+        UPDATE notes SET deleted_at = NULL, updated_at = now()
+        WHERE deleted_at IS NOT NULL
+          AND (
+            owner_id IN (SELECT owner_id FROM note_clusters WHERE id = ${CLUSTER}::uuid)
+            OR owner_id IN (SELECT DISTINCT owner_id FROM notes WHERE cluster_id = ${CLUSTER}::uuid)
+            OR owner_id IN (SELECT owner_id FROM room_owner WHERE lower(email) = 'chad@4ormfinance.com')
+          )
+      `;
+    }],
   ];
   for (const [code, run] of steps) {
     try {

@@ -16,3 +16,5 @@ tsconfig.tsbuildinfo
 /CURSOR-PROMPT.md
 /index.html
 /public/zz-news-test.json
+.vercel
+.env*
