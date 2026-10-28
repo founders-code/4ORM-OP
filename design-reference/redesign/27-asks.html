@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ops Fixes Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060918;--card:#080c1f;--blk:#0a0f26;--ln:rgba(120,150,255,.14);--ln2:rgba(120,150,255,.26);--tx:#e9eefa;--t2:#c8d1ea;--t3:#a3b0d2;--ok:#19d38a;--amb:#ffb547;--blue:#3b82ff;--vio:#a173ff;--pink:#ff4d8d;--red:#ff4d6d;--wt:#101a33;--wt2:#3a4560;--wt3:#5b6678;--wln:#e3e8f1}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:500 14px/1.45 Inter,system-ui,sans-serif;padding:24px}
+h1{font-size:20px;margin:0 0 4px}.sub{color:var(--t3);margin:0 0 16px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.tabs button{font:inherit;font-weight:700;background:var(--blk);color:var(--t2);border:1px solid var(--ln);border-radius:999px;padding:7px 13px;cursor:pointer}
+.tabs button[aria-pressed=true]{background:var(--pink);color:#160308;border-color:var(--pink)}
+.view{display:none}.view.on{display:block}
+.panel{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:18px;max-width:1180px}
+.note{color:var(--t2);max-width:1180px;margin-top:14px}.note b{color:#fff}
+.btn{font:inherit;font-weight:750;border-radius:10px;padding:8px 14px;border:1px solid var(--ln2);background:rgba(255,255,255,.05);color:var(--tx);cursor:pointer}.btn.p{background:var(--blue);border-color:var(--blue);color:#fff}
+.seg{display:inline-flex;background:var(--blk);border:1px solid var(--ln);border-radius:10px;padding:3px}.seg button{font:inherit;font-weight:700;border:0;background:none;color:var(--t2);padding:6px 14px;border-radius:7px;cursor:pointer}.seg button.on{background:var(--pink);color:#160308}
+.av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff;background:#1d4fd8;flex:none}
+/* 1 playbook */
+.pb{display:grid;grid-template-columns:150px repeat(7,minmax(0,1fr));gap:6px 8px;position:relative}
+.pb .h{text-align:center;font-weight:800;font-size:11.5px;color:var(--t3);padding:7px 0;border-radius:8px;position:relative;z-index:1}.pb .h b{display:block;color:var(--t2);font-size:11px}
+.pb .h.today{background:rgba(255,77,141,.12);box-shadow:inset 0 0 0 1px rgba(255,77,141,.5);color:#fff}.pb .h.today b{color:#fff}
+.pb .h.today:before{content:"TODAY";position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:9.5px;font-weight:900;letter-spacing:.08em;background:var(--pink);color:#160308;border-radius:5px;padding:1px 6px}
+.pb .band{position:absolute;grid-row:1 / 7;grid-column:4 / 5;top:-6px;bottom:-6px;left:-4px;right:-4px;background:rgba(255,77,141,.05);border:1px solid rgba(255,77,141,.22);border-radius:10px;pointer-events:none}
+.pb .lab{font-weight:700;padding:5px 0;position:relative;z-index:1}
+.pb .c{height:22px;border-radius:6px;border:1px solid var(--ln);position:relative;z-index:1}.pb .c.t{color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;border:0}
+.wsel{margin-bottom:12px}
+/* 2 planner */
+.ptop{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.ptop h2{margin:0;font-size:22px}
+.tl{margin-top:14px;height:150px;border-radius:12px;background:var(--blk);border:1px solid var(--ln);position:relative;overflow:hidden}
+.tl i{position:absolute;height:14px;border-radius:5px}.tl .now{position:absolute;top:0;bottom:0;width:2px;background:rgba(255,77,141,.55)}
+.ls{margin-top:14px;display:none}.ls div{padding:9px 12px;border-bottom:1px solid var(--ln);color:var(--t2)}
+/* 3 calendar */
+.cal{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.cal .col{height:220px;border-radius:10px;background:var(--blk);border:1px solid var(--ln);position:relative;padding:8px}
+.cal .col h5{margin:0 0 8px;font-size:12px;color:var(--t2)}.cal .ev{background:#1d3a8a;border-radius:6px;padding:5px 7px;font-weight:700;font-size:12px;color:#fff;margin-bottom:6px}
+.cal .now1{background:rgba(255,77,141,.055);border:1px solid rgba(255,77,141,.28);box-shadow:0 0 12px 2px #ff4d8d}
+.cal .now2{background:rgba(255,77,141,.04);border:1px solid rgba(255,77,141,.30);box-shadow:0 0 6px 0 rgba(255,77,141,.45)}
+.cal .now3{background:rgba(255,77,141,.03);border:1px solid rgba(255,77,141,.35);box-shadow:none}
+/* 4 news */
+.gauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.g{background:var(--blk);border:1px solid var(--ln);border-radius:14px;padding:12px 14px 14px;cursor:pointer;transition:border-color .15s}
+.g.on{border-color:var(--c);box-shadow:0 0 0 1px var(--c)}
+.g h5{margin:0;font-size:13.5px;display:flex;justify-content:space-between;align-items:baseline}.g h5 small{color:var(--t3);font-weight:700;font-size:11.5px}
+.g svg{display:block;width:100%;height:auto;margin:4px 0 0}
+.g .num{text-align:center;margin-top:-2px;position:relative}.g .num b{font-size:32px;font-weight:900;color:var(--c);text-shadow:0 0 12px var(--c)}.g .num span{display:block;font-weight:750;font-size:12.5px}
+.g .wk{display:flex;gap:4px;align-items:flex-end;height:34px;margin-top:10px}.g .wk i{flex:1;border-radius:3px 3px 0 0;background:var(--c);opacity:.35}.g .wk i:last-child{opacity:1}
+.g .wl{display:flex;justify-content:space-between;color:var(--t3);font-size:10.5px;font-weight:700;margin-top:3px}
+.g .lead{margin-top:10px;padding-top:9px;border-top:1px solid var(--ln);color:var(--t2);font-size:12.5px}.g .lead small{display:block;color:var(--t3);font-weight:700;font-size:11px;letter-spacing:.05em}
+/* 5 lists */
+.lists{display:grid;grid-template-columns:250px 1fr;gap:16px}
+.ll{background:var(--blk);border:1px solid var(--ln);border-radius:12px;padding:8px}.ll h6{margin:6px 8px 8px;font-size:11.5px;letter-spacing:.08em;color:var(--t3)}
+.ll button{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;font:inherit;font-weight:700;color:var(--tx);background:none;border:0;border-radius:8px;padding:9px 10px;cursor:pointer}.ll button small{color:var(--t3);font-weight:700}
+.ll button.on{background:rgba(255,77,141,.12);box-shadow:inset 3px 0 0 var(--pink)}.ll .up{color:#8dbaff;border:1px dashed var(--ln2);margin-top:8px;justify-content:center}
+.tbl{background:var(--blk);border:1px solid var(--ln);border-radius:12px;overflow:auto}
+.tbl .hd{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--ln);flex-wrap:wrap}.tbl .hd h3{margin:0;font-size:16px}.tbl .hd span{color:var(--t3)}
+.tbl select{font:inherit;font-weight:700;background:var(--card);color:var(--tx);border:1px solid var(--ln2);border-radius:8px;padding:5px 8px;margin-left:auto}
+table{width:100%;border-collapse:collapse;min-width:820px}th{font-size:11.5px;letter-spacing:.06em;color:var(--t3);text-align:left;padding:9px 12px;border-bottom:1px solid var(--ln)}
+td{padding:10px 12px;border-bottom:1px solid var(--ln);vertical-align:top;color:var(--t2)}td b{color:var(--tx);display:block}td small{color:var(--t3)}
+tr.r{cursor:pointer}tr.r:hover td{background:rgba(255,255,255,.04)}tr.next td{background:rgba(255,77,141,.07)}
+td a{color:#8dbaff;text-decoration:none;font-weight:650}.stg{display:inline-block;font-size:11.5px;font-weight:800;border-radius:6px;padding:2px 8px;background:rgba(59,130,255,.16);color:#a9c8ff}
+.nt{color:var(--t2);max-width:220px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pop{position:fixed;inset:0;background:rgba(3,5,14,.6);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}.pop.on{display:flex}
+.pop .box{background:var(--card);border:1px solid var(--ln2);border-radius:14px;padding:18px;width:min(460px,100%);box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.pop h4{margin:0;font-size:17px}.pop .meta{color:var(--t3);margin:2px 0 12px}.pop .row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px}.pop .row a{color:#8dbaff;font-weight:700;text-decoration:none}
+.pop .nb{background:var(--blk);border:1px solid var(--ln);border-radius:10px;padding:10px 12px;color:var(--t2);margin-bottom:12px}.pop .nb p{margin:0 0 6px}.pop .nb small{color:var(--t3)}
+/* 6 email */
+.env{background:var(--blk);border:1px solid var(--ln);border-radius:12px;overflow:hidden}
+.er{display:grid;grid-template-columns:90px 1fr auto;gap:12px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--ln)}.er .k{color:var(--t3);font-weight:700;font-size:12.5px}.er .s{font-size:12px;font-weight:700}.ok{color:var(--ok)}.miss{color:var(--amb)}
+.chipp{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.05);border:1px solid var(--ln2);border-radius:999px;padding:3px 10px 3px 4px;font-weight:650}.chipp .av{width:20px;height:20px;font-size:9px}.chipp small{color:var(--t3)}
+.er input{font:inherit;font-weight:750;font-size:15px;color:#fff;background:none;border:0;outline:0;width:100%}
+.tone{display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--ln);align-items:center}.tone span{color:var(--t3);font-weight:700;font-size:12.5px;margin-right:4px}
+.tone button{font:inherit;font-weight:700;font-size:12.5px;background:rgba(255,255,255,.04);color:var(--t2);border:1px solid var(--ln2);border-radius:999px;padding:5px 12px;cursor:pointer}.tone button.on{background:rgba(161,115,255,.18);border-color:var(--vio);color:#fff}
+.tdesc{padding:8px 14px;color:var(--t3);font-size:12.5px;border-bottom:1px solid var(--ln)}
+.ed{padding:14px}.ed textarea{width:100%;min-height:210px;font:inherit;font-size:14.5px;line-height:1.6;color:var(--tx);background:#070b1d;border:1px solid var(--ln2);border-radius:10px;padding:12px 14px;resize:vertical;outline:0}.ed textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,255,.18)}
+.edbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}.edbar small{color:var(--t3);margin-left:auto}
+/* 7 links */
+.lk{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.lc{border-radius:12px;overflow:hidden;background:#fff;border:1px solid var(--ln)}.lc .im{height:104px;background:#dfe6f2;position:relative}
+.lc .im i{position:absolute;left:12px;right:12px;height:7px;background:#b8c4da;border-radius:3px}
+.lc .tx{padding:10px 12px 12px;color:var(--wt)}.lc .tx b{display:block;color:var(--wt)}.lc .tx small{color:var(--wt3)}.lc .tx a{display:block;margin-top:6px;color:#1d4fd8;font-weight:700;font-size:12.5px}
+/* 8 documents */
+.dbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.dbar span{color:var(--t3)}
+.board{position:relative;height:620px;background:var(--blk);border:1px solid var(--ln);border-radius:12px;overflow:hidden;background-image:radial-gradient(rgba(120,150,255,.12) 1px,transparent 1px);background-size:24px 24px}
+.doc{position:absolute;background:#fff;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.45);overflow:hidden;cursor:grab;user-select:none;display:flex;flex-direction:column;touch-action:none}
+.doc.drag{cursor:grabbing;box-shadow:0 0 0 2px var(--blue),0 18px 50px rgba(0,0,0,.6);z-index:5}
+.doc .pg{flex:1;padding:10px;position:relative;overflow:hidden}.doc .pg i{display:block;height:6px;background:#d7deea;border-radius:3px;margin-bottom:6px}.doc .pg i.h{height:10px;width:60%;background:#1b2a55}
+.doc .ft{padding:7px 10px;border-top:1px solid var(--wln);font-weight:750;font-size:12.5px;color:var(--wt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.doc .ft small{display:block;color:var(--wt3);font-weight:600}
+.doc .rs{position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 50%,var(--blue) 50%)}
+.tag{position:absolute;top:8px;left:8px;font-size:10.5px;font-weight:800;border-radius:5px;padding:1px 6px;color:#fff}
+@media(max-width:720px){body{padding:16px}.lists{grid-template-columns:1fr}.cal{grid-template-columns:1fr}.pb{grid-template-columns:90px repeat(7,minmax(0,1fr))}.er{grid-template-columns:64px 1fr}.er .s{grid-column:2}}
+</style></head><body>
+<h1>Ops fixes, one tab each</h1>
+<p class="sub">What each of today's asks would look like. Click and drag where it says so.</p>
+<div class="tabs">
+<button data-v="v5" aria-pressed="true">Call lists</button>
+<button data-v="v6" aria-pressed="false">Email in the space</button>
+<button data-v="v8" aria-pressed="false">Documents: size and move</button>
+<button data-v="v7" aria-pressed="false">Links cards</button>
+<button data-v="v1" aria-pressed="false">Playbook today</button>
+<button data-v="v2" aria-pressed="false">Planner switch</button>
+<button data-v="v3" aria-pressed="false">Calendar pink</button>
+<button data-v="v4" aria-pressed="false">News meters</button>
+</div>
+
+<!-- CALL LISTS -->
+<section class="view on" id="v5">
+<div class="lists">
+<div class="ll"><h6>LISTS</h6>
+<button class="on" data-l="dp">Design partners<small>50</small></button>
+<button data-l="vc">VCs, pre-seed<small>25</small></button>
+<button data-l="rg">Regulators<small>15</small></button>
+<button data-l="eb">Enterprise BC #1-50<small>50</small></button>
+<button data-l="up">Angels, Calgary (uploaded)<small>18</small></button>
+<button class="up">+ Upload a list (CSV)</button>
+</div>
+<div class="tbl">
+<div class="hd"><h3 id="lt">Design partners</h3><span id="ls">50 people · 5 a day · 11 done</span><select id="lsel"><option value="dp">Design partners</option><option value="vc">VCs, pre-seed</option><option value="rg">Regulators</option><option value="eb">Enterprise BC #1-50</option><option value="up">Angels, Calgary (uploaded)</option></select></div>
+<table><thead><tr><th>PERSON</th><th>PHONE</th><th>EMAIL</th><th>NOTES</th><th>STAGE</th><th>LAST TOUCH</th></tr></thead><tbody id="tb"></tbody></table>
+</div></div>
+<p class="note">The lists sit down the left of Contacts, and the box at the top switches lists too. <b>Click a list and its 25 or 50 people fill the table.</b> Every row shows phone, email and the start of the notes. <b>Click a row for a pop-up of the full notes</b>, with Call, Email and Open space. Uploaded lists show up next to the built ones. The next one to call is the pink row.</p>
+<div class="pop" id="pop"><div class="box"><h4 id="pn"></h4><div class="meta" id="pm"></div><div class="row" id="pc"></div><div class="nb" id="pnotes"></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn p">Open space</button><button class="btn">Mark called</button><button class="btn" id="px">Close</button></div></div></div>
+</section>
+
+<!-- EMAIL -->
+<section class="view" id="v6">
+<div class="panel">
+<div class="env">
+<div class="er"><span class="k">To</span><span><span class="chipp"><span class="av">LG</span>Lina Ghazal <small>lina@alliedmortgage.ca</small></span></span><span class="s ok">from People</span></div>
+<div class="er"><span class="k">Cc</span><span><span class="chipp"><span class="av" style="background:#0f9fb5">BF</span>Bruce Fair <small>warm intro</small></span></span><span class="s ok">set</span></div>
+<div class="er"><span class="k">Subject</span><input value="A 20-minute look at suitability records for Allied"><span class="s ok">editable</span></div>
+<div class="er"><span class="k">Attach</span><span><span class="chipp" style="padding-left:10px">4orm 2-page overview.pdf <small>2 pages</small></span></span><span class="s ok">1 file</span></div>
+<div class="tone"><span>TONE</span><button class="on" data-t="voss">Chris Voss</button><button data-t="ury">William Ury</button><button data-t="cialdini">Robert Cialdini</button><button data-t="plain">Plain</button></div>
+<div class="tdesc" id="td"></div>
+<div class="ed"><textarea id="body"></textarea>
+<div class="edbar"><button class="btn">Rewrite in this tone</button><button class="btn">Shorter</button><button class="btn p">Move to email</button><small>You type here. The tone buttons rewrite your words; they never send.</small></div></div>
+</div></div>
+<p class="note">"Ready for email" now has a real body you type into, under the To, Cc, Subject and Attach lines. The tone buttons rewrite what you wrote in that style. Chris Voss is the default. William Ury and Robert Cialdini are the two others.</p>
+</section>
+
+<!-- DOCUMENTS -->
+<section class="view" id="v8">
+<div class="dbar"><span>Drag a document to move it. Drag its bottom-right corner to make it bigger or smaller. Order and size are saved.</span><button class="btn" id="tidy">Tidy into rows</button></div>
+<div class="board" id="board"></div>
+<p class="note">Each document keeps its own size and spot, like papers on a desk. "Tidy into rows" lines them up again without changing their sizes. Double-click opens the reader, and there's a Back button there.</p>
+</section>
+
+<!-- LINKS -->
+<section class="view" id="v7">
+<div class="lk">
+<div class="lc"><div class="im"><i style="top:24px;width:60%;height:10px;background:#1b2a55"></i><i style="top:44px"></i><i style="top:58px;right:40px"></i></div><div class="tx"><b>SKOOL</b><small>skool.com</small><a>Add a note</a></div></div>
+<div class="lc"><div class="im" style="background:#f3efe2"></div><div class="tx"><b>Weekend Fund</b><small>weekend.fund</small><a>Add a note</a></div></div>
+<div class="lc"><div class="im" style="background:#0b1330"></div><div class="tx"><b>Canadian Venture Capital Private Equity Association</b><small>cvca.ca</small><a>Add a note</a></div></div>
+<div class="lc"><div class="im" style="background:#e9edf5"></div><div class="tx"><b>Dealroom</b><small>dealroom.co</small><a>Add a note</a></div></div>
+</div>
+<p class="note">The title and notes part of each card is white, with dark text, under the picture.</p>
+</section>
+
+<!-- PLAYBOOK -->
+<section class="view" id="v1">
+<div class="panel">
+<div class="wsel seg"><button class="on" data-w="full">Full week</button><button data-w="focus">Focus today</button><button data-w="compact">Compact</button></div>
+<div class="pb" id="pb"></div>
+</div>
+<p class="note">Live, the band is placed at a fixed 495 pixels from the left. It only lines up at one window width, and in Compact it lands on Friday and Saturday. Here the band sits in the same grid column as today's header, so it stays on Wednesday at any width and in all three views. Switch the views to check.</p>
+</section>
+
+<!-- PLANNER -->
+<section class="view" id="v2">
+<div class="panel">
+<div class="ptop"><h2>Planner</h2><div class="seg" id="pseg"><button class="on" data-p="tl">Timeline</button><button data-p="ls">Lists</button></div></div>
+<div class="tl" id="ptl"><span class="now" style="left:22%"></span><i style="left:8%;width:30%;top:20px;background:#3b82ff"></i><i style="left:25%;width:40%;top:46px;background:#19d38a"></i><i style="left:40%;width:22%;top:72px;background:#a173ff"></i><i style="left:18%;width:50%;top:98px;background:#ffb547"></i></div>
+<div class="ls" id="pls"><div>Milestones · 9 goals</div><div>Marketing · 4 items</div><div>Key dates · 17 items</div></div>
+</div>
+<p class="note">Timeline is on the left and is always the page you land on. Lists is on the right for when you want it.</p>
+</section>
+
+<!-- CALENDAR -->
+<section class="view" id="v3">
+<div class="cal">
+<div class="col now1"><h5>Live now</h5><div class="ev">Play · Video 08:30</div><div class="ev">Inbox zero 11:00</div></div>
+<div class="col now2"><h5>Half (pick this)</h5><div class="ev">Play · Video 08:30</div><div class="ev">Inbox zero 11:00</div></div>
+<div class="col now3"><h5>Quarter</h5><div class="ev">Play · Video 08:30</div><div class="ev">Inbox zero 11:00</div></div>
+</div>
+<p class="note">The glow around today goes from a solid 12-pixel pink to a 6-pixel glow at 45%. That's half the brightness. The column wash stays faint.</p>
+</section>
+
+<!-- NEWS -->
+<section class="view" id="v4">
+<div class="gauges" id="gauges"></div>
+<p class="note">Real dials, the same build as the Control room: a track, a calm-to-hot band (green, amber, red), the value arc in the meter's colour with a glow, eleven ticks, a needle and a pivot. Under each dial: the number, how far it sits from the 5-week normal, eight weekly bars, and the lead story. The lead story always belongs to its meter's topic. <b>Click a dial and the stories below filter to that topic and stay filtered.</b> "Building a baseline" shows only while there are fewer than 4 weeks of history; there are 5 now, so every dial shows its number. The numbers here are made up to show the look.</p>
+</section>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+$$('.tabs button').forEach(b=>b.onclick=()=>{$$('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));$$('.view').forEach(v=>v.classList.toggle('on',v.id===b.dataset.v))});
+/* lists (sample people, invented for the preview) */
+const L={dp:{t:'Design partners',s:'50 people · 5 a day · 11 done',p:[['Lina Ghazal','Allied Mortgage Group · Calgary','403-555-0142','lina@alliedmortgage.ca','Runs a 14-broker shop. Wants proof of suitability for renewals. Bruce knows her from the MBABC event.','Warm','2 days ago'],['Keegan Poulton','Speer Technologies','604-555-0110','keegan@speer.io','Tech partner. Ask about the pilot timeline and who signs off.','Talking','yesterday'],['Akber Mirza Abbas','8Twelve Mortgage · Toronto','416-555-0188','akber@8twelve.mortgage','Cold. Large digital brokerage; lead with the renewal step.','Cold','no touch'],['Steve Ponte','PHL Capital','905-555-0123','steve@phlcapital.ca','Met at the Fintech meetup. Said send the 2-pager.','Cold','12 days ago']]},
+vc:{t:'VCs, pre-seed',s:'25 funds · 5 a day · 6 done',p:[['Luge Capital','Fintech fund · Montreal','514-555-0161','hello@luge.vc','Fintech specialists. Ask for a partner meeting, not an analyst.','Cold','no touch'],['Panache Ventures','Pre-seed · Montreal','514-555-0172','deals@panache.vc','Fast pre-seed cheques. Lead with traction.','Cold','no touch'],['BDC Seed Venture Fund','Seed · Canada','877-555-0133','seed@bdc.ca','Government fund; slower, needs the data room.','Cold','no touch']]},
+rg:{t:'Regulators',s:'15 bodies',p:[['FINTRAC','Federal · AML','866-555-0100','guidelines@fintrac.gc.ca','RPAA and AML reporting. Through Michael Stevens.','New','5 Oct'],['FSRA','Ontario · Financial services','416-555-0150','contactcentre@fsrao.ca','Suitability guidance. Ask for the policy team.','New','no touch'],['BCFSA','BC · Mortgage brokers','604-555-0190','info@bcfsa.ca','Home province regulator. Mortgage broker rules.','New','no touch']]},
+eb:{t:'Enterprise BC #1-50',s:'50 companies · protected 1-25',p:[['Westbridge Credit Union','Kelowna','250-555-0130','partners@westbridge.ca','Protected: wait until the pilot is live.','Hold','no touch']]},
+up:{t:'Angels, Calgary (uploaded)',s:'18 people · uploaded 26 Oct',p:[['Dana Reyes','Angel · Calgary','403-555-0177','dana@reyes.ca','From the A100 list. Fintech operator, writes $25-50K.','Cold','no touch']]}};
+function show(k){const l=L[k];$('#lt').textContent=l.t;$('#ls').textContent=l.s;$('#lsel').value=k;$$('.ll button[data-l]').forEach(b=>b.classList.toggle('on',b.dataset.l===k));
+$('#tb').innerHTML=l.p.map((r,i)=>`<tr class="r${i===0?' next':''}" data-i="${i}"><td><b>${r[0]}</b><small>${r[1]}</small></td><td><a href="tel:${r[2]}">${r[2]}</a></td><td><a href="mailto:${r[3]}">${r[3]}</a></td><td><span class="nt">${r[4]}</span></td><td><span class="stg">${r[5]}</span></td><td>${r[6]}</td></tr>`).join('');
+$$('#tb tr').forEach(tr=>tr.onclick=e=>{if(e.target.tagName==='A')return;const r=l.p[tr.dataset.i];$('#pn').textContent=r[0];$('#pm').textContent=r[1]+' · '+r[5]+' · last touch '+r[6];$('#pc').innerHTML=`<a href="tel:${r[2]}">Call ${r[2]}</a><a href="mailto:${r[3]}">Email ${r[3]}</a>`;$('#pnotes').innerHTML=`<p>${r[4]}</p><small>Notes from Contacts, the space and Zoom notes, newest first</small>`;$('#pop').classList.add('on')})}
+$$('.ll button[data-l]').forEach(b=>b.onclick=()=>show(b.dataset.l));$('#lsel').onchange=e=>show(e.target.value);$('#px').onclick=()=>$('#pop').classList.remove('on');$('#pop').onclick=e=>{if(e.target.id==='pop')$('#pop').classList.remove('on')};show('dp');
+/* tone */
+const T={voss:['Tactical empathy. Name what they might be feeling, ask "how" and "what" questions, and make it easy to say no.',"Hi Lina,\n\nIt seems like renewals are where suitability gets hardest to prove, especially with 14 brokers each keeping their own notes.\n\nWould it be a bad idea to take 20 minutes next week so I can show you how one record covers every broker?\n\nChad"],
+ury:['Getting to Yes. Start from shared interests, separate the person from the problem, offer options.',"Hi Lina,\n\nWe both want renewals that hold up if a client complains later. Your brokers want less paperwork; your compliance lead wants a clean record.\n\nI'd like to show you two ways 4orm can give you both. Would 20 minutes next week work?\n\nChad"],
+cialdini:['Influence. Give something first, lean on proof and authority, be specific about the small next step.',"Hi Lina,\n\nI've attached our 2-page overview. It covers the suitability rules that FSRA and BCFSA are tightening.\n\nBruce mentioned your team handles more renewals than anyone in Calgary. Could I have 20 minutes on Tuesday or Wednesday to walk you through it?\n\nChad"],
+plain:['Short and direct. No technique, just the point and the ask.',"Hi Lina,\n\n4orm keeps one suitability record for every broker in your shop. I'd like 20 minutes next week to show you.\n\nChad"]};
+function tone(k){$$('.tone button').forEach(b=>b.classList.toggle('on',b.dataset.t===k));$('#td').textContent=T[k][0];$('#body').value=T[k][1]}
+$$('.tone button').forEach(b=>b.onclick=()=>tone(b.dataset.t));tone('voss');
+/* documents board */
+const D=[['Pre-seed deck.pdf','PDF · 14 pages','#e11d48',20,20,220,280],['2-page overview.pdf','PDF · 2 pages','#e11d48',260,20,170,210],['Investor list.xlsx','Sheet','#12a36a',450,20,300,190],['Welcome to 4orm.png','Image','#7c3aed',770,20,160,160],['Pro forma 09-2026.xlsx','Sheet','#12a36a',260,250,240,170],['Term sheet draft.docx','Doc','#2563eb',520,230,190,240]];
+const board=$('#board');D.forEach(d=>{const el=document.createElement('div');el.className='doc';el.style.cssText=`left:${d[3]}px;top:${d[4]}px;width:${d[5]}px;height:${d[6]}px`;el.innerHTML=`<div class="pg"><span class="tag" style="background:${d[2]}">${d[1].split(' ')[0]}</span><i class="h" style="margin-top:22px"></i><i></i><i style="width:85%"></i><i></i><i style="width:70%"></i><i></i></div><div class="ft">${d[0]}<small>${d[1]}</small></div><span class="rs"></span>`;board.appendChild(el);
+let mode=null,sx,sy,ox,oy,ow,oh;el.addEventListener('pointerdown',e=>{mode=e.target.classList.contains('rs')?'r':'m';sx=e.clientX;sy=e.clientY;ox=el.offsetLeft;oy=el.offsetTop;ow=el.offsetWidth;oh=el.offsetHeight;el.classList.add('drag');el.setPointerCapture(e.pointerId)});
+el.addEventListener('pointermove',e=>{if(!mode)return;const dx=e.clientX-sx,dy=e.clientY-sy;if(mode==='m'){el.style.left=Math.max(0,Math.round((ox+dx)/12)*12)+'px';el.style.top=Math.max(0,Math.round((oy+dy)/12)*12)+'px'}else{el.style.width=Math.max(120,Math.round((ow+dx)/12)*12)+'px';el.style.height=Math.max(120,Math.round((oh+dy)/12)*12)+'px'}});
+el.addEventListener('pointerup',()=>{mode=null;el.classList.remove('drag')})});
+$('#tidy').onclick=()=>{let x=12,y=12,rh=0;const W=board.clientWidth;$$('.doc').forEach(el=>{const w=el.offsetWidth,h=el.offsetHeight;if(x+w>W-12){x=12;y+=rh+12;rh=0}el.style.left=x+'px';el.style.top=y+'px';x+=w+12;rh=Math.max(rh,h)})};
+/* playbook */
+const days=[['MON',26],['TUE',27],['WED',28],['THU',29],['FRI',30],['SAT',31],['SUN',1]];const rows=[['One move','#3b82ff','GO'],['Engage 10 min','#0ea5e9','0/5'],['Reach out to 5','#12a36a','2/5'],['Investor touch','#d97706','GO'],['Inbox zero','#7c3aed','5']];
+function pb(mode){const p=$('#pb');p.style.gridTemplateColumns=(mode==='compact'?'110px':'150px')+' repeat(7,minmax(0,1fr))';p.innerHTML='<span></span>'+days.map((d,i)=>`<div class="h${i===2?' today':''}">${d[0]}<b>${d[1]}</b></div>`).join('')+'<div class="band"></div>'+rows.map(r=>`<span class="lab">${r[0]}</span>`+days.map((d,i)=>i===2?`<div class="c t" style="background:${r[1]}">${r[2]}</div>`:`<div class="c"></div>`).join('')).join('')}
+$$('.wsel button').forEach(b=>b.onclick=()=>{$$('.wsel button').forEach(x=>x.classList.toggle('on',x===b));pb(b.dataset.w)});pb('full');
+/* planner */
+$$('#pseg button').forEach(b=>b.onclick=()=>{$$('#pseg button').forEach(x=>x.classList.toggle('on',x===b));const tl=b.dataset.p==='tl';$('#ptl').style.display=tl?'block':'none';$('#pls').style.display=tl?'none':'block'});
+
+/* news dials */
+const G=[['Regulation heat','#3b82ff',58,'+12 vs normal','#ffb547',[22,30,28,36,29,50,46,58],'FINTRAC 2025-26 Annual Report'],['Fraud heat','#ff4d6d',49,'-8 vs normal','#19d38a',[40,52,61,57,80,40,62,49],'Lockton: tariffs, cyber fraud and benefits costs converge'],['AI and governance heat','#a173ff',71,'+30 vs normal','#ffb547',[18,22,25,31,38,40,52,71],'Zafin to buy Naehas for AI banking compliance'],['Mortgage market heat','#19d38a',44,'level','#a3b0d2',[38,41,47,44,40,46,43,44],'OSFI keeps the stress test floor at 5.25%']];
+function dial(v,c){const cx=110,cy=104,r=82,a=t=>Math.PI*(1-t/100),P=t=>[cx+r*Math.cos(a(t)),cy-r*Math.sin(a(t))];const arc=(t0,t1,col,w,ex='')=>{const[x0,y0]=P(t0),[x1,y1]=P(t1);return `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)} A${r} ${r} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" ${ex}/>`};
+let ticks='';for(let i=0;i<=10;i++){const t=i*10,ang=a(t),r1=r+9,r2=r+(i%5===0?17:13);ticks+=`<line x1="${(cx+r1*Math.cos(ang)).toFixed(1)}" y1="${(cy-r1*Math.sin(ang)).toFixed(1)}" x2="${(cx+r2*Math.cos(ang)).toFixed(1)}" y2="${(cy-r2*Math.sin(ang)).toFixed(1)}" stroke="rgba(163,176,210,.55)" stroke-width="${i%5===0?2:1.2}"/>`}
+const na=a(v),nx=cx+(r-14)*Math.cos(na),ny=cy-(r-14)*Math.sin(na);
+return `<svg viewBox="0 0 220 128" aria-hidden="true">${arc(0,100,'#141c3d',12)}${arc(0,50,'rgba(25,211,138,.28)',4)}${arc(50,75,'rgba(255,181,71,.45)',4)}${arc(75,100,'rgba(255,77,109,.55)',4)}${arc(0.01,v,c,12,`style="filter:drop-shadow(0 0 8px ${c}aa)"`)}${ticks}<line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="7" fill="#0a0f26" stroke="${c}" stroke-width="3"/></svg>`}
+$('#gauges').innerHTML=G.map((g,i)=>`<div class="g${i===0?' on':''}" style="--c:${g[1]}"><h5>${g[0]}<small>5 weeks</small></h5>${dial(g[2],g[1])}<div class="num"><b>${g[2]}</b><span style="color:${g[4]}">${g[3]}</span></div><div class="wk">${g[5].map(x=>`<i style="height:${Math.max(6,x*.34)}px"></i>`).join('')}</div><div class="wl"><span>8 weeks ago</span><span>this week</span></div><div class="lead"><small>LEAD STORY</small>${g[6]}</div></div>`).join('');
+$$('#gauges .g').forEach(el=>el.onclick=()=>$$('#gauges .g').forEach(x=>x.classList.toggle('on',x===el)));
+</script>
+</body></html>

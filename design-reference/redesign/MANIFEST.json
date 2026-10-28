@@ -467,5 +467,12 @@
     "route": "/spaces",
     "bytes": 15348,
     "sha256": "4cbbf1ed41fd6925"
+  },
+  {
+    "file": "redesign/27-asks.html",
+    "page": "Call lists with phone, email and notes pop-up; email body with tone; documents free size and move; links white text block; Playbook today band; Planner switch; calendar today glow at half; News dials",
+    "route": "several",
+    "bytes": 31051,
+    "sha256": "0d1aa7ba8a9e6b38"
   }
 ]
