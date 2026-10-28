@@ -126,6 +126,13 @@ export async function POST(req: Request) {
       }
       await addTouch(g.sql, g.ownerId, String(rec.id), { channel: 'GoHighLevel', outcome: '', note: `${note}: ${stageName || 'new stage'}`, status: String(rec.status || 'Contacted') });
       const place = await ghlPlace(g, rec);
+      /* GoHighLevel's search lags a few seconds behind a move, so show the stage that was just set. */
+      const pipe = place.pipelines.find((p) => p.id === pipelineId);
+      const stage = pipe?.stages.find((x) => x.id === stageId);
+      const hit = place.opps.find((o) => o.id === oppId);
+      const fixed = { id: oppId, name: hit?.name || String(rec.name || ''), pipelineId, pipeline: pipe?.name || '', stageId, stage: stage?.name || stageName, status: hit?.status || 'open' };
+      place.opps = [fixed, ...place.opps.filter((o) => o.id !== oppId)];
+      await setGrowthGhl(g.sql, g.ownerId, String(rec.id), { contactId: place.contactId, opportunityId: oppId, pipeline: fixed.pipeline, stage: fixed.stage, checked: new Date().toISOString() });
       return NextResponse.json({ ok: true, opportunityId: oppId, place });
     }
     if (body.action === 'undo-touch') {

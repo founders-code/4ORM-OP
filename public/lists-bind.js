@@ -525,8 +525,15 @@
       if (!box) return;
       box.innerHTML = '<b>GoHighLevel</b><small>Checking where this contact is…</small>';
       api('/api/growth?ghl=' + encodeURIComponent(p.contactId)).then(function (r) {
-        var g = r.data || {};
-        if (!r.ok || !g.connected) { box.innerHTML = '<b>GoHighLevel</b><small>GoHighLevel is not connected. Connect it in Settings to see and move stages.</small>'; return; }
+        if (!r.ok) { box.innerHTML = '<b>GoHighLevel</b><small>Could not reach GoHighLevel.</small>'; return; }
+        paintGhlPlace(p, r.data || {});
+      }).catch(function () { box.innerHTML = '<b>GoHighLevel</b><small>Could not reach GoHighLevel.</small>'; });
+    }
+    function paintGhlPlace(p, g) {
+      var box = $('#pghl');
+      if (!box) return;
+      (function () {
+        if (!g.connected) { box.innerHTML = '<b>GoHighLevel</b><small>GoHighLevel is not connected. Connect it in Settings to see and move stages.</small>'; return; }
         var opp = (g.opps || [])[0] || null;
         var pipes = g.pipelines || [];
         var pipe = (opp && pipes.find(function (x) { return x.id === opp.pipelineId; })) || pipes.find(function (x) { return x.id === box.getAttribute('data-pipe'); }) || pipes[0];
@@ -544,7 +551,7 @@
         var sel = $('#pghlpipe');
         if (sel) sel.onchange = function () { box.setAttribute('data-pipe', sel.value); paintGhlFrom(p, g, sel.value); };
         bindGhlStages(p, g, pipe, opp);
-      }).catch(function () { box.innerHTML = '<b>GoHighLevel</b><small>Could not reach GoHighLevel.</small>'; });
+      })();
     }
     function paintGhlFrom(p, g, pipeId) {
       var box = $('#pghl');
@@ -566,7 +573,7 @@
             if (!r.ok) { toast((r.data && r.data.error) || 'GoHighLevel did not take that stage'); paintGhl(p); return; }
             p.ghlStage = name; p.ghlPipeline = pipe.name;
             toast((opp ? 'Moved to ' : 'Added to GoHighLevel at ') + name);
-            paintGhl(p); paintHistory(p); renderBody();
+            paintGhlPlace(p, r.data.place); paintHistory(p); renderBody();
           });
         };
       });

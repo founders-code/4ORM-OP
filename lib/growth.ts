@@ -281,7 +281,8 @@ export async function undoTouch(sql: Sql, ownerId: string, touchId: number) {
     if (ix >= 0) { lines.splice(ix, 1); notes = lines.join('\n'); }
   }
   await sql`UPDATE growth_records SET notes = ${notes}, last_touch = ${left ? (left.at as string) : null},
-      status = ${left ? (String(left.outcome || '') || 'Contacted') : 'Not contacted'}, updated_at = now()
+      status = ${left ? (String(left.outcome || '') || 'Contacted') : 'Not contacted'},
+      stage = CASE WHEN ${!left} AND stage = 'Contacted' THEN 'Cold' ELSE stage END, updated_at = now()
     WHERE owner_id = ${ownerId} AND id = ${rid}`;
 }
 
