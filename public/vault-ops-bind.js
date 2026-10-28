@@ -730,53 +730,133 @@
       el.textContent = n + ' data room sign-in' + (n === 1 ? '' : 's');
     });
 
-    /* System map: every part of 4ormop with a real check behind each box. */
-    var MAP = { nodes: [], edges: [] }, mapSel = null, onlyBadMap = false;
-    var LANES = ['HOSTING AND DATA', 'PAGES', 'WORK', 'OUTSIDE'];
-    function nodeXY(n) { return [20 + n.col * 192, 30 + n.lane * 132]; }
+    /* Process map: lanes read top to bottom, data flows down. Each box has a lamp from a real reading.
+       A box that feeds several others drops one trunk onto its own bus, which branches to each of them,
+       so a fan-out (one chat feeding three places) reads at a glance. */
+    var MAP = { nodes: [], edges: [], lanes: [] }, mapSel = null, onlyBadMap = false, GEO = {};
+    var NW = 150, NH = 50, SLOT = 164, X0 = 150, RW = 1650;
+    var LAMP = { ok: '#19d38a', warn: '#ffb547', down: '#ff4d6d', idle: '#5d6b93' };
+    var WORD = { ok: 'OK', warn: 'WARNING', down: 'DOWN', idle: 'IDLE' };
+    function layout() {
+      var lanes = MAP.lanes && MAP.lanes.length ? MAP.lanes : ['COMES IN', 'HOW IT ARRIVES', 'KEPT AND WORKED ON', 'WHERE YOU SEE IT', 'GOES BACK OUT'];
+      var per = Math.floor((RW - X0) / SLOT);
+      var parents = {};
+      MAP.edges.forEach(function (e) { (parents[e[1]] = parents[e[1]] || []).push(e[0]); });
+      var pos = {}, y = 14, laneBox = [];
+      lanes.forEach(function (lab, li) {
+        var mine = MAP.nodes.filter(function (n) { return n.lane === li; });
+        if (li > 0) {
+          /* sit each box under the boxes that feed it, so lines run short and straight */
+          mine.forEach(function (n, ix) {
+            var ps = (parents[n.id] || []).map(function (p) { return pos[p]; }).filter(Boolean);
+            n._bx = ps.length ? ps.reduce(function (a, p) { return a + p.cx; }, 0) / ps.length : 9999 + ix;
+          });
+          mine.sort(function (a, b) { return a._bx - b._bx; });
+        }
+        var rows = Math.ceil(mine.length / per) || 1;
+        var top = y;
+        mine.forEach(function (n, i) {
+          var r = rows > 1 ? i % 2 : 0;
+          var c = rows > 1 ? Math.floor(i / 2) : i;
+          var used = rows > 1 ? Math.ceil(mine.length / 2) : mine.length;
+          var span = used * SLOT + (rows > 1 ? SLOT / 2 : 0);
+          var left = X0 + Math.max(0, (RW - X0 - span) / 2);
+          var x = left + c * SLOT + (r ? SLOT / 2 : 0);
+          var ny = top + 22 + r * (NH + 16);
+          pos[n.id] = { x: x, y: ny, cx: x + NW / 2, n: n };
+        });
+        var h = 22 + rows * (NH + 16) + 6;
+        laneBox.push({ lab: lab, y: top, h: h });
+        y = top + h + 96;
+      });
+      GEO = { pos: pos, lanes: laneBox, H: y - 80 };
+    }
     function paintMap() {
       var svg = $(root, '#sysmap'); if (!svg) return;
-      var pos = {}; MAP.nodes.forEach(function (n) { pos[n.id] = n; });
-      var h = LANES.map(function (l, i) { return '<text class="lane" x="20" y="' + (22 + i * 132) + '">' + l + '</text>'; }).join('');
-      MAP.edges.forEach(function (e) {
-        var a = pos[e[0]], b = pos[e[1]]; if (!a || !b) return;
-        var A = nodeXY(a), B = nodeXY(b);
-        var x1 = A[0] + 88, y1 = A[1] + 60, x2 = B[0] + 88, y2 = B[1];
-        if (B[1] <= A[1]) { y1 = A[1]; y2 = B[1] + 60; }
-        var hot = a.state === 'down' || b.state === 'down';
-        h += '<path class="edge' + (hot ? ' hot' : '') + '" data-e="' + e[0] + '|' + e[1] + '" d="M' + x1 + ' ' + y1 + ' C ' + x1 + ' ' + ((y1 + y2) / 2) + ', ' + x2 + ' ' + ((y1 + y2) / 2) + ', ' + x2 + ' ' + y2 + '"/>';
+      layout();
+      var pos = GEO.pos, h = '';
+      GEO.lanes.forEach(function (L, i) {
+        h += '<rect class="lanebg" x="0" y="' + L.y + '" width="' + RW + '" height="' + L.h + '" rx="12"/>'
+          + '<text class="lane" x="14" y="' + (L.y + 24) + '">' + escS(L.lab) + '</text>'
+          + '<text class="lanesub" x="14" y="' + (L.y + 40) + '">' + String(i + 1) + ' of ' + GEO.lanes.length + '</text>';
+      });
+      /* one bus per source in the gap below its lane, spread so no two buses share a line */
+      var bySrc = {};
+      MAP.edges.forEach(function (e) { if (pos[e[0]] && pos[e[1]]) (bySrc[e[0]] = bySrc[e[0]] || []).push(e[1]); });
+      var laneSrc = {};
+      Object.keys(bySrc).forEach(function (s) { var l = pos[s].n.lane; (laneSrc[l] = laneSrc[l] || []).push(s); });
+      var inCount = {}, inSeen = {};
+      MAP.edges.forEach(function (e) { inCount[e[1]] = (inCount[e[1]] || 0) + 1; });
+      Object.keys(laneSrc).forEach(function (l) {
+        var srcs = laneSrc[l].sort(function (a, b) { return pos[a].cx - pos[b].cx; });
+        var L = GEO.lanes[+l];
+        var gapTop = L.y + L.h + 10, gapH = 76;
+        srcs.forEach(function (s, k) {
+          var a = pos[s];
+          var busY = gapTop + (srcs.length > 1 ? (k * gapH) / (srcs.length - 1) : gapH / 2);
+          var sx = a.cx, sy = a.y + NH;
+          var hotS = a.n.state === 'down';
+          bySrc[s].forEach(function (t) {
+            var b = pos[t];
+            inSeen[t] = (inSeen[t] || 0) + 1;
+            var spread = inCount[t] > 1 ? (inSeen[t] - (inCount[t] + 1) / 2) * 10 : 0;
+            var tx = b.cx + spread, ty = b.y;
+            var hot = hotS || b.n.state === 'down';
+            var cls = 'edge' + (hot ? ' hot' : a.n.state === 'ok' ? ' flow' : a.n.state === 'idle' ? ' quiet' : '');
+            h += '<path class="' + cls + '" data-e="' + s + '|' + t + '" d="M' + sx + ' ' + sy + ' V' + busY + ' H' + tx + ' V' + (ty - 7) + '"/>'
+              + '<path class="ahead' + (hot ? ' hot' : '') + '" data-e="' + s + '|' + t + '" d="M' + (tx - 4.5) + ' ' + (ty - 8) + ' L' + tx + ' ' + (ty - 1) + ' L' + (tx + 4.5) + ' ' + (ty - 8) + 'Z"/>';
+          });
+          if (bySrc[s].length > 2) h += '<circle class="junc" cx="' + sx + '" cy="' + busY + '" r="3.5"/>';
+        });
       });
       MAP.nodes.forEach(function (n) {
-        var p = nodeXY(n);
-        h += '<g class="node ' + n.state + '" data-n="' + n.id + '" transform="translate(' + p[0] + ',' + (p[1] + 8) + ')"><title>' + escS(n.detail) + '</title><rect width="176" height="56" rx="10"/><text x="12" y="21">' + escS(n.name) + '</text><text class="s" x="12" y="37">' + escS(n.sub) + '</text><text class="st" x="12" y="50" style="fill:' + (n.state === 'ok' ? '#19d38a' : n.state === 'warn' ? '#ffb547' : '#ff5a6e') + '">' + (n.state === 'ok' ? 'OK' : n.state === 'warn' ? 'WARNING' : 'DOWN') + '</text></g>';
+        var p = pos[n.id]; if (!p) return;
+        var outs = (bySrc[n.id] || []).length, ins = inCount[n.id] || 0;
+        var deg = (ins ? ins + ' in' : '') + (ins && outs ? ' · ' : '') + (outs ? outs + ' out' : '');
+        h += '<g class="node ' + n.state + '" data-n="' + n.id + '" transform="translate(' + p.x + ',' + p.y + ')"><title>' + escS(n.name + ': ' + n.detail) + '</title>'
+          + '<rect width="' + NW + '" height="' + NH + '" rx="10"/>'
+          + '<circle class="lamp ' + n.state + '" cx="' + (NW - 13) + '" cy="13" r="5.5" style="fill:' + LAMP[n.state] + '"/>'
+          + '<text x="10" y="19">' + escS(n.name.length > 19 ? n.name.slice(0, 18) + '…' : n.name) + '</text>'
+          + '<text class="s" x="10" y="33">' + escS(n.sub.length > 23 ? n.sub.slice(0, 22) + '…' : n.sub) + '</text>'
+          + '<text class="st" x="10" y="45" style="fill:' + LAMP[n.state] + '">' + WORD[n.state] + '</text>'
+          + (deg ? '<text class="dg" x="' + (NW - 8) + '" y="45" text-anchor="end">' + deg + '</text>' : '')
+          + '</g>';
       });
-      svg.setAttribute('viewBox', '0 0 1180 560');
+      svg.setAttribute('viewBox', '0 0 ' + RW + ' ' + GEO.H);
       svg.innerHTML = h;
       $$(svg, '.node').forEach(function (g) { g.onclick = function () { selectNode(g.getAttribute('data-n')); }; });
       var sum = $(root, '#mapSum');
-      if (sum) { sum.textContent = (MAP.down || 0) + ' down · ' + (MAP.warn || 0) + ' warning' + (MAP.warn === 1 ? '' : 's'); sum.className = 'pill ' + (MAP.down ? 'p-red' : MAP.warn ? 'p-amb' : 'p-grn'); }
+      if (sum) { sum.textContent = (MAP.down || 0) + ' down · ' + (MAP.warn || 0) + ' warning' + (MAP.warn === 1 ? '' : 's') + ' · ' + (MAP.idle || 0) + ' idle · ' + MAP.nodes.length + ' points'; sum.className = 'pill ' + (MAP.down ? 'p-red' : MAP.warn ? 'p-amb' : 'p-grn'); }
       paintTests(); paintIncs();
+    }
+    function chainOf(id) {
+      /* everything upstream that feeds this box and everything downstream it feeds */
+      var near = {}; near[id] = 1;
+      var up = [id], down = [id];
+      while (up.length) { var u = up.pop(); MAP.edges.forEach(function (e) { if (e[1] === u && !near[e[0]]) { near[e[0]] = 1; up.push(e[0]); } }); }
+      var seen = {}; seen[id] = 1;
+      while (down.length) { var d0 = down.pop(); MAP.edges.forEach(function (e) { if (e[0] === d0 && !seen[e[1]]) { seen[e[1]] = 1; near[e[1]] = 1; down.push(e[1]); } }); }
+      return near;
     }
     function selectNode(id) {
       var svg = $(root, '#sysmap'); if (!svg) return;
       if (mapSel === id) { clearMap(); return; }
       mapSel = id;
-      var near = {}; near[id] = 1;
-      MAP.edges.forEach(function (e) { if (e[0] === id) near[e[1]] = 1; if (e[1] === id) near[e[0]] = 1; });
+      var near = chainOf(id);
       $$(svg, '.node').forEach(function (x) { var n = x.getAttribute('data-n'); x.classList.toggle('sel', n === id); x.classList.toggle('dim', !near[n]); });
-      $$(svg, '.edge').forEach(function (p) { var ab = p.getAttribute('data-e').split('|'); p.classList.toggle('lit', ab[0] === id || ab[1] === id); });
+      $$(svg, '.edge, .ahead').forEach(function (p) { var ab = p.getAttribute('data-e').split('|'); p.classList.toggle('lit', !!(near[ab[0]] && near[ab[1]])); p.classList.toggle('dim', !(near[ab[0]] && near[ab[1]])); });
       var n = MAP.nodes.filter(function (x) { return x.id === id; })[0];
-      if (n) toast(root, n.name + ': ' + n.detail);
+      if (n) toast(root, n.name + ' · ' + WORD[n.state] + ': ' + n.detail + (n.routes ? ' · ' + n.routes : ''));
       var row = $(root, '[data-t="' + id + '"]'); if (row && row.scrollIntoView) row.scrollIntoView({ block: 'nearest' });
     }
     function clearMap() {
       mapSel = null; var svg = $(root, '#sysmap'); if (!svg) return;
       $$(svg, '.node').forEach(function (x) { x.classList.remove('sel', 'dim'); });
-      $$(svg, '.edge').forEach(function (p) { p.classList.remove('lit'); });
+      $$(svg, '.edge, .ahead').forEach(function (p) { p.classList.remove('lit', 'dim'); });
     }
     function paintTests() {
       var tl = $(root, '#tlist'); if (!tl) return;
-      var rows = MAP.nodes.filter(function (n) { return !onlyBadMap || n.state !== 'ok'; });
+      var rows = MAP.nodes.filter(function (n) { return !onlyBadMap || n.state === 'down' || n.state === 'warn'; });
       tl.innerHTML = rows.map(function (n) {
         return '<div class="trow" data-t="' + n.id + '"><i class="' + n.state + '"></i><span><b>' + escS(n.name) + '</b> <small>' + escS(n.detail) + '</small></span><span class="ms">' + (n.ms != null ? n.ms + ' ms' : '') + '</span><span class="fix" data-run="' + n.id + '">Run</span></div>';
       }).join('') || '<div style="color:#a3b0d2;padding:8px 0">Everything is OK.</div>';
@@ -784,7 +864,7 @@
     }
     function paintIncs() {
       var box = $(root, '#incs'); if (!box) return;
-      var bad = MAP.nodes.filter(function (n) { return n.state !== 'ok'; });
+      var bad = MAP.nodes.filter(function (n) { return n.state === 'down' || n.state === 'warn'; });
       box.innerHTML = bad.map(function (n) {
         return '<div class="incr ' + (n.state === 'down' ? 'p1' : 'p2') + '" data-inc="' + n.id + '"><i></i><div><b>' + escS(n.name) + '</b><small>' + escS(n.detail) + '</small></div><span class="ag">' + (n.state === 'down' ? 'DOWN' : 'WARN') + '</span></div>';
       }).join('') || '<div style="color:#a3b0d2;padding:8px 0">No open items.</div>';

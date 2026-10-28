@@ -482,3 +482,26 @@ table.v td.mut{color:#aebbe0}
 .tpbox .con{margin:0!important}
 .pill.p-amb{background:rgba(255,181,71,.14);color:#ffb547}.pill.p-grn{background:rgba(25,211,138,.14);color:#19d38a}
 @media (max-width:900px){.tiles4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Process map (28 Oct 2026): lanes, lamps, buses */
+.mapwrap svg#sysmap{min-width:1240px}
+#sysmap .lanebg{fill:rgba(120,150,255,.035);stroke:rgba(120,150,255,.10)}
+#sysmap text.lane{fill:#8dbaff;font:800 11px Inter,system-ui,sans-serif;letter-spacing:.14em}
+#sysmap text.lanesub{fill:#5d6b93;font:700 10.5px Inter,system-ui,sans-serif}
+#sysmap .node rect{fill:#0f1734}
+#sysmap .node.idle rect{stroke:#3a4776;filter:none}
+#sysmap .lamp{filter:drop-shadow(0 0 5px currentColor)}
+#sysmap .lamp.ok{filter:drop-shadow(0 0 6px rgba(25,211,138,.9))}
+#sysmap .lamp.warn{filter:drop-shadow(0 0 6px rgba(255,181,71,.9))}
+#sysmap .lamp.down{filter:drop-shadow(0 0 8px rgba(255,77,109,1));animation:lampPulse 1.1s ease-in-out infinite}
+#sysmap .lamp.idle{filter:none;opacity:.8}
+@keyframes lampPulse{0%,100%{opacity:1}50%{opacity:.35}}
+#sysmap text.dg{fill:#6f7fa6;font-size:10px;font-weight:700}
+#sysmap .edge{stroke:#2c3d78;stroke-width:1.4;fill:none;stroke-linejoin:round}
+#sysmap .edge.flow{stroke:#3b82ff;stroke-dasharray:5 6;animation:dash 1.4s linear infinite;opacity:.8}
+#sysmap .edge.quiet{stroke:#2a3560;stroke-dasharray:2 5}
+#sysmap .edge.hot{stroke:#ff4d6d;stroke-width:2;filter:drop-shadow(0 0 5px rgba(255,77,109,.8))}
+#sysmap .edge.lit{stroke:#ff4d8d;stroke-width:2.2;opacity:1}
+#sysmap .edge.dim,#sysmap .ahead.dim{opacity:.12}
+#sysmap .ahead{fill:#3b82ff;opacity:.85}#sysmap .ahead.hot{fill:#ff4d6d}#sysmap .ahead.lit{fill:#ff4d8d}
+#sysmap .junc{fill:#8dbaff}
+.trow i.idle{background:#5d6b93}
