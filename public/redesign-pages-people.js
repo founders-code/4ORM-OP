@@ -372,7 +372,7 @@
       S().__listsPaint = listsToken;
       var mode = S().peopleTab === 'lists' ? 'lists' : 'contacts';
       /* The list frame is cached after the first load so switching Contacts and Lists never flashes blank. */
-      var snip = window.__listsSnippet ? Promise.resolve(window.__listsSnippet) : fetch('/lists-snippet.html?v=8').then(function (r) { return r.ok ? r.text() : ''; });
+      var snip = window.__listsSnippet ? Promise.resolve(window.__listsSnippet) : fetch('/lists-snippet.html?v=9').then(function (r) { return r.ok ? r.text() : ''; });
       snip.then(function (html) {
         if (html) window.__listsSnippet = html;
         if (S().__listsPaint !== listsToken) return;

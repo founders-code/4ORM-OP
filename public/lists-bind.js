@@ -747,6 +747,7 @@
       var f = csvFile.files && csvFile.files[0];
       csvFile.value = '';
       if (!f) return;
+      if (/\.4orm$/i.test(f.name || '')) { importGrowthFile(f); return; }
       var reader = new FileReader();
       reader.onload = function () {
         var parsed = mapCsvRows(parseCsv(String(reader.result || '')));
@@ -778,6 +779,40 @@
       };
       reader.readAsText(f);
     };
+
+    /* The ranked growth master (.4orm file): sent in parts, assembled and loaded on the server. Re-importing keeps notes and edits. */
+    function importGrowthFile(f) {
+      var rd = new FileReader();
+      rd.onload = function () {
+        var bytes = new Uint8Array(rd.result);
+        var bin = '';
+        for (var i = 0; i < bytes.length; i += 32768) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 32768));
+        var b64 = btoa(bin);
+        var up = 'g' + Date.now().toString(36);
+        var size = 900000;
+        var parts = [];
+        for (var j = 0; j < b64.length; j += size) parts.push(b64.slice(j, j + size));
+        toast('Importing the growth lists · 0 of ' + parts.length);
+        var k = 0;
+        (function next() {
+          if (k >= parts.length) {
+            api('/api/growth', { method: 'POST', body: { action: 'upload-finish', upload: up } }).then(function (r) {
+              if (!r.ok) { toast('Import did not finish'); return; }
+              toast('Imported ' + ((r.data && r.data.imported) || 0) + ' records into the growth lists');
+              api('/api/growth', { method: 'POST', body: { action: 'plan', start: '2026-10-27' } }).then(function () { load(); });
+            });
+            return;
+          }
+          api('/api/growth', { method: 'POST', body: { action: 'upload-part', upload: up, part: k, b64: parts[k] } }).then(function (r) {
+            if (!r.ok) { toast('Import stopped at part ' + (k + 1)); return; }
+            k += 1;
+            toast('Importing the growth lists · ' + k + ' of ' + parts.length);
+            next();
+          });
+        })();
+      };
+      rd.readAsArrayBuffer(f);
+    }
 
     root.addEventListener('contextmenu', function (ev) {
       var lc = ev.target && ev.target.closest && ev.target.closest('#listnav button[data-l]');
