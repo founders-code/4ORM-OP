@@ -4,6 +4,7 @@ import fills from '../data/contact-fills.json';
 import { withCreds } from './creds';
 import { getContact, listPipelines, moveOpportunityStage, type GhlPipeline } from './ghl';
 import { fail } from './log';
+import { addTouch, GROWTH_LISTS, listGrowth } from './growth';
 import { loadCredsFor } from './vault';
 
 type Sql = NeonQueryFunction<false, false>;
@@ -447,6 +448,56 @@ export async function buildCallLists(sql: Sql, ownerId: string, userId: string):
     fail('reach_custom_lists', err);
   }
 
+  /* Growth lists: the ranked BC master (design partners, angels, firms, new funds, regulators...). */
+  const growth: ReachList[] = [];
+  try {
+    const rows = await listGrowth(sql, ownerId, null);
+    const dayLabel = (d: unknown) => {
+      if (!d) return '';
+      const iso = d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10);
+      return new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' })
+        .format(new Date(`${iso}T12:00:00Z`)).replace(',', '');
+    };
+    for (const l of GROWTH_LISTS) {
+      const mine = rows.filter((r) => r.list === l.key);
+      if (!mine.length) continue;
+      const people = mine.map((r) => {
+        const isPerson = l.key === 'angels';
+        const firstContact = String(r.contact || '').split(/\s*[|;]\s*/)[0] || '';
+        const ready = [0, 0, 0, 0, 0, 0];
+        const stage = String(r.stage || 'Cold');
+        return {
+          id: `g-${l.key}:${r.id}`,
+          listKey: `g-${l.key}`,
+          name: isPerson ? String(r.name || firstContact) : (firstContact && !/@|^\+?\d/.test(firstContact) ? firstContact : String(r.name || '')),
+          role: String(r.title || ''),
+          company: isPerson ? (firstContact && firstContact !== r.name ? firstContact.replace(String(r.name || ''), '').replace(/^[;,\s]+/, '') : '') : String(r.name || ''),
+          companySub: [String(r.city || ''), String(r.prov || ''), String(r.type || '')].filter(Boolean).join(' · '),
+          city: String(r.city || ''),
+          phone: String(r.phone || ''),
+          email: String(r.email || ''),
+          notes: clip(r.notes || r.next_action, 400),
+          stage,
+          lastTouch: r.last_touch ? new Date(String(r.last_touch)).toLocaleDateString('en-CA', { timeZone: 'America/Vancouver', day: 'numeric', month: 'short' }) : 'Never',
+          day: dayLabel(r.plan_day),
+          done: !!r.last_touch,
+          spaceId: '',
+          opportunityId: '',
+          contactId: String(r.id),
+          ready,
+          nextStep: String(r.next_action || '') || nextFromReady(ready, stage),
+          rank: Number(r.rank) || 0,
+        } as ReachListPerson;
+      });
+      growth.push({
+        id: `g-${l.key}`, key: `g-${l.key}`, name: l.name, sub: `${people.length} · ${l.perDay ? `${l.perDay} a day` : 'later'} · ${l.blurb}`,
+        kind: `growth-${l.grp}`, count: people.length, done: people.filter((p) => p.done).length, people,
+      });
+    }
+  } catch (err) {
+    fail('reach_growth_lists', err);
+  }
+
   const everyone = [...allPeople, ...custom.flatMap((l) => l.people)];
   fillPublicContacts(everyone);
   await applyDoneMarks(sql, ownerId, everyone);
@@ -503,6 +554,7 @@ export async function buildCallLists(sql: Sql, ownerId: string, userId: string):
     wrap('pre-seed', 'VCs, pre-seed', '25 funds · 5 a day', 'vc', preseed),
     wrap('regulators', 'Regulators', `${regulators.length || 15} bodies`, 'regulator', regulators),
     wrap('ent-1-25', 'Enterprise BC #1-50', '50 · protected 1-25', 'enterprise', [...entProtected, ...entWeek].slice(0, 50)),
+    ...growth,
     ...custom,
   ];
 }
@@ -576,6 +628,15 @@ export async function tickReachPerson(
     }
   } catch (err) {
     fail('reach_tick_upsert', err);
+  }
+
+  if (person.listKey.startsWith('g-')) {
+    try {
+      if (done) await addTouch(sql, ownerId, person.contactId, { channel: 'Ticked', outcome: 'Contacted', note: 'Ticked off in Lists' });
+      else await sql`UPDATE growth_records SET last_touch = NULL, status = 'Not contacted' WHERE owner_id = ${ownerId} AND id = ${person.contactId}`;
+    } catch (err) {
+      fail('reach_tick_growth', err);
+    }
   }
 
   let ghl = { ok: false as boolean, note: '' };
