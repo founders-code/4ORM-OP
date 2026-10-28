@@ -494,6 +494,10 @@
       });
     }
     function paintLedger() {
+      var fr = $(root, '#iqFrame');
+      if (fr && !fr.getAttribute('src')) fr.setAttribute('src', 'https://4ormiq.com/real-run-live-go/room');
+      var rl = $(root, '#iqReload');
+      if (rl && !rl._b) { rl._b = 1; rl.onclick = function () { var f = $(root, '#iqFrame'); if (f) f.setAttribute('src', 'https://4ormiq.com/real-run-live-go/room?r=' + Date.now()); }; }
       var rooms = $(root, '#pg-ledger .rooms');
       if (rooms) {
         rooms.querySelectorAll('.big').forEach(function (b) { b.textContent = '-'; });

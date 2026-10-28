@@ -27,7 +27,7 @@
     if (!wrap) { mark('opsDesk'); return; }
     if (P().applyPageCss) P().applyPageCss(wrap, 'ops');
     wrap.classList.add('neon');
-    loadSnip('/ops-snippet.html?v=5', function (html) {
+    loadSnip('/ops-snippet.html?v=6', function (html) {
       wrap.innerHTML = html || '<p>Control room did not load.</p>';
       if (typeof window.bind17fPage === 'function') window.bind17fPage(wrap, 'ops');
       stamp17f(wrap);
