@@ -478,37 +478,37 @@ select{appearance:none;-webkit-appearance:none;background-image:none}
  --p1:#7d8bff;--p2:#3b82ff;--p3:#19d38a;--p4:#ff5fa8;--p5:#a173ff;--p6:#ffb547;--p7:#22d3c5;--p8:#ff6b4a;--bad:#ff5a6e;--good:#2ee59d;color-scheme:dark}
 .card{background:var(--surface);color:var(--fg);border:1px solid rgba(120,150,255,.14)}
 .capture{background:#111a3a;color:var(--fg);border:1px solid rgba(120,150,255,.14)}
-.capture input{color:#fff}.capture input::placeholder{color:#6f7fa6}
+.capture input{color:#fff}.capture input::placeholder{color:#a3b0d2}
 .capture select{background:#0b1430;color:#fff;border-color:#2a3a72}
 .lghead{background:color-mix(in srgb,var(--c) 13%,#111a3a)!important;box-shadow:inset 3px 0 0 var(--c)}
-.lghead b{color:#fff}.lghead .lmeta{color:#9aa8d0}
+.lghead b{color:#fff}.lghead .lmeta{color:#c8d1ea}
 .goals .lghead{background:#231f10!important;box-shadow:inset 3px 0 0 #f5c443}
 .fi{color:var(--fg)}.fi:hover{border-color:#2a3a72}.fi:focus{background:#0b1430;border-color:#3b82ff}
 select,.lrow select{background:#0b1430;color:var(--fg);border-color:#2a3a72}
 .lrow:hover{background:#18234d}
-.cols{color:#6f7fa6}
-.hint,.cardhead .legend,.legend{color:#8fa0c8}
+.cols{color:#a3b0d2}
+.hint,.cardhead .legend,.legend{color:#b9c4e2}
 .cardhead h2{color:#fff}
 .gseg,.seg2{background:#0b1430!important;border-color:#2a3a72!important}
-.gseg button{color:#8fa0c8}.gseg button[aria-pressed="true"]{background:#2e6bf2!important;color:#fff!important}
+.gseg button{color:#b9c4e2}.gseg button[aria-pressed="true"]{background:#2e6bf2!important;color:#fff!important}
 .addrow input,.addrow .fi{background:#0b1430;border-color:#2a3a72;color:#fff}
-.tbtn,.mv,.rm,.oc{color:#9aa8d0}
+.tbtn,.mv,.rm,.oc{color:#c8d1ea}
 .tbtn.has{color:#e9eefa}
 .fi.dt,.addrow.step input.nd,.fixed{color:#e9eefa}
 .gprog{color:#f5c443}
 .dchip{color:#fff}
 /* focus band, dark */
 .focus{background:#0f1838;border-color:rgba(120,150,255,.14)}
-.focus .fh h3{color:#fff}.focus .fh .do{color:#9aa8d0}.focus .fh .do b{color:#fff}
+.focus .fh h3{color:#fff}.focus .fh .do{color:#c8d1ea}.focus .fh .do b{color:#fff}
 .fcol{background:#16214a}.fcol h4 i{background:#0b1430;color:#fff}
 .fcol.late{background:#2a1424;box-shadow:inset 3px 0 0 #ff5a6e}.fcol.late h4{color:#ff6b7d}
 .fcol.soon{background:#2a2112;box-shadow:inset 3px 0 0 #ffb547}.fcol.soon h4{color:#ffb547}
 .fcol.next{box-shadow:inset 3px 0 0 #3b82ff}.fcol.next h4{color:#7fb0ff}
 .fcol.gold{background:#231f10;box-shadow:inset 3px 0 0 #f5c443}.fcol.gold h4{color:#f5c443}
 .fit{background:#1a2552;box-shadow:none}.fit:hover{box-shadow:0 0 0 2px #3b82ff}
-.fit b{color:#fff}.fit span{color:#8fa0c8}
+.fit b{color:#fff}.fit span{color:#b9c4e2}
 .fcol.late .fit span em{color:#ff6b7d}.fcol.soon .fit span em{color:#ffb547}
-.fnone{color:#6f7fa6}
+.fnone{color:#a3b0d2}
 .lrow.late{background:#2a1424;box-shadow:inset 3px 0 0 #ff5a6e}.lrow.soon{background:#2a2112;box-shadow:inset 3px 0 0 #ffb547}
 .tl.late{background:#ff5a6e;color:#fff}.tl.soon{background:#ffb547;color:#1a1200}.tl.next{background:#1d3a86;color:#cfe0ff}
 

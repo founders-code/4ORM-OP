@@ -60,13 +60,14 @@
     links: '/port-css/links.css?v=6', mail: '/port-css/email.css?v=8', mailPeople: '/port-css/email-people.css?v=8',
     playbook: '/port-css/playbook.css?v=3', calendar: '/port-css/calendar.css?v=5', zoom: '/port-css/zoom.css?v=2',
     completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=3',
-    neon: '/port-css/neon.css?v=1', playbookP8: '/port-css/playbook-p8.css?v=4', plannerNeon: '/port-css/planner-neon.css?v=1',
+    neon: '/port-css/neon.css?v=1', playbookP8: '/port-css/playbook-p8.css?v=4', plannerNeon: '/port-css/planner-neon.css?v=2',
     calendarNeon: '/port-css/calendar-neon.css?v=2', completedNeon: '/port-css/completed-neon.css?v=3',
     intNeon: '/port-css/integrations-neon.css?v=2',     vaultOps: '/port-css/vault-ops.css?v=5',
     sheetViewer: '/port-css/sheet-viewer.css?v=2', notesCanvasP8: '/port-css/notes-canvas-p8.css?v=1',
-    outreach: '/port-css/outreach-lists.css?v=2',
+    outreach: '/port-css/outreach-lists.css?v=3',
     vault: '/port-css/vault-ops.css?v=5',
-    ops: '/port-css/vault-ops.css?v=5'
+    ops: '/port-css/vault-ops.css?v=5',
+    contrastP10: '/port-css/contrast-p10.css?v=1'
   };
   var HOSTS = {
     opsDash: 'room', warDesk: 'war', notesDesk: 'notes',
@@ -169,7 +170,7 @@
     var style = root && root.querySelector ? root.querySelector('style') : null;
     if (!style) return;
     if (key === 'work+spaceOpen') {
-      style.textContent = TOKEN + (cssText.work || '') + (cssText.spacesCards || '');
+      style.textContent = TOKEN + (cssText.work || '') + (cssText.spacesCards || '') + (cssText.contrastP10 || '');
       return;
     }
     var body = cssText[key] != null ? cssText[key] : '';
@@ -184,6 +185,7 @@
     if (key === 'notesCanvas') body += cssText.notesCanvasP8 || '';
     if (key === 'vault' || key === 'ops') body += (cssText.vaultOps || '') + (cssText.neon || '');
     if (NEON_KEYS[key] && cssText.neon && key !== 'war' && key !== 'planner' && key !== 'contacts' && key !== 'docs' && key !== 'vault' && key !== 'ops') body = (cssText.neon || '') + body;
+    body += cssText.contrastP10 || '';
     if (wrap && wrap.classList && NEON_KEYS[key]) wrap.classList.add('neon');
     if (cssText[key] != null || body) style.textContent = TOKEN + body;
   }

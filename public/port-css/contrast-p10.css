@@ -1,0 +1,29 @@
+/* Prompt 10 contrast tokens — dark card body / secondary / quiet; white on colour; quiet on white */
+:host,:root,.port-body{
+  --ink:#e9eefa;--ink2:#aebbe0;--ink3:#7f8db5;--ink-quiet-on-white:#5b6678;
+}
+.port-body,.port-body .card,.port-body .con,.spanel{
+  color:#e9eefa;
+}
+.port-body .card .s,.port-body .mut,.port-body .ink2,.port-body .sub{color:#aebbe0!important}
+.port-body .ink3,.port-body .quiet,.port-body .faint{color:#7f8db5!important}
+.port-body .av,.port-body .av *{color:#fff!important;text-shadow:0 1px 0 rgba(0,0,0,.35)}
+.port-body .pill,.port-body .stg,.port-body .chip.on,.port-body .tt,
+.port-body [style*="background:#ff"],.port-body [style*="background: #ff"],
+.port-body [style*="background:#3b"],.port-body [style*="background:#19"],
+.port-body [style*="background:#a1"],.port-body [style*="background:#c9"]{
+  color:#fff!important;text-shadow:1px 1px 0 rgba(0,0,0,.35);font-weight:700;
+}
+.port-body .nx.amb,.port-body .na-docs,.port-body .p-amber{color:#7a5200!important}
+.port-body .clock,.port-body .ro,.port-body .more3,.port-body .lnk{color:#5b6678!important}
+.port-body.neon .clock,.port-body.neon .ro{color:#aebbe0!important}
+.port-body .gprog{color:#f5c443!important}
+.port-body .fixed{color:#aebbe0!important}
+.port-body .tbtn.has{color:#e9eefa!important}
+[style*="background:#ff4d8d"],[style*="background: #ff4d8d"],.pink-bg,.band.today,
+.port-body .chip.on[style*="ff4d"],.todaytag,.seg span.on[style*="ff4d"]{
+  color:#160308!important;
+}
+[style*="background:#ff4d8d"] *,[style*="background: #ff4d8d"] *,.pink-bg *,.band.today *,.todaytag *{
+  color:#160308!important;
+}
