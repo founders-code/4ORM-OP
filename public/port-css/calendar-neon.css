@@ -32,7 +32,7 @@ button{font:inherit;cursor:pointer}
 /* ===== CALENDAR ===== */
 
 .calwrap{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;
---bg:#0c1220;--rail:#0f1729;--panel:#111a2e;--edge:#1f2a44;--edge2:#18223a;--txt:#e9eefb;--mut:#7f8bab;--dim:#4f5b7a;
+--bg:#0c1220;--rail:#0f1729;--panel:#111a2e;--edge:#1f2a44;--edge2:#18223a;--txt:#e9eefb;--mut:#b4bfdc;--dim:#8f9bbd;
 --blue:#1f5fff;--blue2:#4d7cff;--meet:#5aa9ff;--inv:#f5c542;--pay:#a78bfa;--mile:#b6f35a;--hol:#2fd6c6;
 --red:#ff5470;--green:#2fe08b;--violet:#9d7bff;--pink:#ff6fb5;--sky:#47b8ff;--gold:#f5c542;--slate:#8a93a8;--lime:#b6f35a;--amber:#ffb340;--teal:#2fd6c6}
 *{box-sizing:border-box}
@@ -89,7 +89,7 @@ button{font:inherit;cursor:pointer}
 .c-nav span{padding:7px 12px;font-size:13px;font-weight:650;cursor:pointer;color:#cfd8f0}
 .c-nav span:not(:last-child){border-right:1px solid var(--edge)}
 .views{margin:0 auto;display:flex;gap:4px;background:#111a2e;border:1px solid var(--edge);border-radius:11px;padding:3px}
-.views span{padding:7px 16px;border-radius:8px;font-size:13px;font-weight:650;color:#aab6d6;cursor:pointer}
+.views span{padding:7px 16px;border-radius:8px;font-size:13px;font-weight:650;color:#d3dbf0;cursor:pointer}
 .views span.on{background:var(--blue);color:#fff;box-shadow:0 4px 14px rgba(31,95,255,.45)}
 .title{font-size:22px;font-weight:760;white-space:nowrap}.title span{color:var(--blue2)}
 .cw{font-size:11px;font-weight:800;color:var(--blue2);margin-right:6px}

@@ -558,6 +558,30 @@
         });
       }
     }
+    /* Spend: hidden until Show is pressed (same idea as the calendar $). Loaded once, then every 10 minutes while open. */
+    var spendOpen = false, spendT = null;
+    function money2(n) { return '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    function escS(v) { return String(v == null ? '' : v).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function paintSpend(d) {
+      var box = $(root, '#spendw'); if (!box) return;
+      var rows = (d && d.rows) || [];
+      if (!rows.length) { box.innerHTML = '<div class="spempty">No spend yet. Add bills under Financials &rsaquo; Monthly expenses.</div>'; return; }
+      box.innerHTML = '<div class="spk"><div><small>THIS MONTH</small><b>' + money2(d.monthTotal) + '</b><i>' + money2(d.soFar) + ' out so far</i></div><div><small>EVERY MONTH</small><b>' + money2(d.monthly) + '</b><i>from the SaaS sheet</i></div><div><small>YEARLY RENEWALS</small><b>' + money2(d.yearly) + '</b><i>spread over the year</i></div></div>'
+        + '<table class="sptab"><thead><tr><th>SERVICE</th><th>HOW IT BILLS</th><th>COMES OUT</th><th>AMOUNT</th><th>THIS MONTH</th></tr></thead><tbody>'
+        + rows.map(function (r) {
+          var cls = r.basis === 'Per use' ? 'u' : (r.basis === 'Yearly' ? 'y' : 'm');
+          return '<tr><td><b>' + escS(r.name) + '</b>' + (r.what ? '<small>' + escS(r.what) + '</small>' : '') + '</td><td><span class="bs ' + cls + '">' + escS(r.basis) + '</span><small>' + escS(r.source) + '</small></td><td>' + escS(r.when) + '</td><td class="am">' + (r.amount == null ? '&ndash;' : money2(r.amount)) + '</td><td><small>' + escS(r.reading || '') + '</small></td></tr>';
+        }).join('') + '</tbody></table>';
+    }
+    function loadSpend() { api('/api/ops/spend').then(function (r) { return r && r.ok ? r.json() : {}; }).catch(function () { return {}; }).then(paintSpend); }
+    var spendBtn = $(root, '#spendToggle');
+    if (spendBtn) spendBtn.onclick = function () {
+      spendOpen = !spendOpen;
+      var w = $(root, '#spendw'); if (w) w.hidden = !spendOpen;
+      spendBtn.textContent = spendOpen ? 'Hide' : 'Show';
+      clearInterval(spendT);
+      if (spendOpen) { loadSpend(); spendT = setInterval(loadSpend, 600000); }
+    };
     function loadAll() {
       if (frozen) return;
       var last = $(root, '#lastsweep'); if (last) last.textContent = nowVan();

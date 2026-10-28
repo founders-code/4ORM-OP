@@ -337,7 +337,12 @@
       ? 'Showing ' + vm.rows.length + ' of ' + vm.matched + ' &middot; <span class="lnk" data-action="people-show-all">Show all</span>'
       : 'Showing ' + vm.rows.length + ' of ' + vm.matched + (vm.showAll && vm.matched > PAGE_ROWS ? ' &middot; <span class="lnk" data-action="people-show-all">Show fewer</span>' : '');
     var tab = S().peopleTab === 'lists' ? 'lists' : 'contacts';
-    var tabs = '<div class="vseg" style="display:inline-flex;gap:12px;margin:0 16px 0 0"><button type="button" data-action="people-tab" data-tab="contacts" class="' + (tab === 'contacts' ? 'on' : '') + '" style="background:none;border:0;border-bottom:2px solid ' + (tab === 'contacts' ? '#5b8cff' : 'transparent') + ';color:' + (tab === 'contacts' ? '#e9eefa' : '#aebbe0') + ';font-weight:750;padding:6px 0">Contacts</button><button type="button" data-action="people-tab" data-tab="lists" class="' + (tab === 'lists' ? 'on' : '') + '" style="background:none;border:0;border-bottom:2px solid ' + (tab === 'lists' ? '#5b8cff' : 'transparent') + ';color:' + (tab === 'lists' ? '#e9eefa' : '#aebbe0') + ';font-weight:750;padding:6px 0">Lists</button></div>';
+    function segBtn(k, label) {
+      var on = tab === k;
+      return '<button type="button" data-action="people-tab" data-tab="' + k + '" class="' + (on ? 'on' : '') + '" aria-pressed="' + on + '" style="font:inherit;font-size:14px;font-weight:800;border:0;border-radius:9px;padding:8px 18px;cursor:pointer;'
+        + (on ? 'background:#ff4d8d;color:#160308;box-shadow:0 0 14px rgba(255,77,141,.35)' : 'background:transparent;color:#c8d1ea') + '">' + label + '</button>';
+    }
+    var tabs = '<div class="vseg" role="tablist" style="display:inline-flex;gap:4px;margin:0 16px 0 6px;padding:4px;border-radius:12px;background:#0a0f26;border:1px solid rgba(120,150,255,.3)">' + segBtn('contacts', 'Contacts') + segBtn('lists', 'Lists') + '</div>';
     /* Design 28: one header + Contacts/Lists switch; both modes share the call-list rows. */
     var sub = tab === 'lists'
       ? ('your lists · synced with GoHighLevel · ' + esc((typeof window.vancouverTodayLabel === 'function' && window.vancouverTodayLabel()) || '') + ' · today')

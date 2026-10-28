@@ -1709,6 +1709,38 @@
       api('/api/prefs', { method: 'PATCH', body: { links_prefs: { view: view } } }).catch(function () {});
       refresh('links');
     },
+    /* Note pill on a link card: a small pop-up to read or edit the note. */
+    'link-note-pop': function (el, root, ev) {
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      var id = attr(el, 'data-id');
+      var host = (root.querySelector && root.querySelector('.port-body')) || root;
+      var old = host.querySelector('.lnpop'); if (old) old.remove();
+      var box = window.document.createElement('div');
+      box.className = 'lnpop';
+      box.innerHTML = '<div class="lnbox" role="dialog" aria-label="Note"><h4></h4><textarea placeholder="Write a note about this link"></textarea><div class="lnb"><span class="lner"></span><button type="button" class="lnx">Close</button><button type="button" class="lns">Save</button></div></div>';
+      box.querySelector('h4').textContent = attr(el, 'data-title') || 'Note';
+      var ta = box.querySelector('textarea');
+      ta.value = attr(el, 'data-note') || '';
+      function close() { box.remove(); }
+      box.addEventListener('click', function (e) { if (e.target === box) close(); e.stopPropagation(); });
+      box.querySelector('.lnx').onclick = close;
+      ta.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+      box.querySelector('.lns').onclick = function () {
+        var note = String(ta.value || '').trim();
+        if (!id || !writeOk()) { close(); toast(root, 'Note saved (fixture)'); return; }
+        var row = (S().links || []).filter(function (l) { return String(l.id) === String(id); })[0];
+        api('/api/links/' + encodeURIComponent(id), { method: 'PATCH', body: { note: note } }).then(ok).then(function () {
+          if (row) row.note = note;
+          el.setAttribute('data-note', note);
+          el.textContent = note ? 'Note' : '+ Note';
+          el.classList.toggle('has', !!note);
+          close();
+          toast(root, note ? 'Note saved' : 'Note cleared');
+        }).catch(function () { var er = box.querySelector('.lner'); if (er) er.textContent = 'Could not save. Try again.'; });
+      };
+      host.appendChild(box);
+      setTimeout(function () { ta.focus(); }, 20);
+    },
     'link-note': function (el, root, ev) {
       if (ev) { ev.preventDefault(); ev.stopPropagation(); }
       if (el.getAttribute('contenteditable') === 'true') return;
@@ -3674,8 +3706,12 @@
     },
 
     /* ---------- Email: People grid (08e) and person pop-up (08f) ---------- */
-    'mail-view': function (el) {
+    'mail-view': function (el, root) {
       S().mailView = attr(el, 'data-view') || 'inbox';
+      if (S().mailSchedOpen) {
+        S().mailSchedOpen = false;
+        try { ['r3Dr', 'r3Scrim'].forEach(function (id) { var n = root && (root.getElementById ? root.getElementById(id) : root.querySelector('#' + id)); if (n) n.remove(); }); } catch (e) {}
+      }
       S().mailSortOpen = false;
       S().mailBoxMenuOpen = false;
       refresh('mail');
@@ -6340,7 +6376,7 @@
   window.__deskMail = { sync: syncCompose, state: composeState, open: openCompose, repaint: repaintMail, bundle: bundleLinksText, toast: toast, root: mailRoot };
   if (!window.__r3Loaded && !document.querySelector('script[data-r3]')) {
     var r3 = document.createElement('script');
-    r3.src = '/redesign-pages-r3.js?v=2';
+    r3.src = '/redesign-pages-r3.js?v=3';
     r3.setAttribute('data-r3', '1');
     document.head.appendChild(r3);
   }

@@ -1930,7 +1930,7 @@
         return '<a class="tile' + (listOn ? ' row' : '') + '" data-action="link-open" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" data-id="' + id + '" data-url="' + esc(href) + '">' + (w[4] == 2 ? '<span class="dup">Duplicate</span>' : '')
           + '<div class="lg" style="background:' + w[2] + '14">' + cover + '</div>'
           + '<div class="tm"><span title="Edit" data-action="link-edit" data-id="' + id + '" data-title="' + esc(w[0]) + '">Edit</span><span title="Move" data-action="link-move" data-id="' + id + '" data-title="' + esc(w[0]) + '" data-url="' + esc(href) + '">Move</span><span title="Delete" data-action="link-archive" data-id="' + id + '" data-note="' + esc(w[3] || '') + '">&times;</span></div>'
-          + '<div class="nb"><b>' + esc(w[0]) + '</b><div class="dm">' + esc(w[1]) + '</div><div class="nt' + (w[3] ? '' : ' empty') + '" data-action="link-note" data-id="' + id + '">' + (w[3] ? esc(w[3]) : 'Add a note') + '</div></div></a>';
+          + '<div class="nb"><b>' + esc(w[0]) + '</b><div class="dl"><span class="dm">' + esc(w[1]) + '</span><span class="np' + (w[3] ? ' has' : '') + '" data-action="link-note-pop" data-id="' + id + '" data-title="' + esc(w[0]) + '" data-note="' + esc(w[3] || '') + '">' + (w[3] ? 'Note' : '+ Note') + '</span></div></div></a>';
       }).join('') + ((data.wall || []).length ? '' : '<div class="hint">No links here yet.</div>') + '</div>'
       + '<div class="hint">Hover a tile to edit, move or delete it.</div></section></div>';
     wrap.querySelectorAll('.lg img.thumb').forEach(function (img) {
@@ -2688,7 +2688,7 @@
     var feedTop = feed0 && S.mailFeedTabShown === tab ? feed0.scrollTop : 0;
     S.mailFeedTabShown = tab;
     var colsHtml = cols.map(function (c) { return columnHtml(c, msgs); }).join('');
-    var schedSeg = isFix ? '' : '<span data-action="mail-sched-list">Scheduled' + ((S.mailSchedCount | 0) > 0 ? ' <em>' + (S.mailSchedCount | 0) + '</em>' : '') + '</span>';
+    var schedSeg = isFix ? '' : '<span' + (S.mailSchedOpen ? ' class="on"' : '') + ' data-action="mail-sched-list">Scheduled' + ((S.mailSchedCount | 0) > 0 ? ' <em>' + (S.mailSchedCount | 0) + '</em>' : '') + '</span>';
     var tabsHtml = isFix
       ? tabChip('everything', 'Everything') + tabChip('people', 'People') + tabChip('unread', 'Unread')
       : tabChip('everything', 'Everything') + tabChip('notmoved', 'Not moved') + tabChip('people', 'People') + tabChip('unread', 'Unread') + tabChip('junk', 'Junk');
@@ -2699,7 +2699,7 @@
         + '<span class="ncrow"><button type="button" class="ncadd" data-action="mail-col-add">Add</button><span class="nchint">Enter adds &middot; Esc cancels</span></span></div>';
     wrap.innerHTML =
       '<div class="bar"><h1>Email</h1>'
-      + '<div class="seg"><span class="' + (view === 'inbox' ? 'on' : '') + '" data-action="mail-view" data-view="inbox">Inbox</span><span class="' + (view === 'people' ? 'on' : '') + '" data-action="mail-view" data-view="people">People</span>' + schedSeg + '</div>'
+      + '<div class="seg"><span class="' + (view === 'inbox' && !S.mailSchedOpen ? 'on' : '') + '" data-action="mail-view" data-view="inbox">Inbox</span><span class="' + (view === 'people' && !S.mailSchedOpen ? 'on' : '') + '" data-action="mail-view" data-view="people">People</span>' + schedSeg + '</div>'
       + '<div class="cnt"><span><b>' + esc(data.unread != null ? data.unread : msgs.filter(function (m) { return m.un; }).length) + '</b> unread</span><span><b>' + esc(data.need != null ? data.need : 0) + '</b> need a reply</span><span><b>' + esc(cols.length) + '</b> columns</span></div>'
       + '<div class="r"><input class="search" data-action="mail-search" placeholder="Search all mail" value="' + esc(S.mailQ || '') + '"><button class="btn" data-action="mail-filters">Filters</button><button class="btn pri" id="composeBtn" data-action="mail-compose">Compose</button></div></div>'
       + '<div class="lay"><section class="feed"><div class="fh"><h3>' + (S.mailQ ? 'Search: ' + esc(S.mailQ) : 'All mail') + '</h3><span class="s">one feed, newest first</span><div class="tabs">'

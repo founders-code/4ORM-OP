@@ -116,8 +116,22 @@
     box.style.top = top + 'px';
     return box;
   }
+  /* The Email header switch: Scheduled stays lit while its panel is open, then the switch returns to the view you were on. */
+  function markSched(root, on) {
+    try {
+      var seg = root.querySelector && root.querySelector('.bar .seg');
+      if (!seg) return;
+      seg.querySelectorAll('span').forEach(function (sp) {
+        var isSched = sp.getAttribute('data-action') === 'mail-sched-list';
+        if (on) sp.classList.toggle('on', isSched);
+        else sp.classList.toggle('on', !isSched && sp.getAttribute('data-view') === (S().mailView || 'inbox'));
+      });
+    } catch (e) {}
+  }
   function closeDrawer(root) {
+    var had = !!rootGet(root, 'r3Dr');
     ['r3Dr', 'r3Scrim'].forEach(function (id) { var n = rootGet(root, id); if (n) n.remove(); });
+    if (had && S().mailSchedOpen) { S().mailSchedOpen = false; markSched(root, false); }
   }
   function openDrawer(root, title, bodyHtml, footHtml) {
     ensureCss(root);
@@ -312,6 +326,8 @@
     },
     'mail-sched-list': function (el, root) {
       openDrawer(root, 'Scheduled', '<div class="empty">Loading&hellip;</div>', '<button class="r3-btn" type="button" data-action="r3-close">Close</button>');
+      S().mailSchedOpen = true;
+      markSched(root, true);
       if (fixtureOn()) { S().mailSched = { items: [], cron: true }; paintSchedList(root); return; }
       loadSchedList(root);
     },

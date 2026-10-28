@@ -50,8 +50,9 @@
 .upt b{color:#7fb0ff;text-shadow:0 0 8px rgba(127,176,255,.5)}
 
 /* --- dials --- */
-.dials{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px;padding:12px 16px 16px}
-@media(max-width:1100px){.dials{grid-template-columns:repeat(3,minmax(0,1fr))}.lamps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.dials{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;padding:10px 14px 14px}
+.dial svg{max-width:112px;margin:0 auto}
+@media(max-width:1100px){.dials{grid-template-columns:repeat(4,minmax(0,1fr))}.lamps{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .dial{background:#0b1026;border:1px solid #1a2450;border-radius:11px;padding:10px 7px 11px;text-align:center;position:relative;cursor:pointer}
 .dial:hover{border-color:#3b82ff}
 .dial svg{display:block;width:100%;height:auto}
@@ -422,3 +423,20 @@ table.v td.mut{color:#aebbe0}
 #pg-vault .board .dc .ver i,#vboard .dc .ver i{height:3px;flex:1;border-radius:2px;background:rgba(120,150,255,.14);display:block}
 #pg-vault .board .dc .ver i.f,#vboard .dc .ver i.f{background:#3b82ff}
 #pg-vault .board .addc,#vboard .addc{border:1px dashed rgba(120,150,255,.18);border-radius:10px;padding:9px;text-align:center;font-size:11.5px;font-weight:750;color:#7fb0ff;cursor:pointer}
+
+/* --- spend list --- */
+.spendw{padding:4px 16px 16px}
+.spendw .spk{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.spendw .spk div{background:#0b1026;border:1px solid #1a2450;border-radius:11px;padding:10px 12px}
+.spendw .spk small{display:block;font-size:10px;font-weight:800;letter-spacing:.08em;color:#a3b0d2}
+.spendw .spk b{display:block;font-size:20px;font-weight:900;color:#e9eefa;margin-top:2px}
+.spendw .spk i{font-style:normal;font-size:11.5px;color:#a3b0d2}
+.sptab{width:100%;border-collapse:collapse}
+.sptab th{font-size:10px;letter-spacing:.08em;color:#a3b0d2;text-align:left;padding:7px 8px;border-bottom:1px solid #1a2450;font-weight:800}
+.sptab td{padding:8px;border-bottom:1px solid rgba(26,36,80,.7);color:#c8d1ea;font-size:12.5px;vertical-align:top}
+.sptab td b{color:#e9eefa;display:block}.sptab td small{display:block;color:#a3b0d2;font-size:11px;margin-top:2px}
+.sptab td.am{font-weight:800;color:#e9eefa;white-space:nowrap}
+.sptab .bs{font-size:10.5px;font-weight:800;border-radius:6px;padding:2px 7px;display:inline-block}
+.sptab .bs.m{background:rgba(255,181,71,.13);color:#ffd08a}.sptab .bs.y{background:rgba(161,115,255,.14);color:#d6c2ff}.sptab .bs.u{background:rgba(59,130,255,.16);color:#a9c8ff}
+.spempty{color:#a3b0d2;font-size:12.5px;padding:8px 0}
+@media(max-width:900px){.spendw .spk{grid-template-columns:1fr}}
