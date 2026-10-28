@@ -100,16 +100,6 @@ export async function savePlan(sql: Sql, ownerId: string, input: {
   return { itemId, steps, needs, draft, created };
 }
 
-export async function syncCommitments(sql: Sql, ownerId: string, notes: Array<{ id: string; date: string; others: string[]; improve: string[]; intel: Array<{ value?: string }> }>) {
-  const found = extractCommitments(notes);
-  for (const row of found) {
-    await sql`
-      INSERT INTO commitments (owner_id, text, source_note_id, made_on, status)
-      VALUES (${ownerId}, ${row.text}, ${row.sourceNoteId}, ${row.madeOn}, 'open')
-      ON CONFLICT (owner_id, source_note_id, text) DO NOTHING
-    `;
-  }
-}
 
 export async function listCommitments(sql: Sql, ownerId: string) {
   const rows = await sql`
@@ -264,10 +254,6 @@ export async function upsertNews(sql: Sql, ownerId: string, items: Array<Record<
   return saved;
 }
 
-export async function replaceNews(sql: Sql, ownerId: string, items: Array<Record<string, unknown>>, day = todayKey()) {
-  await upsertNews(sql, ownerId, items, day);
-  return listNews(sql, ownerId, day);
-}
 
 export async function newsCategories(sql: Sql, ownerId: string) {
   const rows = await sql`SELECT news_categories FROM owner_settings WHERE owner_id = ${ownerId} LIMIT 1`;
@@ -275,17 +261,6 @@ export async function newsCategories(sql: Sql, ownerId: string) {
   return stored.length ? stored : NEWS_CATEGORIES.slice();
 }
 
-export async function saveNewsCategories(sql: Sql, ownerId: string, categories: unknown) {
-  const list = (Array.isArray(categories) ? categories : []).map((item) => String(item || '').trim().slice(0, 80)).filter(Boolean).slice(0, 24);
-  const next = list.length ? list : NEWS_CATEGORIES.slice();
-  await sql`
-    INSERT INTO owner_settings (owner_id, news_categories)
-    VALUES (${ownerId}, ${JSON.stringify(next)}::jsonb)
-    ON CONFLICT (owner_id)
-    DO UPDATE SET news_categories = EXCLUDED.news_categories
-  `;
-  return next;
-}
 
 async function modelPlan(system: string, user: string) {
   const anthropic = env('ANTHROPIC_API_KEY');

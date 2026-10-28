@@ -111,27 +111,6 @@ export async function listSocialQueue() {
   return { left, cadence, newsletterDue, empty: left === 0 };
 }
 
-export async function listPipeline() {
-  const all = await listPipelines();
-  if (all.status === 'unavailable') return { status: 'unavailable' as const, stages: [] as Array<{ stage: string; count: number; detail: string }>, touches: [] as Array<{ sourceId: string; name: string; at: string }> };
-  const counts = new Map<string, number>();
-  const touches: Array<{ sourceId: string; name: string; at: string }> = [];
-  for (const pipe of all.pipelines) {
-    for (const stage of pipe.stages) {
-      counts.set(stage.name, (counts.get(stage.name) || 0) + stage.count);
-      for (const opp of stage.opps) {
-        if (opp.updatedAt && (opp.contactId || opp.contact)) touches.push({ sourceId: opp.contactId, name: opp.contact, at: opp.updatedAt });
-      }
-    }
-  }
-  const stages = [...counts.entries()].map(([stage, count]) => ({
-    stage,
-    count,
-    detail: count === 1 ? '1 opportunity' : `${count} opportunities`,
-  }));
-  touches.sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
-  return { status: stages.length ? ('connected' as const) : ('reached_empty' as const), stages, touches: touches.slice(0, 120) };
-}
 
 export async function createContact(input: { name: string; company?: string; email?: string }) {
   const name = String(input.name || '').trim().slice(0, 120);

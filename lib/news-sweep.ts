@@ -415,31 +415,8 @@ function ensureSweepTable(sql: Sql) {
   return sweepTable;
 }
 
-function pacificParts(at: Date) {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Los_Angeles',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(at);
-  const get = (type: string) => Number(parts.find((part) => part.type === type)?.value || 0);
-  return { y: get('year'), m: get('month'), d: get('day'), h: get('hour'), min: get('minute'), s: get('second') };
-}
 
 /** The most recent 8:00 or 11:00 America/Los_Angeles that has already passed. */
-export function lastSweepSlot(now = new Date()) {
-  const p = pacificParts(now);
-  const offset = Date.UTC(p.y, p.m - 1, p.d, p.h, p.min, p.s) - Math.floor(now.getTime() / 1000) * 1000;
-  const slots: number[] = [];
-  for (const back of [0, 1]) {
-    for (const hour of [11, 8]) slots.push(Date.UTC(p.y, p.m - 1, p.d - back, hour, 0, 0) - offset);
-  }
-  return slots.filter((ms) => ms <= now.getTime()).sort((a, b) => b - a)[0] || now.getTime();
-}
 
 export async function lastSweptAt(sql: Sql, ownerId: string) {
   if (!(await ensureSweepTable(sql))) return 0;
@@ -465,10 +442,3 @@ export async function markSwept(sql: Sql, ownerId: string) {
 }
 
 /** Sweep when the latest 8am or 11am Pacific slot has not been swept yet. Marks swept only after the run finishes. */
-export async function sweepIfDue(sql: Sql, ownerId: string, force = false, budgetMs = 50000) {
-  const due = force || (await lastSweptAt(sql, ownerId)) < lastSweepSlot();
-  if (!due) return false;
-  await sweepNews(sql, ownerId, Math.max(budgetMs - 2000, 8000));
-  await markSwept(sql, ownerId);
-  return true;
-}

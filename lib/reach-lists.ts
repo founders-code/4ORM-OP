@@ -61,11 +61,6 @@ function vancouverParts(d = new Date()) {
   return { weekday: get('weekday'), day: get('day'), month: get('month') };
 }
 
-/** e.g. "Wed 28 Oct" in America/Vancouver. */
-export function vancouverDayLabel(d = new Date()) {
-  const p = vancouverParts(d);
-  return `${p.weekday} ${p.day} ${p.month}`;
-}
 
 function weekdayBuckets(n: number) {
   const today = new Date();

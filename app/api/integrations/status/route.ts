@@ -18,7 +18,7 @@ export async function GET() {
   }
 }
 
-/** { refresh: 'gmail'|'calendar'|'drive'|'ghl'|'granola'|'riverside' } runs that sync now, then returns the fresh list. */
+/** { refresh: 'gmail'|'calendar'|'drive'|'ghl' } runs that sync now, then returns the fresh list. */
 export async function POST(req: Request) {
   try {
     const session = await openBoard();

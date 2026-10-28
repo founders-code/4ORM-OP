@@ -277,20 +277,6 @@ async function wouldCycle(sql: Sql, itemId: string, dependsOn: string) {
   return false;
 }
 
-export async function addDep(sql: Sql, ownerId: string, itemId: string, dependsOn: string) {
-  const rows = await sql`
-    SELECT id, kind FROM timeline_items
-    WHERE owner_id = ${ownerId} AND archived_at IS NULL AND (id = ${itemId}::uuid OR id = ${dependsOn}::uuid)
-  `;
-  if (rows.length < 2) return { ok: false, status: 404 as const };
-  const dep = rows.find((r) => String(r.id) === dependsOn);
-  if (dep && (String(dep.kind) === 'milestone' || String(dep.kind) === 'recurring')) {
-    return { ok: false, status: 409 as const, error: 'Cannot depend on a milestone or recurring item' };
-  }
-  if (await wouldCycle(sql, itemId, dependsOn)) return { ok: false, status: 409 as const, error: 'Cycle' };
-  await sql`INSERT INTO timeline_deps (item_id, depends_on_id) VALUES (${itemId}::uuid, ${dependsOn}::uuid) ON CONFLICT DO NOTHING`;
-  return { ok: true as const };
-}
 
 export async function archiveItem(sql: Sql, ownerId: string, id: string) {
   const rows = await sql`

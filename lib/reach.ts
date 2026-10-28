@@ -86,9 +86,6 @@ export async function listReach(sql: Sql, ownerId: string, userId?: string) {
   }
 }
 
-export async function listReachLists(sql: Sql, ownerId: string, userId: string): Promise<ReachList[]> {
-  return buildCallLists(sql, ownerId, userId);
-}
 
 export async function addReach(sql: Sql, ownerId: string, input: Record<string, unknown>) {
   const name = clip(input.name, 120) || 'Person';

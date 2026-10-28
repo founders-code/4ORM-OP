@@ -335,4 +335,3 @@ export async function setGrowthGhl(sql: Sql, ownerId: string, id: string, ghl: R
 }
 
 export { vanToday, addWeekdays };
-export const safeGrowth = <T>(p: Promise<T>, label: string, fallback: T) => p.catch((err) => { fail(label, err); return fallback; });

@@ -15,7 +15,7 @@ export const FLOW_LANES = ['COMES IN', 'HOW IT ARRIVES', 'KEPT AND WORKED ON', '
 export const FLOW_EDGES: Array<[string, string]> = [
   // comes in -> arrives
   ['src-gmail', 'in-gmail'], ['src-gmail', 'in-live'], ['src-cal', 'in-cal'], ['src-cal', 'in-live'], ['src-drive', 'in-live'],
-  ['src-zoom', 'in-zoom'], ['src-zoom', 'in-live'], ['src-granola', 'in-live'], ['src-ghl', 'in-ghl'], ['src-ghl', 'in-live'],
+  ['src-zoom', 'in-zoom'], ['src-zoom', 'in-live'], ['src-ghl', 'in-ghl'], ['src-ghl', 'in-live'],
   ['src-news', 'in-scrape'], ['src-news', 'in-news'], ['src-boc', 'in-news'], ['src-iq', 'in-live'], ['src-room', 'in-visit'],
   ['src-mic', 'in-voice'], ['src-you', 'in-voice'], ['src-you', 'in-import'],
   // arrives -> kept
@@ -133,7 +133,6 @@ export async function buildFlowMap(sql: Sql | null, ownerId: string, userId: str
   const oai = service('openai', 'openai');
   const ant = service('anthropic', 'anthropic');
   const ppx = service('perplexity', 'perplexity');
-  const gran = Y.get('granola') ? syncOf('granola', 26, 72) : { state: 'idle' as FlowState, detail: 'Granola not connected' };
   const boc = A.get('boc') ? service('boc', 'boc') : { state: 'idle' as FlowState, detail: 'No rate pulls in 24 h' };
   const iq = A.get('iq') ? service('iq', 'iq') : { state: 'idle' as FlowState, detail: 'No reads from 4ormIQ in 24 h' };
   const scrapeState = fresh((scrape || {}).t, 7, 13);
@@ -144,7 +143,6 @@ export async function buildFlowMap(sql: Sql | null, ownerId: string, userId: str
     { id: 'src-cal', lane: 0, name: 'Google Calendar', sub: 'events, invites', ...c },
     { id: 'src-drive', lane: 0, name: 'Google Drive', sub: 'files, folders', ...d },
     { id: 'src-zoom', lane: 0, name: 'Zoom', sub: 'meetings, notes', ...zoom },
-    { id: 'src-granola', lane: 0, name: 'Granola', sub: 'meeting notes', ...gran },
     { id: 'src-ghl', lane: 0, name: 'GoHighLevel', sub: 'contacts, pipelines', ...ghl },
     { id: 'src-news', lane: 0, name: 'News sites', sub: 'regulators, trade press', state: worst(scrapeState, newsState), detail: `Read ${ago((news || {}).t)}` },
     { id: 'src-boc', lane: 0, name: 'Bank of Canada', sub: 'policy rate', ...boc },

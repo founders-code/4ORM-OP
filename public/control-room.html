@@ -2605,7 +2605,6 @@ function ghlMoney(n){n=Number(n)||0;if(n>=1000000)return '$'+(Math.round(n/10000
 document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-ghl-pipe],[data-ghl-stage]');if(!t)return;if(t.hasAttribute('data-ghl-pipe')){STATE.ghlPipe=t.getAttribute('data-ghl-pipe');STATE.ghlStage='';}else{STATE.ghlStage=t.getAttribute('data-ghl-stage');}if(typeof renderContacts==='function')renderContacts(document.getElementById('cSearch')?document.getElementById('cSearch').value:'');});
 (function(){function keep(){var c=window.__clerk;if(c&&c.session&&typeof c.session.getToken==='function')c.session.getToken({skipCache:true}).catch(function(){});}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')keep();});window.addEventListener('focus',keep);setInterval(function(){if(document.visibilityState==='visible')keep();},45000);})();
 </script>
-<script src="/shadow-port.js?v=5"></script>
 <script src="/redesign-fixture.js?v=6"></script>
 <script>if(/(?:^|[?&])fixture=mockup(?:&|$)/.test(location.search))document.write('<script src="/redesign-fixture-c.js?v=6"><\/script><script src="/redesign-fixture-sheet.js?v=1"><\/script>');</script>
 <script src="/_sounds.js?v=3"></script>
@@ -2630,7 +2629,6 @@ document.addEventListener('click',function(e){var t=e.target.closest&&e.target.c
 <script src="/redesign-p8.js?v=12"></script>
 <script src="/redesign-recordings.js?v=5"></script>
 <script src="/redesign-pages-d.js?v=8"></script>
-<script src="/outreach-lists-data.js?v=2"></script>
 <script src="/lists-bind.js?v=15"></script>
 <script src="/redesign-pages-people.js?v=24"></script>
 <script src="/redesign-news-saved.js?v=2"></script>

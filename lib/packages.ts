@@ -131,82 +131,9 @@ async function readRecipients(sql: Sql, ownerId: string, packageId: string): Pro
   }));
 }
 
-export async function listPackages(sql: Sql, ownerId: string) {
-  try {
-    await seedPackages(sql, ownerId);
-    let rows: Record<string, unknown>[];
-    try {
-      rows = (await sql`
-        SELECT id, name, kind, status, drive_folder_url, space_type, subject_label, pushed_to_drive_at, description, space_category
-        FROM packages
-        WHERE owner_id = ${ownerId} AND deleted_at IS NULL
-        ORDER BY created_at
-      `) as Record<string, unknown>[];
-    } catch (err) {
-      fail('packages_list_space', err);
-      rows = (await sql`
-        SELECT id, name, kind, status, drive_folder_url
-        FROM packages
-        WHERE owner_id = ${ownerId} AND deleted_at IS NULL
-        ORDER BY created_at
-      `) as Record<string, unknown>[];
-    }
-    const out = [];
-    for (const row of rows as Record<string, unknown>[]) {
-      const id = String(row.id);
-      let docCount = 0;
-      let recipientCount = 0;
-      try {
-        const docs = await sql`SELECT id FROM package_docs WHERE package_id = ${id} AND deleted_at IS NULL`;
-        const people = await sql`SELECT id FROM package_recipients WHERE package_id = ${id} AND deleted_at IS NULL`;
-        docCount = docs.length;
-        recipientCount = people.length;
-      } catch (err) {
-        fail('packages_counts', err);
-      }
-      const pushed = row.pushed_to_drive_at ? new Date(String(row.pushed_to_drive_at)) : null;
-      out.push({
-        id,
-        name: String(row.name || ''),
-        kind: String(row.kind || ''),
-        status: String(row.status || 'draft'),
-        driveFolderUrl: row.drive_folder_url ? String(row.drive_folder_url) : '',
-        spaceType: row.space_type ? String(row.space_type) : '',
-        subjectLabel: row.subject_label ? String(row.subject_label) : '',
-        description: String(row.description || ''),
-        spaceCategory: String(row.space_category || ''),
-        pushedToDriveAt: pushed && !Number.isNaN(pushed.getTime()) ? pushed.toISOString() : '',
-        docCount,
-        recipientCount,
-      });
-    }
-    return out;
-  } catch (err) {
-    fail('packages_list', err);
-    return [];
-  }
-}
 
 const BLANK_SPACES = ['Untitled space 1', 'Untitled space 2', 'Untitled space 3', 'Untitled space 4'];
 
-async function seedPackages(sql: Sql, ownerId: string) {
-  const seeds = [
-    ...STARTERS.map((item) => ({ name: item.name, kind: item.kind, emailSubject: item.emailSubject, emailBody: item.emailBody, research: item.research })),
-    ...BLANK_SPACES.map((name) => ({ name, kind: 'data_room', emailSubject: '', emailBody: '', research: '' })),
-  ];
-  for (const item of seeds) {
-    try {
-      const found = await sql`SELECT id FROM packages WHERE owner_id = ${ownerId} AND name = ${item.name} LIMIT 1`;
-      if (found.length) continue;
-      await sql`
-        INSERT INTO packages (owner_id, name, kind, email_subject, email_body, research, status)
-        VALUES (${ownerId}, ${item.name}, ${item.kind}, ${item.emailSubject}, ${item.emailBody}, ${item.research}, 'draft')
-      `;
-    } catch (err) {
-      fail('packages_seed', err);
-    }
-  }
-}
 
 async function owned(sql: Sql, ownerId: string, id: string) {
   try {

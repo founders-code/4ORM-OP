@@ -532,29 +532,6 @@ async function seedOutreach(sql: Sql, ownerId: string) {
   }
 }
 
-async function pullGhlStages(sql: Sql, ownerId: string) {
-  try {
-    if (!ghlConfigured()) return;
-    const board = await opportunityStages();
-    if (!board.length) return;
-    const rows = await sql`
-      SELECT id, ghl_opportunity_id
-      FROM spaces
-      WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND coalesce(ghl_opportunity_id, '') <> ''
-    `;
-    const byId = new Map(board.map((row) => [row.id, row.stage]));
-    for (const row of rows as Array<{ id: string; ghl_opportunity_id?: string }>) {
-      const next = byId.get(String(row.ghl_opportunity_id || ''));
-      if (!next) continue;
-      await sql`
-        UPDATE spaces SET stage = ${next}, updated_at = now()
-        WHERE id = ${row.id} AND owner_id = ${ownerId} AND coalesce(stage, '') <> ${next}
-      `;
-    }
-  } catch (err) {
-    fail('spaces_ghl_pull', err);
-  }
-}
 
 async function rememberOpportunity(sql: Sql, ownerId: string, id: string, stage: string) {
   try {
