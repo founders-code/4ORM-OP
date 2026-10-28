@@ -567,7 +567,9 @@ async function logDecision(sql: Sql, ownerId: string, moveId: string | null, fie
   `;
 }
 
-async function loadMove(sql: Sql, ownerId: string, id: string) {
+/* Moves are rewritten when the board refreshes, so an id on a page loaded earlier can be gone.
+   The page also sends the move's text; the same move under its new id is used then. */
+async function loadMove(sql: Sql, ownerId: string, id: string, text = '') {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
   const rows = await sql`
     SELECT id, rank, text, principle, why_now, how, area, suggested_due, status, source_key
@@ -575,11 +577,18 @@ async function loadMove(sql: Sql, ownerId: string, id: string) {
     WHERE id = ${id} AND owner_id = ${ownerId}
     LIMIT 1
   `;
-  return (rows[0] as MoveRow | undefined) || null;
+  if (rows[0] || !text.trim()) return (rows[0] as MoveRow | undefined) || null;
+  const same = await sql`
+    SELECT id, rank, text, principle, why_now, how, area, suggested_due, status, source_key
+    FROM ceo_moves
+    WHERE owner_id = ${ownerId} AND status = 'open' AND text = ${text.trim().slice(0, 2000)}
+    LIMIT 1
+  `;
+  return (same[0] as MoveRow | undefined) || null;
 }
 
-export async function doMove(sql: Sql, ownerId: string, id: string) {
-  const move = await loadMove(sql, ownerId, id);
+export async function doMove(sql: Sql, ownerId: string, id: string, text = '') {
+  const move = await loadMove(sql, ownerId, id, text);
   if (!move || move.status !== 'open') return null;
   const area = allowArea(move.area) || 'other';
   const due = move.suggested_due ? new Date(move.suggested_due).toISOString() : null;
@@ -634,8 +643,8 @@ function edmontonDay(now = new Date()) {
   }).format(now);
 }
 
-export async function snoozeMove(sql: Sql, ownerId: string, id: string, reason: string) {
-  const move = await loadMove(sql, ownerId, id);
+export async function snoozeMove(sql: Sql, ownerId: string, id: string, reason: string, text = '') {
+  const move = await loadMove(sql, ownerId, id, text);
   if (!move || move.status !== 'open') return null;
   const key = String(move.source_key || move.text || '').trim().slice(0, 180);
   if (!key) return null;

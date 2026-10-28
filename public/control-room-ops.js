@@ -92,6 +92,7 @@
     if (!id) return;
     var data = STATE.ceo || { moves: [] };
     var prev = (data.moves || []).slice();
+    var mtext = typeof ceoMoveText === 'function' ? ceoMoveText(id) : '';
     STATE.ceo = Object.assign({}, data, { moves: prev.filter(function (m) { return String(m.id) !== id; }) });
     var map = {};
     try { map = JSON.parse(localStorage.getItem('cr_needle') || '{}'); } catch (err) { map = {}; }
@@ -99,7 +100,7 @@
     try { localStorage.setItem('cr_needle', JSON.stringify(map)); } catch (err) {}
     renderWar();
     if (typeof renderOpsDash === 'function') renderOpsDash();
-    authFetch('/api/ceo/moves/' + id + '/snooze', { method: 'POST', quiet: true, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reason: 'dismissed' }) }).then(function (r) {
+    authFetch('/api/ceo/moves/' + id + '/snooze', { method: 'POST', quiet: true, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reason: 'dismissed', text: mtext }) }).then(function (r) {
       if (!r.ok) throw 0;
       return r.json();
     }).then(function (next) {

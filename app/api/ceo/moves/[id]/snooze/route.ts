@@ -12,7 +12,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ error: 'Unavailable' }, { status: 503 });
     const body = await req.json().catch(() => null);
-    const result = await snoozeMove(session.sql, session.userId, params.id, String(body?.reason || ''));
+    const result = await snoozeMove(session.sql, session.userId, params.id, String(body?.reason || ''), String(body?.text || ''));
     if (!result) return NextResponse.json({ error: 'Unavailable' }, { status: 404 });
     return NextResponse.json(result);
   } catch (err) {

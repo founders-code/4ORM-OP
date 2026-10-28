@@ -638,7 +638,7 @@
       $('#pm').textContent = companyLine(p) + (p.role ? ' · ' + p.role : '') + (p.stage ? ' · ' + p.stage : '');
       var phone = p.phone || '';
       var email = p.email || '';
-      $('#pc').innerHTML = (phone ? '<a href="tel:' + esc(phone.replace(/\s+/g, '')) + '">Call ' + esc(phone) + '</a>' : '')
+      $('#pc').innerHTML = (phone ? '<a href="tel:' + esc(telOf(phone)) + '">Call ' + esc(phone) + '</a>' : '')
         + (email ? '<a href="mailto:' + esc(email) + '">Email ' + esc(email) + '</a>' : '');
       var en = $('#en'); var ec = $('#ec'); var ep = $('#ep'); var ee = $('#ee');
       if (en) en.value = p.name || '';
@@ -706,7 +706,15 @@
     }
 
     /* +18006392274 -> (800) 639-2274; leaves other formats as typed. */
+    /* "1-866-392-1088; 416-925-0015" holds two numbers: dial the first, show both. */
+    function firstPhone(v) { return String(v || '').split(/\s*(?:;|\/|,|\bor\b)\s*/)[0]; }
+    function telOf(v) { return firstPhone(v).replace(/[^\d+]/g, ''); }
     function fmtPhone(v) {
+      var parts = String(v || '').split(/\s*(?:;|\/|,|\bor\b)\s*/).filter(Boolean);
+      if (parts.length > 1) return parts.map(fmtOne).join(' / ');
+      return fmtOne(v);
+    }
+    function fmtOne(v) {
       var d = String(v || '').replace(/[^\d]/g, '');
       if (d.length === 11 && d.charAt(0) === '1') d = d.slice(1);
       if (d.length === 10) return '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6);
@@ -744,7 +752,7 @@
           + '<td class="rk">' + esc(String(p.rank || '')) + '</td>'
           + '<td><b title="' + esc(p.name) + '">' + esc(p.name) + '</b><small>' + esc(companyLine(p)) + '</small>'
           + (email ? '<a class="em" href="mailto:' + esc(email) + '">' + esc(email) + '</a>' : '') + role + cb + '</td>'
-          + '<td>' + (phone ? '<a href="tel:' + esc(phone.replace(/[^\d+]/g, '')) + '">' + esc(fmtPhone(phone)) + '</a>' : '<small>no phone</small>') + '</td>'
+          + '<td>' + (phone ? '<a href="tel:' + esc(telOf(phone)) + '">' + esc(fmtPhone(phone)) + '</a>' : '<small>no phone</small>') + '</td>'
           + '<td><span class="nt">' + (notePreview(p.notes) ? esc(notePreview(p.notes)) : '<small>none yet</small>') + '</span></td>'
           + '<td class="dy">' + esc(p.day || '') + '</td>'
           + '<td><button type="button" class="stg2" data-a="stage" title="' + esc(S.hint || '') + '" style="color:' + S.color + ';background:' + S.bg + '">' + esc(S.k) + '</button></td>'
