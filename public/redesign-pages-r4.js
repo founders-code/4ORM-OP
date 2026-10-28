@@ -133,6 +133,13 @@
   }
 
   function saveNotePos(n) {
+    var S0 = window.STATE || {};
+    [S0.notes, S0.boardNotes, S0.stickies].forEach(function (list) {
+      (list || []).forEach(function (r) {
+        if (!r || String(r.id) !== String(n.id)) return;
+        r.canvas_x = n.x; r.canvas_y = n.y; r.canvas_w = n.w; r.canvas_h = n.hh; r.cluster_id = n.c || null;
+      });
+    });
     if (!writeOk() || !n.id) return;
     api('/api/notes/' + encodeURIComponent(n.id), { method: 'PATCH', body: { canvas_x: n.x, canvas_y: n.y, x: n.x, y: n.y, w: n.w, h: n.hh, canvas_w: n.w, canvas_h: n.hh, cluster_id: n.c || null } }).catch(function () {});
   }
@@ -148,10 +155,7 @@
     var data = fixtureOn() ? canvasSample() : liveCanvasData();
     var prev = wrap.__canvasWorld || window.__notesCanvasWorld;
     if (!fixtureOn() && prev && wrap.querySelector && wrap.querySelector('#world') && wrap.querySelectorAll('.note').length) {
-      if (data.notes.length >= prev.NOTES.length) {
-        prev.NOTES = data.notes.slice();
-        if (data.clusters.length) prev.CL = data.clusters.slice();
-      }
+      if (typeof wrap.__canvasRefresh === 'function') wrap.__canvasRefresh(data);
       wrap.__canvasWorld = prev;
       window.__notesCanvasWorld = prev;
       markReady('notesDesk');
@@ -323,7 +327,56 @@
       cn.addEventListener('blur', done, { once: true });
       cn.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); cn.blur(); } });
     }
-    if (!root.__canvasBound) {
+    /* Click a note on the canvas to read and edit it. */
+    function openCanvasNote(i) {
+      var n = NOTES[i];
+      if (!n) return;
+      var old = root.querySelector('.cnpop');
+      if (old) old.remove();
+      var pop = window.document.createElement('div');
+      pop.className = 'cnpop';
+      pop.setAttribute('style', 'position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(4,8,20,.55)');
+      pop.innerHTML = '<div style="width:min(620px,92vw);background:#fff;color:#101a33;border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.5);padding:18px 20px;display:flex;flex-direction:column;gap:10px">'
+        + '<input data-f="t" style="font-family:Inter,system-ui,sans-serif;font-size:20px;font-weight:800;line-height:1.3;border:0;outline:0;color:#101a33;background:transparent" placeholder="Title">'
+        + '<textarea data-f="b" style="min-height:220px;font-family:Inter,system-ui,sans-serif;font-size:14.5px;font-weight:500;line-height:1.55;border:1px solid #e3e8f2;border-radius:10px;padding:10px 12px;color:#101a33;resize:vertical;outline:0" placeholder="Write the note"></textarea>'
+        + '<div style="display:flex;gap:8px;justify-content:flex-end;align-items:center"><span data-f="s" style="margin-right:auto;font-size:12.5px;color:#5b6678"></span>'
+        + '<button type="button" data-f="x" style="font-family:Inter,system-ui,sans-serif;font-size:13px;font-weight:700;opacity:1;padding:8px 14px;border-radius:9px;border:1px solid #d5dbe8;background:#fff;color:#101a33;cursor:pointer">Close</button>'
+        + '<button type="button" data-f="v" style="font-family:Inter,system-ui,sans-serif;font-size:13px;font-weight:700;opacity:1;padding:8px 16px;border-radius:9px;border:0;background:#1f5fff;color:#fff;cursor:pointer">Save</button></div></div>';
+      root.appendChild(pop);
+      var tI = pop.querySelector('[data-f="t"]'), bI = pop.querySelector('[data-f="b"]'), st = pop.querySelector('[data-f="s"]');
+      tI.value = n.h || '';
+      bI.value = n.p || '';
+      function close() { pop.remove(); }
+      pop.addEventListener('pointerdown', function (ev) { ev.stopPropagation(); });
+      pop.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        if (ev.target === pop || (ev.target.closest && ev.target.closest('[data-f="x"]'))) { close(); return; }
+        if (!(ev.target.closest && ev.target.closest('[data-f="v"]'))) return;
+        var title = String(tI.value || '').trim(), body = String(bI.value || '');
+        n.h = title; n.p = body;
+        var S0 = window.STATE || {};
+        (S0.notes || []).forEach(function (r) { if (String(r.id) === String(n.id)) { r.title = title; r.body = body; } });
+        (S0.stickies || []).forEach(function (r) { if (String(r.id) === String(n.id)) { r.body = body; r.meta = Object.assign({}, r.meta || {}, { title: title }); } });
+        render(); markSel();
+        if (!writeOk() || !n.id) { close(); toast(root, 'Saved'); return; }
+        st.textContent = 'Saving';
+        var payload = n.src === 'sticky' ? { body: body, meta: { title: title } } : { title: title || 'Note', body: body };
+        api('/api/notes/' + encodeURIComponent(n.id), { method: 'PATCH', body: payload })
+          .then(function (r) { if (!r || !r.ok) throw new Error('save'); close(); toast(root, 'Note saved'); })
+          .catch(function () { st.textContent = 'Could not save. Try again.'; });
+      });
+      pop.addEventListener('keydown', function (ev) { ev.stopPropagation(); if (ev.key === 'Escape') close(); });
+      setTimeout(function () { bI.focus(); }, 30);
+    }
+    /* Fresh data from a refresh: swap it in place so every handler sees the same arrays. */
+    root.__canvasRefresh = function (d) {
+      if (drag || root.querySelector('.cnpop')) return;
+      NOTES.length = 0; Array.prototype.push.apply(NOTES, d.notes || []);
+      if (d.clusters && d.clusters.length) { CL.length = 0; Array.prototype.push.apply(CL, d.clusters); }
+      sel.clear();
+      render(); markSel();
+    };
+    if (root.__canvasAbort) root.__canvasAbort.abort(); var AC = new AbortController(); root.__canvasAbort = AC; {
     function onStageWheel(e) {
       stage = root.querySelector('#stage') || stage;
       world = root.querySelector('#world') || world;
@@ -338,7 +391,7 @@
       if (e.ctrlKey || e.metaKey) zoomAt(Math.exp(-dy * 0.0025), e.clientX, e.clientY);
       else { setPan(p.z, p.ox - dx, p.oy - dy); apply(); }
     }
-    root.addEventListener('wheel', onStageWheel, { passive: false, capture: true });
+    root.addEventListener('wheel', onStageWheel, { passive: false, capture: true, signal: AC.signal });
     stage.addEventListener('wheel', onStageWheel, { passive: false });
     root.addEventListener('pointerdown', function (e) {
       stage = root.querySelector('#stage') || stage;
@@ -360,7 +413,7 @@
         var i = +note.dataset.i;
         if (!NOTES[i]) return;
         if (!sel.has(i)) { if (!e.shiftKey) sel.clear(); sel.add(i); }
-        drag = { type: 'note', sx: wx, sy: wy, start: Array.from(sel).map(function (j) { return [j, NOTES[j].x, NOTES[j].y]; }).filter(function (p) { return NOTES[p[0]]; }) };
+        drag = { type: 'note', clicked: i, sx: wx, sy: wy, start: Array.from(sel).map(function (j) { return [j, NOTES[j].x, NOTES[j].y]; }).filter(function (p) { return NOTES[p[0]]; }) };
         markSel();
       } else if (cn) {
         var cl = CL.find(function (x) { return String(x.id) === String(cn.parentNode.dataset.id); });
@@ -368,7 +421,7 @@
       } else if (e.shiftKey) drag = { type: 'marq', sx: e.clientX, sy: e.clientY };
       else { drag = { type: 'pan', sx: e.clientX, sy: e.clientY, ox: ox, oy: oy }; stage.classList.add('pan'); sel.clear(); markSel(); }
       try { stage.setPointerCapture(e.pointerId); } catch (err) {}
-    });
+    }, { signal: AC.signal });
     root.addEventListener('pointermove', function (e) {
       stage = root.querySelector('#stage') || stage;
       world = root.querySelector('#world') || world;
@@ -419,7 +472,7 @@
           if (sz) sz.textContent = Math.round(NOTES[drag.i].w) + ' x ' + Math.round(NOTES[drag.i].hh);
         }
       }
-    });
+    }, { signal: AC.signal });
     root.addEventListener('pointerup', function (e) {
       stage = root.querySelector('#stage') || stage;
       world = root.querySelector('#world') || world;
@@ -427,6 +480,13 @@
       stage.classList.remove('pan');
       if (drag.type === 'note') {
         var w = toWorld(e.clientX, e.clientY);
+        if (Math.abs(w[0] - drag.sx) * z < 4 && Math.abs(w[1] - drag.sy) * z < 4 && !e.shiftKey) {
+          /* A click, not a drag: open the note. */
+          var ci = drag.clicked != null ? drag.clicked : (drag.start.length ? drag.start[0][0] : -1);
+          drag = null;
+          if (NOTES[ci]) openCanvasNote(ci);
+          return;
+        }
         var hit = clusterAt(w[0], w[1]);
         var moved = 0;
         drag.start.forEach(function (p) {
@@ -453,7 +513,7 @@
       var mq = root.getElementById ? root.getElementById('marq') : root.querySelector('#marq');
       if (mq) mq.style.display = 'none';
       drag = null;
-    });
+    }, { signal: AC.signal });
     world.addEventListener('dblclick', function (e) {
       var cn = e.target.closest('.cn');
       if (cn) rename(cn.parentNode.dataset.id);
@@ -526,7 +586,7 @@
         oy = sr.height / 2 - ((e.clientY - box.top) / s) * z;
         apply();
       }
-    });
+    }, { signal: AC.signal });
     var q = root.getElementById ? root.getElementById('q') : root.querySelector('#q');
     if (q) q.addEventListener('keydown', function (e) {
       if (e.key !== 'Enter') return;
@@ -547,7 +607,7 @@
       ox = sr.width / 2 - ((e.clientX - box.left) / s) * z;
       oy = sr.height / 2 - ((e.clientY - box.top) / s) * z;
       apply();
-    }, true);
+    }, { capture: true, signal: AC.signal });
     root.__canvasBound = true;
     }
     render();

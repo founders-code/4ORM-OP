@@ -115,8 +115,11 @@ function windowWeight(items: Item[], cats: string[], start: number, end: number)
   }).reduce((a, it) => a + weight(it), 0);
 }
 
+/* A normal week reads 50. Busier weeks climb on a soft curve (2x normal = 75, 3x = 88,
+   4x = 94) so one heavy week no longer pins a gauge at 100. */
 function scaled(n: number, median: number) {
-  return Math.max(0, Math.min(100, Math.round((n / (median || 1)) * 50)));
+  const ratio = Math.max(0, n / (median || 1));
+  return Math.max(0, Math.min(99, Math.round(100 * (1 - Math.pow(2, -ratio)))));
 }
 
 function medianOf(nums: number[]) {

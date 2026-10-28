@@ -337,17 +337,11 @@
       ? 'Showing ' + vm.rows.length + ' of ' + vm.matched + ' &middot; <span class="lnk" data-action="people-show-all">Show all</span>'
       : 'Showing ' + vm.rows.length + ' of ' + vm.matched + (vm.showAll && vm.matched > PAGE_ROWS ? ' &middot; <span class="lnk" data-action="people-show-all">Show fewer</span>' : '');
     var tab = S().peopleTab === 'lists' ? 'lists' : 'contacts';
-    function segBtn(k, label) {
-      var on = tab === k;
-      return '<button type="button" data-action="people-tab" data-tab="' + k + '" class="' + (on ? 'on' : '') + '" aria-pressed="' + on + '" style="font:inherit;font-size:14px;font-weight:800;border:0;border-radius:9px;padding:8px 18px;cursor:pointer;'
-        + (on ? 'background:#ff4d8d;color:#160308;box-shadow:0 0 14px rgba(255,77,141,.35)' : 'background:transparent;color:#c8d1ea') + '">' + label + '</button>';
-    }
-    var tabs = '<div class="vseg" role="tablist" style="display:inline-flex;gap:4px;margin:0 16px 0 6px;padding:4px;border-radius:12px;background:#0a0f26;border:1px solid rgba(120,150,255,.3)">' + segBtn('contacts', 'Contacts') + segBtn('lists', 'Lists') + '</div>';
     /* Design 28: one header + Contacts/Lists switch; both modes share the call-list rows. */
     var sub = tab === 'lists'
       ? ('your lists · synced with GoHighLevel · ' + esc((typeof window.vancouverTodayLabel === 'function' && window.vancouverTodayLabel()) || '') + ' · today')
       : 'everyone you know · from email, calls and GoHighLevel';
-    return '<div class="bar"><h1>Contacts</h1>' + tabs + '<span class="sub">' + sub + '</span></div><div data-lists-host="1"></div>';
+    return '<div class="bar"><h1>' + (tab === 'lists' ? 'Lists' : 'Contacts') + '</h1><span class="sub">' + sub + '</span></div><div data-lists-host="1"></div>';
   }
 
   function paintContacts() {
@@ -359,6 +353,8 @@
           var qs = new URLSearchParams(String(location.search || ''));
           if (qs.get('lists') === '1' || qs.get('tab') === 'lists') S().peopleTab = 'lists';
           if (qs.get('tab') === 'contacts') S().peopleTab = 'contacts';
+          if (/^\/lists\/?$/.test(location.pathname || '')) S().peopleTab = 'lists';
+          else if (/^\/(contacts|people)\/?$/.test(location.pathname || '') && !qs.get('tab')) S().peopleTab = 'contacts';
         }
       } catch (e) {}
     } catch (e) {}

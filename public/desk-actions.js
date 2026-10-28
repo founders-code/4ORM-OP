@@ -1900,7 +1900,21 @@
     'nav-go': function (el) {
       if (document.body.classList.contains('arranging')) return;
       var view = attr(el, 'data-v');
-      if (view) go(view);
+      var nm = attr(el, 'data-name');
+      if (view === 'people') {
+        S().peopleTab = nm === 'Lists' ? 'lists' : 'contacts';
+        S().__peopleUrlRead = true;
+        if (S().peopleTab === 'lists' && !S().peopleLists) {
+          api('/api/reach-out?lists=1').then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {
+            S().peopleLists = (d && d.lists) || [];
+            if (S().desk === 'people' && typeof window.paintRedesignContacts === 'function') window.paintRedesignContacts();
+          }).catch(function () {});
+        }
+        if (S().desk === 'people') {
+          if (typeof window.paintRedesignContacts === 'function') window.paintRedesignContacts();
+          if (typeof window.paintShellNav === 'function') window.paintShellNav();
+        } else go(view);
+      } else if (view) go(view);
       var path = attr(el, 'data-path');
       if (path && window.history && history.replaceState) { try { history.replaceState({}, '', path); } catch (err) {} }
     },

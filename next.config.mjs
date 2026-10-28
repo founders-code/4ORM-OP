@@ -60,6 +60,7 @@ const nextConfig = {
       { source: '/timeline', destination: '/control-room.html' },
       { source: '/contacts', destination: '/control-room.html' },
       { source: '/people', destination: '/control-room.html' },
+      { source: '/lists', destination: '/control-room.html' },
       { source: '/recordings', destination: '/control-room.html' },
       { source: '/financials', destination: '/control-room.html' },
       { source: '/integrations', destination: '/control-room.html' },

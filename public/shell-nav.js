@@ -8,6 +8,7 @@
     ['Email', '', '', 'mail', '/email'],
     ['People'],
     ['Contacts', '', '', 'people', '/contacts'],
+    ['Lists', '', '', 'people', '/lists'],
     ['Spaces', '', '', 'work', '/spaces'],
     ['Pipeline', '', '', 'contacts', '/pipeline'],
     ['Library'],
@@ -58,6 +59,7 @@
       if (n === 'Drive' || n === 'Record') return '';
       return n;
     }).filter(Boolean);
+    if (names.indexOf('Lists') < 0 && names.indexOf('Contacts') >= 0) names.splice(names.indexOf('Contacts') + 1, 0, 'Lists');
     DEFAULT.forEach(function (n) { if (names.indexOf(n) < 0) names.push(n); });
     return names.filter(function (n) { return !!itemByName(n); });
   }
@@ -102,6 +104,7 @@
   }
   function activeName() {
     var v = (typeof STATE !== 'undefined' && STATE.desk) || 'room';
+    if (v === 'people' && typeof STATE !== 'undefined' && STATE.peopleTab === 'lists') return 'Lists';
     return PAGE[v] || 'War Room';
   }
   function paint() {
