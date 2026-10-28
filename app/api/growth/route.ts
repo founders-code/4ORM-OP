@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
 import {
-  addTouch, finishUpload, growthRecord, growthSummary, listGrowth, outreachLog, patchGrowth, planDays, saveUploadPart, undoTouch, vanToday,
+  addTouch, finishUpload, growthRecord, importGrowth, growthSummary, listGrowth, outreachLog, patchGrowth, planDays, saveUploadPart, undoTouch, vanToday,
 } from '@/lib/growth';
 import { openBoard, sessionOwner } from '@/lib/session';
 
@@ -47,6 +47,11 @@ export async function POST(req: Request) {
       if (!id || !/^[A-Za-z0-9+/=]+$/.test(b64)) return NextResponse.json({ error: 'Bad part' }, { status: 400 });
       await saveUploadPart(g.sql, g.ownerId, id, Number(body.part) || 0, b64);
       return NextResponse.json({ ok: true });
+    }
+    if (body.action === 'import-json') {
+      const recs = Array.isArray(body.records) ? (body.records as Array<Record<string, unknown>>) : [];
+      if (!recs.length) return NextResponse.json({ error: 'No records' }, { status: 400 });
+      return NextResponse.json({ ok: true, imported: await importGrowth(g.sql, g.ownerId, recs.slice(0, 2000)) });
     }
     if (body.action === 'upload-finish') {
       const id = String(body.upload || '').replace(/[^a-z0-9-]/gi, '').slice(0, 40);
