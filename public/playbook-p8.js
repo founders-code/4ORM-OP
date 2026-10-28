@@ -1,6 +1,6 @@
 /* Playbook 09g to-do board, views, Say it, edit plays. Bound after the plays grid mounts. */
 (function () {
-  var SC = { Zoom: '#a173ff', 'Bruce asked': '#a173ff', Email: '#3b82ff', 'Voice log': '#ff5fa8', 'Outreach list': '#19d38a', Typed: '#ffb547' };
+  var SC = { Zoom: '#a173ff', 'Bruce asked': '#a173ff', Email: '#3b82ff', 'Voice log': '#ff5fa8', 'Outreach list': '#19d38a', Typed: '#ffb547', Planner: '#2fd6c6' };
   var LINK = { Zoom: 'Open the Zoom notes', 'Bruce asked': 'Open the Zoom notes', Email: 'Open the email', 'Voice log': 'Play the voice note', 'Outreach list': "Open the Pre-seed list", Typed: '' };
   /* Exact 09g To-do seed (design-reference/redesign/09g-playbook.html). */
   function seed() {
@@ -43,7 +43,28 @@
       var b = !isFinite(due) ? 'next' : due <= endToday.getTime() ? 'today' : due <= endWeek.getTime() ? 'week' : 'next';
       var late = isFinite(due) && due < now.getTime() - 86400000 ? Math.floor((now.getTime() - due) / 86400000) : 0;
       return { id: String(it.id), t: String(it.title || 'Untitled task'), src: srcOf(it.source), from: String(it.category || it.area || ''), n: String(it.notes || ''), b: b, w: late, due: due };
-    }).sort(function (a, c) { return (isFinite(a.due) ? a.due : 9e15) - (isFinite(c.due) ? c.due : 9e15); });
+    }).concat(planTD()).sort(function (a, c) { return (isFinite(a.due) ? a.due : 9e15) - (isFinite(c.due) ? c.due : 9e15); });
+  }
+  /* Planner steps that land in the next two weeks (or are in motion) are to-dos too, so the timeline gets worked. */
+  var PLAN = [];
+  var PIPE_NAME = { corporate: 'Corporate', capital: 'Capital', revenue: 'Revenue', marketing: 'Marketing', development: 'Development', partnership: 'Partnership', regulators: 'Regulators', team: 'Team' };
+  function planTD() {
+    var today = Math.floor(Date.now() / 86400000);
+    return PLAN.filter(function (i) {
+      if (!i || i.st === 'done' || i.p === 'goals' || (i.kind !== 'span' && i.kind !== 'ms')) return false;
+      return i.e <= today + 13 || (i.kind === 'span' && i.s <= today && i.e >= today);
+    }).map(function (i) {
+      var due = i.e * 86400000 + 19 * 3600000;
+      var b = i.e <= today ? 'today' : i.e <= today + 7 ? 'week' : 'next';
+      return { id: 'tl:' + i.id, t: String(i.n || 'Planner step'), src: 'Planner', from: (PIPE_NAME[i.p] || i.p || '') + (i.kind === 'span' ? ' step' : ' key date'), n: '', b: b, w: i.e < today ? today - i.e : 0, due: due, plan: true };
+    });
+  }
+  function loadPlan(then) {
+    var fn = typeof window.authFetch === 'function' ? window.authFetch : fetch;
+    fn('/api/timeline', { credentials: 'same-origin' }).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {
+      if (d && Array.isArray(d.items)) PLAN = d.items;
+      if (then) then();
+    }).catch(function () {});
   }
   window.bindPlaybookP8 = function (root) {
     if (!root || !root.querySelector) return;
@@ -96,7 +117,18 @@
       window.document.body.appendChild(t);
       setTimeout(function () { if (t.parentNode) t.remove(); }, 6000);
     }
+    function setPlanDone(x, done) {
+      var id = String(x.id).slice(3);
+      PLAN.forEach(function (i) { if (String(i.id) === id) i.st = done ? 'done' : ''; });
+      return apiCall('/api/timeline/items/' + encodeURIComponent(id), 'PATCH', { st: done ? 'done' : '' }).catch(function () { note('Could not save that. Try again.'); });
+    }
     function setStatusLive(x, status, msg) {
+      if (String(x.id).indexOf('tl:') === 0) {
+        setPlanDone(x, status === 'done').then(function () { if (status === 'done') snapToday(); });
+        render();
+        undoToast(msg, function () { setPlanDone(x, false).then(snapToday); render(); });
+        return;
+      }
       var S0 = window.STATE || {};
       var row = (S0.items || []).filter(function (it) { return String(it.id) === String(x.id); })[0];
       var prev = (row && row.status && row.status !== 'done' && row.status !== 'dropped') ? row.status : 'new';
@@ -231,7 +263,15 @@
         c.classList.remove('drop');
         var id = e.dataTransfer.getData('text');
         var x = TD.filter(function (y) { return String(y.id) === String(id); })[0];
-        if (x) { x.b = c.getAttribute('data-b'); render(); }
+        if (!x) return;
+        var nb = c.getAttribute('data-b');
+        if (LIVE) {
+          if (x.plan) { note('Planner steps move on the Planner'); return; }
+          patchLive(x.id, { due: dueFor(nb) });
+          render();
+          return;
+        }
+        x.b = nb; render();
       });
     });
     todo.addEventListener('dragstart', function (e) {
@@ -254,6 +294,7 @@
     });
     function openTodo(id) {
       var x = TD.filter(function (y) { return String(y.id) === String(id); })[0];
+      if (x && x.plan) { if (typeof window.switchView === 'function') window.switchView('planner'); try { history.replaceState({}, '', '/planner'); } catch (e) {} return; }
       var box = $('tdbox'), m = $('tdm');
       var t0 = x ? x.t : '', n0 = x ? (x.n || '') : '';
       function saveEdits() {
@@ -366,6 +407,7 @@
     window.tdRender = render;
     window.TDL = TD;
     render();
+    if (LIVE) { loadPlan(render); setInterval(function () { if (todo.isConnected) loadPlan(render); }, 600000); }
     /* The board loads after the Playbook paints: redraw whenever the task list changes. */
     if (LIVE) {
       var sig = '';
