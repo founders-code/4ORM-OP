@@ -2,7 +2,6 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import type { Sql } from './db';
 import { fail } from './log';
-import { outbound } from './outbound';
 
 type SeedRow = {
   org?: string;
@@ -42,24 +41,6 @@ function asRows(raw: unknown): SeedRow[] {
   return [];
 }
 
-async function fetchDr001(): Promise<SeedRow[]> {
-  const urls = [
-    'https://www.4ormiq.com/api/_dr001.json',
-    'https://4ormiq.com/api/_dr001.json',
-  ];
-  for (const url of urls) {
-    try {
-      const res = await outbound(url, { cache: 'no-store', signal: AbortSignal.timeout(8000) });
-      if (!res.ok) continue;
-      const json = await res.json().catch(() => null);
-      const rows = asRows(json);
-      if (rows.length) return rows;
-    } catch {
-      /* 4ormIQ has not published this endpoint yet */
-    }
-  }
-  return [];
-}
 
 function norm(row: SeedRow): SeedRow | null {
   const id = String(row.id || (row as { doc_id?: string }).doc_id || '').trim().slice(0, 40);
@@ -81,7 +62,8 @@ function norm(row: SeedRow): SeedRow | null {
 /** Seed vault_docs from the 17f register plus 4ormIQ DR-001 if that endpoint answers. Never overwrites an existing doc_id. */
 export async function seedVaultDocs(sql: Sql, ownerId: string) {
   try {
-    const remote = await fetchDr001();
+    /* 4ormIQ keeps its register private (nothing under its /api/_ path is published), so the Vault seeds from the local register only. */
+    const remote: SeedRow[] = [];
     const seen = new Set<string>();
     const rows: SeedRow[] = [];
     for (const raw of [...remote, ...loadLocal()]) {
