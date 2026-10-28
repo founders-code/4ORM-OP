@@ -848,6 +848,8 @@ function fillPublicContacts(people: ReachListPerson[]) {
     map.set(fillKey(f.company), f);
   }
   for (const p of people) {
+    /* A named regulator contact keeps their own details; the agency's general line only fills the agency rows. */
+    if (/regulator/i.test(p.role) && fillKey(p.name) !== fillKey(p.company)) continue;
     const hit = map.get(fillKey(p.company)) || map.get(fillKey(p.name));
     if (!hit) continue;
     if (!p.phone && hit.phone) p.phone = clip(hit.phone, 40);
