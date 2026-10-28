@@ -1527,8 +1527,11 @@
     var modal = S.docSheetModal
       ? '<div class="modal open" id="sheetModal"><div class="mbox"><h3>Make a list from “' + esc(sh.name) + '”</h3><p>Each of the ' + (sh.rows || []).length + ' rows becomes a contact (matched to GoHighLevel by email or name), gets its own Space with every column from the sheet, and lands in a new list under Contacts. Rows already in GoHighLevel are updated, not duplicated.</p><input value="' + esc(sh.name) + '"><select><option>Add to pipeline: Storage</option><option>Do not add to a pipeline</option></select><div class="row"><button class="btn" data-action="docs-sheet-modal-close">Cancel</button><button class="btn pri" data-action="docs-sheet-make-go">Make the list</button></div></div></div>'
       : '';
+    var folder = (od && (od.folder || (od.meta && od.meta.folder))) || 'All';
     wrap.innerHTML =
-      '<div class="bar"><h1>Documents</h1><span class="sub">sheets open right here, no Google sign-in</span><div class="r"><input class="search" data-action="docs-sheet-search" placeholder="Search this sheet" value="' + esc(S.docSheetQ || '') + '"></div></div>'
+      '<div class="bar"><button type="button" class="btn" data-action="doc-close" title="Back to Documents" style="margin-right:8px">Back</button>'
+      + '<div class="crumbs" style="flex:1;min-width:200px;margin:0 12px 0 0"><span class="lnk" data-action="doc-close" style="cursor:pointer;color:#9db9ff;text-decoration:underline">Documents</span> / <span class="lnk" data-action="docs-folder" data-folder="' + esc(folder === 'All' ? '' : folder) + '" style="cursor:pointer;color:#9db9ff;text-decoration:underline">' + esc(folder) + '</span> / <span>' + esc(book.name) + '</span></div>'
+      + '<h1 style="margin:0">Documents</h1><span class="sub">sheets open right here, no Google sign-in</span><div class="r"><input class="search" data-action="docs-sheet-search" placeholder="Search this sheet" value="' + esc(S.docSheetQ || '') + '"><button type="button" class="btn" data-action="doc-close" title="Close (Esc)">Close</button></div></div>'
       + '<div class="files" id="files">' + files + '</div>'
       + '<section class="card doc">'
       + '<div class="dh"><span class="kind">SHEET</span><h2>' + esc(book.name) + '</h2><span style="font-size:12px;color:var(--ink3);font-weight:650">' + (sh.rows || []).length + ' rows · ' + hdr.length + ' columns</span>'
@@ -1663,6 +1666,18 @@
       paintSheetViewer(wrap, S.docOpen || {});
       if (P().finishPaint) P().finishPaint(wrap);
       else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
+      if (!wrap._docKeys) {
+        wrap._docKeys = 1;
+        document.addEventListener('keydown', function (e) {
+          if (e.key !== 'Escape') return;
+          if (!(window.STATE && window.STATE.docOpen)) return;
+          if (window.deskActions && window.deskActions['doc-close']) window.deskActions['doc-close']();
+        });
+        window.addEventListener('popstate', function () {
+          if (window.STATE && window.STATE.docOpen && window.deskActions && window.deskActions['doc-close']) window.deskActions['doc-close']();
+        });
+      }
+      try { history.pushState({ doc: 1 }, ''); } catch (e) {}
       markReady('docsDesk');
       return;
     }
