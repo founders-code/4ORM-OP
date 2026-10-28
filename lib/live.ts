@@ -319,12 +319,18 @@ export async function ensureWatches(sql: Sql, ownerId: string, origin: string) {
 }
 
 export async function safetySweep(sql: Sql, ownerId: string, origin = '') {
-  const mail = await cacheInbox(sql, ownerId, true).catch((err) => {
+  /* Mail: read only what changed since the last history id (one or two calls). A full inbox read
+     (about 45 calls) runs at most once an hour, or when there is no history to read from. */
+  const cached = await readMailCache(sql, ownerId).catch(() => null);
+  const stale = !cached || Date.now() - cached.fetchedAt > 60 * 60 * 1000;
+  const mail = await (stale ? cacheInbox(sql, ownerId, true) : applyGmailHistory(sql, ownerId)).catch((err) => {
     fail('live_mail', err);
     return { added: 0, linkedin: 0, titles: [] as string[] };
   });
   await syncCalendar(sql, ownerId, true).catch((err) => fail('live_cal', err));
-  const ghl = await syncGhl(sql, ownerId, true).catch((err) => {
+  /* GoHighLevel: the webhook carries changes as they happen; the sweep is a 30-minute safety net. */
+  const ghlAt = await sql`SELECT synced_at FROM sync_state WHERE owner_id = ${ownerId} AND source = 'ghl'`.then((r) => (r[0]?.synced_at ? new Date(String(r[0].synced_at)).getTime() : 0)).catch(() => 0);
+  const ghl = await (Date.now() - ghlAt > 30 * 60 * 1000 ? syncGhl(sql, ownerId, true) : Promise.resolve(undefined)).catch((err) => {
     fail('live_ghl', err);
     return undefined;
   });

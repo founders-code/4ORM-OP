@@ -495,16 +495,9 @@
     }
     function paintLedger() {
       var fr = $(root, '#iqFrame');
-      if (fr && !fr.getAttribute('src')) fr.setAttribute('src', 'https://4ormiq.com/real-run-live-go/room');
+      if (fr && !fr.getAttribute('src')) fr.setAttribute('src', 'https://www.4ormiq.com/real-run-live-go/room');
       var rl = $(root, '#iqReload');
-      if (rl && !rl._b) { rl._b = 1; rl.onclick = function () { var f = $(root, '#iqFrame'); if (f) f.setAttribute('src', 'https://4ormiq.com/real-run-live-go/room?r=' + Date.now()); }; }
-      var rooms = $(root, '#pg-ledger .rooms');
-      if (rooms) {
-        rooms.querySelectorAll('.big').forEach(function (b) { b.textContent = '-'; });
-        rooms.querySelectorAll('.s').forEach(function (s) { s.textContent = 'no sample from 4ormIQ yet'; });
-      }
-      $$(root, '#pg-ledger .led .ch').forEach(function (c) { if (!c.classList.contains('h')) c.textContent = '-'; });
-      $$(root, '#pg-ledger .led .hash').forEach(function (c) { c.textContent = '-'; });
+      if (rl && !rl._b) { rl._b = 1; rl.onclick = function () { var f = $(root, '#iqFrame'); if (f) f.setAttribute('src', 'https://www.4ormiq.com/real-run-live-go/room?r=' + Date.now()); }; }
     }
     function dropCovers() {
       $$(root, '.sw.lifted').forEach(function (x) { x.classList.remove('lifted'); });
@@ -734,12 +727,12 @@
        A box that feeds several others drops one trunk onto its own bus, which branches to each of them,
        so a fan-out (one chat feeding three places) reads at a glance. */
     var MAP = { nodes: [], edges: [], lanes: [] }, mapSel = null, onlyBadMap = false, GEO = {};
-    var NW = 150, NH = 50, SLOT = 164, X0 = 150, RW = 1650;
+    var NW = 146, NH = 50, SLOT = 160, X0 = 150, RW = 1700;
     var LAMP = { ok: '#19d38a', warn: '#ffb547', down: '#ff4d6d', idle: '#5d6b93' };
     var WORD = { ok: 'OK', warn: 'WARNING', down: 'DOWN', idle: 'IDLE' };
     function layout() {
       var lanes = MAP.lanes && MAP.lanes.length ? MAP.lanes : ['COMES IN', 'HOW IT ARRIVES', 'KEPT AND WORKED ON', 'WHERE YOU SEE IT', 'GOES BACK OUT'];
-      var per = Math.floor((RW - X0) / SLOT);
+      var per = Math.floor((RW - X0 - SLOT / 2) / SLOT);
       var parents = {};
       MAP.edges.forEach(function (e) { (parents[e[1]] = parents[e[1]] || []).push(e[0]); });
       var pos = {}, y = 14, laneBox = [];
@@ -753,7 +746,7 @@
           });
           mine.sort(function (a, b) { return a._bx - b._bx; });
         }
-        var rows = Math.ceil(mine.length / per) || 1;
+        var rows = mine.length > per ? 2 : 1;
         var top = y;
         mine.forEach(function (n, i) {
           var r = rows > 1 ? i % 2 : 0;

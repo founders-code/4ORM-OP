@@ -35,7 +35,14 @@ export async function GET(req: Request) {
     const creds = await loadCredsFor(ownerId);
     const origin = publicOrigin();
     const result = await withCreds(creds, () => safetySweep(sql, ownerId, origin));
-    const vault = await seedVaultDocs(sql, ownerId);
+    /* The Vault register only changes when a document is filed, so it is re-seeded once a day, not every 5 minutes. */
+    const seededAt = await sql`SELECT synced_at FROM sync_state WHERE owner_id = ${ownerId} AND source = 'vault_seed'`.then((r) => (r[0]?.synced_at ? new Date(String(r[0].synced_at)).getTime() : 0)).catch(() => 0);
+    let vault = { added: 0, total: 0 };
+    if (Date.now() - seededAt > 24 * 3600 * 1000) {
+      vault = await seedVaultDocs(sql, ownerId);
+      await sql`INSERT INTO sync_state (owner_id, source, status, detail, synced_at) VALUES (${ownerId}, 'vault_seed', 'connected', ${`${vault.total} register rows`}, now())
+        ON CONFLICT (owner_id, source) DO UPDATE SET status = EXCLUDED.status, detail = EXCLUDED.detail, synced_at = now()`.catch(() => null);
+    }
     const dials = await sampleOpsDials(sql);
     await tape('ok', 'cron', `sweep mail=${result.mail || 0} zoom=${result.zoom || 0} vault+${vault.added}`);
     return NextResponse.json({

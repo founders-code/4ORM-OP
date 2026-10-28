@@ -15,36 +15,8 @@
 <div class="toast" id="toast"><span id="tmsg"></span><b id="tundo" style="display:none"></b></div>
 <div class="bar" id="barControl"><h1>Control room</h1><span class="sub">the system map for 4ormop, plus the other control rooms mapped in</span><div class="r"><div class="seg" id="iseg"><span class="on" data-v="map">4ormop system</span><span data-v="ledger">4ormIQ</span><span data-v="more">+ Map another</span></div></div></div>
 <section id="pg-ledger">
- <div class="card iqmap"><div class="vhead"><h2>4ormIQ operations board</h2><span class="st">the live process map with every alert, straight from 4ormIQ &middot; sign in to 4ormIQ once if it asks</span><div class="r"><button class="cbtn" type="button" id="iqReload">Reload</button><a class="cbtn" style="text-decoration:none;display:inline-flex;align-items:center" id="iqOpen" href="https://4ormiq.com/real-run-live-go/room" target="_blank" rel="noopener">Open in a new tab</a></div></div>
+ <div class="card iqmap"><div class="vhead"><h2>4ormIQ operations board</h2><span class="st">the live process map with every alert, straight from 4ormIQ &middot; sign in to 4ormIQ once if it asks</span><div class="r"><button class="cbtn" type="button" id="iqReload">Reload</button><a class="cbtn" style="text-decoration:none;display:inline-flex;align-items:center" id="iqOpen" href="https://www.4ormiq.com/real-run-live-go/room" target="_blank" rel="noopener">Open in a new tab</a></div></div>
   <iframe id="iqFrame" title="4ormIQ operations board" loading="lazy" referrerpolicy="no-referrer" style="width:100%;height:1100px;border:0;border-radius:0 0 14px 14px;background:#0b1430;display:block"></iframe>
- </div>
- <div class="lgrid">
-  <div class="card"><div class="vhead"><h2>4ormIQ control room</h2><span class="st">mapped in by API, every 5 minutes</span><div class="r"><span class="pill p-green">Live · updated 09:12</span><button class="btn">Open 4ormIQ</button></div></div>
-   <div class="rooms">
-    <div class="room" style="--rc:#19d38a"><h4><i></i>Operations</h4><div class="big">1,240</div><div class="s">checks run this week · 0 errors · p95 1.8 s</div></div>
-    <div class="room" style="--rc:#3b82ff"><h4><i></i>Source health</h4><div class="big">11 / 12</div><div class="s">registers answering · CAFC feed slow (14 s)</div></div>
-    <div class="room" style="--rc:#ffb547"><h4><i></i>Alerts</h4><div class="big">2</div><div class="s">derived from current state, never a stored feed</div><div class="fb">Privacy Officer still unappointed · SEC-001 draft</div></div>
-    <div class="room" style="--rc:#a173ff"><h4><i></i>Compliance risk</h4><div class="big">CR-001 v0.1</div><div class="s">rebuild to v1.0 due · 6 rows with no owner</div></div>
-    <div class="room" style="--rc:#22d3c5"><h4><i></i>Code sweep</h4><div class="big">F10 open</div><div class="s">compliance gate not in repo · 34 orphan scripts</div></div>
-    <div class="room" style="--rc:#ff5fa8"><h4><i></i>Documents</h4><div class="big">14</div><div class="s">controlled · 4 launch blockers in draft</div></div>
-    <div class="room" style="--rc:#f5c443"><h4><i></i>Legal authority</h4><div class="big">LR-001</div><div class="s">every CR row cites an LR row · 0 uncited</div></div>
-    <div class="room" style="--rc:#7f8db5"><h4><i></i>Endpoint</h4><div class="endp" style="background:#0b1430;color:#cfd8ee">GET https://4ormiq.com/api/control-room → rooms[], alerts[], docs[], generated_at · bearer key in Vercel · 4ormop caches 5 min, shows a red "fallback" banner if it does not answer</div></div>
-   </div>
-  </div>
-  <div class="card"><div class="vhead"><h2>Canonical ledger</h2><span class="st">one row per fact that must stay true</span><div class="r"><button class="btn">Export</button></div></div>
-   <div style="padding:0 6px 12px">
-    <div class="led"><span class="h">ID</span><span class="h">Fact</span><span class="h">Hash</span><span class="h">Check</span></div>
-    <div class="led"><b class="id">L-001</b><span>Slogan: "Major financial decisions. Easier to understand. Easier to explain."<br><small>used on landing, data room, deck p1</small></span><span class="hash">a3f9…c21e</span><span class="ch p-cur">match</span></div>
-    <div class="led"><b class="id">L-002</b><span>Tagline: People · Trust · Clear Outcomes<br><small>every deck and one-pager</small></span><span class="hash">7b10…88d4</span><span class="ch p-cur">match</span></div>
-    <div class="led"><b class="id">L-003</b><span>Base case: C$94.7M 2031 revenue (28 Sep 2026 model)<br><small>pro forma, investor summary, deck</small></span><span class="hash">e5c2…0a7f</span><span class="ch p-cur">match</span></div>
-    <div class="led"><b class="id">L-004</b><span>Pre-seed: $2.05M, SAFEs at $15M / $18M / $20M<br><small>v15r workbook, deck, data room</small></span><span class="hash">91ad…3b60</span><span class="ch p-due">deck p14 differs</span></div>
-    <div class="led"><b class="id">L-005</b><span>Canonical "what we do" paragraph (2 Oct 2026)<br><small>4ormfinance.com and data room only</small></span><span class="hash">c0de…f117</span><span class="ch p-cur">match</span></div>
-    <div class="led"><b class="id">L-006</b><span>4ormIQ status: designed and built; the 4orm platform is not built<br><small>every public page</small></span><span class="hash">55e1…9ab2</span><span class="ch p-cur">match</span></div>
-    <div class="led"><b class="id">L-007</b><span>Team: Chad, Kevin, Zahiruddin, Michael Stephens, Matt Mozaffari (technology lead seat)<br><small>team page, decks</small></span><span class="hash">d8f3…41c9</span><span class="ch p-dr">1 page unchecked</span></div>
-    <div class="led"><b class="id">L-008</b><span>Standing Zoom: us06web.zoom.us/j/7783632424<br><small>calendar, email signature</small></span><span class="hash">0b77…e3e3</span><span class="ch p-cur">match</span></div>
-   </div>
-   <div style="padding:0 18px 18px;font-size:12.5px;color:var(--ink3);font-weight:650">Each fact has a canonical value and a list of places it appears. The nightly check hashes every place and flags any drift. Change the canonical value here and it re-flags everywhere until each copy is fixed.</div>
-  </div>
  </div>
 </section>
 <section id="pg-map"><div class="crwrap">

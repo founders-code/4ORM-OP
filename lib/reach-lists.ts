@@ -343,16 +343,21 @@ async function applyDoneMarks(sql: Sql, ownerId: string, people: ReachListPerson
 export async function buildCallLists(sql: Sql, ownerId: string, userId: string): Promise<ReachList[]> {
   let pipes: GhlPipeline[] = [];
   let creds: Awaited<ReturnType<typeof loadCredsFor>> | null = null;
-  try {
-    creds = await loadCredsFor(userId);
-    const all = await withCreds(creds, () => listPipelines());
-    pipes = all.pipelines || [];
-  } catch (err) {
-    fail('reach_pipes', err);
+  /* Once the growth lists are loaded the older GoHighLevel-built lists are not shown, so skip the
+     pipeline pull and the per-contact lookups that went with it (dozens of calls on every page load). */
+  const hasGrowth = await sql`SELECT 1 FROM growth_records WHERE owner_id = ${ownerId} AND deleted_at IS NULL LIMIT 1`.then((r) => r.length > 0).catch(() => false);
+  if (!hasGrowth) {
+    try {
+      creds = await loadCredsFor(userId);
+      const all = await withCreds(creds, () => listPipelines());
+      pipes = all.pipelines || [];
+    } catch (err) {
+      fail('reach_pipes', err);
+    }
   }
 
   const [designLive, regulators] = await Promise.all([
-    creds ? withCreds(creds, () => designPartnerPeople(ownerId, pipes)).catch(() => [] as ReachListPerson[]) : designPartnerPeople(ownerId, pipes),
+    hasGrowth ? Promise.resolve([] as ReachListPerson[]) : creds ? withCreds(creds, () => designPartnerPeople(ownerId, pipes)).catch(() => [] as ReachListPerson[]) : designPartnerPeople(ownerId, pipes),
     regulatorPeople(sql, ownerId),
   ]);
   /* GoHighLevel can time out or rate-limit. Keep the last good Design partners list so the page never flips to empty. */

@@ -14,7 +14,7 @@ const APIS = [
   { key: 'neon', name: 'Neon Postgres', endpoint: 'postgres' },
   { key: 'clerk', name: 'Clerk', endpoint: 'https://api.clerk.com' },
   { key: 'boc', name: 'Bank of Canada', endpoint: 'https://www.bankofcanada.ca/valet' },
-  { key: 'iq', name: '4ormIQ control room', endpoint: 'https://4ormiq.com/api/control-room' },
+  { key: 'iq', name: '4ormIQ control room', endpoint: 'https://www.4ormiq.com/api/stats' },
   { key: 'vercel', name: 'Vercel', endpoint: 'https://api.vercel.com' },
 ];
 

@@ -138,7 +138,6 @@ export async function buildFlowMap(sql: Sql | null, ownerId: string, userId: str
   const iq = A.get('iq') ? service('iq', 'iq') : { state: 'idle' as FlowState, detail: 'No reads from 4ormIQ in 24 h' };
   const scrapeState = fresh((scrape || {}).t, 7, 13);
   const newsState = fresh((news || {}).t, 9, 26);
-  const live = syncOf('gmail', 0.5, 3);
 
   const nodes: FlowNode[] = [
     { id: 'src-gmail', lane: 0, name: 'Gmail', sub: 'inbox, LinkedIn alerts', ...g },
@@ -158,7 +157,7 @@ export async function buildFlowMap(sql: Sql | null, ownerId: string, userId: str
     { id: 'in-cal', lane: 1, name: 'Calendar push', sub: '/api/hooks/calendar', routes: '/api/hooks/calendar', ...watchOf('calendar') },
     { id: 'in-zoom', lane: 1, name: 'Zoom webhook', sub: '/api/hooks/zoom', routes: '/api/hooks/zoom', state: (zoomSync || {}).t ? fresh((zoomSync || {}).t, 26, 72) : 'idle', detail: `Zoom synced ${ago((zoomSync || {}).t)}` },
     { id: 'in-ghl', lane: 1, name: 'GoHighLevel webhook', sub: '/api/hooks/ghl', routes: '/api/hooks/ghl', ...syncOf('ghl', 1, 24) },
-    { id: 'in-live', lane: 1, name: 'Live sync', sub: 'every 5 min', routes: '/api/cron/live', ...live },
+    { id: 'in-live', lane: 1, name: 'Live sync', sub: 'every 5 min', routes: '/api/cron/live', state: (mail || {}).t ? fresh((mail || {}).t, 1.5, 6) : 'idle', detail: `Inbox read ${ago((mail || {}).t)}; pushes and history in between` },
     { id: 'in-scrape', lane: 1, name: 'Scrape', sub: '06:00, 12:00, 18:00', routes: '/api/cron/scrape', state: n(scrape, 'bad') ? worst(scrapeState, 'warn') : scrapeState, detail: `Last run ${ago((scrape || {}).t)} · ${n(scrape)} runs in 24 h${n(scrape, 'bad') ? `, ${n(scrape, 'bad')} did not finish` : ''}` },
     { id: 'in-news', lane: 1, name: 'News sweep, pulse', sub: 'several times a day', routes: '/api/cron/news, /api/cron/pulse', state: newsState, detail: `Swept ${ago((news || {}).t)}` },
     { id: 'in-brief', lane: 1, name: 'Morning brief', sub: 'weekdays 05:00', routes: '/api/cron/brief', state: fresh((brief || {}).t, 30, 80), detail: `Written ${ago((brief || {}).t)}` },
@@ -168,7 +167,7 @@ export async function buildFlowMap(sql: Sql | null, ownerId: string, userId: str
     { id: 'in-voice', lane: 1, name: 'Recorder, voice', sub: 'record and transcribe', routes: '/api/recordings, /api/voice', state: n(rec, 'bad') ? 'warn' : (rec ? 'ok' : 'down'), detail: `${n(voice)} voice notes · ${n(rec)} recordings${n(rec, 'bad') ? ` · ${n(rec, 'bad')} failed` : ''}` },
     { id: 'in-import', lane: 1, name: 'Imports', sub: 'CSV, .4orm, uploads', routes: '/api/growth, /api/reach-out, /api/documents/upload', state: growth ? 'ok' : 'down', detail: `${n(growth)} list records loaded` },
 
-    { id: 'kp-mail', lane: 2, name: 'Mail store', sub: 'inbox cache', state: (mail || {}).t ? fresh((mail || {}).t, 1, 12) : 'idle', detail: `Inbox cached ${ago((mail || {}).t)}` },
+    { id: 'kp-mail', lane: 2, name: 'Mail store', sub: 'inbox cache', state: (mail || {}).t ? fresh((mail || {}).t, 1.5, 12) : 'idle', detail: `Inbox cached ${ago((mail || {}).t)}` },
     { id: 'kp-cal', lane: 2, name: 'Calendar store', sub: 'event cache', state: (cal || {}).t ? fresh((cal || {}).t, 1, 12) : 'idle', detail: `Events cached ${ago((cal || {}).t)}` },
     { id: 'kp-people', lane: 2, name: 'People and lists', sub: 'contacts, growth, calls', state: growth && contacts ? 'ok' : 'down', detail: `${n(contacts)} contacts · ${n(growth)} list records · ${n(growth, 't')} contacted` },
     { id: 'kp-plan', lane: 2, name: 'Plans and to-dos', sub: 'items, timeline', state: items && tl ? 'ok' : 'down', detail: `${n(items, 'open')} open to-dos · ${n(tl)} timeline items` },
