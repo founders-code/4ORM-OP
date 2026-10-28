@@ -820,7 +820,7 @@
       ] }
     ];
   }
-  function pctOf(s) { return (s.d || []).filter(Boolean).length; }
+  function pctOf(s) { return ((s && s.d) || []).filter(Boolean).length; }
   function iniOf(n) { return String(n || '').split(' ').map(function (x) { return x[0] || ''; }).join('').slice(0, 2).toUpperCase(); }
   function ringColor(k) { return k === 5 ? 'var(--green)' : (k >= 3 ? '#2e6bf2' : '#c98408'); }
   function fmtDay(iso) {
@@ -1053,7 +1053,7 @@
       if (cur) markCur();
     }
     function fillWindow() {
-      if (!cur) return;
+      if (!cur || !CATS[cur.ci] || !CATS[cur.ci].sp[cur.si]) return;
       var s = CATS[cur.ci].sp[cur.si], k = pctOf(s), c = ringColor(k);
       var qCr = root.getElementById ? root.getElementById('qCr') : root.querySelector('#qCr');
       var qb = root.getElementById ? root.getElementById('qb') : root.querySelector('#qb');
