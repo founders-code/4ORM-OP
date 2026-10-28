@@ -66,6 +66,43 @@
       if (then) then();
     }).catch(function () {});
   }
+  /* Today's reach-outs from the call lists (regulators, VCs, angels, design partners...). */
+  var REACH = null, reachAt = 0;
+  function vanLabel(d) {
+    var p = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', weekday: 'short', day: 'numeric', month: 'short' }).formatToParts(d);
+    var g = function (t) { var x = p.filter(function (y) { return y.type === t; })[0]; return x ? x.value.replace('.', '') : ''; };
+    return g('weekday') + ' ' + g('day') + ' ' + g('month');
+  }
+  var MON = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Sept: 8, Oct: 9, Nov: 10, Dec: 11 };
+  function labelKey(lab) {
+    var m = /(\d{1,2})\s+([A-Za-z]{3,4})/.exec(String(lab || ''));
+    if (!m || MON[m[2]] == null) return null;
+    return MON[m[2]] * 40 + Number(m[1]);
+  }
+  function loadReach(then) {
+    if (REACH && Date.now() - reachAt < 120000) { if (then) then(); return; }
+    var fn = typeof window.authFetch === 'function' ? window.authFetch : fetch;
+    fn('/api/reach-out?lists=1', { credentials: 'same-origin' }).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {
+      var lists = d && (d.lists || d.callLists || d);
+      if (Array.isArray(lists)) { REACH = lists; reachAt = Date.now(); }
+      if (then) then();
+    }).catch(function () {});
+  }
+  function reachToday() {
+    if (!Array.isArray(REACH)) return [];
+    var todayLab = vanLabel(new Date());
+    var tk = labelKey(todayLab);
+    return REACH.map(function (l) {
+      var ppl = (l.people || []).filter(function (p) {
+        if (!p || p.done) return false;
+        if (p.day === todayLab) return true;
+        var k = labelKey(p.day);
+        return k != null && tk != null && k < tk && tk - k < 40;
+      });
+      var due = ppl.filter(function (p) { return p.day === todayLab; }).length;
+      return { key: l.key, name: l.name || 'List', people: ppl, today: due, carried: ppl.length - due };
+    }).filter(function (g) { return g.people.length; });
+  }
   window.bindPlaybookP8 = function (root) {
     if (!root || !root.querySelector) return;
     var todo = root.querySelector('#todo');
@@ -235,7 +272,22 @@
           + (lab && !/^go$/i.test(lab) ? '<span>' + escT(lab) + '</span>' : (r.target ? '<span>' + escT(r.target) + '</span>' : ''))
           + (go ? '<a class="fxj" href="' + escT(go) + '">Open</a>' : '') + '</div></div>';
       }).join('') || '<div class="fxnone">' + (rows.length ? 'Every play for today is done.' : 'Plays load with the Playbook grid.') + '</div>';
-      setTitle('next', "Today's plays", due.length);
+      var groups = reachToday();
+      var reachN = 0;
+      if (playHost && groups.length) {
+        playHost.insertAdjacentHTML('beforeend', '<div class="fxrh">Reach out today</div>' + groups.map(function (g) {
+          reachN += g.people.length;
+          var names = g.people.slice(0, 6).map(function (p) {
+            var how = p.phone ? '<a class="fxj" href="tel:' + escT(p.phone) + '">Call</a>' : p.email ? '<a class="fxj" href="mailto:' + escT(p.email) + '">Email</a>' : '';
+            return '<li><span>' + escT(p.name || 'Contact') + '</span>' + (p.company ? '<em>' + escT(p.company) + '</em>' : '') + how + '</li>';
+          }).join('');
+          var more = g.people.length > 6 ? '<li class="fxmore">+' + (g.people.length - 6) + ' more</li>' : '';
+          return '<div class="ti fxpl fxrc" style="--sc:#ffb547"><div class="tt">' + escT(g.name) + '</div><div class="meta"><span>' + g.today + ' today</span>'
+            + (g.carried ? '<span class="late">' + g.carried + ' carried over</span>' : '') + '<a class="fxj" href="#" data-golist="' + escT(g.key) + '">Open list</a></div><ul class="fxppl">' + names + more + '</ul></div>';
+        }).join(''));
+      }
+      if (!REACH) loadReach(function () { if (isFocus()) paintFocus(); });
+      setTitle('next', "Today's plays", due.length + reachN);
       var c = $('cnt-today');
       setTitle('today', 'To-dos due today', c ? c.textContent : '');
     }
@@ -250,6 +302,13 @@
         x.done = !x.done;
         doneToday += x.done ? 1 : -1;
         render();
+        return;
+      }
+      var gl = e.target.closest && e.target.closest('[data-golist]');
+      if (gl) {
+        e.preventDefault();
+        try { window.STATE.peopleTab = 'lists'; window.STATE.peopleListKey = gl.getAttribute('data-golist'); } catch (x) {}
+        if (typeof window.switchView === 'function') window.switchView('people');
         return;
       }
       var open = e.target.closest && e.target.closest('[data-open]');
