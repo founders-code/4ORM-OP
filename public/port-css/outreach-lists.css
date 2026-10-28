@@ -281,3 +281,18 @@ td.reach .em{font-size:11.5px;color:#7fb0ff;font-weight:650;margin-top:3px;overf
 .reach-lists table.ltab .stg2{height:22px!important;min-height:0!important;line-height:20px!important;padding:0 10px!important}
 .reach-lists table.ltab td .sp{display:none!important}
 .reach-lists table.ltab td{height:auto!important}
+.reach-lists .pop .box{max-height:calc(100vh - 32px);overflow:auto;width:min(560px,100%)}
+.reach-lists .pop .call,.reach-lists .pop .ghl{background:#0a0f26;border:1px solid rgba(120,150,255,.14);border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.reach-lists .pop .call:empty,.reach-lists .pop .ghl:empty{display:none}
+.reach-lists .pop .call b,.reach-lists .pop .ghl b{display:block;color:#e9eefa;margin-bottom:6px}
+.reach-lists .pop .ghl small{display:block;color:#a3b0d2;margin-bottom:8px}.reach-lists .pop .ghl em{font-style:normal;color:#7ff0c2;font-weight:700}
+.reach-lists .pop .outs,.reach-lists .pop .stgs{display:flex;flex-wrap:wrap;gap:6px}
+.reach-lists .pop .outs button,.reach-lists .pop .stgs button{font:inherit;font-size:12.5px;font-weight:700;border-radius:999px;padding:5px 11px;border:1px solid rgba(120,150,255,.26);background:rgba(255,255,255,.04);color:#c8d1ea;cursor:pointer}
+.reach-lists .pop .outs button.on{background:#3b82ff;border-color:#3b82ff;color:#fff}
+.reach-lists .pop .stgs button.on{background:rgba(25,211,138,.18);border-color:#19d38a;color:#7ff0c2}
+.reach-lists .pop .stgs button:disabled{opacity:.5;cursor:default}
+.reach-lists .pop .fu{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}.reach-lists .pop .fu label{color:#a3b0d2;font-weight:700;font-size:12.5px}
+.reach-lists .pop .fu input,.reach-lists .pop .ghl select{background:#080c1f;border:1px solid rgba(120,150,255,.26);border-radius:8px;color:#e9eefa;padding:6px 8px;font:inherit;color-scheme:dark}
+.reach-lists .pop .ghl select{margin-bottom:8px}.reach-lists .pop .fu .btn{margin-left:auto}
+.reach-lists .pop .nb a{color:#8dbaff}
+.reach-lists span.gh{display:inline-block;margin:3px 4px 0 0;font-size:11px;font-weight:700;color:#7ff0c2;background:rgba(25,211,138,.12);border-radius:6px;padding:1px 6px}

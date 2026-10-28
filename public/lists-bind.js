@@ -275,6 +275,12 @@
       render();
       var contactId = person.contactId || '';
       var reachId = person.id || contactId;
+      if (person.growth) {
+        api('/api/growth', { method: 'PATCH', body: { id: contactId, stage: next } }).then(function (r) {
+          if (!r.ok) { person.stage = prev; render(); toast('Could not save stage'); }
+        });
+        return;
+      }
       api('/api/reach-out/' + encodeURIComponent(reachId), {
         method: 'PATCH',
         body: { stage: next, contactId: contactId },
@@ -415,6 +421,15 @@
     function softDeletePerson(person) {
       person._del = true;
       render();
+      if (person.growth) {
+        api('/api/growth', { method: 'PATCH', body: { id: person.contactId, deleted: true } }).then(function (r) {
+          if (!r.ok) { person._del = false; render(); toast('Could not delete'); return; }
+          toast((person.name || 'Person') + ' removed', function () {
+            api('/api/growth', { method: 'PATCH', body: { id: person.contactId, deleted: false } }).then(function () { person._del = false; render(); });
+          });
+        });
+        return;
+      }
       var isContact = state.mode === 'contacts' || !!(person.contactId && /^[0-9a-f-]{36}$/i.test(person.contactId));
       var path = isContact && person.contactId
         ? '/api/contacts/' + encodeURIComponent(person.contactId)
@@ -442,7 +457,175 @@
       });
     }
 
+    var OUTCOMES = ['No answer', 'Left voicemail', 'Spoke', 'Interested', 'Call back', 'Not interested', 'Wrong number', 'Meeting booked'];
+    var OUT_STAGE = { 'Spoke': 1, 'Interested': 1, 'Call back': 1, 'Meeting booked': 5 };
+
+    /* Every field in the card saves when it changes. */
+    function bindFields(p) {
+      var map = { en: 'name', ec: 'company', ep: 'phone', ee: 'email' };
+      Object.keys(map).forEach(function (fid) {
+        var el = $('#' + fid);
+        if (!el) return;
+        el.onchange = function () {
+          var key = map[fid];
+          var val = String(el.value || '').trim();
+          var body = {};
+          var path;
+          if (p.growth) {
+            if (key === 'company') { body.name = val; } else if (key === 'name' && p.company) { body.contact = val; } else { body[key] = val; }
+            body.id = p.contactId; path = '/api/growth';
+          } else if (p.contactId && /^[0-9a-f-]{36}$/i.test(p.contactId)) {
+            body[key] = val; body.id = p.contactId; path = '/api/contacts';
+          } else { toast('This row has no contact record to save to'); return; }
+          api(path, { method: 'PATCH', body: body }).then(function (r) {
+            if (!r.ok) { toast('Could not save ' + key); return; }
+            p[key] = val;
+            toast('Saved');
+            renderBody();
+          });
+        };
+      });
+    }
+
+    function fmtWhen(v) {
+      if (!v) return '';
+      var d = new Date(v);
+      if (isNaN(d)) return String(v).slice(0, 10);
+      return d.toLocaleString('en-CA', { timeZone: 'America/Vancouver', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+
+    function paintHistory(p) {
+      api('/api/growth?id=' + encodeURIComponent(p.contactId)).then(function (r) {
+        var rec = r.data || {};
+        var list = rec.touches || [];
+        var box = $('#pnotes');
+        if (!box) return;
+        var older = String(rec.notes || '').trim();
+        if (!list.length && !older) { box.innerHTML = '<p><small>No calls or notes yet.</small></p>'; return; }
+        box.innerHTML = list.map(function (t) {
+          return '<p><b>' + esc(t.outcome || t.channel || 'Note') + '</b>' + (t.note ? ' · ' + esc(t.note).replace(/\n/g, '<br>') : '') + '</p>'
+            + '<small>' + esc(fmtWhen(t.at)) + (t.channel ? ' · ' + esc(t.channel) : '') + (t.next_date ? ' · follow up ' + esc(String(t.next_date).slice(0, 10)) : '')
+            + ' · <a href="#" data-undo="' + esc(String(t.id)) + '">Undo</a></small>';
+        }).join('') + (!list.length && older ? '<p>' + esc(older).replace(/\n/g, '<br>') + '</p><small>From the list</small>' : '');
+        box.querySelectorAll('a[data-undo]').forEach(function (a) {
+          a.onclick = function (ev) {
+            ev.preventDefault();
+            api('/api/growth', { method: 'POST', body: { action: 'undo-touch', touchId: Number(a.getAttribute('data-undo')) } }).then(function (x) {
+              if (!x.ok) { toast('Could not undo'); return; }
+              toast('Removed from the history');
+              paintHistory(p);
+            });
+          };
+        });
+      }).catch(function () {});
+    }
+
+    function paintGhl(p) {
+      var box = $('#pghl');
+      if (!box) return;
+      box.innerHTML = '<b>GoHighLevel</b><small>Checking where this contact is…</small>';
+      api('/api/growth?ghl=' + encodeURIComponent(p.contactId)).then(function (r) {
+        var g = r.data || {};
+        if (!r.ok || !g.connected) { box.innerHTML = '<b>GoHighLevel</b><small>GoHighLevel is not connected. Connect it in Settings to see and move stages.</small>'; return; }
+        var opp = (g.opps || [])[0] || null;
+        var pipes = g.pipelines || [];
+        var pipe = (opp && pipes.find(function (x) { return x.id === opp.pipelineId; })) || pipes.find(function (x) { return x.id === box.getAttribute('data-pipe'); }) || pipes[0];
+        if (!pipe) { box.innerHTML = '<b>GoHighLevel</b><small>No pipelines in GoHighLevel yet.</small>'; return; }
+        var head = opp
+          ? '<b>GoHighLevel</b><small>In <em>' + esc(opp.pipeline || pipe.name) + '</em> at <em>' + esc(opp.stage || 'unknown stage') + '</em>. Click a stage to move it.</small>'
+          : '<b>GoHighLevel</b><small>' + (g.contactId ? 'In GoHighLevel as a contact, not in a pipeline yet.' : 'Not in GoHighLevel yet.') + ' Click a stage to add them there.</small>';
+        var pick = pipes.length > 1 && !opp
+          ? '<select id="pghlpipe" aria-label="Pipeline">' + pipes.map(function (x) { return '<option value="' + esc(x.id) + '"' + (x.id === pipe.id ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select>'
+          : '';
+        box.innerHTML = head + pick + '<div class="stgs">' + pipe.stages.map(function (st) {
+          var on = opp && opp.stageId === st.id;
+          return '<button type="button" class="' + (on ? 'on' : '') + '" data-st="' + esc(st.id) + '">' + esc(st.name) + '</button>';
+        }).join('') + '</div>';
+        var sel = $('#pghlpipe');
+        if (sel) sel.onchange = function () { box.setAttribute('data-pipe', sel.value); paintGhlFrom(p, g, sel.value); };
+        bindGhlStages(p, g, pipe, opp);
+      }).catch(function () { box.innerHTML = '<b>GoHighLevel</b><small>Could not reach GoHighLevel.</small>'; });
+    }
+    function paintGhlFrom(p, g, pipeId) {
+      var box = $('#pghl');
+      var pipe = (g.pipelines || []).find(function (x) { return x.id === pipeId; });
+      if (!box || !pipe) return;
+      var stgs = box.querySelector('.stgs');
+      if (stgs) stgs.innerHTML = pipe.stages.map(function (st) { return '<button type="button" data-st="' + esc(st.id) + '">' + esc(st.name) + '</button>'; }).join('');
+      bindGhlStages(p, g, pipe, null);
+    }
+    function bindGhlStages(p, g, pipe, opp) {
+      var box = $('#pghl');
+      box.querySelectorAll('button[data-st]').forEach(function (b) {
+        b.onclick = function () {
+          if (opp && opp.stageId === b.getAttribute('data-st')) return;
+          var name = b.textContent;
+          box.querySelectorAll('button[data-st]').forEach(function (x) { x.disabled = true; });
+          b.textContent = name + ' · saving';
+          api('/api/growth', { method: 'POST', body: { action: 'ghl-move', id: p.contactId, opportunityId: opp ? opp.id : '', pipelineId: pipe.id, stageId: b.getAttribute('data-st'), stageName: name } }).then(function (r) {
+            if (!r.ok) { toast((r.data && r.data.error) || 'GoHighLevel did not take that stage'); paintGhl(p); return; }
+            p.ghlStage = name; p.ghlPipeline = pipe.name;
+            toast((opp ? 'Moved to ' : 'Added to GoHighLevel at ') + name);
+            paintGhl(p); paintHistory(p); renderBody();
+          });
+        };
+      });
+    }
+
+    function paintCall(p) {
+      var box = $('#pcall');
+      if (!box) return;
+      var chosen = '';
+      box.innerHTML = '<b>Log this call</b><div class="outs">' + OUTCOMES.map(function (o) { return '<button type="button" data-o="' + esc(o) + '">' + esc(o) + '</button>'; }).join('') + '</div>'
+        + '<div class="fu"><label for="pfu">Follow up</label><input type="date" id="pfu" aria-label="Follow-up date"><button type="button" class="btn p" id="psave">Save call</button></div>';
+      box.querySelectorAll('button[data-o]').forEach(function (b) {
+        b.onclick = function () {
+          chosen = chosen === b.getAttribute('data-o') ? '' : b.getAttribute('data-o');
+          box.querySelectorAll('button[data-o]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-o') === chosen); });
+          if (chosen === 'Call back' && !$('#pfu').value) {
+            var d = new Date(Date.now() + 86400000);
+            $('#pfu').value = d.toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' });
+          }
+        };
+      });
+      function save() {
+        var note = String(($('#pnoteAdd') && $('#pnoteAdd').value) || '').trim();
+        var fu = ($('#pfu') && $('#pfu').value) || '';
+        if (!chosen && !note) { toast('Pick an outcome or write a note'); return; }
+        var sv = $('#psave'); if (sv) sv.disabled = true;
+        api('/api/growth', { method: 'POST', body: { action: 'touch', id: p.contactId, channel: 'Call', outcome: chosen, note: note, next_date: fu } }).then(function (r) {
+          if (sv) sv.disabled = false;
+          if (!r.ok) { toast('Could not save the call'); return; }
+          var tid = r.data && r.data.touch && r.data.touch.id;
+          if ($('#pnoteAdd')) $('#pnoteAdd').value = '';
+          if (note) p.notes = note + (p.notes ? '\n' + p.notes : '');
+          p.done = true;
+          if (chosen === 'Call back' && fu) p.callback = fu;
+          var want = OUT_STAGE[chosen];
+          if (want != null && stageIndex(p.stage) < want) setStage(p, want);
+          else if (stageIndex(p.stage) === 0) setStage(p, 1);
+          chosen = '';
+          box.querySelectorAll('button[data-o]').forEach(function (x) { x.classList.remove('on'); });
+          if ($('#pfu')) $('#pfu').value = '';
+          toast('Call saved', tid ? function () {
+            api('/api/growth', { method: 'POST', body: { action: 'undo-touch', touchId: tid } }).then(function () { paintHistory(p); });
+          } : null);
+          paintHistory(p);
+          renderBody();
+        });
+      }
+      $('#psave').onclick = save;
+      var na = $('#pnoteAdd');
+      if (na) {
+        na.value = '';
+        na.placeholder = 'Call notes. Return saves with the outcome you picked';
+        na.onkeydown = function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); save(); } };
+      }
+    }
+
     function showPerson(p) {
+      var pc0 = $('#pcall'); if (pc0) pc0.innerHTML = '';
+      var pg0 = $('#pghl'); if (pg0) { pg0.innerHTML = ''; pg0.removeAttribute('data-pipe'); }
       $('#pn').textContent = p.name || 'Person';
       $('#pm').textContent = companyLine(p) + (p.role ? ' · ' + p.role : '') + (p.stage ? ' · ' + p.stage : '');
       var phone = p.phone || '';
@@ -456,6 +639,7 @@
       if (ee) ee.value = email;
       $('#pnotes').innerHTML = '<p>Loading notes…</p>';
       openPop();
+      bindFields(p);
       var openBtn = $('#popen');
       if (openBtn) {
         openBtn.textContent = (p.spaceId || p.space_id) ? 'Open space' : 'Start space';
@@ -466,8 +650,15 @@
         if (email) window.location.href = 'mailto:' + email;
         if (stageIndex(p.stage) < 2) setStage(p, 2);
       };
+      if (p.growth) {
+        paintCall(p);
+        paintGhl(p);
+        paintHistory(p);
+        return;
+      }
       var noteAdd = $('#pnoteAdd');
       if (noteAdd) {
+        noteAdd.placeholder = 'Add a note, press Return to save';
         noteAdd.value = '';
         noteAdd.onkeydown = function (e) {
           if (e.key !== 'Enter' || e.shiftKey) return;
@@ -476,9 +667,11 @@
           if (!text) return;
           noteAdd.value = '';
           var contactId = p.contactId || p.id;
-          api('/api/contacts/' + encodeURIComponent(contactId), {
+          if (!/^[0-9a-f-]{36}$/i.test(String(contactId))) { toast('This row has no contact record to save notes to'); return; }
+          var stamp = new Date().toLocaleString('en-CA', { timeZone: 'America/Vancouver', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
+          api('/api/contacts', {
             method: 'PATCH',
-            body: { note: text },
+            body: { id: contactId, notes: (stamp + ' · ' + text + (p.notes ? '\n' + p.notes : '')).slice(0, 500) },
           }).then(function (r) {
             if (!r.ok) { toast('Could not save note'); return; }
             p.notes = text + (p.notes ? '\n' + p.notes : '');
@@ -534,7 +727,8 @@
         var S = STAGES[g];
         var cls = 'r' + (p.id === nextId ? ' next' : '');
         var role = p.role ? '<span class="sp has">' + esc(p.role) + '</span>' : '';
-        var cb = p.callback ? '<span class="cb">Call back ' + esc(p.callback) + '</span>' : '';
+        var cb = (p.callback ? '<span class="cb">Call back ' + esc(p.callback) + '</span>' : '')
+          + (p.ghlStage ? '<span class="gh" title="' + esc(p.ghlPipeline || 'GoHighLevel') + '">GHL · ' + esc(p.ghlStage) + '</span>' : '');
         var spaceLabel = (p.spaceId || p.space_id) ? 'Open space' : 'Space';
         return '<tr class="' + cls + '" data-id="' + esc(p.id) + '">'
           + '<td class="rk">' + esc(String(p.rank || '')) + '</td>'

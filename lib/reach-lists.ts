@@ -30,6 +30,9 @@ export type ReachListPerson = {
   ready: number[];
   nextStep: string;
   rank: number;
+  ghlStage?: string;
+  ghlPipeline?: string;
+  growth?: boolean;
 };
 
 export type ReachList = {
@@ -488,6 +491,9 @@ export async function buildCallLists(sql: Sql, ownerId: string, userId: string):
           ready,
           nextStep: String(r.next_action || '') || nextFromReady(ready, stage),
           rank: ix + 1,
+          ghlStage: String(r.ghl_stage || ''),
+          ghlPipeline: String(r.ghl_pipeline || ''),
+          growth: true,
         } as ReachListPerson;
       });
       growth.push({

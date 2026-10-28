@@ -661,3 +661,63 @@ export async function testOpportunityRail(step: 'ensure' | 'move' | 'archive', i
   });
   return { ok: true as const, opportunityId, archived: true, pipelineId: String(pipe.id), stages: stages.map((s) => ({ id: String(s.id), name: String(s.name || '') })) };
 }
+
+export type GhlPlace = {
+  connected: boolean;
+  contactId: string;
+  opps: Array<{ id: string; name: string; pipelineId: string; pipeline: string; stageId: string; stage: string; status: string }>;
+  pipelines: Array<{ id: string; name: string; stages: Array<{ id: string; name: string }> }>;
+};
+
+/** Where one person sits in GoHighLevel: their contact, every open opportunity and the stage it is in. Never writes. */
+export async function ghlPlaceFor(email: string, contactHint = ''): Promise<GhlPlace> {
+  const empty: GhlPlace = { connected: false, contactId: '', opps: [], pipelines: [] };
+  if (!configured() || !locationId()) return empty;
+  const loc = encodeURIComponent(locationId());
+  const pipes = (await ghl(`/opportunities/pipelines?locationId=${loc}`)) as {
+    pipelines?: Array<{ id?: string; name?: string; stages?: Array<{ id?: string; name?: string; position?: number }> }>;
+  } | null;
+  if (!pipes) return empty;
+  const pipelines = (pipes.pipelines || []).filter((p) => p.id).map((p) => ({
+    id: String(p.id),
+    name: String(p.name || 'Pipeline').slice(0, 80),
+    stages: (p.stages || []).filter((s) => s.id).slice().sort((a, b) => (Number(a.position) || 0) - (Number(b.position) || 0))
+      .map((s) => ({ id: String(s.id), name: String(s.name || 'Stage').replace(/\s+/g, ' ').trim().slice(0, 80) })),
+  }));
+  const contactId = /^[A-Za-z0-9_-]{4,64}$/.test(contactHint) ? contactHint : await findGhlContactId(email);
+  if (!contactId) return { connected: true, contactId: '', opps: [], pipelines };
+  const json = (await ghl(`/opportunities/search?location_id=${loc}&contact_id=${encodeURIComponent(contactId)}&limit=20`)) as {
+    opportunities?: Array<Record<string, unknown>>;
+  } | null;
+  const opps = (json?.opportunities || []).filter((o) => String(o.contactId || contactId) === contactId).map((o) => {
+    const pipe = pipelines.find((p) => p.id === String(o.pipelineId || ''));
+    const stage = pipe?.stages.find((s) => s.id === String(o.pipelineStageId || ''));
+    return {
+      id: String(o.id || ''),
+      name: String(o.name || '').slice(0, 120),
+      pipelineId: String(o.pipelineId || ''),
+      pipeline: pipe?.name || '',
+      stageId: String(o.pipelineStageId || ''),
+      stage: stage?.name || '',
+      status: String(o.status || 'open').slice(0, 20),
+    };
+  }).filter((o) => o.id);
+  return { connected: true, contactId, opps, pipelines };
+}
+
+/** Open a new opportunity for a contact at a chosen pipeline stage. */
+export async function createOpportunityAt(input: { contactId: string; name: string; pipelineId: string; stageId: string }) {
+  if (!configured() || !locationId() || !input.contactId || !input.pipelineId || !input.stageId) return '';
+  const created = (await ghl('/opportunities/', {
+    method: 'POST',
+    body: JSON.stringify({
+      locationId: locationId(),
+      pipelineId: input.pipelineId,
+      pipelineStageId: input.stageId,
+      name: String(input.name || 'Contact').slice(0, 120),
+      contactId: input.contactId,
+      status: 'open',
+    }),
+  })) as { opportunity?: { id?: string } } | null;
+  return created?.opportunity?.id ? String(created.opportunity.id) : '';
+}

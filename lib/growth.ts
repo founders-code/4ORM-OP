@@ -255,7 +255,10 @@ export async function addTouch(sql: Sql, ownerId: string, recordId: string, t: {
   const row = await sql`INSERT INTO growth_touches (owner_id, record_id, channel, outcome, note, next_date)
     VALUES (${ownerId}, ${s(recordId, 40)}, ${s(t.channel, 40)}, ${s(t.outcome, 80)}, ${s(t.note, 4000)}, ${nd}::date) RETURNING *`;
   const status = s(t.status, 80) || (t.outcome ? s(t.outcome, 80) : 'Contacted');
+  const stamp = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+  const line = t.note ? `${stamp} · ${s(t.outcome, 80) || s(t.channel, 40) || 'Note'}: ${s(t.note, 1000)}` : '';
   await sql`UPDATE growth_records SET last_touch = now(), status = ${status},
+      notes = CASE WHEN ${line}::text = '' THEN notes ELSE left(${line}::text || CASE WHEN notes = '' THEN '' ELSE E'\n' || notes END, 8000) END,
       stage = CASE WHEN stage = 'Cold' THEN 'Contacted' ELSE stage END,
       next_date = COALESCE(${nd}::date, next_date), updated_at = now()
     WHERE owner_id = ${ownerId} AND id = ${s(recordId, 40)}`;
@@ -272,7 +275,7 @@ const LIST_COLS = (sql: Sql, ownerId: string, list: string | null) => (list
       FROM growth_records WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND list = ${list} ORDER BY rank, grank`
   : sql`SELECT id, list, grp, rank, priority, name, contact, title, email, phone, linkedin, website, city, prov, type, status, stage,
       next_action, plan_day, next_date, last_touch, left(notes, 400) AS notes, grank,
-      data->'ranks'->>'VC firm rank' AS vcrank, data->'ranks'->>'Investor rank' AS invrank
+      data->'ranks'->>'VC firm rank' AS vcrank, data->'ghl'->>'stage' AS ghl_stage, data->'ghl'->>'pipeline' AS ghl_pipeline, data->'ranks'->>'Investor rank' AS invrank
       FROM growth_records WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY list, rank`);
 
 export async function listGrowth(sql: Sql, ownerId: string, list: string | null) {
@@ -306,6 +309,12 @@ export async function growthSummary(sql: Sql, ownerId: string) {
       count(*) FILTER (WHERE plan_day < ${today}::date AND last_touch IS NULL)::int AS overdue
     FROM growth_records WHERE owner_id = ${ownerId} AND deleted_at IS NULL GROUP BY list`) as Array<Record<string, unknown>>;
   return { today, lists: GROWTH_LISTS.map((l) => ({ ...l, ...(rows.find((r) => r.list === l.key) || { n: 0, touched: 0, today: 0, overdue: 0 }) })) };
+}
+
+/** Remember where this record sits in GoHighLevel (contact id, last known opportunity and stage). */
+export async function setGrowthGhl(sql: Sql, ownerId: string, id: string, ghl: Record<string, unknown>) {
+  await sql`UPDATE growth_records SET data = jsonb_set(data, '{ghl}', ${JSON.stringify(ghl)}::jsonb, true), updated_at = now()
+    WHERE owner_id = ${ownerId} AND id = ${id}`;
 }
 
 export { vanToday, addWeekdays };
