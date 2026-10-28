@@ -617,6 +617,7 @@
       $('#psave').onclick = save;
       var na = $('#pnoteAdd');
       if (na) {
+        box.insertBefore(na, box.querySelector('.fu'));
         na.value = '';
         na.placeholder = 'Call notes. Return saves with the outcome you picked';
         na.onkeydown = function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); save(); } };
@@ -657,6 +658,8 @@
         return;
       }
       var noteAdd = $('#pnoteAdd');
+      var nbox = $('#pnotes');
+      if (noteAdd && nbox && noteAdd.previousElementSibling !== nbox) nbox.parentNode.insertBefore(noteAdd, nbox.nextSibling);
       if (noteAdd) {
         noteAdd.placeholder = 'Add a note, press Return to save';
         noteAdd.value = '';
@@ -706,11 +709,11 @@
       var body = $('#lbody');
       if (!body) return;
       if (state.loading && !(state.cur && state.cur.people && state.cur.people.length)) {
-        body.innerHTML = '<tr><td colspan="8" style="padding:18px;color:#a3b0d2">Loading contacts…</td></tr>';
+        body.innerHTML = '<tr><td colspan="7" style="padding:18px;color:#a3b0d2">Loading contacts…</td></tr>';
         return;
       }
       if (!state.cur) {
-        body.innerHTML = '<tr><td colspan="8" style="padding:18px;color:#6f7fa6">No lists yet.</td></tr>';
+        body.innerHTML = '<tr><td colspan="7" style="padding:18px;color:#6f7fa6">No lists yet.</td></tr>';
         return;
       }
       var all = peopleOf();
@@ -732,20 +735,19 @@
         var spaceLabel = (p.spaceId || p.space_id) ? 'Open space' : 'Space';
         return '<tr class="' + cls + '" data-id="' + esc(p.id) + '">'
           + '<td class="rk">' + esc(String(p.rank || '')) + '</td>'
-          + '<td><b>' + esc(p.name) + '</b><small>' + esc(companyLine(p)) + '</small>' + role + cb + '</td>'
+          + '<td><b title="' + esc(p.name) + '">' + esc(p.name) + '</b><small>' + esc(companyLine(p)) + '</small>'
+          + (email ? '<a class="em" href="mailto:' + esc(email) + '">' + esc(email) + '</a>' : '') + role + cb + '</td>'
           + '<td>' + (phone ? '<a href="tel:' + esc(phone.replace(/[^\d+]/g, '')) + '">' + esc(fmtPhone(phone)) + '</a>' : '<small>no phone</small>') + '</td>'
-          + '<td>' + (email ? '<a href="mailto:' + esc(email) + '">' + esc(email) + '</a>' : '<small>no email</small>') + '</td>'
           + '<td><span class="nt">' + (notePreview(p.notes) ? esc(notePreview(p.notes)) : '<small>none yet</small>') + '</span></td>'
           + '<td class="dy">' + esc(p.day || '') + '</td>'
           + '<td><button type="button" class="stg2" data-a="stage" title="' + esc(S.hint || '') + '" style="color:' + S.color + ';background:' + S.bg + '">' + esc(S.k) + '</button></td>'
           + '<td><div class="pills">'
           + '<button type="button" class="pl cbk" data-a="cb" title="Call back">Call back</button>'
-          + '<button type="button" class="pl" data-a="email">Email</button>'
           + '<button type="button" class="pl go" data-a="space" title="' + ((p.spaceId || p.space_id) ? 'Open this space' : 'Start a space') + '">' + ((p.spaceId || p.space_id) ? 'Open' : 'Space') + '</button>'
           + '<button type="button" class="pl del" data-a="del">Delete</button>'
           + '</div></td></tr>';
-      }).join('') + (all.length > rows.length ? '<tr><td colspan="8" class="more"><button type="button" id="lmore">Show ' + Math.min(150, all.length - rows.length) + ' more of ' + all.length + '</button></td></tr>' : '')
-        || '<tr><td colspan="8" style="padding:18px;color:#6f7fa6">Nobody on this list yet.</td></tr>';
+      }).join('') + (all.length > rows.length ? '<tr><td colspan="7" class="more"><button type="button" id="lmore">Show ' + Math.min(150, all.length - rows.length) + ' more of ' + all.length + '</button></td></tr>' : '')
+        || '<tr><td colspan="7" style="padding:18px;color:#6f7fa6">Nobody on this list yet.</td></tr>';
       var mb = $('#lmore');
       if (mb) mb.onclick = function () { state.cap = cap + 150; renderBody(); };
 
