@@ -1586,7 +1586,9 @@
       wrap.innerHTML +=
         '<div class="vscrim" data-action="doc-close"></div>'
         + '<div class="vwin" id="docView">'
-        + '<div class="vtop"><div class="crumbs" style="width:100%;margin:0 0 8px"><span class="lnk" data-action="doc-close">Documents</span> / <span class="lnk" data-action="docs-folder" data-folder="' + esc(dv.folder || '') + '">' + esc(dv.folder || 'All') + '</span> / <span>' + esc(dv.name) + '</span></div>'
+        + '<div class="vtop" style="flex-wrap:wrap">'
+        + '<button type="button" class="vb" data-action="doc-close" style="margin-right:8px" title="Back to Documents">Back</button>'
+        + '<div class="crumbs" style="flex:1;min-width:200px;margin:0"><span class="lnk" data-action="doc-close" style="cursor:pointer;color:#9db9ff;text-decoration:underline">Documents</span> / <span class="lnk" data-action="docs-folder" data-folder="' + esc(dv.folder || '') + '" style="cursor:pointer;color:#9db9ff;text-decoration:underline">' + esc(dv.folder || 'All') + '</span> / <span>' + esc(dv.name) + '</span></div>'
         + '<span class="vty">' + esc(dv.type) + '</span><b>' + esc(dv.name) + '</b><small>' + esc(dv.sub) + '</small>'
         + '<div class="r"><button class="vb" data-action="doc-prev">Prev file</button><button class="vb" data-action="doc-next">Next file</button><button class="vb" data-action="doc-download">Download</button><button class="vb" data-action="doc-drive-open">Open in Drive</button><button class="vb pri" data-action="doc-add-space">+ Add to a Space</button><button class="vb" data-action="doc-close" title="Close (Esc)">Close</button></div></div>'
         + '<div class="vbody"><div class="vthumbs">' + thumbs + '</div>'

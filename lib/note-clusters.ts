@@ -16,8 +16,10 @@ export async function ensureNoteCanvas(sql: Sql) {
       w int NOT NULL DEFAULT 500,
       h int NOT NULL DEFAULT 300,
       position int NOT NULL DEFAULT 0,
-      deleted_at timestamptz
+      deleted_at timestamptz,
+      created_at timestamptz DEFAULT now()
     )`],
+    ['db_note_clusters_created_at', () => sql`ALTER TABLE note_clusters ADD COLUMN IF NOT EXISTS created_at timestamptz`],
     ['db_notes_canvas_x', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS canvas_x int`],
     ['db_notes_canvas_y', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS canvas_y int`],
     ['db_notes_cluster_id', () => sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS cluster_id uuid`],

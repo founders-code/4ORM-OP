@@ -39,16 +39,18 @@ export async function GET(req: Request) {
         `;
         let cluster: Record<string, unknown> | null = null;
         try {
+          await sql`ALTER TABLE note_clusters ADD COLUMN IF NOT EXISTS created_at timestamptz`;
           const cl = await sql`
             SELECT id::text, name, owner_id::text AS owner_id, deleted_at IS NOT NULL AS del,
               to_char(created_at AT TIME ZONE 'America/Vancouver', 'YYYY-MM-DD HH24:MI:SS') AS created_van,
-              to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created_utc
+              to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created_utc,
+              (created_at IS NULL) AS created_null
             FROM note_clusters WHERE id = ${CLUSTER}::uuid
             LIMIT 1
           `;
           cluster = (cl[0] as Record<string, unknown>) || null;
-        } catch {
-          cluster = null;
+        } catch (err) {
+          cluster = { error: String((err as Error)?.message || err) };
         }
         notes.push({
           ownerId,
@@ -64,18 +66,34 @@ export async function GET(req: Request) {
     }
     let clusterAny: Record<string, unknown> | null = null;
     try {
+      await sql`ALTER TABLE note_clusters ADD COLUMN IF NOT EXISTS created_at timestamptz`;
       const cl = await sql`
         SELECT id::text, name, owner_id::text AS owner_id, deleted_at IS NOT NULL AS del,
           to_char(created_at AT TIME ZONE 'America/Vancouver', 'YYYY-MM-DD HH24:MI:SS') AS created_van,
-          to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created_utc
+          to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created_utc,
+          (created_at IS NULL) AS created_null
         FROM note_clusters WHERE id = ${CLUSTER}::uuid LIMIT 1
       `;
       clusterAny = (cl[0] as Record<string, unknown>) || null;
-    } catch { /* ignore */ }
+    } catch (err) {
+      clusterAny = { error: String((err as Error)?.message || err) };
+    }
     let notesOnCluster = 0;
+    let earliestOnCluster: string | null = null;
+    let liveTitles: string[] = [];
+    let deletedTitles: string[] = [];
     try {
       const n = await sql`SELECT count(*)::int AS n FROM notes WHERE cluster_id = ${CLUSTER}::uuid`;
       notesOnCluster = Number(n[0]?.n || 0);
+      const ear = await sql`
+        SELECT to_char(min(updated_at) AT TIME ZONE 'America/Vancouver', 'YYYY-MM-DD HH24:MI:SS') AS van
+        FROM notes WHERE cluster_id = ${CLUSTER}::uuid
+      `;
+      earliestOnCluster = (ear[0]?.van as string) || null;
+      const live = await sql`SELECT title FROM notes WHERE cluster_id = ${CLUSTER}::uuid AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 40`;
+      liveTitles = (live as { title?: string }[]).map((t) => t.title || '');
+      const gone = await sql`SELECT title FROM notes WHERE cluster_id = ${CLUSTER}::uuid AND deleted_at IS NOT NULL ORDER BY deleted_at DESC LIMIT 40`;
+      deletedTitles = (gone as { title?: string }[]).map((t) => t.title || '');
     } catch { /* ignore */ }
     const pitr = {
       neonProject: process.env.NEON_PROJECT_ID ? 'set' : 'missing',
@@ -83,6 +101,10 @@ export async function GET(req: Request) {
       note: 'A read-only PITR branch needs NEON_API_KEY. It is not in Vercel env; DATABASE_URL is Sensitive and cannot be pulled locally.',
       cluster: clusterAny,
       notesOnCluster,
+      earliestOnCluster,
+      liveTitles,
+      deletedTitles,
+      retention: 'Neon Launch/Free history is typically hours to ~7 days; without NEON_API_KEY the window cannot be queried and a PITR branch cannot be created.',
     };
     if (onlyNotes) return NextResponse.json({ ok: true, readOnly: true, owners, notes, pitr });
     const boxes = [];
