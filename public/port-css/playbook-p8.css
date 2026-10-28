@@ -280,8 +280,7 @@ button{font:inherit;cursor:pointer}
 .pbwrap>.beats{margin-bottom:18px}
 .beat .btop{display:flex;align-items:flex-start;justify-content:space-between}.beat .d{font-size:28px;line-height:1;display:flex;flex-direction:column;align-items:flex-end;text-align:right}.beat .d small{display:block;font-size:10.5px;font-weight:750;color:#8fa0c8;margin:3px 0 0;letter-spacing:.04em;white-space:nowrap}
 .beat .btop{gap:10px}.beat .btop .n{font-size:14px;flex:1;min-width:0}.beat .d{white-space:nowrap;flex:none}
-/* Focus today keeps the week grid (and TODAY band) visible; only the sequence rail hides (prompt 13 / design 27). */
-:host-context(body.focusday) .pbwrap>.seq, .port-body.focusday .pbwrap>.seq{display:none}
+:host-context(body.focusday) .pbwrap>.seq, .port-body.focusday .pbwrap>.seq,:host-context(body.focusday) .pbwrap>.beats, .port-body.focusday .pbwrap>.beats,:host-context(body.focusday) .pbwrap>.beatlh, .port-body.focusday .pbwrap>.beatlh{display:none}
 :host-context(body.focusday) #todo, .port-body.focusday #todo{margin-top:0}
 :host-context(body.compact) .pbwrap>.beatlh, .port-body.compact .pbwrap>.beatlh{display:none}
 :host-context(body.compact) .pbwrap>.beats, .port-body.compact .pbwrap>.beats{grid-column:1/-1;grid-row:2;grid-template-columns:repeat(6,minmax(0,1fr))!important}
