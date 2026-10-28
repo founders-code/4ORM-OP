@@ -1,5 +1,6 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import sheet from '../data/outreach-lists.json';
+import fills from '../data/contact-fills.json';
 import { withCreds } from './creds';
 import { getContact, listPipelines, moveOpportunityStage, type GhlPipeline } from './ghl';
 import { fail } from './log';
@@ -154,13 +155,21 @@ async function designPartnerPeople(ownerId: string, pipes: GhlPipeline[]): Promi
   const top = flat.slice(0, 50);
   const days = weekdayBuckets(top.length);
   const people: ReachListPerson[] = [];
+  /* Contact lookups in parallel batches (was 50 one after another, about 6 seconds). */
+  const contacts = new Map<string, Awaited<ReturnType<typeof getContact>>>();
+  const ids = Array.from(new Set(top.map((t) => t.opp.contactId).filter(Boolean))) as string[];
+  for (let b = 0; b < ids.length; b += 10) {
+    const chunk = ids.slice(b, b + 10);
+    const got = await Promise.all(chunk.map((id) => getContact(id).catch(() => null)));
+    chunk.forEach((id, k) => contacts.set(id, got[k]));
+  }
   for (let i = 0; i < top.length; i++) {
     const { opp, stageName } = top[i];
     let phone = '';
     let email = opp.email || '';
     let role = '';
     if (opp.contactId) {
-      const c = await getContact(opp.contactId).catch(() => null);
+      const c = contacts.get(opp.contactId) || null;
       if (c) {
         phone = c.phone || phone;
         email = c.email || email;
@@ -329,18 +338,21 @@ async function applyDoneMarks(sql: Sql, ownerId: string, people: ReachListPerson
 
 export async function buildCallLists(sql: Sql, ownerId: string, userId: string): Promise<ReachList[]> {
   let pipes: GhlPipeline[] = [];
+  let creds: Awaited<ReturnType<typeof loadCredsFor>> | null = null;
   try {
-    const creds = await loadCredsFor(userId);
+    creds = await loadCredsFor(userId);
     const all = await withCreds(creds, () => listPipelines());
     pipes = all.pipelines || [];
   } catch (err) {
     fail('reach_pipes', err);
   }
 
-  const [design, regulators] = await Promise.all([
-    designPartnerPeople(ownerId, pipes),
+  const [designLive, regulators] = await Promise.all([
+    creds ? withCreds(creds, () => designPartnerPeople(ownerId, pipes)).catch(() => [] as ReachListPerson[]) : designPartnerPeople(ownerId, pipes),
     regulatorPeople(sql, ownerId),
   ]);
+  /* GoHighLevel can time out or rate-limit. Keep the last good Design partners list so the page never flips to empty. */
+  const design = await keepLastGood(sql, ownerId, 'design-partners', designLive);
   const preseed = sheetPeople('inv', { start: 0, end: 25 }, 'pre-seed');
   const entProtected = sheetPeople('ent', { start: 0, end: 25 }, 'ent-1-25');
   const entWeek = sheetPeople('ent', { start: 25, end: 50 }, 'ent-26-50');
@@ -436,6 +448,7 @@ export async function buildCallLists(sql: Sql, ownerId: string, userId: string):
   }
 
   const everyone = [...allPeople, ...custom.flatMap((l) => l.people)];
+  fillPublicContacts(everyone);
   await applyDoneMarks(sql, ownerId, everyone);
 
   // Fill notes / city from contacts matched by email when the list row is thin.
@@ -822,4 +835,43 @@ export async function personNotes(
 
   notes.sort((a, b) => String(b.when).localeCompare(String(a.when)));
   return { notes, person };
+}
+
+/* Public business phone / email found for firms on the lists (data/contact-fills.json, each with its source).
+   Only fills blanks; anything already on the row or in GoHighLevel wins. */
+function fillKey(v: string) {
+  return String(v || '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+function fillPublicContacts(people: ReachListPerson[]) {
+  const map = new Map<string, { phone?: string; email?: string }>();
+  for (const f of fills as Array<{ company: string; phone?: string; email?: string }>) {
+    map.set(fillKey(f.company), f);
+  }
+  for (const p of people) {
+    const hit = map.get(fillKey(p.company)) || map.get(fillKey(p.name));
+    if (!hit) continue;
+    if (!p.phone && hit.phone) p.phone = clip(hit.phone, 40);
+    if (!p.email && hit.email) p.email = clip(hit.email, 180);
+  }
+}
+
+async function keepLastGood(sql: Sql, ownerId: string, key: string, people: ReachListPerson[]): Promise<ReachListPerson[]> {
+  try {
+    await sql`CREATE TABLE IF NOT EXISTS reach_list_cache (
+      owner_id text NOT NULL, list_key text NOT NULL, people jsonb NOT NULL, saved_at timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (owner_id, list_key)
+    )`;
+    if (people.length) {
+      await sql`INSERT INTO reach_list_cache (owner_id, list_key, people, saved_at)
+        VALUES (${ownerId}, ${key}, ${JSON.stringify(people)}::jsonb, now())
+        ON CONFLICT (owner_id, list_key) DO UPDATE SET people = EXCLUDED.people, saved_at = now()`;
+      return people;
+    }
+    const rows = await sql`SELECT people FROM reach_list_cache WHERE owner_id = ${ownerId} AND list_key = ${key} LIMIT 1`;
+    const cached = rows[0]?.people;
+    return Array.isArray(cached) ? (cached as ReachListPerson[]) : people;
+  } catch (err) {
+    fail('reach_cache', err);
+    return people;
+  }
 }

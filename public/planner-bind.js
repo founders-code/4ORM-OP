@@ -129,7 +129,8 @@ function save(){
 }
 function persistItem(i){
   if(!liveOk()||!i||!i.id||String(i.id).indexOf('n')===0&&String(i.id).length<20)return;
-  var body={n:i.n,o:i.o,st:i.st,start_date:i.kind==='ms'||i.kind==='goal'?'':isoOf(i.s),due_date:isoOf(i.e)};
+  var body={n:i.n,o:i.o,st:i.st,start_date:i.kind==='ms'?'':i.kind==='goal'?(i.s<i.e?isoOf(i.s):''):isoOf(i.s),due_date:isoOf(i.e)};
+  if(i.kind==='goal')body.plan_date=i.ps!=null?isoOf(i.ps):'';
   window.authFetch('/api/timeline/items/'+encodeURIComponent(i.id),{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).catch(function(){});
 }
 const ordered=()=>state.order.map(id=>pipe(id)).filter(Boolean);
@@ -140,6 +141,9 @@ function applyView(){const pg=document.querySelector('.page');if(!pg)return;cons
 const visPipes=()=>ordered().filter(p=>!state.hidden.has(p.id));
 const GL=()=>ITEMS.filter(i=>i.kind==='goal').sort((a,b)=>a.e-b.e);
 const WORK=()=>ITEMS.filter(i=>i.kind!=='goal');
+/* Milestone dates: planning (faint lead-in), start, complete. Without a saved start, the work starts when its first feeder does (or 3 weeks out); planning defaults to 2 weeks before the start. */
+function gStart(g){if(g.s!=null&&g.s<g.e)return g.s;const f=(typeof feeders==='function'?feeders(g):[]).map(i=>i.s).filter(v=>v!=null&&v<g.e);return f.length?Math.min.apply(null,f):g.e-21}
+function gPlan(g){return g.ps!=null&&g.ps<=gStart(g)?g.ps:gStart(g)-14}
 
 let byId={},rev={};
 function index(){byId={};rev={};ITEMS.forEach(i=>byId[i.id]=i);ITEMS.forEach(i=>{i.dep=i.dep.filter(d=>byId[d]&&byId[d].kind!=='goal');if(i.g&&!byId[i.g])i.g='';i.dep.forEach(d=>(rev[d]=rev[d]||[]).push(i.id))})}
@@ -236,10 +240,13 @@ function hdrRow(){let t='';const vis0=Math.floor((scroller.scrollLeft||0)/ppd)+S
   if(TODAY>=START&&TODAY<=END)t+=`<span class="todaytag" style="left:${x(TODAY)+ppd/2}px">Today ${fmt(TODAY)}</span>`;
   return `<div class="row hdr"><div class="lab corner"><span class="kick">Pipeline</span></div><div class="trk" style="width:${W}px">${t}</div></div>`}
 function goalRow(){const gs=GL();const lv=[];let o='';
-  gs.forEach(g=>{const x0=x(g.e)+ppd/2-15;const lbl=`${g.n}`;const L=pack(lv,x0,x0+30+tw(lbl)+70,10);
-    o+=`<button class="goal ${phase(g)}${risky(g)?' risk':''}" data-id="${g.id}" data-open="${g.id}" style="left:${x0}px;top:${12+L*38}px"><i class="gd anchor"></i>${esc(lbl)}<small>${fmt(g.e)} · ${goalPct(g)}%</small></button>`});
+  gs.forEach(g=>{const ps=Math.max(START,gPlan(g)),st=Math.max(START,gStart(g)),en=g.e;const xp=x(ps),xs=x(st),xe=x(en)+ppd;const pct=goalPct(g);
+    const lbl=`${g.n}`;const L=pack(lv,xp,Math.max(xe,xs+tw(lbl)+150)+14,10);const top=10+L*36;
+    o+=`<div class="gspan${g.st==='done'?' done':''}${risky(g)?' risk':''}" data-id="${g.id}" data-open="${g.id}" style="left:${xp}px;top:${top}px;width:${Math.max(xe-xp,24)}px">`
+      +`<i class="gplan" style="width:${Math.max(xs-xp,0)}px"></i><i class="grun" style="left:${xs-xp}px"><b style="width:${pct}%"></b></i><i class="gdia"></i>`
+      +`<span class="glab" style="left:${xs-xp+8}px">${esc(lbl)}<small>${fmt(st)} to ${fmt(en)}${pct?' · '+pct+'%':''}</small></span></div>`});
   const red=gs.filter(risky).length;
-  return `<div class="row goalrow master"><div class="lab"><span class="ltitle">Milestones</span><span class="lmeta">${gs.length} big goals${red?` &middot; <em>${red} at risk</em>`:''}</span></div><div class="trk" style="width:${W}px;height:${Math.max(56,20+lv.length*38)}px">${o}</div></div>`}
+  return `<div class="row goalrow master"><div class="lab"><span class="ltitle">Milestones</span><span class="lmeta">${gs.length} big goals${red?` &middot; <em>${red} at risk</em>`:''}</span></div><div class="trk" style="width:${W}px;height:${Math.max(56,16+lv.length*36)}px">${o}</div></div>`}
 function loadRow(vis){
   const spans=WORK().filter(i=>i.kind==='span');let max=1,peak=null;const weeks=[];
   for(let w=START;w<=END;w+=7){const we=Math.min(w+6,END);const seg=vis.map(p=>({p,n:spans.filter(i=>i.p===p.id&&i.s<=we&&i.e>=w).length}));
@@ -247,7 +254,7 @@ function loadRow(vis){
   const H=96,unit=Math.min(11,(H-8)/max);
   let s=`<svg class="load" width="${W}" height="${H}" role="img" aria-label="Items running per week">`;
   weeks.forEach(wk=>{let y=H-2;const bw=Math.max(2,(wk.we-wk.w+1)*ppd-3);
-    wk.seg.forEach(g=>{if(!g.n)return;const hh=g.n*unit;y-=hh;s+=`<rect x="${x(wk.w)+1.5}" y="${y.toFixed(1)}" width="${bw}" height="${Math.max(hh-1.5,1).toFixed(1)}" rx="2" style="fill:var(${g.p.c})"><title>Week of ${fmt(wk.w)}: ${g.n} ${g.p.name}</title></rect>`})});
+    wk.seg.forEach(g=>{if(!g.n)return;const hh=g.n*unit;y-=hh;const rh=Math.max(hh-2.5,1.5);s+=`<rect x="${x(wk.w)+2}" y="${y.toFixed(1)}" width="${Math.max(bw-1,2)}" height="${rh.toFixed(1)}" rx="${Math.min(6,rh/2,bw/2).toFixed(1)}" style="fill:var(${g.p.c});fill-opacity:.92"><title>Week of ${fmt(wk.w)}: ${g.n} ${g.p.name}</title></rect>`})});
   s+='</svg>';
   return `<div class="row master"><div class="lab"><span class="ltitle">Workload</span><span class="lmeta">${peak&&peak.tot?`peak ${peak.tot} running, week of ${fmt(peak.w)}`:'no running items'}</span></div><div class="trk" style="width:${W}px;padding-top:4px">${s}</div></div>`}
 function msRow(vis){
@@ -307,8 +314,8 @@ let hov=null;
 let hovT=null;
 canvas.addEventListener('pointerover',e=>{if(mv&&mv.on)return;const el=e.target.closest('[data-id]');const id=el?el.dataset.id:null;if(id===hov)return;
   if(!id&&e.target.closest('.links'))return;
-  hov=id;clearTimeout(hovT);hovT=setTimeout(()=>{if(mv&&mv.on)return;hov?applyFocus(hov):clearFocus()},id?90:160)});
-canvas.addEventListener('pointerleave',()=>{hov=null;clearTimeout(hovT);hovT=setTimeout(clearFocus,160)});
+  hov=id;clearTimeout(hovT);hovT=setTimeout(()=>{if(mv&&mv.on)return;hov?applyFocus(hov):clearFocus()},id?90:380)});
+canvas.addEventListener('pointerleave',()=>{hov=null;clearTimeout(hovT);hovT=setTimeout(clearFocus,260)});
 
 /* Grab any item on the timeline and drag it left or right. It moves by whole days, keeps its length,
    pushes anything that depends on it forward if they would now overlap, saves every changed item, and offers Undo. */
@@ -354,7 +361,7 @@ function goalSel(i){return `<select class="gsel${i.g?' on':''}" id="f-${i.id}-g"
 let armed=null;
 function renderGoals(){const gs=GL();const open=state.open.has('goals');
   let h=`<section class="lgroup goals"><div class="lghead"><button class="lgt" data-toggle="goals" aria-expanded="${open}"><b>Milestones</b><span class="lmeta">${gs.length} big goals${gs.filter(risky).length?` &middot; <em>${gs.filter(risky).length} at risk</em>`:''}</span><span class="oc">${open?'Hide':'Show'}</span></button></div>`;
-  if(open){h+=`<div class="cols"><span>Milestone</span><span>Owner</span><span>Target</span><span>Status</span><span>Fed so far</span><span>Feeding it</span><span></span></div>`;
+  if(open){h+=`<div class="cols"><span>Milestone</span><span>Owner</span><span>Plan · Start · Complete</span><span>Status</span><span>Fed so far</span><span>Feeding it</span><span></span></div>`;
     gs.forEach(g=>{h+=goalRowHTML(g)});
     h+=`<div class="addrow"><input id="f-add-goals" data-add="goals" placeholder="Add a milestone, press Return"></div>`}
   return h+'</section>'}
@@ -380,7 +387,7 @@ function goalRowHTML(g){let h='';const f=feeders(g);const late=lateFor(g);const 
       h+=`<div class="lrow" data-row="${g.id}" style="--c:var(--gold-ink)">
         <div class="cname"><i class="kd ms" style="background:var(--gold)"></i><input class="fi nm" id="f-${g.id}-n" data-item="${g.id}" data-f="n" value="${esc(g.n)}" aria-label="Milestone name"></div>
         <input class="fi" id="f-${g.id}-o" data-item="${g.id}" data-f="o" value="${esc(g.o)}" aria-label="Owner">
-        <input class="fi dt" id="f-${g.id}-e" data-item="${g.id}" data-f="e" value="${fmt(g.e)}" placeholder="MMDD" aria-label="Target date">
+        <div class="g3d"><input class="fi dt" id="f-${g.id}-ps" data-item="${g.id}" data-f="ps" value="${fmt(gPlan(g))}" placeholder="Plan" title="Planning from" aria-label="Planning from"><input class="fi dt" id="f-${g.id}-gs" data-item="${g.id}" data-f="gs" value="${fmt(gStart(g))}" placeholder="Start" title="Start" aria-label="Start"><input class="fi dt" id="f-${g.id}-e" data-item="${g.id}" data-f="e" value="${fmt(g.e)}" placeholder="Complete" title="Complete by" aria-label="Complete by"></div>
         <div style="display:flex;gap:4px;min-width:0">${st}<button class="tbtn" data-gdone="${g.id}">${g.st==='done'?'Reopen':'Mark done'}</button></div>
         <div class="gprog"><i><b style="width:${pct}%"></b></i>${pct}%</div>
         <div class="feed">${f.length?f.map(i=>`<button class="dchip${late.includes(i)?' bad':''}" data-open="${i.id}" data-reveal="1" style="--c:var(${pc(i.p)})">${esc(i.n)}</button>`).join(''):'<span class="none">Nothing yet. Pick this milestone on any row below.</span>'}</div>
@@ -393,7 +400,7 @@ function bucketOf(d){if(d<TODAY)return {k:'over',t:'Overdue',o:-1};const off=d-T
   const wk0=TODAY-((D(TODAY).getUTCDay()+6)%7);if(d<wk0+14)return {k:'d'+d,t:off===0?'Today':off===1?'Tomorrow':dLabel(d),sub:off<2?dLabel(d):'',o:d,today:off===0};
   if(off<63){const x=D(d);const mon=d-((x.getUTCDay()+6)%7);return {k:'w'+mon,t:'Week of '+dLabel(mon),o:mon}}
   const x=D(d);return {k:'m'+x.getUTCFullYear()+'-'+x.getUTCMonth(),t:MON[x.getUTCMonth()]+' '+x.getUTCFullYear(),o:Date.UTC(x.getUTCFullYear(),x.getUTCMonth(),1)/864e5}}
-function renderByDate(){const vis=new Set(visPipes().map(p=>p.id).concat(['goals']));const rows=[];
+function renderByDate(){/* Lists always show every pipeline; the timeline chips only filter the timeline. */const vis=new Set(ordered().map(p=>p.id).concat(['goals']));const rows=[];
   ITEMS.forEach(i=>{if(!vis.has(i.p))return;let d=i.e;if(i.kind==='series'){d=nextOf(i);if(d==null)return}
     if(i.st==='done'&&d<TODAY)return;const late=i.kind!=='series'&&i.st!=='done'&&d<TODAY;rows.push({i,d:late?d:d,b:bucketOf(late?d:(d<TODAY?TODAY:d))})});
   const groups={};rows.forEach(r=>{(groups[r.b.k]=groups[r.b.k]||{b:r.b,rows:[]}).rows.push(r)});
@@ -408,7 +415,7 @@ function renderByDate(){const vis=new Set(visPipes().map(p=>p.id).concat(['goals
       return `<div class="drw${i.kind==='goal'?' dgl':''}${i.st==='done'?' ddone':''}" data-open="${i.id}" style="--c:var(${pc(i.p)})"><span class="ddt">${dLabel(d)}<small>${span}</small></span><span class="dmk${i.kind==='goal'||i.kind==='ms'?' dia2':''}"></span><span class="dnm">${esc(i.n)}<small>${[esc(i.t||''),g,i.tasks.length?i.tasks.filter(t=>t.d).length+'/'+i.tasks.length+' tasks':''].filter(Boolean).join(' &middot; ')}</small></span><span class="dpp">${p.name}</span><span class="dow">${esc(i.o||'')}</span>${st}</div>`}).join('')+'</div>'}).join('')}
 function renderList(){
   if((state.group||'pipe')==='date'){document.getElementById('list').innerHTML=renderByDate();return}
-  const vis=visPipes();let h=renderGoals();
+  const vis=ordered();let h=renderGoals();
   vis.forEach(p=>{const its=ITEMS.filter(i=>i.p===p.id).sort((a,b)=>a.s-b.s||a.e-b.e);const open=state.open.has(p.id);
     const att=its.filter(attention).length;
     h+=`<section class="lgroup" style="--c:var(${p.c})"><div class="lghead" draggable="true" data-drag="${p.id}"><button class="lgt" data-toggle="${p.id}" aria-expanded="${open}"><b>${p.name}</b><span class="lmeta">${its.length} items${att?` &middot; <em>${att} red</em>`:''}</span><span class="oc">${open?'Hide':'Show'}</span></button><button class="mv" data-mv="${p.id}|-1" aria-label="Move ${p.name} up">Up</button><button class="mv" data-mv="${p.id}|1" aria-label="Move ${p.name} down">Down</button></div>`;
@@ -443,10 +450,12 @@ document.getElementById('list').addEventListener('change',e=>{
   else if(f==='o'){i.o=v.trim()}
   else if(f==='st'){i.st=v}
   else if(f==='g'){i.g=v}
+  else if(f==='ps'||f==='gs'){const d=parseDate(v);if(d==null||Number.isNaN(d)){t.classList.add('bad');setTimeout(()=>{t.classList.remove('bad');t.value=fmt(f==='ps'?gPlan(i):gStart(i))},1300);return}
+    if(f==='ps'){i.ps=Math.min(d,gStart(i))}else{i.s=Math.min(d,i.e);if(i.ps!=null&&i.ps>i.s)i.ps=i.s}}
   else if(f==='s'||f==='e'){const d=parseDate(v);
     if(Number.isNaN(d)){t.classList.add('bad');setTimeout(()=>{t.classList.remove('bad');t.value=f==='s'?(i.kind==='span'?fmt(i.s):''):fmt(i.e)},1300);return}
     if(f==='s'){if(d===null){i.kind='ms';i.s=i.e}else{const len=i.kind==='span'?i.e-i.s:7;i.kind='span';i.s=d;if(i.e<d)i.e=Math.min(END,d+len)}}
-    else{if(d===null){t.value=fmt(i.e);return}if(i.kind==='ms'||i.kind==='goal'){i.s=i.e=d}else{i.e=d;if(i.s>d)i.s=d}}}
+    else{if(d===null){t.value=fmt(i.e);return}if(i.kind==='ms'){i.s=i.e=d}else if(i.kind==='goal'){const keep=gStart(i)<i.e?gStart(i):null;i.e=d;if(keep!=null&&keep<d)i.s=keep;else i.s=d}else{i.e=d;if(i.s>d)i.s=d}}}
   save();persistItem(i);rerender();
 });
 document.getElementById('list').addEventListener('keydown',e=>{

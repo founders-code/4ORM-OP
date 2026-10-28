@@ -147,6 +147,65 @@
       var dn = $('tdDone');
       if (dn) dn.textContent = doneToday;
       window.TDL = TD;
+      paintFocus();
+    }
+    /* Focus today: only what is needed today. Calendar for today, today's daily plays, and to-dos due today.
+       Full week keeps the Today / This week / Next week board. */
+    var TITLES = { today: 'Today', week: 'This week', next: 'Next week' };
+    function isFocus() {
+      var port = (root.querySelector && root.querySelector('.port-body')) || root.host || document.body;
+      return document.body.classList.contains('focusday') || !!(port && port.classList && port.classList.contains('focusday'));
+    }
+    function vanDay(ms) {
+      return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
+    }
+    function vanTime(ms) {
+      return new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Vancouver', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(ms));
+    }
+    function setTitle(b, text, n) {
+      var col = todo.querySelector('.tdc[data-b="' + b + '"]');
+      if (!col) return;
+      var h = col.querySelector('h4');
+      if (h) h.innerHTML = escT(text) + ' <i id="cnt-' + b + '">' + (n == null ? '' : n) + '</i>';
+      col.style.setProperty('--cc', b === 'week' && todo.classList.contains('fx') ? '#4d7cff' : b === 'next' && todo.classList.contains('fx') ? '#2fe08b' : ({ today: '#ff5a6e', week: '#ffb547', next: '#3b82ff' })[b]);
+    }
+    function paintFocus() {
+      var on = isFocus();
+      todo.classList.toggle('fx', on);
+      if (!on) {
+        ['today', 'week', 'next'].forEach(function (b) { var c = $('cnt-' + b); setTitle(b, TITLES[b], c ? c.textContent : ''); });
+        return;
+      }
+      var today = vanDay(Date.now());
+      /* Calendar column (uses the "week" slot). */
+      var evs = (((window.STATE || {}).events) || []).filter(function (ev) {
+        return ev && ev.start && vanDay(ev.start) === today && !(ev.dur >= 1440);
+      }).sort(function (a, b) { return a.start - b.start; });
+      var now = Date.now();
+      var calHost = $('b-week');
+      if (calHost) calHost.innerHTML = evs.map(function (ev) {
+        var end = ev.start + (Number(ev.dur) || 30) * 60000;
+        var live = now >= ev.start && now < end;
+        return '<div class="ti fxev' + (live ? ' now' : '') + (end < now ? ' past' : '') + '" style="--sc:#4d7cff"><span class="fxt">' + vanTime(ev.start) + '</span><div class="tt">' + escT(ev.title || 'Event')
+          + '</div><div class="meta"><span>' + (Number(ev.dur) || 30) + ' min</span>' + (ev.join ? '<a class="fxj" href="' + escT(ev.join) + '" target="_blank" rel="noopener">Join</a>' : '') + (live ? '<span class="late">now</span>' : '') + '</div></div>';
+      }).join('') || '<div class="fxnone">Nothing on the calendar today.</div>';
+      setTitle('week', 'Calendar', evs.length);
+      /* Today's plays (uses the "next" slot): every daily play still due today, from the Playbook grid. */
+      var M = window.__playMount || {};
+      var rows = (M.rows || []).filter(function (r) { return r && !r.s && r.d; });
+      var ti = M.todayIdx == null ? 0 : M.todayIdx;
+      var due = rows.filter(function (r) { var st = r.d[ti]; return st === 'due' || st === 'next'; });
+      var playHost = $('b-next');
+      if (playHost) playHost.innerHTML = due.map(function (r) {
+        var lab = (r.lab && r.lab[ti]) || '';
+        var go = r.room && r.room[1] ? r.room[1] : '';
+        return '<div class="ti fxpl" style="--sc:' + escT(r.c || '#2fe08b') + '"><div class="tt">' + escT(r.n || 'Play') + '</div><div class="meta"><span>' + escT(r.grp || 'Daily') + '</span>'
+          + (r.target ? '<span>' + escT(r.target) + '</span>' : '') + (lab && !/^go$/i.test(lab) ? '<span>' + escT(lab) + '</span>' : '')
+          + (go ? '<a class="fxj" href="' + escT(go) + '">Open</a>' : '') + '</div></div>';
+      }).join('') || '<div class="fxnone">' + (rows.length ? 'Every play for today is done.' : 'Plays load with the Playbook grid.') + '</div>';
+      setTitle('next', "Today's plays", due.length);
+      var c = $('cnt-today');
+      setTitle('today', 'To-dos due today', c ? c.textContent : '');
     }
     todo.addEventListener('click', function (e) {
       var exp = e.target.closest && e.target.closest('[data-exp]');

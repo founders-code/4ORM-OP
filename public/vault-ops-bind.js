@@ -582,6 +582,83 @@
       clearInterval(spendT);
       if (spendOpen) { loadSpend(); spendT = setInterval(loadSpend, 600000); }
     };
+    /* Scrape: three lamps for today, an alert when a slot is missed, a 7-day audit, Run now. */
+    function vanHM(iso) { try { return new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Vancouver', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(iso)); } catch (e) { return ''; } }
+    var scrOpen = false;
+    function paintScrape(d) {
+      var slots = (d && d.slots) || [];
+      var today = slots.slice(0, 3).slice().sort(function (a, b) { return a.hour - b.hour; });
+      var lamps = $(root, '#scrLamps');
+      var word = { ok: 'ran', partial: 'part ran', missed: 'missed', running: 'running', upcoming: 'due' };
+      if (lamps) lamps.innerHTML = today.map(function (s) { return '<i class="' + s.state + '" title="' + escS(s.detail || '') + '">' + String(s.hour).padStart(2, '0') + ':00 ' + (word[s.state] || s.state) + '</i>'; }).join('') || '<i>no runs yet</i>';
+      var al = $(root, '#scrAlert');
+      if (al) { al.hidden = !(d && d.alert); al.textContent = (d && d.alert) ? d.alert + '. Press Run now, then check the Vercel cron.' : ''; }
+      var w = $(root, '#scrw');
+      if (!w) return;
+      var days = {};
+      slots.forEach(function (s) { (days[s.day] = days[s.day] || {})[s.hour] = s; });
+      var keys = Object.keys(days).sort().reverse();
+      w.innerHTML = '<div class="scrg"><span class="scrh" style="border:0;background:none">DAY</span><span class="scrh" style="border:0;background:none">06:00</span><span class="scrh" style="border:0;background:none">12:00</span><span class="scrh" style="border:0;background:none">18:00</span>'
+        + keys.map(function (k) {
+          return '<b>' + escS(k.slice(5)) + '</b>' + [6, 12, 18].map(function (h) {
+            var s = days[k][h];
+            if (!s) return '<span>not tracked</span>';
+            return '<span class="' + s.state + '" title="' + escS(s.detail || '') + '">' + (s.state === 'ok' ? 'ran ' + vanHM(s.at) : s.state === 'partial' ? 'part ' + vanHM(s.at) : s.state) + (s.detail ? ' &middot; ' + escS(s.detail) : '') + '</span>';
+          }).join('');
+        }).join('') + '</div><div style="margin-top:8px;color:#a3b0d2;font-size:12px">' + ((d && d.missed) ? d.missed + ' missed in 7 days' : 'Nothing missed') + ' &middot; expected ' + ((d && d.perDay) || 3) + ' a day</div>';
+    }
+    function loadScrape() { api('/api/ops/scrape').then(function (r) { return r && r.ok ? r.json() : {}; }).catch(function () { return {}; }).then(paintScrape); }
+    var scrBtn = $(root, '#scrToggle');
+    if (scrBtn) scrBtn.onclick = function () { scrOpen = !scrOpen; var w = $(root, '#scrw'); if (w) w.hidden = !scrOpen; scrBtn.textContent = scrOpen ? 'Hide' : 'Audit'; };
+    var scrRun = $(root, '#scrRun');
+    if (scrRun) scrRun.onclick = function () {
+      if (scrRun.disabled) return;
+      scrRun.disabled = true; scrRun.textContent = 'Running';
+      api('/api/ops/scrape', { method: 'POST' }).then(function (r) { return r && r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (d) {
+        scrRun.disabled = false; scrRun.textContent = 'Run now';
+        toast(root, d ? 'Scrape ran: ' + (d.detail || 'done') : 'Scrape failed. Try again.');
+        loadScrape();
+      });
+    };
+    loadScrape();
+    var scrT = setInterval(function () { if (!root.isConnected && root.host && !root.host.isConnected) { clearInterval(scrT); return; } loadScrape(); }, 300000);
+
+    /* Production log */
+    var plOpen = false;
+    function paintProd(d) {
+      var w = $(root, '#plw'); if (!w) return;
+      var days = (d && d.days) || [];
+      var st = $(root, '#plSt');
+      if (st && days[0]) st.textContent = 'what got done and what was made · today ' + days[0].entries.length + ' entries';
+      w.innerHTML = (d && d.summary ? '<div class="plai">' + escS(d.summary) + '</div>' : '<div class="plai">' + (d && d.aiOn ? 'No summary yet for today.' : 'Written summary switches on when the OpenAI key is added in Vercel (OPENAI_API_KEY). The log below is live now.') + '</div>')
+        + (days.map(function (day) {
+          var c = Object.keys(day.counts).map(function (k) { return '<span>' + day.counts[k] + ' ' + escS(k.toLowerCase()) + '</span>'; }).join('');
+          return '<div class="pld"><h4>' + escS(day.day) + '<small>' + day.entries.length + ' entries</small></h4><div class="pc">' + c + '</div><ul>'
+            + day.entries.slice(0, 25).map(function (e) { return '<li><i>' + vanHM(e.at) + ' ' + escS(e.kind) + '</i>' + escS(e.title) + '</li>'; }).join('')
+            + (day.entries.length > 25 ? '<li><i></i>and ' + (day.entries.length - 25) + ' more</li>' : '') + '</ul></div>';
+        }).join('') || '<div style="color:#a3b0d2">Nothing logged in the last 7 days.</div>');
+    }
+    function loadProd() { api('/api/ops/production').then(function (r) { return r && r.ok ? r.json() : {}; }).catch(function () { return {}; }).then(paintProd); }
+    var plBtn = $(root, '#plToggle');
+    if (plBtn) plBtn.onclick = function () { plOpen = !plOpen; var w = $(root, '#plw'); if (w) w.hidden = !plOpen; plBtn.textContent = plOpen ? 'Hide' : 'Show'; if (plOpen) loadProd(); };
+
+    /* Sites and social */
+    var ssOpen = false;
+    function paintSites(d) {
+      var w = $(root, '#ssw'); if (!w) return;
+      var cards = (d && d.cards) || [];
+      var log = (d && d.drLog) || [];
+      w.innerHTML = '<div class="ssg">' + cards.map(function (c) {
+        return '<div class="ssc' + (c.connected ? '' : ' off') + '"><small>' + escS(c.label) + '</small><b>' + escS(c.connected ? c.value : 'Not connected') + '</b><i>' + escS(c.note || '') + '</i></div>';
+      }).join('') + '</div>'
+        + '<div class="sslog"><table class="sptab"><thead><tr><th>DATA ROOM VISITOR</th><th>SIGNED IN</th><th>STAYED</th><th>PAGES</th></tr></thead><tbody>'
+        + (log.map(function (v) { return '<tr><td><b>' + escS(v.who) + '</b><small>' + escS(v.email || '') + '</small></td><td>' + escS(v.when) + '</td><td>' + escS(v.stayed || '-') + '</td><td>' + escS(String(v.pages || 0)) + '</td></tr>'; }).join('')
+          || '<tr><td colspan="4"><small>No data room sign-ins logged yet. Each sign-in shows here and in Signals.</small></td></tr>') + '</tbody></table></div>';
+    }
+    function loadSites() { api('/api/ops/sites').then(function (r) { return r && r.ok ? r.json() : {}; }).catch(function () { return {}; }).then(paintSites); }
+    var ssBtn = $(root, '#ssToggle');
+    if (ssBtn) ssBtn.onclick = function () { ssOpen = !ssOpen; var w = $(root, '#ssw'); if (w) w.hidden = !ssOpen; ssBtn.textContent = ssOpen ? 'Hide' : 'Show'; if (ssOpen) loadSites(); };
+
     function loadAll() {
       if (frozen) return;
       var last = $(root, '#lastsweep'); if (last) last.textContent = nowVan();

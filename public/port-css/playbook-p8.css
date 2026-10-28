@@ -346,3 +346,23 @@ button{font:inherit;cursor:pointer}
 body.navshut{grid-template-columns:0 minmax(0,1fr)}
 body.navshut .side{width:0;padding:0;border:0}
 .navtog{height:32px;border:1px solid var(--line);background:#fff;border-radius:9px;padding:0 12px;font-size:12.5px;font-weight:700;color:var(--ink);cursor:pointer;margin-right:4px}
+/* Focus today: Calendar | Today's plays | To-dos due today */
+#todo.fx .tdc[data-b="week"]{order:1;--cc:#4d7cff}
+#todo.fx .tdc[data-b="next"]{order:2;--cc:#2fe08b}
+#todo.fx .tdc[data-b="today"]{order:3}
+#todo .fxev{display:grid;grid-template-columns:52px 1fr;column-gap:10px;align-items:start}
+#todo .fxev .meta{grid-column:2}
+#todo .fxt{font-weight:850;color:#fff;font-size:13.5px;font-variant-numeric:tabular-nums;padding-top:1px}
+#todo .fxev.now{outline:1.5px solid #4d7cff;outline-offset:-1.5px}
+#todo .fxev.past{opacity:.5}
+#todo .fxj{color:#8dbaff;font-weight:800;text-decoration:none;margin-left:6px}
+#todo .fxpl .tt{font-weight:800}
+#todo .fxnone{color:#a3b0d2;font-size:12.5px;padding:8px 4px}
+#todo.fx .tdg{grid-template-columns:1fr 1fr 1.25fr!important}
+#todo.fx .tdc[data-b="week"]{--cc:#4d7cff!important}
+#todo.fx .tdc[data-b="next"]{--cc:#2fe08b!important}
+#todo.fx .tdc[data-b="week"] .ti,#todo.fx .tdc[data-b="next"] .ti{display:block;cursor:default;padding:10px 12px}
+#todo.fx .tdc[data-b="week"] .ti.fxev{display:grid;grid-template-columns:50px 1fr}
+#todo.fx .tdc[data-b="week"] .ti .tt,#todo.fx .tdc[data-b="next"] .ti .tt{font-size:14.5px;font-weight:800;color:#fff}
+#todo.fx .tdc .ti .meta{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:3px}
+#todo.fx .tdc .ti .meta span{display:inline!important;color:#aab6d6;font-size:12px;font-weight:650}

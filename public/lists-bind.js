@@ -495,6 +495,13 @@
       });
     }
 
+    /* +18006392274 -> (800) 639-2274; leaves other formats as typed. */
+    function fmtPhone(v) {
+      var d = String(v || '').replace(/[^\d]/g, '');
+      if (d.length === 11 && d.charAt(0) === '1') d = d.slice(1);
+      if (d.length === 10) return '(' + d.slice(0, 3) + ') ' + d.slice(3, 6) + '-' + d.slice(6);
+      return String(v || '');
+    }
     function renderBody() {
       var body = $('#lbody');
       if (!body) return;
@@ -519,18 +526,18 @@
         var cls = 'r' + (p.id === nextId ? ' next' : '');
         var role = p.role ? '<span class="sp has">' + esc(p.role) + '</span>' : '';
         var cb = p.callback ? '<span class="cb">Call back ' + esc(p.callback) + '</span>' : '';
-        var spaceLabel = (p.spaceId || p.space_id) ? 'Open space' : 'Start space';
+        var spaceLabel = (p.spaceId || p.space_id) ? 'Open space' : 'Space';
         return '<tr class="' + cls + '" data-id="' + esc(p.id) + '">'
           + '<td><b>' + esc(p.name) + '</b><small>' + esc(companyLine(p)) + '</small>' + role + cb + '</td>'
-          + '<td>' + (phone ? '<a href="tel:' + esc(phone.replace(/\s+/g, '')) + '">' + esc(phone) + '</a>' : '—') + '</td>'
+          + '<td>' + (phone ? '<a href="tel:' + esc(phone.replace(/[^\d+]/g, '')) + '">' + esc(fmtPhone(phone)) + '</a>' : '<small>no phone</small>') + '</td>'
           + '<td>' + (email ? '<a href="mailto:' + esc(email) + '">' + esc(email) + '</a>' : '<small>no email</small>') + '</td>'
-          + '<td><span class="nt">' + (notePreview(p.notes) ? esc(notePreview(p.notes)) : '<small>no notes yet</small>') + '</span></td>'
+          + '<td><span class="nt">' + (notePreview(p.notes) ? esc(notePreview(p.notes)) : '<small>none yet</small>') + '</span></td>'
           + '<td><button type="button" class="stg2" data-a="stage" style="color:' + S.color + ';background:' + S.bg + '">' + esc(S.k)
           + (S.hint ? '<small>' + esc(S.hint) + '</small>' : '') + '</button></td>'
           + '<td><div class="pills">'
-          + '<button type="button" class="pl cbk" data-a="cb">Callback</button>'
+          + '<button type="button" class="pl cbk" data-a="cb" title="Call back">Call back</button>'
           + '<button type="button" class="pl" data-a="email">Email</button>'
-          + '<button type="button" class="pl go" data-a="space">' + spaceLabel + '</button>'
+          + '<button type="button" class="pl go" data-a="space" title="' + ((p.spaceId || p.space_id) ? 'Open this space' : 'Start a space') + '">' + ((p.spaceId || p.space_id) ? 'Open' : 'Space') + '</button>'
           + '<button type="button" class="pl del" data-a="del">Delete</button>'
           + '</div></td></tr>';
       }).join('') || '<tr><td colspan="6" style="padding:18px;color:#6f7fa6">Nobody on this list yet.</td></tr>';

@@ -32,7 +32,7 @@
     + '.pbox textarea{min-height:150px;resize:vertical}.pbox .er{color:var(--red);font-size:12.5px;font-weight:700;min-height:16px}'
     + '.pbox .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}'
     + '.btn[disabled]{opacity:.55;cursor:default}';
-  var CSS = { contacts: '/port-css/contacts.css?v=2', finance: '/port-css/financials.css?v=1', outreach: '/port-css/outreach-lists.css?v=7', neon: '/port-css/neon.css?v=1', contrastP10: '/port-css/contrast-p10.css?v=4' };
+  var CSS = { contacts: '/port-css/contacts.css?v=2', finance: '/port-css/financials.css?v=1', outreach: '/port-css/outreach-lists.css?v=8', neon: '/port-css/neon.css?v=1', contrastP10: '/port-css/contrast-p10.css?v=4' };
   var cssText = {};
   var NA = 'Fills in from the master finance sheet once it\'s connected';
   var COLD_DAYS = 21;
@@ -339,7 +339,7 @@
     var tab = S().peopleTab === 'lists' ? 'lists' : 'contacts';
     /* Design 28: one header + Contacts/Lists switch; both modes share the call-list rows. */
     var sub = tab === 'lists'
-      ? ('your lists · synced with GoHighLevel · ' + esc((typeof window.vancouverTodayLabel === 'function' && window.vancouverTodayLabel()) || '') + ' · today')
+      ? 'your call lists, synced with GoHighLevel'
       : 'everyone you know · from email, calls and GoHighLevel';
     return '<div class="bar"><h1>' + (tab === 'lists' ? 'Lists' : 'Contacts') + '</h1><span class="sub">' + sub + '</span></div><div data-lists-host="1"></div>';
   }

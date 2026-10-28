@@ -60,13 +60,13 @@
     links: '/port-css/links.css?v=10', mail: '/port-css/email.css?v=8', mailPeople: '/port-css/email-people.css?v=8',
     playbook: '/port-css/playbook.css?v=10', calendar: '/port-css/calendar.css?v=7', zoom: '/port-css/zoom.css?v=2',
     completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=4',
-    neon: '/port-css/neon.css?v=1', playbookP8: '/port-css/playbook-p8.css?v=11', plannerNeon: '/port-css/planner-neon.css?v=5',
+    neon: '/port-css/neon.css?v=1', playbookP8: '/port-css/playbook-p8.css?v=12', plannerNeon: '/port-css/planner-neon.css?v=6',
     calendarNeon: '/port-css/calendar-neon.css?v=7', completedNeon: '/port-css/completed-neon.css?v=3',
-    intNeon: '/port-css/integrations-neon.css?v=2',     vaultOps: '/port-css/vault-ops.css?v=6',
+    intNeon: '/port-css/integrations-neon.css?v=2',     vaultOps: '/port-css/vault-ops.css?v=7',
     sheetViewer: '/port-css/sheet-viewer.css?v=2', notesCanvasP8: '/port-css/notes-canvas-p8.css?v=1',
-    outreach: '/port-css/outreach-lists.css?v=7',
-    vault: '/port-css/vault-ops.css?v=6',
-    ops: '/port-css/vault-ops.css?v=6',
+    outreach: '/port-css/outreach-lists.css?v=8',
+    vault: '/port-css/vault-ops.css?v=7',
+    ops: '/port-css/vault-ops.css?v=7',
     contrastP10: '/port-css/contrast-p10.css?v=4'
   };
   var HOSTS = {

@@ -475,7 +475,7 @@ select{appearance:none;-webkit-appearance:none;background-image:none}
 
 /* ===== 18h / 18k: Planner in the Playbook dark style (shadow :host, not document :root) ===== */
 :host,.port-body,:root{--surface:#111a3a;--raise:#1a2552;--band:#16214a;--edge:#2a3a72;--fg:#eef2fc;--muted:#c8d1ea;--faint:#a3b0d2;--gold:#f5c443;--gold-ink:#f5c443;--gold-soft:#2b2612;
- --p1:#7d8bff;--p2:#3b82ff;--p3:#19d38a;--p4:#ff5fa8;--p5:#a173ff;--p6:#ffb547;--p7:#22d3c5;--p8:#ff6b4a;--bad:#ff5a6e;--good:#2ee59d;color-scheme:dark}
+ --p1:#47b8ff;--p2:#4d7cff;--p3:#2fe08b;--p4:#ff6fb5;--p5:#9d7bff;--p6:#ffb340;--p7:#2fd6c6;--p8:#ff8a3d;--bad:#ff5a6e;--good:#2ee59d;color-scheme:dark}
 .card{background:var(--surface);color:var(--fg);border:1px solid rgba(120,150,255,.14)}
 .capture{background:#111a3a;color:var(--fg);border:1px solid rgba(120,150,255,.14)}
 .capture input{color:#fff}.capture input::placeholder{color:#a3b0d2}
@@ -646,3 +646,19 @@ body.th-neon .main{color:#eef2fc}
 .canvas [data-id]:not(.series){touch-action:pan-y}
 .canvas [data-id].moving{z-index:6;cursor:grabbing;box-shadow:0 0 0 2px #3b82ff,0 10px 26px rgba(0,0,0,.5);transition:none!important}
 .canvas .mvtag{position:absolute;z-index:7;pointer-events:none;background:#0e1430;color:#e9eefa;border:1px solid rgba(120,150,255,.35);border-radius:7px;padding:2px 8px;font:700 12px Inter,system-ui,sans-serif;white-space:nowrap}
+/* Hover highlight fades instead of snapping, so moving across the timeline never flickers. */
+.canvas [data-id],.canvas .links path,.canvas .links circle{transition:opacity .18s ease}
+.canvas [data-id]{will-change:opacity;backface-visibility:hidden}
+/* Milestones: planning (very faint) then start to complete (gold, filled by progress), diamond on the complete date. */
+.gspan{position:absolute;height:26px;cursor:pointer}
+.gspan .gplan{position:absolute;left:0;top:0;bottom:0;border-radius:13px 0 0 13px;background:rgba(245,197,66,.06);border:1px dashed rgba(245,197,66,.26);border-right:0}
+.gspan .grun{position:absolute;top:0;bottom:0;right:0;border-radius:0 13px 13px 0;background:rgba(245,197,66,.26);border:1.5px solid #f5c542;overflow:hidden}
+.gspan .grun b{display:block;height:100%;background:rgba(245,197,66,.5)}
+.gspan .gplan[style*="width:0px"]+.grun{border-radius:13px}
+.gspan .gdia{position:absolute;right:-7px;top:6px;width:13px;height:13px;background:#f5c542;transform:rotate(45deg);border-radius:2px;box-shadow:0 0 10px rgba(245,197,66,.6)}
+.gspan .glab{position:absolute;top:4px;white-space:nowrap;font-weight:800;font-size:12.5px;color:#fff;pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.gspan .glab small{color:#f8dd8c;font-weight:700;margin-left:7px;font-size:11px}
+.gspan.risk .grun{border-color:#ff5470;background:rgba(255,84,112,.18)}.gspan.risk .gdia{background:#ff5470}
+.gspan.done .grun{background:rgba(47,224,139,.25);border-color:#2fe08b}.gspan.done .gdia{background:#2fe08b}
+.gspan:hover .grun{background:rgba(245,197,66,.34)}
+.g3d{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;min-width:0}

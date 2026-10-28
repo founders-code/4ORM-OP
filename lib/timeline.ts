@@ -25,6 +25,8 @@ export async function ensureTimeline(sql: Sql) {
     updated_at timestamptz NOT NULL DEFAULT now(),
     archived_at timestamptz
   )`;
+  /* Milestones carry a planning date, a start date and a complete date (additive). */
+  await sql`ALTER TABLE timeline_items ADD COLUMN IF NOT EXISTS plan_date date`;
   await sql`CREATE TABLE IF NOT EXISTS timeline_deps (
     item_id uuid NOT NULL,
     depends_on_id uuid NOT NULL,
@@ -212,7 +214,8 @@ export async function readTimeline(sql: Sql, ownerId: string) {
   const shaped = (items as Record<string, unknown>[]).map((row) => {
     const kind = String(row.kind);
     const due = dayNum(row.due_date);
-    const start = kind === 'span' ? dayNum(row.start_date) : due;
+    const start = kind === 'span' || (kind === 'milestone' || String(row.pipeline) === 'milestones') && row.start_date ? dayNum(row.start_date) : due;
+    const plan = row.plan_date ? dayNum(row.plan_date) : null;
     const recur = String(row.recur_rule || '');
     const dates = kind === 'recurring' && recur ? expandRecur(recur) : undefined;
     return {
@@ -231,6 +234,7 @@ export async function readTimeline(sql: Sql, ownerId: string) {
       e: dates ? dates[dates.length - 1] : due,
       dates,
       planned: /Confidence: estimated/.test(String(row.note || '')),
+      ps: plan,
     };
   });
   note(`[live-map] timeline items=${shaped.filter((i) => i.kind !== 'goal').length} milestones=${shaped.filter((i) => i.kind === 'goal').length} deps=${deps.length} tasks=${tasks.length}`);

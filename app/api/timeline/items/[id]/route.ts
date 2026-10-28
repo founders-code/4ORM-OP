@@ -27,6 +27,10 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
     const due = dueRaw && /^\d{4}-\d{2}-\d{2}$/.test(dueRaw) ? dueRaw : null;
     const start = startRaw === '' ? '' : (startRaw && /^\d{4}-\d{2}-\d{2}$/.test(startRaw) ? startRaw : null);
     const clearStart = startRaw === '';
+    const planRaw = body.plan_date != null ? String(body.plan_date) : null;
+    const plan = planRaw && /^\d{4}-\d{2}-\d{2}$/.test(planRaw) ? planRaw : null;
+    const clearPlan = planRaw === '';
+    if (planRaw != null) await session.sql`ALTER TABLE timeline_items ADD COLUMN IF NOT EXISTS plan_date date`;
     await session.sql`
       UPDATE timeline_items
       SET title = CASE WHEN ${title != null} THEN ${title || ''} ELSE title END,
@@ -39,6 +43,10 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
           updated_at = now()
       WHERE id = ${ctx.params.id}::uuid AND owner_id = ${session.userId}
     `;
+    if (planRaw != null) {
+      await session.sql`UPDATE timeline_items SET plan_date = CASE WHEN ${clearPlan} THEN NULL ELSE ${plan}::date END
+        WHERE id = ${ctx.params.id}::uuid AND owner_id = ${session.userId}`;
+    }
     return NextResponse.json({ ok: true, id: ctx.params.id });
   } catch (err) {
     fail('timeline_item_patch', err);
