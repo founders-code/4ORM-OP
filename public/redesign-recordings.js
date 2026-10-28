@@ -158,9 +158,13 @@
     ];
   }
   function card(r) {
-    if (r.proc || r.status === 'transcribing' || r.status === 'summarizing' || r.status === 'waiting' || /waiting for transcription|openai/i.test(String(r.step || r.detail || ''))) {
+    if (r.proc || r.status === 'transcribing' || r.status === 'summarizing' || r.status === 'waiting' || /waiting for transcription|openai|transcrib/i.test(String(r.step || r.detail || ''))) {
+      /* Without OPENAI_API_KEY nothing is actually transcribing - never claim it is. */
+      var peerWaiting = (S().recordings || []).some(function (x) {
+        return /waiting for transcription|openai_api_key|openai/i.test(String(x.step || x.detail || x.error || ''));
+      });
       var waiting = r.status === 'waiting' || /waiting for transcription|openai|not set/i.test(String(r.step || r.detail || r.error || ''));
-      var noKey = waiting || !!(window.__openaiMissing);
+      var noKey = waiting || peerWaiting || window.__openaiMissing !== false;
       var label = noKey ? 'Waiting for transcription - add OPENAI_API_KEY in Vercel' : (r.step || 'Transcribing');
       var body = noKey
         ? (esc(fmtDur(r.duration_s)) + ' recorded. Transcription cannot run until OPENAI_API_KEY is set in Vercel.')
