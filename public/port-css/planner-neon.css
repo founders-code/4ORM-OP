@@ -618,8 +618,10 @@ body.th-neon .main{color:#eef2fc}
 .port-body.neon .fi:hover,:host(.neon) .fi:hover,.port-body .fi:hover{background:rgba(255,255,255,.05)!important;border-color:rgba(120,150,255,.28)!important}
 .port-body.neon .fi:focus,:host(.neon) .fi:focus,.port-body .fi:focus{background:#0e1430!important;border-color:#3b82ff!important;box-shadow:0 0 0 3px rgba(59,130,255,.18)!important}
 .port-body.neon .fi.bad,:host(.neon) .fi.bad{background:rgba(255,77,109,.12)!important;border-color:#ff4d6d!important}
-/* 18k-r2: leftover light surfaces under Neon (shadow host, not body.th-neon) */
-.port-body.neon .sname,:host(.neon) .sname,.port-body .sname{background:#0e1430!important;color:#eef2fc!important;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c) 70%,transparent)!important}
+/* 18k-r2: leftover light surfaces under Neon (shadow host, not body.th-neon).
+   #drawer alone beats class selectors - pin the id with !important. */
+.port-body.neon .sname,:host(.neon) .sname,.port-body .sname,#board .sname,.sname{background:#0e1430!important;color:#eef2fc!important;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c) 70%,transparent)!important}
+#drawer,.pop,.newbox,.dueweek,.dpk,
 .port-body.neon #drawer,.port-body.neon .pop,.port-body.neon .newbox,.port-body.neon .dueweek,.port-body.neon .dpk,
 :host(.neon) #drawer,:host(.neon) .pop,:host(.neon) .newbox,:host(.neon) .dueweek,:host(.neon) .dpk,
 .port-body #drawer,.port-body .pop,.port-body .newbox,.port-body .dueweek,.port-body .dpk{

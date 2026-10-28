@@ -139,13 +139,14 @@ function heat(items: Item[], cats: string[], hist: { start: number; end: number 
   while (lead < counts.length && counts[lead] === 0) lead += 1;
   const afterLead = counts.slice(lead);
   const real = afterLead.filter((n) => n > 0);
-  const building = real.length < 4;
+  /* Leading empty weeks mean the baseline is still forming - do not score 100 yet. */
+  const building = real.length < 4 || lead > 0;
   const med = medianOf(real) || 1;
   const nowCount = counts[counts.length - 1] || 0;
   const thenCount = counts[counts.length - 2] || 0;
   const v = building ? null : scaled(nowCount, med);
   const lastV = building ? null : scaled(thenCount, med);
-  const bars = counts.map((n, i) => (i < lead ? 0 : scaled(n, med)));
+  const bars = counts.map((n, i) => (i < lead ? 0 : (building ? Math.min(100, Math.round((n / (med || 1)) * 40)) : scaled(n, med))));
   const top = topic.slice().sort((a, b) => weight(b) - weight(a) || new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime())[0];
   const title = String(top?.title || '');
   return {

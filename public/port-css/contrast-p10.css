@@ -23,9 +23,14 @@
 .port-body.neon .fl{background:#0a0f26!important;border-color:rgba(120,150,255,.12)!important}
 .port-body.neon .bar .sub,.port-body .bar .sub{color:#aebbe0!important}
 /* Segmented toggles on dark pages — never #000 / #101a33 on dark */
-.port-body .seg span,.port-body.neon .seg span{color:#aebbe0!important}
-.port-body .seg span.on,.port-body.neon .seg span.on{background:#ff4d8d!important;color:#160308!important}
-.port-body .seg span:not(.on){color:#aebbe0!important}
+.port-body .seg span,.port-body.neon .seg span,
+.port-body .vseg button,.port-body.neon .vseg button{color:#aebbe0!important}
+.port-body .seg span.on,.port-body.neon .seg span.on,
+.port-body .vseg button[aria-pressed="true"],.port-body.neon .vseg button[aria-pressed="true"]{background:#ff4d8d!important;color:#160308!important}
+.port-body .seg span:not(.on),.port-body .vseg button[aria-pressed="false"]{color:#aebbe0!important;background:transparent!important}
+/* Contacts / Lists and Cards / List were measuring #000 / #101a33 on dark */
+.bar .seg span,.port-body .bar .seg span{color:#aebbe0!important}
+.bar .seg span.on,.port-body .bar .seg span.on{color:#160308!important}
 /* Integrations / Contacts / Links white-on-white strips */
 .port-body .stat,.port-body .sx b,.port-body .kpi b,.port-body .tiles .sx b{color:#e9eefa!important}
 .port-body .stat span,.port-body .sx span{color:#aebbe0!important}

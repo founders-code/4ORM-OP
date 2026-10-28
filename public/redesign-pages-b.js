@@ -1659,6 +1659,7 @@
   function paintLinksLive() {
     var wrap = wrapOf('linksDesk');
     if (!wrap) return;
+    if (P().applyPageCss) P().applyPageCss(wrap, 'links');
     var data = linksData();
     wrap.innerHTML =
       '<div class="bar"><h1>Links</h1><span class="sub">Every bookmark, sorted &mdash; each opens the site in a new tab</span>'
