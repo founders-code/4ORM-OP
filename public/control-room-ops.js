@@ -1307,19 +1307,25 @@
     el.innerHTML = '<div class="nwx"><div class="top"><span class="t">News</span>' + modeSeg + '<div class="seg" id="newsSpan"><button type="button" data-action="news-span" data-span="today"' + (span === 'today' ? ' class="on"' : '') + '>Today</button><button type="button" data-action="news-span" data-span="week"' + (span === 'week' ? ' class="on"' : '') + '>Last week</button><button type="button" data-action="news-span" data-span="month"' + (span === 'month' ? ' class="on"' : '') + '>Last month</button></div><button class="btn" id="newsRefresh" type="button" data-action="news-refresh"' + (STATE.newsBusy ? ' disabled' : '') + '>' + (STATE.newsBusy ? 'Sweeping...' : 'Refresh') + '</button><div class="right"><input class="search" id="newsSearch" type="text" data-action="news-search" placeholder="Search news..." value="' + esc(STATE.newsQ || '') + '"/><span class="sweeps">Sweeps at 08:00 and 11:00' + (swept ? ' &middot; last ' + esc(swept) : '') + '</span></div></div><div class="chips">' + chips + '</div>' + pulseHtml + '<div class="wrap"><div class="main">' + (miss ? '<div class="nw-miss">' + miss + '</div>' : '') + body + '</div><div class="rail"><div class="card"><div class="ch"><span class="mk">4</span><span class="t">Your briefing</span><span class="s">' + briefRows.length + ' things ' + (span === 'today' ? 'today' : 'this ' + span) + '</span></div><div class="brief">' + brief + '</div></div><div class="card"><div class="ch"><span class="t">Competitor watch</span><span class="s">' + NEWS_RIVALS.length + ' tracked</span></div><div class="comp">' + comps + '</div></div><div class="card"><div class="ch"><span class="t">Trending for 4orm</span></div><div class="trend">' + trend + '</div></div><div class="card"><div class="ch"><span class="t">What this means - priority</span></div><div class="prio">' + pri + '</div></div></div></div></div>';
     if (typeof window.bindNewsPulse === 'function') {
       var fxNews = !!(window.fixtureMockup || (typeof fixtureOn === 'function' && fixtureOn()));
-      var pulseData = fxNews ? window.__NEWS_PULSE_FIXTURE : (STATE.newsPulse || window.__NEWS_PULSE_FIXTURE);
+      var pulseHas = function (p) {
+        return !!(p && ((p.gauges && p.gauges.length) || (p.consumer && p.consumer.length)));
+      };
+      var pulseData = fxNews
+        ? window.__NEWS_PULSE_FIXTURE
+        : (pulseHas(STATE.newsPulse) ? STATE.newsPulse : window.__NEWS_PULSE_FIXTURE);
       window.bindNewsPulse(el, pulseData);
       var nextAt = STATE.newsPulse && Date.parse(STATE.newsPulse.nextAt || '') || 0;
       var staleBuild = !fxNews && !!(STATE.newsPulse && (STATE.newsPulse.gauges || STATE.newsPulse.consumer || []).some(function (g) {
         return g && g.building && (g.buildingN == null || g.buildingN >= 4);
       }));
-      var due = !fxNews && !STATE.newsPulseBusy && (!STATE.newsPulse || staleBuild || (nextAt && Date.now() >= nextAt));
+      var due = !fxNews && !STATE.newsPulseBusy && (!pulseHas(STATE.newsPulse) || staleBuild || (nextAt && Date.now() >= nextAt));
       if (due) {
         STATE.newsPulseBusy = true;
-        var pulseUrl = '/api/news/pulse?view=' + (STATE.newsPulseView || 'market') + (staleBuild || !STATE.newsPulse ? '&rebuild=1' : '');
+        var pulseUrl = '/api/news/pulse?view=' + (STATE.newsPulseView || 'market') + (staleBuild || !pulseHas(STATE.newsPulse) ? '&rebuild=1' : '');
         authFetch(pulseUrl).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {
           STATE.newsPulseBusy = false;
-          if (d && (d.gauges || d.consumer)) { STATE.newsPulse = d; window.bindNewsPulse(el, d); }
+          if (pulseHas(d)) { STATE.newsPulse = d; window.bindNewsPulse(el, d); }
+          else if (!pulseHas(STATE.newsPulse)) window.bindNewsPulse(el, window.__NEWS_PULSE_FIXTURE);
         }).catch(function () { STATE.newsPulseBusy = false; });
       }
     }

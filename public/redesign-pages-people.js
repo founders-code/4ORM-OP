@@ -347,7 +347,11 @@
 
   function paintContacts() {
     try {
-      if (new URLSearchParams(String(location.search || '')).get('lists') === '1') S().peopleTab = 'lists';
+      try {
+        var qs = new URLSearchParams(String(location.search || ''));
+        if (qs.get('lists') === '1' || qs.get('tab') === 'lists') S().peopleTab = 'lists';
+        if (qs.get('tab') === 'contacts') S().peopleTab = 'contacts';
+      } catch (e) {}
     } catch (e) {}
     Promise.all([loadCss('contacts'), loadCss('outreach'), loadCss('neon'), loadCss('contrastP10')]).then(function () { whenFixture(function () {
       var root = mount('peopleDesk', 'contacts');
