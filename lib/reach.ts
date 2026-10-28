@@ -1,5 +1,14 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { fail } from './log';
+import {
+  buildCallLists,
+  createList,
+  flattenPeople,
+  restoreList,
+  softDeleteList,
+  tickReachPerson,
+  type ReachList,
+} from './reach-lists';
 
 type Sql = NeonQueryFunction<false, false>;
 
@@ -13,6 +22,13 @@ export type ReachPerson = {
   kind: string;
   nextAction: string;
   done: boolean;
+  phone?: string;
+  email?: string;
+  spaceId?: string;
+  opportunityId?: string;
+  listKey?: string;
+  stage?: string;
+  day?: string;
 };
 
 function clip(value: unknown, max: number) {
@@ -33,22 +49,39 @@ function shape(row: Record<string, unknown>): ReachPerson {
     kind: kindOf(row.kind),
     nextAction: String(row.next_action || ''),
     done: !!row.done,
+    phone: row.phone ? String(row.phone) : '',
+    email: row.email ? String(row.email) : '',
+    spaceId: row.space_id ? String(row.space_id) : '',
+    opportunityId: row.ghl_opportunity_id ? String(row.ghl_opportunity_id) : '',
+    listKey: row.list_key ? String(row.list_key) : '',
+    stage: row.stage ? String(row.stage) : '',
+    day: row.day ? String(row.day) : '',
   };
 }
 
-export async function listReach(sql: Sql, ownerId: string) {
+export async function listReach(sql: Sql, ownerId: string, userId?: string) {
   try {
-    const rows = await sql`
-      SELECT id, contact_id, name, company, kind, next_action, done
-      FROM reach_out
-      WHERE owner_id = ${ownerId}
-      ORDER BY done, created_at DESC
-    `;
-    return (rows as Record<string, unknown>[]).map(shape);
+    const lists = await buildCallLists(sql, ownerId, userId || ownerId);
+    return flattenPeople(lists);
   } catch (err) {
     fail('reach_list', err);
-    return [];
+    try {
+      const rows = await sql`
+        SELECT id, contact_id, name, company, kind, next_action, done, phone, email, space_id, ghl_opportunity_id, list_key, day, stage
+        FROM reach_out
+        WHERE owner_id = ${ownerId} AND deleted_at IS NULL
+        ORDER BY done, created_at DESC
+      `;
+      return (rows as Record<string, unknown>[]).map(shape);
+    } catch (inner) {
+      fail('reach_list_fallback', inner);
+      return [];
+    }
   }
+}
+
+export async function listReachLists(sql: Sql, ownerId: string, userId: string): Promise<ReachList[]> {
+  return buildCallLists(sql, ownerId, userId);
 }
 
 export async function addReach(sql: Sql, ownerId: string, input: Record<string, unknown>) {
@@ -70,22 +103,67 @@ export async function addReach(sql: Sql, ownerId: string, input: Record<string, 
   }
 }
 
-export async function patchReach(sql: Sql, ownerId: string, id: string, input: Record<string, unknown>) {
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+export async function patchReach(
+  sql: Sql,
+  ownerId: string,
+  id: string,
+  input: Record<string, unknown>,
+  opts?: { userId?: string; email?: string },
+) {
   const setDone = Object.prototype.hasOwnProperty.call(input, 'done');
+  if (setDone && (id.includes(':') || opts?.userId)) {
+    const tick = await tickReachPerson(
+      sql,
+      ownerId,
+      opts?.userId || ownerId,
+      id,
+      !!input.done,
+      opts?.email || '',
+    );
+    if (tick) {
+      return {
+        id: tick.id,
+        contactId: tick.contactId,
+        name: tick.name,
+        company: tick.company,
+        kind: kindOf(tick.listKey === 'design-partners' ? 'design' : tick.listKey === 'regulators' ? 'regulator' : 'corporate'),
+        nextAction: tick.nextStep,
+        done: tick.done,
+        phone: tick.phone,
+        email: tick.email,
+        spaceId: tick.spaceId,
+        opportunityId: tick.opportunityId,
+        listKey: tick.listKey,
+        stage: tick.done ? 'Contacted' : tick.stage,
+        day: tick.day,
+        ghl: tick.ghl,
+      };
+    }
+  }
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
   const setAction = Object.prototype.hasOwnProperty.call(input, 'nextAction') || Object.prototype.hasOwnProperty.call(input, 'next_action');
   const setKind = Object.prototype.hasOwnProperty.call(input, 'kind');
+  const setArchived = Object.prototype.hasOwnProperty.call(input, 'archived') || Object.prototype.hasOwnProperty.call(input, 'deleted');
   const done = !!input.done;
   const nextAction = clip(input.nextAction || input.next_action, 180);
   const kind = kindOf(input.kind);
+  const archived = !!(input.archived ?? input.deleted);
   try {
+    if (setArchived) {
+      const rows = await sql`
+        UPDATE reach_out SET deleted_at = CASE WHEN ${archived} THEN now() ELSE NULL END
+        WHERE id = ${id} AND owner_id = ${ownerId}
+        RETURNING id, contact_id, name, company, kind, next_action, done, phone, email, space_id, ghl_opportunity_id, list_key, day, stage
+      `;
+      return rows[0] ? shape(rows[0] as Record<string, unknown>) : null;
+    }
     const rows = await sql`
       UPDATE reach_out SET
         done = CASE WHEN ${setDone} THEN ${done} ELSE done END,
         next_action = CASE WHEN ${setAction} THEN ${nextAction} ELSE next_action END,
         kind = CASE WHEN ${setKind} THEN ${kind} ELSE kind END
-      WHERE id = ${id} AND owner_id = ${ownerId}
-      RETURNING id, contact_id, name, company, kind, next_action, done
+      WHERE id = ${id} AND owner_id = ${ownerId} AND deleted_at IS NULL
+      RETURNING id, contact_id, name, company, kind, next_action, done, phone, email, space_id, ghl_opportunity_id, list_key, day, stage
     `;
     return rows[0] ? shape(rows[0] as Record<string, unknown>) : null;
   } catch (err) {
@@ -93,3 +171,5 @@ export async function patchReach(sql: Sql, ownerId: string, id: string, input: R
     return null;
   }
 }
+
+export { createList, softDeleteList, restoreList };

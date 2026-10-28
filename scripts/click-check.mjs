@@ -2052,11 +2052,16 @@ async function main() {
       await page.waitForSelector(spec.ready.split(',')[0].trim(), { timeout: 15000, state: 'attached' }).catch(() => {});
       await page.waitForTimeout(500);
       const report = await page.evaluate(() => {
+        function parseRgb(c) {
+          const m = String(c).match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9.]+))?/);
+          if (!m) return null;
+          return { r: Number(m[1]), g: Number(m[2]), b: Number(m[3]), a: m[4] == null ? 1 : Number(m[4]) };
+        }
         function lum(c) {
-          const m = String(c).match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-          if (!m) return 0;
-          const s = [m[1], m[2], m[3]].map((n) => {
-            const v = Number(n) / 255;
+          const p = parseRgb(c);
+          if (!p) return 0;
+          const s = [p.r, p.g, p.b].map((n) => {
+            const v = n / 255;
             return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
           });
           return 0.2126 * s[0] + 0.7152 * s[1] + 0.0722 * s[2];
@@ -2066,18 +2071,36 @@ async function main() {
           const hi = Math.max(a, b), lo = Math.min(a, b);
           return (hi + 0.05) / (lo + 0.05);
         }
+        /* Walk ancestors for the real painted surface (white card inside a dark page). */
         function bgOf(el, stop) {
           let n = el;
+          let fallback = 'rgb(11, 20, 48)';
           while (n && n !== stop) {
             const cs = getComputedStyle(n);
             const bg = cs.backgroundColor;
-            if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
-              const mm = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9.]+))?/);
-              if (!mm || mm[4] == null || Number(mm[4]) > 0.08) return bg;
+            const p = parseRgb(bg);
+            if (p && p.a > 0.08) {
+              if (p.a >= 0.92) return `rgb(${p.r}, ${p.g}, ${p.b})`;
+              /* Blend translucent surface over the next opaque ancestor. */
+              const under = bgOf(n.parentElement, stop);
+              const u = parseRgb(under) || { r: 11, g: 20, b: 48 };
+              const r = Math.round(p.r * p.a + u.r * (1 - p.a));
+              const g = Math.round(p.g * p.a + u.g * (1 - p.a));
+              const b = Math.round(p.b * p.a + u.b * (1 - p.a));
+              return `rgb(${r}, ${g}, ${b})`;
+            }
+            if (n.classList && (n.classList.contains('light-surface') || n.classList.contains('feed') || n.classList.contains('sp') || n.classList.contains('pick-box') || n.classList.contains('compose') || n.classList.contains('reader') || n.classList.contains('smenu') || n.classList.contains('tbl'))) {
+              fallback = 'rgb(255, 255, 255)';
             }
             n = n.parentElement;
           }
-          return 'rgb(11, 20, 48)';
+          return fallback;
+        }
+        function mismatchKind(fg, bg) {
+          const fl = lum(fg), bl = lum(bg);
+          if (fl > 0.55 && bl > 0.55) return 'light-on-white';
+          if (fl < 0.25 && bl < 0.25) return 'dark-on-dark';
+          return 'low-contrast';
         }
         const fails = [];
         function walk(root) {
@@ -2095,8 +2118,18 @@ async function main() {
             if (parseFloat(cs.fontSize) < 9) continue;
             const r = el.getBoundingClientRect();
             if (r.width < 2 || r.height < 2) continue;
-            const rat = ratio(cs.color, bgOf(el, root));
-            if (rat < 4.5) fails.push({ t: t.slice(0, 40), fg: cs.color, bg: bgOf(el, root), r: rat, cls: String(el.className || '') });
+            const bg = bgOf(el, root);
+            const rat = ratio(cs.color, bg);
+            if (rat < 4.5) {
+              fails.push({
+                t: t.slice(0, 40),
+                fg: cs.color,
+                bg,
+                r: rat,
+                kind: mismatchKind(cs.color, bg),
+                cls: String(el.className || ''),
+              });
+            }
           }
         }
         document.querySelectorAll('[id$="Desk"], #v-news, #v-finance, #v-vault, #v-ops').forEach((el) => {
@@ -2105,18 +2138,24 @@ async function main() {
         const seen = {};
         const uniq = [];
         fails.forEach((f) => {
-          const k = f.t + '|' + f.fg + '|' + f.bg;
+          const k = f.t + '|' + f.fg + '|' + f.bg + '|' + f.kind;
           if (seen[k]) return;
           seen[k] = 1;
           uniq.push(f);
         });
         uniq.sort((a, b) => a.r - b.r);
-        return { n: uniq.length, worst: uniq[0] ? uniq[0].r.toFixed(2) + ' "' + uniq[0].t + '"' : '-' };
+        const surfaceFails = uniq.filter((f) => f.kind === 'light-on-white' || f.kind === 'dark-on-dark');
+        const worst = uniq[0];
+        return {
+          n: uniq.length,
+          surface: surfaceFails.length,
+          worst: worst ? `${worst.r.toFixed(2)} ${worst.kind} "${worst.t}"` : '-',
+        };
       });
-      const ok = report.n === 0;
+      const ok = report.n === 0 && report.surface === 0;
       if (!ok) failed = true;
       clicks.push({ page: spec.name, control: 'contrast 4.5:1', dom: ok, net: true, persist: true, pass: ok });
-      console.log(`${spec.name.padEnd(12)} ${String(report.n).padEnd(6)} ${report.worst}`);
+      console.log(`${spec.name.padEnd(12)} ${String(report.n).padEnd(6)} surf=${String(report.surface).padEnd(3)} ${report.worst}`);
     }
 
     console.log('\nB  click-check (fixture DOM)');

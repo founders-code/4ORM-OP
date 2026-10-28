@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 const DAYS = ['Tue', 'Wed', 'Thu', 'Fri', 'Mon'];
 
 async function ensureLists(sql: NonNullable<BoardSession['sql']>, ownerId: string) {
-  const existing = await sql`SELECT id, name FROM contact_lists WHERE owner_id = ${ownerId}`;
+  const existing = await sql`SELECT id, name FROM contact_lists WHERE owner_id = ${ownerId} AND deleted_at IS NULL`;
   const names = new Set(existing.map((r) => String(r.name || '')));
   const want = [
     { name: 'Pre-seed investors · this week', kind: 'sheet', source: '25 VCs' },
@@ -21,7 +21,7 @@ async function ensureLists(sql: NonNullable<BoardSession['sql']>, ownerId: strin
       VALUES (${ownerId}, ${w.name}, ${w.kind}, ${w.source}, ${JSON.stringify(['#', 'Name', 'Company', 'Email', 'Day'])}::jsonb)
     `;
   }
-  const lists = await sql`SELECT id, name, kind, source, columns, created_at FROM contact_lists WHERE owner_id = ${ownerId} ORDER BY created_at`;
+  const lists = await sql`SELECT id, name, kind, source, columns, created_at FROM contact_lists WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY created_at`;
   const contacts = await sql`SELECT id, name, company, email FROM contacts WHERE owner_id = ${ownerId} ORDER BY name LIMIT 80`.catch(() => []);
   for (const list of lists as Array<{ id: string; name: string }>) {
     const count = await sql`SELECT count(*)::int AS n FROM contact_list_rows WHERE list_id = ${list.id}`;

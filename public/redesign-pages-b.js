@@ -619,7 +619,7 @@
       var url = l.url || '';
       var host = hostOf(url);
       var n = (seen[host + '|' + url] = (seen[host + '|' + url] || 0) + 1);
-      return [l.title || l.name || host || 'Link', host || url, l.color || '#2e6bf2', l.note || '', n > 1 ? 2 : 1, absUrl(url), l.id || '', l.thumb_url || l.thumbUrl || ''];
+      return [l.title || l.name || host || 'Link', host || url, l.color || '#2e6bf2', l.note || '', n > 1 ? 2 : 1, absUrl(url), l.id || '', l.thumb_url || l.thumbUrl || '', l.thumb_status || l.thumbStatus || ''];
     });
     var dups = {};
     wall.forEach(function (w) { var k = String(w[5] || w[1]).replace(/\/$/, ''); dups[k] = (dups[k] || 0) + 1; });
@@ -1029,6 +1029,161 @@
       })
     };
   }
+  /* Ready-for-email envelope (design 26 tab 1): rows + body paras, violet underlines for space words. */
+  function spacePlain(html) {
+    return String(html || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  function spaceUnderline(text, terms) {
+    var html = esc(spacePlain(text));
+    if (!html) return '';
+    var seen = {};
+    (terms || []).slice().filter(Boolean).sort(function (a, b) { return String(b).length - String(a).length; }).forEach(function (term) {
+      var t = spacePlain(term);
+      if (t.length < 3 || seen[t.toLowerCase()]) return;
+      seen[t.toLowerCase()] = 1;
+      var re = new RegExp('(' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      html = html.replace(re, '<u>$1</u>');
+    });
+    return html;
+  }
+  function spaceEmailReady(d) {
+    d = d || {};
+    var peopleList = asList(d.people);
+    var fileList = asList(d.files);
+    var lead = peopleList[0] || {};
+    var ccPeople = peopleList.slice(1);
+    var attachFiles = fileList.filter(function (f) { return f && !f.sug; });
+    if (!attachFiles.length) {
+      attachFiles = fileList.filter(function (f) { return f && (f.goesOut || f.goes_out || /goes out/i.test(String(f.sub || ''))); });
+    }
+    var subject = String(d.subject || d.template || '').trim();
+    var angleRaw = String(d.angle || '');
+    var angleText = spacePlain(angleRaw);
+    var askText = String(d.ask || '').trim();
+    if (!askText) {
+      asList(d.hooks).forEach(function (h) {
+        if (!askText && /ask|20 min|minutes/i.test(String(h))) askText = String(h).replace(/^\+\s*/, '');
+      });
+    }
+    if (!askText) askText = '';
+    var askOk = !!askText && !/not set|defaults/i.test(askText);
+    var askDisplay = askOk ? askText : 'Could we take 20 minutes next week to walk you through it?';
+    var toOk = !!(lead.name || lead.meta) && !/^Add a person/i.test(String(d.to || ''));
+    var ccOk = ccPeople.length > 0;
+    var attOk = attachFiles.length > 0;
+    var subjOk = !!subject;
+    var angleOk = !!angleText;
+    var terms = [];
+    peopleList.forEach(function (p) { if (p.name) terms.push(p.name); });
+    asList(d.hooks).forEach(function (h) { terms.push(String(h).replace(/^\+\s*/, '')); });
+    String(d.notes || d.who || '').split(/[·|,;/]+/).forEach(function (bit) {
+      var t = String(bit || '').trim();
+      if (t.length >= 4 && t.length <= 48) terms.push(t);
+    });
+    ['20 minutes', 'RPAA', 'suitability', '4orm'].forEach(function (t) { terms.push(t); });
+    var openingPlain = '';
+    if (ccPeople[0] && ccPeople[0].name) {
+      openingPlain = ccPeople[0].name + ' suggested I reach out.';
+      if (lead.name) openingPlain += ' ' + (angleText ? angleText.split(/[.!?]/)[0] + '.' : (lead.name + ' — worth a short conversation.'));
+    } else if (toOk) {
+      openingPlain = String(d.intro || '').trim() || ('Reaching out about ' + (d.name || 'this') + '.');
+      if (openingPlain.length > 280) openingPlain = openingPlain.slice(0, 277) + '…';
+    }
+    var openingOk = !!openingPlain;
+    var openingHtml = openingOk
+      ? spaceUnderline(openingPlain, terms)
+      : 'Not written yet. Add a person and notes and it lands here.';
+    var angleHtml = angleOk
+      ? (angleRaw.indexOf('<') >= 0
+        ? String(angleRaw).replace(/<\/?b>/gi, function (m) { return m[1] === '/' ? '</u>' : '<u>'; }).replace(/<(?!\/?u\b)[^>]+>/g, '')
+        : spaceUnderline(angleText, terms))
+      : 'Not written yet. Add one line in Notes and it lands here.';
+    var askHtml = askOk ? spaceUnderline(askDisplay, terms) : 'Not set yet. Add the ask in Notes, or it defaults to 20 minutes.';
+    var signOff = 'Chad Johnston · 4orm Finance';
+    function chip(p, role) {
+      var name = p.name || 'Person';
+      var meta = p.meta || p.role || role || '';
+      return '<span class="chipp"><span class="av">' + esc(p.ini || initials(name)) + '</span>' + esc(name)
+        + (meta ? ' <small>' + esc(meta) + '</small>' : '') + '</span>';
+    }
+    function row(lab, valueHtml, ok, stOk, stMiss) {
+      return '<div class="env-row"><span class="k">' + esc(lab) + '</span><span class="v">' + valueHtml + '</span>'
+        + '<span class="st ' + (ok ? 'ok' : 'miss') + '">' + esc(ok ? stOk : stMiss) + '</span></div>';
+    }
+    function para(lab, html, ok) {
+      return '<div class="para' + (ok ? '' : ' m') + '"><div class="lab">' + esc(lab) + '</div><p>' + html + '</p></div>';
+    }
+    var fromHtml = '<span class="chipp"><span class="av">CJ</span>Chad Johnston <small>chad@4ormfinance.com</small></span>';
+    var toHtml = toOk
+      ? chip(lead, 'Lead')
+      : '<span class="add" data-action="space-people" data-id="' + esc(d.id || '') + '">+ Add a person from Contacts or Pipeline</span>';
+    var ccHtml = ccOk
+      ? ccPeople.map(function (p) { return chip(p, p.role || 'warm intro'); }).join('')
+      : '<span class="add" data-action="space-people" data-id="' + esc(d.id || '') + '">+ Add a Cc from People</span>';
+    var subjHtml = subjOk
+      ? '<span class="subj">' + esc(subject) + '</span>'
+      : '<span class="add">+ Pick or write a subject</span>';
+    var attHtml;
+    if (attOk) {
+      attHtml = '<span class="att">' + attachFiles.map(function (f) {
+        return '<span class="file"><span class="th"><i style="top:7px"></i><i style="top:13px"></i><i style="top:19px;right:12px"></i><i style="top:27px"></i></span><span><b>'
+          + esc(f.name || 'File') + '</b><small>goes out' + (f.sub ? ' · ' + esc(f.sub) : '') + '</small></span></span>';
+      }).join('') + '</span>';
+    } else {
+      attHtml = '<span class="add" data-action="space-docs" data-id="' + esc(d.id || '') + '">+ Mark a document "goes out"</span>';
+    }
+    var checks = [
+      { ok: true },
+      { ok: toOk },
+      { ok: ccOk },
+      { ok: subjOk },
+      { ok: attOk },
+      { ok: openingOk },
+      { ok: angleOk },
+      { ok: askOk }
+    ];
+    var okN = checks.filter(function (c) { return c.ok; }).length;
+    var html = '<div class="env">'
+      + row('From', fromHtml, true, 'set', 'missing')
+      + row('To', toHtml, toOk, 'set', 'missing')
+      + row('Cc', ccHtml, ccOk, 'set', 'missing')
+      + row('Subject', subjHtml, subjOk, subject ? 'from template' : 'set', 'missing')
+      + row('Attach', attHtml, attOk, attachFiles.length === 1 ? '1 file' : (attachFiles.length + ' files'), 'missing')
+      + '<div class="env-body">'
+      + para('OPENING', openingHtml, openingOk)
+      + para('THE ANGLE', angleHtml, angleOk)
+      + para('THE ASK', askHtml, askOk)
+      + para('SIGN-OFF', esc(signOff), true)
+      + '</div></div>'
+      + '<div class="ready-hint">Template: ' + esc(subject || d.template || 'picked from who they are')
+      + '. Underlined words come from this space.</div>';
+    var bodyText = [openingOk ? openingPlain : '', angleOk ? angleText : '', askOk ? askDisplay : (askDisplay || ''), signOff]
+      .filter(Boolean).join('\n\n');
+    return {
+      ok: okN,
+      total: checks.length,
+      html: html,
+      subject: subject,
+      body: bodyText,
+      to: (function () {
+        var em = String(lead.email || lead.meta || '').trim();
+        if (toOk && /@/.test(em)) return [{ email: em.toLowerCase(), name: lead.name || '' }];
+        return [];
+      })(),
+      toName: lead.name || '',
+      cc: ccPeople.map(function (p) {
+        var em = String((p && (p.email || p.meta)) || '').trim();
+        return /@/.test(em) ? { email: em.toLowerCase(), name: (p && p.name) || '' } : null;
+      }).filter(Boolean),
+      attachments: attachFiles,
+      opening: openingPlain,
+      angle: angleText,
+      ask: askDisplay,
+      signOff: signOff
+    };
+  }
+  window.spaceEmailReady = spaceEmailReady;
+  window.liveSpaceOpenFromPkg = liveSpaceOpenFromPkg;
   function paintSpaceOpen(wrap) {
     var S = window.STATE || {};
     if (!S.pkg || !S.pkg.id) {
@@ -1107,27 +1262,10 @@
         if (!created && (/created/i.test(String(h.t || '')) || h.kind === 'created')) created = h.when || '';
       });
     }
-    var attN = fileList.filter(function (f) { return !f.sug; }).length || fileList.length;
-    var angleText = String(d.angle || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-    var askText = String(d.ask || '').trim();
-    if (!askText) {
-      asList(d.hooks).forEach(function (h) {
-        if (!askText && /ask|20 min|minutes/i.test(String(h))) askText = String(h).replace(/^\+\s*/, '');
-      });
-    }
-    var templateLabel = String(d.template || d.subject || '').trim();
-    var readyItems = [
-      { ok: !!(lead.name || lead.meta) && !/^Add a person/i.test(String(d.to || '')), title: lead.name ? ('To · ' + lead.name) : 'To', sub: lead.meta || d.to || 'add a person' },
-      { ok: ccPeople.length > 0, title: ccPeople.length ? ('Cc · ' + ccPeople.map(function (p) { return p.name; }).join(', ')) : 'Cc', sub: ccPeople.length ? 'from People' : 'not set' },
-      { ok: attN > 0, title: attN ? (attN + ' attachment' + (attN === 1 ? '' : 's')) : 'Attachments', sub: attN ? 'from Documents' : 'none marked' },
-      { ok: !!angleText, title: 'The angle', sub: angleText ? angleText.slice(0, 48) : 'not written' },
-      { ok: !!templateLabel, title: templateLabel ? ('Template · ' + templateLabel.slice(0, 28)) : 'Template', sub: templateLabel ? 'chosen for this send' : 'not set' },
-      { ok: !!askText && !/not set|defaults/i.test(askText), title: 'The ask', sub: askText || 'not set · defaults to 20 min' }
-    ];
-    var readyOk = readyItems.filter(function (r) { return r.ok; }).length;
-    var readyHtml = readyItems.map(function (r) {
-      return '<div class="it flat"><div><b class="' + (r.ok ? 'ok' : 'miss') + '">' + esc(r.title) + '</b><span>' + esc(r.sub) + '</span></div></div>';
-    }).join('');
+    var ready = spaceEmailReady(d);
+    var readyOk = ready.ok;
+    var readyTotal = ready.total;
+    var readyHtml = ready.html;
     var gated = !fixtureOn();
     try {
       var sentMap = JSON.parse(localStorage.getItem('cr_space_test') || '{}');
@@ -1172,9 +1310,9 @@
       + '<div class="blk"><div class="bh"><span class="dot" style="background:#19d38a"></span><b>TASKS</b><span class="c" id="tdc">' + doneN + ' of ' + taskTotal + '</span><span class="a">+ Add</span></div><div class="bb todo" id="todo">'
       + todos
       + '<div class="drop">These land on the Planner</div></div></div>'
-      + '<div class="blk wide"><div class="bh"><span class="dot" style="background:#ff4d8d"></span><b>READY FOR EMAIL</b><span class="a ok">' + readyOk + ' of 6</span></div><div class="bb">'
-      + '<div class="ready-grid">' + readyHtml + '</div>'
-      + '<div class="ready-hint">Press <b>Move to email</b> and everything above goes into a written email in the Email page. No email body is written here.</div></div></div>'
+      + '<div class="blk wide"><div class="bh"><span class="dot" style="background:#ff4d8d"></span><b>READY FOR EMAIL</b><span class="a ok">' + readyOk + ' of ' + readyTotal + '</span></div><div class="bb">'
+      + readyHtml
+      + '</div></div>'
       + '<div class="blk"><div class="bh"><span class="dot" style="background:#22d3c5"></span><b>HISTORY</b></div><div class="bb">'
       + (touched ? '' : '<div class="firsttouch">No contact yet. This bundle will be the first touch.</div>')
       + hist + '</div></div>'
@@ -1690,10 +1828,17 @@
       + '<div class="add"><input data-action="link-title" placeholder="Title (optional - we\'ll read it from the site)"><input data-action="link-url" placeholder="Paste a link - https://"><button data-action="link-add">Add link</button></div>'
       + '<div class="wall' + (((window.STATE && window.STATE.prefs && window.STATE.prefs.links_prefs && window.STATE.prefs.links_prefs.view) === 'list') ? ' list' : '') + '" id="wall">' + (data.wall || []).map(function (w) {
         var href = absUrl(w[5] || w[1]);
-        var letter = esc(String(w[0] || '?')[0]);
         var id = esc(w[6] || '');
-        var thumb = w[7] ? '/api/links/thumb?id=' + encodeURIComponent(w[6] || '') : '';
-        var cover = thumb ? '<img alt="" loading="lazy" src="' + esc(thumb) + '" class="thumb">' : '<i style="background:' + w[2] + '">' + letter + '</i>';
+        var status = String(w[8] || '');
+        var rawThumb = String(w[7] || '');
+        var thumb = rawThumb
+          ? (rawThumb.indexOf('/api/links/image/') === 0 ? rawThumb : '/api/links/thumb?id=' + encodeURIComponent(w[6] || ''))
+          : '';
+        var cover = thumb
+          ? '<img alt="" loading="lazy" src="' + esc(thumb) + '" class="thumb">'
+          : (status === 'failed'
+            ? '<i class="noload" style="background:' + w[2] + '" title="page would not load"><span>page would not load</span></i>'
+            : '<i class="wait" style="background:#152040" aria-hidden="true"></i>');
         var listOn = (window.STATE && window.STATE.prefs && window.STATE.prefs.links_prefs && window.STATE.prefs.links_prefs.view) === 'list';
         return '<a class="tile' + (listOn ? ' row' : '') + '" data-action="link-open" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" data-id="' + id + '" data-url="' + esc(href) + '">' + (w[4] == 2 ? '<span class="dup">Duplicate</span>' : '')
           + '<div class="lg" style="background:' + w[2] + '14">' + cover + '</div>'

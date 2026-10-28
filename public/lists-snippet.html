@@ -1,22 +1,17 @@
-<section id="pg-contacts">
- <div class="bar"><h1>Contacts</h1><span class="sub">your tables, built from contacts &middot; synced with GoHighLevel</span>
-  <div class="r"><div class="seg" id="cseg"><span data-v="contacts">Contacts</span><span class="on" data-v="lists">Lists</span></div><input class="search" id="lsearch" placeholder="Search this list"></div></div>
- <div class="lwrap">
-  <div class="card lists"><h3>LISTS</h3><div id="listnav"></div><div class="newl" id="newList">+ New list</div></div>
-  <div class="card" id="listcard">
-   <div class="lh"><h2 id="lname"></h2><span class="st" id="lstat"></span>
-    <div class="r"><button class="btn" id="colBtn">Columns</button><div class="colmenu" id="colmenu"></div><button class="btn pri" id="todayBtn">Work today&rsquo;s 5</button></div></div>
-   <div class="prog"><i id="lprog" style="width:0"></i></div>
-   <div class="tools"><span style="font-size:12px;font-weight:750;color:var(--ink3)">Group by</span>
-    <span class="chip on" data-g="day">Day</span><span class="chip" data-g="stage">Stage</span><span class="chip" data-g="none">None</span>
-    <span style="width:10px"></span><span class="chip" data-f="all">All</span><span class="chip" data-f="todo">Not sent</span><span class="chip" data-f="sent">Sent</span></div>
-   <div style="overflow:auto"><table class="t" id="ltable"></table></div>
+<section id="pg-contacts" class="reach-lists">
+ <div class="bar"><h1>Contacts</h1><span class="sub">your lists · synced with GoHighLevel</span>
+  <div class="r"><div class="seg" id="cseg"><span data-v="contacts">Contacts</span><span class="on" data-v="lists">Lists</span></div><input class="search" id="lsearch" placeholder="Search this list" aria-label="Search this list"></div></div>
+ <div class="rl">
+  <div class="lists"><h4>Your lists</h4><div id="listnav"></div><div class="lc new" id="newList"><b>+ New list</b><span>from a sheet, a tag or a stage</span></div></div>
+  <div class="main" id="listcard">
+   <div class="mh"><h3 id="lname"></h3><span class="done" id="lstat"></span>
+    <span class="r"><div class="fl" id="lfilt"><span class="on" data-f="todo">To do</span><span data-f="done">Done</span><span data-f="all">All</span></div>
+    <button type="button" class="ib go" id="todayBtn">Start with the next one</button></span></div>
+   <div class="thd"><span></span><span>WHO</span><span>COMPANY</span><span>PHONE AND EMAIL</span><span>STAGE</span><span>SPACE</span><span>NEXT STEP</span><span></span></div>
+   <div id="lbody"></div>
   </div>
  </div>
 </section>
 
-
-<div class="scrim" id="scrim"></div>
-<aside class="drawer" id="drawer"><div class="dtop"><span class="bc" id="dbc"></span><div class="r"><button class="btn" id="dclose">Close</button></div></div><div class="dbody" id="dbody"></div><div class="dfoot" id="dfoot"></div></aside>
 <div class="modal" id="modal"><div class="mbox" id="mbox"></div></div>
 <div class="toast" id="toast"><span id="tmsg"></span><b id="tundo" style="display:none"></b></div>

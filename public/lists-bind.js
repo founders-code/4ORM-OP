@@ -1,101 +1,295 @@
-/* Lists tab from 20-outreach-lists.html */
+/* Contacts > Lists — design 25-build tab 2, fed by /api/reach-out */
 (function () {
-  window.bindOutreachLists = function (root) {
-    if (!root || !window.OUTREACH_LISTS_DATA) return;
-    var DATA = window.OUTREACH_LISTS_DATA;
-    var document = {
-      querySelector: function (sel) { return root.querySelector(sel); },
-      querySelectorAll: function (sel) { return root.querySelectorAll(sel); },
-      getElementById: function (id) { return root.querySelector('#' + id); },
-      createElement: function (t) { return window.document.createElement(t); },
-      addEventListener: function (t, fn) { root.addEventListener(t, fn); }
-    };
-    function toast(m) {
-      var t = root.querySelector('#toast') || root.querySelector('#tmsg');
-      if (root.querySelector('#tmsg')) root.querySelector('#tmsg').textContent = m;
-      var box = root.querySelector('#toast');
-      if (box) { box.classList.add('show'); setTimeout(function () { box.classList.remove('show'); }, 2500); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  }
+
+  function vancouverTodayLabel() {
+    try {
+      var parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Vancouver',
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+      }).formatToParts(new Date());
+      var get = function (t) { return (parts.find(function (p) { return p.type === t; }) || {}).value || ''; };
+      return get('weekday') + ' ' + get('day') + ' ' + get('month');
+    } catch (e) {
+      return '';
     }
-    function closeModal() { var m = root.querySelector('#modal'); if (m) m.classList.remove('open'); }
+  }
+
+  function stCls(s) {
+    s = String(s || '');
+    if (/won|met|contacted|replied|meeting/i.test(s)) return 'met';
+    if (/reach|send|1st/i.test(s)) return 'r1';
+    return 'cold';
+  }
+
+  function readyBars(arr) {
+    var a = Array.isArray(arr) ? arr : [];
+    var n = 0;
+    var html = '';
+    for (var i = 0; i < 6; i++) {
+      var on = !!a[i];
+      if (on) n += 1;
+      html += '<i class="' + (on ? 'f' : '') + '"></i>';
+    }
+    return { html: html, n: n };
+  }
+
+  window.bindOutreachLists = function (root) {
+    if (!root) return;
+    var state = {
+      lists: [],
+      cur: null,
+      filt: 'todo',
+      q: '',
+      undo: null,
+    };
+
+    function $(sel) { return root.querySelector(sel); }
+    function toast(m, undo) {
+      var t = $('#tmsg');
+      var u = $('#tundo');
+      var box = $('#toast');
+      if (t) t.textContent = m;
+      if (u) {
+        if (undo) {
+          u.style.display = '';
+          u.textContent = 'Undo';
+          u.onclick = function () { undo(); };
+        } else {
+          u.style.display = 'none';
+          u.onclick = null;
+        }
+      }
+      if (box) {
+        box.classList.add('show');
+        setTimeout(function () { box.classList.remove('show'); }, 6000);
+      }
+    }
+    function closeModal() { var m = $('#modal'); if (m) m.classList.remove('open'); }
     function modal(h) {
-      var box = root.querySelector('#mbox'); var wrap = root.querySelector('#modal');
+      var box = $('#mbox'); var wrap = $('#modal');
       if (box) box.innerHTML = h; if (wrap) wrap.classList.add('open');
     }
-    function openSpace(id) { toast('Space for that row'); }
-    function markSent(x, v) { x.sent = !!v; if (typeof renderList === 'function') renderList(); if (typeof renderNav === 'function') renderNav(); }
-    const TODAY='Tue 27 Oct';
-const ALL=[...DATA.inv,...DATA.ent];
-ALL.forEach(x=>{x.sent=false;x.log=[];});
-const LISTS=[
- {id:'inv-w',name:'Pre-seed investors · this week',sub:'25 funds · 5 a day',k:'inv',f:x=>x.k=='inv'},
- {id:'ent-w',name:'Enterprise BC · this week',sub:'#26–50 · 5 a day',k:'ent',f:x=>x.k=='ent'&&x.rank>25},
- {id:'ent-p',name:'Enterprise BC · protected',sub:'#1–25 · after we learn',k:'ent',f:x=>x.k=='ent'&&x.rank<=25}];
-const COLS={
- inv:[['rank','#',1],['name','Fund',1],['reach','Phone and email',1],['route','Reach by',1],['stage','Stage',1],['day','Day',1],['cheque','First cheque',1],['base','Base',0],['sector','Sector fit',0],['recent','Most recent deal',0]],
- ent:[['rank','#',1],['name','Company',1],['reach','Phone and email',1],['route','Reach by',1],['stage','Stage',1],['day','Day',1],['segment','Segment',1],['foot','B.C. footprint',0],['scale','Scale',0]]};
-let curList=LISTS[0],group='day',filt='all',q='';
-const $=s=>document.querySelector(s);
-const fact=(x,k)=>((x.facts.find(f=>f[0]==k)||[])[1])||'-';
-function cell(x,c){
- switch(c){case'rank':return '<td class="mut">'+x.rank+'</td>';
- case'name':return '<td class="nm"><b>'+x.n+'</b><small>'+(x.p||'No named contact yet')+'</small></td>';
- case'route':return '<td>'+routePill(x)+'</td>';
- case'stage':return '<td><span class="pill '+stCls(x.st)+'">'+x.st+'</span></td>';
- case'day':return '<td class="mut nw">'+(x.day||'-')+'</td>';
- case'cheque':return '<td class="mut">'+fact(x,'First cheque')+'</td>';
- case'base':return '<td class="mut">'+fact(x,'Base')+'</td>';
- case'sector':return '<td class="mut">'+fact(x,'Sector fit')+'</td>';
- case'recent':return '<td class="mut">'+fact(x,'Most recent deal')+'</td>';
- case'segment':return '<td class="mut">'+fact(x,'Segment')+'</td>';
- case'foot':return '<td class="mut">'+fact(x,'B.C. footprint')+'</td>';
- case'scale':return '<td class="mut">'+fact(x,'Scale')+'</td>';
- case'phone':return '<td class="mut">'+fact(x,'Phone')+'</td>';
- case'email':return '<td class="mut">'+(x.em||'-')+'</td>';
- case'reach':return '<td class="reach"><div class="ph">'+(fact(x,'Phone')||'-')+'</div><div class="em">'+(x.em||'-')+'</div></td>';}}
-function routePill(x){const m={Email:'p-blue',Form:'p-violet',Apply:'p-violet',Intro:'p-amber',Call:'p-green','Find contact':'p-red'};return '<span class="pill '+(m[x.r]||'p-gray')+'">'+x.r+'</span>';}
-function stCls(s){return /Storage/.test(s)?'p-gray':/Cold/.test(s)?'p-blue':/reach out|Send/.test(s)?'p-amber':/Lost|Pass|Not now/.test(s)?'p-red':'p-green';}
-function renderNav(){
- $('#listnav').innerHTML=LISTS.map(l=>{const r=ALL.filter(l.f),s=r.filter(x=>x.sent).length;return '<div class="li'+(l==curList?' on':'')+'" data-l="'+l.id+'"><b>'+l.name+'</b><span>'+l.sub+' · '+s+' of '+r.length+' sent</span><div class="bar2"><i style="width:'+(r.length?s/r.length*100:0)+'%"></i></div></div>';}).join('');
- document.querySelectorAll('.li').forEach(e=>e.onclick=()=>{curList=LISTS.find(l=>l.id==e.dataset.l);group=curList.id=='ent-p'?'none':'day';syncChips();renderList();renderNav();});}
-function syncChips(){document.querySelectorAll('[data-g]').forEach(c=>c.classList.toggle('on',c.dataset.g==group));document.querySelectorAll('[data-f]').forEach(c=>c.classList.toggle('on',c.dataset.f==filt));}
-const shut={};
-function renderList(){
- const cols=COLS[curList.k].filter(c=>c[2]);
- let rows=ALL.filter(curList.f);
- const tot=rows.length,s=rows.filter(x=>x.sent).length;
- $('#lname').textContent=curList.name;$('#lstat').textContent=s+' of '+tot+' sent · '+rows.filter(x=>/Replied|Call booked|Meeting/.test(x.st)).length+' replies';
- $('#lprog').style.width=(tot?s/tot*100:0)+'%';
- if(filt=='todo')rows=rows.filter(x=>!x.sent);if(filt=='sent')rows=rows.filter(x=>x.sent);
- if(q)rows=rows.filter(x=>(x.n+' '+x.p).toLowerCase().includes(q));
- let h='<tr><th style="width:44px">Sent</th>'+cols.map(c=>'<th>'+c[1]+'</th>').join('')+'</tr>';
- const line=x=>'<tr class="row'+(x.sent?' sent':'')+'" data-id="'+x.id+'"><td><span class="ck'+(x.sent?' on':'')+'" data-ck="'+x.id+'">'+(x.sent?'Y':'')+'</span></td>'+cols.map(c=>cell(x,c[0])).join('')+'</tr>';
- let groups=[];
- if(group=='day')groups=DATA.days.map(d=>[d,rows.filter(x=>x.day==d)]);
- else if(group=='stage')groups=DATA.stages[curList.k].map(st=>[st,rows.filter(x=>x.st==st)]);
- else groups=[['',rows]];
- groups.forEach(([g,r])=>{
-  if(g){const key=curList.id+g,sn=r.filter(x=>x.sent).length;
-   h+='<tr class="gh'+(g==TODAY?' today':'')+'" data-g="'+key+'"><td colspan="'+(cols.length+1)+'">'+g+(g==TODAY?' · today':'')+'<span class="x">'+r.length+(group=='day'?' to send · '+sn+' sent':'')+'</span><span class="tg">'+(shut[key]?'Open':'Close')+'</span></td></tr>';
-   if(shut[key])return;}
-  h+=r.length?r.map(line).join(''):'<tr><td colspan="'+(cols.length+1)+'" class="empty">Nothing here yet</td></tr>';});
- $('#ltable').innerHTML=h;
- document.querySelectorAll('#ltable tr.gh').forEach(e=>e.onclick=()=>{shut[e.dataset.g]=!shut[e.dataset.g];renderList();});
- document.querySelectorAll('#ltable tr.row').forEach(e=>e.onclick=ev=>{if(ev.target.dataset.ck)return;openSpace(e.dataset.id,[...document.querySelectorAll('#ltable tr.row')].map(r=>r.dataset.id));});
- document.querySelectorAll('[data-ck]').forEach(e=>e.onclick=ev=>{ev.stopPropagation();const x=ALL.find(y=>y.id==e.dataset.ck);markSent(x,!x.sent);});
- renderColMenu();}
-function renderColMenu(){$('#colmenu').innerHTML='<div class="h">Show columns</div>'+COLS[curList.k].map((c,i)=>'<label><input type="checkbox" data-c="'+i+'"'+(c[2]?' checked':'')+(i<2?' disabled':'')+'>'+c[1]+'</label>').join('');
- document.querySelectorAll('[data-c]').forEach(e=>e.onchange=()=>{COLS[curList.k][+e.dataset.c][2]=e.checked?1:0;renderList();});}
-$('#colBtn').onclick=e=>{e.stopPropagation();$('#colmenu').classList.toggle('open');};
-document.addEventListener('click',e=>{if(!e.target.closest('#colmenu'))$('#colmenu').classList.remove('open');});
-document.querySelectorAll('[data-g]').forEach(c=>c.onclick=()=>{group=c.dataset.g;syncChips();renderList();});
-document.querySelectorAll('[data-f]').forEach(c=>c.onclick=()=>{filt=c.dataset.f;syncChips();renderList();});
-$('#lsearch').oninput=e=>{q=e.target.value.toLowerCase();renderList();};
-$('#todayBtn').onclick=()=>{const r=ALL.filter(curList.f).filter(x=>x.day==TODAY&&!x.sent);if(!r.length){toast('Nothing left for today in this list');return;}openSpace(r[0].id,r.map(x=>x.id));};
-$('#newList').onclick=()=>modal('<h3>New list</h3><p>A list is a table of contacts with the columns you choose. Start it from a tag, a pipeline stage or a sheet in Documents.</p><input placeholder="Name, for example Regulators this month"><select><option>From a GoHighLevel tag</option><option>From a pipeline and stage</option><option>From a sheet in Documents</option><option>Empty, add people by hand</option></select><div class="row"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn pri" onclick="closeModal();toast(\'List created\')">Create list</button></div>');
-document.querySelectorAll('#cseg span').forEach(s=>s.onclick=()=>{if(s.dataset.v=='contacts')toast('Contacts table stays as it is today');});
 
+    function api(path, opts) {
+      opts = opts || {};
+      var init = { credentials: 'include', headers: {} };
+      if (opts.method) init.method = opts.method;
+      if (opts.body) {
+        init.headers['content-type'] = 'application/json';
+        init.body = JSON.stringify(opts.body);
+      }
+      return fetch(path, init).then(function (r) { return r.json().catch(function () { return null; }).then(function (d) { return { ok: r.ok, status: r.status, data: d }; }); });
+    }
 
-    if (typeof renderNav === 'function') renderNav();
-    if (typeof renderList === 'function') renderList();
+    function openSpace(person) {
+      var id = person && (person.spaceId || person.space_id);
+      if (id && typeof window.__openSpacePanel === 'function') {
+        var el = document.createElement('div');
+        el.setAttribute('data-id', id);
+        el.setAttribute('data-space', id);
+        window.__openSpacePanel(el, root);
+        return;
+      }
+      if (person && person.name && typeof window.openDesk === 'function') {
+        try { window.openDesk('work'); } catch (e) {}
+      }
+      toast(id ? 'Opening space' : 'No space linked yet for ' + (person && person.name || 'that row'));
+    }
+
+    function renderNav() {
+      var nav = $('#listnav');
+      if (!nav) return;
+      nav.innerHTML = state.lists.map(function (l) {
+        var on = state.cur && state.cur.key === l.key;
+        var pct = l.count ? Math.round((l.done / l.count) * 100) : 0;
+        return '<div class="lc' + (on ? ' on' : '') + '" data-l="' + esc(l.key) + '"><b>' + esc(l.name) + '</b><span>' + esc(l.sub || (l.count + ' people')) + '</span><div class="pb"><i style="width:' + pct + '%"></i></div></div>';
+      }).join('');
+      nav.querySelectorAll('.lc').forEach(function (el) {
+        el.onclick = function () {
+          state.cur = state.lists.find(function (l) { return l.key === el.getAttribute('data-l'); }) || state.lists[0];
+          render();
+        };
+      });
+    }
+
+    function peopleOf() {
+      if (!state.cur) return [];
+      var rows = (state.cur.people || []).slice();
+      if (state.filt === 'todo') rows = rows.filter(function (p) { return !p.done; });
+      if (state.filt === 'done') rows = rows.filter(function (p) { return p.done; });
+      if (state.q) {
+        var q = state.q;
+        rows = rows.filter(function (p) {
+          return (p.name + ' ' + p.company + ' ' + p.email + ' ' + p.phone).toLowerCase().indexOf(q) >= 0;
+        });
+      }
+      return rows;
+    }
+
+    function renderBody() {
+      var body = $('#lbody');
+      if (!body || !state.cur) return;
+      var today = vancouverTodayLabel();
+      var rows = peopleOf();
+      var byDay = {};
+      var order = [];
+      rows.forEach(function (p) {
+        var d = p.day || 'Later';
+        if (!byDay[d]) { byDay[d] = []; order.push(d); }
+        byDay[d].push(p);
+      });
+      var nextId = '';
+      for (var i = 0; i < rows.length; i++) {
+        if (!rows[i].done) { nextId = rows[i].id; break; }
+      }
+      var html = '';
+      order.forEach(function (day) {
+        var group = byDay[day] || [];
+        var doneN = group.filter(function (p) { return p.done; }).length;
+        var isToday = day === today;
+        html += '<div class="dayrow">' + esc(day.toUpperCase())
+          + (isToday ? '<em>TODAY · ' + doneN + ' OF ' + group.length + ' DONE</em>' : '')
+          + '</div>';
+        group.forEach(function (p) {
+          var ready = readyBars(p.ready);
+          var cls = 'row' + (p.done ? ' done' : '') + (p.id === nextId ? ' next' : '');
+          html += '<div class="' + cls + '" data-id="' + esc(p.id) + '">'
+            + '<div class="ck' + (p.done ? ' on' : '') + '" data-ck="' + esc(p.id) + '"></div>'
+            + '<div><div class="nm">' + esc(p.name) + '</div><div class="org">' + esc(p.role || '') + '</div></div>'
+            + '<div class="co2">' + esc(p.company) + (p.companySub ? '<small>' + esc(p.companySub) + '</small>' : '') + '</div>'
+            + '<div><div class="ph">' + esc(p.phone || '-') + '</div><div class="em">' + esc(p.email || '-') + '</div></div>'
+            + '<div><span class="stg ' + stCls(p.stage) + '">' + esc(String(p.stage || 'COLD').toUpperCase()) + '</span>'
+            + '<div class="lt">last · ' + esc(p.lastTouch || 'Never') + '</div></div>'
+            + '<div><div class="ready">' + ready.html + '</div><div class="rlab">' + ready.n + ' of 6 built</div></div>'
+            + '<div class="nx">' + esc(p.nextStep || '') + '</div>'
+            + '<div class="arr">&rsaquo;</div>'
+            + '</div>';
+        });
+      });
+      if (!rows.length) html = '<div class="empty" style="padding:18px;color:#6f7fa6">Nobody on this list yet.</div>';
+      body.innerHTML = html;
+      body.querySelectorAll('.row').forEach(function (el) {
+        el.onclick = function (ev) {
+          if (ev.target && ev.target.getAttribute && ev.target.getAttribute('data-ck') != null) return;
+          if (ev.target && ev.target.closest && ev.target.closest('[data-ck]')) return;
+          var p = (state.cur.people || []).find(function (x) { return x.id === el.getAttribute('data-id'); });
+          if (p) openSpace(p);
+        };
+      });
+      body.querySelectorAll('[data-ck]').forEach(function (el) {
+        el.onclick = function (ev) {
+          ev.stopPropagation();
+          var id = el.getAttribute('data-ck');
+          var p = (state.cur.people || []).find(function (x) { return x.id === id; });
+          if (!p) return;
+          var prev = !!p.done;
+          p.done = !prev;
+          state.cur.done = (state.cur.people || []).filter(function (x) { return x.done; }).length;
+          render();
+          api('/api/reach-out/' + encodeURIComponent(id), { method: 'PATCH', body: { done: p.done } }).then(function (r) {
+            if (!r.ok) {
+              p.done = prev;
+              state.cur.done = (state.cur.people || []).filter(function (x) { return x.done; }).length;
+              render();
+              toast('Could not save that tick');
+              return;
+            }
+            toast(p.done ? 'Marked done · stage written when GoHighLevel has the opportunity' : 'Moved back to to-do');
+          }).catch(function () {
+            p.done = prev;
+            render();
+            toast('Could not save that tick');
+          });
+        };
+      });
+    }
+
+    function render() {
+      if (!state.cur && state.lists.length) state.cur = state.lists[0];
+      renderNav();
+      var name = $('#lname');
+      var stat = $('#lstat');
+      if (name && state.cur) name.textContent = state.cur.name;
+      if (stat && state.cur) stat.textContent = state.cur.done + ' of ' + state.cur.count + ' done';
+      root.querySelectorAll('#lfilt span').forEach(function (s) {
+        s.classList.toggle('on', s.getAttribute('data-f') === state.filt);
+      });
+      renderBody();
+    }
+
+    function load() {
+      return api('/api/reach-out?lists=1').then(function (r) {
+        var lists = (r.data && r.data.lists) || [];
+        state.lists = lists;
+        if (!state.cur || !lists.find(function (l) { return l.key === state.cur.key; })) state.cur = lists[0] || null;
+        if (window.STATE) window.STATE.peopleLists = lists;
+        render();
+        return lists;
+      }).catch(function () {
+        state.lists = [];
+        render();
+        return [];
+      });
+    }
+
+    root.querySelectorAll('#lfilt span').forEach(function (s) {
+      s.onclick = function () { state.filt = s.getAttribute('data-f') || 'todo'; render(); };
+    });
+    var search = $('#lsearch');
+    if (search) search.oninput = function (e) { state.q = String(e.target.value || '').toLowerCase(); render(); };
+    var todayBtn = $('#todayBtn');
+    if (todayBtn) todayBtn.onclick = function () {
+      var rows = (state.cur && state.cur.people || []).filter(function (p) { return !p.done; });
+      if (!rows.length) { toast('Nothing left to do in this list'); return; }
+      openSpace(rows[0]);
+    };
+    var newList = $('#newList');
+    if (newList) newList.onclick = function () {
+      modal('<h3>New list</h3><p>A list is a table of contacts with the columns you choose.</p>'
+        + '<input id="nlname" placeholder="Name, for example Regulators this month">'
+        + '<div class="row" style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">'
+        + '<button type="button" class="btn" id="nlcancel">Cancel</button>'
+        + '<button type="button" class="btn pri" id="nlcreate">Create list</button></div>');
+      var c = $('#nlcancel'); var g = $('#nlcreate');
+      if (c) c.onclick = closeModal;
+      if (g) g.onclick = function () {
+        var nm = ($('#nlname') && $('#nlname').value) || '';
+        closeModal();
+        api('/api/reach-out', { method: 'POST', body: { action: 'create-list', name: nm } }).then(function (r) {
+          if (!r.ok) { toast('Could not create that list'); return; }
+          var id = r.data && r.data.id;
+          toast('List created', id ? function () {
+            api('/api/reach-out', { method: 'POST', body: { action: 'delete-list', id: id } }).then(load);
+          } : null);
+          load();
+        });
+      };
+    };
+
+    // Soft-delete a custom list: long-press is overkill; expose via double-click on custom nav items after load.
+    root.addEventListener('contextmenu', function (ev) {
+      var lc = ev.target && ev.target.closest && ev.target.closest('#listnav .lc');
+      if (!lc) return;
+      var key = lc.getAttribute('data-l') || '';
+      if (key.indexOf('custom:') !== 0) return;
+      ev.preventDefault();
+      var id = key.slice('custom:'.length);
+      var prev = state.lists.slice();
+      api('/api/reach-out', { method: 'POST', body: { action: 'delete-list', id: id } }).then(function (r) {
+        if (!r.ok) { toast('Could not delete that list'); return; }
+        toast('List removed', function () {
+          api('/api/reach-out', { method: 'POST', body: { action: 'restore-list', id: id } }).then(load);
+        });
+        load();
+      });
+      state.lists = prev;
+    });
+
+    load();
   };
 })();

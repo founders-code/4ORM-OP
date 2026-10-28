@@ -55,19 +55,19 @@
     + '.flash-row{box-shadow:0 0 0 3px rgba(127,176,255,.85)!important;transition:box-shadow .2s}';
   var CSS = {
     room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=8', notes: '/port-css/notes.css?v=4',
-    notesCanvas: '/port-css/notes-canvas.css?v=9', spacesArrange: '/port-css/spaces-arrange.css?v=1', spacesCards: '/port-css/spaces-cards.css?v=5', signalsDetail: '/port-css/signals-detail.css?v=4', rec: '/port-css/recordings.css?v=2',
-    contacts: '/port-css/pipeline.css?v=6', work: '/port-css/spaces.css?v=11', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css?v=4',
+    notesCanvas: '/port-css/notes-canvas.css?v=9', spacesArrange: '/port-css/spaces-arrange.css?v=1', spacesCards: '/port-css/spaces-cards.css?v=7', signalsDetail: '/port-css/signals-detail.css?v=4', rec: '/port-css/recordings.css?v=2',
+    contacts: '/port-css/pipeline.css?v=6', work: '/port-css/spaces.css?v=12', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css?v=4',
     links: '/port-css/links.css?v=6', mail: '/port-css/email.css?v=8', mailPeople: '/port-css/email-people.css?v=8',
-    playbook: '/port-css/playbook.css?v=3', calendar: '/port-css/calendar.css?v=5', zoom: '/port-css/zoom.css?v=2',
+    playbook: '/port-css/playbook.css?v=4', calendar: '/port-css/calendar.css?v=5', zoom: '/port-css/zoom.css?v=2',
     completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=3',
-    neon: '/port-css/neon.css?v=1', playbookP8: '/port-css/playbook-p8.css?v=4', plannerNeon: '/port-css/planner-neon.css?v=4',
+    neon: '/port-css/neon.css?v=1', playbookP8: '/port-css/playbook-p8.css?v=5', plannerNeon: '/port-css/planner-neon.css?v=4',
     calendarNeon: '/port-css/calendar-neon.css?v=2', completedNeon: '/port-css/completed-neon.css?v=3',
     intNeon: '/port-css/integrations-neon.css?v=2',     vaultOps: '/port-css/vault-ops.css?v=5',
     sheetViewer: '/port-css/sheet-viewer.css?v=2', notesCanvasP8: '/port-css/notes-canvas-p8.css?v=1',
-    outreach: '/port-css/outreach-lists.css?v=3',
+    outreach: '/port-css/outreach-lists.css?v=4',
     vault: '/port-css/vault-ops.css?v=5',
     ops: '/port-css/vault-ops.css?v=5',
-    contrastP10: '/port-css/contrast-p10.css?v=2'
+    contrastP10: '/port-css/contrast-p10.css?v=3'
   };
   var HOSTS = {
     opsDash: 'room', warDesk: 'war', notesDesk: 'notes',
@@ -118,6 +118,31 @@
   function vanDay(ms) {
     try { return new Date(ms).toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' }); } catch (e) { return ''; }
   }
+  /* One "today" for Playbook, Planner, Calendar, Contacts lists, Completed — America/Vancouver. */
+  function vancouverTodayIso() {
+    try {
+      var parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+      function g(t) { for (var i = 0; i < parts.length; i++) if (parts[i].type === t) return parts[i].value; return ''; }
+      return g('year') + '-' + g('month') + '-' + g('day');
+    } catch (e) { return vanDay(Date.now()) || ''; }
+  }
+  function vancouverTodayDate() {
+    var iso = vancouverTodayIso();
+    var m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return new Date();
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  }
+  /* Contacts > Lists day headers use "Wed 28 Oct". */
+  function vancouverTodayLabel() {
+    try {
+      var parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Vancouver', weekday: 'short', day: 'numeric', month: 'short' }).formatToParts(new Date());
+      function g(t) { for (var i = 0; i < parts.length; i++) if (parts[i].type === t) return parts[i].value; return ''; }
+      return (g('weekday') + ' ' + g('day') + ' ' + g('month')).replace(/\s+/g, ' ').trim();
+    } catch (e) { return ''; }
+  }
+  window.vancouverTodayIso = vancouverTodayIso;
+  window.vancouverTodayDate = vancouverTodayDate;
+  window.vancouverTodayLabel = vancouverTodayLabel;
   function committedOne() {
     try {
       var m = JSON.parse(localStorage.getItem('cr_needle') || '{}') || {};

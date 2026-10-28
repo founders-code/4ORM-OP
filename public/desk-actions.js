@@ -5330,15 +5330,43 @@
     return (S().packages || []).filter(function (p) { return String(p.id) === String(id); })[0] || (S().pkg && String(S().pkg.id) === String(id) ? S().pkg : null);
   }
   function spaceDraft(pkg) {
-    var people = pkg.recipients || pkg.people || [];
-    var first = people[0] || {};
+    /* Move to email: open composer with the Ready-for-email envelope written out. */
+    if (typeof window.liveSpaceOpenFromPkg === 'function' && typeof window.spaceEmailReady === 'function') {
+      try {
+        var open = window.liveSpaceOpenFromPkg(pkg || {});
+        var ready = window.spaceEmailReady(open);
+        var people = pkg.recipients || pkg.people || [];
+        var first = people[0] || {};
+        var to = (ready.to && ready.to.length)
+          ? ready.to
+          : (first.email ? [{ email: String(first.email).toLowerCase(), name: first.name || '' }] : []);
+        var cc = (ready.cc && ready.cc.length)
+          ? ready.cc
+          : people.slice(1).filter(function (p) { return p && p.email; }).map(function (p) {
+            return { email: String(p.email).toLowerCase(), name: p.name || '' };
+          });
+        var atts = (pkg.docs || pkg.items || []).filter(function (d) {
+          return d && d.kind !== 'link' && d.kind !== 'note' && d.kind !== 'folder';
+        });
+        return {
+          to: to,
+          cc: cc,
+          subject: ready.subject || pkg.emailSubject || (pkg.email && pkg.email.subject) || pkg.subject || '',
+          body: ready.body || pkg.emailBody || (pkg.email && pkg.email.body) || pkg.intro || '',
+          attachments: atts,
+          spaceId: pkg.id
+        };
+      } catch (e) {}
+    }
+    var people2 = pkg.recipients || pkg.people || [];
+    var first2 = people2[0] || {};
     var mail = pkg.email || {};
-    var cc = people.slice(1).filter(function (p) { return p && p.email; }).map(function (p) {
+    var cc2 = people2.slice(1).filter(function (p) { return p && p.email; }).map(function (p) {
       return { email: String(p.email).toLowerCase(), name: p.name || '' };
     });
     return {
-      to: first.email ? [{ email: String(first.email).toLowerCase(), name: first.name || '' }] : [],
-      cc: cc,
+      to: first2.email ? [{ email: String(first2.email).toLowerCase(), name: first2.name || '' }] : [],
+      cc: cc2,
       subject: pkg.emailSubject || mail.subject || pkg.subject || '',
       body: pkg.emailBody || mail.body || pkg.intro || '',
       attachments: (pkg.docs || pkg.items || []).filter(function (d) { return d && d.kind !== 'link' && d.kind !== 'note' && d.kind !== 'folder'; }),

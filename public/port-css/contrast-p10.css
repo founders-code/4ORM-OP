@@ -1,46 +1,385 @@
-/* Prompt 10 contrast tokens — dark card body / secondary / quiet; white on colour; quiet on white */
+/* Prompt 12 — text follows the surface, not the page.
+   Dark page chrome uses the dark ramp. White / near-white containers
+   opt into .light-surface (or the selector list below) which resets
+   --ink / --ink2 / --ink3 / --link for everything inside. Pink uses #160308. */
+
 :host,:root,.port-body{
-  --ink:#e9eefa;--ink2:#aebbe0;--ink3:#7f8db5;--ink-quiet-on-white:#5b6678;
+  --ink:#e9eefa;
+  --ink2:#c8d1ea;
+  --ink3:#a3b0d2;
+  --link:#8dbaff;
+  --ink-on-light:#101a33;
+  --ink2-on-light:#3a4560;
+  --ink3-on-light:#5b6678;
+  --link-on-light:#1d4fd8;
+  --ink-on-pink:#160308;
+  --ink-quiet-on-white:#5b6678;
 }
-.port-body,.port-body .card,.port-body .con,.spanel{
-  color:#e9eefa;
+.port-body{color:var(--ink)}
+.port-body.neon .card,
+.port-body .con,
+.port-body .spanel{color:var(--ink)}
+.port-body .card .s,
+.port-body .mut,
+.port-body .ink2,
+.port-body .sub{color:var(--ink2)}
+.port-body .ink3,
+.port-body .quiet,
+.port-body .faint{color:var(--ink3)}
+.port-body a:not(.btn):not(.av),
+.port-body .lnk{color:var(--link)}
+
+/* Light / near-white surfaces — reset the text ramp for descendants */
+.light-surface,
+.port-body:not(.neon):not(.lists) .card,
+.port-body .feed,
+.port-body .em,
+.port-body:not(.neon) .cols > .col,
+.port-body .compose,
+.port-body .reader,
+.port-body .pick-box,
+.port-body .plan-box,
+.port-body .desk-pop,
+.port-body .smenu,
+.port-body .menu,
+.port-body .pop,
+.port-body .sp,
+.port-body .bx,
+.port-body .panel,
+.port-body .pb,
+.port-body .picker,
+.port-body .kpi,
+.port-body .bcard,
+.port-body .ce,
+.port-body .stats,
+.port-body .pbox,
+.port-body .pp:not(.navy),
+.port-body .pc .tabs,
+.port-body .pfoot,
+.port-body .pbody .row,
+.port-body .pc .row,
+.port-body .rd,
+.port-body .tbl,
+.port-body:not(.neon):not(.lists) table.t,
+.port-body .tree,
+.port-body .lm,
+.port-body .fth,
+.port-body .side2 .box,
+.port-body .qw .note,
+.port-body .qw .ang,
+.port-body .qw .chk label,
+.port-body .qw .qfacts,
+.port-body .qw .tags span{
+  --ink:#101a33;
+  --ink2:#3a4560;
+  --ink3:#5b6678;
+  --link:#1d4fd8;
+  color:var(--ink);
 }
-.port-body .card .s,.port-body .mut,.port-body .ink2,.port-body .sub{color:#aebbe0!important}
-.port-body .ink3,.port-body .quiet,.port-body .faint{color:#7f8db5!important}
-.port-body .av,.port-body .av *{color:#fff!important;text-shadow:0 1px 0 rgba(0,0,0,.35)}
-.port-body .pill,.port-body .stg,.port-body .chip.on,.port-body .tt,
-.port-body [style*="background:#ff"],.port-body [style*="background: #ff"],
-.port-body [style*="background:#3b"],.port-body [style*="background:#19"],
-.port-body [style*="background:#a1"],.port-body [style*="background:#c9"]{
+
+.light-surface .s,
+.light-surface .mut,
+.light-surface .ink2,
+.light-surface .sub,
+.light-surface .org,
+.light-surface .pv,
+.light-surface .why,
+.light-surface .bund,
+.light-surface small,
+.port-body:not(.neon):not(.lists) .card .s,
+.port-body:not(.neon):not(.lists) .card .mut,
+.port-body:not(.neon):not(.lists) .card .ink2,
+.port-body:not(.neon):not(.lists) .card .sub,
+.port-body .feed .s,
+.port-body .feed .mut,
+.port-body .feed .ink2,
+.port-body .feed .sub,
+.port-body .em .pv,
+.port-body .em .fl span,
+.port-body .sp .org,
+.port-body .sp .why,
+.port-body .sp .bund,
+.port-body .sp .facts small,
+.port-body .pick-box p,
+.port-body .plan-box p,
+.port-body .pbox .to,
+.port-body .col .s,
+.port-body .ce .sj,
+.port-body .tbl td.mut,
+.port-body table.t td.mut,
+.port-body .cr.sub,
+.port-body .cr.sub3{color:var(--ink2)!important}
+
+.light-surface .ink3,
+.light-surface .quiet,
+.light-surface .faint,
+.light-surface .day,
+.light-surface .t,
+.port-body:not(.neon):not(.lists) .card .ink3,
+.port-body:not(.neon):not(.lists) .card .quiet,
+.port-body .feed .ink3,
+.port-body .feed .day,
+.port-body .feed .foot,
+.port-body .em .l1 span,
+.port-body .em .t,
+.port-body .sp .facts small,
+.port-body .colh .c,
+.port-body .ce .h em,
+.port-body .cempty,
+.port-body .tbl th,
+.port-body table.t th,
+.port-body .cr .n,
+.port-body .lh,
+.port-body .hint,
+.port-body .crumbs{color:var(--ink3)!important}
+
+.light-surface a:not(.btn):not(.av),
+.light-surface .lnk,
+.light-surface .go,
+.port-body:not(.neon):not(.lists) .card a:not(.btn):not(.av),
+.port-body:not(.neon):not(.lists) .card .lnk,
+.port-body .feed .lnk,
+.port-body .sp .go,
+.port-body .pick-box .lnk,
+.port-body .tree .lnk,
+.port-body .cr.on{color:var(--link)!important}
+
+/* White buttons on dark pages — dark ink (never inherit page light ink) */
+.port-body .btn:not(.pri):not(.ghost){color:#101a33!important}
+.port-body .btn.pri{color:#fff!important}
+.port-body .btn.ghost{color:#dbe4fb!important}
+.port-body.neon .btn:not(.pri):not(.ghost),
+.port-body.lists .btn:not(.pri):not(.ghost){color:#e9eefa!important}
+.port-body.neon .btn.pri,
+.port-body.lists .btn.pri{color:#fff!important}
+
+/* Soft chips on light strips */
+.port-body .c2{color:#3a4560!important}
+.port-body .c2.on{background:#101a33!important;color:#fff!important}
+
+/* Contacts rail rows follow the card surface */
+.port-body .sg{color:var(--ink)!important}
+.port-body .sg .n{color:var(--ink3)!important}
+.port-body .sg.on{color:var(--blue)!important}
+/* Role chips on soft pads need dark ink even when the page ramp is dark */
+.port-body .role.r-net{color:#3a4560!important;background:#f5f7fb}
+.port-body.neon .role.r-net,
+.port-body.lists .role.r-net{color:#c8d1ea!important;background:#13204a!important}
+
+.light-surface h1,
+.light-surface h2,
+.light-surface h3,
+.light-surface h4,
+.light-surface h5,
+.light-surface h6,
+.light-surface b,
+.light-surface .n,
+.light-surface .nm,
+.light-surface .sj,
+.light-surface .em2,
+.port-body .feed h3,
+.port-body .em .l1 b,
+.port-body .em .sj,
+.port-body .sp h4,
+.port-body .sp .facts b,
+.port-body:not(.neon) .cols > .col .colh b,
+.port-body .ce .h b,
+.port-body .pick-box h3,
+.port-body .pbox h3,
+.port-body:not(.neon):not(.lists) .tbl td.nm b,
+.port-body:not(.neon):not(.lists) .tbl .ps b,
+.port-body:not(.neon):not(.lists) table.t td.nm b,
+.port-body .cr,
+.port-body .cr.all b{color:var(--ink)!important}
+
+/* Email tags on white — design ink #1d3f9e (backgrounds stay as page CSS) */
+.port-body .em .fl span,
+.port-body .tag{color:#1d3f9e!important}
+
+/* Avatars stay white-on-colour */
+.port-body .av,
+.port-body .av *,
+.light-surface .av,
+.light-surface .av *{color:#fff!important;text-shadow:0 1px 0 rgba(0,0,0,.35)}
+
+/* Coloured chips / stage pills: white ink */
+.port-body .pill,
+.port-body .stg,
+.port-body .chip.on,
+.port-body .tt,
+.port-body [style*="background:#ff"],
+.port-body [style*="background: #ff"],
+.port-body [style*="background:#3b"],
+.port-body [style*="background:#19"],
+.port-body [style*="background:#a1"],
+.port-body [style*="background:#c9"]{
   color:#fff!important;text-shadow:1px 1px 0 rgba(0,0,0,.35);font-weight:700;
 }
-.port-body .nx.amb,.port-body .na-docs,.port-body .p-amber{color:#7a5200!important}
-.port-body .clock,.port-body .ro,.port-body .more3,.port-body .lnk{color:#5b6678!important}
-.port-body.neon .clock,.port-body.neon .ro{color:#aebbe0!important}
+
+/* Amber callouts: light amber50 keeps dark amber ink; dark amber chips keep white */
+.port-body .na-docs,
+.port-body .p-amber{color:#7a5200!important}
+.port-body .nx.amb,
+.port-body .nx.red,
+.port-body .nx.grn{color:#fff!important;text-shadow:0 1px 0 rgba(0,0,0,.35)}
+
+/* Quiet chrome that sits on white strips of dark pages */
+.port-body .clock,
+.port-body .ro,
+.port-body .more3{color:var(--ink3)!important}
+.port-body.neon .clock,
+.port-body.neon .ro{color:var(--ink2)!important}
+
 /* Documents: folder + file names on dark */
-.port-body.neon .fd,.port-body.neon .fd b,.port-body .fd{color:#e9eefa!important}
-.port-body.neon .fl,.port-body.neon .fl .nm,.port-body .fl .nm{color:#e9eefa!important}
+.port-body.neon .fd,
+.port-body.neon .fd b,
+.port-body .fd{color:var(--ink)!important}
+.port-body.neon .fl,
+.port-body.neon .fl .nm,
+.port-body .fl .nm{color:var(--ink)!important}
 .port-body.neon .fl{background:#0a0f26!important;border-color:rgba(120,150,255,.12)!important}
-.port-body.neon .bar .sub,.port-body .bar .sub{color:#aebbe0!important}
-/* Segmented toggles on dark pages — never #000 / #101a33 on dark */
-.port-body .seg span,.port-body.neon .seg span,
-.port-body .vseg button,.port-body.neon .vseg button{color:#aebbe0!important}
-.port-body .seg span.on,.port-body.neon .seg span.on,
-.port-body .vseg button[aria-pressed="true"],.port-body.neon .vseg button[aria-pressed="true"]{background:#ff4d8d!important;color:#160308!important}
-.port-body .seg span:not(.on),.port-body .vseg button[aria-pressed="false"]{color:#aebbe0!important;background:transparent!important}
-/* Contacts / Lists and Cards / List were measuring #000 / #101a33 on dark */
-.bar .seg span,.port-body .bar .seg span{color:#aebbe0!important}
-.bar .seg span.on,.port-body .bar .seg span.on{color:#160308!important}
-/* Integrations / Contacts / Links white-on-white strips */
-.port-body .stat,.port-body .sx b,.port-body .kpi b,.port-body .tiles .sx b{color:#e9eefa!important}
-.port-body .stat span,.port-body .sx span{color:#aebbe0!important}
+.port-body.neon .bar .sub,
+.port-body .bar .sub{color:var(--ink2)!important}
+
+/* White-pill / pink-on .seg — never inherit page light ink onto the pill */
+.port-body .seg span.on,
+.port-body .vseg button[aria-pressed="true"]{color:#101a33!important}
+.port-body.neon .seg span,
+.port-body.lists .seg span,
+.port-body.neon .vseg button,
+.port-body.lists .vseg button{color:#aebbe0!important}
+.port-body.neon .seg span.on,
+.port-body.lists .seg span.on,
+.port-body.neon .vseg button[aria-pressed="true"],
+.port-body.lists .vseg button[aria-pressed="true"]{background:#ff4d8d!important;color:#160308!important}
+
+/* KPI / stat strips on dark page chrome */
+.port-body > .stat,
+.port-body > .kpis,
+.port-body .kpis span,
+.port-body .stat{color:var(--ink2)}
+.port-body .stat b,
+.port-body .kpis b,
+.port-body .sx b,
+.port-body .kpi b,
+.port-body .tiles .sx b{color:var(--ink)!important}
+.port-body .stat span,
+.port-body .sx span{color:var(--ink2)!important}
 .port-body .gprog{color:#f5c443!important}
-.port-body .fixed{color:#aebbe0!important}
-.port-body .tbtn.has{color:#e9eefa!important}
-[style*="background:#ff4d8d"],[style*="background: #ff4d8d"],.pink-bg,.band.today,
-.port-body .chip.on[style*="ff4d"],.todaytag,.seg span.on[style*="ff4d"]{
+.port-body .fixed{color:var(--ink2)!important}
+.port-body .tbtn.has{color:var(--ink)!important}
+
+/* White stats strip on Spaces (not neon card) */
+.port-body .stats,
+.port-body .stats .sx b{color:var(--ink)!important}
+.port-body .stats .sx span{color:var(--ink3)!important}
+
+/* Pink surfaces — ink #160308 */
+.pink-surface,
+.pink-bg,
+.band.today,
+.todaytag,
+.port-body .today:not(.h),
+[style*="background:#ff4d8d"],
+[style*="background: #ff4d8d"],
+.port-body .chip.on[style*="ff4d"],
+.port-body .seg span.on[style*="ff4d"]{
+  --ink:#160308;
+  --ink2:#160308;
+  --ink3:#160308;
   color:#160308!important;
 }
-[style*="background:#ff4d8d"] *,[style*="background: #ff4d8d"] *,.pink-bg *,.band.today *,.todaytag *{
+.pink-surface *,
+.pink-bg *,
+.band.today *,
+.todaytag *,
+[style*="background:#ff4d8d"] *,
+[style*="background: #ff4d8d"] *{
   color:#160308!important;
+}
+
+/* Neon / lists dark cards keep the dark ramp (override any light-surface bleed) */
+.port-body.neon .card,
+.port-body.lists .card{
+  --ink:#e9eefa;
+  --ink2:#c8d1ea;
+  --ink3:#a3b0d2;
+  --link:#8dbaff;
+  color:var(--ink);
+}
+.port-body.neon .card .s,
+.port-body.neon .card .mut,
+.port-body.neon .card .ink2,
+.port-body.neon .card .sub,
+.port-body.lists .card .s,
+.port-body.lists .card .mut{color:var(--ink2)!important}
+.port-body.neon .card .ink3,
+.port-body.neon .card .quiet,
+.port-body.lists .card .ink3,
+.port-body.lists .card .quiet{color:var(--ink3)!important}
+.port-body.neon .card a:not(.btn):not(.av),
+.port-body.neon .card .lnk,
+.port-body.lists .card a:not(.btn):not(.av),
+.port-body.lists .card .lnk{color:var(--link)!important}
+/* Neon/lists tables sit on dark cards — keep dark ramp (including Contacts .tbl). */
+.port-body.neon table.t,
+.port-body.lists table.t,
+.port-body.neon .tbl,
+.port-body.lists .tbl{
+  --ink:#e9eefa;
+  --ink2:#c8d1ea;
+  --ink3:#a3b0d2;
+  --link:#8dbaff;
+  color:var(--ink);
+}
+.port-body.neon table.t td,
+.port-body.lists table.t td,
+.port-body.neon .tbl td,
+.port-body.lists .tbl td,
+.port-body.neon .tbl .ps b,
+.port-body.lists .tbl .ps b,
+.port-body.neon .tbl td.nm b,
+.port-body.lists .tbl td.nm b{color:var(--ink)!important}
+.port-body.neon table.t td.mut,
+.port-body.lists table.t td.mut,
+.port-body.neon .tbl td.mut,
+.port-body.lists .tbl td.mut,
+.port-body.neon .tbl .ps span,
+.port-body.lists .tbl .ps span{color:var(--ink2)!important}
+.port-body.neon table.t th,
+.port-body.lists table.t th,
+.port-body.neon .tbl th,
+.port-body.lists .tbl th{color:var(--ink3)!important;background:#0b1026!important}
+
+/* Pipeline board cards on dark columns stay light ink */
+.port-body.neon .bcard,
+.port-body.neon .cd{
+  --ink:#e9eefa;
+  --ink2:#c8d1ea;
+  --ink3:#a3b0d2;
+  color:var(--ink);
+}
+.port-body.neon .bcard b,
+.port-body.neon .cd b{color:var(--ink)!important}
+.port-body.neon .bcard span,
+.port-body.neon .cd span{color:var(--ink2)!important}
+
+/* Dark quick-view drawer keeps dark ramp even if nested light bits exist */
+.port-body .qw{
+  --ink:#e9eefa;
+  --ink2:#c8d1ea;
+  --ink3:#a3b0d2;
+  --link:#8dbaff;
+  color:var(--ink);
+}
+.port-body .qw .note,
+.port-body .qw .ang,
+.port-body .qw .chk label,
+.port-body .qw .qfacts,
+.port-body .qw .tags span{
+  --ink:#101a33;
+  --ink2:#3a4560;
+  --ink3:#5b6678;
+  --link:#1d4fd8;
+  color:var(--ink);
 }

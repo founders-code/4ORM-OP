@@ -509,7 +509,7 @@ export async function listPipelines() {
       const value = Number(row.monetaryValue) || 0;
       stage.count += 1;
       stage.value += value;
-      if (stage.opps.length < 60) {
+      if (stage.opps.length < 100) {
         stage.opps.push({
           id: String(row.id || ''),
           name: String(row.name || '').slice(0, 120),

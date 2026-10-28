@@ -32,7 +32,7 @@
     + '.pbox textarea{min-height:150px;resize:vertical}.pbox .er{color:var(--red);font-size:12.5px;font-weight:700;min-height:16px}'
     + '.pbox .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}'
     + '.btn[disabled]{opacity:.55;cursor:default}';
-  var CSS = { contacts: '/port-css/contacts.css?v=2', finance: '/port-css/financials.css?v=1', outreach: '/port-css/outreach-lists.css?v=2', neon: '/port-css/neon.css?v=1' };
+  var CSS = { contacts: '/port-css/contacts.css?v=2', finance: '/port-css/financials.css?v=1', outreach: '/port-css/outreach-lists.css?v=4', neon: '/port-css/neon.css?v=1', contrastP10: '/port-css/contrast-p10.css?v=3' };
   var cssText = {};
   var NA = 'Fills in from the master finance sheet once it\'s connected';
   var COLD_DAYS = 21;
@@ -80,7 +80,7 @@
     }
     var st = root.querySelector('style');
     if (st && cssText[key] != null && st.getAttribute('data-css') !== key) {
-      var extra = key === 'contacts' ? ((cssText.outreach || '') + (cssText.neon || '')) : '';
+      var extra = key === 'contacts' ? ((cssText.outreach || '') + (cssText.neon || '') + (cssText.contrastP10 || '')) : (cssText.contrastP10 || '');
       st.textContent = TOKEN + cssText[key] + extra;
       st.setAttribute('data-css', key);
       var wrap = root.querySelector('.port-body');
@@ -354,38 +354,36 @@
     try {
       if (new URLSearchParams(String(location.search || '')).get('lists') === '1') S().peopleTab = 'lists';
     } catch (e) {}
-    loadCss('contacts').then(function () { whenFixture(function () {
+    Promise.all([loadCss('contacts'), loadCss('outreach'), loadCss('neon'), loadCss('contrastP10')]).then(function () { whenFixture(function () {
       var root = mount('peopleDesk', 'contacts');
       if (!root) return;
       var vm = fixtureOn() ? fixtureContactsVm() : liveContactsVm();
       paintInto(root, contactsHtml(vm) + composeHtml());
       watchDrawer();
       if (S().peopleTab === 'lists') {
-        Promise.all([loadCss('outreach'), loadCss('neon')]).then(function () {
-          var st = root.querySelector('style');
-          if (st) st.textContent = TOKEN + (cssText.contacts || '') + (cssText.outreach || '') + (cssText.neon || '');
-          var wrap = root.querySelector('.port-body');
-          if (wrap) wrap.classList.add('neon', 'lists');
-          fetch('/lists-snippet.html?v=2').then(function (r) { return r.ok ? r.text() : ''; }).then(function (html) {
-            var host = root.querySelector('[data-lists-host]');
-            if (host) host.outerHTML = html;
-            else if (wrap) wrap.innerHTML = html;
-            root.querySelectorAll('#cseg span').forEach(function (s) {
-              s.addEventListener('click', function () {
-                if (s.getAttribute('data-v') === 'contacts') {
-                  S().peopleTab = 'contacts';
-                  paintContacts();
-                }
-              });
+        var st = root.querySelector('style');
+        if (st) st.textContent = TOKEN + (cssText.contacts || '') + (cssText.outreach || '') + (cssText.neon || '') + (cssText.contrastP10 || '');
+        var wrap = root.querySelector('.port-body');
+        if (wrap) wrap.classList.add('neon', 'lists');
+          fetch('/lists-snippet.html?v=3').then(function (r) { return r.ok ? r.text() : ''; }).then(function (html) {
+          var host = root.querySelector('[data-lists-host]');
+          if (host) host.outerHTML = html;
+          else if (wrap) wrap.innerHTML = html;
+          root.querySelectorAll('#cseg span').forEach(function (s) {
+            s.addEventListener('click', function () {
+              if (s.getAttribute('data-v') === 'contacts') {
+                S().peopleTab = 'contacts';
+                paintContacts();
+              }
             });
-            if (typeof window.bindOutreachLists === 'function') window.bindOutreachLists(root);
           });
+          if (typeof window.bindOutreachLists === 'function') window.bindOutreachLists(root);
         });
       }
     }); });
     loadContactExtras(false);
     if (!S().peopleLists && typeof api === 'function') {
-      api('/api/contact-lists').then(readJson).catch(function () { return null; }).then(function (d) {
+      api('/api/reach-out?lists=1').then(readJson).catch(function () { return null; }).then(function (d) {
         if (d && d.lists) { S().peopleLists = d.lists; if (S().peopleTab === 'lists') repaintPeople(); }
       });
     }
@@ -432,7 +430,7 @@
     'people-tab': function (el) {
       S().peopleTab = attr(el, 'data-tab') || 'contacts';
       if (S().peopleTab === 'lists' && !S().peopleLists) {
-        api('/api/contact-lists').then(readJson).then(function (d) {
+        api('/api/reach-out?lists=1').then(readJson).then(function (d) {
           S().peopleLists = (d && d.lists) || [];
           repaintPeople();
         }).catch(function () { S().peopleLists = []; repaintPeople(); });

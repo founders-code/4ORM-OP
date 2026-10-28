@@ -126,6 +126,9 @@
     });
   }
   function vancouverTodayIso() {
+    if (typeof window.vancouverTodayIso === 'function' && window.vancouverTodayIso !== vancouverTodayIso) {
+      try { return window.vancouverTodayIso(); } catch (e) {}
+    }
     var parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
     function g(t) {
       for (var i = 0; i < parts.length; i++) if (parts[i].type === t) return parts[i].value;
@@ -145,19 +148,17 @@
   }
   function livePlaybookState() {
     var pb = (window.STATE || {}).playbook || {};
+    /* Header + pink TODAY band share this one Vancouver date — never a stale pb.today alone. */
+    var today = vancouverTodayIso();
     var days = asList(pb.days);
-    var today = String(pb.today || '');
+    if (!days.length || days.indexOf(today) < 0) days = vancouverWeekDays();
     var todayIdx = days.indexOf(today);
     if (todayIdx < 0) todayIdx = 0;
     var dates = days.map(function (d) {
       var m = String(d).match(/(\d{4})-(\d{2})-(\d{2})/);
       return m ? Number(m[3]) : Number(String(d).slice(8));
     });
-    if (!days.length || !today) {
-      days = vancouverWeekDays();
-      today = vancouverTodayIso();
-      todayIdx = days.indexOf(today);
-      if (todayIdx < 0) todayIdx = 0;
+    if (!dates.length) {
       dates = days.map(function (d) {
         var m = String(d).match(/(\d{4})-(\d{2})-(\d{2})/);
         return m ? Number(m[3]) : 0;
@@ -303,7 +304,7 @@
   }
   function mountPlaybookExtrasLive(root, wrap) {
     var pb = (window.STATE || {}).playbook || {};
-    var today = String(pb.today || vancouverTodayIso());
+    var today = vancouverTodayIso();
     var api = asList(pb.rows).filter(function (r) { return r && r.id && !r.s; });
     var logs = {};
     asList(pb.monthLogs).forEach(function (l) { logs[l.rhythmId + '|' + l.day] = l.status; });
@@ -866,7 +867,9 @@
           var calEl = wrap.querySelector('.calwrap');
           if (live && calEl) calEl.classList.add('live-align');
           var root = wrap.getRootNode();
-          var today = live ? new Date() : new Date(2026, 9, 19);
+          var today = live
+            ? (typeof window.vancouverTodayDate === 'function' ? window.vancouverTodayDate() : new Date())
+            : new Date(2026, 9, 19);
           if (typeof window.mountRedesignCalendar === 'function') {
             window.mountRedesignCalendar(root, {
               fixture: !live,
