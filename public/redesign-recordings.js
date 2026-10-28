@@ -209,7 +209,12 @@
       var src = (r.src || r.type) === 'mic' || r.type === 'voice' ? 'mic' : 'both';
       var mins = Math.max(1, Math.round((Number(r.duration_s) || 0) / 60));
       if (r.proc || r.status === 'transcribing' || r.status === 'summarizing' || r.status === 'waiting') {
-        h += '<div class="rw proc"><span class="t">' + esc(timeOf(r)) + '</span><div style="min-width:0"><h4>' + esc(r.step || 'Transcribing') + '</h4><div class="prog"><i style="width:' + (r.pct || 35) + '%"></i></div></div><span class="src' + (src === 'mic' ? ' mic' : '') + '">' + (src === 'mic' ? 'Mic' : 'Computer and mic') + '</span><span class="d">' + mins + ' m</span></div>';
+        var peerWait = (S().recordings || []).some(function (x) {
+          return /waiting for transcription|openai_api_key|openai/i.test(String(x.step || x.detail || ''));
+        });
+        var noKey = r.status === 'waiting' || peerWait || window.__openaiMissing !== false || /waiting for transcription|openai/i.test(String(r.step || ''));
+        var stepLab = noKey ? 'Waiting for transcription - add OPENAI_API_KEY in Vercel' : (r.step || 'Transcribing');
+        h += '<div class="rw proc" data-action="rec-open" data-id="' + esc(r.id) + '"><span class="t">' + esc(timeOf(r)) + '</span><div style="min-width:0"><h4>' + esc(stepLab) + '</h4>' + (noKey ? '' : '<div class="prog"><i style="width:' + (r.pct || 35) + '%"></i></div>') + '</div><span class="src' + (src === 'mic' ? ' mic' : '') + '">' + (src === 'mic' ? 'Mic' : 'Computer and mic') + '</span><span class="d">' + mins + ' m</span></div>';
         return;
       }
       var line = r.summary || '';
