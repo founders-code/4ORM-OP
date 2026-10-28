@@ -24,7 +24,7 @@ const FEAR_THEMES = [
 ];
 const VALET: { k: string; series: string; pct?: boolean }[] = [
   { k: 'Bank of Canada rate', series: 'V39079', pct: true },
-  { k: '5-year Canada bond', series: 'V39063', pct: true },
+  { k: '5-year Canada bond', series: 'BD.CDN.5YR.DQ.YLD', pct: true },
   { k: 'Prime rate', series: 'V80691335', pct: true },
   { k: 'CAD per USD', series: 'FXUSDCAD' },
 ];
