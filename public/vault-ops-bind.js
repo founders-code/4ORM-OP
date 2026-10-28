@@ -594,7 +594,8 @@
       var today = slots.slice(0, 3).slice().sort(function (a, b) { return a.hour - b.hour; });
       var lamps = $(root, '#scrLamps');
       var word = { ok: 'ran', partial: 'part ran', missed: 'missed', running: 'running', upcoming: 'due' };
-      if (lamps) lamps.innerHTML = today.map(function (s) { return '<i class="' + s.state + '" title="' + escS(s.detail || '') + '">' + String(s.hour).padStart(2, '0') + ':00 ' + (word[s.state] || s.state) + '</i>'; }).join('') || '<i>no runs yet</i>';
+      var lastTxt = d && d.last ? '<i class="' + (d.last.status === 'ok' ? 'ok' : 'partial') + '" title="' + escS(d.last.detail || '') + '">last ' + (d.last.trigger === 'manual' ? 'run now ' : '') + vanHM(d.last.at) + '</i>' : '';
+      if (lamps) lamps.innerHTML = (today.map(function (s) { return '<i class="' + s.state + '" title="' + escS(s.detail || '') + '">' + String(s.hour).padStart(2, '0') + ':00 ' + (word[s.state] || s.state) + '</i>'; }).join('') + lastTxt) || '<i>no runs yet</i>';
       var al = $(root, '#scrAlert');
       if (al) { al.hidden = !(d && d.alert); al.textContent = (d && d.alert) ? d.alert + '. Press Run now, then check the Vercel cron.' : ''; }
       var w = $(root, '#scrw');

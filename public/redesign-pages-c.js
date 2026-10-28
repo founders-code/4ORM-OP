@@ -284,6 +284,10 @@
     function toast(t) { var x = gid('toast'); if (!x) return; x.textContent = t; x.classList.add('show'); setTimeout(function () { x.classList.remove('show'); }, 1800); }
     window.__playMount = { rows: rows, render: render, place: place, count: count, toast: toast, root: root, todayIdx: todayIdx, pop: pop, openPop: openPop, get cur() { return cur; }, set cur(v) { cur = v; } };
     render();
+    /* The TODAY band is measured from today's header; fonts and the side menu settle after the first paint,
+       so measure again a few times and whenever the grid changes size. */
+    [120, 400, 1000, 2500].forEach(function (t) { setTimeout(place, t); });
+    if (window.ResizeObserver && g && !g.__bandRo) { g.__bandRo = new ResizeObserver(function () { place(); }); g.__bandRo.observe(g); }
     if (fixtureOn()) {
       mountMonths(root, rows);
       mountVoiceDemo(root, rows, render, count, toast);
@@ -1069,7 +1073,7 @@
     else if (zf === 'solo') meetings = meetings.filter(function (m) { return m.solo; });
     else if (zf && zf !== 'all') meetings = meetings.filter(function (m) { return (String(m.t || '') + ' ' + asList(m.p).join(' ') + ' ' + String(m.s || '')).toLowerCase().indexOf(String(zf).toLowerCase()) >= 0; });
     if (zsrc && zsrc !== 'all') meetings = meetings.filter(function (m) { return String(m.src || '').toLowerCase() === String(zsrc).toLowerCase(); });
-    loadSnip('/zwrap-snippet.html', function (html) {
+    loadSnip('/zwrap-snippet.html?v=2', function (html) {
       wrap.innerHTML = html || '<div class="zwrap"></div>';
       var root = wrap.getRootNode();
       var sortKey = (window.STATE || {}).zoomSort || 'newest';

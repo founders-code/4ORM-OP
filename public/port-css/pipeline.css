@@ -89,3 +89,8 @@
 .mx td{overflow:hidden;text-overflow:ellipsis}
 .mx td:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
+/* Dark page: stage pills read clearly; Needs-you-today uses 2 columns on laptops so names are not cut. */
+.why2{color:#a9c8ff!important;background:rgba(59,130,255,.16)!important}
+.why2.red{color:#ff9fb0!important;background:rgba(255,77,109,.16)!important}
+.why2.amb{color:#ffd08a!important;background:rgba(255,181,71,.14)!important}
+@media (max-width:1500px){.ndg{grid-template-columns:repeat(2,minmax(0,1fr))}}

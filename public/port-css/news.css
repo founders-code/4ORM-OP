@@ -340,3 +340,8 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,s
 .ntoast b{color:#8fb4ff;cursor:pointer}
 .hero .hrm{position:absolute;right:14px;top:14px;font-size:11.5px;font-weight:750;color:#fff;background:rgba(0,0,0,.45);border-radius:8px;padding:5px 9px;cursor:pointer;opacity:0;transition:opacity .15s}
 .hero:hover .hrm{opacity:1}
+/* Competitor rows: the count sits as plain text, not a market tile. */
+.nwx .comp .comprow .mt{background:none!important;border:0!important;padding:0!important;min-width:0;color:#a3b0d2;font-size:11.5px;font-weight:700}
+/* Story card footer: source on its own line, Save and Remove under it, never overlapping. */
+.nwx .card .foot{flex-wrap:wrap;gap:6px 10px;justify-content:flex-start}
+.nwx .card .foot .src{flex:1 1 100%;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

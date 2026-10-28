@@ -114,3 +114,4 @@ button{font:inherit;cursor:pointer}
 .ztop h1,.ztop .meta,.btn,.chip,.seg span{white-space:nowrap}
 .bar{flex-wrap:wrap}.search{min-width:260px}
 .said .who{flex-wrap:wrap}
+.search{background-image:none!important;padding-left:12px!important}

@@ -78,3 +78,7 @@
 .tr p mark{background:#fff2b8;color:inherit}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;display:none;z-index:90}.toast.show{display:block}
 .toast a{color:#9cc0ff;font-weight:800;margin-left:10px;cursor:pointer}
+/* Waiting rows on the white list: readable dark text, not faint grey. */
+.rw.proc h4{color:#4a5672!important}
+.rw .t,.rw .tm,.rw time{color:#4a5672}
+.list{--ink:#101a33;--ink2:#4a5672;--ink3:#5b6678;color:#101a33}.list .day{background:#f3f6fb;color:#4a5672}

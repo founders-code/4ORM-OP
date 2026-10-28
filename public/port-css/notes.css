@@ -77,3 +77,4 @@ button{font:inherit;cursor:pointer}
 .nbig .nf .r{margin-left:auto;display:flex;gap:8px}
 .nbig .nb{height:34px;border-radius:10px;border:none;background:rgba(61,50,0,.1);color:inherit;font-size:13px;font-weight:800;padding:0 13px;cursor:pointer}
 .nbig .nb.pri{background:#3d3200;color:#fff6c9}
+.search{background-image:none!important;padding-left:12px!important}

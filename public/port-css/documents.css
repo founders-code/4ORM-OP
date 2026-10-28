@@ -124,3 +124,8 @@
 .port-body.neon .btn.pri{background:#2e6bf2!important;border-color:#2e6bf2!important;color:#fff!important}
 .port-body.neon .drop{border-color:rgba(120,150,255,.22)!important;color:#aebbe0!important}
 .port-body.neon .ch{background:#080c1f!important;border:1px solid rgba(120,150,255,.14)!important}
+/* Laptop widths: all three columns fit; the middle one flexes. */
+.lay{grid-template-columns:220px minmax(0,1fr) 260px}
+@media (max-width:1180px){.lay{grid-template-columns:220px minmax(0,1fr)}}
+.ctr .ch{flex-wrap:wrap;row-gap:4px}
+.ctr .ch .s{flex:1 1 100%;order:3}

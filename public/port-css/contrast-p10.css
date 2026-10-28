@@ -396,3 +396,8 @@
   --link:#1d4fd8;
   color:var(--ink);
 }
+/* Integrations summary strip is white: dark numbers, coloured where they mean something. */
+.port-body .sumr .sx b{color:#101a33!important}
+.port-body .sumr .sx span{color:#4a5672!important}
+.port-body .sumr .sx.g b{color:#12a36a!important}
+.port-body .sumr .sx.a b{color:#c98408!important}

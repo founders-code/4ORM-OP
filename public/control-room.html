@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="/port-css/shell.css?v=7"/>
 <link rel="stylesheet" href="/port-css/shell-live.css?v=8"/>
 <link rel="stylesheet" href="/port-css/signals-detail.css?v=3"/>
-<script src="/shadow-port.js?v=4"></script>
+<script src="/shadow-port.js?v=5"></script>
 <style>
 :root{--bg:#FFFFFF;--bg-2:#F7F9FC;--bg-3:#EFF3F9;--surface:#FFFFFF;--surface-2:#F4F7FB;--surface-3:#EAEFF6;--border:#E6EBF3;--border-strong:#CCD6E4;--tx:#142036;--tx-2:#46556E;--tx-3:#5E6E88;--blue:#2E6BF2;--blue-dp:#1B4ABE;--blue-50:#EAF1FE;--ok:#0E8A5F;--warn:#8F5C12;--warn-lit:#F2A104;--warn-bg:#FBF1DC;--bad:#D6334E;--info:#1B7BB5;--sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;--mono:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;--r:14px;--r-sm:10px;--sh-sm:0 1px 2px rgba(16,32,64,.05);--sh:0 14px 40px rgba(16,32,64,.12);--ok-bg:#E3F6EE;--ok-br:#9CCFBB;--bad-bg:#FCE6EA;--bad-br:#EBB6C0;}
 *{box-sizing:border-box;}html,body{margin:0;}
@@ -2596,7 +2596,7 @@ function rzPlace(box,c){var h=box.querySelector(':scope > .rz-handle');var panel
 function rzEnsure(){RZ.forEach(function(c){document.querySelectorAll(c.box).forEach(function(box){if(!rzPanel(box,c))return;box.classList.add('rz-box');var h=box.querySelector(':scope > .rz-handle');if(!h){h=document.createElement('div');h.className='rz-handle';h.setAttribute('role','separator');h.setAttribute('aria-orientation','vertical');h.setAttribute('aria-label','Drag to resize the panel');h.title='Drag to resize - double-click to reset';h.addEventListener('pointerdown',function(e){rzDrag(e,box,c,h);});h.addEventListener('dblclick',function(){try{localStorage.removeItem('cr_rz_'+c.key);}catch(err){}rzPaint();rzPlace(box,c);});box.appendChild(h);}rzPlace(box,c);});});}
 function rzDrag(e,box,c,h){var panel=rzPanel(box,c);if(!panel||e.button!==0)return;e.preventDefault();var x0=e.clientX;var w0=panel.getBoundingClientRect().width;var cap=Math.max(c.min,Math.min(c.max,box.getBoundingClientRect().width-420));var w=w0;h.classList.add('on');document.body.classList.add('rz-drag');try{h.setPointerCapture(e.pointerId);}catch(err){}var move=function(ev){w=Math.round(Math.max(c.min,Math.min(cap,w0+ev.clientX-x0)));rzPaint({key:c.key,w:w});rzPlace(box,c);};var up=function(){h.removeEventListener('pointermove',move);h.removeEventListener('pointerup',up);h.removeEventListener('pointercancel',up);h.classList.remove('on');document.body.classList.remove('rz-drag');try{localStorage.setItem('cr_rz_'+c.key,String(w));}catch(err){}rzPaint();rzPlace(box,c);};h.addEventListener('pointermove',move);h.addEventListener('pointerup',up);h.addEventListener('pointercancel',up);}
 (function(){rzPaint();var queued=false;var run=function(){queued=false;rzEnsure();};var later=function(){if(queued)return;queued=true;requestAnimationFrame(run);};new MutationObserver(later).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});window.addEventListener('resize',later);later();})();
-function zoomRefresh(quiet){var b=document.getElementById('zRefresh');if(zoomRefresh.busy)return;zoomRefresh.busy=true;if(b){b.disabled=true;b.innerHTML='&#8635; Refreshing...';}try{localStorage.setItem('cr_zoom_sync',String(Date.now()));}catch(e){}authFetch('/api/zoom-notes',{method:'POST',credentials:'same-origin',quiet:true}).then(function(r){return r.json();}).then(function(d){if(d&&Array.isArray(d.notes)&&d.notes.length){STATE.zoomNotes=d.notes;if(STATE.desk==='znotes')renderZNotes();}if(quiet)return;if(!d||d.error&&!d.busy){deskNote('Zoom could not be reached. Try again.');return;}if(d.busy){deskNote(d.error);return;}var bits=[];if(d.added)bits.push(d.added+(d.added===1?' new call':' new calls'));if(d.filled)bits.push(d.filled+(d.filled===1?' transcript filled in':' transcripts filled in'));var msg=bits.length?bits.join(', ')+' added':'Up to date';if(d.zoom==='not_connected')msg+=' - connect Zoom in Vercel to pull transcripts directly';else if(d.zoom==='unavailable')msg+=' - Zoom did not answer';deskNote(msg);}).catch(function(){if(!quiet)deskNote('Zoom could not be reached. Try again.');}).then(function(){zoomRefresh.busy=false;if(b){b.disabled=false;b.innerHTML='&#8635; Refresh';}});}
+function zoomRefresh(quiet){var b=document.getElementById('zRefresh');if(zoomRefresh.busy)return;zoomRefresh.busy=true;if(b){b.disabled=true;b.innerHTML='Refreshing...';}try{localStorage.setItem('cr_zoom_sync',String(Date.now()));}catch(e){}authFetch('/api/zoom-notes',{method:'POST',credentials:'same-origin',quiet:true}).then(function(r){return r.json();}).then(function(d){if(d&&Array.isArray(d.notes)&&d.notes.length){STATE.zoomNotes=d.notes;if(STATE.desk==='znotes')renderZNotes();}if(quiet)return;if(!d||d.error&&!d.busy){deskNote('Zoom could not be reached. Try again.');return;}if(d.busy){deskNote(d.error);return;}var bits=[];if(d.added)bits.push(d.added+(d.added===1?' new call':' new calls'));if(d.filled)bits.push(d.filled+(d.filled===1?' transcript filled in':' transcripts filled in'));var msg=bits.length?bits.join(', ')+' added':'Up to date';if(d.zoom==='not_connected')msg+=' - connect Zoom in Vercel to pull transcripts directly';else if(d.zoom==='unavailable')msg+=' - Zoom did not answer';deskNote(msg);}).catch(function(){if(!quiet)deskNote('Zoom could not be reached. Try again.');}).then(function(){zoomRefresh.busy=false;if(b){b.disabled=false;b.innerHTML='Refresh';}});}
 function zoomAutoRefresh(){if(zoomAutoRefresh.done)return;zoomAutoRefresh.done=true;var last=0;try{last=Number(localStorage.getItem('cr_zoom_sync')||0);}catch(e){}if(Date.now()-last>3*3600000)zoomRefresh(true);}
 (function(){var b=document.getElementById('zRefresh');if(b)b.addEventListener('click',function(){zoomRefresh(false);});})();
 (function(){var box=document.getElementById('dvFind');if(!box)return;box.addEventListener('input',function(){STATE.driveQ=box.value;paintDrivePane();});})();
@@ -2605,33 +2605,33 @@ function ghlMoney(n){n=Number(n)||0;if(n>=1000000)return '$'+(Math.round(n/10000
 document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('[data-ghl-pipe],[data-ghl-stage]');if(!t)return;if(t.hasAttribute('data-ghl-pipe')){STATE.ghlPipe=t.getAttribute('data-ghl-pipe');STATE.ghlStage='';}else{STATE.ghlStage=t.getAttribute('data-ghl-stage');}if(typeof renderContacts==='function')renderContacts(document.getElementById('cSearch')?document.getElementById('cSearch').value:'');});
 (function(){function keep(){var c=window.__clerk;if(c&&c.session&&typeof c.session.getToken==='function')c.session.getToken({skipCache:true}).catch(function(){});}document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')keep();});window.addEventListener('focus',keep);setInterval(function(){if(document.visibilityState==='visible')keep();},45000);})();
 </script>
-<script src="/shadow-port.js?v=4"></script>
+<script src="/shadow-port.js?v=5"></script>
 <script src="/redesign-fixture.js?v=6"></script>
 <script>if(/(?:^|[?&])fixture=mockup(?:&|$)/.test(location.search))document.write('<script src="/redesign-fixture-c.js?v=6"><\/script><script src="/redesign-fixture-sheet.js?v=1"><\/script>');</script>
 <script src="/_sounds.js?v=3"></script>
 <script src="/desk-actions.js?v=48"></script>
-<script src="/redesign-pages.js?v=48"></script>
-<script src="/redesign-pages-b.js?v=37"></script>
+<script src="/redesign-pages.js?v=49"></script>
+<script src="/redesign-pages-b.js?v=38"></script>
 <script src="/control-room-war.js?v=3"></script>
 <script src="/heat-ramp.js?v=1"></script>
 <script src="/grid-zoom.js?v=1"></script>
 <script src="/news-pulse.js?v=8"></script>
-<script src="/control-room-ops.js?v=13"></script>
+<script src="/control-room-ops.js?v=14"></script>
 <script src="/shell-nav.js?v=15"></script>
 <script src="/control-room-mail.js"></script>
-<script src="/control-room-zoom.js?v=4"></script>
+<script src="/control-room-zoom.js?v=5"></script>
 <script src="/redesign-cal-engine.js?v=15"></script>
-<script src="/redesign-pages-c.js?v=25"></script>
-<script src="/planner-bind.js?v=21"></script>
+<script src="/redesign-pages-c.js?v=27"></script>
+<script src="/planner-bind.js?v=22"></script>
 <script src="/redesign-pages-r4.js?v=40"></script>
-<script src="/playbook-p8.js?v=8"></script>
-<script src="/vault-ops-bind.js?v=9"></script>
+<script src="/playbook-p8.js?v=9"></script>
+<script src="/vault-ops-bind.js?v=10"></script>
 <script src="/redesign-p8.js?v=8"></script>
 <script src="/redesign-recordings.js?v=5"></script>
-<script src="/redesign-pages-d.js?v=7"></script>
+<script src="/redesign-pages-d.js?v=8"></script>
 <script src="/outreach-lists-data.js?v=2"></script>
-<script src="/lists-bind.js?v=9"></script>
-<script src="/redesign-pages-people.js?v=17"></script>
+<script src="/lists-bind.js?v=10"></script>
+<script src="/redesign-pages-people.js?v=18"></script>
 <script src="/redesign-news-saved.js?v=2"></script>
 <script src="/live-updates.js?v=10"></script>
 <script src="/voice-capture.js?v=1"></script>

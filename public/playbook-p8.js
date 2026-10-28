@@ -200,7 +200,7 @@
         var lab = (r.lab && r.lab[ti]) || '';
         var go = r.room && r.room[1] ? r.room[1] : '';
         return '<div class="ti fxpl" style="--sc:' + escT(r.c || '#2fe08b') + '"><div class="tt">' + escT(r.n || 'Play') + '</div><div class="meta"><span>' + escT(r.grp || 'Daily') + '</span>'
-          + (r.target ? '<span>' + escT(r.target) + '</span>' : '') + (lab && !/^go$/i.test(lab) ? '<span>' + escT(lab) + '</span>' : '')
+          + (lab && !/^go$/i.test(lab) ? '<span>' + escT(lab) + '</span>' : (r.target ? '<span>' + escT(r.target) + '</span>' : ''))
           + (go ? '<a class="fxj" href="' + escT(go) + '">Open</a>' : '') + '</div></div>';
       }).join('') || '<div class="fxnone">' + (rows.length ? 'Every play for today is done.' : 'Plays load with the Playbook grid.') + '</div>';
       setTitle('next', "Today's plays", due.length);

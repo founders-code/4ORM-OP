@@ -227,7 +227,7 @@ function renderBoard(){
   h+=`<div style="height:18px"></div>`;
   canvas.style.setProperty('--lw',LW+'px');canvas.style.width=(LW+W)+'px';
   canvas.innerHTML=h;
-  requestAnimationFrame(()=>{drawLinks();if(pinned)applyFocus(pinned)});
+  requestAnimationFrame(()=>{drawLinks();if(pinned)applyFocus(pinned);if(typeof stickGoalLabels==='function')stickGoalLabels()});
 }
 function hdrRow(){let t='';const vis0=Math.floor((scroller.scrollLeft||0)/ppd)+START-3,vis1=vis0+Math.ceil(trackW()/ppd)+6;
   if(ppd<4){months().forEach((m,k)=>{t+=`<div class="mo" style="left:${x(m.s)}px">${m.m%3===0?'Q'+(m.m/3+1)+' ':''}${MON[m.m]}${(k===0||m.m===0)?`<span>${m.y}</span>`:''}</div>`})}
@@ -619,6 +619,9 @@ scroller.addEventListener('gesturechange',e=>{e.preventDefault();if(gs0)zoomSoon
 scroller.addEventListener('gestureend',e=>{e.preventDefault();gs0=null});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-zlv]');if(!b)return;zoomTo(LV[b.dataset.zlv](),null);save()});
 scroller.tabIndex=0;scroller.addEventListener('keydown',e=>{if(e.key==='+'||e.key==='='){zoomTo(ppdOf(state.zoom)*1.4,null);save()}if(e.key==='-'){zoomTo(ppdOf(state.zoom)/1.4,null);save()}});
+/* Milestone names stay in view: when a milestone starts left of the visible area, its label slides along the bar. */
+function stickGoalLabels(){const sl=scroller.scrollLeft||0;canvas.querySelectorAll('.gspan').forEach(g=>{const lab=g.querySelector('.glab');const run=g.querySelector('.grun');if(!lab||!run)return;const base=parseFloat(run.style.left)||0;const left=parseFloat(g.style.left)||0;const want=Math.max(base+8,sl-left+12);lab.style.left=Math.min(want,Math.max(base+8,g.offsetWidth-lab.offsetWidth-14))+'px'})}
+scroller.addEventListener('scroll',()=>requestAnimationFrame(stickGoalLabels),{passive:true});
 let sq;scroller.addEventListener('scroll',()=>{if(ppd<18)return;clearTimeout(sq);sq=setTimeout(()=>{const l=scroller.scrollLeft;renderBoard();scroller.scrollLeft=l},90)});
 let dg=null;
 function startDragAdd(e){

@@ -257,3 +257,6 @@ button{font:inherit;cursor:pointer}
 .xpbtn.on{background:rgba(255,181,71,.16);border-color:#ffb547;color:#ffd08a}
 .mp.xpp{display:flex;justify-content:space-between;gap:6px;font-size:11px;font-weight:800;border-radius:999px;padding:1px 8px;margin-top:3px;background:rgba(255,181,71,.13);color:#ffd08a;border:1px solid rgba(255,181,71,.35);white-space:nowrap;overflow:hidden}
 .mp.xpp span{overflow:hidden;text-overflow:ellipsis}.mp.xpp b{font-weight:800;flex:none}
+/* Week view: the day header stays pinned while the hours scroll under it. */
+.wkb .whead{position:sticky;top:0;z-index:6;background:#0c1220;box-shadow:0 6px 10px -8px rgba(0,0,0,.6)}
+.wkb .allday{position:sticky;top:53px;z-index:5;background:#0c1220}

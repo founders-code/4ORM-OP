@@ -662,3 +662,8 @@ body.th-neon .main{color:#eef2fc}
 .gspan.done .grun{background:rgba(47,224,139,.25);border-color:#2fe08b}.gspan.done .gdia{background:#2fe08b}
 .gspan:hover .grun{background:rgba(245,197,66,.34)}
 .g3d{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;min-width:0}
+/* Lists fit the page at laptop widths; milestone rows have room for plan, start and complete. */
+.cols,.lrow{grid-template-columns:minmax(150px,2fr) 96px 88px 66px 72px 112px 140px minmax(110px,1.2fr) 54px 62px}
+.goals .cols,.goals .lrow{grid-template-columns:minmax(190px,2fr) 96px 214px 150px 140px minmax(180px,2fr) 66px}
+.g3d .fi{min-width:0;padding-left:6px;padding-right:6px;text-align:center}
+.lgroup{overflow-x:auto}

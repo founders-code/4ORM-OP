@@ -100,8 +100,10 @@ export async function scrapeAudit(sql: Sql, ownerId: string, days = 7) {
     const prev = bySlot.get(k);
     if (!prev || (prev.status !== 'ok' && r.status === 'ok')) bySlot.set(k, r);
   }
-  const first = (await sql`SELECT min(slot) AS s FROM scrape_runs WHERE owner_id = ${ownerId}`)[0]?.s;
-  const since = first ? String(first) : '9999';
+  /* Slots before the first run ever logged are not tracked (the audit starts the day it was switched on). */
+  const firstRow = (await sql`SELECT min(started_at) AS t FROM scrape_runs WHERE owner_id = ${ownerId}`)[0]?.t;
+  const firstAt = firstRow ? new Date(String(firstRow)).getTime() : Infinity;
+  const last = (await sql`SELECT slot, trigger, finished_at, status, detail FROM scrape_runs WHERE owner_id = ${ownerId} AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 1`)[0] as Record<string, unknown> | undefined;
   const now = new Date();
   const out: Array<{ slot: string; day: string; hour: number; state: 'ok' | 'partial' | 'missed' | 'running' | 'upcoming'; at: string; detail: string }> = [];
   for (let i = 0; i < days; i++) {
@@ -109,7 +111,7 @@ export async function scrapeAudit(sql: Sql, ownerId: string, days = 7) {
     const day = vanParts(d).day;
     for (const h of SCRAPE_HOURS) {
       const slot = `${day} ${String(h).padStart(2, '0')}:00`;
-      if (slot < since) continue;
+      if (slotInstant(day, h) + 30 * 60000 < firstAt) continue;
       const r = bySlot.get(slot);
       const v = vanParts(now);
       const slotMinutes = h * 60;
@@ -131,5 +133,20 @@ export async function scrapeAudit(sql: Sql, ownerId: string, days = 7) {
   const alert = last24.some((s) => s.state === 'missed')
     ? `Scrape missed at ${last24.filter((s) => s.state === 'missed').map((s) => s.slot.slice(11)).join(', ')}`
     : '';
-  return { slots: out, missed: missed.length, alert, perDay: SCRAPE_HOURS.length };
+  return {
+    slots: out, missed: missed.length, alert, perDay: SCRAPE_HOURS.length,
+    last: last ? { at: new Date(String(last.finished_at)).toISOString(), trigger: String(last.trigger), status: String(last.status), detail: String(last.detail || '') } : null,
+  };
+}
+
+/* Vancouver wall clock (day 'YYYY-MM-DD', hour) to epoch ms. */
+function slotInstant(day: string, hour: number) {
+  const [y, m, d] = day.split('-').map(Number);
+  let guess = Date.UTC(y, m - 1, d, hour, 0);
+  for (let k = 0; k < 2; k++) {
+    const v = vanParts(new Date(guess));
+    const [vy, vm, vd] = v.day.split('-').map(Number);
+    guess -= Date.UTC(vy, vm - 1, vd, v.hour, v.minute) - Date.UTC(y, m - 1, d, hour, 0);
+  }
+  return guess;
 }

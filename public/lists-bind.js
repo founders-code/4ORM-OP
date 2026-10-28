@@ -613,7 +613,12 @@
     }
 
     function loadContacts() {
-      state.loading = true;
+      /* Show the last loaded contacts at once, then refresh them quietly. */
+      if (window.__listsContactsCache && window.__listsContactsCache.people && window.__listsContactsCache.people.length) {
+        state.contacts = window.__listsContactsCache;
+        state.loading = false;
+        state.cur = contactsAsList();
+      } else state.loading = true;
       render();
       var boardPeople = [];
       try {
@@ -664,6 +669,7 @@
           });
         });
         state.contacts = { people: Object.keys(byKey).map(function (k) { return byKey[k]; }) };
+        window.__listsContactsCache = state.contacts;
         state.loading = false;
         state.cur = contactsAsList();
         render();

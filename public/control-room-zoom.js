@@ -326,7 +326,7 @@
     });
     if (week) boxes += '</div>';
     if (!rows.length) boxes = '<div class="emp" style="padding:20px 4px">No meetings match.</div>';
-    host.innerHTML = '<div class="top"><h1>Zoom notes</h1><span class="sub">What other people said, and what you owe them</span><span class="meta">' + (window.fixtureMockup ? '43 meetings &middot; synced 2 min ago' : (all.length + ' meetings &middot; ' + esc(syncedLabel()))) + '</span><button class="btn" type="button" id="zRefresh">&#8635; Refresh</button><button class="btn pri" type="button" id="zAddBtn">+ Add note</button></div>'
+    host.innerHTML = '<div class="top"><h1>Zoom notes</h1><span class="sub">What other people said, and what you owe them</span><span class="meta">' + (window.fixtureMockup ? '43 meetings &middot; synced 2 min ago' : (all.length + ' meetings &middot; ' + esc(syncedLabel()))) + '</span><button class="btn" type="button" id="zRefresh">Refresh</button><button class="btn pri" type="button" id="zAddBtn">+ Add note</button></div>'
       + '<div class="card bar"><input class="search" id="zSearch" placeholder="Search a person, company or something they said" value="' + esc(STATE.zQuery || '') + '">'
       + '<div class="chips">' + ['All', 'Investors', 'Speer', 'Design partners', 'Team', 'Solo'].map(function (c) { return '<button class="chip' + (chip === c ? ' on' : '') + '" type="button" data-zchip="' + c + '">' + c + '</button>'; }).join('') + '</div>'
       + '<div class="seg">' + [['both', 'All'], ['zoom', 'Zoom']].map(function (p) { return '<span class="' + (src === p[0] ? 'on' : '') + '" data-zsrc="' + p[0] + '">' + p[1] + '</span>'; }).join('') + '</div>'
@@ -418,7 +418,7 @@
     var b = zEl('zRefresh');
     if (zoomRefresh.busy) return;
     zoomRefresh.busy = true;
-    if (b) { b.disabled = true; b.innerHTML = '&#8635; Refreshing...'; }
+    if (b) { b.disabled = true; b.innerHTML = 'Refreshing...'; }
     try { localStorage.setItem('cr_zoom_sync', String(Date.now())); } catch (e) {}
     authFetch('/api/zoom-notes', { method: 'POST', credentials: 'same-origin', quiet: true }).then(function (r) { return r.json(); }).then(function (d) {
       STATE.zoomSyncedAt = Date.now();
@@ -435,7 +435,7 @@
       toast(bits.length ? bits.join(', ') + ' added' : 'Up to date');
     }).catch(function () { if (!quiet) toast('Zoom could not be reached. Try again.'); }).then(function () {
       zoomRefresh.busy = false;
-      if (b) { b.disabled = false; b.innerHTML = '&#8635; Refresh'; }
+      if (b) { b.disabled = false; b.innerHTML = 'Refresh'; }
     });
   }
 

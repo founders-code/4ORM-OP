@@ -2566,7 +2566,11 @@
     var catLab = /team/.test(cat) ? 'Team' : /invest/.test(cat) ? 'Investors' : /design/.test(cat) ? 'Design partners' : /regulat/.test(cat) ? 'Regulators' : /legal/.test(cat) ? 'Legal' : (m.tag ? m.tag : 'Other');
     if (!fixtureOn()) {
       if (m.tag && !fl) fl = '<div class="fl"><span class="ctag">' + esc(catLab) + '</span></div>';
-      else if (m.tag) fl = fl.replace('<div class="fl">', '<div class="fl"><span class="ctag">' + esc(catLab) + '</span>');
+      else if (m.tag) {
+        /* The coloured category tag replaces the plain tag; never show the same word twice. */
+        fl = fl.replace('<div class="fl"><span>' + esc(m.tag) + '</span>', '<div class="fl">');
+        fl = fl.replace('<div class="fl">', '<div class="fl"><span class="ctag">' + esc(catLab) + '</span>');
+      }
     }
     return '<div class="em ' + catCls + '" draggable="true" data-kind="mail" data-action="mail-open"' + mailRowAttrs(m) + '><span class="un' + (m.un ? '' : ' r') + '"></span><span class="av" style="background:' + esc(m.c) + '">' + esc(iniOf(m.f)) + '</span><div style="min-width:0"><div class="l1"><b>' + esc(m.f) + '</b><span>' + esc(m.e) + '</span></div><div class="sj">' + esc(m.sj) + '</div><div class="pv">' + esc(m.pv) + '</div>' + fl + '</div><div class="rt"><span class="t">' + esc(m.t) + '</span><span class="flag' + (filed.length ? ' on' : '') + '" data-action="mail-flag"' + mailRowAttrs(m) + '>Flag</span>'
       + '</div>' + racts + '</div>';
