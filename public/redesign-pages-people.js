@@ -747,6 +747,97 @@
       + '</section><section class="card"><div class="ch"><h3>Where the money goes</h3><span class="s">monthly burn by line</span></div>' + lines + '</section></div>'
       + '<section class="card"><div class="ch"><h3>Model scenarios</h3><span class="s">' + esc((model && model.metric) || '2031 revenue') + (model && model.date ? ' &middot; ' + esc(model.date) + ' model' : '') + '</span></div>' + sc + '</section>';
   }
+  /* Monthly expenses and spend (back end only; the calendar shows these only when its $ switch is on). */
+  var MONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function m2(n) { return '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function ord(n) { var t = n % 100; return n + ((t > 10 && t < 14) ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th')); }
+  function expensesHtml(s) {
+    var d = s.expData, ed = s.expEdit || null;
+    var css = '<style>.xpw .xk{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:4px 0 14px}.xpw .xk div{background:rgba(255,255,255,.03);border:1px solid rgba(120,150,255,.14);border-radius:10px;padding:10px 12px}.xpw .xk small{display:block;font-size:11px;font-weight:800;letter-spacing:.07em;color:#a3b0d2}.xpw .xk b{display:block;font-size:20px;font-weight:900;margin-top:2px;color:#e9eefa}.xpw .xk i{font-style:normal;font-size:12px;color:#a3b0d2}'
+      + '.xpw table{width:100%;border-collapse:collapse}.xpw th{font-size:11px;letter-spacing:.07em;color:#a3b0d2;text-align:left;padding:7px 8px;border-bottom:1px solid rgba(120,150,255,.14)}.xpw td{padding:8px;border-bottom:1px solid rgba(120,150,255,.1);color:#c8d1ea;font-size:13px}.xpw td b{color:#e9eefa}'
+      + '.xpw .fq{font-size:11px;font-weight:800;border-radius:6px;padding:2px 7px}.xpw .fq.m{background:rgba(255,181,71,.13);color:#ffd08a}.xpw .fq.y{background:rgba(161,115,255,.14);color:#d6c2ff}'
+      + '.xpw .lk{font:inherit;font-size:12px;font-weight:750;background:none;border:0;color:#8dbaff;cursor:pointer;padding:2px 6px}.xpw .lk.del{color:#ff9fb0}'
+      + '.xpw input,.xpw select{font:inherit;font-size:13px;background:#0b1030;border:1px solid rgba(120,150,255,.28);border-radius:7px;color:#e9eefa;padding:5px 7px;width:100%}'
+      + '.xpw .add{margin-top:10px}.xpw .er{color:#ff9fb0;font-size:12.5px;margin-top:6px}.xpw .nt{font-size:12.5px;color:#a3b0d2;margin-top:10px}'
+      + '@media(max-width:700px){.xpw .xk{grid-template-columns:1fr 1fr}}</style>';
+    if (!d) return css + '<section class="card xpw"><div class="ch"><h3>Monthly expenses</h3><span class="s">loading</span></div></section>';
+    if (d.error) return css + '<section class="card xpw"><div class="ch"><h3>Monthly expenses</h3></div><div class="empty">' + esc(d.error) + '</div></section>';
+    var sp = d.spend || {}, list = d.expenses || [];
+    var neon = sp.neon || {};
+    var neonTxt = neon.connected ? (neon.computeHours + ' compute hours since ' + esc(String(neon.periodStart || '').slice(0, 10))) : 'add a Neon API key in Vercel to track this';
+    var k = '<div class="xk"><div><small>THIS MONTH</small><b>' + m2(sp.monthTotal) + '</b><i>' + m2(sp.soFar) + ' out so far · ' + (sp.paymentsThisMonth || 0) + ' payments</i></div>'
+      + '<div><small>EVERY MONTH</small><b>' + m2(sp.monthly) + '</b><i>plus ' + m2(sp.yearly) + ' in yearly renewals</i></div>'
+      + '<div><small>A YEAR IN ALL</small><b>' + m2(sp.annual) + '</b><i>from this list</i></div>'
+      + '<div><small>AI CALLS THIS MONTH</small><b>' + (sp.aiCalls || 0) + '</b><i>about ' + m2(sp.aiEstimate) + ' · Neon: ' + neonTxt + '</i></div></div>';
+    function row(e) {
+      if (ed && ed.id === e.id) return editRow(e);
+      return '<tr><td><b>' + esc(e.name) + '</b></td><td><span class="fq ' + e.freq + '">' + (e.freq === 'm' ? 'Monthly' : 'Yearly') + '</span></td><td>'
+        + (e.freq === 'm' ? 'the ' + ord(e.day) : MONS[(e.month || 1) - 1] + ' ' + e.day) + '</td><td><b>' + m2(e.amount) + '</b></td><td style="text-align:right;white-space:nowrap">'
+        + '<button type="button" class="lk" data-xp="edit" data-id="' + esc(e.id) + '">Edit</button><button type="button" class="lk del" data-xp="del" data-id="' + esc(e.id) + '">Delete</button></td></tr>';
+    }
+    function editRow(e) {
+      e = e || { id: '', name: '', freq: 'm', day: 1, month: null, amount: '' };
+      var mo = MONS.map(function (n, i) { return '<option value="' + (i + 1) + '"' + (e.month === i + 1 ? ' selected' : '') + '>' + n + '</option>'; }).join('');
+      return '<tr class="xed"><td><input id="xpName" value="' + esc(e.name) + '" placeholder="Service"></td><td><select id="xpFreq"><option value="m"' + (e.freq === 'm' ? ' selected' : '') + '>Monthly</option><option value="y"' + (e.freq === 'y' ? ' selected' : '') + '>Yearly</option></select></td>'
+        + '<td style="display:flex;gap:6px"><select id="xpMonth" title="Month (yearly bills)"><option value="">Every month</option>' + mo + '</select><input id="xpDay" type="number" min="1" max="31" value="' + esc(e.day) + '" style="width:64px" title="Day of the month"></td>'
+        + '<td><input id="xpAmt" type="number" step="0.01" min="0" value="' + esc(e.amount) + '" style="width:100px"></td>'
+        + '<td style="text-align:right;white-space:nowrap"><button type="button" class="lk" data-xp="save" data-id="' + esc(e.id) + '">Save</button><button type="button" class="lk" data-xp="cancel">Cancel</button></td></tr>';
+    }
+    var body = list.map(row).join('') + (ed && ed.id === '' ? editRow(null) : '');
+    return css + '<section class="card xpw" id="xpCard"><div class="ch"><h3>Monthly expenses</h3><span class="s">shown on the calendar only when you press its $ button</span></div>' + k
+      + '<table><thead><tr><th>SERVICE</th><th>HOW OFTEN</th><th>COMES OUT</th><th>AMOUNT</th><th></th></tr></thead><tbody>' + body + '</tbody></table>'
+      + (s.expErr ? '<div class="er">' + esc(s.expErr) + '</div>' : '')
+      + (s.expUndo ? '<div class="nt" style="color:#e9eefa">Deleted ' + esc(s.expUndo.name) + ' <button type="button" class="lk" data-xp="undo">Undo</button></div>' : '')
+      + '<button type="button" class="btn add" data-xp="new">+ Add an expense</button>'
+      + '<div class="nt">Started from the SaaS OPEX tab of the finance tracker. Deleting a row can be undone for 6 seconds.</div></section>';
+  }
+  function loadExpenses(force) {
+    var s = S();
+    if (s.__expLoading || (s.expData && !force)) return;
+    s.__expLoading = true;
+    api('/api/finance/expenses').then(function (r) { return r && r.json ? r.json().then(function (j) { return { ok: r.ok, j: j }; }) : null; }).then(function (x) {
+      s.__expLoading = false;
+      s.expData = x && x.ok ? x.j : { error: (x && x.j && x.j.locked) ? 'Unlock Financials to see the expenses.' : 'Expenses could not load right now.' };
+      if (s.desk === 'finance') paintFinance();
+    }).catch(function () { s.__expLoading = false; s.expData = { error: 'Expenses could not load right now.' }; if (s.desk === 'finance') paintFinance(); });
+  }
+  function bindExpenses(root) {
+    var card = root.getElementById && root.getElementById('xpCard');
+    if (!card || card.__bound) return;
+    card.__bound = true;
+    card.addEventListener('click', function (ev) {
+      var b = ev.target.closest && ev.target.closest('[data-xp]');
+      if (!b) return;
+      var s = S(), act = b.getAttribute('data-xp'), id = b.getAttribute('data-id') || '';
+      var list = (s.expData && s.expData.expenses) || [];
+      if (act === 'new') { s.expEdit = { id: '' }; s.expErr = ''; paintFinance(); return; }
+      if (act === 'edit') { s.expEdit = { id: id }; s.expErr = ''; paintFinance(); return; }
+      if (act === 'cancel') { s.expEdit = null; s.expErr = ''; paintFinance(); return; }
+      if (act === 'save') {
+        var v = function (x) { var el = root.getElementById(x); return el ? el.value : ''; };
+        var freq = v('xpFreq'), body = { name: v('xpName'), freq: freq, day: Number(v('xpDay')), month: freq === 'y' ? Number(v('xpMonth')) : null, amount: Number(v('xpAmt')) };
+        if (id) body.id = id;
+        api('/api/finance/expenses', { method: id ? 'PATCH' : 'POST', body: body }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); }).then(function (x) {
+          if (!x.ok) { s.expErr = (x.j && x.j.error) || 'Could not save.'; paintFinance(); return; }
+          s.expEdit = null; s.expErr = ''; loadExpenses(true);
+        });
+        return;
+      }
+      if (act === 'del') {
+        var gone = list.filter(function (e) { return e.id === id; })[0];
+        api('/api/finance/expenses', { method: 'DELETE', body: { id: id } }).then(function () {
+          s.expUndo = gone ? { id: id, name: gone.name } : null;
+          clearTimeout(s.__expUndoT); s.__expUndoT = setTimeout(function () { s.expUndo = null; if (S().desk === 'finance') paintFinance(); }, 6000);
+          loadExpenses(true);
+        });
+        return;
+      }
+      if (act === 'undo' && s.expUndo) {
+        var u = s.expUndo; s.expUndo = null; clearTimeout(s.__expUndoT);
+        api('/api/finance/expenses', { method: 'DELETE', body: { id: u.id, restore: true } }).then(function () { loadExpenses(true); });
+      }
+    });
+  }
   function gateHtml(on) {
     var g = S().finGate || {};
     return '<div class="gate' + (on ? ' on' : '') + '" id="gate"><div class="gbox' + (g.shake ? ' shake' : '') + '" id="gbox"><div class="ic">Locked</div><h3>Financials</h3><p>Enter your code, then press Return.</p>'
@@ -760,7 +851,8 @@
       var fx = fixtureOn();
       var unlocked = fx ? !s.finFxLocked : !!(s.finUnlocked && s.finance && s.finance.locked === false);
       var data = fx ? fixtureFinance() : (unlocked ? s.finance : null);
-      paintInto(root, financeHtml(data, unlocked) + gateHtml(!unlocked));
+      paintInto(root, financeHtml(data, unlocked) + (unlocked && !fx ? expensesHtml(s) : '') + gateHtml(!unlocked));
+      if (unlocked && !fx) { bindExpenses(root); loadExpenses(false); }
       var g = s.finGate || {};
       if (g.shake) setTimeout(function () { var b = root.getElementById('gbox'); if (b) b.classList.remove('shake'); g.shake = false; }, 400);
       if (!unlocked && s.desk === 'finance') setTimeout(function () { var i = root.getElementById('code'); if (i && !i.disabled) i.focus(); }, 30);
@@ -808,7 +900,7 @@
       var s = S();
       if (fixtureOn()) { s.finFxLocked = true; paintFinance(); return; }
       s.finUnlocked = false;
-      s.finance = null;
+      s.finance = null; s.expData = null; s.expEdit = null;
       s.__finChecked = true;
       try { sessionStorage.removeItem('cr_fin_until'); } catch (e) {}
       paintFinance();
@@ -827,7 +919,7 @@
   /* Leaving the page: switchView's lockFinance(true) posts the lock; reset the per-visit check here. */
   function onDeskChange() {
     var s = S();
-    if (s.desk !== 'finance') { s.__finChecked = false; s.finGate = {}; }
+    if (s.desk !== 'finance') { s.__finChecked = false; s.finGate = {}; s.expData = null; s.expEdit = null; }
   }
 
   /* ===================== wiring ===================== */

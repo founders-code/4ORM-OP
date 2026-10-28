@@ -250,3 +250,10 @@ button{font:inherit;cursor:pointer}
 .qc.td .c-n,.mc.td .c-n{color:#ff4d8d!important;font-weight:850}
 .rail .seg{box-shadow:0 0 8px currentColor}
 .rail .next,.rail .nx,.rail .card{background:linear-gradient(140deg,#121a44,#0e1430)!important;border:1px solid rgba(120,150,255,.18)}
+
+/* $ switch: recurring bills on the calendar, off by default */
+.xpbtn{font:inherit;font-weight:900;font-size:14px;width:32px;height:32px;margin-left:8px;border-radius:9px;border:1px solid rgba(120,150,255,.26);background:rgba(255,255,255,.04);color:#a3b0d2;cursor:pointer;padding:0;flex:none}
+.xpbtn:hover{color:#e9eefa;border-color:rgba(120,150,255,.45)}
+.xpbtn.on{background:rgba(255,181,71,.16);border-color:#ffb547;color:#ffd08a}
+.mp.xpp{display:flex;justify-content:space-between;gap:6px;font-size:11px;font-weight:800;border-radius:999px;padding:1px 8px;margin-top:3px;background:rgba(255,181,71,.13);color:#ffd08a;border:1px solid rgba(255,181,71,.35);white-space:nowrap;overflow:hidden}
+.mp.xpp span{overflow:hidden;text-overflow:ellipsis}.mp.xpp b{font-weight:800;flex:none}

@@ -19,7 +19,7 @@ window.mountRedesignCalendar = function (root, opts) {
   function escH(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
 let TODAY=opts.today||new Date();
-const C={meet:'#1a4aa8',inv:'#8a6a08',pay:'#5a3ea0',mile:'#3a6a14',hol:'#0e6e66'};
+const C={meet:'#1a4aa8',inv:'#8a6a08',pay:'#5a3ea0',mile:'#3a6a14',hol:'#0e6e66',xp:'#ffb547'};
 function darkenCal(c){
   var m=String(c||'').match(/#([0-9a-f]{6})/i);
   if(!m) return C.meet;
@@ -155,7 +155,7 @@ function wkPill(ws,we,tws){const n=Math.round((ws-tws)/6048e5);let p='';
  for(let k=1;k<=3;k++){const t=new Date(TODAY.getFullYear(),TODAY.getMonth()+k,TODAY.getDate());if(t>=ws&&t<=we)p+=`<em class="mo">${k} month${k>1?'s':''} out</em>`;}
  return p;}
 function firstHour(keys){const hs=E.filter(x=>!x.all&&keys.indexOf(x.d)>=0&&visible(x)).map(x=>x.s);const f=hs.length?Math.min.apply(null,hs):7;return Math.max(0,Math.min(7,Math.floor(f)))}
-function render(){
+function render(){if(XP&&XP.on)xpApply();
  root.querySelectorAll('#views span').forEach(s=>s.classList.toggle('on',s.dataset.v==view));
  body.onscroll=null;
  if(view=='week'){
@@ -185,7 +185,7 @@ function render(){
      const alls=E.filter(x=>x.d==k&&x.all&&visible(x)),tim=E.filter(x=>x.d==k&&!x.all&&visible(x)).sort((a,b)=>a.s-b.s);
      const lbl=first?`<span>${MON[d.getMonth()].slice(0,3)} 1</span>`:(same(d,TODAY)?`<span>${MON[d.getMonth()].slice(0,3)} ${d.getDate()}</span>`:d.getDate());
      block+=`<div class="qc mc${oth?' oth':''}${first?' first':''}${same(d,TODAY)?' td':''}" data-action="cal-cell" data-d="${k}"><div class="c-n">${lbl}</div>`;
-     const items=[...alls.map(x=>`<div class="mp ad" style="color:${C[x.c]}">${escH(x.t)}</div>`),...tim.map(x=>`<div class="mp"><em style="background:${C[x.c]}"></em>${escH(x.t)}<span class="tm">${fmt(x.s)}</span></div>`)];
+     const items=[...alls.map(x=>x.xp?`<div class="mp xpp" title="${escH(x.t)}"><span>${escH(x.n)}</span><b>${escH(x.a)}</b></div>`:`<div class="mp ad" style="color:${C[x.c]}">${escH(x.t)}</div>`),...tim.map(x=>`<div class="mp"><em style="background:${C[x.c]}"></em>${escH(x.t)}<span class="tm">${fmt(x.s)}</span></div>`)];
      block+=items.slice(0,4).join('')+(items.length>4?`<div class="more" data-action="cal-more" data-d="${k}">${items.length-4} more...</div>`:'');
      block+=`</div>`;}
     block+=`</div>`;s=add(s,7);}
@@ -227,6 +227,26 @@ function render(){
 }
 gid('views').onclick=e=>{const v=e.target.dataset.v;if(v){view=v;render()}};
 mini();ribbon();nextCard();render();
+// ---------- EXPENSES ($) ----------
+/* A small $ on the calendar bar. Off every time the calendar opens, so nobody looking at the screen sees bills.
+   On: each recurring bill from Financials > Monthly expenses shows as a pill on the day it comes out. Never written to Google. */
+var XP={on:false,list:null,busy:false};
+function xpMoney(n){return '$'+(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function xpApply(){for(let i=E.length-1;i>=0;i--)if(E[i].xp)E.splice(i,1);
+  if(!XP.on||!XP.list)return;
+  const base=new Date(focus.getFullYear(),focus.getMonth()-13,1);
+  for(let k=0;k<27;k++){const y=base.getFullYear()+Math.floor((base.getMonth()+k)/12),mo=(base.getMonth()+k)%12;const dim=new Date(y,mo+1,0).getDate();
+    XP.list.forEach(e=>{if(e.freq==='y'&&Number(e.month)!==mo+1)return;const d=Math.min(Number(e.day)||1,dim);
+      E.push({d:ymd(new Date(y,mo,d)),t:e.name+' '+xpMoney(e.amount),n:e.name,a:xpMoney(e.amount),c:'xp',all:1,xp:1})})}}
+(function xpButton(){const vw=gid('views');if(!vw||!vw.parentNode||vw.parentNode.querySelector('.xpbtn'))return;
+  const b=window.document.createElement('button');b.type='button';b.className='xpbtn';b.textContent='$';b.title='Show payments';b.setAttribute('aria-label','Show payments');b.setAttribute('aria-pressed','false');
+  vw.parentNode.insertBefore(b,vw.nextSibling);
+  on(b,'click',function(){
+    if(XP.busy)return;XP.on=!XP.on;b.classList.toggle('on',XP.on);b.setAttribute('aria-pressed',String(XP.on));
+    if(XP.on&&!XP.list){XP.busy=true;const fn=typeof window.authFetch==='function'?window.authFetch:fetch;
+      fn('/api/expense-days',{credentials:'same-origin',quiet:true}).then(r=>r&&r.ok?r.json():{expenses:[]}).then(j=>{XP.list=(j&&j.expenses)||[];XP.busy=false;xpApply();render()}).catch(()=>{XP.list=[];XP.busy=false;render()});return}
+    xpApply();render()});
+})();
 // ===== Fantastical-style interactions =====
 const hist=[];
 const snap=h=>Math.round(h*4)/4;

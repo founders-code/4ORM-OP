@@ -228,10 +228,10 @@ svg.links{position:absolute;top:0;z-index:1;pointer-events:none;overflow:visible
 .dot{position:absolute;top:10px;width:8px;height:8px;border-radius:50%;background:var(--c)}
 .dot.past{opacity:.35}
 .sname{position:absolute;top:0;height:28px;border:0;cursor:pointer;font-weight:600;font-size:13px;padding:0 9px;border-radius:7px;background:#fff;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c) 45%,transparent);white-space:nowrap}
-.canvas.focus [data-id]:not(.lit){opacity:.16}
-.canvas.focus .links path:not(.lit),.canvas.focus .links circle:not(.lit){opacity:.05}
-.canvas.focus .links path.lit{opacity:1;stroke-width:2.6}
-.canvas.focus .links circle.lit{opacity:1}
+.canvas.hfocus [data-id]:not(.lit){opacity:.16}
+.canvas.hfocus .links path:not(.lit),.canvas.hfocus .links circle:not(.lit){opacity:.05}
+.canvas.hfocus .links path.lit{opacity:1;stroke-width:2.6}
+.canvas.hfocus .links circle.lit{opacity:1}
 .flash{animation:flash 1.1s ease 2}
 @keyframes flash{50%{filter:brightness(1.2);transform:scale(1.03)}}
 
@@ -641,3 +641,8 @@ body.th-neon .main{color:#eef2fc}
 .port-body.neon .newbox input,.port-body .newbox input{background:#0e1430!important;color:#eef2fc!important;border-color:#3b82ff!important}
 .port-body.neon .newbox small,.port-body .newbox small{color:#a3b0d2!important}
 .port-body.neon .newbox button.x2,.port-body .newbox button.x2{background:rgba(255,255,255,.06)!important;color:#e9eefa!important}
+
+/* drag to move on the timeline */
+.canvas [data-id]:not(.series){touch-action:pan-y}
+.canvas [data-id].moving{z-index:6;cursor:grabbing;box-shadow:0 0 0 2px #3b82ff,0 10px 26px rgba(0,0,0,.5);transition:none!important}
+.canvas .mvtag{position:absolute;z-index:7;pointer-events:none;background:#0e1430;color:#e9eefa;border:1px solid rgba(120,150,255,.35);border-radius:7px;padding:2px 8px;font:700 12px Inter,system-ui,sans-serif;white-space:nowrap}

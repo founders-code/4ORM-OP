@@ -298,13 +298,49 @@ function chain(id){const it=byId[id];const set=new Set([id]);
   if(it.kind==='goal'){feeders(it).forEach(i=>set.add(i.id));return set}
   const up=i=>byId[i].dep.forEach(d=>{if(!set.has(d)){set.add(d);up(d)}});const down=i=>(rev[i]||[]).forEach(d=>{if(!set.has(d)){set.add(d);down(d)}});up(id);down(id);
   if(it.g)set.add(it.g);return set}
-function applyFocus(id){if(!byId[id])return;const set=chain(id);canvas.classList.add('focus');
+function applyFocus(id){if(!byId[id])return;const set=chain(id);canvas.classList.add('hfocus');
   canvas.querySelectorAll('[data-id]').forEach(el=>el.classList.toggle('lit',set.has(el.dataset.id)));
   canvas.querySelectorAll('.links path,.links circle').forEach(el=>el.classList.toggle('lit',set.has(el.dataset.a)&&set.has(el.dataset.b)))}
-function clearFocus(){if(pinned){applyFocus(pinned);return}canvas.classList.remove('focus');canvas.querySelectorAll('.lit').forEach(el=>el.classList.remove('lit'))}
+function clearFocus(){if(pinned){applyFocus(pinned);return}canvas.classList.remove('hfocus');canvas.querySelectorAll('.lit').forEach(el=>el.classList.remove('lit'))}
 let hov=null;
-canvas.addEventListener('pointerover',e=>{const el=e.target.closest('[data-id]');const id=el?el.dataset.id:null;if(id===hov)return;hov=id;id?applyFocus(id):clearFocus()});
-canvas.addEventListener('pointerleave',()=>{hov=null;clearFocus()});
+/* Hover highlight. Uses its own class (hfocus): the plain .focus class is also the Focus strip, which adds padding and margin, so every hover used to shift the board. A short dwell stops the board flashing as the pointer crosses gaps and link lines. */
+let hovT=null;
+canvas.addEventListener('pointerover',e=>{if(mv&&mv.on)return;const el=e.target.closest('[data-id]');const id=el?el.dataset.id:null;if(id===hov)return;
+  if(!id&&e.target.closest('.links'))return;
+  hov=id;clearTimeout(hovT);hovT=setTimeout(()=>{if(mv&&mv.on)return;hov?applyFocus(hov):clearFocus()},id?90:160)});
+canvas.addEventListener('pointerleave',()=>{hov=null;clearTimeout(hovT);hovT=setTimeout(clearFocus,160)});
+
+/* Grab any item on the timeline and drag it left or right. It moves by whole days, keeps its length,
+   pushes anything that depends on it forward if they would now overlap, saves every changed item, and offers Undo. */
+let mv=null,mvBlock=0;
+function mvToast(msg,undo){let t=window.document.getElementById('mvToast');if(!t){t=window.document.createElement('div');t.id='mvToast';t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:90;background:#0e1430;color:#e9eefa;border:1px solid rgba(120,150,255,.3);border-radius:10px;padding:9px 14px;font:600 13px Inter,system-ui,sans-serif;display:flex;gap:12px;align-items:center;box-shadow:0 12px 30px rgba(0,0,0,.5)';window.document.body.appendChild(t)}
+  t.innerHTML='<span></span><button type="button" style="font:inherit;font-weight:800;color:#8dbaff;background:none;border:0;cursor:pointer">Undo</button>';t.firstChild.textContent=msg;t.style.display='flex';
+  t.lastChild.onclick=()=>{t.style.display='none';undo()};clearTimeout(t._h);t._h=setTimeout(()=>{t.style.display='none'},6000)}
+canvas.addEventListener('pointerdown',e=>{
+  if(dg||(e.button!=null&&e.button!==0))return;const el=e.target.closest('[data-id]');if(!el||el.classList.contains('series'))return;
+  const it=byId[el.dataset.id];if(!it||it.kind==='series')return;
+  mv={el,it,x0:e.clientX,on:false,d:0,id:e.pointerId,base:parseFloat(el.style.left)||0};
+});
+canvas.addEventListener('pointermove',e=>{if(!mv||e.pointerId!==mv.id)return;const dx=e.clientX-mv.x0;
+  if(!mv.on){if(Math.abs(dx)<5)return;mv.on=true;clearTimeout(hovT);clearFocus();try{canvas.setPointerCapture(e.pointerId)}catch(_){}mv.el.classList.add('moving');
+    mv.tag=window.document.createElement('div');mv.tag.className='mvtag';mv.el.parentNode.appendChild(mv.tag)}
+  const d=Math.round(dx/ppd);const lo=START-mv.it.s,hi=END-mv.it.e;mv.d=Math.max(lo,Math.min(hi,d));
+  mv.el.style.transform='translateX('+(mv.d*ppd)+'px)';
+  const s=mv.it.s+mv.d,en=mv.it.e+mv.d;mv.tag.textContent=(s===en?fmt(s):fmt(s)+' to '+fmt(en))+(mv.d?'  ('+(mv.d>0?'+':'')+mv.d+'d)':'');
+  mv.tag.style.left=(mv.base+mv.d*ppd)+'px';mv.tag.style.top=((parseFloat(mv.el.style.top)||0)-24)+'px';e.preventDefault()});
+function endMove(e){if(!mv)return;const m=mv;mv=null;if(!m.on)return;
+  mvBlock=Date.now();m.el.classList.remove('moving');m.el.style.transform='';m.tag&&m.tag.remove();if(!m.d)return;
+  const before=new Map();const keep=i=>{if(!before.has(i.id))before.set(i.id,{s:i.s,e:i.e})};
+  keep(m.it);m.it.s+=m.d;m.it.e+=m.d;
+  const push=(id)=>{const p=byId[id];(rev[id]||[]).forEach(cid=>{const c=byId[cid];if(!c||c.kind==='series'||c.kind==='goal'||c.st==='done')return;
+    if(c.s<=p.e){const by=p.e+1-c.s;if(c.e+by>END)return;keep(c);c.s+=by;c.e+=by;push(cid)}})};
+  push(m.it.id);
+  before.forEach((_,id)=>persistItem(byId[id]));index();renderAll();
+  const moved=before.size-1;
+  mvToast('Moved '+m.it.n+' to '+(m.it.s===m.it.e?fmt(m.it.s):fmt(m.it.s)+' to '+fmt(m.it.e))+(moved?' · '+moved+' after it moved too':''),()=>{before.forEach((v,id)=>{const i=byId[id];if(!i)return;i.s=v.s;i.e=v.e;persistItem(i)});index();renderAll()});
+}
+canvas.addEventListener('pointerup',endMove);canvas.addEventListener('pointercancel',endMove);
+canvas.addEventListener('click',e=>{if(Date.now()-mvBlock<300){e.stopPropagation();e.preventDefault()}},true);
 
 /* List */
 function wouldCycle(item,cand){const seen=new Set();const up=i=>{if(i===item)return true;if(seen.has(i))return false;seen.add(i);return byId[i].dep.some(up)};return up(cand)}

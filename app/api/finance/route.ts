@@ -8,6 +8,7 @@ import {
   financeUnlockValue,
   financeUnlocked,
 } from '@/lib/finance';
+import { listExpenses } from '@/lib/expenses';
 import { fail } from '@/lib/log';
 import { takeRateLimit } from '@/lib/rate-limit';
 import { openBoard, sessionOwner } from '@/lib/session';
@@ -37,7 +38,20 @@ export async function GET() {
     if (!financeUnlocked(cookies().get(FINANCE_COOKIE)?.value, gate.session.userId)) {
       return NextResponse.json({ locked: true }, { status: 403 });
     }
-    return NextResponse.json({ locked: false, ...financeDesk() });
+    const desk = financeDesk();
+    /* "Where the money goes": the recurring bills from the expenses list, monthly equivalent, biggest first. */
+    if (gate.session.sql) {
+      try {
+        const list = await listExpenses(gate.session.sql, gate.ownerId);
+        desk.expenses = list
+          .map((e) => ({ name: e.name + (e.freq === 'y' ? ' (yearly / 12)' : ''), amount: Math.round((e.freq === 'y' ? e.amount / 12 : e.amount) * 100) / 100 }))
+          .sort((a, b) => b.amount - a.amount)
+          .slice(0, 8);
+      } catch (err) {
+        fail('finance_expenses', err);
+      }
+    }
+    return NextResponse.json({ locked: false, ...desk });
   } catch (err) {
     fail('finance_failed', err);
     return NextResponse.json({ error: 'Finance is unavailable.' }, { status: 503 });
