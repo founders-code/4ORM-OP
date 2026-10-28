@@ -348,9 +348,13 @@
   function paintContacts() {
     try {
       try {
-        var qs = new URLSearchParams(String(location.search || ''));
-        if (qs.get('lists') === '1' || qs.get('tab') === 'lists') S().peopleTab = 'lists';
-        if (qs.get('tab') === 'contacts') S().peopleTab = 'contacts';
+        /* The URL picks the tab once, on arrival. After that the switch decides, or the page flips back on every repaint. */
+        if (!S().__peopleUrlRead) {
+          S().__peopleUrlRead = true;
+          var qs = new URLSearchParams(String(location.search || ''));
+          if (qs.get('lists') === '1' || qs.get('tab') === 'lists') S().peopleTab = 'lists';
+          if (qs.get('tab') === 'contacts') S().peopleTab = 'contacts';
+        }
       } catch (e) {}
     } catch (e) {}
     Promise.all([loadCss('contacts'), loadCss('outreach'), loadCss('neon'), loadCss('contrastP10')]).then(function () { whenFixture(function () {
@@ -423,6 +427,7 @@
   var peopleActions = {
     'people-tab': function (el) {
       S().peopleTab = attr(el, 'data-tab') || 'contacts';
+      try { var u = new URL(location.href); u.searchParams.set('tab', S().peopleTab); u.searchParams.delete('lists'); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch (e) {}
       if (S().peopleTab === 'lists' && !S().peopleLists) {
         api('/api/reach-out?lists=1').then(readJson).then(function (d) {
           S().peopleLists = (d && d.lists) || [];

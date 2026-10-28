@@ -131,3 +131,15 @@
 .smenu .it.red{color:#d6334e}
 .smenu .ren{display:flex;gap:6px;padding:4px 6px}
 .smenu .ren input{flex:1;height:30px;border:1.5px solid #2e6bf2;border-radius:7px;padding:0 8px;font:inherit;font-size:12.5px;outline:none}
+
+/* Text follows the surface: these cards are white, so their text is the dark ramp whatever the page tokens say. */
+.sp{color:#101a33!important}
+.sp h4{color:#101a33!important}
+.sp .org,.facts small,.sp .ft .bund{color:#5b6678!important}
+.sp .why{color:#3a4560!important}.sp .why span{color:#5b6678!important}
+.facts b{color:#101a33!important}
+.sp>.chk div{color:#c8d1ea!important}.sp>.chk div.y{color:#fff!important}.sp>.chk b{color:#fff!important}
+.sp .ring span{color:#3a4560!important}
+.sp .ft .go{color:#1d4fd8!important}
+.nx{background:#eaf1fe!important;color:#1d3f9e!important}
+.nx.red{background:#8a1f32!important;color:#fff!important}.nx.amb{background:#8a5a08!important;color:#fff!important}.nx.grn{background:#0c6b46!important;color:#fff!important}

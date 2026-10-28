@@ -113,7 +113,7 @@
     if (d.linkedin) {
       window.STATE.linkedin = d.linkedin;
       paintRoom();
-      if (desk() === 'people' && typeof window.paintRedesignContacts === 'function') window.paintRedesignContacts();
+      if (desk() === 'people' && typeof window.paintRedesignContacts === 'function') { /* data saved to STATE; the page shows it on the next visit instead of repainting under you */ }
       else if (desk() === 'people' && typeof renderPeople === 'function') renderPeople(document.getElementById('pSearch') ? document.getElementById('pSearch').value : '');
     }
     if (d.calendar) {
@@ -147,7 +147,7 @@
     if (d.people) {
       window.STATE.contacts = d.people;
       paintRoom();
-      if (desk() === 'people' && typeof window.paintRedesignContacts === 'function') window.paintRedesignContacts();
+      if (desk() === 'people' && typeof window.paintRedesignContacts === 'function') { /* data saved to STATE; the page shows it on the next visit instead of repainting under you */ }
       else if (desk() === 'people' && typeof renderPeople === 'function') renderPeople(document.getElementById('pSearch') ? document.getElementById('pSearch').value : '');
       if (desk() === 'contacts' && typeof renderContacts === 'function') renderContacts(document.getElementById('cSearch') ? document.getElementById('cSearch').value : '');
     }

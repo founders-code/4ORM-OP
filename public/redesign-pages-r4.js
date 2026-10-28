@@ -1050,6 +1050,15 @@
       markCur();
     }
     function openCard(ci, si) {
+      /* A real space opens in the full workbench (documents, links, people, notes, tasks, ready for email, history).
+         The quick panel is only for sample data. */
+      var real = CATS[ci] && CATS[ci].sp[si];
+      if (real && real.id && !/^fx/.test(String(real.id)) && window.deskActions && window.deskActions['space-open']) {
+        var t0 = document.createElement('span');
+        t0.setAttribute('data-id', real.id);
+        window.deskActions['space-open'](t0, root);
+        return;
+      }
       var host = document.getElementById('spacesDesk');
       savedScroll = (host && host.scrollTop) || (root.scrollTop) || 0;
       cur = { ci: ci, si: si };

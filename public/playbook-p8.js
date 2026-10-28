@@ -157,6 +157,12 @@
         })();
       });
     });
+    /* Two views: Full week (the compact grid, where the page opens) and Focus today. Keep whichever is on across repaints. */
+    if (ctr) {
+      var want = document.body.classList.contains('focusday') ? 'focusday' : 'compact';
+      var btn = ctr.querySelector('button[data-m="' + want + '"]');
+      if (btn && !(document.body.classList.contains(want) && btn.classList.contains('on'))) btn.click();
+    }
     var apply = $('vSave');
     if (apply) apply.addEventListener('click', function () {
       var tx = $('vTx');

@@ -56,6 +56,7 @@ export async function POST(req: Request) {
           notes: String(r.notes || ''),
           city: String(r.city || ''),
         })),
+        String(body.file || ''),
       );
       return NextResponse.json({ ok: true, ...list, undo: true });
     }

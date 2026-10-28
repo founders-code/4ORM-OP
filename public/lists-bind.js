@@ -115,6 +115,16 @@
       undo: null,
       loading: true,
     };
+    /* The page repaints (live updates, drawer closing). Keep the chosen list, role, filter and search across repaints
+       so the view never jumps back to the first list. */
+    var KEEP = window.__listsKeep = window.__listsKeep || {};
+    if (KEEP.role) state.role = KEEP.role;
+    if (KEEP.filt) state.filt = KEEP.filt;
+    if (KEEP.q) state.q = KEEP.q;
+    function pickCur(lists) {
+      var want = KEEP.cur;
+      return (want && lists.find(function (l) { return l.key === want; })) || (state.cur && lists.find(function (l) { return l.key === state.cur.key; })) || lists[0] || null;
+    }
 
     function $(sel) { return root.querySelector(sel); }
     function toast(m, undo) {
@@ -303,7 +313,7 @@
       if (nav && state.mode === 'lists') {
         nav.innerHTML = state.lists.map(function (l) {
           var on = state.cur && state.cur.key === l.key;
-          return '<button type="button" class="' + (on ? 'on' : '') + '" data-l="' + esc(l.key) + '">' + esc(l.name) + '<small>' + esc(String(l.count || 0)) + '</small></button>';
+          return '<button type="button" class="' + (on ? 'on' : '') + '" data-l="' + esc(l.key) + '"' + (l.file ? ' title="' + esc(l.file) + '"' : '') + '><span style="display:flex;flex-direction:column;min-width:0;text-align:left"><span>' + esc(l.name) + '</span>' + (l.kind === 'uploaded' ? '<em style="font-style:normal;font-size:11px;font-weight:600;color:#a3b0d2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(l.file || l.sub || 'uploaded list') + '</em>' : '') + '</span><small>' + esc(String(l.count || 0)) + '</small></button>';
         }).join('') || (state.loading ? '<button type="button"><b>Loading lists</b><small>—</small></button>' : '');
         nav.querySelectorAll('button[data-l]').forEach(function (el) {
           el.onclick = function () {
@@ -549,7 +559,9 @@
 
     function render() {
       if (state.mode === 'contacts') state.cur = contactsAsList();
-      else if (!state.cur && state.lists.length) state.cur = state.lists[0];
+      else if (!state.cur && state.lists.length) state.cur = pickCur(state.lists);
+      if (state.mode === 'lists' && state.cur && state.cur.key) KEEP.cur = state.cur.key;
+      KEEP.role = state.role; KEEP.filt = state.filt; KEEP.q = state.q;
       renderNav();
       var name = $('#lname');
       var stat = $('#lstat');
@@ -663,7 +675,7 @@
       render();
       if (window.STATE && window.STATE.peopleLists && window.STATE.peopleLists.length && !state.lists.length) {
         state.lists = window.STATE.peopleLists;
-        state.cur = state.lists[0] || null;
+        state.cur = pickCur(state.lists);
         state.loading = false;
         render();
       }
@@ -671,7 +683,7 @@
         var lists = (r.data && r.data.lists) || [];
         state.lists = lists;
         state.loading = false;
-        if (!state.cur || !lists.find(function (l) { return l.key === state.cur.key; })) state.cur = lists[0] || null;
+        state.cur = pickCur(lists);
         if (window.STATE) window.STATE.peopleLists = lists;
         render();
         return lists;
@@ -684,6 +696,8 @@
     }
 
     var search = $('#lsearch');
+    if (search && state.q && !search.value) search.value = state.q;
+    (function () { var fb = $('#lfilt'); if (!fb || !state.filt) return; fb.querySelectorAll('button[data-f]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-f') === state.filt); }); })();
     if (search) search.oninput = function (e) { state.q = String(e.target.value || '').toLowerCase(); render(); };
     var filt = $('#lfilt');
     if (filt) filt.querySelectorAll('button[data-f]').forEach(function (b) {
@@ -736,7 +750,7 @@
         if (g) g.onclick = function () {
           var nm = ($('#ulname') && $('#ulname').value) || base;
           closeModal();
-          api('/api/reach-out', { method: 'POST', body: { action: 'upload-list', name: nm, rows: parsed.rows } }).then(function (r) {
+          api('/api/reach-out', { method: 'POST', body: { action: 'upload-list', name: nm, file: f.name || '', rows: parsed.rows } }).then(function (r) {
             if (!r.ok) { toast('Could not upload that list'); return; }
             var id = r.data && r.data.id;
             toast('List uploaded · ' + ((r.data && r.data.matched) || 0) + ' matched by email', id ? function () {

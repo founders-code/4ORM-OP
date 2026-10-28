@@ -39,6 +39,8 @@ export type ReachList = {
   count: number;
   done: number;
   people: ReachListPerson[];
+  /** Uploaded lists: the CSV file the list came from. */
+  file?: string;
 };
 
 const DAYS_FALLBACK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -367,7 +369,7 @@ export async function buildCallLists(sql: Sql, ownerId: string, userId: string):
   let custom: ReachList[] = [];
   try {
     const lists = await sql`
-      SELECT id, name, kind, source
+      SELECT id, name, kind, source, created_at
       FROM contact_lists
       WHERE owner_id = ${ownerId} AND deleted_at IS NULL
         AND name NOT ILIKE 'Pre-seed%'
@@ -413,10 +415,15 @@ export async function buildCallLists(sql: Sql, ownerId: string, userId: string):
           rank: Number(r.position) || ix + 1,
         } as ReachListPerson;
       });
+      const src = String(list.source || '');
+      const file = src.startsWith('csv:') ? src.slice(4) : '';
+      let when = '';
+      try { when = list.created_at ? new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', day: 'numeric', month: 'short' }).format(new Date(String(list.created_at))) : ''; } catch { when = ''; }
       custom.push({
         id: String(list.id),
         key: `custom:${list.id}`,
         name: String(list.name),
+        file: file || (when ? `CSV uploaded ${when}` : 'CSV upload'),
         sub: `${people.length} people · uploaded`,
         kind: 'uploaded',
         count: people.length,
@@ -626,12 +633,13 @@ export type UploadRow = {
 };
 
 /** Create a list from mapped CSV rows; match existing contacts by email. */
-export async function uploadList(sql: Sql, ownerId: string, name: string, rows: UploadRow[]) {
+export async function uploadList(sql: Sql, ownerId: string, name: string, rows: UploadRow[], fileName = '') {
   const clean = clip(name, 80) || 'Uploaded list';
+  const source = fileName ? `csv:${clip(fileName, 160)}` : 'csv';
   const list = await sql`
     INSERT INTO contact_lists (owner_id, name, kind, source, columns)
     VALUES (
-      ${ownerId}, ${clean}, 'uploaded', 'csv',
+      ${ownerId}, ${clean}, 'uploaded', ${source},
       ${JSON.stringify(['Name', 'Company', 'Phone', 'Email', 'Notes'])}::jsonb
     )
     RETURNING id, name

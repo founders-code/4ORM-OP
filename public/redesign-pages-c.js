@@ -632,7 +632,7 @@
       markReady('playDesk');
       return;
     }
-    loadSnip('/pbwrap-snippet.html?v=6', function (html) {
+    loadSnip('/pbwrap-snippet.html?v=7', function (html) {
       try {
         wrap.innerHTML = html || '<div class="pbwrap"></div>';
         if (!fixtureOn()) {
