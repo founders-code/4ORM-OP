@@ -265,8 +265,24 @@ export async function addTouch(sql: Sql, ownerId: string, recordId: string, t: {
   return row[0];
 }
 
+/** Undo puts the record back: the touch goes, last touch and status come from what is left, and the note line it added is taken off. */
 export async function undoTouch(sql: Sql, ownerId: string, touchId: number) {
-  await sql`UPDATE growth_touches SET deleted_at = now() WHERE owner_id = ${ownerId} AND id = ${touchId}`;
+  const gone = (await sql`UPDATE growth_touches SET deleted_at = now() WHERE owner_id = ${ownerId} AND id = ${touchId} AND deleted_at IS NULL
+    RETURNING record_id, outcome, channel, note`)[0] as Record<string, unknown> | undefined;
+  if (!gone) return;
+  const rid = String(gone.record_id);
+  const left = (await sql`SELECT at, outcome FROM growth_touches WHERE owner_id = ${ownerId} AND record_id = ${rid} AND deleted_at IS NULL ORDER BY at DESC LIMIT 1`)[0] as Record<string, unknown> | undefined;
+  const cur = (await sql`SELECT notes FROM growth_records WHERE owner_id = ${ownerId} AND id = ${rid}`)[0] as Record<string, unknown> | undefined;
+  let notes = String(cur?.notes || '');
+  const tail = gone.note ? `${s(gone.outcome, 80) || s(gone.channel, 40) || 'Note'}: ${s(gone.note, 1000)}` : '';
+  if (tail) {
+    const lines = notes.split('\n');
+    const ix = lines.findIndex((l) => l.endsWith(tail));
+    if (ix >= 0) { lines.splice(ix, 1); notes = lines.join('\n'); }
+  }
+  await sql`UPDATE growth_records SET notes = ${notes}, last_touch = ${left ? (left.at as string) : null},
+      status = ${left ? (String(left.outcome || '') || 'Contacted') : 'Not contacted'}, updated_at = now()
+    WHERE owner_id = ${ownerId} AND id = ${rid}`;
 }
 
 const LIST_COLS = (sql: Sql, ownerId: string, list: string | null) => (list
