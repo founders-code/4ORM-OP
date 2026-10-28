@@ -15,7 +15,8 @@ export async function POST(req: Request) {
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const title = String(body.title || body.n || 'New item').trim().slice(0, 180);
     const pipeline = String(body.pipeline || body.p || 'corporate');
-    const kind = pipeline === 'milestones' || pipeline === 'goals' ? 'milestone' : String(body.kind || 'span');
+    const rawKind = String(body.kind || 'span');
+    const kind = pipeline === 'milestones' || pipeline === 'goals' ? 'milestone' : rawKind === 'ms' ? 'key_date' : ['span', 'key_date', 'recurring'].includes(rawKind) ? rawKind : 'span';
     const today = new Date().toISOString().slice(0, 10);
     const due = String(body.due_date || body.e || '') || today;
     const start = String(body.start_date || body.s || today);

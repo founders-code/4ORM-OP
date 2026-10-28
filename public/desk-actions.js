@@ -2062,6 +2062,12 @@
       S().pipeNeedChip = attr(el, 'data-chip') || 'all';
       refresh('pipe');
     },
+    'pipe-need-toggle': function () {
+      var shut = !S().pipeNeedShut;
+      S().pipeNeedShut = shut;
+      try { localStorage.setItem('pipeNeedShut', shut ? '1' : ''); } catch (e) {}
+      refresh('pipe');
+    },
     'pipe-need-more': function () {
       S().pipeNeedAll = !S().pipeNeedAll;
       refresh('pipe');

@@ -110,7 +110,7 @@ export async function POST(req: Request) {
       });
     }
     const title = clean(body?.title, 180);
-    const noteBody = clean(body?.body, 4000);
+    const noteBody = clean(body?.body, 40000);
     const color = allowNoteColor(String(body?.color || 'yellow')) || 'yellow';
     if (!title) {
       const rows = await session.sql`
@@ -171,7 +171,7 @@ export async function PATCH(req: Request) {
     const id = String(body?.id || '');
     if (!ID.test(id)) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     const title = clean(body?.title, 180);
-    const noteBody = clean(body?.body, 4000);
+    const noteBody = clean(body?.body, 40000);
     const color = body?.color == null || body.color === '' ? null : allowNoteColor(String(body.color));
     if (body?.color && !color) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });
     if (body?.title != null && !title) return NextResponse.json({ error: 'Unavailable' }, { status: 400 });

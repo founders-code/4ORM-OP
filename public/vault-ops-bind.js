@@ -683,6 +683,127 @@
         var upt = $(root, '#upt'); if (upt) upt.textContent = '-';
       });
     }
+    /* Four tiles across the top: Spend, Scrape, Production log, Sites and social. A click opens that panel in a pop-up. */
+    var TILE = { spend: ['Spend', '#spendToggle', '#spendw'], scrape: ['Scrape', '#scrToggle', '#scrw'], prod: ['Production log', '#plToggle', '#plw'], sites: ['Sites and social', '#ssToggle', '#ssw'] };
+    var tpop = $(root, '#tpop'), tpbody = $(root, '#tpbody'), hold = $(root, '#tileHold'), tpOpen = null;
+    function tileClose() {
+      if (!tpOpen) return;
+      var sec = tpbody && tpbody.firstElementChild;
+      if (sec && hold) hold.appendChild(sec);
+      if (tpop) tpop.hidden = true;
+      tpOpen = null;
+    }
+    function tileOpen(k) {
+      var t = TILE[k]; if (!t || !tpop || !hold) return;
+      tileClose();
+      var wrapEl = $(root, t[2]);
+      var sec = wrapEl && wrapEl.closest('.con');
+      if (!sec) return;
+      tpbody.appendChild(sec);
+      var tt = $(root, '#tpt'); if (tt) tt.textContent = t[0];
+      if (wrapEl.hidden) { var btn = $(root, t[1]); if (btn) btn.click(); }
+      tpop.hidden = false;
+      tpOpen = k;
+    }
+    $$(root, '[data-tile]').forEach(function (b) { b.onclick = function () { tileOpen(b.getAttribute('data-tile')); }; });
+    var tpx = $(root, '#tpx'); if (tpx) tpx.onclick = tileClose;
+    if (tpop) tpop.addEventListener('click', function (e) { if (e.target === tpop) tileClose(); });
+    root.addEventListener('keydown', function (e) { if (e.key === 'Escape') tileClose(); });
+    /* Tile readings */
+    api('/api/ops/spend').then(function (r) { return r && r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (d) {
+      var el = $(root, '#t4spend'); if (!el || !d) return;
+      if (d.monthTotal != null) el.textContent = money2(d.monthTotal) + ' this month';
+    });
+    api('/api/ops/scrape').then(function (r) { return r && r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (d) {
+      var el = $(root, '#t4scr'), i = $(root, '#t4scri'); if (!el || !d) return;
+      el.textContent = d.last ? 'Last run ' + vanHM(d.last.at) : 'No run yet';
+      if (i) i.textContent = d.alert ? d.alert : ((d.missed || 0) + ' missed in 7 days');
+      var tile = el.closest('.tile4'); if (tile) tile.classList.toggle('bad', !!d.alert);
+    });
+    api('/api/ops/production').then(function (r) { return r && r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (d) {
+      var el = $(root, '#t4pl'); if (!el || !d || !d.days) return;
+      el.textContent = (d.days[0] ? d.days[0].entries.length : 0) + ' entries today';
+    });
+    api('/api/ops/sites').then(function (r) { return r && r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (d) {
+      var el = $(root, '#t4ss'); if (!el || !d) return;
+      var n = (d.drLog || []).length;
+      el.textContent = n + ' data room sign-in' + (n === 1 ? '' : 's');
+    });
+
+    /* System map: every part of 4ormop with a real check behind each box. */
+    var MAP = { nodes: [], edges: [] }, mapSel = null, onlyBadMap = false;
+    var LANES = ['HOSTING AND DATA', 'PAGES', 'WORK', 'OUTSIDE'];
+    function nodeXY(n) { return [20 + n.col * 192, 30 + n.lane * 132]; }
+    function paintMap() {
+      var svg = $(root, '#sysmap'); if (!svg) return;
+      var pos = {}; MAP.nodes.forEach(function (n) { pos[n.id] = n; });
+      var h = LANES.map(function (l, i) { return '<text class="lane" x="20" y="' + (22 + i * 132) + '">' + l + '</text>'; }).join('');
+      MAP.edges.forEach(function (e) {
+        var a = pos[e[0]], b = pos[e[1]]; if (!a || !b) return;
+        var A = nodeXY(a), B = nodeXY(b);
+        var x1 = A[0] + 88, y1 = A[1] + 60, x2 = B[0] + 88, y2 = B[1];
+        if (B[1] <= A[1]) { y1 = A[1]; y2 = B[1] + 60; }
+        var hot = a.state === 'down' || b.state === 'down';
+        h += '<path class="edge' + (hot ? ' hot' : '') + '" data-e="' + e[0] + '|' + e[1] + '" d="M' + x1 + ' ' + y1 + ' C ' + x1 + ' ' + ((y1 + y2) / 2) + ', ' + x2 + ' ' + ((y1 + y2) / 2) + ', ' + x2 + ' ' + y2 + '"/>';
+      });
+      MAP.nodes.forEach(function (n) {
+        var p = nodeXY(n);
+        h += '<g class="node ' + n.state + '" data-n="' + n.id + '" transform="translate(' + p[0] + ',' + (p[1] + 8) + ')"><title>' + escS(n.detail) + '</title><rect width="176" height="56" rx="10"/><text x="12" y="21">' + escS(n.name) + '</text><text class="s" x="12" y="37">' + escS(n.sub) + '</text><text class="st" x="12" y="50" style="fill:' + (n.state === 'ok' ? '#19d38a' : n.state === 'warn' ? '#ffb547' : '#ff5a6e') + '">' + (n.state === 'ok' ? 'OK' : n.state === 'warn' ? 'WARNING' : 'DOWN') + '</text></g>';
+      });
+      svg.setAttribute('viewBox', '0 0 1180 560');
+      svg.innerHTML = h;
+      $$(svg, '.node').forEach(function (g) { g.onclick = function () { selectNode(g.getAttribute('data-n')); }; });
+      var sum = $(root, '#mapSum');
+      if (sum) { sum.textContent = (MAP.down || 0) + ' down · ' + (MAP.warn || 0) + ' warning' + (MAP.warn === 1 ? '' : 's'); sum.className = 'pill ' + (MAP.down ? 'p-red' : MAP.warn ? 'p-amb' : 'p-grn'); }
+      paintTests(); paintIncs();
+    }
+    function selectNode(id) {
+      var svg = $(root, '#sysmap'); if (!svg) return;
+      if (mapSel === id) { clearMap(); return; }
+      mapSel = id;
+      var near = {}; near[id] = 1;
+      MAP.edges.forEach(function (e) { if (e[0] === id) near[e[1]] = 1; if (e[1] === id) near[e[0]] = 1; });
+      $$(svg, '.node').forEach(function (x) { var n = x.getAttribute('data-n'); x.classList.toggle('sel', n === id); x.classList.toggle('dim', !near[n]); });
+      $$(svg, '.edge').forEach(function (p) { var ab = p.getAttribute('data-e').split('|'); p.classList.toggle('lit', ab[0] === id || ab[1] === id); });
+      var n = MAP.nodes.filter(function (x) { return x.id === id; })[0];
+      if (n) toast(root, n.name + ': ' + n.detail);
+      var row = $(root, '[data-t="' + id + '"]'); if (row && row.scrollIntoView) row.scrollIntoView({ block: 'nearest' });
+    }
+    function clearMap() {
+      mapSel = null; var svg = $(root, '#sysmap'); if (!svg) return;
+      $$(svg, '.node').forEach(function (x) { x.classList.remove('sel', 'dim'); });
+      $$(svg, '.edge').forEach(function (p) { p.classList.remove('lit'); });
+    }
+    function paintTests() {
+      var tl = $(root, '#tlist'); if (!tl) return;
+      var rows = MAP.nodes.filter(function (n) { return !onlyBadMap || n.state !== 'ok'; });
+      tl.innerHTML = rows.map(function (n) {
+        return '<div class="trow" data-t="' + n.id + '"><i class="' + n.state + '"></i><span><b>' + escS(n.name) + '</b> <small>' + escS(n.detail) + '</small></span><span class="ms">' + (n.ms != null ? n.ms + ' ms' : '') + '</span><span class="fix" data-run="' + n.id + '">Run</span></div>';
+      }).join('') || '<div style="color:#a3b0d2;padding:8px 0">Everything is OK.</div>';
+      $$(tl, '[data-run]').forEach(function (b) { b.onclick = function () { loadMap(b.getAttribute('data-run')); }; });
+    }
+    function paintIncs() {
+      var box = $(root, '#incs'); if (!box) return;
+      var bad = MAP.nodes.filter(function (n) { return n.state !== 'ok'; });
+      box.innerHTML = bad.map(function (n) {
+        return '<div class="incr ' + (n.state === 'down' ? 'p1' : 'p2') + '" data-inc="' + n.id + '"><i></i><div><b>' + escS(n.name) + '</b><small>' + escS(n.detail) + '</small></div><span class="ag">' + (n.state === 'down' ? 'DOWN' : 'WARN') + '</span></div>';
+      }).join('') || '<div style="color:#a3b0d2;padding:8px 0">No open items.</div>';
+      $$(box, '[data-inc]').forEach(function (r) { r.onclick = function () { selectNode(r.getAttribute('data-inc')); }; });
+    }
+    function loadMap(focusId) {
+      api('/api/ops/map').then(function (r) { return r && r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (d) {
+        if (!d || !d.nodes) { var s2 = $(root, '#mapSum'); if (s2) s2.textContent = 'map did not load'; return; }
+        MAP = d; paintMap();
+        if (focusId) { mapSel = null; selectNode(focusId); }
+        tapeLine(d.down ? 'err' : d.warn ? 'warn' : 'ok', 'map', d.nodes.length + ' checks: ' + (d.down || 0) + ' down, ' + (d.warn || 0) + ' warnings');
+      });
+    }
+    var runAll = $(root, '#runAll'); if (runAll) runAll.onclick = function () { loadMap(); toast(root, 'Every check run again'); };
+    var clearSel = $(root, '#clearSel'); if (clearSel) clearSel.onclick = clearMap;
+    var onlyBad = $(root, '#onlyBad'); if (onlyBad) onlyBad.onclick = function () { onlyBadMap = !onlyBadMap; onlyBad.textContent = onlyBadMap ? 'Show all' : 'Only problems'; paintTests(); };
+    loadMap();
+    var mapT = setInterval(function () { if (!root.isConnected && root.host && !root.host.isConnected) { clearInterval(mapT); return; } loadMap(); }, 120000);
+
     bindTabs();
     showPages(root, 'ops', 'map');
     var freeze = $(root, '#freeze');

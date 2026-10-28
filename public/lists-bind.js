@@ -311,13 +311,20 @@
       if (rolesEl) rolesEl.style.display = state.mode === 'contacts' ? '' : 'none';
       var nav = $('#listnav');
       if (nav && state.mode === 'lists') {
+        var lastSec = '';
         nav.innerHTML = state.lists.map(function (l) {
           var on = state.cur && state.cur.key === l.key;
+          var sec = l.kind === 'master' ? 'MASTER LISTS' : l.kind === 'uploaded' || l.kind === 'manual' ? 'YOUR LISTS' : 'WORK NOW';
+          var head = sec !== lastSec ? '<h6 class="lsec">' + sec + '</h6>' : '';
+          lastSec = sec;
+          return head + (function () {
           return '<button type="button" class="' + (on ? 'on' : '') + '" data-l="' + esc(l.key) + '"' + (l.file ? ' title="' + esc(l.file) + '"' : '') + '><span style="display:flex;flex-direction:column;min-width:0;text-align:left"><span>' + esc(l.name) + '</span>' + (l.kind === 'uploaded' ? '<em style="font-style:normal;font-size:11px;font-weight:600;color:#a3b0d2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(l.file || l.sub || 'uploaded list') + '</em>' : '') + '</span><small>' + esc(String(l.count || 0)) + '</small></button>';
+          })();
         }).join('') || (state.loading ? '<button type="button"><b>Loading lists</b><small>—</small></button>' : '');
         nav.querySelectorAll('button[data-l]').forEach(function (el) {
           el.onclick = function () {
             state.cur = state.lists.find(function (l) { return l.key === el.getAttribute('data-l'); }) || state.lists[0];
+            state.cap = 150;
             render();
           };
         });
@@ -506,14 +513,16 @@
       var body = $('#lbody');
       if (!body) return;
       if (state.loading && !(state.cur && state.cur.people && state.cur.people.length)) {
-        body.innerHTML = '<tr><td colspan="6" style="padding:18px;color:#a3b0d2">Loading contacts…</td></tr>';
+        body.innerHTML = '<tr><td colspan="8" style="padding:18px;color:#a3b0d2">Loading contacts…</td></tr>';
         return;
       }
       if (!state.cur) {
-        body.innerHTML = '<tr><td colspan="6" style="padding:18px;color:#6f7fa6">No lists yet.</td></tr>';
+        body.innerHTML = '<tr><td colspan="8" style="padding:18px;color:#6f7fa6">No lists yet.</td></tr>';
         return;
       }
-      var rows = peopleOf();
+      var all = peopleOf();
+      var cap = state.cap || 150;
+      var rows = all.slice(0, cap);
       var nextId = '';
       for (var i = 0; i < rows.length; i++) {
         if (stageIndex(rows[i].stage) === 0 && !rows[i].callback) { nextId = rows[i].id; break; }
@@ -528,19 +537,23 @@
         var cb = p.callback ? '<span class="cb">Call back ' + esc(p.callback) + '</span>' : '';
         var spaceLabel = (p.spaceId || p.space_id) ? 'Open space' : 'Space';
         return '<tr class="' + cls + '" data-id="' + esc(p.id) + '">'
+          + '<td class="rk">' + esc(String(p.rank || '')) + '</td>'
           + '<td><b>' + esc(p.name) + '</b><small>' + esc(companyLine(p)) + '</small>' + role + cb + '</td>'
           + '<td>' + (phone ? '<a href="tel:' + esc(phone.replace(/[^\d+]/g, '')) + '">' + esc(fmtPhone(phone)) + '</a>' : '<small>no phone</small>') + '</td>'
           + '<td>' + (email ? '<a href="mailto:' + esc(email) + '">' + esc(email) + '</a>' : '<small>no email</small>') + '</td>'
           + '<td><span class="nt">' + (notePreview(p.notes) ? esc(notePreview(p.notes)) : '<small>none yet</small>') + '</span></td>'
-          + '<td><button type="button" class="stg2" data-a="stage" style="color:' + S.color + ';background:' + S.bg + '">' + esc(S.k)
-          + (S.hint ? '<small>' + esc(S.hint) + '</small>' : '') + '</button></td>'
+          + '<td class="dy">' + esc(p.day || '') + '</td>'
+          + '<td><button type="button" class="stg2" data-a="stage" title="' + esc(S.hint || '') + '" style="color:' + S.color + ';background:' + S.bg + '">' + esc(S.k) + '</button></td>'
           + '<td><div class="pills">'
           + '<button type="button" class="pl cbk" data-a="cb" title="Call back">Call back</button>'
           + '<button type="button" class="pl" data-a="email">Email</button>'
           + '<button type="button" class="pl go" data-a="space" title="' + ((p.spaceId || p.space_id) ? 'Open this space' : 'Start a space') + '">' + ((p.spaceId || p.space_id) ? 'Open' : 'Space') + '</button>'
           + '<button type="button" class="pl del" data-a="del">Delete</button>'
           + '</div></td></tr>';
-      }).join('') || '<tr><td colspan="6" style="padding:18px;color:#6f7fa6">Nobody on this list yet.</td></tr>';
+      }).join('') + (all.length > rows.length ? '<tr><td colspan="8" class="more"><button type="button" id="lmore">Show ' + Math.min(150, all.length - rows.length) + ' more of ' + all.length + '</button></td></tr>' : '')
+        || '<tr><td colspan="8" style="padding:18px;color:#6f7fa6">Nobody on this list yet.</td></tr>';
+      var mb = $('#lmore');
+      if (mb) mb.onclick = function () { state.cap = cap + 150; renderBody(); };
 
       body.querySelectorAll('tr.r').forEach(function (tr) {
         tr.onclick = function (ev) {

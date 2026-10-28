@@ -37,3 +37,7 @@
 .shake{animation:sh .35s}@keyframes sh{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
 .eyeT,.bellT{font-size:11px;font-weight:800;color:#4a5672;background:#f5f7fb;border-radius:6px;padding:2px 7px;cursor:pointer;white-space:nowrap}.eye{border:none;background:none;padding:0}
 .kp span{color:#4a5672!important}.kp small{color:#5b6678!important}.kp b{color:#101a33}
+/* Oct 28: text on the white cards is black, not grey */
+.kp,.card,.sv{--ink:#0b1020;--ink2:#0b1020;--ink3:#1f2937}
+.kp span,.kp small,.rs,.bline,.bline b,.empty,.card .s,.card small,.card td,.card th,.card p,.card label,.card li,.sv span,.sv small,.card .h,.card h3,.card h4{color:#0b1020!important}
+.kp.red b,.card .red{color:#d6334e!important}

@@ -45,7 +45,7 @@
   function parse(text) {
     var t = String(text || '').trim();
     var low = t.toLowerCase();
-    var kind = /\b(remind me|reminder)\b/.test(low) ? 'reminder' : 'task';
+    var kind = /\b(remind me|reminder)\b/.test(low) ? 'reminder' : /^(note|add a note|write a note|notes?)\b/.test(low) ? 'note' : 'task';
     var now = vanParts(new Date());
     var base = new Date(Date.UTC(now.y, now.m - 1, now.d));
     var addDays = 0, dayLabel = 'today';
@@ -110,14 +110,14 @@
       panel = document.createElement('div');
       panel.id = 'vcPanel';
       panel.innerHTML = '<h4>Record <small id="vcState">listening</small></h4><textarea id="vcText" placeholder="Talk, or type. Say remind me at 1530 to call Bruce, or tomorrow send Kevin the deck."></textarea>'
-        + '<div class="vk"><button type="button" data-k="task">To-do</button><button type="button" data-k="reminder">Reminder</button></div>'
+        + '<div class="vk"><button type="button" data-k="task">To-do</button><button type="button" data-k="reminder">Reminder</button><button type="button" data-k="note">Note</button><button type="button" data-k="meeting">Meeting</button></div>'
         + '<div class="vw" id="vcWhen"></div>'
         + '<div class="va"><button type="button" data-a="discard">Discard</button><button type="button" data-a="again">Record again</button><button type="button" class="p" data-a="save">Save</button></div>';
       document.body.appendChild(panel);
       panel.addEventListener('input', preview);
       panel.addEventListener('click', function (e) {
         var k = e.target.closest('[data-k]');
-        if (k) { kindOverride = k.getAttribute('data-k'); preview(); return; }
+        if (k) { kindOverride = k.getAttribute('data-k'); preview(); if (kindOverride === 'meeting' && !listening) start(); return; }
         var a = e.target.closest('[data-a]');
         if (!a) return;
         var act = a.getAttribute('data-a');
@@ -140,7 +140,8 @@
     var txt = document.getElementById('vcText').value.trim();
     var p = current();
     panel.querySelectorAll('[data-k]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-k') === p.kind); });
-    document.getElementById('vcWhen').innerHTML = txt ? 'Saves as a <b>' + (p.kind === 'reminder' ? 'reminder' : 'to-do') + '</b>: <b>' + esc(p.title) + '</b>, ' + esc(p.label) : 'Nothing heard yet.';
+    var what = p.kind === 'note' ? 'Saves to <b>Notes</b>' : p.kind === 'meeting' ? 'Saves the whole conversation to <b>Notes</b> as meeting notes (keep recording until the meeting ends)' : 'Saves as a <b>' + (p.kind === 'reminder' ? 'reminder' : 'to-do') + '</b>';
+    document.getElementById('vcWhen').innerHTML = txt ? what + ': <b>' + esc(p.kind === 'meeting' ? meetingTitle() : p.title) + '</b>' + (p.kind === 'task' || p.kind === 'reminder' ? ', ' + esc(p.label) : '') : (p.kind === 'meeting' ? 'Meeting mode: everything said is written down until you press Stop.' : 'Nothing heard yet.');
   }
   function esc(v) { return String(v || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function setState(s) { var el = document.getElementById('vcState'); if (el) el.textContent = s; }
@@ -167,21 +168,45 @@
       preview();
     };
     rec.onerror = function (e) { setState(e && e.error === 'not-allowed' ? 'microphone blocked: allow it for this site' : 'stopped'); listening = false; setBtn(false); };
-    rec.onend = function () { listening = false; setBtn(false); setState('done: check it, then Save'); };
+    rec.onend = function () {
+      /* Meeting mode keeps listening through pauses until Stop or Save. */
+      if (kindOverride === 'meeting' && !stopping) { try { before = box.value ? box.value.trim() + ' ' : ''; finalText = ''; rec.start(); return; } catch (e) {} }
+      listening = false; setBtn(false); setState('done: check it, then Save');
+    };
     try { rec.start(); listening = true; setBtn(true); setState('listening'); } catch (e) { setState('could not start the microphone'); }
   }
-  function stop() { try { if (rec) rec.stop(); } catch (e) {} listening = false; setBtn(false); }
+  var stopping = false;
+  function stop() { stopping = true; try { if (rec) rec.stop(); } catch (e) {} listening = false; setBtn(false); setTimeout(function () { stopping = false; }, 800); }
 
   function toast(msg) {
     var t = document.getElementById('vcToast');
     if (!t) { t = document.createElement('div'); t.id = 'vcToast'; t.setAttribute('style', 'position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:9999;background:#101a33;color:#fff;border:1px solid rgba(120,150,255,.3);border-radius:12px;padding:10px 16px;font:700 13.5px Inter,system-ui,sans-serif;box-shadow:0 14px 40px rgba(0,0,0,.45)'); document.body.appendChild(t); }
     t.textContent = msg; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(function () { t.style.display = 'none'; }, 3500);
   }
+  function meetingTitle() {
+    var p = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Vancouver', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
+    return 'Meeting ' + p.replace(',', '');
+  }
+  function saveNote(title, text, isMeeting) {
+    var fn = window.authFetch || fetch;
+    setState('saving');
+    fn('/api/notes', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: title, body: text, color: isMeeting ? 'blue' : 'yellow' }) })
+      .then(function (r) { if (!r || !r.ok) throw new Error('save'); return r.json(); })
+      .then(function () {
+        document.getElementById('vcText').value = '';
+        close();
+        toast(isMeeting ? 'Meeting notes saved to Notes' : 'Note saved to Notes');
+        if (typeof window.renderNotes === 'function') try { window.renderNotes(); } catch (e) {}
+      })
+      .catch(function () { setState('could not save, try again'); });
+  }
   function save() {
     stop();
     var txt = document.getElementById('vcText').value.trim();
     if (!txt) { setState('nothing to save'); return; }
     var p = current();
+    if (p.kind === 'note') { saveNote(p.title.length > 80 ? p.title.slice(0, 77) + '...' : p.title, txt.replace(/^(note|add a note|write a note|notes?)[:,]?\s*/i, ''), false); return; }
+    if (p.kind === 'meeting') { saveNote(meetingTitle(), txt, true); return; }
     var fn = window.authFetch || fetch;
     var body = { title: (p.kind === 'reminder' ? 'Reminder: ' : '') + p.title, area: 'other', priority: p.kind === 'reminder' ? 'high' : 'normal', due: p.due, category: p.kind === 'reminder' ? 'reminder' : 'voice' };
     setState('saving');
@@ -210,7 +235,7 @@
     b.className = 'tb';
     b.id = 'vcBtn';
     b.type = 'button';
-    b.title = 'Record a to-do or a reminder';
+    b.title = 'Record a to-do, reminder, note or meeting';
     b.innerHTML = '<span class="vd"></span><span>Record</span>';
     b.addEventListener('click', function (e) {
       e.stopPropagation();

@@ -4,7 +4,7 @@ import fills from '../data/contact-fills.json';
 import { withCreds } from './creds';
 import { getContact, listPipelines, moveOpportunityStage, type GhlPipeline } from './ghl';
 import { fail } from './log';
-import { addTouch, GROWTH_LISTS, listGrowth } from './growth';
+import { addTouch, GROWTH_VIEWS, listGrowth } from './growth';
 import { loadCredsFor } from './vault';
 
 type Sql = NeonQueryFunction<false, false>;
@@ -458,20 +458,21 @@ export async function buildCallLists(sql: Sql, ownerId: string, userId: string):
       return new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' })
         .format(new Date(`${iso}T12:00:00Z`)).replace(',', '');
     };
-    for (const l of GROWTH_LISTS) {
-      const mine = rows.filter((r) => r.list === l.key);
+    for (const v of GROWTH_VIEWS) {
+      const mine = v.pick(rows);
       if (!mine.length) continue;
-      const people = mine.map((r) => {
-        const isPerson = l.key === 'angels';
-        const firstContact = String(r.contact || '').split(/\s*[|;]\s*/)[0] || '';
+      const people = mine.map((r, ix) => {
+        const isPerson = r.list === 'angels';
+        let firstContact = String(r.contact || '').split(/\s*[|;]\s*/)[0] || '';
+        if (/^(existing contact|leadership|executive|business contact|principal broker)/i.test(firstContact)) firstContact = '';
         const ready = [0, 0, 0, 0, 0, 0];
         const stage = String(r.stage || 'Cold');
         return {
-          id: `g-${l.key}:${r.id}`,
-          listKey: `g-${l.key}`,
+          id: `${v.key}:${r.id}`,
+          listKey: v.key,
           name: isPerson ? String(r.name || firstContact) : (firstContact && !/@|^\+?\d/.test(firstContact) ? firstContact : String(r.name || '')),
           role: String(r.title || ''),
-          company: isPerson ? (firstContact && firstContact !== r.name ? firstContact.replace(String(r.name || ''), '').replace(/^[;,\s]+/, '') : '') : String(r.name || ''),
+          company: isPerson ? '' : String(r.name || ''),
           companySub: [String(r.city || ''), String(r.prov || ''), String(r.type || '')].filter(Boolean).join(' · '),
           city: String(r.city || ''),
           phone: String(r.phone || ''),
@@ -486,12 +487,12 @@ export async function buildCallLists(sql: Sql, ownerId: string, userId: string):
           contactId: String(r.id),
           ready,
           nextStep: String(r.next_action || '') || nextFromReady(ready, stage),
-          rank: Number(r.rank) || 0,
+          rank: ix + 1,
         } as ReachListPerson;
       });
       growth.push({
-        id: `g-${l.key}`, key: `g-${l.key}`, name: l.name, sub: `${people.length} · ${l.perDay ? `${l.perDay} a day` : 'later'} · ${l.blurb}`,
-        kind: `growth-${l.grp}`, count: people.length, done: people.filter((p) => p.done).length, people,
+        id: v.key, key: v.key, name: v.name, sub: `${people.length} · ${v.sub}`,
+        kind: v.master ? 'master' : v.kind, count: people.length, done: people.filter((p) => p.done).length, people,
       });
     }
   } catch (err) {
@@ -549,12 +550,13 @@ export async function buildCallLists(sql: Sql, ownerId: string, userId: string):
     people,
   });
 
+  /* Once the growth lists are loaded they replace the four older lists (every contact is in the masters). */
+  if (growth.length) return [...growth.filter((l) => l.kind !== 'master'), ...custom, ...growth.filter((l) => l.kind === 'master')];
   return [
     wrap('design-partners', 'Design partners', `${design.length} people · 5 a day`, 'design', design),
     wrap('pre-seed', 'VCs, pre-seed', '25 funds · 5 a day', 'vc', preseed),
     wrap('regulators', 'Regulators', `${regulators.length || 15} bodies`, 'regulator', regulators),
     wrap('ent-1-25', 'Enterprise BC #1-50', '50 · protected 1-25', 'enterprise', [...entProtected, ...entWeek].slice(0, 50)),
-    ...growth,
     ...custom,
   ];
 }
@@ -630,7 +632,7 @@ export async function tickReachPerson(
     fail('reach_tick_upsert', err);
   }
 
-  if (person.listKey.startsWith('g-')) {
+  if (/^(w|m)-/.test(person.listKey)) {
     try {
       if (done) await addTouch(sql, ownerId, person.contactId, { channel: 'Ticked', outcome: 'Contacted', note: 'Ticked off in Lists' });
       else await sql`UPDATE growth_records SET last_touch = NULL, status = 'Not contacted' WHERE owner_id = ${ownerId} AND id = ${person.contactId}`;

@@ -130,8 +130,9 @@ function save(){
 function persistItem(i){
   if(!liveOk()||!i||!i.id||String(i.id).indexOf('n')===0&&String(i.id).length<20)return;
   var body={n:i.n,o:i.o,st:i.st,start_date:i.kind==='ms'?'':i.kind==='goal'?(i.s<i.e?isoOf(i.s):''):isoOf(i.s),due_date:isoOf(i.e)};
-  if(i.kind==='goal')body.plan_date=i.ps!=null?isoOf(i.ps):'';
+  body.plan_date=i.ps!=null?isoOf(i.ps):'';
   if(i.kind!=='goal'){body.t=i.t||'';body.g=i.g||''}
+  if(i.kind==='span')body.kind='span';else if(i.kind==='ms')body.kind='key_date';
   body.note=i.note||'';
   window.authFetch('/api/timeline/items/'+encodeURIComponent(i.id),{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).catch(function(){});
 }
@@ -518,7 +519,8 @@ function drawEdit(i){const g=i.kind==='goal',ser=i.kind==='series';
   let h=`<div class="dedit">`+f('Name',inp('n',i.n))+`<div class="dgrid">`+f('Owner',inp('o',i.o,'Who'));
   if(!g)h+=f('Stream',inp('t',i.t,'Stream'));
   if(g)h+=f('Planning from',inp('ps',fmt(gPlan(i)),'MMDD'))+f('Start',inp('gs',fmt(gStart(i)),'MMDD'))+f('Complete by',inp('e',fmt(i.e),'MMDD'));
-  else if(!ser)h+=f(i.kind==='ms'?'Key date':'Start',inp('s',i.kind==='span'?fmt(i.s):fmt(i.e),'MMDD'))+(i.kind==='span'?f('Due',inp('e',fmt(i.e),'MMDD')):'');
+  else if(i.kind==='ms')h+=f('Planning from',inp('ps',i.ps!=null?fmt(i.ps):'','MMDD'))+f('Start',inp('s',fmt(i.e),'MMDD'))+f('Complete by',inp('e',fmt(i.e),'MMDD'));
+  else h+=f('Planning from',inp('ps',i.ps!=null?fmt(i.ps):'','MMDD'))+f('Start',inp('s',fmt(i.s),'MMDD'))+f('Complete by',inp('e',fmt(i.e),'MMDD'));
   h+=f('Status',`<select class="fi" data-de="st"><option value=""${!i.st?' selected':''}>Automatic</option><option value="risk"${i.st==='risk'?' selected':''}>At risk</option><option value="done"${i.st==='done'?' selected':''}>Done</option></select>`);
   if(!g)h+=f('Feeds milestone',`<select class="fi" data-de="g"><option value="">None</option>${GL().map(m=>`<option value="${m.id}"${i.g===m.id?' selected':''}>${esc(m.n)}</option>`).join('')}</select>`);
   h+=`</div>`+f('Notes',`<textarea class="fi" data-de="note" rows="3" placeholder="What this is, what was agreed">${esc(i.note||'')}</textarea>`)+`<div class="derr" id="deErr"></div></div>`;
@@ -533,9 +535,11 @@ function saveDrawer(id){const i=byId[id];if(!i)return;const v={};
   i.st=v.st||'';if(v.g!=null)i.g=v.g||'';i.note=String(v.note||'');
   if(i.kind==='goal'){const ps=pd(v.ps),gs=pd(v.gs),e=pd(v.e);if([ps,gs,e].some(Number.isNaN))return bad('Dates are MMDD, like 1030, or 30 Oct.');
     if(e!=null)i.e=e;if(gs!=null)i.s=Math.min(gs,i.e);if(ps!=null)i.ps=Math.min(ps,gStart(i))}
-  else if(i.kind==='ms'){const d=pd(v.s);if(Number.isNaN(d))return bad('Dates are MMDD, like 1030, or 30 Oct.');if(d!=null){i.s=i.e=d}}
-  else if(i.kind==='span'){const s0=pd(v.s),e0=pd(v.e);if(Number.isNaN(s0)||Number.isNaN(e0))return bad('Dates are MMDD, like 1030, or 30 Oct.');
-    if(s0!=null)i.s=s0;if(e0!=null)i.e=e0;if(i.e<i.s)i.e=i.s}
+  else{const ps=pd(v.ps),s0=pd(v.s),e0=pd(v.e);if([ps,s0,e0].some(Number.isNaN))return bad('Dates are MMDD, like 1030, or 30 Oct.');
+    if(i.kind==='ms'){/* a key date that gains a different start becomes a span */
+      if(e0!=null){i.e=e0;i.s=e0}if(s0!=null&&s0<i.e){i.s=s0;i.kind='span'}else if(s0!=null&&e0==null){i.s=i.e=s0}}
+    else{if(s0!=null)i.s=s0;if(e0!=null)i.e=e0;if(i.e<i.s)i.e=i.s}
+    if(v.ps!=null){i.ps=ps==null?null:Math.min(ps,i.s)}}
   save();persistItem(i);rerender();openDrawer(id);
   const b=drawer.querySelector('[data-dsave]');if(b){b.textContent='Saved';setTimeout(()=>{if(b.isConnected)b.textContent='Save changes'},1400)}}
 drawer.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches&&e.target.matches('input[data-de]')){e.preventDefault();const b=drawer.querySelector('[data-dsave]');if(b)saveDrawer(b.dataset.dsave)}});

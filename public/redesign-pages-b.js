@@ -825,6 +825,8 @@
       + '<table class="tbl"><tr><th>Person / company</th><th>Category</th><th>Stage</th><th>Last touch</th><th>Next step</th><th></th></tr><tbody id="rows">' + rows + '</tbody></table>'
       + '<div class="foot">' + esc(data.tableFoot || '') + ' &middot; <span class="lnk" data-action="pipe-show-all">Show all</span></div></section>';
     var needChip = S.pipeNeedChip || 'all';
+    if (S.pipeNeedShut == null) { try { S.pipeNeedShut = localStorage.getItem('pipeNeedShut') === '1'; } catch (e) { S.pipeNeedShut = false; } }
+    var needShut = !!S.pipeNeedShut;
     var needsAll = data.needs || [];
     var needsFiltered = needsAll.filter(function (n) { return needChip === 'all' || n.kind === needChip; });
     var needCap = S.pipeNeedAll ? needsFiltered.length : Math.min(9, needsFiltered.length);
@@ -834,7 +836,9 @@
       '<section class="card" style="margin-bottom:14px"><div class="ch"><h3>Needs you today</h3><span class="s">one list &middot; follow-ups due, going cold, and your reach-outs</span><span class="chips2">'
       + [['all', 'All ' + needsAll.length], ['follow', 'Follow up ' + chipCount('follow')], ['cold', 'Going cold ' + chipCount('cold')], ['reach', 'Reach out ' + chipCount('reach')]].map(function (c) {
         return '<span class="c2' + (needChip === c[0] ? ' on' : '') + '" data-action="pipe-need-chip" data-chip="' + c[0] + '">' + esc(c[1]) + '</span>';
-      }).join('') + '</span><span class="lnk" style="margin-left:auto" data-action="pipe-add">+ Add a person</span></div><div class="ndg">'
+      }).join('') + '</span><span class="lnk" style="margin-left:auto" data-action="pipe-add">+ Add a person</span>'
+      + '<button type="button" class="needtog" data-action="pipe-need-toggle" aria-expanded="' + (needShut ? 'false' : 'true') + '">' + (needShut ? 'Expand' : 'Collapse') + '</button></div>'
+      + (needShut ? '</section>' : '<div class="ndg">'
       + (needsShown.length ? needsShown.map(function (n, i) {
         var whyCls = n.kind === 'cold' ? ' amb' : n.kind === 'reach' ? '' : ' red';
         var rowAttrs = ' data-id="' + esc(n.id || '') + '" data-kind="' + esc(n.kind) + '" data-key="' + esc(n.key || '') + '" data-contact="' + esc(n.contactId || '') + '" data-name="' + esc(n.name) + '" data-email="' + esc(n.email || '') + '"'
@@ -843,7 +847,7 @@
       }).join('') : '<div class="nd"><div style="min-width:0"><b>Nobody waiting</b><span>Follow-ups due, people going cold and your reach-outs land here.</span></div></div>')
       + '</div>'
       + (needsFiltered.length > 9 ? '<div class="foot"><span class="lnk" data-action="pipe-need-more">' + (S.pipeNeedAll ? 'Show fewer' : ('Show all ' + needsFiltered.length)) + '</span></div>' : '')
-      + '</section>';
+      + '</section>');
     if (view === 'board') {
       var stages = asList(data.board).length || !fixtureOn() ? asList(data.board) : fixtureBoard(ST, data.rows || []);
       var filled = stages.filter(function (s) { return s.opps.length; });
@@ -1924,7 +1928,7 @@
         var cover = thumb
           ? '<img alt="" loading="lazy" src="' + esc(thumb) + '" class="thumb">'
           : (status === 'failed'
-            ? '<i class="noload" style="background:' + w[2] + '" title="page would not load"><span>page would not load</span></i>'
+            ? '<i class="noload" title="Preview not available"><span><b>' + esc(String(href).replace(/^https?:\/\/(www\.)?/, '').split('/')[0]) + '</b>preview not available</span></i>'
             : '<i class="wait" style="background:#152040" aria-hidden="true"></i>');
         var listOn = (window.STATE && window.STATE.prefs && window.STATE.prefs.links_prefs && window.STATE.prefs.links_prefs.view) === 'list';
         return '<a class="tile' + (listOn ? ' row' : '') + '" data-action="link-open" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" data-id="' + id + '" data-url="' + esc(href) + '">' + (w[4] == 2 ? '<span class="dup">Duplicate</span>' : '')

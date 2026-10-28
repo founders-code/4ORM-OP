@@ -16,6 +16,39 @@ export const GROWTH_LISTS: Array<{ key: string; name: string; grp: string; perDa
   { key: 'firms_later', name: 'Firms and funds: later', grp: 'investment', perDay: 0, channel: 'Email', blurb: 'Weaker fit, keep for later' },
   { key: 'programs', name: 'Grants and programs', grp: 'investment', perDay: 1, channel: 'Form', blurb: 'Grants, accelerators, tax credits' },
   { key: 'regulators', name: 'Regulators', grp: 'regulation', perDay: 2, channel: 'Email', blurb: 'Scoped questions, BC first' },
+  { key: 'index', name: 'Wider contact index', grp: 'revenue', perDay: 0, channel: 'Email', blurb: 'Not ranked in the BC master; kept so nothing is lost' },
+];
+
+/* What Chad works now (top of Lists) and the full masters (bottom). Working lists are slices of the masters. */
+export type GrowthView = { key: string; name: string; sub: string; kind: string; perDay: number; master: boolean; pick: (rows: Array<Record<string, unknown>>) => Array<Record<string, unknown>> };
+const byList = (rows: Array<Record<string, unknown>>, keys: string[]) => rows.filter((r) => keys.includes(String(r.list)));
+const byNum = (k: string) => (a: Record<string, unknown>, b: Record<string, unknown>) => (Number(a[k]) || 1e9) - (Number(b[k]) || 1e9);
+const VC_TYPES = /^(VC|MICRO_VC|CORPORATE_VC|VC fund|VC \(new fund\))$/;
+export const GROWTH_VIEWS: GrowthView[] = [
+  { key: 'w-design', name: 'Design partners: first 50', sub: '10 calls a day', kind: 'design', perDay: 10, master: false,
+    pick: (rows) => byList(rows, ['design']).sort(byNum('rank')).slice(0, 50) },
+  { key: 'w-clients', name: 'Client targets: first 25', sub: '5 a day', kind: 'design', perDay: 5, master: false,
+    pick: (rows) => byList(rows, ['clients']).sort(byNum('rank')).slice(0, 25) },
+  { key: 'w-vcs', name: 'VCs: 75 to 125', sub: '5 a day · top 75 held back', kind: 'vc', perDay: 5, master: false,
+    pick: (rows) => byList(rows, ['firms_now', 'firms_later', 'new_funds']).filter((r) => VC_TYPES.test(String(r.type)) || r.vcrank).sort(byNum('vcrank')).slice(74, 125) },
+  { key: 'w-angels', name: 'Angels: 75 to 125', sub: '10 LinkedIn messages a day', kind: 'vc', perDay: 10, master: false,
+    pick: (rows) => byList(rows, ['angels']).sort(byNum('rank')).slice(74, 125) },
+  { key: 'w-newfunds', name: 'New funds 2024-26', sub: '3 a day', kind: 'vc', perDay: 3, master: false,
+    pick: (rows) => byList(rows, ['new_funds']).sort(byNum('rank')) },
+  { key: 'w-regulators', name: 'Regulators: first 20', sub: '2 a day · scoped questions', kind: 'regulator', perDay: 2, master: false,
+    pick: (rows) => byList(rows, ['regulators']).sort(byNum('rank')).slice(0, 20) },
+  { key: 'm-revenue', name: 'Master: revenue', sub: 'Design partners, clients, prospects, channels', kind: 'master', perDay: 0, master: true,
+    pick: (rows) => byList(rows, ['design', 'clients', 'prospects', 'channels']).sort(byNum('grank')) },
+  { key: 'm-firms', name: 'Master: firms and funds', sub: 'VCs, angel groups, offices, incubators, funds', kind: 'master', perDay: 0, master: true,
+    pick: (rows) => byList(rows, ['new_funds', 'firms_now', 'firms_later']).sort(byNum('grank')) },
+  { key: 'm-angels', name: 'Master: angels (people)', sub: 'Individual investors', kind: 'master', perDay: 0, master: true,
+    pick: (rows) => byList(rows, ['angels']).sort(byNum('rank')) },
+  { key: 'm-regulators', name: 'Master: regulators', sub: 'Regulators and public bodies', kind: 'master', perDay: 0, master: true,
+    pick: (rows) => byList(rows, ['regulators']).sort(byNum('rank')) },
+  { key: 'm-programs', name: 'Master: grants and programs', sub: 'Grants, accelerators, tax credits', kind: 'master', perDay: 0, master: true,
+    pick: (rows) => byList(rows, ['programs']).sort(byNum('rank')) },
+  { key: 'm-index', name: 'Master: wider contact index', sub: 'Not ranked; nothing lost', kind: 'master', perDay: 0, master: true,
+    pick: (rows) => byList(rows, ['index']).sort(byNum('rank')) },
 ];
 
 export async function ensureGrowth(sql: Sql) {
@@ -155,24 +188,30 @@ function addWeekdays(iso: string, k: number) {
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
 }
 
-/** Give every uncontacted record without a plan day a weekday, best first, at each list's daily pace, from `start`. */
+/** Give every uncontacted record in a working list a weekday, best first, at that list's daily pace, from `start`. */
 export async function planDays(sql: Sql, ownerId: string, start: string) {
+  const rows = await listGrowth(sql, ownerId, null);
   const out: Record<string, number> = {};
-  for (const l of GROWTH_LISTS) {
-    if (!l.perDay) continue;
-    const rows = (await sql`SELECT id FROM growth_records WHERE owner_id = ${ownerId} AND list = ${l.key} AND deleted_at IS NULL
-      AND plan_day IS NULL AND last_touch IS NULL AND status IN ('Not contacted', '') ORDER BY rank LIMIT ${l.perDay * 22}`) as Array<{ id: string }>;
+  const seen = new Set<string>();
+  for (const v of GROWTH_VIEWS) {
+    if (v.master || !v.perDay) continue;
     const ids: string[] = [];
     const days: string[] = [];
-    rows.forEach((r, i) => {
-      ids.push(r.id);
-      days.push(addWeekdays(start, Math.floor(i / l.perDay)));
-    });
+    let i = 0;
+    for (const r of v.pick(rows)) {
+      const id = String(r.id);
+      if (seen.has(id)) continue;
+      seen.add(id);
+      if (r.last_touch || r.plan_day) { i += 1; continue; }
+      ids.push(id);
+      days.push(addWeekdays(start, Math.floor(i / v.perDay)));
+      i += 1;
+    }
     if (ids.length) {
       await sql`UPDATE growth_records g SET plan_day = x.d::date FROM (SELECT unnest(${ids}::text[]) AS id, unnest(${days}::text[]) AS d) x
         WHERE g.owner_id = ${ownerId} AND g.id = x.id`;
     }
-    out[l.key] = ids.length;
+    out[v.key] = ids.length;
   }
   return out;
 }
@@ -232,7 +271,8 @@ const LIST_COLS = (sql: Sql, ownerId: string, list: string | null) => (list
       route, next_action, why, constraint_note, evidence, owner_name, status, stage, sources, notes, plan_day, next_date, last_touch, updated_at
       FROM growth_records WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND list = ${list} ORDER BY rank, grank`
   : sql`SELECT id, list, grp, rank, priority, name, contact, title, email, phone, linkedin, website, city, prov, type, status, stage,
-      next_action, plan_day, next_date, last_touch, left(notes, 400) AS notes
+      next_action, plan_day, next_date, last_touch, left(notes, 400) AS notes, grank,
+      data->'ranks'->>'VC firm rank' AS vcrank, data->'ranks'->>'Investor rank' AS invrank
       FROM growth_records WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY list, rank`);
 
 export async function listGrowth(sql: Sql, ownerId: string, list: string | null) {

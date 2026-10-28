@@ -78,3 +78,6 @@
 .lnb .lns{background:#1d4fd8;border-color:#1d4fd8;color:#fff}
 /* A site that will not render gets a quiet tile, not a loud blue block. */
 .lg .noload{background:linear-gradient(160deg,#16214a,#0e1838)!important;color:#a3b0d2!important;font-size:12px;font-weight:700}
+.lg .noload,.lg i.noload{background:#fff!important;color:#5e6e88!important}
+.lg i.noload span{max-width:none;display:flex;flex-direction:column;align-items:center;gap:3px}
+.lg i.noload span b{color:#142036;font-size:14px;font-weight:800;letter-spacing:-.01em;word-break:break-all}

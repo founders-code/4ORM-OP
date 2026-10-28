@@ -54,6 +54,11 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
       await session.sql`UPDATE timeline_items SET milestone_id = ${gid}::uuid, updated_at = now()
         WHERE id = ${ctx.params.id}::uuid AND owner_id = ${session.userId}`;
     }
+    /* A key date that gains its own start becomes a span (and back). Only between those two kinds; 'ms' was a bad earlier value. */
+    if (body.kind === 'span' || body.kind === 'key_date') {
+      await session.sql`UPDATE timeline_items SET kind = ${String(body.kind)}, updated_at = now()
+        WHERE id = ${ctx.params.id}::uuid AND owner_id = ${session.userId} AND kind IN ('span', 'key_date', 'ms') AND pipeline <> 'milestones'`;
+    }
     if (planRaw != null) {
       await session.sql`UPDATE timeline_items SET plan_date = CASE WHEN ${clearPlan} THEN NULL ELSE ${plan}::date END
         WHERE id = ${ctx.params.id}::uuid AND owner_id = ${session.userId}`;

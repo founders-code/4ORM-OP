@@ -374,3 +374,14 @@ body.navshut .side{width:0;padding:0;border:0}
 #todo .fxppl li em{font-style:normal;color:#93a1c8;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
 #todo .fxppl li .fxj{margin-left:auto}
 #todo .fxppl .fxmore{color:#93a1c8}
+/* Compact task rows (Oct 28): like the Reach out card. Small type, rows close together, checkbox beside each task. */
+#todo .tdc .ti:not(.fxev):not(.fxpl){background:transparent!important;border:0!important;box-shadow:none!important;border-radius:8px!important;
+  padding:4px 6px!important;margin:0 0 2px!important;grid-template-columns:16px minmax(0,1fr) auto!important;gap:0 9px!important;align-items:start!important}
+#todo .tdc .ti:not(.fxev):not(.fxpl):hover{background:#1a2552!important}
+#todo .tdc .ti .cb{width:15px!important;height:15px!important;border-radius:4px!important;border-width:1.5px!important;margin-top:2px;font-size:9px!important}
+#todo .tdc .ti .tt{font-size:13px!important;font-weight:750!important;line-height:1.35!important}
+#todo .tdc .ti .meta{font-size:11px!important;gap:2px 8px!important;margin-top:1px}
+#todo .tdc .ti .meta span{font-size:11px!important}
+#todo .tdc .ti.fxpl,#todo .tdc .ti.fxev{padding:9px 11px!important;margin-bottom:6px!important}
+#todo .fxppl li{font-size:12.5px;padding:1px 0}
+.plan30{height:34px;border-radius:999px;border:1px solid #2f4180;background:#16214a;color:#fff;font:800 13px Inter,system-ui,sans-serif;padding:0 16px;cursor:pointer;margin-left:8px}.plan30:hover{border-color:#4d7cff}
