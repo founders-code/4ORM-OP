@@ -528,7 +528,10 @@
     return {
       folders: folderRows, sets: setRows, files: files, drops: spaces, recent: recent, picked: picked,
       title: setOn ? setOn.name : (folderOn || 'All documents'),
-      loading: !S.docsLoaded && !S.docsError, error: !!S.docsError
+      /* Show cached docs immediately; only flash Loading when nothing is on hand yet. */
+      loading: !S.docsLoaded && !S.docsError && !docs.length,
+      error: !!S.docsError,
+      layout: S.docsLayout || []
     };
   }
 
@@ -988,12 +991,13 @@
       to: people[0] ? (people[0].name || people[0].email || '') : 'Add a person first',
       subject: p.emailSubject || (p.email && p.email.subject) || p.subject || '',
       intro: p.emailBody || (p.email && p.email.body) || p.intro || '',
+      tone: p.emailTone || (p.email && p.email.tone) || 'voss',
       files: docs.map(fileTile),
       heroLinks: (links || []).slice(0, 6).map(function (l) {
         return { label: l.name || l.label || hostOf(l.url || ''), url: l.url || '#' };
       }),
       link: links[0] ? { host: hostOf(links[0].url || links[0].name || ''), label: links[0].name || links[0].url || '' } : null,
-      people: people.map(function (r) { return { ini: initials(r.name || r.email || 'P'), name: r.name || r.email || 'Person', meta: r.email || r.company || '', role: r.role || 'Lead' }; }),
+      people: people.map(function (r) { return { ini: initials(r.name || r.email || 'P'), name: r.name || r.email || 'Person', email: r.email || '', meta: r.email || r.company || '', role: r.role || 'Lead' }; }),
       facts: [[p.lastContact || '\u2014', 'last contact'], [String(p.emails || 0), 'emails'], [p.stage || p.status || '\u2014', 'pipeline stage']],
       /* Next steps are saved on the Space (spaces.steps). A list ticked before that shipped may still sit in
          this browser; it shows only while the server copy is empty, and is removed the next time steps save. */
@@ -1057,49 +1061,19 @@
       attachFiles = fileList.filter(function (f) { return f && (f.goesOut || f.goes_out || /goes out/i.test(String(f.sub || ''))); });
     }
     var subject = String(d.subject || d.template || '').trim();
-    var angleRaw = String(d.angle || '');
-    var angleText = spacePlain(angleRaw);
-    var askText = String(d.ask || '').trim();
-    if (!askText) {
-      asList(d.hooks).forEach(function (h) {
-        if (!askText && /ask|20 min|minutes/i.test(String(h))) askText = String(h).replace(/^\+\s*/, '');
-      });
-    }
-    if (!askText) askText = '';
-    var askOk = !!askText && !/not set|defaults/i.test(askText);
-    var askDisplay = askOk ? askText : 'Could we take 20 minutes next week to walk you through it?';
+    var bodyText = String(d.intro || '').trim();
+    var tone = /^(voss|ury|cialdini|plain)$/i.test(String(d.tone || '')) ? String(d.tone).toLowerCase() : 'voss';
+    var TONE_DESC = {
+      voss: 'Tactical empathy. Name what they might be feeling, ask "how" and "what" questions, and make it easy to say no.',
+      ury: 'Getting to Yes. Start from shared interests, separate the person from the problem, offer options.',
+      cialdini: 'Influence. Give something first, lean on proof and authority, be specific about the small next step.',
+      plain: 'Short and direct. No technique, just the point and the ask.'
+    };
     var toOk = !!(lead.name || lead.meta) && !/^Add a person/i.test(String(d.to || ''));
     var ccOk = ccPeople.length > 0;
     var attOk = attachFiles.length > 0;
     var subjOk = !!subject;
-    var angleOk = !!angleText;
-    var terms = [];
-    peopleList.forEach(function (p) { if (p.name) terms.push(p.name); });
-    asList(d.hooks).forEach(function (h) { terms.push(String(h).replace(/^\+\s*/, '')); });
-    String(d.notes || d.who || '').split(/[·|,;/]+/).forEach(function (bit) {
-      var t = String(bit || '').trim();
-      if (t.length >= 4 && t.length <= 48) terms.push(t);
-    });
-    ['20 minutes', 'RPAA', 'suitability', '4orm'].forEach(function (t) { terms.push(t); });
-    var openingPlain = '';
-    if (ccPeople[0] && ccPeople[0].name) {
-      openingPlain = ccPeople[0].name + ' suggested I reach out.';
-      if (lead.name) openingPlain += ' ' + (angleText ? angleText.split(/[.!?]/)[0] + '.' : (lead.name + ' — worth a short conversation.'));
-    } else if (toOk) {
-      openingPlain = String(d.intro || '').trim() || ('Reaching out about ' + (d.name || 'this') + '.');
-      if (openingPlain.length > 280) openingPlain = openingPlain.slice(0, 277) + '…';
-    }
-    var openingOk = !!openingPlain;
-    var openingHtml = openingOk
-      ? spaceUnderline(openingPlain, terms)
-      : 'Not written yet. Add a person and notes and it lands here.';
-    var angleHtml = angleOk
-      ? (angleRaw.indexOf('<') >= 0
-        ? String(angleRaw).replace(/<\/?b>/gi, function (m) { return m[1] === '/' ? '</u>' : '<u>'; }).replace(/<(?!\/?u\b)[^>]+>/g, '')
-        : spaceUnderline(angleText, terms))
-      : 'Not written yet. Add one line in Notes and it lands here.';
-    var askHtml = askOk ? spaceUnderline(askDisplay, terms) : 'Not set yet. Add the ask in Notes, or it defaults to 20 minutes.';
-    var signOff = 'Chad Johnston · 4orm Finance';
+    var bodyOk = !!bodyText;
     function chip(p, role) {
       var name = p.name || 'Person';
       var meta = p.meta || p.role || role || '';
@@ -1110,61 +1084,51 @@
       return '<div class="env-row"><span class="k">' + esc(lab) + '</span><span class="v">' + valueHtml + '</span>'
         + '<span class="st ' + (ok ? 'ok' : 'miss') + '">' + esc(ok ? stOk : stMiss) + '</span></div>';
     }
-    function para(lab, html, ok) {
-      return '<div class="para' + (ok ? '' : ' m') + '"><div class="lab">' + esc(lab) + '</div><p>' + html + '</p></div>';
-    }
-    var fromHtml = '<span class="chipp"><span class="av">CJ</span>Chad Johnston <small>chad@4ormfinance.com</small></span>';
     var toHtml = toOk
       ? chip(lead, 'Lead')
       : '<span class="add" data-action="space-people" data-id="' + esc(d.id || '') + '">+ Add a person from Contacts or Pipeline</span>';
     var ccHtml = ccOk
       ? ccPeople.map(function (p) { return chip(p, p.role || 'warm intro'); }).join('')
       : '<span class="add" data-action="space-people" data-id="' + esc(d.id || '') + '">+ Add a Cc from People</span>';
-    var subjHtml = subjOk
-      ? '<span class="subj">' + esc(subject) + '</span>'
-      : '<span class="add">+ Pick or write a subject</span>';
+    var subjHtml = '<input class="subj-in" data-action="space-subject" data-id="' + esc(d.id || '') + '" value="' + esc(subject) + '" placeholder="Subject" aria-label="Subject">';
     var attHtml;
     if (attOk) {
       attHtml = '<span class="att">' + attachFiles.map(function (f) {
-        return '<span class="file"><span class="th"><i style="top:7px"></i><i style="top:13px"></i><i style="top:19px;right:12px"></i><i style="top:27px"></i></span><span><b>'
+        return '<span class="file"><span class="th"></span><span><b>'
           + esc(f.name || 'File') + '</b><small>goes out' + (f.sub ? ' · ' + esc(f.sub) : '') + '</small></span></span>';
       }).join('') + '</span>';
     } else {
       attHtml = '<span class="add" data-action="space-docs" data-id="' + esc(d.id || '') + '">+ Mark a document "goes out"</span>';
     }
-    var checks = [
-      { ok: true },
-      { ok: toOk },
-      { ok: ccOk },
-      { ok: subjOk },
-      { ok: attOk },
-      { ok: openingOk },
-      { ok: angleOk },
-      { ok: askOk }
-    ];
+    var tones = [['voss', 'Chris Voss'], ['ury', 'William Ury'], ['cialdini', 'Robert Cialdini'], ['plain', 'Plain']];
+    var toneHtml = '<div class="tone"><span>TONE</span>'
+      + tones.map(function (t) {
+        return '<button type="button" class="' + (tone === t[0] ? 'on' : '') + '" data-action="space-tone" data-tone="' + t[0] + '" data-id="' + esc(d.id || '') + '">' + t[1] + '</button>';
+      }).join('') + '</div>'
+      + '<div class="tdesc">' + esc(TONE_DESC[tone] || TONE_DESC.voss) + '</div>';
+    var bodyHtml = '<div class="ed"><textarea data-action="space-intro" data-id="' + esc(d.id || '') + '" placeholder="You type here. The tone buttons rewrite your words; they never send." aria-label="Email body">' + esc(bodyText) + '</textarea>'
+      + '<div class="edbar">'
+      + '<button type="button" class="ob" data-action="space-rewrite-tone" data-id="' + esc(d.id || '') + '">Rewrite in this tone</button>'
+      + '<button type="button" class="ob" data-action="space-rewrite-shorter" data-id="' + esc(d.id || '') + '">Shorter</button>'
+      + '<button type="button" class="ob p" data-action="space-compose" data-id="' + esc(d.id || '') + '">Move to email</button>'
+      + '<small>You type here. The tone buttons rewrite your words; they never send.</small></div></div>';
+    var checks = [{ ok: toOk }, { ok: ccOk }, { ok: subjOk }, { ok: attOk }, { ok: bodyOk }];
     var okN = checks.filter(function (c) { return c.ok; }).length;
     var html = '<div class="env">'
-      + row('From', fromHtml, true, 'set', 'missing')
-      + row('To', toHtml, toOk, 'set', 'missing')
+      + row('To', toHtml, toOk, 'from People', 'missing')
       + row('Cc', ccHtml, ccOk, 'set', 'missing')
-      + row('Subject', subjHtml, subjOk, subject ? 'from template' : 'set', 'missing')
+      + row('Subject', subjHtml, subjOk, 'editable', 'missing')
       + row('Attach', attHtml, attOk, attachFiles.length === 1 ? '1 file' : (attachFiles.length + ' files'), 'missing')
-      + '<div class="env-body">'
-      + para('OPENING', openingHtml, openingOk)
-      + para('THE ANGLE', angleHtml, angleOk)
-      + para('THE ASK', askHtml, askOk)
-      + para('SIGN-OFF', esc(signOff), true)
-      + '</div></div>'
-      + '<div class="ready-hint">Template: ' + esc(subject || d.template || 'picked from who they are')
-      + '. Underlined words come from this space.</div>';
-    var bodyText = [openingOk ? openingPlain : '', angleOk ? angleText : '', askOk ? askDisplay : (askDisplay || ''), signOff]
-      .filter(Boolean).join('\n\n');
+      + toneHtml
+      + bodyHtml
+      + '</div>';
     return {
       ok: okN,
       total: checks.length,
       html: html,
       subject: subject,
       body: bodyText,
+      tone: tone,
       to: (function () {
         var em = String(lead.email || lead.meta || '').trim();
         if (toOk && /@/.test(em)) return [{ email: em.toLowerCase(), name: lead.name || '' }];
@@ -1175,11 +1139,7 @@
         var em = String((p && (p.email || p.meta)) || '').trim();
         return /@/.test(em) ? { email: em.toLowerCase(), name: (p && p.name) || '' } : null;
       }).filter(Boolean),
-      attachments: attachFiles,
-      opening: openingPlain,
-      angle: angleText,
-      ask: askDisplay,
-      signOff: signOff
+      attachments: attachFiles
     };
   }
   window.spaceEmailReady = spaceEmailReady;
@@ -1568,6 +1528,9 @@
     if (!wrap) return;
     if (P().applyPageCss) P().applyPageCss(wrap, 'docs');
     var S = window.STATE || {};
+    if (!S.docsLayout) {
+      try { S.docsLayout = JSON.parse(localStorage.getItem('cr_docs_layout') || '[]'); } catch (e) { S.docsLayout = []; }
+    }
     var view = S.docsView || 'grid';
     var source = S.docSource === 'drive' ? 'drive' : 'local';
     var typeOn = S.docType || 'all';
@@ -1584,7 +1547,18 @@
       if (ib < 0) return -1;
       return ia - ib;
     });
-    var files = fileRows.map(function (f) {
+    var layoutMap = {};
+    (function () {
+      var cached = [];
+      try { cached = JSON.parse(localStorage.getItem('cr_docs_layout') || '[]'); } catch (e) { cached = []; }
+      asList(data.layout).concat(asList(S.docsLayout), asList(cached)).forEach(function (row) {
+        if (!row || !row.docId) return;
+        layoutMap[String(row.docId)] = row;
+      });
+    })();
+    var defaultW = Math.max(120, Math.min(220, Number((S.prefs && S.prefs.docs_prefs && S.prefs.docs_prefs.size) || 168) || 168));
+    var boardMode = view !== 'list';
+    var files = fileRows.map(function (f, ix) {
       var inner = (f[0] === 'ppt' || f[0] === 'img') ? '<div class="sl" style="background:linear-gradient(135deg,#1b2f66,#2e6bf2)">' + esc(String(f[1]).split('|')[0]) + '</div>' : '<div class="pg"><i class="h"></i><i></i><i></i><i style="width:80%"></i><i></i><i style="width:60%"></i></div>';
       if (f[10]) inner = '<img data-thumb="1" alt="" loading="lazy" src="' + esc(f[10]) + '" style="width:100%;height:100%;object-fit:cover;object-position:top;display:block">';
       else if (f[11]) inner = '<iframe src="' + esc(f[11]) + '#page=1&toolbar=0&navpanes=0&view=FitH" loading="lazy" tabindex="-1" title="" aria-hidden="true" style="width:100%;height:100%;border:0;pointer-events:none;background:#fff;display:block"></iframe>';
@@ -1593,7 +1567,17 @@
       var id = esc(rawId);
       var on = !!pick[rawId];
       var hi = S.docHighlight && String(S.docHighlight) === rawId;
-      return '<div class="fl' + (on ? ' picked' : '') + (hi ? ' hi' : '') + '" draggable="true" data-action="doc-open" data-kind="doc" data-id="' + id + '" data-url="' + esc(href) + '" data-web="' + esc(href) + '" data-drive="' + esc(f[7] || '') + '" data-name="' + esc(f[1] || '') + '" data-type="' + esc(f[0] || '') + '" data-folder="' + esc(f[8] || '') + '" data-mime="' + esc(f[9] || '') + '"' + (on || hi ? ' style="box-shadow:0 0 0 2px var(--blue)"' : '') + '><div class="th" style="background:' + f[4] + '">' + inner + '<span class="ty ' + L[f[0]][0] + '">' + L[f[0]][1] + '</span><span class="sync s-' + f[3] + '"></span></div><span class="sel' + (on ? ' on' : '') + '" data-action="doc-pick" data-id="' + id + '" title="Select"></span><div class="nm">' + esc(f[1]) + '</div><div class="mt">' + esc(f[2]) + '</div></div>';
+      var lay = layoutMap[rawId] || {};
+      var w = Math.max(120, Number(lay.w) || defaultW);
+      var h = Math.max(120, Number(lay.h) || Math.round(w * 1.25));
+      var x = Number.isFinite(Number(lay.x)) ? Number(lay.x) : (12 + (ix % 4) * (defaultW + 12));
+      var y = Number.isFinite(Number(lay.y)) ? Number(lay.y) : (12 + Math.floor(ix / 4) * (Math.round(defaultW * 1.25) + 12));
+      var style = boardMode
+        ? 'left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;height:' + h + 'px'
+        : (on || hi ? 'box-shadow:0 0 0 2px var(--blue)' : '');
+      return '<div class="fl doc' + (on ? ' picked' : '') + (hi ? ' hi' : '') + (boardMode ? ' board-doc' : '') + '" '
+        + (boardMode ? 'data-board="1"' : 'data-action="doc-open"')
+        + ' data-kind="doc" data-id="' + id + '" data-url="' + esc(href) + '" data-web="' + esc(href) + '" data-drive="' + esc(f[7] || '') + '" data-name="' + esc(f[1] || '') + '" data-type="' + esc(f[0] || '') + '" data-folder="' + esc(f[8] || '') + '" data-mime="' + esc(f[9] || '') + '"' + (style ? ' style="' + style + '"' : '') + '><div class="th" style="background:' + f[4] + '">' + inner + '<span class="ty ' + L[f[0]][0] + '">' + L[f[0]][1] + '</span><span class="sync s-' + f[3] + '"></span></div><span class="sel' + (on ? ' on' : '') + '" data-action="doc-pick" data-id="' + id + '" title="Select"></span><div class="nm">' + esc(f[1]) + '</div><div class="mt">' + esc(f[2]) + '</div>' + (boardMode ? '<span class="rs" data-resize="1"></span>' : '') + '</div>';
     }).join('');
     var empty = data.error
       ? '<div class="drop">Couldn\'t load - <span class="lnk" data-action="docs-retry">Retry</span></div>'
@@ -1621,16 +1605,11 @@
       + '<div class="types">' + TYPE_CHIPS.map(function (c) {
         return '<button class="chip' + (typeOn === c[0] ? ' on' : '') + '" data-action="docs-type" data-type="' + c[0] + '">' + c[1] + '</button>';
       }).join('') + '</div></section>'
-      + '<section class="card ctr"><div class="ch"><h3>' + esc(data.title || 'All documents') + '</h3><span class="s">' + (data.files || []).length + ' files &middot; hover a file to select it, then drop it on a Space</span>'
-      + '<span class="sizer">Size <input type="range" min="120" max="280" value="' + (function () {
-        var raw = Number((window.STATE && window.STATE.prefs && window.STATE.prefs.docs_prefs && window.STATE.prefs.docs_prefs.size) || 168);
-        return Math.max(120, Math.min(220, raw || 168));
-      })() + '" data-action="docs-size"></span></div>'
+      + '<section class="card ctr"><div class="ch"><h3>' + esc(data.title || 'All documents') + '</h3><span class="s">' + (boardMode ? 'Drag to move · resize from the corner · double-click to open' : (data.files || []).length + ' files') + '</span>'
+      + (boardMode ? '<button class="btn" type="button" data-action="docs-tidy" style="margin-left:8px">Tidy into rows</button>' : '')
+      + '<span class="sizer">Size <input type="range" min="120" max="280" value="' + defaultW + '" data-action="docs-size"></span></div>'
       + bulk
-      + '<div class="files' + (view === 'list' ? ' list' : '') + '" id="files" style="--dw:' + (function () {
-        var raw = Number((window.STATE && window.STATE.prefs && window.STATE.prefs.docs_prefs && window.STATE.prefs.docs_prefs.size) || 168);
-        return Math.max(120, Math.min(220, raw || 168));
-      })() + 'px">' + (files || empty) + '</div>'
+      + '<div class="' + (boardMode ? 'board' : 'files list') + '" id="files"' + (boardMode ? '' : ' style="--dw:' + defaultW + 'px"') + '>' + (files || empty) + '</div>'
       + '<div class="drop">Drop files here, <span class="lnk" data-action="docs-upload">upload</span> or <span class="lnk" data-action="docs-drive">pull from Drive</span> &mdash; <b>first-page previews</b> appear automatically.</div></section>'
       + '<div class="rs"><section class="card"><div class="ch"><h3>Drop into a Space</h3><span class="s">drag a file here</span></div>'
       + ((data.drops || []).length ? (data.drops || []).map(function (d) {
@@ -1808,7 +1787,90 @@
         else if (e.scale < 0.94) applySize(cur + 12);
       });
     })();
+    if (boardMode) bindDocsBoard(wrap);
     markReady('docsDesk');
+  }
+
+  function bindDocsBoard(wrap) {
+    var board = wrap.querySelector('#files.board');
+    if (!board) return;
+    var SNAP = 12;
+    var MIN = 120;
+    var saveTimer = 0;
+    function snap(n) { return Math.max(0, Math.round(Number(n) / SNAP) * SNAP); }
+    function collect() {
+      return Array.prototype.slice.call(board.querySelectorAll('.board-doc')).map(function (el) {
+        return {
+          docId: el.getAttribute('data-id') || '',
+          x: snap(el.offsetLeft),
+          y: snap(el.offsetTop),
+          w: Math.max(MIN, snap(el.offsetWidth)),
+          h: Math.max(MIN, snap(el.offsetHeight))
+        };
+      }).filter(function (r) { return r.docId; });
+    }
+    function persist() {
+      var items = collect();
+      if (window.STATE) window.STATE.docsLayout = items;
+      try { localStorage.setItem('cr_docs_layout', JSON.stringify(items)); } catch (e) {}
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(function () {
+        var fn = typeof window.authFetch === 'function' ? window.authFetch : fetch;
+        fn('/api/documents', {
+          method: 'POST', credentials: 'include', quiet: true,
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ action: 'save-layout', items: items })
+        }).catch(function () {});
+      }, 400);
+    }
+    board.querySelectorAll('.board-doc').forEach(function (el) {
+      var mode = null, sx, sy, ox, oy, ow, oh;
+      el.addEventListener('pointerdown', function (e) {
+        if (e.target && e.target.closest && e.target.closest('[data-action="doc-pick"]')) return;
+        mode = (e.target && e.target.getAttribute && e.target.getAttribute('data-resize')) ? 'r' : 'm';
+        sx = e.clientX; sy = e.clientY;
+        ox = el.offsetLeft; oy = el.offsetTop; ow = el.offsetWidth; oh = el.offsetHeight;
+        el.classList.add('drag');
+        try { el.setPointerCapture(e.pointerId); } catch (err) {}
+        e.preventDefault();
+      });
+      el.addEventListener('pointermove', function (e) {
+        if (!mode) return;
+        var dx = e.clientX - sx, dy = e.clientY - sy;
+        if (mode === 'm') {
+          el.style.left = snap(ox + dx) + 'px';
+          el.style.top = snap(oy + dy) + 'px';
+        } else {
+          el.style.width = Math.max(MIN, snap(ow + dx)) + 'px';
+          el.style.height = Math.max(MIN, snap(oh + dy)) + 'px';
+        }
+      });
+      el.addEventListener('pointerup', function () {
+        if (!mode) return;
+        mode = null;
+        el.classList.remove('drag');
+        persist();
+      });
+      el.addEventListener('dblclick', function (e) {
+        if (e.target && e.target.closest && e.target.closest('[data-resize], [data-action="doc-pick"]')) return;
+        if (window.deskActions && window.deskActions['doc-open']) {
+          window.deskActions['doc-open'](el, wrap);
+        }
+      });
+    });
+    window.__docsTidy = function () {
+      var x = 12, y = 12, rh = 0;
+      var W = board.clientWidth || 800;
+      board.querySelectorAll('.board-doc').forEach(function (el) {
+        var w = el.offsetWidth, h = el.offsetHeight;
+        if (x + w > W - 12) { x = 12; y += rh + 12; rh = 0; }
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+        x += w + 12;
+        rh = Math.max(rh, h);
+      });
+      persist();
+    };
   }
 
   function paintLinksLive() {
@@ -2714,6 +2776,10 @@
           window.STATE.staged = d.docs;
           window.STATE.docFolders = Array.isArray(d.folders) ? d.folders : (Array.isArray(d.categories) ? d.categories : []);
           window.STATE.docSets = Array.isArray(d.sets) ? d.sets : [];
+          if (Array.isArray(d.layout)) {
+            window.STATE.docsLayout = d.layout;
+            try { localStorage.setItem('cr_docs_layout', JSON.stringify(d.layout)); } catch (e) {}
+          }
           window.STATE.docsLoaded = true;
           window.STATE.docsError = false;
         }

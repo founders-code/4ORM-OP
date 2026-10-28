@@ -4,10 +4,13 @@ import {
   buildCallLists,
   createList,
   flattenPeople,
+  personNotes,
   restoreList,
   softDeleteList,
   tickReachPerson,
+  uploadList,
   type ReachList,
+  type UploadRow,
 } from './reach-lists';
 
 type Sql = NeonQueryFunction<false, false>;
@@ -172,4 +175,5 @@ export async function patchReach(
   }
 }
 
-export { createList, softDeleteList, restoreList };
+export { createList, softDeleteList, restoreList, uploadList, personNotes };
+export type { UploadRow };

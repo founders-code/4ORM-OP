@@ -1182,6 +1182,23 @@ async function migrateWar(sql: Sql) {
           )
       `;
     }],
+    /* Prompt 13: free-board document positions per user. */
+    ['db_docs_layout', () => sql`CREATE TABLE IF NOT EXISTS docs_layout (
+      owner_id text NOT NULL,
+      doc_id text NOT NULL,
+      x int NOT NULL DEFAULT 0,
+      y int NOT NULL DEFAULT 0,
+      w int NOT NULL DEFAULT 168,
+      h int NOT NULL DEFAULT 210,
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (owner_id, doc_id)
+    )`],
+    /* Prompt 13: email tone in the space (Chris Voss default). */
+    ['db_space_email_tone', () => sql`ALTER TABLE space_email ADD COLUMN IF NOT EXISTS tone text`],
+    /* Prompt 13: CSV upload rows keep a free-text name when no contact matched yet. */
+    ['db_contact_list_rows_name', () => sql`ALTER TABLE contact_list_rows ADD COLUMN IF NOT EXISTS name text`],
+    ['db_contact_list_rows_company', () => sql`ALTER TABLE contact_list_rows ADD COLUMN IF NOT EXISTS company text`],
+    ['db_contact_list_rows_notes', () => sql`ALTER TABLE contact_list_rows ADD COLUMN IF NOT EXISTS notes text`],
   ];
   for (const [code, run] of steps) {
     try {

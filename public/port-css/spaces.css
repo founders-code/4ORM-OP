@@ -135,6 +135,19 @@
 .spanel .env .para .lab{font-size:11.5px;font-weight:800;letter-spacing:.06em;color:#a3b0d2;margin-bottom:2px}
 .spanel .env .para p{margin:0;color:#c8d1ea}.spanel .env .para p u{text-decoration-color:#a173ff;text-decoration-thickness:2px;text-underline-offset:3px;color:#e9eefa}
 .spanel .env .para.m p{color:#ffb547}
+/* Prompt 13 / design 27 — tone + body in the space */
+.spanel .env .subj-in{font:inherit;font-weight:750;font-size:15px;color:#fff;background:none;border:0;outline:0;width:100%}
+.spanel .env .tone{display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid rgba(120,150,255,.14);align-items:center}
+.spanel .env .tone span{color:#a3b0d2;font-weight:700;font-size:12.5px;margin-right:4px}
+.spanel .env .tone button{font:inherit;font-weight:700;font-size:12.5px;background:rgba(255,255,255,.04);color:#c8d1ea;border:1px solid rgba(120,150,255,.26);border-radius:999px;padding:5px 12px;cursor:pointer}
+.spanel .env .tone button.on{background:rgba(161,115,255,.18);border-color:#a173ff;color:#fff}
+.spanel .env .tdesc{padding:8px 14px;color:#a3b0d2;font-size:12.5px;border-bottom:1px solid rgba(120,150,255,.14)}
+.spanel .env .ed{padding:14px}
+.spanel .env .ed textarea{width:100%;min-height:210px;font:inherit;font-size:14.5px;line-height:1.6;color:#e9eefa;background:#070b1d;border:1px solid rgba(120,150,255,.26);border-radius:10px;padding:12px 14px;resize:vertical;outline:0}
+.spanel .env .ed textarea:focus{border-color:#3b82ff;box-shadow:0 0 0 3px rgba(59,130,255,.18)}
+.spanel .env .edbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.spanel .env .edbar small{color:#a3b0d2;margin-left:auto;font-size:12px;font-weight:650}
+.spanel .env .edbar .ob{height:32px}
 /* People block stats: hairline border (not thick white boxes) */
 .spanel .facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin-top:8px;border:1px solid rgba(120,150,255,.14);border-radius:10px;overflow:hidden;background:transparent}
 .spanel .facts div{padding:8px 10px;border-radius:0;background:transparent;border:0;border-left:1px solid rgba(120,150,255,.14)}

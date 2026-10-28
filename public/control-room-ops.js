@@ -1310,10 +1310,14 @@
       var pulseData = fxNews ? window.__NEWS_PULSE_FIXTURE : (STATE.newsPulse || window.__NEWS_PULSE_FIXTURE);
       window.bindNewsPulse(el, pulseData);
       var nextAt = STATE.newsPulse && Date.parse(STATE.newsPulse.nextAt || '') || 0;
-      var due = !fxNews && !STATE.newsPulseBusy && (!STATE.newsPulse || (nextAt && Date.now() >= nextAt));
+      var staleBuild = !fxNews && !!(STATE.newsPulse && (STATE.newsPulse.gauges || STATE.newsPulse.consumer || []).some(function (g) {
+        return g && g.building && (g.buildingN == null || g.buildingN >= 4);
+      }));
+      var due = !fxNews && !STATE.newsPulseBusy && (!STATE.newsPulse || staleBuild || (nextAt && Date.now() >= nextAt));
       if (due) {
         STATE.newsPulseBusy = true;
-        authFetch('/api/news/pulse?view=' + (STATE.newsPulseView || 'market')).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {
+        var pulseUrl = '/api/news/pulse?view=' + (STATE.newsPulseView || 'market') + (staleBuild || !STATE.newsPulse ? '&rebuild=1' : '');
+        authFetch(pulseUrl).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {
           STATE.newsPulseBusy = false;
           if (d && (d.gauges || d.consumer)) { STATE.newsPulse = d; window.bindNewsPulse(el, d); }
         }).catch(function () { STATE.newsPulseBusy = false; });

@@ -350,6 +350,19 @@
 .port-body.lists table.t th,
 .port-body.neon .tbl th,
 .port-body.lists .tbl th{color:var(--ink3)!important;background:#0b1026!important}
+/* Prompt 13: Contacts table hover must stay on the dark surface (prompt 12 surface rule). */
+.port-body.neon .tbl tr:hover td,
+.port-body.lists .tbl tr:hover td,
+.port-body.neon table.t tr:hover td,
+.port-body.lists table.t tr:hover td{background:rgba(255,255,255,.04)!important;color:var(--ink)!important}
+.port-body.neon .tbl tr:hover .ps b,
+.port-body.lists .tbl tr:hover .ps b,
+.port-body.neon .tbl tr:hover .ps span,
+.port-body.lists .tbl tr:hover .ps span,
+.port-body.neon .tbl tr:hover .nx,
+.port-body.lists .tbl tr:hover .nx,
+.port-body.neon .tbl tr:hover .lt,
+.port-body.lists .tbl tr:hover .lt{color:inherit!important}
 
 /* Pipeline board cards on dark columns stay light ink */
 .port-body.neon .bcard,

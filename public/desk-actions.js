@@ -2489,15 +2489,42 @@
       var hookText = (el.textContent || '').trim();
       var intro = root.querySelector && root.querySelector('[data-action="space-intro"]');
       if (!hookText || !intro) { toast(root, hookText || 'Hook'); return; }
-      var cur = String(intro.innerText || '').trim();
+      var cur = String(intro.value != null ? intro.value : (intro.innerText || '')).trim();
       if (cur.indexOf(hookText) === 0) { toast(root, 'That hook already opens the intro'); return; }
-      intro.innerText = hookText + (cur ? '\n\n' + cur : '');
+      var next = hookText + (cur ? '\n\n' + cur : '');
+      if (intro.value != null) intro.value = next; else intro.innerText = next;
       saveSpaceText(root, intro, 'space-intro');
       toast(root, 'Hook added to the intro');
     },
     'space-angle': function () {},
     'space-subject': function () {},
     'space-intro': function () {},
+    'space-tone': function (el, root) {
+      var sid = attr(el, 'data-id') || (S().pkg && S().pkg.id);
+      var tone = attr(el, 'data-tone') || 'voss';
+      if (S().pkg && String(S().pkg.id) === String(sid)) S().pkg.emailTone = tone;
+      (S().packages || []).forEach(function (p) { if (String(p.id) === String(sid)) p.emailTone = tone; });
+      root.querySelectorAll('[data-action="space-tone"]').forEach(function (b) {
+        b.classList.toggle('on', attr(b, 'data-tone') === tone);
+      });
+      var desc = {
+        voss: 'Tactical empathy. Name what they might be feeling, ask "how" and "what" questions, and make it easy to say no.',
+        ury: 'Getting to Yes. Start from shared interests, separate the person from the problem, offer options.',
+        cialdini: 'Influence. Give something first, lean on proof and authority, be specific about the small next step.',
+        plain: 'Short and direct. No technique, just the point and the ask.'
+      };
+      var td = root.querySelector('.tdesc');
+      if (td) td.textContent = desc[tone] || desc.voss;
+      if (sid && writeOk() && UUID_RE.test(String(sid))) {
+        api('/api/spaces/' + encodeURIComponent(sid), { method: 'PATCH', body: { emailTone: tone } }).catch(function () {});
+      }
+    },
+    'space-rewrite-tone': function (el, root) {
+      spaceToneRewrite(root, attr(el, 'data-id') || (S().pkg && S().pkg.id), 'tone');
+    },
+    'space-rewrite-shorter': function (el, root) {
+      spaceToneRewrite(root, attr(el, 'data-id') || (S().pkg && S().pkg.id), 'shorter');
+    },
     'space-people': function (el, root) {
       if (!S().pkg && !attr(el, 'data-id')) actions['space-open'](el, root);
       var id = attr(el, 'data-id') || (S().pkg && S().pkg.id);
@@ -2743,6 +2770,9 @@
       S().spaceShowAll = true;
       refresh('spaces');
       toast(root, 'Showing all in this group');
+    },
+    'docs-tidy': function () {
+      if (typeof window.__docsTidy === 'function') window.__docsTidy();
     },
     'docs-view': function (el) {
       S().docsView = attr(el, 'data-view') || 'grid';
@@ -5352,7 +5382,12 @@
           to: to,
           cc: cc,
           subject: ready.subject || pkg.emailSubject || (pkg.email && pkg.email.subject) || pkg.subject || '',
-          body: ready.body || pkg.emailBody || (pkg.email && pkg.email.body) || pkg.intro || '',
+          body: (function () {
+            var ta = document.querySelector('[data-action="space-intro"][data-id="' + String(pkg.id || '') + '"]')
+              || document.querySelector('[data-action="space-intro"]');
+            if (ta && String(ta.value || '').length) return String(ta.value);
+            return ready.body || pkg.emailBody || (pkg.email && pkg.email.body) || pkg.intro || '';
+          })(),
           attachments: atts,
           spaceId: pkg.id
         };
@@ -5654,10 +5689,19 @@
     var sid = attr(el, 'data-id') || (S().pkg && S().pkg.id);
     var raw = String(el.value != null ? el.value : (el.innerText || ''));
     if (name === 'space-notes') raw = raw.replace(/\s*Saved\s*$/, '');
-    var text = raw.trim();
+    var text = name === 'space-intro' ? raw : raw.trim();
     var field = { 'space-notes': 'notes', 'space-angle': 'angle', 'space-intro': 'emailBody', 'space-subject': 'emailSubject' }[name];
-    if (S().pkg && String(S().pkg.id) === String(sid)) S().pkg[field] = text;
-    (S().packages || []).forEach(function (p) { if (String(p.id) === String(sid)) p[field] = text; });
+    if (S().pkg && String(S().pkg.id) === String(sid)) {
+      S().pkg[field] = text;
+      if (name === 'space-intro') S().pkg.emailBody = text;
+      if (name === 'space-subject') S().pkg.emailSubject = text;
+    }
+    (S().packages || []).forEach(function (p) {
+      if (String(p.id) !== String(sid)) return;
+      p[field] = text;
+      if (name === 'space-intro') p.emailBody = text;
+      if (name === 'space-subject') p.emailSubject = text;
+    });
     if (!sid || !writeOk() || !UUID_RE.test(String(sid))) return;
     clearTimeout(spaceSaveTimers[name]);
     spaceSaveTimers[name] = setTimeout(function () {
@@ -5667,9 +5711,43 @@
         if (d && d.saved === false) throw new Error('not saved');
         /* The angle now lives on the server (spaces.angle); drop the old browser-only copy once saved. */
         if (name === 'space-angle') { try { localStorage.removeItem('cr_space_angle_' + sid); } catch (err) {} }
-        toast(root, 'Saved');
+        if (name !== 'space-intro' && name !== 'space-subject') toast(root, 'Saved');
       }).catch(function () { toast(root, 'Could not save that'); });
     }, 500);
+  }
+  function spaceToneRewrite(root, spaceId, mode) {
+    var pkg = spaceById(spaceId) || S().pkg;
+    if (!pkg) return;
+    var ta = root.querySelector('[data-action="space-intro"][data-id="' + spaceId + '"]')
+      || root.querySelector('[data-action="space-intro"]');
+    var text = ta ? String(ta.value || '') : String(pkg.emailBody || '');
+    var tone = String(pkg.emailTone || 'voss');
+    if (mode === 'tone' && !text.trim()) { toast(root, 'Write something first, then pick a tone'); return; }
+    var prev = text;
+    toast(root, mode === 'shorter' ? 'Shortening…' : 'Rewriting…');
+    api('/api/mail/write', {
+      method: 'POST',
+      body: {
+        mode: 'tone',
+        tone: mode === 'shorter' ? 'shorter' : tone,
+        text: text,
+        subject: pkg.emailSubject || '',
+        toEmail: ((pkg.recipients || [])[0] || {}).email || '',
+        toName: ((pkg.recipients || [])[0] || {}).name || ''
+      }
+    }).then(ok).then(json).then(function (d) {
+      var next = String((d && d.body) || '').trim();
+      if (!next) throw new Error('empty');
+      if (ta) ta.value = next;
+      pkg.emailBody = next;
+      if (S().pkg && String(S().pkg.id) === String(spaceId)) S().pkg.emailBody = next;
+      api('/api/spaces/' + encodeURIComponent(spaceId), { method: 'PATCH', body: { emailBody: next } }).catch(function () {});
+      toast(root, 'Draft updated', function () {
+        if (ta) ta.value = prev;
+        pkg.emailBody = prev;
+        api('/api/spaces/' + encodeURIComponent(spaceId), { method: 'PATCH', body: { emailBody: prev } }).catch(function () {});
+      });
+    }).catch(function () { toast(root, 'Could not rewrite that'); });
   }
   var mailSearchTimer = 0;
   /* Search all mail: the DOM filter is instant; 3+ characters also asks Gmail (last 90 days). */

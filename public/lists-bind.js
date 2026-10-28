@@ -1,4 +1,4 @@
-/* Contacts > Lists — design 25-build tab 2, fed by /api/reach-out */
+/* Contacts > Lists — design 27 Call lists, fed by /api/reach-out */
 (function () {
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -19,23 +19,77 @@
     }
   }
 
-  function stCls(s) {
-    s = String(s || '');
-    if (/won|met|contacted|replied|meeting/i.test(s)) return 'met';
-    if (/reach|send|1st/i.test(s)) return 'r1';
-    return 'cold';
+  function notePreview(text) {
+    var lines = String(text || '').replace(/\r/g, '').split(/\n+/).map(function (l) { return l.trim(); }).filter(Boolean);
+    return lines.slice(0, 2).join(' ');
   }
 
-  function readyBars(arr) {
-    var a = Array.isArray(arr) ? arr : [];
-    var n = 0;
-    var html = '';
-    for (var i = 0; i < 6; i++) {
-      var on = !!a[i];
-      if (on) n += 1;
-      html += '<i class="' + (on ? 'f' : '') + '"></i>';
+  function parseCsv(text) {
+    var rows = [];
+    var i = 0;
+    var cur = '';
+    var row = [];
+    var q = false;
+    var s = String(text || '').replace(/^\uFEFF/, '');
+    while (i < s.length) {
+      var ch = s[i];
+      if (q) {
+        if (ch === '"' && s[i + 1] === '"') { cur += '"'; i += 2; continue; }
+        if (ch === '"') { q = false; i += 1; continue; }
+        cur += ch; i += 1; continue;
+      }
+      if (ch === '"') { q = true; i += 1; continue; }
+      if (ch === ',') { row.push(cur); cur = ''; i += 1; continue; }
+      if (ch === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; i += 1; continue; }
+      if (ch === '\r') { i += 1; continue; }
+      cur += ch; i += 1;
     }
-    return { html: html, n: n };
+    row.push(cur);
+    if (row.some(function (c) { return String(c).trim(); })) rows.push(row);
+    return rows;
+  }
+
+  function mapCsvRows(raw) {
+    if (!raw.length) return { name: 'Uploaded list', rows: [] };
+    var header = raw[0].map(function (h) { return String(h || '').trim().toLowerCase(); });
+    var hasHeader = header.some(function (h) {
+      return /^(name|full.?name|person|company|org|phone|tel|email|e-?mail|notes?|city|location)$/.test(h);
+    });
+    var cols = hasHeader ? header : [];
+    var start = hasHeader ? 1 : 0;
+    function idx(keys) {
+      for (var k = 0; k < keys.length; k++) {
+        var i = cols.indexOf(keys[k]);
+        if (i >= 0) return i;
+      }
+      return -1;
+    }
+    var iName = idx(['name', 'full name', 'person', 'contact']);
+    var iCo = idx(['company', 'org', 'organisation', 'organization', 'firm']);
+    var iPhone = idx(['phone', 'tel', 'mobile', 'cell']);
+    var iEmail = idx(['email', 'e-mail', 'mail']);
+    var iNotes = idx(['notes', 'note', 'comment', 'comments']);
+    var iCity = idx(['city', 'location', 'base']);
+    if (!hasHeader) {
+      iName = 0; iCo = 1; iPhone = 2; iEmail = 3; iNotes = 4; iCity = 5;
+    }
+    var out = [];
+    for (var r = start; r < raw.length; r++) {
+      var cells = raw[r];
+      var get = function (ix) { return ix >= 0 ? String(cells[ix] || '').trim() : ''; };
+      var email = get(iEmail);
+      var name = get(iName);
+      if (!name && !email) continue;
+      out.push({
+        name: name,
+        company: get(iCo),
+        phone: get(iPhone),
+        email: email,
+        notes: get(iNotes),
+        city: get(iCity),
+      });
+    }
+    return { name: 'Uploaded list', rows: out };
   }
 
   window.bindOutreachLists = function (root) {
@@ -43,7 +97,6 @@
     var state = {
       lists: [],
       cur: null,
-      filt: 'todo',
       q: '',
       undo: null,
     };
@@ -74,6 +127,8 @@
       var box = $('#mbox'); var wrap = $('#modal');
       if (box) box.innerHTML = h; if (wrap) wrap.classList.add('open');
     }
+    function closePop() { var p = $('#pop'); if (p) p.classList.remove('on'); }
+    function openPop() { var p = $('#pop'); if (p) p.classList.add('on'); }
 
     function api(path, opts) {
       opts = opts || {};
@@ -96,10 +151,30 @@
         window.__openSpacePanel(el, root);
         return;
       }
-      if (person && person.name && typeof window.openDesk === 'function') {
-        try { window.openDesk('work'); } catch (e) {}
-      }
       toast(id ? 'Opening space' : 'No space linked yet for ' + (person && person.name || 'that row'));
+    }
+
+    function companyLine(p) {
+      var bits = [p.company, p.city || p.companySub].filter(Boolean);
+      var seen = {};
+      return bits.filter(function (b) {
+        var k = String(b).toLowerCase();
+        if (seen[k]) return false;
+        seen[k] = 1;
+        return true;
+      }).join(' · ');
+    }
+
+    function peopleOf() {
+      if (!state.cur) return [];
+      var rows = (state.cur.people || []).slice();
+      if (state.q) {
+        var q = state.q;
+        rows = rows.filter(function (p) {
+          return (p.name + ' ' + p.company + ' ' + p.email + ' ' + p.phone + ' ' + (p.notes || '')).toLowerCase().indexOf(q) >= 0;
+        });
+      }
+      return rows;
     }
 
     function renderNav() {
@@ -107,106 +182,96 @@
       if (!nav) return;
       nav.innerHTML = state.lists.map(function (l) {
         var on = state.cur && state.cur.key === l.key;
-        var pct = l.count ? Math.round((l.done / l.count) * 100) : 0;
-        return '<div class="lc' + (on ? ' on' : '') + '" data-l="' + esc(l.key) + '"><b>' + esc(l.name) + '</b><span>' + esc(l.sub || (l.count + ' people')) + '</span><div class="pb"><i style="width:' + pct + '%"></i></div></div>';
+        return '<button type="button" class="' + (on ? 'on' : '') + '" data-l="' + esc(l.key) + '">' + esc(l.name) + '<small>' + esc(String(l.count || 0)) + '</small></button>';
       }).join('');
-      nav.querySelectorAll('.lc').forEach(function (el) {
+      nav.querySelectorAll('button[data-l]').forEach(function (el) {
         el.onclick = function () {
           state.cur = state.lists.find(function (l) { return l.key === el.getAttribute('data-l'); }) || state.lists[0];
           render();
         };
       });
-    }
-
-    function peopleOf() {
-      if (!state.cur) return [];
-      var rows = (state.cur.people || []).slice();
-      if (state.filt === 'todo') rows = rows.filter(function (p) { return !p.done; });
-      if (state.filt === 'done') rows = rows.filter(function (p) { return p.done; });
-      if (state.q) {
-        var q = state.q;
-        rows = rows.filter(function (p) {
-          return (p.name + ' ' + p.company + ' ' + p.email + ' ' + p.phone).toLowerCase().indexOf(q) >= 0;
-        });
+      var sel = $('#lsel');
+      if (sel) {
+        sel.innerHTML = state.lists.map(function (l) {
+          return '<option value="' + esc(l.key) + '"' + (state.cur && state.cur.key === l.key ? ' selected' : '') + '>' + esc(l.name) + '</option>';
+        }).join('');
       }
-      return rows;
     }
 
     function renderBody() {
       var body = $('#lbody');
       if (!body || !state.cur) return;
-      var today = vancouverTodayLabel();
       var rows = peopleOf();
-      var byDay = {};
-      var order = [];
-      rows.forEach(function (p) {
-        var d = p.day || 'Later';
-        if (!byDay[d]) { byDay[d] = []; order.push(d); }
-        byDay[d].push(p);
-      });
       var nextId = '';
       for (var i = 0; i < rows.length; i++) {
         if (!rows[i].done) { nextId = rows[i].id; break; }
       }
-      var html = '';
-      order.forEach(function (day) {
-        var group = byDay[day] || [];
-        var doneN = group.filter(function (p) { return p.done; }).length;
-        var isToday = day === today;
-        html += '<div class="dayrow">' + esc(day.toUpperCase())
-          + (isToday ? '<em>TODAY · ' + doneN + ' OF ' + group.length + ' DONE</em>' : '')
-          + '</div>';
-        group.forEach(function (p) {
-          var ready = readyBars(p.ready);
-          var cls = 'row' + (p.done ? ' done' : '') + (p.id === nextId ? ' next' : '');
-          html += '<div class="' + cls + '" data-id="' + esc(p.id) + '">'
-            + '<div class="ck' + (p.done ? ' on' : '') + '" data-ck="' + esc(p.id) + '"></div>'
-            + '<div><div class="nm">' + esc(p.name) + '</div><div class="org">' + esc(p.role || '') + '</div></div>'
-            + '<div class="co2">' + esc(p.company) + (p.companySub ? '<small>' + esc(p.companySub) + '</small>' : '') + '</div>'
-            + '<div><div class="ph">' + esc(p.phone || '-') + '</div><div class="em">' + esc(p.email || '-') + '</div></div>'
-            + '<div><span class="stg ' + stCls(p.stage) + '">' + esc(String(p.stage || 'COLD').toUpperCase()) + '</span>'
-            + '<div class="lt">last · ' + esc(p.lastTouch || 'Never') + '</div></div>'
-            + '<div><div class="ready">' + ready.html + '</div><div class="rlab">' + ready.n + ' of 6 built</div></div>'
-            + '<div class="nx">' + esc(p.nextStep || '') + '</div>'
-            + '<div class="arr">&rsaquo;</div>'
-            + '</div>';
-        });
-      });
-      if (!rows.length) html = '<div class="empty" style="padding:18px;color:#6f7fa6">Nobody on this list yet.</div>';
-      body.innerHTML = html;
-      body.querySelectorAll('.row').forEach(function (el) {
-        el.onclick = function (ev) {
-          if (ev.target && ev.target.getAttribute && ev.target.getAttribute('data-ck') != null) return;
-          if (ev.target && ev.target.closest && ev.target.closest('[data-ck]')) return;
-          var p = (state.cur.people || []).find(function (x) { return x.id === el.getAttribute('data-id'); });
-          if (p) openSpace(p);
+      body.innerHTML = rows.map(function (p) {
+        var phone = p.phone || '';
+        var email = p.email || '';
+        var cls = 'r' + (p.id === nextId ? ' next' : '') + (p.done ? ' done' : '');
+        return '<tr class="' + cls + '" data-id="' + esc(p.id) + '">'
+          + '<td><b>' + esc(p.name) + '</b><small>' + esc(companyLine(p)) + '</small></td>'
+          + '<td>' + (phone ? '<a href="tel:' + esc(phone.replace(/\s+/g, '')) + '">' + esc(phone) + '</a>' : '—') + '</td>'
+          + '<td>' + (email ? '<a href="mailto:' + esc(email) + '">' + esc(email) + '</a>' : '—') + '</td>'
+          + '<td><span class="nt">' + esc(notePreview(p.notes)) + '</span></td>'
+          + '<td><span class="stg">' + esc(p.stage || 'Cold') + '</span></td>'
+          + '<td>' + esc(p.lastTouch || 'Never') + '</td></tr>';
+      }).join('') || '<tr><td colspan="6" style="padding:18px;color:#6f7fa6">Nobody on this list yet.</td></tr>';
+      body.querySelectorAll('tr.r').forEach(function (tr) {
+        tr.onclick = function (ev) {
+          if (ev.target && ev.target.closest && ev.target.closest('a')) return;
+          var p = (state.cur.people || []).find(function (x) { return x.id === tr.getAttribute('data-id'); });
+          if (p) showPerson(p);
         };
       });
-      body.querySelectorAll('[data-ck]').forEach(function (el) {
-        el.onclick = function (ev) {
-          ev.stopPropagation();
-          var id = el.getAttribute('data-ck');
-          var p = (state.cur.people || []).find(function (x) { return x.id === id; });
-          if (!p) return;
-          var prev = !!p.done;
-          p.done = !prev;
-          state.cur.done = (state.cur.people || []).filter(function (x) { return x.done; }).length;
-          render();
-          api('/api/reach-out/' + encodeURIComponent(id), { method: 'PATCH', body: { done: p.done } }).then(function (r) {
-            if (!r.ok) {
-              p.done = prev;
-              state.cur.done = (state.cur.people || []).filter(function (x) { return x.done; }).length;
-              render();
-              toast('Could not save that tick');
-              return;
-            }
-            toast(p.done ? 'Marked done · stage written when GoHighLevel has the opportunity' : 'Moved back to to-do');
-          }).catch(function () {
+    }
+
+    function showPerson(p) {
+      $('#pn').textContent = p.name || 'Person';
+      $('#pm').textContent = companyLine(p) + (p.stage ? ' · ' + p.stage : '') + ' · last touch ' + (p.lastTouch || 'Never');
+      var phone = p.phone || '';
+      var email = p.email || '';
+      $('#pc').innerHTML = (phone ? '<a href="tel:' + esc(phone.replace(/\s+/g, '')) + '">Call ' + esc(phone) + '</a>' : '')
+        + (email ? '<a href="mailto:' + esc(email) + '">Email ' + esc(email) + '</a>' : '');
+      $('#pnotes').innerHTML = '<p>Loading notes…</p><small>Notes from Contacts, the space and Zoom notes, newest first</small>';
+      openPop();
+      var openBtn = $('#popen');
+      if (openBtn) openBtn.onclick = function () { closePop(); openSpace(p); };
+      var markBtn = $('#pmark');
+      if (markBtn) markBtn.onclick = function () {
+        var prev = !!p.done;
+        p.done = true;
+        state.cur.done = (state.cur.people || []).filter(function (x) { return x.done; }).length;
+        closePop();
+        render();
+        api('/api/reach-out/' + encodeURIComponent(p.id), { method: 'PATCH', body: { done: true } }).then(function (r) {
+          if (!r.ok) {
             p.done = prev;
+            state.cur.done = (state.cur.people || []).filter(function (x) { return x.done; }).length;
             render();
-            toast('Could not save that tick');
+            toast('Could not mark called');
+            return;
+          }
+          toast('Marked called', function () {
+            p.done = false;
+            api('/api/reach-out/' + encodeURIComponent(p.id), { method: 'PATCH', body: { done: false } }).then(load);
           });
-        };
+        });
+      };
+      api('/api/reach-out?notes=' + encodeURIComponent(p.id)).then(function (r) {
+        var list = (r.data && r.data.notes) || [];
+        if (!list.length && p.notes) list = [{ source: 'List', when: '', text: p.notes }];
+        if (!list.length) {
+          $('#pnotes').innerHTML = '<p>No notes yet.</p><small>Notes from Contacts, the space and Zoom notes, newest first</small>';
+          return;
+        }
+        $('#pnotes').innerHTML = list.map(function (n) {
+          return '<p>' + esc(n.text).replace(/\n/g, '<br>') + '</p>'
+            + '<small>' + esc(n.source) + (n.when ? ' · ' + esc(n.when) : '') + '</small>';
+        }).join('') + '<small>Notes from Contacts, the space and Zoom notes, newest first</small>';
+      }).catch(function () {
+        $('#pnotes').innerHTML = '<p>' + esc(p.notes || 'No notes yet.') + '</p><small>Notes from Contacts, the space and Zoom notes, newest first</small>';
       });
     }
 
@@ -216,22 +281,22 @@
       var name = $('#lname');
       var stat = $('#lstat');
       if (name && state.cur) name.textContent = state.cur.name;
-      if (stat && state.cur) stat.textContent = state.cur.done + ' of ' + state.cur.count + ' done';
-      root.querySelectorAll('#lfilt span').forEach(function (s) {
-        s.classList.toggle('on', s.getAttribute('data-f') === state.filt);
-      });
+      if (stat && state.cur) {
+        var left = (state.cur.people || []).filter(function (p) { return !p.done; }).length;
+        stat.textContent = state.cur.count + ' people · 5 a day · ' + state.cur.done + ' done'
+          + (left ? ' · ' + left + ' left' : '');
+      }
       renderBody();
     }
 
     function load() {
-      var cached = (window.STATE && window.STATE.peopleLists) || [];
-      if (cached.length && !state.lists.length) {
-        state.lists = cached;
-        state.cur = cached[0] || null;
+      if (window.STATE && window.STATE.peopleLists && window.STATE.peopleLists.length && !state.lists.length) {
+        state.lists = window.STATE.peopleLists;
+        state.cur = state.lists[0] || null;
         render();
-      } else {
+      } else if (!state.lists.length) {
         var nav = $('#listnav');
-        if (nav && !state.lists.length) nav.innerHTML = '<div class="lc"><b>Loading lists</b><span>from GoHighLevel and your sheets</span></div>';
+        if (nav) nav.innerHTML = '<button type="button"><b>Loading lists</b><small>—</small></button>';
       }
       return api('/api/reach-out?lists=1').then(function (r) {
         var lists = (r.data && r.data.lists) || [];
@@ -247,49 +312,71 @@
       });
     }
 
-    root.querySelectorAll('#lfilt span').forEach(function (s) {
-      s.onclick = function () { state.filt = s.getAttribute('data-f') || 'todo'; render(); };
-    });
     var search = $('#lsearch');
     if (search) search.oninput = function (e) { state.q = String(e.target.value || '').toLowerCase(); render(); };
-    var todayBtn = $('#todayBtn');
-    if (todayBtn) todayBtn.onclick = function () {
-      var rows = (state.cur && state.cur.people || []).filter(function (p) { return !p.done; });
-      if (!rows.length) { toast('Nothing left to do in this list'); return; }
-      openSpace(rows[0]);
+    var sel = $('#lsel');
+    if (sel) sel.onchange = function (e) {
+      state.cur = state.lists.find(function (l) { return l.key === e.target.value; }) || state.lists[0];
+      render();
     };
-    var newList = $('#newList');
-    if (newList) newList.onclick = function () {
-      modal('<h3>New list</h3><p>A list is a table of contacts with the columns you choose.</p>'
-        + '<input id="nlname" placeholder="Name, for example Regulators this month">'
-        + '<div class="row" style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">'
-        + '<button type="button" class="btn" id="nlcancel">Cancel</button>'
-        + '<button type="button" class="btn pri" id="nlcreate">Create list</button></div>');
-      var c = $('#nlcancel'); var g = $('#nlcreate');
-      if (c) c.onclick = closeModal;
-      if (g) g.onclick = function () {
-        var nm = ($('#nlname') && $('#nlname').value) || '';
-        closeModal();
-        api('/api/reach-out', { method: 'POST', body: { action: 'create-list', name: nm } }).then(function (r) {
-          if (!r.ok) { toast('Could not create that list'); return; }
-          var id = r.data && r.data.id;
-          toast('List created', id ? function () {
-            api('/api/reach-out', { method: 'POST', body: { action: 'delete-list', id: id } }).then(load);
-          } : null);
-          load();
-        });
+    var px = $('#px');
+    if (px) px.onclick = closePop;
+    var pop = $('#pop');
+    if (pop) pop.onclick = function (e) { if (e.target === pop) closePop(); };
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closePop();
+    });
+
+    function startUpload() {
+      var file = $('#csvFile');
+      if (file) file.click();
+    }
+    var uploadBtn = $('#uploadList');
+    if (uploadBtn) uploadBtn.onclick = startUpload;
+    var csvFile = $('#csvFile');
+    if (csvFile) csvFile.onchange = function () {
+      var f = csvFile.files && csvFile.files[0];
+      csvFile.value = '';
+      if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        var parsed = mapCsvRows(parseCsv(String(reader.result || '')));
+        if (!parsed.rows.length) { toast('No people found in that CSV'); return; }
+        var base = String(f.name || 'Uploaded list').replace(/\.csv$/i, '');
+        modal('<h3>Upload list</h3><p>Map name, company, phone, email and notes. Matching contacts by email.</p>'
+          + '<input id="ulname" value="' + esc(base) + '">'
+          + '<p style="margin-top:10px">' + parsed.rows.length + ' people ready.</p>'
+          + '<div class="row" style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">'
+          + '<button type="button" class="btn" id="ulcancel">Cancel</button>'
+          + '<button type="button" class="btn pri" id="ulgo">Create list</button></div>');
+        var c = $('#ulcancel'); var g = $('#ulgo');
+        if (c) c.onclick = closeModal;
+        if (g) g.onclick = function () {
+          var nm = ($('#ulname') && $('#ulname').value) || base;
+          closeModal();
+          api('/api/reach-out', { method: 'POST', body: { action: 'upload-list', name: nm, rows: parsed.rows } }).then(function (r) {
+            if (!r.ok) { toast('Could not upload that list'); return; }
+            var id = r.data && r.data.id;
+            toast('List uploaded · ' + ((r.data && r.data.matched) || 0) + ' matched by email', id ? function () {
+              api('/api/reach-out', { method: 'POST', body: { action: 'delete-list', id: id } }).then(load);
+            } : null);
+            load().then(function (lists) {
+              var hit = (lists || []).find(function (l) { return l.id === id || l.key === 'custom:' + id; });
+              if (hit) { state.cur = hit; render(); }
+            });
+          });
+        };
       };
+      reader.readAsText(f);
     };
 
-    // Soft-delete a custom list: long-press is overkill; expose via double-click on custom nav items after load.
     root.addEventListener('contextmenu', function (ev) {
-      var lc = ev.target && ev.target.closest && ev.target.closest('#listnav .lc');
+      var lc = ev.target && ev.target.closest && ev.target.closest('#listnav button[data-l]');
       if (!lc) return;
       var key = lc.getAttribute('data-l') || '';
       if (key.indexOf('custom:') !== 0) return;
       ev.preventDefault();
       var id = key.slice('custom:'.length);
-      var prev = state.lists.slice();
       api('/api/reach-out', { method: 'POST', body: { action: 'delete-list', id: id } }).then(function (r) {
         if (!r.ok) { toast('Could not delete that list'); return; }
         toast('List removed', function () {
@@ -297,7 +384,6 @@
         });
         load();
       });
-      state.lists = prev;
     });
 
     load();

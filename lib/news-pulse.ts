@@ -139,19 +139,28 @@ function heat(items: Item[], cats: string[], hist: { start: number; end: number 
   while (lead < counts.length && counts[lead] === 0) lead += 1;
   const afterLead = counts.slice(lead);
   const real = afterLead.filter((n) => n > 0);
-  /* Leading empty weeks mean the baseline is still forming - do not score 100 yet. */
-  const building = real.length < 4 || lead > 0;
+  /* Building only while history is shorter than 4 weeks with data. Leading empty
+     weeks no longer force building once four real weeks exist (prompt 13). */
+  const building = real.length < 4;
   const med = medianOf(real) || 1;
   const nowCount = counts[counts.length - 1] || 0;
-  const thenCount = counts[counts.length - 2] || 0;
   const v = building ? null : scaled(nowCount, med);
-  const lastV = building ? null : scaled(thenCount, med);
+  /* Delta vs the 5-week normal (median of the prior five weeks), not last week. */
+  const prior5 = counts.slice(Math.max(0, counts.length - 6), -1).filter((n) => n > 0);
+  const normalCount = medianOf(prior5.length ? prior5 : real) || med;
+  const normalV = building ? null : scaled(normalCount, med);
   const bars = counts.map((n, i) => (i < lead ? 0 : (building ? Math.min(100, Math.round((n / (med || 1)) * 40)) : scaled(n, med))));
-  const top = topic.slice().sort((a, b) => weight(b) - weight(a) || new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime())[0];
+  const mtgRule = /mortgage|renewal|lender|broker|osfi\s*b-?20|bcfsa|\brates?\b|stress.?test/i;
+  const ranked = topic.slice().sort((a, b) => weight(b) - weight(a) || new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime());
+  const wantMtg = cats.some((c) => /mortgage|housing/i.test(c));
+  /* Mortgage lead must name mortgages / renewals / lenders / brokers / B-20 / BCFSA / rates. */
+  const top = wantMtg
+    ? ranked.find((it) => mtgRule.test(`${it.title || ''} ${it.summary || ''} ${it.why_it_matters || ''}`))
+    : ranked[0];
   const title = String(top?.title || '');
   return {
     v: v == null ? null : v,
-    d: building || v == null || lastV == null ? 0 : v - lastV,
+    d: building || v == null || normalV == null ? 0 : v - normalV,
     building,
     buildingN: real.length,
     w: bars,
@@ -165,7 +174,14 @@ function heat(items: Item[], cats: string[], hist: { start: number; end: number 
           dek: String(top.summary || ''),
           wim: String(top.why_it_matters || ''),
         }
-      : { chip: cats[0], img: '', imp: 'reg', h: 'No story this week', dek: '', wim: '' },
+      : {
+          chip: cats[0],
+          img: '',
+          imp: 'reg',
+          h: wantMtg ? 'No mortgage story this week' : 'No story this week',
+          dek: '',
+          wim: '',
+        },
   };
 }
 

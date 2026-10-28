@@ -14,8 +14,10 @@ export type ReachListPerson = {
   role: string;
   company: string;
   companySub: string;
+  city: string;
   phone: string;
   email: string;
+  notes: string;
   stage: string;
   lastTouch: string;
   day: string;
@@ -104,6 +106,8 @@ function sheetPeople(kind: 'inv' | 'ent', slice: { start: number; end: number },
     const stage = String(row.st || 'Cold');
     const phone = fact(row as { facts?: string[][] }, 'Phone') || '';
     const email = String(row.em || '');
+    const city = fact(row as { facts?: string[][] }, 'Base') || fact(row as { facts?: string[][] }, 'Segment') || '';
+    const notes = clip(row.why || row.watch || '', 400);
     return {
       id: `${listKey}:${String(row.id || ix)}`,
       listKey,
@@ -111,11 +115,13 @@ function sheetPeople(kind: 'inv' | 'ent', slice: { start: number; end: number },
       role: String(row.p || '').includes(',') ? String(row.p).split(',').slice(1).join(',').trim() : (kind === 'inv' ? 'Investor' : 'Contact'),
       company: String(row.n || ''),
       companySub: [
-        fact(row as { facts?: string[][] }, 'Base') || fact(row as { facts?: string[][] }, 'Segment'),
+        city,
         fact(row as { facts?: string[][] }, 'First cheque') || fact(row as { facts?: string[][] }, 'Scale'),
       ].filter(Boolean).join(' · '),
+      city,
       phone,
       email,
+      notes,
       stage,
       lastTouch: 'Never',
       day: days[ix] || '',
@@ -170,8 +176,10 @@ async function designPartnerPeople(ownerId: string, pipes: GhlPipeline[]): Promi
       role: role || 'Design partner',
       company: opp.company || opp.name || '',
       companySub: stageName,
+      city: '',
       phone,
       email,
+      notes: '',
       stage: stageName,
       lastTouch: last,
       day: days[i] || '',
@@ -262,8 +270,10 @@ async function regulatorPeople(sql: Sql, ownerId: string): Promise<ReachListPers
         role: first?.role || 'Regulator',
         company: String(row.name || ''),
         companySub: 'Regulatory',
+        city: '',
         phone: '',
         email: first?.email || '',
+        notes: clip(row.notes, 400),
         stage,
         lastTouch: row.updated_at
           ? new Date(String(row.updated_at)).toLocaleDateString('en-CA', { timeZone: 'America/Vancouver', day: 'numeric', month: 'short' })
@@ -369,7 +379,8 @@ export async function buildCallLists(sql: Sql, ownerId: string, userId: string):
     for (const list of lists as Array<Record<string, unknown>>) {
       const rows = await sql`
         SELECT r.contact_id, r.position, r.day, r.sent_at, r.stage, r.phone, r.email,
-          c.name, c.company, c.email AS c_email, c.phone AS c_phone, c.role
+          r.name AS row_name, r.company AS row_company, r.notes AS row_notes,
+          c.name, c.company, c.email AS c_email, c.phone AS c_phone, c.role, c.notes AS c_notes, c.area
         FROM contact_list_rows r
         LEFT JOIN contacts c ON c.id::text = r.contact_id AND c.owner_id = ${ownerId} AND c.deleted_at IS NULL
         WHERE r.list_id = ${String(list.id)}::uuid
@@ -378,15 +389,18 @@ export async function buildCallLists(sql: Sql, ownerId: string, userId: string):
       const people = (rows as Array<Record<string, unknown>>).map((r, ix) => {
         const ready = [0, 0, 0, 0, 0, 0];
         const stage = String(r.stage || 'Cold');
+        const city = clip(r.area, 80);
         return {
           id: `custom:${list.id}:${r.contact_id || ix}`,
           listKey: `custom:${list.id}`,
-          name: String(r.name || 'Person'),
+          name: String(r.name || r.row_name || 'Person'),
           role: String(r.role || ''),
-          company: String(r.company || ''),
-          companySub: '',
+          company: String(r.company || r.row_company || ''),
+          companySub: city,
+          city,
           phone: String(r.phone || r.c_phone || ''),
           email: String(r.email || r.c_email || ''),
+          notes: clip(r.row_notes || r.c_notes, 400),
           stage,
           lastTouch: r.sent_at ? 'Sent' : 'Never',
           day: String(r.day || ''),
@@ -403,8 +417,8 @@ export async function buildCallLists(sql: Sql, ownerId: string, userId: string):
         id: String(list.id),
         key: `custom:${list.id}`,
         name: String(list.name),
-        sub: `${people.length} people`,
-        kind: 'custom',
+        sub: `${people.length} people · uploaded`,
+        kind: 'uploaded',
         count: people.length,
         done: people.filter((p) => p.done).length,
         people,
@@ -412,6 +426,45 @@ export async function buildCallLists(sql: Sql, ownerId: string, userId: string):
     }
   } catch (err) {
     fail('reach_custom_lists', err);
+  }
+
+  const everyone = [...allPeople, ...custom.flatMap((l) => l.people)];
+  await applyDoneMarks(sql, ownerId, everyone);
+
+  // Fill notes / city from contacts matched by email when the list row is thin.
+  try {
+    const emails = everyone.map((p) => p.email.toLowerCase()).filter((e) => e.includes('@'));
+    if (emails.length) {
+      const unique = Array.from(new Set(emails)).slice(0, 400);
+      const rows = await sql`
+        SELECT id, name, email, phone, notes, area, company, last_touch
+        FROM contacts
+        WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND lower(email) = ANY(${unique}::text[])
+      `.catch(() => []);
+      const byEmail = new Map(
+        (rows as Array<Record<string, unknown>>).map((r) => [String(r.email || '').toLowerCase(), r]),
+      );
+      for (const p of everyone) {
+        const hit = byEmail.get(p.email.toLowerCase());
+        if (!hit) continue;
+        if (!p.contactId) p.contactId = String(hit.id || '');
+        if (!p.notes) p.notes = clip(hit.notes, 400);
+        if (!p.city) p.city = clip(hit.area, 80);
+        if (!p.phone) p.phone = clip(hit.phone, 40);
+        if (p.lastTouch === 'Never' && hit.last_touch) {
+          p.lastTouch = new Date(String(hit.last_touch)).toLocaleDateString('en-CA', {
+            timeZone: 'America/Vancouver', day: 'numeric', month: 'short',
+          });
+        }
+        if (p.city && p.companySub && !p.companySub.includes(p.city)) {
+          p.companySub = `${p.companySub} · ${p.city}`;
+        } else if (p.city && !p.companySub) {
+          p.companySub = p.city;
+        }
+      }
+    }
+  } catch (err) {
+    fail('reach_contact_enrich', err);
   }
 
   const wrap = (key: string, name: string, sub: string, kind: string, people: ReachListPerson[]): ReachList => ({
@@ -427,10 +480,9 @@ export async function buildCallLists(sql: Sql, ownerId: string, userId: string):
 
   return [
     wrap('design-partners', 'Design partners', `${design.length} people · 5 a day`, 'design', design),
-    wrap('pre-seed', 'Pre-seed investors', '25 funds · 5 a day', 'vc', preseed),
-    wrap('regulators', 'Regulators', '15 Regulatory spaces', 'regulator', regulators),
-    wrap('ent-1-25', 'Enterprise BC · #1-25', '25 · protected', 'enterprise', entProtected),
-    wrap('ent-26-50', 'Enterprise BC · #26-50', '25 · 5 a day', 'enterprise', entWeek),
+    wrap('pre-seed', 'VCs, pre-seed', '25 funds · 5 a day', 'vc', preseed),
+    wrap('regulators', 'Regulators', `${regulators.length || 15} bodies`, 'regulator', regulators),
+    wrap('ent-1-25', 'Enterprise BC #1-50', '50 · protected 1-25', 'enterprise', [...entProtected, ...entWeek].slice(0, 50)),
     ...custom,
   ];
 }
@@ -562,4 +614,204 @@ export async function createList(sql: Sql, ownerId: string, name: string) {
     RETURNING id, name
   `;
   return { id: String(rows[0].id), name: String(rows[0].name) };
+}
+
+export type UploadRow = {
+  name?: string;
+  company?: string;
+  phone?: string;
+  email?: string;
+  notes?: string;
+  city?: string;
+};
+
+/** Create a list from mapped CSV rows; match existing contacts by email. */
+export async function uploadList(sql: Sql, ownerId: string, name: string, rows: UploadRow[]) {
+  const clean = clip(name, 80) || 'Uploaded list';
+  const list = await sql`
+    INSERT INTO contact_lists (owner_id, name, kind, source, columns)
+    VALUES (
+      ${ownerId}, ${clean}, 'uploaded', 'csv',
+      ${JSON.stringify(['Name', 'Company', 'Phone', 'Email', 'Notes'])}::jsonb
+    )
+    RETURNING id, name
+  `;
+  const listId = String(list[0].id);
+  const days = weekdayBuckets(Math.max(rows.length, 1));
+  let matched = 0;
+  let created = 0;
+  for (let i = 0; i < rows.slice(0, 500).length; i++) {
+    const row = rows[i];
+    const email = clip(row.email, 180).toLowerCase();
+    const personName = clip(row.name, 120) || email.split('@')[0] || 'Person';
+    const company = clip(row.company, 160);
+    const phone = clip(row.phone, 40);
+    const notes = clip(row.notes, 2000);
+    const city = clip(row.city, 80);
+    let contactId = '';
+    if (email.includes('@')) {
+      const found = await sql`
+        SELECT id FROM contacts
+        WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND lower(email) = ${email}
+        LIMIT 1
+      `.catch(() => []);
+      if (found[0]?.id) {
+        contactId = String(found[0].id);
+        matched += 1;
+        if (notes) {
+          await sql`
+            UPDATE contacts SET
+              notes = CASE WHEN coalesce(notes, '') = '' THEN ${notes} ELSE notes END,
+              phone = CASE WHEN coalesce(phone, '') = '' THEN ${phone || null} ELSE phone END,
+              area = CASE WHEN coalesce(area, '') = '' THEN ${city || null} ELSE area END
+            WHERE id = ${contactId}::uuid AND owner_id = ${ownerId}
+          `.catch(() => null);
+        }
+      }
+    }
+    if (!contactId) {
+      const inserted = await sql`
+        INSERT INTO contacts (owner_id, name, company, email, phone, area, notes, source, type, stage)
+        VALUES (
+          ${ownerId}, ${personName}, ${company || null}, ${email || null}, ${phone || null},
+          ${city || null}, ${notes || null}, 'csv-upload', 'other', 'new'
+        )
+        RETURNING id
+      `.catch(() => []);
+      if (inserted[0]?.id) {
+        contactId = String(inserted[0].id);
+        created += 1;
+      } else {
+        contactId = `row-${i}-${Date.now()}`;
+      }
+    }
+    await sql`
+      INSERT INTO contact_list_rows (list_id, contact_id, position, day, stage, phone, email, name, company, notes)
+      VALUES (
+        ${listId}::uuid, ${contactId}, ${i + 1}, ${days[i] || null}, 'Cold',
+        ${phone || null}, ${email || null}, ${personName}, ${company || null}, ${notes || null}
+      )
+      ON CONFLICT (list_id, contact_id) DO UPDATE SET
+        position = EXCLUDED.position, phone = EXCLUDED.phone, email = EXCLUDED.email,
+        name = EXCLUDED.name, company = EXCLUDED.company, notes = EXCLUDED.notes
+    `.catch((err) => { fail('reach_upload_row', err); });
+  }
+  return {
+    id: listId,
+    name: String(list[0].name),
+    key: `custom:${listId}`,
+    count: rows.length,
+    matched,
+    created,
+  };
+}
+
+export type PersonNote = {
+  source: string;
+  when: string;
+  text: string;
+};
+
+/** Full notes newest first: Contacts + person space + Zoom notes. */
+export async function personNotes(
+  sql: Sql,
+  ownerId: string,
+  userId: string,
+  personId: string,
+): Promise<{ notes: PersonNote[]; person: ReachListPerson | null }> {
+  const lists = await buildCallLists(sql, ownerId, userId);
+  const person = lists.flatMap((l) => l.people).find((p) => p.id === personId) || null;
+  const notes: PersonNote[] = [];
+  const push = (source: string, when: string | Date | null | undefined, text: string) => {
+    const t = String(text || '').trim();
+    if (!t) return;
+    const whenLabel = when
+      ? new Date(when).toLocaleString('en-CA', {
+        timeZone: 'America/Vancouver',
+        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
+      })
+      : '';
+    notes.push({ source, when: whenLabel, text: t });
+  };
+
+  if (person?.contactId && /^[0-9a-f-]{36}$/i.test(person.contactId)) {
+    try {
+      const rows = await sql`
+        SELECT notes, updated_at, created_at FROM contacts
+        WHERE id = ${person.contactId}::uuid AND owner_id = ${ownerId} AND deleted_at IS NULL
+        LIMIT 1
+      `;
+      if (rows[0]) push('Contacts', rows[0].updated_at || rows[0].created_at, String(rows[0].notes || ''));
+    } catch (err) {
+      fail('reach_notes_contact', err);
+    }
+  } else if (person?.email) {
+    try {
+      const rows = await sql`
+        SELECT notes, updated_at, created_at FROM contacts
+        WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND lower(email) = ${person.email.toLowerCase()}
+        LIMIT 1
+      `;
+      if (rows[0]) push('Contacts', rows[0].updated_at || rows[0].created_at, String(rows[0].notes || ''));
+    } catch (err) {
+      fail('reach_notes_contact_email', err);
+    }
+  }
+
+  if (person?.spaceId) {
+    try {
+      const rows = await sql`
+        SELECT notes, updated_at, created_at FROM spaces
+        WHERE id = ${person.spaceId}::uuid AND owner_id = ${ownerId} AND deleted_at IS NULL
+        LIMIT 1
+      `;
+      if (rows[0]) push('Space', rows[0].updated_at || rows[0].created_at, String(rows[0].notes || ''));
+      const items = await sql`
+        SELECT body, created_at FROM space_items
+        WHERE space_id = ${person.spaceId}::uuid AND owner_id = ${ownerId} AND deleted_at IS NULL AND kind = 'note'
+        ORDER BY created_at DESC
+        LIMIT 20
+      `.catch(() => []);
+      for (const it of items as Array<Record<string, unknown>>) {
+        push('Space note', it.created_at as string | Date | null | undefined, String(it.body || ''));
+      }
+    } catch (err) {
+      fail('reach_notes_space', err);
+    }
+  }
+
+  const nameNeedle = (person?.name || '').trim().toLowerCase();
+  const emailNeedle = (person?.email || '').trim().toLowerCase();
+  if (nameNeedle || emailNeedle) {
+    try {
+      const rows = await sql`
+        SELECT title, ai_summary, others, note_date, created_at, attendees
+        FROM zoom_notes
+        WHERE owner_id = ${ownerId} AND deleted_at IS NULL
+        ORDER BY coalesce(note_date, created_at::date) DESC
+        LIMIT 40
+      `.catch(() => []);
+      for (const z of rows as Array<Record<string, unknown>>) {
+        const attendees = Array.isArray(z.attendees)
+          ? (z.attendees as unknown[]).map((a) => String(a).toLowerCase())
+          : [];
+        const blob = `${z.title || ''} ${attendees.join(' ')}`.toLowerCase();
+        const hit = (nameNeedle && blob.includes(nameNeedle.split(' ')[0]))
+          || (emailNeedle && blob.includes(emailNeedle));
+        if (!hit) continue;
+        const others = Array.isArray(z.others) ? (z.others as unknown[]).map(String).join('\n') : '';
+        const text = [String(z.title || ''), String(z.ai_summary || ''), others].filter(Boolean).join('\n');
+        push('Zoom notes', (z.note_date || z.created_at) as string | Date | null | undefined, text);
+      }
+    } catch (err) {
+      fail('reach_notes_zoom', err);
+    }
+  }
+
+  if (person?.notes && !notes.some((n) => n.text === person.notes)) {
+    push('List', null, person.notes);
+  }
+
+  notes.sort((a, b) => String(b.when).localeCompare(String(a.when)));
+  return { notes, person };
 }

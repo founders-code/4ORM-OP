@@ -56,18 +56,18 @@
   var CSS = {
     room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=8', notes: '/port-css/notes.css?v=4',
     notesCanvas: '/port-css/notes-canvas.css?v=9', spacesArrange: '/port-css/spaces-arrange.css?v=1', spacesCards: '/port-css/spaces-cards.css?v=7', signalsDetail: '/port-css/signals-detail.css?v=4', rec: '/port-css/recordings.css?v=2',
-    contacts: '/port-css/pipeline.css?v=6', work: '/port-css/spaces.css?v=12', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css?v=4',
-    links: '/port-css/links.css?v=6', mail: '/port-css/email.css?v=8', mailPeople: '/port-css/email-people.css?v=8',
-    playbook: '/port-css/playbook.css?v=4', calendar: '/port-css/calendar.css?v=5', zoom: '/port-css/zoom.css?v=2',
+    contacts: '/port-css/pipeline.css?v=6', work: '/port-css/spaces.css?v=13', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css?v=5',
+    links: '/port-css/links.css?v=7', mail: '/port-css/email.css?v=8', mailPeople: '/port-css/email-people.css?v=8',
+    playbook: '/port-css/playbook.css?v=5', calendar: '/port-css/calendar.css?v=5', zoom: '/port-css/zoom.css?v=2',
     completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=3',
-    neon: '/port-css/neon.css?v=1', playbookP8: '/port-css/playbook-p8.css?v=5', plannerNeon: '/port-css/planner-neon.css?v=4',
-    calendarNeon: '/port-css/calendar-neon.css?v=2', completedNeon: '/port-css/completed-neon.css?v=3',
+    neon: '/port-css/neon.css?v=1', playbookP8: '/port-css/playbook-p8.css?v=6', plannerNeon: '/port-css/planner-neon.css?v=4',
+    calendarNeon: '/port-css/calendar-neon.css?v=3', completedNeon: '/port-css/completed-neon.css?v=3',
     intNeon: '/port-css/integrations-neon.css?v=2',     vaultOps: '/port-css/vault-ops.css?v=5',
     sheetViewer: '/port-css/sheet-viewer.css?v=2', notesCanvasP8: '/port-css/notes-canvas-p8.css?v=1',
-    outreach: '/port-css/outreach-lists.css?v=4',
+    outreach: '/port-css/outreach-lists.css?v=5',
     vault: '/port-css/vault-ops.css?v=5',
     ops: '/port-css/vault-ops.css?v=5',
-    contrastP10: '/port-css/contrast-p10.css?v=3'
+    contrastP10: '/port-css/contrast-p10.css?v=4'
   };
   var HOSTS = {
     opsDash: 'room', warDesk: 'war', notesDesk: 'notes',
@@ -1200,6 +1200,15 @@
       var k = String(n.category || '').toLowerCase();
       if (k) catCount[k] = (catCount[k] || 0) + 1;
     });
+    /* Board must show every note (clustered or not). A stale category filter that
+       matches zero notes falls back to All so "All 0" never hides the collection. */
+    if (catOn !== 'all') {
+      var wantCat = catOn.toLowerCase();
+      var inCat = (data.notes || []).concat(data.pinned || []).filter(function (n) {
+        return String(n.category || '').toLowerCase() === wantCat;
+      }).length;
+      if (!inCat) catOn = 'all';
+    }
     if (catOn !== 'all' && cats.map(function (c) { return c.toLowerCase(); }).indexOf(catOn.toLowerCase()) < 0) catOn = 'all';
     var archiveView = filt === 'archive' && !fixtureOn();
     /* N9: Canvas = free placement of sticky notes, saved to sticky_notes.x / y. */

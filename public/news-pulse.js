@@ -1,23 +1,23 @@
 (function(){
 const PULSE={
  gauges:[
-  {k:'reg',t:'Regulation heat',chip:'Compliance',v:82,d:+19,w:[38,44,41,52,47,58,63,82],why:['FINTRAC','fined four credit unions $816,750 for missed client reviews'],
+  {k:'reg',t:'Regulation heat',chip:'Compliance',v:82,d:+19,building:false,buildingN:5,w:[38,44,41,52,47,58,63,82],why:['FINTRAC','fined four credit unions $816,750 for missed client reviews'],
    story:{chip:'Payments / FINTRAC',img:'/news-images/Court-ruling_sm.jpg',imp:'reg',h:'FINTRAC fines four credit unions $816,750',dek:'Penalties for failing to apply compliance procedures, assess risk and monitor clients. At one, 46 of 118 high-risk client files went more than a year without review.',wim:'regulators are penalising missed reviews and undocumented risk assessments - exactly the record a 4orm session produces automatically.'}},
-  {k:'fraud',t:'Fraud heat',chip:'Fraud',v:71,d:+12,w:[40,46,51,49,55,57,59,71],why:['Equifax','says AI-forged income letters are slipping past underwriting'],
+  {k:'fraud',t:'Fraud heat',chip:'Fraud',v:71,d:+12,building:false,buildingN:5,w:[40,46,51,49,55,57,59,71],why:['Equifax','says AI-forged income letters are slipping past underwriting'],
    story:{chip:'Fraud',img:'/news-images/Mortgage-fraud2_sm.jpg',imp:'opp',h:'AI is making mortgage fraud harder to spot, Equifax warns',dek:'AI-forged income letters and employment records are getting past first-line underwriting. Equifax says brokers should flag suspect files earlier.',wim:'a broker who can show what was checked, and when, is the broker a lender trusts. That is the record 4orm keeps.'}},
-  {k:'ai',t:'AI and governance heat',chip:'AI & governance',v:64,d:+6,w:[30,33,41,45,52,50,58,64],why:['OSFI','says AI governance and testing must keep pace with adoption'],
+  {k:'ai',t:'AI and governance heat',chip:'AI & governance',v:64,d:+6,building:false,buildingN:5,w:[30,33,41,45,52,50,58,64],why:['OSFI','says AI governance and testing must keep pace with adoption'],
    story:{chip:'AI & governance',img:'/news-images/Peter-Routledge_med.jpg',imp:'reg',h:'OSFI warns AI could amplify cyber and technology risks for lenders',dek:'OSFI says governance and testing must keep pace with AI adoption, and boards stay accountable for the outcome.',wim:'every AI-assisted step needs a reviewable record. That is the auditable-AI line in the deck.'}},
-  {k:'mtg',t:'Mortgage market heat',chip:'Mortgage / brokerage',v:47,d:-8,w:[61,58,55,57,52,50,55,47],why:['Renewals','volume steady; fixed rates flat for a third week'],
+  {k:'mtg',t:'Mortgage market heat',chip:'Mortgage / brokerage',v:47,d:-8,building:false,buildingN:5,w:[61,58,55,57,52,50,55,47],why:['Renewals','volume steady; fixed rates flat for a third week'],
    story:{chip:'Mortgage / brokerage',img:'/news-images/Northguard-500x267.png',imp:'threat',h:'AI-powered mortgage lender Northguard Financial to launch in 2027',dek:'A new digital lender plans to launch next year with automated underwriting for prime borrowers.',wim:'new automated lenders raise the bar for suitability evidence. A design-partner conversation for brokers.'}}
  ],
  consumer:[
-  {k:'fear',t:'Consumer fear index',chip:'Housing market',v:68,d:+9,w:[44,47,52,50,55,58,59,68],why:['Renewals','payment shock is the top worry in searches and complaints'],
+  {k:'fear',t:'Consumer fear index',chip:'Housing market',v:68,d:+9,building:false,buildingN:5,w:[44,47,52,50,55,58,59,68],why:['Renewals','payment shock is the top worry in searches and complaints'],
    story:{chip:'Housing market',img:'/news-images/OREA-calls-on-government-to-increase-housing-supply_med-500x336.jpg',imp:'threat',h:'Renewal payment shock is the top household worry this fall',dek:'More borrowers renewing into higher payments are searching for help and calling their lender before the renewal date.',wim:'a consumer facing a renewal decision is exactly who 4ormIQ walks through the suitability questions, on the record.'}},
-  {k:'unc',t:'Uncertainty index',chip:'Housing market',v:74,d:+5,w:[60,62,66,63,69,70,69,74],why:['Trade','tariff talk and rate-path doubt keep households waiting'],
+  {k:'unc',t:'Uncertainty index',chip:'Housing market',v:74,d:+5,building:false,buildingN:5,w:[60,62,66,63,69,70,69,74],why:['Trade','tariff talk and rate-path doubt keep households waiting'],
    story:{chip:'Housing market',img:'/news-images/OREA-calls-on-government-to-increase-housing-supply_med-500x336.jpg',imp:'threat',h:'Households hold off on big decisions as uncertainty stays high',dek:'Trade and rate uncertainty are keeping buyers and renewers on the sidelines, waiting for clearer signals.',wim:'uncertain consumers want a second opinion before they sign. That is the 4ormIQ moment.'}},
-  {k:'cmp',t:'Complaints heat',chip:'Compliance',v:58,d:+11,w:[36,39,41,44,40,47,47,58],why:['OBSI','banking complaints up; unsuitable advice is a leading reason'],
+  {k:'cmp',t:'Complaints heat',chip:'Compliance',v:58,d:+11,building:false,buildingN:5,w:[36,39,41,44,40,47,47,58],why:['OBSI','banking complaints up; unsuitable advice is a leading reason'],
    story:{chip:'Compliance',img:'/news-images/Court-ruling_sm.jpg',imp:'reg',h:'Complaints about unsuitable advice keep climbing',dek:'The ombudsman reports more consumers saying a product was not right for them, and firms struggling to show what was explained.',wim:'the firm that can show what the consumer was told wins the complaint. That record is what 4orm keeps.'}},
-  {k:'scam',t:'Scam reports',chip:'Fraud',v:77,d:+14,w:[48,51,55,53,58,62,63,77],why:['CAFC','investment and impersonation scams lead reported losses'],
+  {k:'scam',t:'Scam reports',chip:'Fraud',v:77,d:+14,building:false,buildingN:5,w:[48,51,55,53,58,62,63,77],why:['CAFC','investment and impersonation scams lead reported losses'],
    story:{chip:'Fraud',img:'/news-images/Mortgage-fraud2_sm.jpg',imp:'opp',h:'AI is making mortgage fraud harder to spot, Equifax warns',dek:'AI-forged income letters and employment records are getting past first-line underwriting.',wim:'4ormIQ checks who a consumer is dealing with before they send money. Scam season is when it matters most.'}}
  ],
  fear:[
@@ -56,13 +56,18 @@ window.__NEWS_PULSE_FIXTURE = PULSE;
 window.__NEWS_PULSE = PULSE;
 function q(root, sel){ return (root.querySelector && root.querySelector(sel)) || null; }
 function qa(root, sel){ return root.querySelectorAll ? Array.from(root.querySelectorAll(sel)) : []; }
-const LEV=v=>v>=80?['hot','Hot']:v>=65?['warm','Warm']:v>=35?['normal','Normal']:['calm','Calm'];
-const HEAT=v=>v>=80?'#d23b2b':v>=65?'#e8642c':v>=35?'#f29a3a':'#f6c26b';
-function gaugeSVG(v){const r=50,cx=59,cy=60,a=Math.PI*(1-v/100);const x=cx+r*Math.cos(a),y=cy-r*Math.sin(a);
- return `<svg viewBox="0 0 118 70" aria-hidden="true"><path d="M9 60 A50 50 0 0 1 109 60" fill="none" stroke="#eef1f6" stroke-width="10" stroke-linecap="round"/>
- <path class="arc" d="M9 60 A50 50 0 0 1 ${x.toFixed(1)} ${y.toFixed(1)}" fill="none" stroke="${HEAT(v)}" stroke-width="10" stroke-linecap="round"/>
- <line class="ndl" x1="${cx}" y1="${cy}" x2="${(cx+38*Math.cos(a)).toFixed(1)}" y2="${(cy-38*Math.sin(a)).toFixed(1)}" stroke="#101828" stroke-width="2.5" stroke-linecap="round"/>
- <circle cx="${cx}" cy="${cy}" r="4.5" fill="#101828"/><text x="9" y="69" font-size="8.5" fill="#9aa3b5" font-family="inherit">0</text><text x="101" y="69" font-size="8.5" fill="#9aa3b5" font-family="inherit">100</text></svg>`}
+const GCOL={reg:'#3b82ff',fraud:'#ff4d6d',ai:'#a173ff',mtg:'#19d38a',fear:'#ff8a3d',unc:'#f5c443',cmp:'#ff5fa8',scam:'#22d3c5'};
+/* Control-room dial: track, green≤50 / amber≤75 / red>75 band, value arc+glow, 11 ticks, white needle, coloured pivot. */
+function dialSVG(v,c){
+  const cx=110,cy=104,r=82,vv=Math.max(0,Math.min(100,Number(v)||0));
+  const a=t=>Math.PI*(1-t/100),P=t=>[cx+r*Math.cos(a(t)),cy-r*Math.sin(a(t))];
+  const arc=(t0,t1,col,w,ex)=>{const p0=P(t0),p1=P(t1);return `<path d="M${p0[0].toFixed(1)} ${p0[1].toFixed(1)} A${r} ${r} 0 0 1 ${p1[0].toFixed(1)} ${p1[1].toFixed(1)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"${ex||''}/>`;};
+  let ticks='';
+  for(let i=0;i<=10;i++){const t=i*10,ang=a(t),r1=r+9,r2=r+(i%5===0?17:13);
+    ticks+=`<line x1="${(cx+r1*Math.cos(ang)).toFixed(1)}" y1="${(cy-r1*Math.sin(ang)).toFixed(1)}" x2="${(cx+r2*Math.cos(ang)).toFixed(1)}" y2="${(cy-r2*Math.sin(ang)).toFixed(1)}" stroke="rgba(163,176,210,.55)" stroke-width="${i%5===0?2:1.2}"/>`;}
+  const na=a(vv),nx=cx+(r-14)*Math.cos(na),ny=cy-(r-14)*Math.sin(na);
+  return `<svg viewBox="0 0 220 128" aria-hidden="true">${arc(0,100,'#141c3d',12)}${arc(0,50,'rgba(25,211,138,.28)',4)}${arc(50,75,'rgba(255,181,71,.45)',4)}${arc(75,100,'rgba(255,77,109,.55)',4)}${vv>0.01?arc(0.01,vv,c,12,` style="filter:drop-shadow(0 0 8px ${c}aa)" class="arc"`):''}${ticks}<line class="ndl" x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="7" fill="#0a0f26" stroke="${c}" stroke-width="3"/></svg>`;
+}
 window.bindNewsPulse = function(root, pulse){
   if(!root) return;
   const PULSE = pulse || window.__NEWS_PULSE || window.__NEWS_PULSE_FIXTURE;
@@ -76,19 +81,30 @@ window.bindNewsPulse = function(root, pulse){
   window.__newsFocus = FOCUS;
   const GA=()=>VIEW==='market'?PULSE.gauges:PULSE.consumer;
   function drawGauges(anim){const g=q(root,'#gg'); if(!g) return;
-   g.innerHTML=GA().map(x=>{const L=LEV(x.v);const mx=Math.max.apply(null,x.w);
-    const why = Array.isArray(x.why) ? ('<b>'+x.why[0]+'</b> '+(x.why[1]||'')) : (x.why||'');
-    const nWeeks = x.buildingN != null ? x.buildingN : 0;
-    const delta = x.building ? ('building a baseline, ' + nWeeks + ' of 4 weeks') : ('<span class="'+(x.d>=0?'up':'dn')+'">'+(x.d>=0?'+':'')+x.d+'</span> vs last week');
-    const shown = x.building || x.v == null ? '-' : (anim?0:x.v);
-    const L2 = x.building || x.v == null ? ['calm',''] : L;
-    return `<button class="gc${FOCUS===x.k?' on':''}" data-g="${x.k}" data-action="news-heat-focus" aria-pressed="${FOCUS===x.k}">${gaugeSVG(anim?0:(x.v||0))}
-    <div><div class="gt">${x.t}</div><div class="gv"><b data-to="${x.v||0}">${shown}</b>${L2[1]?'<em class="lv-'+L2[0]+'">'+L2[1]+'</em>':''}</div>
-    <div class="gd">${delta}</div></div>
-    <div class="sp">${x.w.map((n,i)=>`<i class="${i===x.w.length-1?'now':''}" style="height:${Math.max(8,(mx?n/mx:0)*100)}%" data-tip="<b>${x.t}</b><br>${PULSE.weeks[i]}: ${n}"></i>`).join('')}</div>
-    <div class="why">${why}</div></button>`}).join('');
-   if(anim&&!reduce){GA().forEach((x,gi)=>{if(x.building||x.v==null)return;const el=g.children[gi];if(!el)return;const t0=performance.now();const D=1100+gi*120;
-    (function step(t){const p=Math.min(1,(t-t0)/D);const e=1-Math.pow(1-p,3);const v=x.v*e;const svg=el.querySelector('svg'); if(svg) svg.outerHTML=gaugeSVG(v);const b=el.querySelector('.gv b'); if(b) b.textContent=Math.round(v);if(p<1)requestAnimationFrame(step)})(t0)})}
+   g.innerHTML=GA().map(x=>{
+    const c=GCOL[x.k]||'#3b82ff';
+    const mx=Math.max.apply(null,x.w.concat([1]));
+    const nWeeks=x.buildingN!=null?x.buildingN:0;
+    const building=!!x.building;
+    const val=building||x.v==null?null:x.v;
+    const shown=val==null?'-':(anim?0:val);
+    let delta;
+    if(building) delta='building a baseline, '+nWeeks+' of 4 weeks';
+    else if(!x.d) delta='<span class="fl">level</span>';
+    else delta='<span class="'+(x.d>=0?'up':'dn')+'">'+(x.d>=0?'+':'')+x.d+'</span> vs normal';
+    const lead=(x.story&&x.story.h)||(Array.isArray(x.why)?x.why.join(' '):(x.why||'No story this week'));
+    const sub=building?(nWeeks+' of 4 weeks'):'5 weeks';
+    return `<button class="gc${FOCUS===x.k?' on':''}" style="--c:${c}" data-g="${x.k}" data-action="news-heat-focus" aria-pressed="${FOCUS===x.k}">
+      <h5 class="gt">${x.t}<small>${sub}</small></h5>
+      ${dialSVG(anim?0:(val||0),c)}
+      <div class="num"><b data-to="${val==null?'':val}">${shown}</b><span class="gd">${delta}</span></div>
+      <div class="sp">${(x.w||[]).map((n,i)=>`<i class="${i===(x.w.length-1)?'now':''}" style="height:${Math.max(6,(n/mx)*34)}px" data-tip="<b>${x.t}</b><br>${(PULSE.weeks&&PULSE.weeks[i])||''}: ${n}"></i>`).join('')}</div>
+      <div class="wl"><span>8 weeks ago</span><span>this week</span></div>
+      <div class="lead why"><small>LEAD STORY</small>${lead}</div>
+    </button>`;
+   }).join('');
+   if(anim&&!reduce){GA().forEach((x,gi)=>{if(x.building||x.v==null)return;const el=g.children[gi];if(!el)return;const c=GCOL[x.k]||'#3b82ff';const t0=performance.now();const D=1100+gi*120;
+    (function step(t){const p=Math.min(1,(t-t0)/D);const e=1-Math.pow(1-p,3);const v=x.v*e;const svg=el.querySelector('svg'); if(svg) svg.outerHTML=dialSVG(v,c);const b=el.querySelector('.num b'); if(b) b.textContent=Math.round(v);if(p<1)requestAnimationFrame(step)})(t0)})}
   }
   function drawRadar(){const g=q(root,'#rrg'); if(!g) return;
    const ramp=window.heatRampD||function(n){return {bg:n?('#3b82ff'):'rgba(255,255,255,.04)',text:n?String(n):'',n:n||0};};

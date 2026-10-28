@@ -168,59 +168,48 @@ td.reach .em{font-size:11.5px;color:#7fb0ff;font-weight:650;margin-top:3px;overf
 .port-body.neon .card{background:#080c1f;border:1px solid rgba(120,150,255,.14);color:#e9eefa}
 .port-body.lists .card{background:#080c1f;border:1px solid rgba(120,150,255,.14);color:#e9eefa}
 
-/* ===== 25-build reach-out list ===== */
-.reach-lists .rl{display:grid;grid-template-columns:300px minmax(0,1fr);gap:14px;align-items:start}
-.reach-lists .lists{background:#080c1f;border:1px solid rgba(120,150,255,.12);border-radius:14px;padding:12px}
-.reach-lists .lists h4{margin:2px 4px 10px;font-size:10px;font-weight:850;letter-spacing:.11em;color:#8fa0c8;text-transform:uppercase}
-.reach-lists .lc{padding:11px 12px;border-radius:11px;cursor:pointer;margin-bottom:6px;border:1px solid transparent;color:#e9eefa}
-.reach-lists .lc:hover{background:rgba(255,255,255,.03)}
-.reach-lists .lc.on{background:rgba(59,130,255,.12);border-color:rgba(59,130,255,.35)}
-.reach-lists .lc b{display:block;font-size:13px;font-weight:800;color:#e9eefa}
-.reach-lists .lc span{display:block;font-size:11px;color:#6f7fa6;font-weight:650;margin-top:2px}
-.reach-lists .lc .pb{height:4px;border-radius:4px;background:rgba(120,150,255,.12);margin-top:8px;overflow:hidden}
-.reach-lists .lc .pb i{display:block;height:100%;background:#19d38a;box-shadow:0 0 8px rgba(25,211,138,.6)}
-.reach-lists .lc.new{border:1px dashed rgba(120,150,255,.18);text-align:center}
-.reach-lists .lc.new b{color:#7fb0ff}
-.reach-lists .main{background:#080c1f;border:1px solid rgba(120,150,255,.12);border-radius:14px;overflow:hidden;min-width:0}
-.reach-lists .mh{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(120,150,255,.09);flex-wrap:wrap}
-.reach-lists .mh h3{margin:0;font-size:16px;font-weight:850;color:#e9eefa}
-.reach-lists .mh .done{font-size:12px;font-weight:800;color:#2ee59d}
-.reach-lists .mh .r{margin-left:auto;display:flex;gap:7px;align-items:center}
-.reach-lists .fl{display:flex;gap:5px}
-.reach-lists .fl span{font-size:11.5px;font-weight:750;padding:5px 11px;border-radius:999px;color:#8fa0c8;background:rgba(255,255,255,.04);cursor:pointer}
-.reach-lists .fl span.on{background:rgba(255,255,255,.1);color:#fff}
-.reach-lists .ib{height:32px;border-radius:9px;padding:0 12px;font-size:12px;font-weight:750;border:1px solid rgba(120,150,255,.16);background:rgba(255,255,255,.03);color:#cfd8ee;cursor:pointer}
-.reach-lists .ib.go{background:linear-gradient(180deg,#2f6fed,#1d4fc4);border-color:#4b87ff;color:#fff}
-.reach-lists .thd{display:grid;grid-template-columns:24px minmax(0,1.35fr) minmax(0,1.05fr) minmax(0,1.25fr) 96px 92px minmax(0,1.2fr) 18px;gap:14px;padding:9px 16px;font-size:9.5px;font-weight:850;letter-spacing:.09em;color:#50607f;border-bottom:1px solid rgba(120,150,255,.08)}
-.reach-lists .dayrow{padding:10px 16px 6px;font-size:10.5px;font-weight:850;letter-spacing:.09em;color:#8fa0c8;background:rgba(255,255,255,.015)}
-.reach-lists .dayrow em{font-style:normal;color:#ff87b8;margin-left:8px}
-.reach-lists .row{display:grid;grid-template-columns:24px minmax(0,1.35fr) minmax(0,1.05fr) minmax(0,1.25fr) 96px 92px minmax(0,1.2fr) 18px;gap:14px;align-items:center;padding:12px 16px;border-bottom:1px solid rgba(120,150,255,.06);cursor:pointer;color:#e9eefa}
-.reach-lists .row:hover{background:rgba(59,130,255,.06)}
-.reach-lists .row.next{background:rgba(255,77,141,.06);box-shadow:inset 3px 0 0 #ff4d8d}
-.reach-lists .row.done{opacity:.42}.reach-lists .row.done .nm{text-decoration:line-through}
-.reach-lists .ck{width:20px;height:20px;border-radius:6px;border:1.5px solid #2a3a72;cursor:pointer}
-.reach-lists .ck.on{background:#19d38a;border-color:#19d38a}
-.reach-lists .nm{font-size:13.5px;font-weight:800}
-.reach-lists .org{font-size:11.5px;color:#6f7fa6;font-weight:650;margin-top:2px}
-.reach-lists .ph{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;font-weight:700;color:#ffd38a}
-.reach-lists .em{font-size:11.5px;color:#7fb0ff;font-weight:650;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.reach-lists .co2{font-size:12.5px;font-weight:750;color:#cfd8ee}
-.reach-lists .co2 small{display:block;font-size:10.5px;color:#5b6a94;font-weight:650;margin-top:2px}
-.reach-lists .stg{font-size:10px;font-weight:850;letter-spacing:.06em;padding:3px 8px;border-radius:999px;display:inline-block}
-.reach-lists .stg.cold{background:rgba(59,130,255,.13);color:#7fb0ff}
-.reach-lists .stg.r1{background:rgba(255,181,71,.13);color:#ffb547}
-.reach-lists .stg.met{background:rgba(25,211,138,.12);color:#2ee59d}
-.reach-lists .lt{font-size:10.5px;color:#5b6a94;font-weight:700;margin-top:4px}
-.reach-lists .ready{display:flex;gap:3px}.reach-lists .ready i{width:14px;height:5px;border-radius:2px;background:rgba(120,150,255,.14);display:block}
-.reach-lists .ready i.f{background:#19d38a}
-.reach-lists .rlab{font-size:10px;color:#5b6a94;font-weight:750;margin-top:4px}
-.reach-lists .nx{font-size:12px;color:#aebbe0;font-weight:650;line-height:1.4}
-.reach-lists .arr{color:#5b6a94;font-size:15px;font-weight:800}
-.reach-lists .row:hover .arr{color:#7fb0ff}
+/* ===== 27-asks Call lists ===== */
+.reach-lists .lists{display:grid;grid-template-columns:250px 1fr;gap:16px;align-items:start}
+.reach-lists .ll{background:#0a0f26;border:1px solid rgba(120,150,255,.14);border-radius:12px;padding:8px}
+.reach-lists .ll h6{margin:6px 8px 8px;font-size:11.5px;letter-spacing:.08em;color:#a3b0d2;font-weight:800}
+.reach-lists .ll button{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;font:inherit;font-weight:700;color:#e9eefa;background:none;border:0;border-radius:8px;padding:9px 10px;cursor:pointer}
+.reach-lists .ll button small{color:#a3b0d2;font-weight:700}
+.reach-lists .ll button.on{background:rgba(255,77,141,.12);box-shadow:inset 3px 0 0 #ff4d8d}
+.reach-lists .ll .up{color:#8dbaff;border:1px dashed rgba(120,150,255,.26);margin-top:8px;justify-content:center}
+.reach-lists .tbl{background:#0a0f26;border:1px solid rgba(120,150,255,.14);border-radius:12px;overflow:auto;min-width:0}
+.reach-lists .tbl .hd{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(120,150,255,.14);flex-wrap:wrap}
+.reach-lists .tbl .hd h3{margin:0;font-size:16px;font-weight:850;color:#e9eefa}
+.reach-lists .tbl .hd span{color:#a3b0d2;font-weight:650}
+.reach-lists .tbl select{font:inherit;font-weight:700;background:#080c1f;color:#e9eefa;border:1px solid rgba(120,150,255,.26);border-radius:8px;padding:5px 8px;margin-left:auto}
+.reach-lists table{width:100%;border-collapse:collapse;min-width:820px}
+.reach-lists th{font-size:11.5px;letter-spacing:.06em;color:#a3b0d2;text-align:left;padding:9px 12px;border-bottom:1px solid rgba(120,150,255,.14);font-weight:800}
+.reach-lists td{padding:10px 12px;border-bottom:1px solid rgba(120,150,255,.14);vertical-align:top;color:#c8d1ea}
+.reach-lists td b{color:#e9eefa;display:block;font-weight:800}
+.reach-lists td small{color:#a3b0d2;display:block;margin-top:2px}
+.reach-lists tr.r{cursor:pointer}
+.reach-lists tr.r:hover td{background:rgba(255,255,255,.04)}
+.reach-lists tr.next td{background:rgba(255,77,141,.07)}
+.reach-lists tr.done{opacity:.45}
+.reach-lists td a{color:#8dbaff;text-decoration:none;font-weight:650}
+.reach-lists .stg{display:inline-block;font-size:11.5px;font-weight:800;border-radius:6px;padding:2px 8px;background:rgba(59,130,255,.16);color:#a9c8ff}
+.reach-lists .nt{color:#c8d1ea;max-width:220px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.reach-lists .pop{position:fixed;inset:0;background:rgba(3,5,14,.6);display:none;align-items:center;justify-content:center;z-index:90;padding:16px}
+.reach-lists .pop.on{display:flex}
+.reach-lists .pop .box{background:#080c1f;border:1px solid rgba(120,150,255,.26);border-radius:14px;padding:18px;width:min(460px,100%);box-shadow:0 20px 60px rgba(0,0,0,.6);color:#e9eefa}
+.reach-lists .pop h4{margin:0;font-size:17px;color:#e9eefa}
+.reach-lists .pop .meta{color:#a3b0d2;margin:2px 0 12px}
+.reach-lists .pop .row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+.reach-lists .pop .row a{color:#8dbaff;font-weight:700;text-decoration:none}
+.reach-lists .pop .nb{background:#0a0f26;border:1px solid rgba(120,150,255,.14);border-radius:10px;padding:10px 12px;color:#c8d1ea;margin-bottom:12px;max-height:220px;overflow:auto}
+.reach-lists .pop .nb p{margin:0 0 6px}
+.reach-lists .pop .nb small{color:#a3b0d2;display:block;margin-bottom:8px}
+.reach-lists .pop .acts{display:flex;gap:8px;flex-wrap:wrap}
+.reach-lists .btn{font:inherit;font-weight:750;border-radius:10px;padding:8px 14px;border:1px solid rgba(120,150,255,.26);background:rgba(255,255,255,.05);color:#e9eefa;cursor:pointer}
+.reach-lists .btn.p{background:#3b82ff;border-color:#3b82ff;color:#fff}
 .reach-lists .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0e1430;border:1px solid rgba(120,150,255,.25);color:#e9eefa;padding:10px 16px;border-radius:10px;display:none;gap:12px;align-items:center;z-index:80;font-size:13px;font-weight:650}
 .reach-lists .toast.show{display:flex}
 .reach-lists .toast b{color:#7fb0ff;cursor:pointer;font-weight:800}
-.reach-lists .modal{position:fixed;inset:0;background:rgba(4,8,20,.55);display:none;align-items:center;justify-content:center;z-index:90}
+.reach-lists .modal{position:fixed;inset:0;background:rgba(4,8,20,.55);display:none;align-items:center;justify-content:center;z-index:95}
 .reach-lists .modal.open{display:flex}
 .reach-lists .mbox{background:#0e1430;border:1px solid rgba(120,150,255,.2);border-radius:14px;padding:18px;width:min(420px,92vw);color:#e9eefa}
 .reach-lists .mbox h3{margin:0 0 8px;font-size:16px}
@@ -228,4 +217,4 @@ td.reach .em{font-size:11.5px;color:#7fb0ff;font-weight:650;margin-top:3px;overf
 .reach-lists .mbox input{width:100%;height:36px;border-radius:9px;border:1px solid rgba(120,150,255,.2);background:#0a0f26;color:#e9eefa;padding:0 12px;font:inherit}
 .reach-lists .mbox .btn{height:32px;border-radius:9px;border:1px solid rgba(120,150,255,.2);background:#13204a;color:#e9eefa;padding:0 12px;font-weight:750;cursor:pointer}
 .reach-lists .mbox .btn.pri{background:#2e6bf2;border-color:#2e6bf2;color:#fff}
-@media(max-width:900px){.reach-lists .rl{grid-template-columns:1fr}.reach-lists .thd,.reach-lists .row{grid-template-columns:24px minmax(0,1fr) minmax(0,1fr);gap:10px}.reach-lists .thd span:nth-child(n+4),.reach-lists .row > :nth-child(n+4){display:none}}
+@media(max-width:900px){.reach-lists .lists{grid-template-columns:1fr}}

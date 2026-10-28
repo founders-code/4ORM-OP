@@ -204,24 +204,28 @@
     if (pct && data.pct) pct.textContent = data.pct;
     function colOf(r) { return r.c === '--white' ? '#ffffff' : 'var(' + r.c + ')'; }
     var g = gid('g');
+    function todayCol() { return (Number(todayIdx) || 0) + 2; /* col 1 = labels; days start at 2 */ }
     function render() {
-      var h = '<div></div>';
+      /* Band is a grid child on today's column so Full week / Focus / Compact and
+         every width keep it under the pink header (prompt 13). */
+      var col = todayCol();
+      var h = '<div class="ph" id="ph" style="grid-column:' + col + ' / ' + (col + 1) + ';grid-row:1 / -1"></div><div></div>';
       ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].forEach(function (x, i) {
         h += '<div class="dh' + (i === todayIdx ? ' today" id="fri' : '"') + '">' + x + '<small>' + dates[i] + '</small></div>';
       });
       h += '<div class="dh" style="text-align:right">STREAK</div>';
       rows.forEach(function (r, ri) {
         if (r.s) { h += '<div class="sect">' + r.s.toUpperCase() + '</div>'; return; }
-        var col = colOf(r), rm = ROOMS[r.room] || ROOMS.dash;
-        h += '<div class="track"><span class="swatch" style="background:' + col + '"></span><div><div class="t">' + r.n + (r.nw ? '<span class="new">NEW</span>' : '') + '</div><div class="r"><a href="' + rm[1] + '" data-action="play-go" data-view="' + (r.room || 'dash') + '">' + rm[0] + ' &rarr;</a>' + (r.sub ? ' &middot; ' + r.sub : '') + '</div></div></div>';
+        var c = colOf(r), rm = ROOMS[r.room] || ROOMS.dash;
+        h += '<div class="track"><span class="swatch" style="background:' + c + '"></span><div><div class="t">' + r.n + (r.nw ? '<span class="new">NEW</span>' : '') + '</div><div class="r"><a href="' + rm[1] + '" data-action="play-go" data-view="' + (r.room || 'dash') + '">' + rm[0] + ' &rarr;</a>' + (r.sub ? ' &middot; ' + r.sub : '') + '</div></div></div>';
         r.d.forEach(function (s, i) {
           var l = fixtureOn() ? ((r.lab && r.lab[i]) || '') : t24label((r.lab && r.lab[i]) || '');
           var day = (r.pads && r.pads[i] && r.pads[i].day) || '';
           var ids = ' data-action="play-pad" data-r="' + ri + '" data-i="' + i + '" data-id="' + esc(r.id || '') + '" data-day="' + esc(day) + '"';
-          if (s === D) h += '<div class="pad done" style="--c:' + col + ';color:#fff"' + ids + '>' + l + '</div>';
+          if (s === D) h += '<div class="pad done" style="--c:' + c + ';color:#fff"' + ids + '>' + l + '</div>';
           else if (s === M) h += '<div class="pad miss" data-action="play-pad-off"></div>';
-          else if (s === U) h += '<div class="pad due" style="--c:' + col + ';color:#0b0d12"' + ids + '>' + l + '</div>';
-          else if (s === N) h += '<div class="pad next" style="--c:' + col + '"' + ids + '>' + l + '</div>';
+          else if (s === U) h += '<div class="pad due" style="--c:' + c + ';color:#0b0d12"' + ids + '>' + l + '</div>';
+          else if (s === N) h += '<div class="pad next" style="--c:' + c + '"' + ids + '>' + l + '</div>';
           else h += '<div class="pad off" data-action="play-pad-off"></div>';
         });
         h += '<div class="streak">' + (r.st || '') + '</div>';
@@ -230,10 +234,10 @@
       if (g) { g.innerHTML = h; place(); count(); }
     }
     function place() {
-      var f = gid('fri'); if (!f) return;
       var ph = gid('ph'); if (!ph || !g) return;
-      ph.style.left = (g.offsetLeft + f.offsetLeft - 4) + 'px';
-      ph.style.width = (f.offsetWidth + 8) + 'px';
+      var col = todayCol();
+      ph.style.gridColumn = col + ' / ' + (col + 1);
+      ph.style.gridRow = '1 / -1';
     }
     function count() {
       var left = 0;
@@ -622,7 +626,7 @@
       markReady('playDesk');
       return;
     }
-    loadSnip('/pbwrap-snippet.html?v=4', function (html) {
+    loadSnip('/pbwrap-snippet.html?v=5', function (html) {
       try {
         wrap.innerHTML = html || '<div class="pbwrap"></div>';
         if (!fixtureOn()) {

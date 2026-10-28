@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { withCreds } from '@/lib/creds';
+import { listDocsLayout, saveDocsLayout } from '@/lib/docs-layout';
 import { copyDriveFile, driveWrite, uploadDriveBytes } from '@/lib/google';
 import { fail } from '@/lib/log';
 import { openBoard, sessionOwner } from '@/lib/session';
@@ -83,10 +84,11 @@ export async function GET() {
     } catch (err) {
       fail('doc_sets', err);
     }
-    return NextResponse.json({ docs, categories: folders, folders, sets });
+    const layout = await listDocsLayout(session.sql, session.userId);
+    return NextResponse.json({ docs, categories: folders, folders, sets, layout });
   } catch (err) {
     fail('staged_docs', err);
-    return NextResponse.json({ docs: [], categories: [], folders: [], sets: [] });
+    return NextResponse.json({ docs: [], categories: [], folders: [], sets: [], layout: [] });
   }
 }
 
@@ -98,6 +100,17 @@ export async function POST(req: Request) {
     if (!session.sql) return NextResponse.json({ saved: false }, { status: 503 });
     const body = await req.json().catch(() => ({})) as Record<string, unknown>;
     const action = String(body?.action || '');
+    if (action === 'save-layout') {
+      const items = Array.isArray(body?.items) ? body.items as Array<Record<string, unknown>> : [];
+      const saved = await saveDocsLayout(session.sql, session.userId, items.map((it) => ({
+        docId: String(it.docId || it.id || ''),
+        x: Number(it.x),
+        y: Number(it.y),
+        w: Number(it.w),
+        h: Number(it.h),
+      })));
+      return NextResponse.json({ ok: true, layout: saved });
+    }
     if (action === 'pull') {
       const category = String(body?.category || '').trim().slice(0, 80) || 'Uncategorized';
       const name = String(body?.name || '').trim().slice(0, 180);

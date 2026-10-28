@@ -232,7 +232,7 @@ button{font:inherit;cursor:pointer}
 .eyeT,.bellT{font-size:11px;font-weight:800;color:#4a5672;background:#f5f7fb;border-radius:6px;padding:2px 7px;cursor:pointer;white-space:nowrap}.eye{border:none;background:none;padding:0}
 /* ===== 10d: Neon calendar ===== */
 .calwrap{--bg:#080c1f!important;--rail:#0a0f26!important;--panel:#0e1430!important;--edge:#1c2650!important;--edge2:#141c3c!important;border-color:rgba(120,150,255,.14)!important}
-.col.today{background:rgba(255,77,141,.055)!important;box-shadow:inset 1px 0 0 rgba(255,77,141,.28);border-left:1px solid rgba(255,77,141,.28)!important}
+.col.today{background:rgba(255,77,141,.04)!important;box-shadow:0 0 6px 0 rgba(255,77,141,.45)!important;border:1px solid rgba(255,77,141,.30)!important;border-left:1px solid rgba(255,77,141,.30)!important}
 .nowline{background:#ff4d8d!important;box-shadow:0 0 10px #ff4d8d}.nowline::before{background:#ff4d8d!important;box-shadow:0 0 10px #ff4d8d}
 .ev.real{color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.35);border-radius:6px!important;box-shadow:0 0 14px var(--glow,rgba(59,130,255,.55)),inset 0 0 0 1px rgba(255,255,255,.35)!important;filter:saturate(1.15) brightness(.72)}
 .ev.real .tt,.ev.real .tm{color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.35)}

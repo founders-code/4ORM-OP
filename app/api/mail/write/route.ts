@@ -14,6 +14,11 @@ const TONES: Record<string, string> = {
   direct: 'Direct: lead with the ask, cut padding.',
   shorter: 'Shorter: keep every fact and the ask, cut the length by about half.',
   formal: 'More formal and polished, no slang.',
+  /* Prompt 13 / design 27 — space email tones */
+  voss: 'Chris Voss: tactical empathy. Name what they might be feeling, ask "how" and "what" questions, and make it easy to say no. Keep every fact and name.',
+  ury: 'William Ury / Getting to Yes: start from shared interests, separate the person from the problem, offer options. Keep every fact and name.',
+  cialdini: 'Robert Cialdini / Influence: give something first, lean on proof and authority, be specific about the small next step. Keep every fact and name.',
+  plain: 'Plain: short and direct. No technique, just the point and the ask. Keep every fact and name.',
 };
 
 function clip(value: unknown, max: number) {

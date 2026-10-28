@@ -236,19 +236,23 @@ async function readPeople(sql: Sql, ownerId: string, spaceId: string): Promise<P
 async function readMail(sql: Sql, ownerId: string, spaceId: string) {
   try {
     const rows = await sql`
-      SELECT subject, body FROM space_email
+      SELECT subject, body, to_jsonb(space_email) ->> 'tone' AS tone FROM space_email
       WHERE space_id = ${spaceId} AND owner_id = ${ownerId}
       LIMIT 1
     `;
     const row = rows[0] as Record<string, unknown> | undefined;
-    return { subject: String(row?.subject || ''), body: String(row?.body || '') };
+    return {
+      subject: String(row?.subject || ''),
+      body: String(row?.body || ''),
+      tone: String(row?.tone || 'voss') || 'voss',
+    };
   } catch (err) {
     fail('spaces_email', err);
-    return { subject: '', body: '' };
+    return { subject: '', body: '', tone: 'voss' };
   }
 }
 
-function toView(row: Record<string, unknown>, items: Item[], people: Person[], mail: { subject: string; body: string }) {
+function toView(row: Record<string, unknown>, items: Item[], people: Person[], mail: { subject: string; body: string; tone?: string }) {
   const folders = items.filter((item) => item.mime === 'text/x-folder').map((item) => ({
     id: item.id,
     parentId: item.parentId,
@@ -279,6 +283,7 @@ function toView(row: Record<string, unknown>, items: Item[], people: Person[], m
     driveFolderUrl: row.drive_folder_url ? String(row.drive_folder_url) : '',
     emailSubject: mail.subject || starter?.emailSubject || '',
     emailBody: mail.body || starter?.emailBody || '',
+    emailTone: mail.tone || 'voss',
     research: starter?.research || '',
     spaceType: 'project',
     subjectContactId: '',
@@ -394,7 +399,7 @@ export async function readSpace(sql: Sql, ownerId: string, id: string) {
       history,
       sentAt: isoOf(row.sent_at),
       space: { id: view.id, name: view.name, driveFolderId: view.driveFolderId, pushedToDriveAt: view.pushedToDriveAt },
-      email: { subject: view.emailSubject, body: view.emailBody },
+      email: { subject: view.emailSubject, body: view.emailBody, tone: view.emailTone || 'voss' },
     };
   } catch (err) {
     fail('spaces_read', err);
@@ -938,7 +943,14 @@ export async function patchSpace(sql: Sql, ownerId: string, id: string, body: Re
       WHERE id = ${id} AND owner_id = ${ownerId}
     `;
   }
-  if (Object.prototype.hasOwnProperty.call(body, 'emailSubject') || Object.prototype.hasOwnProperty.call(body, 'emailBody') || Object.prototype.hasOwnProperty.call(body, 'subject') || Object.prototype.hasOwnProperty.call(body, 'body')) {
+  if (
+    Object.prototype.hasOwnProperty.call(body, 'emailSubject')
+    || Object.prototype.hasOwnProperty.call(body, 'emailBody')
+    || Object.prototype.hasOwnProperty.call(body, 'subject')
+    || Object.prototype.hasOwnProperty.call(body, 'body')
+    || Object.prototype.hasOwnProperty.call(body, 'emailTone')
+    || Object.prototype.hasOwnProperty.call(body, 'tone')
+  ) {
     const current = await readMail(sql, ownerId, id);
     const subject = Object.prototype.hasOwnProperty.call(body, 'emailSubject') || Object.prototype.hasOwnProperty.call(body, 'subject')
       ? clip(body.emailSubject ?? body.subject, 200)
@@ -946,7 +958,10 @@ export async function patchSpace(sql: Sql, ownerId: string, id: string, body: Re
     const emailBody = Object.prototype.hasOwnProperty.call(body, 'emailBody') || Object.prototype.hasOwnProperty.call(body, 'body')
       ? clip(body.emailBody ?? body.body, 8000)
       : current.body;
-    await saveEmail(sql, ownerId, id, subject, emailBody);
+    const tone = Object.prototype.hasOwnProperty.call(body, 'emailTone') || Object.prototype.hasOwnProperty.call(body, 'tone')
+      ? String((body.emailTone ?? body.tone) || 'voss')
+      : current.tone;
+    await saveEmail(sql, ownerId, id, subject, emailBody, tone);
   }
   if (Object.prototype.hasOwnProperty.call(body, 'angle')) {
     // The angle is its own field; it never touches notes.
@@ -1197,15 +1212,28 @@ export async function deleteSpaceRecipient(sql: Sql, ownerId: string, spaceId: s
   return readSpace(sql, ownerId, spaceId);
 }
 
-export async function saveEmail(sql: Sql, ownerId: string, spaceId: string, subject: string, body: string) {
+export async function saveEmail(
+  sql: Sql,
+  ownerId: string,
+  spaceId: string,
+  subject: string,
+  body: string,
+  tone?: string,
+) {
   const row = await owned(sql, ownerId, spaceId);
   if (!row) return null;
   const cleanSubject = clip(subject, 200);
   const cleanBody = clip(body, 8000);
+  const toneKey = /^(voss|ury|cialdini|plain)$/i.test(String(tone || ''))
+    ? String(tone).toLowerCase()
+    : 'voss';
   await sql`
-    INSERT INTO space_email (space_id, owner_id, subject, body)
-    VALUES (${spaceId}, ${ownerId}, ${cleanSubject}, ${cleanBody})
-    ON CONFLICT (space_id) DO UPDATE SET subject = EXCLUDED.subject, body = EXCLUDED.body
+    INSERT INTO space_email (space_id, owner_id, subject, body, tone)
+    VALUES (${spaceId}, ${ownerId}, ${cleanSubject}, ${cleanBody}, ${toneKey})
+    ON CONFLICT (space_id) DO UPDATE SET
+      subject = EXCLUDED.subject,
+      body = EXCLUDED.body,
+      tone = EXCLUDED.tone
   `;
   return readSpace(sql, ownerId, spaceId);
 }
