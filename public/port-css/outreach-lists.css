@@ -277,3 +277,7 @@ td.reach .em{font-size:11.5px;color:#7fb0ff;font-weight:650;margin-top:3px;overf
 .reach-lists table.ltab td.more button{background:#16214a;border:1px solid #2f4180;color:#dfe6ff;border-radius:999px;padding:6px 16px;font-weight:750;cursor:pointer}
 .reach-lists .lsec{margin:14px 6px 4px;font-size:10.5px;letter-spacing:.14em;color:#7f8cb3}
 .reach-lists .lsec:first-child{margin-top:4px}
+.reach-lists table.ltab .pl{height:22px!important;min-height:0!important;line-height:20px!important;padding:0 8px!important}
+.reach-lists table.ltab .stg2{height:22px!important;min-height:0!important;line-height:20px!important;padding:0 10px!important}
+.reach-lists table.ltab td .sp{display:none!important}
+.reach-lists table.ltab td{height:auto!important}
