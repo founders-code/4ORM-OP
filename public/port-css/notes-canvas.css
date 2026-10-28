@@ -50,3 +50,11 @@
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;display:none;z-index:20}.toast.show{display:block}
 :host{display:block;width:100%;height:calc(100vh - 96px);min-width:0}
 .port-body{display:flex;flex-direction:column;min-height:0;height:100%;padding:0;box-sizing:border-box}
+/* Notes sit on pale paper: keep their text dark whatever the page theme sets for --ink. */
+.note h4{color:#101a33!important}
+.note p{color:#33405a!important}
+.note .ty:not(.todo):not(.idea):not(.person):not(.dec){color:#4a5672!important}
+.cnpop input,.cnpop textarea{color:#101a33!important;-webkit-text-fill-color:#101a33!important;background:#fff!important}
+.cnpop [data-f="x"]{color:#101a33!important;-webkit-text-fill-color:#101a33!important;background:#fff!important}
+.cnpop [data-f="v"]{color:#fff!important;-webkit-text-fill-color:#fff!important;background:#1f5fff!important}
+.cnpop [data-f="s"]{color:#5b6678!important}

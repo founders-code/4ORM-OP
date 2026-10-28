@@ -23,7 +23,9 @@
   /* Live to-dos: every open task on the board, bucketed by its due date (Vancouver day). */
   function liveTD() {
     var items = ((window.STATE || {}).items || []).filter(function (it) {
-      return it && it.id && it.status !== 'done' && it.status !== 'dropped' && !it.plan_of;
+      if (!it || !it.id || it.status === 'done' || it.status === 'dropped' || it.plan_of || it.planOf) return false;
+      /* Imported mail and Planner roadmap steps are not to-dos. */
+      return !/^(gmail|mail|email_sync|roadmap|timeline)$/i.test(String(it.source || ''));
     });
     var now = new Date();
     var endToday = new Date(now); endToday.setHours(23, 59, 59, 999);
@@ -305,6 +307,20 @@
     window.tdRender = render;
     window.TDL = TD;
     render();
+    /* The board loads after the Playbook paints: redraw whenever the task list changes. */
+    if (LIVE) {
+      var sig = '';
+      var tick = setInterval(function () {
+        if (!todo.isConnected) { clearInterval(tick); return; }
+        var its = (window.STATE || {}).items || [];
+        var next = its.length + ':' + its.map(function (i) { return i.id + i.status + (i.due || '') + (i.title || ''); }).join('|').length;
+        if (next === sig) return;
+        sig = next;
+        var m = $('tdm');
+        if (m && m.classList.contains('open')) return;
+        render();
+      }, 1500);
+    }
     try {
       var lhs = root.querySelectorAll ? root.querySelectorAll('.lh') : [];
       lhs.forEach(function (h) {
