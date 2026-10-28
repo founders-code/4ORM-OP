@@ -616,6 +616,24 @@ body.th-neon .main{color:#eef2fc}
 /* text on the pink #ff4d8d is near-black, never white */
 .nz button[aria-pressed="true"],body.th-neon .today,body.th-neon .todaytag{color:#160308!important;text-shadow:none!important}
 .clock{color:#5b6678!important}
+/* a row being edited: dark field, bright text, never pale text on white */
+body.th-neon #listCard input{color:#eef2fc!important}
+/* the editable cells: 18j kept the light-mode .fi:hover and .fi:focus background #fff, so on the dark page a hovered
+   or focused cell turned into a white box. On dark they stay dark. */
+body.th-neon .fi:hover{background:rgba(255,255,255,.05)!important;border-color:rgba(120,150,255,.28)!important}
+body.th-neon .fi:focus{background:#0e1430!important;border-color:#3b82ff!important;box-shadow:0 0 0 3px rgba(59,130,255,.18)!important}
+body.th-neon .fi.bad{background:rgba(255,77,109,.12)!important;border-color:#ff4d6d!important}
+body.th-neon #listCard input:focus,body.th-neon #listCard textarea:focus,body.th-neon #listCard [contenteditable="true"]:focus{background:#0e1430!important;color:#eef2fc!important;border:1px solid #3b82ff!important;box-shadow:0 0 0 3px rgba(59,130,255,.18)!important;caret-color:#8dbaff}
+body.th-neon #listCard input::placeholder{color:#a3b0d2!important}
+
+/* 18k-r2: leftover light surfaces under Neon */
+body.th-neon .sname{background:#0e1430!important;color:#eef2fc!important;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c) 70%,transparent)!important}
+body.th-neon #drawer,body.th-neon .pop,body.th-neon .newbox,body.th-neon .dueweek,body.th-neon .dpk{background:#0b1030!important;color:#e9eefa!important;border:1px solid rgba(120,150,255,.18)!important;box-shadow:0 18px 50px rgba(0,0,0,.55)!important}
+body.th-neon .dtop button,body.th-neon .move .alt,body.th-neon .move select,body.th-neon .capture select,body.th-neon .fb.move2 select{background:rgba(255,255,255,.06)!important;color:#e9eefa!important;border-color:rgba(120,150,255,.22)!important}
+body.th-neon .lg.red{background:#080c1f!important}
+body.th-neon .dpk .dph b,body.th-neon .dpk .dpg button{color:#e9eefa!important}
+body.th-neon .dpk .dph button,body.th-neon .dpk .dpf button{background:rgba(255,255,255,.06)!important;border-color:rgba(120,150,255,.22)!important;color:#e9eefa!important}
+body.th-neon .dpk .dpg button:hover{background:rgba(255,255,255,.08)!important}
 </style>
 <script>addEventListener('load',()=>{const b=document.querySelector('button[data-view="timeline"]');if(b)b.click();});</script></head><body>
 <header class="top">
