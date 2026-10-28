@@ -879,6 +879,18 @@
 
     bindTabs();
     showPages(root, 'ops', 'map');
+    var engLog = $(root, '#engLog');
+    if (engLog) engLog.onclick = function () {
+      api('/api/ops/switches?log=1').then(function (r) { return r && r.ok ? r.json() : { log: [] }; }).catch(function () { return { log: [] }; }).then(function (d) {
+        var rows = d.log || [];
+        modal(root, '<h3>Change log</h3><p style="color:#a3b0d2;margin:0 0 10px">Every flip of an engage switch, newest first.</p>'
+          + (rows.length ? '<table class="t" style="width:100%"><tr><th style="text-align:left">When</th><th style="text-align:left">Switch</th><th style="text-align:left">Set to</th></tr>' + rows.map(function (x) {
+            return '<tr><td>' + escS(new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Vancouver', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(x.at))) + '</td><td>' + escS(x.label) + '</td><td>' + (x.on ? 'On' : 'Off') + '</td></tr>';
+          }).join('') + '</table>' : '<p>No switch has been flipped yet.</p>')
+          + '<div style="text-align:right;margin-top:12px"><button class="cbtn" data-close>Close</button></div>');
+        var c = $(root, '#mbox [data-close]'); if (c) c.onclick = function () { closeModal(root); };
+      });
+    };
     var freeze = $(root, '#freeze');
     if (freeze) freeze.onclick = function () { frozen = !frozen; freeze.textContent = frozen ? 'Frozen' : 'Freeze'; toast(root, frozen ? 'Dials held at this reading' : 'Dials live again'); };
     var sweep = $(root, '#sweepNow');

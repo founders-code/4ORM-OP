@@ -17,12 +17,16 @@ const KEYS = [
   { key: 'test_mode', label: 'Test mode · opstest only', sub: 'confirm first' },
 ];
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await openBoard();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!(await sessionOwner(session))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (!session.sql) return NextResponse.json({ switches: KEYS.map((k) => ({ ...k, on: true })) });
+    if (new URL(req.url).searchParams.get('log') === '1') {
+      const log = await session.sql`SELECT key, on_state, at FROM ops_switch_log ORDER BY at DESC LIMIT 60`.catch(() => []);
+      return NextResponse.json({ log: (log as Array<Record<string, unknown>>).map((r) => ({ key: String(r.key), label: KEYS.find((k) => k.key === r.key)?.label || String(r.key), on: !!r.on_state, at: r.at })) });
+    }
     const rows = await session.sql`SELECT key, on_state FROM ops_switches`;
     const map = new Map(rows.map((r) => [String(r.key), !!r.on_state]));
     return NextResponse.json({ switches: KEYS.map((k) => ({ ...k, on: map.has(k.key) ? !!map.get(k.key) : true })) });
