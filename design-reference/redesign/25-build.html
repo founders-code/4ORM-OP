@@ -1,0 +1,283 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<title>Build designs</title><style>
+*{box-sizing:border-box}html,body{margin:0}html{background:#05070f}
+body{font-family:Inter,-apple-system,system-ui,sans-serif;background:#05070f;color:#e9eefa}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+.bar{height:52px;display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid rgba(120,150,255,.1)}
+.bar b{font-size:14px;font-weight:850}.bar span{font-size:12px;color:#6f7fa6;font-weight:650}
+.tabs{display:flex;gap:4px;padding:14px 20px 0}
+.tabs button{background:rgba(255,255,255,.06);color:#aebbe0;font-size:12.5px;font-weight:750;padding:8px 14px;border-radius:9px}
+.tabs button.on{background:#ff4d8d;color:#12030a;box-shadow:0 0 14px rgba(255,77,141,.4)}
+.wrap{padding:16px 20px 60px}
+.pan{display:none}.pan.on{display:block}
+h2{margin:0 0 4px;font-size:19px;font-weight:850}
+.lede{margin:0 0 16px;font-size:13px;color:#8fa0c8;font-weight:650;line-height:1.55;max-width:900px}
+.note{font-size:12px;color:#6f7fa6;font-weight:650;line-height:1.75;margin-top:14px;max-width:1100px}
+.note b{color:#cfe0ff}
+.ib{height:28px;border-radius:8px;border:1px solid rgba(120,150,255,.16);background:rgba(255,255,255,.03);padding:0 11px;font-size:11.5px;font-weight:750;color:#aebbe0}
+.ib:hover{border-color:rgba(127,176,255,.5);color:#fff}
+.ib.go{background:linear-gradient(180deg,#2f6fed,#1d4fc4);border-color:#4b87ff;color:#fff}
+
+/* ===== VAULT COLUMNS ===== */
+.vtop{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.vtop h3{margin:0;font-size:17px;font-weight:850}
+.vtop .r{margin-left:auto;display:flex;gap:7px}
+.kp{display:flex;gap:8px}
+.kp span{font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.05);color:#8fa0c8}
+.kp .g{color:#2ee59d;background:rgba(25,211,138,.1)}.kp .a{color:#ffb547;background:rgba(255,181,71,.1)}.kp .r2{color:#ff8a9c;background:rgba(255,77,109,.1)}
+.board{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px}
+.col{flex:0 0 300px;background:#080c1f;border:1px solid rgba(120,150,255,.12);border-radius:14px;display:flex;flex-direction:column;max-height:640px}
+.ch{padding:12px 13px 10px;border-bottom:1px solid rgba(120,150,255,.09);display:flex;align-items:center;gap:8px}
+.ch b{font-size:13px;font-weight:850}
+.ch .o{font-size:9.5px;font-weight:800;letter-spacing:.08em;color:#5b6a94;text-transform:uppercase}
+.ch .c{margin-left:auto;font-size:10px;font-weight:800;background:rgba(255,255,255,.06);color:#aebbe0;border-radius:999px;padding:2px 8px}
+.ch .c.r{background:rgba(255,77,109,.15);color:#ff8a9c}
+.cb{overflow-y:auto;padding:9px;display:flex;flex-direction:column;gap:7px}
+.cb::-webkit-scrollbar{width:6px}.cb::-webkit-scrollbar-thumb{background:rgba(120,150,255,.2);border-radius:6px}
+.dc{background:#0a0f26;border:1px solid rgba(120,150,255,.09);border-radius:10px;padding:10px 11px 10px 14px;position:relative;cursor:pointer}
+.dc:hover{border-color:rgba(127,176,255,.4)}
+.dc::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:3px}
+.dc.cur::before{background:#19d38a;box-shadow:0 0 8px rgba(25,211,138,.6)}
+.dc.dr::before{background:#ffb547;box-shadow:0 0 8px rgba(255,181,71,.6)}
+.dc.due::before{background:#ff4d6d;box-shadow:0 0 8px rgba(255,77,109,.7)}
+.dc .id{font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#7fb0ff}
+.dc b{display:block;font-size:12.5px;font-weight:800;margin-top:3px;line-height:1.3}
+.dc .m{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:10.5px;font-weight:700;color:#6f7fa6}
+.dc .m .ow.none{color:#ff8a9c}
+.dc .m .v{margin-left:auto;color:#5b6a94}
+.dc .pv{font-size:11.5px;line-height:1.5;color:#9aa8cc;font-weight:550;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dc .meta2{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.dc .meta2 span{font-size:10px;font-weight:750;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.04);color:#8fa0c8}
+.dc .meta2 span.dep{color:#7fb0ff;background:rgba(59,130,255,.1)}
+.dc .ver{display:flex;gap:2px;margin-top:8px}.dc .ver i{height:3px;flex:1;border-radius:2px;background:rgba(120,150,255,.14)}.dc .ver i.f{background:#3b82ff}
+.addc{border:1px dashed rgba(120,150,255,.18);border-radius:10px;padding:9px;text-align:center;font-size:11.5px;font-weight:750;color:#7fb0ff;cursor:pointer}
+
+/* ===== REACH LIST ===== */
+.rl{display:grid;grid-template-columns:300px minmax(0,1fr);gap:14px}
+.lists{background:#080c1f;border:1px solid rgba(120,150,255,.12);border-radius:14px;padding:12px}
+.lists h4{margin:2px 4px 10px;font-size:10px;font-weight:850;letter-spacing:.11em;color:#8fa0c8;text-transform:uppercase}
+.lc{padding:11px 12px;border-radius:11px;cursor:pointer;margin-bottom:6px;border:1px solid transparent}
+.lc:hover{background:rgba(255,255,255,.03)}
+.lc.on{background:rgba(59,130,255,.12);border-color:rgba(59,130,255,.35)}
+.lc b{display:block;font-size:13px;font-weight:800}
+.lc span{display:block;font-size:11px;color:#6f7fa6;font-weight:650;margin-top:2px}
+.lc .pb{height:4px;border-radius:4px;background:rgba(120,150,255,.12);margin-top:8px;overflow:hidden}
+.lc .pb i{display:block;height:100%;background:#19d38a;box-shadow:0 0 8px rgba(25,211,138,.6)}
+.main{background:#080c1f;border:1px solid rgba(120,150,255,.12);border-radius:14px;overflow:hidden}
+.mh{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(120,150,255,.09);flex-wrap:wrap}
+.mh h3{margin:0;font-size:16px;font-weight:850}
+.mh .r{margin-left:auto;display:flex;gap:7px;align-items:center}
+.fl{display:flex;gap:5px}
+.fl span{font-size:11.5px;font-weight:750;padding:5px 11px;border-radius:999px;color:#8fa0c8;background:rgba(255,255,255,.04);cursor:pointer}
+.fl span.on{background:rgba(255,255,255,.1);color:#fff}
+.row{display:grid;grid-template-columns:24px minmax(0,1.35fr) minmax(0,1.05fr) minmax(0,1.25fr) 96px 92px minmax(0,1.2fr) 18px;gap:14px;align-items:center;
+ padding:12px 16px;border-bottom:1px solid rgba(120,150,255,.06);cursor:pointer}
+.row:hover{background:rgba(59,130,255,.06)}
+.row.next{background:rgba(255,77,141,.06);box-shadow:inset 3px 0 0 #ff4d8d}
+.row.done{opacity:.42}.row.done .nm{text-decoration:line-through}
+.ck{width:20px;height:20px;border-radius:6px;border:1.5px solid #2a3a72}
+.row.done .ck{background:#19d38a;border-color:#19d38a}
+.nm{font-size:13.5px;font-weight:800}
+.org{font-size:11.5px;color:#6f7fa6;font-weight:650;margin-top:2px}
+.ph{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;font-weight:700;color:#ffd38a}
+.em{font-size:11.5px;color:#7fb0ff;font-weight:650;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.co2{font-size:12.5px;font-weight:750;color:#cfd8ee}
+.co2 small{display:block;font-size:10.5px;color:#5b6a94;font-weight:650;margin-top:2px}
+.stg{font-size:10px;font-weight:850;letter-spacing:.06em;padding:3px 8px;border-radius:999px;display:inline-block}
+.stg.cold{background:rgba(59,130,255,.13);color:#7fb0ff}.stg.r1{background:rgba(255,181,71,.13);color:#ffb547}.stg.met{background:rgba(25,211,138,.12);color:#2ee59d}
+.lt{font-size:10.5px;color:#5b6a94;font-weight:700;margin-top:4px}
+.how{font-size:12px;font-weight:750;color:#cfe0ff}
+.how small{display:block;font-size:10.5px;color:#5b6a94;font-weight:650;margin-top:2px}
+.ready{display:flex;gap:3px}.ready i{width:14px;height:5px;border-radius:2px;background:rgba(120,150,255,.14)}
+.ready i.f{background:#19d38a}
+.rlab{font-size:10px;color:#5b6a94;font-weight:750;margin-top:4px}
+.nx{font-size:12px;color:#aebbe0;font-weight:650;line-height:1.4}
+.nx b{color:#ffb547;font-weight:800}
+.arr{color:#5b6a94;font-size:15px;font-weight:800}
+.row:hover .arr{color:#7fb0ff}
+.thd{display:grid;grid-template-columns:24px minmax(0,1.35fr) minmax(0,1.05fr) minmax(0,1.25fr) 96px 92px minmax(0,1.2fr) 18px;gap:14px;padding:9px 16px;
+ font-size:9.5px;font-weight:850;letter-spacing:.09em;color:#50607f;border-bottom:1px solid rgba(120,150,255,.08)}
+.dayrow{padding:10px 16px 6px;font-size:10.5px;font-weight:850;letter-spacing:.09em;color:#8fa0c8;background:rgba(255,255,255,.015)}
+.dayrow em{font-style:normal;color:#ff87b8;margin-left:8px}
+
+/* ===== SPACE WORKBENCH ===== */
+.ws{background:#080c1f;border:1px solid rgba(120,150,255,.13);border-radius:16px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.wh{padding:16px 20px;border-bottom:1px solid rgba(120,150,255,.09);display:grid;grid-template-columns:54px minmax(0,1fr) auto;gap:14px;align-items:center;
+ background:linear-gradient(180deg,rgba(59,130,255,.06),transparent)}
+.wh .mk{width:54px;height:54px;border-radius:14px;display:grid;place-items:center;font-size:17px;font-weight:850;
+ background:linear-gradient(145deg,#1b3a7a,#0e1f49);color:#9fc4ff;border:1px solid rgba(127,176,255,.3)}
+.wh h1{margin:0;font-size:22px;font-weight:850;letter-spacing:-.015em}
+.wh .sub{font-size:12.5px;color:#7f8db5;font-weight:650;margin-top:3px}
+.wh .r{display:flex;gap:7px}
+.adder{display:flex;gap:8px;padding:12px 20px;border-bottom:1px solid rgba(120,150,255,.09);background:#060913;align-items:center;flex-wrap:wrap}
+.adder .in{flex:1;min-width:260px;height:36px;border-radius:10px;border:1px solid rgba(120,150,255,.16);background:#0a0f26;
+ padding:0 13px;font-size:12.5px;color:#6f7fa6;display:flex;align-items:center}
+.adder .q{font-size:11.5px;font-weight:750;padding:7px 12px;border-radius:9px;border:1px solid rgba(120,150,255,.14);color:#aebbe0;background:rgba(255,255,255,.03)}
+.adder .q:hover{border-color:rgba(127,176,255,.5);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:16px 20px 20px}
+.blk{background:#0a0f26;border:1px solid rgba(120,150,255,.10);border-radius:13px;display:flex;flex-direction:column;min-height:190px}
+.blk.wide{grid-column:span 2}
+.bh{display:flex;align-items:center;gap:8px;padding:11px 13px 9px;border-bottom:1px solid rgba(120,150,255,.07)}
+.bh .dot{width:8px;height:8px;border-radius:50%}
+.bh b{font-size:12px;font-weight:850;letter-spacing:.04em}
+.bh .c{font-size:10px;font-weight:800;color:#6f7fa6;background:rgba(255,255,255,.05);border-radius:999px;padding:1px 7px}
+.bh .a{margin-left:auto;font-size:11px;font-weight:750;color:#7fb0ff;cursor:pointer}
+.bb{padding:10px 13px 12px;display:flex;flex-direction:column;gap:7px;flex:1}
+.it{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:center;padding:7px 8px;border-radius:9px;background:#070b1c;border:1px solid rgba(120,150,255,.07)}
+.it .th{width:34px;height:34px;border-radius:7px;display:grid;place-items:center;font-size:8.5px;font-weight:850;letter-spacing:.05em}
+.th.pdf{background:rgba(255,77,109,.14);color:#ff8a9c}.th.doc{background:rgba(59,130,255,.15);color:#7fb0ff}
+.th.xls{background:rgba(25,211,138,.13);color:#2ee59d}.th.lnk{background:rgba(161,115,255,.14);color:#b98dff}
+.th.p{background:rgba(255,181,71,.13);color:#ffb547;border-radius:50%}
+.it b{display:block;font-size:12px;font-weight:750;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it span{display:block;font-size:10.5px;color:#5b6a94;font-weight:650;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drop{border:1px dashed rgba(120,150,255,.18);border-radius:9px;padding:9px;text-align:center;font-size:11px;font-weight:700;color:#5b6a94;margin-top:auto}
+.nt{background:rgba(245,196,67,.06);border:1px solid rgba(245,196,67,.16);border-radius:9px;padding:9px 11px;font-size:12px;line-height:1.6;color:#f0e3bd}
+.nt small{display:block;font-size:10px;color:#a1823f;font-weight:750;margin-top:4px}
+.tk{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:9px;align-items:center;font-size:12px;font-weight:700;padding:5px 2px}
+.tk i{width:15px;height:15px;border-radius:5px;border:1.5px solid #2a3a72}
+.tk.d i{background:#19d38a;border-color:#19d38a}.tk.d span{text-decoration:line-through;color:#5b6a94}
+.tk em{font-style:normal;font-size:10.5px;color:#6f7fa6;font-weight:700}
+.tl{display:grid;grid-template-columns:52px minmax(0,1fr);gap:10px;font-size:11.5px;padding:6px 0;border-top:1px solid rgba(120,150,255,.06)}
+.tl:first-child{border-top:0}
+.tl span{color:#5b6a94;font-weight:750}.tl b{font-weight:650;color:#aebbe0}
+.outs{display:flex;gap:8px;padding:14px 20px;border-top:1px solid rgba(120,150,255,.09);align-items:center;flex-wrap:wrap;background:#060913}
+.outs .lb{font-size:10px;font-weight:850;letter-spacing:.1em;color:#6f7fa6;margin-right:4px}
+.ob{height:34px;border-radius:9px;padding:0 14px;font-size:12px;font-weight:750;border:1px solid rgba(120,150,255,.16);background:rgba(255,255,255,.03);color:#cfd8ee}
+.ob:hover{border-color:rgba(127,176,255,.5);color:#fff}
+.ob.p{background:linear-gradient(180deg,#2f6fed,#1d4fc4);border-color:#4b87ff;color:#fff;box-shadow:0 0 16px rgba(59,130,255,.35)}
+
+.ec{display:grid;grid-template-columns:minmax(0,1fr) 320px;background:#080c1f;border:1px solid rgba(120,150,255,.13);border-radius:16px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.eh{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid rgba(120,150,255,.09)}
+.eh b{font-size:15px;font-weight:850}.eh .from{font-size:11.5px;color:#6f7fa6;font-weight:700}
+.eh .r{margin-left:auto;display:flex;gap:7px}
+.tpl{display:flex;gap:6px;padding:11px 18px;border-bottom:1px solid rgba(120,150,255,.07);flex-wrap:wrap;align-items:center}
+.tpl .lb{font-size:9.5px;font-weight:850;letter-spacing:.1em;color:#6f7fa6;margin-right:4px}
+.tp{font-size:11.5px;font-weight:750;padding:5px 11px;border-radius:999px;border:1px solid rgba(120,150,255,.14);color:#aebbe0;cursor:pointer}
+.tp.on{background:rgba(255,77,141,.16);border-color:rgba(255,77,141,.5);color:#ffb3d1}
+.fld{display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px;padding:10px 18px;border-bottom:1px solid rgba(120,150,255,.07);font-size:12.5px;align-items:center}
+.fld .k{color:#6f7fa6;font-weight:750}
+.pp{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:3px 10px 3px 4px;border-radius:999px;background:rgba(59,130,255,.12);color:#cfe0ff;margin-right:6px}
+.pp i{width:20px;height:20px;border-radius:50%;background:#1b3a7a;display:grid;place-items:center;font-style:normal;font-size:9px;font-weight:850;color:#9fc4ff}
+.ebody{padding:16px 18px;font-size:13.5px;line-height:1.8;color:#dfe7fb;min-height:300px}
+.ebody .f{background:rgba(161,115,255,.14);border-bottom:1px dashed rgba(185,141,255,.6);padding:0 2px;border-radius:2px}
+.eatt{display:flex;gap:8px;padding:12px 18px;border-top:1px solid rgba(120,150,255,.07);flex-wrap:wrap}
+.af{display:grid;grid-template-columns:30px auto;gap:8px;align-items:center;background:#0a0f26;border:1px solid rgba(120,150,255,.1);border-radius:9px;padding:6px 11px 6px 6px}
+.af .t{width:30px;height:30px;border-radius:6px;background:rgba(255,77,109,.14);color:#ff8a9c;font-size:8.5px;font-weight:850;display:grid;place-items:center}
+.af b{font-size:12px;font-weight:750;display:block}.af span{font-size:10.5px;color:#5b6a94;font-weight:650}
+.esend{display:flex;align-items:center;gap:10px;padding:13px 18px;border-top:1px solid rgba(120,150,255,.09);background:#060913}
+.esend .r{margin-left:auto;display:flex;gap:8px}
+.side{background:#060913;border-left:1px solid rgba(120,150,255,.09);padding:14px}
+.side h4{margin:0 0 10px;font-size:10px;font-weight:850;letter-spacing:.11em;color:#8fa0c8}
+.pull{display:grid;grid-template-columns:16px minmax(0,1fr);gap:9px;padding:8px 0;border-top:1px solid rgba(120,150,255,.06);font-size:12px}
+.pull i{width:14px;height:14px;border-radius:50%;background:#19d38a;margin-top:2px;box-shadow:0 0 8px rgba(25,211,138,.5)}
+.pull i.a{background:#ffb547;box-shadow:0 0 8px rgba(255,181,71,.5)}
+.pull b{font-weight:750;display:block}.pull span{color:#6f7fa6;font-weight:650;font-size:11px}
+.why{margin-top:14px;background:rgba(255,77,141,.07);border:1px solid rgba(255,77,141,.2);border-radius:10px;padding:11px;font-size:11.5px;line-height:1.6;color:#e9c3d3}
+.why b{color:#ffb3d1}
+</style></head><body>
+<div class="bar"><b>4orm Ops</b><span>the Vault in columns, the reach-out list, the space as a workbench</span></div>
+<div class="tabs" id="tabs"><button class="on" data-p="0">1 The space</button><button data-p="1">2 The reach-out list</button><button data-p="2">3 The Vault</button><button data-p="3">4 Move to email</button></div>
+<div class="wrap">
+<div class="pan on" data-p="0"><h2>The space, as a workbench</h2>
+<p class="lede">A space is where you build out everything for one person or company. So it opens like a workbench: one bar at the top that takes anything you throw at it, and a block for each kind of thing &mdash; documents, links, people, notes, tasks, the email, the history. Every block grows as you add. The outputs sit at the bottom, for when it is ready.</p>
+<div class="ws">
+ <div class="wh"><div class="mk">WF</div><div><h1>Weekend Fund</h1><div class="sub">Ryan Hoover &middot; pre-seed &middot; Cold &middot; created 2 Oct</div></div>
+  <div class="r"><button class="ib">&lsaquo; Prev</button><button class="ib">Next &rsaquo;</button><button class="ib">&middot;&middot;&middot;</button><button class="ib">Close</button></div></div>
+ <div class="adder"><div class="in">Drop a file, paste a link, or type a note &mdash; it goes in the right place</div>
+  <button class="q">+ Document</button><button class="q">+ Link</button><button class="q">+ Note</button><button class="q">+ Person</button><button class="q">+ Task</button></div>
+ <div class="grid">
+  <div class="blk"><div class="bh"><span class="dot" style="background:#3b82ff"></span><b>DOCUMENTS</b><span class="c">4</span><span class="a">+ Add</span></div><div class="bb">
+   <div class="it"><div class="th pdf">PDF</div><div><b>Intro to 4orm deck</b><span>4.8 MB &middot; goes out</span></div></div>
+   <div class="it"><div class="th pdf">PDF</div><div><b>One-pager</b><span>880 KB &middot; goes out</span></div></div>
+   <div class="it"><div class="th xls">XLS</div><div><b>Pre-seed summary</b><span>internal</span></div></div>
+   <div class="it"><div class="th doc">DOC</div><div><b>Investor FAQ</b><span>internal</span></div></div>
+   <div class="drop">Drop files here</div></div></div>
+  <div class="blk"><div class="bh"><span class="dot" style="background:#a173ff"></span><b>LINKS</b><span class="c">3</span><span class="a">+ Add</span></div><div class="bb">
+   <div class="it"><div class="th lnk">WEB</div><div><b>weekend.fund</b><span>their site</span></div></div>
+   <div class="it"><div class="th lnk">IN</div><div><b>Ryan Hoover on LinkedIn</b><span>linkedin.com/in/rrhoover</span></div></div>
+   <div class="it"><div class="th lnk">WEB</div><div><b>Portfolio: Pipe, Mercury</b><span>why the angle works</span></div></div>
+   <div class="drop">Paste a link</div></div></div>
+  <div class="blk"><div class="bh"><span class="dot" style="background:#ffb547"></span><b>PEOPLE</b><span class="c">2</span><span class="a">+ Add</span></div><div class="bb">
+   <div class="it"><div class="th p">RH</div><div><b>Ryan Hoover</b><span>Founder &middot; ryan@weekend.fund</span></div></div>
+   <div class="it"><div class="th p">BF</div><div><b>Bruce Fair</b><span>ours &middot; warm intro route</span></div></div>
+   <div class="drop">From Contacts or Pipeline</div></div></div>
+  <div class="blk wide"><div class="bh"><span class="dot" style="background:#f5c443"></span><b>NOTES</b><span class="c">3</span><span class="a">+ Add</span></div><div class="bb">
+   <div class="nt">Backed Pipe and Mercury early. Writes $250K&ndash;$1M. Moves fast on infrastructure, slow on consumer.<small>The angle &middot; 4orm Intelligence</small></div>
+   <div class="nt">Met at the YC meetup. Said come back once a design partner is signed.<small>27 Oct</small></div>
+   <div class="nt">Do not call the 4orm platform built. 4ormIQ is built; the platform is not.<small>watch-out</small></div></div></div>
+  <div class="blk"><div class="bh"><span class="dot" style="background:#19d38a"></span><b>TASKS</b><span class="c">3</span><span class="a">+ Add</span></div><div class="bb">
+   <div class="tk d"><i></i><span>Write the angle</span><em>done</em></div>
+   <div class="tk"><i></i><span>Send the intro</span><em>today</em></div>
+   <div class="tk"><i></i><span>Follow up if no reply</span><em>Fri 30 Oct</em></div>
+   <div class="drop" style="margin-top:auto">These land on the Planner</div></div></div>
+  <div class="blk wide"><div class="bh"><span class="dot" style="background:#ff4d8d"></span><b>READY FOR EMAIL</b><span class="a" style="color:#2ee59d">5 of 6</span></div><div class="bb">
+   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
+    <div class="it" style="grid-template-columns:1fr"><div><b style="color:#2ee59d">To &middot; Ryan Hoover</b><span>ryan@weekend.fund</span></div></div>
+    <div class="it" style="grid-template-columns:1fr"><div><b style="color:#2ee59d">Cc &middot; Bruce Fair</b><span>from People, warm intro</span></div></div>
+    <div class="it" style="grid-template-columns:1fr"><div><b style="color:#2ee59d">2 attachments</b><span>marked "goes out"</span></div></div>
+    <div class="it" style="grid-template-columns:1fr"><div><b style="color:#2ee59d">The angle</b><span>Pipe, Mercury</span></div></div>
+    <div class="it" style="grid-template-columns:1fr"><div><b style="color:#2ee59d">Template &middot; Investor intro</b><span>chosen from the stage</span></div></div>
+    <div class="it" style="grid-template-columns:1fr"><div><b style="color:#ffb547">The ask</b><span>not set &middot; defaults to 20 min</span></div></div>
+   </div>
+   <div style="font-size:11.5px;color:#8fa0c8;font-weight:650;margin-top:4px">Press <b style="color:#fff">Move to email</b> and everything above goes into a written email in the Email page.</div></div></div>
+  <div class="blk"><div class="bh"><span class="dot" style="background:#22d3c5"></span><b>HISTORY</b></div><div class="bb">
+   <div class="tl"><span>Today</span><b>Angle written</b></div>
+   <div class="tl"><span>27 Oct</span><b>Met at YC meetup</b></div>
+   <div class="tl"><span>2 Oct</span><b>Space created</b></div></div></div>
+ </div>
+ <div class="outs"><span class="lb">WHEN IT IS READY</span><button class="ob p">Move to email &rarr;</button><button class="ob">Book 20 min</button><button class="ob">Copy for their form</button><button class="ob">Move to Drive</button></div>
+</div>
+<div class="note"><b>How it works.</b> The add bar takes a dropped file, a pasted link or typed text and files each in its block. Documents marked "goes out" are what an email attaches. Tasks land on the Planner. The email is not written here &mdash; "Ready for email" shows what the email will be built from, and <b>Move to email</b> hands all of it to the Email page, written (tab 4).</div></div>
+
+<div class="pan" data-p="1"><h2>The reach-out list</h2>
+<p class="lede">A real list to work down. Your lists down the left, the people in the one you picked on the right, grouped by the day they are due. Each row tells you how to reach them, how built-out their space is, and the one next step &mdash; so you can see at a glance who is ready to go and who still needs work.</p>
+<div class="rl"><div class="lists"><h4>Your lists</h4><div class="lc on"><b>Design partners</b><span>50 people &middot; 5 a day</span><div class="pb"><i style="width:22%"></i></div></div><div class="lc"><b>Pre-seed angels</b><span>25 people &middot; 5 a day</span><div class="pb"><i style="width:8%"></i></div></div><div class="lc"><b>Enterprise BC &middot; protected</b><span>25 &middot; on hold</span><div class="pb"><i style="width:0"></i></div></div><div class="lc" style="border:1px dashed rgba(120,150,255,.18);text-align:center"><b style="color:#7fb0ff">+ New list</b><span>from a sheet, a tag or a stage</span></div></div><div class="main"><div class="mh"><h3>Design partners</h3><span style="font-size:12px;font-weight:800;color:#2ee59d">11 of 50 done</span><span class="r"><div class="fl"><span class="on">To do</span><span>Done</span><span>All</span></div><button class="ib go">Start with the next one</button></span></div><div class="thd"><span></span><span>WHO</span><span>COMPANY</span><span>PHONE AND EMAIL</span><span>STAGE</span><span>SPACE</span><span>NEXT STEP</span><span></span></div><div class="dayrow">TUESDAY 27 OCTOBER<em>TODAY &middot; 1 OF 3 DONE</em></div><div class="row done"><div class="ck"></div><div><div class="nm">Ryan Hoover</div><div class="org">Founder</div></div><div class="co2">Weekend Fund<small>San Francisco &middot; writes $250K-$1M</small></div><div><div class="ph">415 555 0118</div><div class="em">ryan@weekend.fund</div></div><div><span class="stg met">CONTACTED</span><div class="lt">last &middot; Sent today</div></div><div><div class="ready"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class=""></i></div><div class="rlab">5 of 6 built</div></div><div class="nx"><b>Wait</b> &middot; follow up Fri</div><div class="arr">&rsaquo;</div></div><div class="row next"><div class="ck"></div><div><div class="nm">Marie-Claude Lau</div><div class="org">Managing Partner</div></div><div class="co2">BCF Ventures<small>Vancouver &middot; 2 BC brokerages</small></div><div><div class="ph">604 555 0142</div><div class="em">mclau@bcfventures.vc</div></div><div><span class="stg cold">COLD</span><div class="lt">last &middot; Never</div></div><div><div class="ready"><i class="f"></i><i class="f"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div><div class="rlab">2 of 6 built</div></div><div class="nx"><b>Call</b>, ask for 20 min</div><div class="arr">&rsaquo;</div></div><div class="row "><div class="ck"></div><div><div class="nm">Steve Ponte</div><div class="org">Partner</div></div><div class="co2">Perch Capital<small>Toronto &middot; fintech seed</small></div><div><div class="ph">416 555 0167</div><div class="em">steve@perch.vc</div></div><div><span class="stg cold">COLD</span><div class="lt">last &middot; 31 days</div></div><div><div class="ready"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class=""></i><i class=""></i></div><div class="rlab">4 of 6 built</div></div><div class="nx"><b>Attach</b> the deck, then send</div><div class="arr">&rsaquo;</div></div><div class="dayrow">WEDNESDAY 28 OCTOBER</div><div class="row "><div class="ck"></div><div><div class="nm">Nadeem Keshavjee</div><div class="org">Principal</div></div><div class="co2">GreenBirch Capital<small>Calgary &middot; mortgage tech</small></div><div><div class="ph">778 555 0199</div><div class="em">nadeem@greenbirch.ca</div></div><div><span class="stg r1">1ST REACH OUT</span><div class="lt">last &middot; 21 days</div></div><div><div class="ready"><i class="f"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div><div class="rlab">1 of 6 built</div></div><div class="nx"><b>Write</b> the angle first</div><div class="arr">&rsaquo;</div></div><div class="row "><div class="ck"></div><div><div class="nm">Akber Mirza</div><div class="org">Owner</div></div><div class="co2">BRX Mortgage<small>Surrey &middot; 14 brokers</small></div><div><div class="ph">604 555 0133</div><div class="em">ask@brxmortgage.com</div></div><div><span class="stg cold">COLD</span><div class="lt">last &middot; 11 days</div></div><div><div class="ready"><i class="f"></i><i class="f"></i><i class="f"></i><i class=""></i><i class=""></i><i class=""></i></div><div class="rlab">3 of 6 built</div></div><div class="nx"><b>Paste</b> into their form</div><div class="arr">&rsaquo;</div></div><div class="row "><div class="ck"></div><div><div class="nm">Frances Hinojosa</div><div class="org">Broker of Record</div></div><div class="co2">Tribe Financial<small>Kelowna &middot; 22 brokers</small></div><div><div class="ph">250 555 0184</div><div class="em">frances@tribefinancial.ca</div></div><div><span class="stg r1">1ST REACH OUT</span><div class="lt">last &middot; 11 days</div></div><div><div class="ready"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i></div><div class="rlab">6 of 6 built</div></div><div class="nx"><b>Move to email</b> &middot; ready</div><div class="arr">&rsaquo;</div></div></div></div>
+<div class="note"><b>How it works.</b> The pink row is the next one to do. "Space" is six small bars: how much of that person's space is built out &mdash; documents, links, people, notes, angle, email. A row with one bar filled tells you to go build before you reach out; six bars means send it. "Next step" is generated from what is missing, so it always says the actual thing to do. Click a row and the space opens over the list; Prev and Next in the space walk this list. Tick the box and the row greys out and the next one turns pink. Ticking writes the stage to GoHighLevel. "Start with the next one" opens the pink row straight away.</div></div>
+
+<div class="pan" data-p="2"><h2>The Vault, in columns</h2>
+<p class="lede">One column per category, side by side, each scrolling on its own. Audits down one column, registers down the next. Scroll the board sideways to reach more columns.</p>
+<div class="vtop"><h3>The Vault</h3><div class="kp"><span class="g">14 current</span><span class="a">7 draft</span><span class="r2">2 rebuild due</span><span class="r2">3 no owner</span></div><span class="r"><button class="ib">Export register</button><button class="ib">Run an audit</button></span></div><div class="board"><div class="col"><div class="ch"><div><div class="o">4ormIQ</div><b>Audits</b></div><span class="c">9</span></div><div class="cb"><div class="dc cur"><div class="id">PIA-001</div><b>Privacy impact assessment</b><div class="pv">How 4ormIQ collects, seals and releases consumer data, against PIPEDA and the Alberta and BC private-sector acts.</div><div class="ver"><i class="f"></i><i class="f"></i><i class="f"></i><i class=""></i></div><div class="meta2"><span>verified 9 Oct</span><span class="dep">needs SEC-001</span></div><div class="m"><span class="ow">Chad</span><span class="v">v2.0</span></div></div><div class="dc cur"><div class="id">HRA-001</div><b>Human rights assessment</b><div class="pv">Protected grounds are never collected or used in ranking; two findings, both closed in the time-window rule.</div><div class="ver"><i class="f"></i><i class="f"></i><i class="f"></i></div><div class="meta2"><span>verified 12 Oct</span><span class="dep">needs DR-001</span></div><div class="m"><span class="ow">Chad</span><span class="v">v1.0</span></div></div><div class="dc dr"><div class="id">CS-001</div><b>Code sweep</b><div class="pv">Sweep of the live repo: compliance gate not in the repo, 34 orphan scripts, F10 open.</div><div class="ver"><i class="f"></i><i class=""></i><i class=""></i></div><div class="meta2"><span>verified 4 Sep</span><span class="dep">needs CR-001</span></div><div class="m"><span class="ow none">Unassigned</span><span class="v">v1.0</span></div></div><div class="dc dr"><div class="id">SEC-001</div><b>Security review</b><div class="pv">Threat model for the evidence store and the result page; three items open on key handling.</div><div class="ver"><i class="f"></i><i class=""></i><i class=""></i></div><div class="meta2"><span>verified 1 Sep</span><span class="dep">needs PIA-001</span></div><div class="m"><span class="ow">Chad</span><span class="v">v0.3</span></div></div><div class="dc cur"><div class="id">RET-001</div><b>Retention schedule</b><div class="pv">What is kept, for how long, and when it is destroyed, by record type.</div><div class="ver"><i class="f"></i><i class=""></i></div><div class="meta2"><span>verified 28 Sep</span><span class="dep">needs PIA-001</span></div><div class="m"><span class="ow">Chad</span><span class="v">v0.2</span></div></div><div class="dc cur"><div class="id">IR-001</div><b>Incident response</b><div class="pv">Who is called, in what order, and what is logged when something goes wrong.</div><div class="ver"><i class="f"></i><i class=""></i></div><div class="meta2"><span>verified 30 Sep</span><span class="dep">needs SEC-001</span></div><div class="m"><span class="ow">Chad</span><span class="v">v0.2</span></div></div><div class="dc dr"><div class="id">VR-001</div><b>Vendor review</b><div class="pv">Every third party that touches consumer data, what it sees, and its contract status.</div><div class="ver"><i class="f"></i></div><div class="meta2"><span>verified 15 Oct</span><span class="dep">needs PIA-001</span></div><div class="m"><span class="ow">Chad</span><span class="v">v0.1</span></div></div><div class="dc cur"><div class="id">ACC-001</div><b>Accessibility audit</b><div class="pv">WCAG 2.2 AA pass on the consumer pages; contrast and keyboard order fixed.</div><div class="ver"><i class="f"></i><i class="f"></i></div><div class="meta2"><span>verified 10 Oct</span></div><div class="m"><span class="ow">Chad</span><span class="v">v1.0</span></div></div><div class="dc dr"><div class="id">AI-001</div><b>Model risk assessment</b><div class="pv">Model risk for retrieval and ranking: drift checks, human review, and the favourable-evidence rule.</div><div class="ver"><i class="f"></i><i class=""></i></div><div class="meta2"><span>verified 18 Oct</span><span class="dep">needs HRA-001</span></div><div class="m"><span class="ow">Chad</span><span class="v">v0.2</span></div></div><div class="addc">+ Add</div></div></div><div class="col"><div class="ch"><div><div class="o">4ormIQ</div><b>Registers</b></div><span class="c r">6</span></div><div class="cb"><div class="dc cur"><div class="id">DR-001</div><b>Register of registers</b><div class="pv">The register of every register: what exists, who owns it, and when it was last verified.</div><div class="ver"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class=""></i></div><div class="meta2"><span>verified 20 Oct</span></div><div class="m"><span class="ow">Chad</span><span class="v">v1.2</span></div></div><div class="dc due"><div class="id">CR-001</div><b>Compliance register</b><div class="pv">Every rule 4orm must meet, mapped to the control that meets it. Due for a full rebuild to v1.0.</div><div class="ver"><i class="f"></i><i class=""></i><i class=""></i><i class=""></i></div><div class="meta2"><span>rebuild due</span><span class="dep">needs LR-001</span></div><div class="m"><span class="ow none">Unassigned</span><span class="v">v0.1</span></div></div><div class="dc cur"><div class="id">LR-001</div><b>Legal authority register</b><div class="pv">Every compliance row cites a legal authority; zero uncited.</div><div class="ver"><i class="f"></i><i class="f"></i><i class="f"></i></div><div class="meta2"><span>verified 8 Oct</span></div><div class="m"><span class="ow">Chad</span><span class="v">v1.0</span></div></div><div class="dc cur"><div class="id">SR-001</div><b>Source register</b><div class="pv">Every external figure used in public material, with its source and the date checked.</div><div class="ver"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i></div><div class="meta2"><span>verified 22 Oct</span></div><div class="m"><span class="ow">Chad</span><span class="v">v2.1</span></div></div><div class="dc dr"><div class="id">RR-001</div><b>Risk register</b><div class="pv">Top risks to the company, scored on likelihood and impact, with an owner each.</div><div class="ver"><i class="f"></i><i class=""></i></div><div class="meta2"><span>verified 14 Oct</span></div><div class="m"><span class="ow">Chad</span><span class="v">v0.4</span></div></div><div class="dc due"><div class="id">DSR-001</div><b>Deck source register</b><div class="pv">The 89 claims in the investor deck, each traced to a source. Eleven block release.</div><div class="ver"><i class="f"></i><i class=""></i><i class=""></i></div><div class="meta2"><span>rebuild due</span><span class="dep">needs SR-001</span></div><div class="m"><span class="ow none">Unassigned</span><span class="v">v1.0</span></div></div><div class="addc">+ Add</div></div></div><div class="col"><div class="ch"><div><div class="o">4ormop</div><b>Audits</b></div><span class="c">3</span></div><div class="cb"><div class="dc cur"><div class="id">BTN-001</div><b>Every button and where it leads</b><div class="pv">Every button on 4ormop and where it leads, run signed in on production.</div><div class="ver"><i class="f"></i><i class="f"></i><i class="f"></i></div><div class="meta2"><span>verified 27 Oct</span></div><div class="m"><span class="ow">Chad</span><span class="v">v3</span></div></div><div class="dc dr"><div class="id">CT-001</div><b>Contrast walk, 18 routes</b><div class="pv">Contrast walk over all 18 routes; 58 failures on the first four pages.</div><div class="ver"><i class="f"></i></div><div class="meta2"><span>verified 27 Oct</span><span class="dep">needs BTN-001</span></div><div class="m"><span class="ow">Chad</span><span class="v">v1</span></div></div><div class="dc dr"><div class="id">VC-001</div><b>Visual check, 33 shots</b><div class="pv">Visual check against 33 reference shots; the font finding moves every number.</div><div class="ver"><i class="f"></i><i class=""></i></div><div class="meta2"><span>verified 27 Oct</span></div><div class="m"><span class="ow">Chad</span><span class="v">v2</span></div></div><div class="addc">+ Add</div></div></div><div class="col"><div class="ch"><div><div class="o">4orm Finance</div><b>Important documents</b></div><span class="c r">4</span></div><div class="cb"><div class="dc cur"><div class="id">INC-001</div><b>Articles of incorporation</b><div class="pv">4orm Finance articles, Alberta, with the share classes as filed.</div><div class="ver"><i class="f"></i></div><div class="meta2"><span>verified 25 Jul</span></div><div class="m"><span class="ow">Bruce</span><span class="v">v1.0</span></div></div><div class="dc cur"><div class="id">SAFE-01</div><b>v15r capital structure</b><div class="pv">Pre-seed structure: subscriptions plus stacked SAFEs at $15M, $18M and $20M.</div><div class="ver"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i></div><div class="meta2"><span>verified 30 Jul</span><span class="dep">needs INC-001</span></div><div class="m"><span class="ow">Bruce</span><span class="v">v15r</span></div></div><div class="dc dr"><div class="id">SHA-001</div><b>Shareholders agreement</b><div class="pv">Founders and early holders: vesting, transfer and the board seats. Draft with counsel.</div><div class="ver"><i class="f"></i><i class=""></i><i class=""></i></div><div class="meta2"><span>draft</span><span class="dep">needs INC-001</span></div><div class="m"><span class="ow none">Unassigned</span><span class="v">v0.3</span></div></div><div class="dc cur"><div class="id">NDA-SPR</div><b>Speer mutual NDA</b><div class="pv">Mutual NDA with Speer Technologies, amended for the platform build.</div><div class="ver"><i class="f"></i><i class="f"></i></div><div class="meta2"><span>verified 13 Aug</span></div><div class="m"><span class="ow">Chad</span><span class="v">v2</span></div></div><div class="addc">+ Add</div></div></div></div>
+<div class="note"><b>How it works.</b> Each column is a category and scrolls on its own, so a long Audits column never pushes Registers off the screen. The coloured edge on each card is its status &mdash; green current, amber draft, red rebuild due &mdash; and "Unassigned" in red is the only other colour. A column's count turns red when something in it has no owner. "+ Add" at the bottom of a column adds straight into that category. Click a card and the document opens in the reader. Columns can be dragged to reorder, and you can add a column for a new category.</div></div>
+<div class="pan" data-p="3"><h2>Move to email: what lands in the Email page</h2>
+<p class="lede">Build the space, press Move to email, and this is what opens. The email is written for you from everything in the space, with the right template for who they are, the documents attached and the other people copied in. You read it, change what you want, and send.</p>
+<div class="ec"><div>
+ <div class="eh"><b>New email</b><span class="from">from chad@4ormfinance.com &middot; through GoHighLevel</span><span class="r"><button class="ib">Back to the space</button><button class="ib">Send me a test</button></span></div>
+ <div class="tpl"><span class="lb">TEMPLATE</span><span class="tp on">Investor intro</span><span class="tp">Design partner</span><span class="tp">Regulator</span><span class="tp">Warm intro ask</span><span class="tp">Follow-up</span><span class="tp">Meeting recap</span></div>
+ <div class="fld"><span class="k">To</span><span><span class="pp"><i>RH</i>Ryan Hoover</span></span></div>
+ <div class="fld"><span class="k">Cc</span><span><span class="pp"><i>BF</i>Bruce Fair</span><span style="font-size:11px;color:#5b6a94;font-weight:700">+ add from the space</span></span></div>
+ <div class="fld"><span class="k">Subject</span><span style="font-weight:700">4orm Finance &mdash; suitability as a shared record</span></div>
+ <div class="ebody">Ryan,<br><br>
+ <span class="f">Bruce Fair</span> suggested I reach out. You backed <span class="f">Pipe and Mercury</span> early &mdash; both infrastructure plays that sat under the thing everyone else was building on top of. 4orm is the same shape for suitability.<br><br>
+ Every regulated financial decision in Canada produces a suitability judgement, and today it lives in a PDF nobody reads twice. We turn it into a record both sides sign and both sides can audit. 4ormIQ, the consumer side, is built; the business side is what we are raising for.<br><br>
+ You mentioned at <span class="f">the YC meetup</span> to come back once a design partner was signed &mdash; I would rather show you where we are now and let you judge the timing.<br><br>
+ <span class="f">Worth twenty minutes next week?</span> The deck and a one-pager are attached.<br><br>
+ Chad Johnston<br>Founder and CEO, 4orm Finance</div>
+ <div class="eatt"><div class="af"><div class="t">PDF</div><div><b>Intro to 4orm deck</b><span>4.8 MB &middot; from the space</span></div></div>
+  <div class="af"><div class="t">PDF</div><div><b>One-pager</b><span>880 KB &middot; from the space</span></div></div>
+  <div class="af" style="border-style:dashed"><div class="t" style="background:rgba(59,130,255,.12);color:#7fb0ff">+</div><div><b style="color:#7fb0ff">Add from the space</b><span>2 more there</span></div></div></div>
+ <div class="esend"><span style="font-size:12px;color:#8fa0c8;font-weight:700">Sending creates "Follow up if no reply" for Fri 30 Oct and logs the email in the space</span>
+  <span class="r"><button class="ib">Rewrite</button><button class="ib">Shorter</button><button class="ib go" style="height:34px;padding:0 16px">Send</button></span></div>
+</div>
+<div class="side"><h4>BUILT FROM THE SPACE</h4>
+ <div class="pull"><i></i><div><b>To &middot; Ryan Hoover</b><span>People &middot; Founder</span></div></div>
+ <div class="pull"><i></i><div><b>Cc &middot; Bruce Fair</b><span>People &middot; marked warm intro, so he is named in the opening</span></div></div>
+ <div class="pull"><i></i><div><b>The angle</b><span>Notes &middot; backed Pipe and Mercury</span></div></div>
+ <div class="pull"><i></i><div><b>Where you met</b><span>Notes &middot; YC meetup, 27 Oct</span></div></div>
+ <div class="pull"><i></i><div><b>Watch-out applied</b><span>Notes &middot; "platform not built" &mdash; the email says the business side is what we are raising for</span></div></div>
+ <div class="pull"><i></i><div><b>Two attachments</b><span>Documents marked "goes out"</span></div></div>
+ <div class="pull"><i class="a"></i><div><b>The ask</b><span>not set in the space &middot; used the template's 20 minutes</span></div></div>
+ <div class="why"><b>Why Investor intro.</b> His stage is Cold, he is on the Pre-seed angels list, and there is a warm-intro person in the space &mdash; so the template opens with the intro, leads with his own portfolio, and asks for one meeting. A design partner gets the problem-first template; a regulator gets the plain-terms one with no ask for money.</div>
+</div></div>
+<div class="note"><b>How it works.</b> Move to email takes everything in the space &mdash; the people, the notes, the angle, the documents marked "goes out" &mdash; and opens the Email composer with it already written. The template is picked from who they are: the list they are on, their stage, and whether there is a warm intro. Every phrase pulled from the space is underlined in violet, so you can see what came from where, and the panel on the right lists each source. Anyone in the space's People block can be copied with a click. Back to the space keeps the draft. Send logs the email in the space's history and creates the follow-up task on the Planner.</div></div>
+</div>
+<script>
+document.getElementById('tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+ document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
+ document.querySelectorAll('.pan').forEach(p=>p.classList.toggle('on',p.dataset.p===b.dataset.p));window.scrollTo(0,0)};
+document.querySelectorAll('.row').forEach(r=>r.querySelector('.ck').onclick=e=>{e.stopPropagation();r.classList.toggle('done')});
+document.querySelectorAll('.tp').forEach(s=>s.onclick=()=>{document.querySelectorAll('.tp').forEach(x=>x.classList.remove('on'));s.classList.add('on')});
+document.querySelectorAll('.lc').forEach(s=>s.onclick=()=>{document.querySelectorAll('.tp').forEach(s=>s.onclick=()=>{document.querySelectorAll('.tp').forEach(x=>x.classList.remove('on'));s.classList.add('on')});
+document.querySelectorAll('.lc').forEach(x=>x.classList.remove('on'));s.classList.add('on')});
+</script></body></html>
