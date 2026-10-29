@@ -88,6 +88,9 @@ export function autoJunk(mail: BoardMail) {
   if (JUNK_LOCAL.test(local)) return true;
   if (JUNK_HOST.test(host)) return true;
   if (JUNK_SUBJECT.test(String(mail.subject || ''))) return true;
+  /* Package tests and Chad's own GoHighLevel sends that come back to his inbox. */
+  if (/^\[TEST\]/i.test(String(mail.subject || ''))) return true;
+  if (/(^|\.)msgsndrroute\.com$/i.test(host) && /^chad\+/i.test(local)) return true;
   if (mail.internal) return false;
   return !!mail.bulk;
 }

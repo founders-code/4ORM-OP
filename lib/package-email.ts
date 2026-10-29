@@ -36,7 +36,7 @@ function section(inner: string, bg = '#ffffff') {
 }
 function hero(k: string, h1: string, h2: string) {
   return `<tr><td style="background:#0b1430;padding:24px 26px 26px;border-radius:12px 12px 0 0">
-<div style="${F}font-size:11px;letter-spacing:2px;font-weight:bold;color:#8fb0ff">${esc(k)}</div>
+<div style="${F}font-size:13px;letter-spacing:0.3px;font-weight:bold;color:#8fb0ff">${esc(k)}</div>
 <div style="${F}font-size:24px;line-height:30px;font-weight:bold;color:#ffffff;margin-top:8px">${esc(h1)}</div>
 <div style="${F}font-size:24px;line-height:30px;font-weight:bold;color:#6f9bff">${esc(h2)}</div></td></tr>`;
 }
@@ -108,7 +108,7 @@ const CAVEAT = '4ormIQ is in validation with mortgage firms. Integrations, time 
 
 function brief(design: Design) {
   if (design === 'brief-broker') {
-    return hero('4ORMIQ IN ONE MINUTE', 'Major financial decisions.', 'Easier to understand. Easier to explain.')
+    return hero('4ormIQ in one minute', 'Major financial decisions.', 'Easier to understand. Easier to explain.')
       + intro()
       + stats([
         ['C$500K', 'B.C. brokerage penalty ceiling under new rules from Oct 13, 2026'],
@@ -126,7 +126,7 @@ function brief(design: Design) {
       + lockup();
   }
   if (design === 'brief-regulator') {
-    return hero('4ORMIQ IN ONE MINUTE', 'Suitability evidence, captured once,', 'as the decision happens.')
+    return hero('4ormIQ in one minute', 'Suitability evidence, captured once,', 'as the decision happens.')
       + intro()
       + stats([
         ['C$20M', 'Max FINTRAC penalty per very serious entity violation, a 40x increase'],
@@ -151,7 +151,7 @@ function brief(design: Design) {
   }
   if (design === 'brief-investor') {
     const sup = (n: number) => `<sup style="font-size:9px;color:${MUTED}">${n}</sup>`;
-    return hero('4ORM FINANCE INTRODUCES', '4ormIQ', 'Counselling-inspired AI that connects compliance and consumer understanding.')
+    return hero('4orm Finance introduces', '4ormIQ', 'Counselling-inspired AI that connects compliance and consumer understanding.')
       + intro()
       + rows('THE CHALLENGE', [
         ['100%', `of files examined lacked a documented suitability assessment, up from 85%.${sup(1)}`],
@@ -191,8 +191,19 @@ function docCards(docs: Array<{ name: string; url: string }>) {
   }).join('');
 }
 
+/* House rule: wherever the brand is written (4orm, 4orm Finance, 4ormIQ) the real blue 4 mark stands in for
+   the "4". Text nodes only, so addresses and links such as 4ormiq.com and chad@4ormfinance.com stay as they are. */
+const MARK = `<img src="${SITE}/assets/email/4-mark.png" alt="4" style="height:0.92em;width:auto;vertical-align:-0.08em;border:0;display:inline">`;
+function brandMarks(html: string) {
+  return html.replace(/>([^<]+)</g, (m, text: string) => '>' + text.replace(/\b4(?=orm(?:IQ\b|ORMIQ|[\s,.;:'’)]|$))(?!orm[a-z]*\.com)/g, MARK) + '<')
+    .replace(/>4ORMIQ/g, '>' + MARK + 'ORMIQ');
+}
+
 /** Full HTML email: logo, Chad's note, signature, documents, then the forwardable brief. */
 export function renderPackageEmail(design: Design, note: string, docs: Array<{ name: string; url: string }>) {
+  return brandMarks(renderRaw(design, note, docs));
+}
+function renderRaw(design: Design, note: string, docs: Array<{ name: string; url: string }>) {
   const sig = `<div style="${F}font-size:14px;line-height:20px;color:${INK};margin-top:4px"><b>With Gratitude,</b><br><b>Chad R Johnston</b><br><span style="color:${MUTED};font-size:13px">Founder &amp; CEO, 4orm Finance<br>778-363-2423 &middot; chad@4ormfinance.com</span></div>`;
   const body = note.replace(/\n*\s*With Gratitude,[\s\S]*$/i, '').trim();
   const b = brief(design);

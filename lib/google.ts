@@ -897,7 +897,10 @@ export async function inboxMail() {
   const isSelf = (raw: string) => {
     const address = addressOf(raw);
     const name = displayOf(raw).toLowerCase();
-    return (!!address && self.addresses.has(address)) || (!!name && self.names.has(name));
+    if (!!address && self.addresses.has(address)) return true;
+    /* A matching display name only counts on our own domain (or with no address). Mail sent for Chad by
+       GoHighLevel and other senders carries his name from another domain; it is inbound, not his own. */
+    return !!name && self.names.has(name) && (!address || (!!self.domain && address.endsWith('@' + self.domain)));
   };
   const sent = (await gmailList('in:sent', 2).catch(() => null)) || [];
   for (const msg of sent) {
@@ -1175,7 +1178,10 @@ export async function boardMail(query = '', max = 80) {
   const isSelf = (raw: string) => {
     const address = addressOf(raw);
     const name = displayOf(raw).toLowerCase();
-    return (!!address && self.addresses.has(address)) || (!!name && self.names.has(name));
+    if (!!address && self.addresses.has(address)) return true;
+    /* A matching display name only counts on our own domain (or with no address). Mail sent for Chad by
+       GoHighLevel and other senders carries his name from another domain; it is inbound, not his own. */
+    return !!name && self.names.has(name) && (!address || (!!self.domain && address.endsWith('@' + self.domain)));
   };
   const messages: BoardMail[] = [];
   for (const msg of metas) {
@@ -1580,7 +1586,10 @@ export async function classifyGmailIds(ids: string[]) {
   const isSelf = (raw: string) => {
     const address = addressOf(raw);
     const name = displayOf(raw).toLowerCase();
-    return (!!address && self.addresses.has(address)) || (!!name && self.names.has(name));
+    if (!!address && self.addresses.has(address)) return true;
+    /* A matching display name only counts on our own domain (or with no address). Mail sent for Chad by
+       GoHighLevel and other senders carries his name from another domain; it is inbound, not his own. */
+    return !!name && self.names.has(name) && (!address || (!!self.domain && address.endsWith('@' + self.domain)));
   };
   for (const msg of rows) {
     const pick = headerOf(msg);

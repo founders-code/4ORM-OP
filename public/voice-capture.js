@@ -109,11 +109,12 @@
     if (!panel) {
       panel = document.createElement('div');
       panel.id = 'vcPanel';
-      panel.innerHTML = '<h4>Record <small id="vcState">listening</small></h4><textarea id="vcText" placeholder="Talk, or type. Say remind me at 1530 to call Bruce, or tomorrow send Kevin the deck."></textarea>'
+      panel.innerHTML = '<h4><span>Record <small id="vcState">listening</small></span><button type="button" data-a="close" style="font:inherit;font-size:12px;font-weight:800;border-radius:999px;padding:4px 12px;border:1px solid rgba(120,150,255,.3);background:transparent;color:#e9eefa;cursor:pointer">Close</button></h4><textarea id="vcText" placeholder="Talk, or type. Say remind me at 1530 to call Bruce, or tomorrow send Kevin the deck."></textarea>'
         + '<div class="vk"><button type="button" data-k="task">To-do</button><button type="button" data-k="reminder">Reminder</button><button type="button" data-k="note">Note</button><button type="button" data-k="meeting">Meeting</button></div>'
         + '<div class="vw" id="vcWhen"></div>'
         + '<div class="va"><button type="button" data-a="discard">Discard</button><button type="button" data-a="again">Record again</button><button type="button" class="p" data-a="save">Save</button></div>';
       document.body.appendChild(panel);
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && panel && !panel.hidden) { stop(true); close(); } });
       panel.addEventListener('input', preview);
       panel.addEventListener('click', function (e) {
         var k = e.target.closest('[data-k]');
@@ -121,7 +122,7 @@
         var a = e.target.closest('[data-a]');
         if (!a) return;
         var act = a.getAttribute('data-a');
-        if (act === 'discard') { stop(); close(); }
+        if (act === 'discard' || act === 'close') { stop(true); close(); }
         if (act === 'again') { finalText = ''; document.getElementById('vcText').value = ''; start(); }
         if (act === 'save') save();
       });
@@ -146,37 +147,88 @@
   function esc(v) { return String(v || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function setState(s) { var el = document.getElementById('vcState'); if (el) el.textContent = s; }
 
-  function start() {
-    openPanel();
-    try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
-    if (!SR) { setState('type it: this browser has no speech-to-text'); document.getElementById('vcText').focus(); return; }
+  /* Recording keeps going until Stop. The microphone is recorded with MediaRecorder and sent to
+     /api/voice/transcribe on Stop. The browser's own speech-to-text only shows words live while you talk;
+     if it gives up (it often does after a pause), the recording carries on regardless. */
+  var media = null, stream = null, chunks = [], tickT = null, secs = 0, stopping = false, discardNext = false;
+  function liveSR(box, before) {
+    if (!SR) return;
     try { if (rec) rec.abort(); } catch (e) {}
     rec = new SR();
-    rec.lang = 'en-CA';
-    rec.continuous = true;
-    rec.interimResults = true;
-    var box = document.getElementById('vcText');
-    var before = box.value ? box.value.trim() + ' ' : '';
+    rec.lang = 'en-CA'; rec.continuous = true; rec.interimResults = true;
     finalText = '';
     rec.onresult = function (ev) {
       var interim = '';
       for (var i = ev.resultIndex; i < ev.results.length; i++) {
-        if (ev.results[i].isFinal) finalText += ev.results[i][0].transcript;
+        if (ev.results[i].isFinal) finalText += ev.results[i][0].transcript + ' ';
         else interim += ev.results[i][0].transcript;
       }
       box.value = (before + finalText + interim).replace(/\s{2,}/g, ' ');
       preview();
     };
-    rec.onerror = function (e) { setState(e && e.error === 'not-allowed' ? 'microphone blocked: allow it for this site' : 'stopped'); listening = false; setBtn(false); };
+    rec.onerror = function () {};
     rec.onend = function () {
-      /* Meeting mode keeps listening through pauses until Stop or Save. */
-      if (kindOverride === 'meeting' && !stopping) { try { before = box.value ? box.value.trim() + ' ' : ''; finalText = ''; rec.start(); return; } catch (e) {} }
-      listening = false; setBtn(false); setState('done: check it, then Save');
+      if (!listening || stopping) return;
+      before = box.value ? box.value.trim() + ' ' : '';
+      setTimeout(function () { if (listening && !stopping) liveSR(box, before); }, 250);
     };
-    try { rec.start(); listening = true; setBtn(true); setState('listening'); } catch (e) { setState('could not start the microphone'); }
+    try { rec.start(); } catch (e) {}
   }
-  var stopping = false;
-  function stop() { stopping = true; try { if (rec) rec.stop(); } catch (e) {} listening = false; setBtn(false); setTimeout(function () { stopping = false; }, 800); }
+  function clock() { return pad(Math.floor(secs / 60)) + ':' + pad(secs % 60); }
+  function start() {
+    openPanel();
+    try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
+    var box = document.getElementById('vcText');
+    var before = box.value ? box.value.trim() + ' ' : '';
+    if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder)) {
+      setState('type it: this browser cannot record audio'); box.focus(); return;
+    }
+    setState('starting the microphone');
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) {
+      stream = s; chunks = []; secs = 0; stopping = false; discardNext = false;
+      var type = MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : '';
+      media = type ? new MediaRecorder(s, { mimeType: type }) : new MediaRecorder(s);
+      media.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+      media.onstop = function () { finishRecording(box, before); };
+      media.start(1000);
+      listening = true; setBtn(true);
+      setState('recording 00:00');
+      clearInterval(tickT);
+      tickT = setInterval(function () { secs += 1; if (listening) setState('recording ' + clock()); }, 1000);
+      liveSR(box, before);
+    }).catch(function () {
+      setState('microphone blocked: allow it for this site, or type it');
+      box.focus();
+    });
+  }
+  function stop(discard) {
+    discardNext = !!discard;
+    stopping = true;
+    listening = false; setBtn(false);
+    clearInterval(tickT);
+    try { if (rec) rec.stop(); } catch (e) {}
+    try { if (media && media.state !== 'inactive') media.stop(); else if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; } } catch (e) {}
+    setTimeout(function () { stopping = false; }, 800);
+  }
+  function finishRecording(box, before) {
+    if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
+    var blob = new Blob(chunks, { type: (media && media.mimeType) || 'audio/webm' });
+    media = null; chunks = [];
+    if (discardNext || !blob.size || secs < 1) { if (!discardNext) setState('nothing recorded'); return; }
+    setState('writing it down (' + clock() + ')');
+    var fd = new FormData();
+    fd.append('audio', blob, 'voice.webm');
+    var fn = window.authFetch || fetch;
+    fn('/api/voice/transcribe', { method: 'POST', credentials: 'same-origin', body: fd })
+      .then(function (r) { return r.json().catch(function () { return {}; }); })
+      .then(function (j) {
+        var t = String((j && j.transcript) || '').trim();
+        if (t) { box.value = (before + t).trim(); setState('done: check it, then Save'); }
+        else setState(box.value.trim() ? 'done: check it, then Save' : 'could not write it down' + (j && j.error ? ': ' + j.error : ''));
+        preview();
+      })
+      .catch(function () { setState(box.value.trim() ? 'done: check it, then Save' : 'could not write it down, try again'); });
+  }
 
   function toast(msg) {
     var t = document.getElementById('vcToast');
@@ -201,7 +253,7 @@
       .catch(function () { setState('could not save, try again'); });
   }
   function save() {
-    stop();
+    if (listening) { stop(); setState('finish writing it down, then Save'); return; }
     var txt = document.getElementById('vcText').value.trim();
     if (!txt) { setState('nothing to save'); return; }
     var p = current();
