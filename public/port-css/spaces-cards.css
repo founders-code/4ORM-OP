@@ -146,3 +146,7 @@
 /* Laptop widths: cards keep a readable width (names, stats and Open fit) instead of squeezing to 4 across. */
 @media (max-width:1500px){.grid{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))!important}}
 .facts>div{min-width:0}.facts small,.facts span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+/* Audit 29 Oct: the name gets the room, two lines before it trims */
+.sp .hd>div{flex:1 1 auto;min-width:0}
+.sp .hd h4{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.2}
+.sp .facts small{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.2}

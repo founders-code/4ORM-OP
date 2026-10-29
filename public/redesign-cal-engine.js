@@ -239,7 +239,7 @@ function xpApply(){for(let i=E.length-1;i>=0;i--)if(E[i].xp)E.splice(i,1);
     XP.list.forEach(e=>{if(e.freq==='y'&&Number(e.month)!==mo+1)return;const d=Math.min(Number(e.day)||1,dim);
       E.push({d:ymd(new Date(y,mo,d)),t:e.name+' '+xpMoney(e.amount),n:e.name,a:xpMoney(e.amount),c:'xp',all:1,xp:1})})}}
 (function xpButton(){const vw=gid('views');if(!vw||!vw.parentNode||vw.parentNode.querySelector('.xpbtn'))return;
-  const b=window.document.createElement('button');b.type='button';b.className='xpbtn';b.textContent='$';b.title='Show payments';b.setAttribute('aria-label','Show payments');b.setAttribute('aria-pressed','false');
+  const b=window.document.createElement('button');b.type='button';b.className='xpbtn';b.textContent='Payments';b.title='Show payments';b.setAttribute('aria-label','Show payments');b.setAttribute('aria-pressed','false');
   vw.parentNode.insertBefore(b,vw.nextSibling);
   on(b,'click',function(){
     if(XP.busy)return;XP.on=!XP.on;b.classList.toggle('on',XP.on);b.setAttribute('aria-pressed',String(XP.on));

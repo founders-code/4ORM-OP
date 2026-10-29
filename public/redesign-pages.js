@@ -55,16 +55,16 @@
     + '.flash-row{box-shadow:0 0 0 3px rgba(127,176,255,.85)!important;transition:box-shadow .2s}';
   var CSS = {
     room: '/port-css/dashboard.css?v=4', war: '/port-css/war-room.css?v=10', notes: '/port-css/notes.css?v=6',
-    notesCanvas: '/port-css/notes-canvas.css?v=11', spacesArrange: '/port-css/spaces-arrange.css?v=1', spacesCards: '/port-css/spaces-cards.css?v=13', signalsDetail: '/port-css/signals-detail.css?v=4', rec: '/port-css/recordings.css?v=3',
+    notesCanvas: '/port-css/notes-canvas.css?v=11', spacesArrange: '/port-css/spaces-arrange.css?v=1', spacesCards: '/port-css/spaces-cards.css?v=14', signalsDetail: '/port-css/signals-detail.css?v=4', rec: '/port-css/recordings.css?v=3',
     contacts: '/port-css/pipeline.css?v=10', work: '/port-css/spaces.css?v=15', spaceOpen: '/port-css/space-open.css?v=3', docs: '/port-css/documents.css?v=11',
     links: '/port-css/links.css?v=14', mail: '/port-css/email.css?v=10', mailPeople: '/port-css/email-people.css?v=9',
-    playbook: '/port-css/playbook.css?v=12', calendar: '/port-css/calendar.css?v=8', zoom: '/port-css/zoom.css?v=5',
+    playbook: '/port-css/playbook.css?v=12', calendar: '/port-css/calendar.css?v=9', zoom: '/port-css/zoom.css?v=5',
     completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=5',
     neon: '/port-css/neon.css?v=2', playbookP8: '/port-css/playbook-p8.css?v=24', plannerNeon: '/port-css/planner-neon.css?v=14',
-    calendarNeon: '/port-css/calendar-neon.css?v=13', completedNeon: '/port-css/completed-neon.css?v=6',
+    calendarNeon: '/port-css/calendar-neon.css?v=14', completedNeon: '/port-css/completed-neon.css?v=6',
     intNeon: '/port-css/integrations-neon.css?v=5',     vaultOps: '/port-css/vault-ops.css?v=13',
     sheetViewer: '/port-css/sheet-viewer.css?v=5', notesCanvasP8: '/port-css/notes-canvas-p8.css?v=4',
-    outreach: '/port-css/outreach-lists.css?v=15',
+    outreach: '/port-css/outreach-lists.css?v=16',
     vault: '/port-css/vault-ops.css?v=13',
     ops: '/port-css/vault-ops.css?v=13',
     contrastP10: '/port-css/contrast-p10.css?v=6'

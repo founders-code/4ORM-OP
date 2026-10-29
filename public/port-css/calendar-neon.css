@@ -59,13 +59,13 @@ button{font:inherit;cursor:pointer}
 .ribbon .seg{position:absolute;top:4px;bottom:4px;border-radius:6px}
 .ribbon .now{position:absolute;top:0;bottom:0;width:2px;background:var(--red)}
 .rticks{display:flex;justify-content:space-between;font-size:10.5px;color:var(--dim);margin-top:4px;font-weight:700}
-.nextcard{margin-top:12px;background:linear-gradient(135deg,#16306f,#2c2e37);border:1px solid #2a4590;border-radius:14px;padding:12px 13px}
+.nextcard{margin-top:12px;background:#18191f;border:1px solid #2a2c35;border-left:3px solid #2e6bf2;border-radius:14px;padding:12px 13px}
 .nextcard .k{font-size:11px;font-weight:800;letter-spacing:.1em;color:#9fb4ff}
 .nextcard .t{font-size:14px;font-weight:750;margin:4px 0 2px}
 .nextcard .c-s{font-size:11.5px;color:#b9c6ea}
 .nextcard .row{display:flex;gap:7px;margin-top:10px}
 .nextcard button{border:none;border-radius:9px;padding:7px 11px;font-size:11.5px;font-weight:750;cursor:pointer}
-.b1{background:#fff;color:#0f2160}.b2{background:#1d3270;color:#cfdcff}
+.b1{background:#fff;color:#0f2160}.b2{background:#20222a;color:#e6eaf2;border:1px solid #2a2c35!important}
 .shape{display:flex;height:12px;border-radius:7px;overflow:hidden;gap:2px}
 .shape i{display:block;height:100%}
 .slegend{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin-top:10px;font-size:11.5px;color:var(--mut)}
@@ -252,7 +252,7 @@ button{font:inherit;cursor:pointer}
 .rail .next,.rail .nx,.rail .card{background:linear-gradient(140deg,#23252c,#0b0c10)!important;border:1px solid rgba(120,150,255,.18)}
 
 /* $ switch: recurring bills on the calendar, off by default */
-.xpbtn{font:inherit;font-weight:900;font-size:14px;width:32px;height:32px;margin-left:8px;border-radius:9px;border:1px solid rgba(120,150,255,.26);background:rgba(255,255,255,.04);color:#a3b0d2;cursor:pointer;padding:0;flex:none}
+.xpbtn{font:inherit;font-weight:800;font-size:12px;height:32px;padding:0 12px!important;width:auto;margin-left:8px;border-radius:9px;border:1px solid rgba(120,150,255,.26);background:rgba(255,255,255,.04);color:#a3b0d2;cursor:pointer;padding:0;flex:none}
 .xpbtn:hover{color:#e9eefa;border-color:rgba(120,150,255,.45)}
 .xpbtn.on{background:rgba(255,181,71,.16);border-color:#ffb547;color:#ffd08a}
 .mp.xpp{display:flex;justify-content:space-between;gap:6px;font-size:11px;font-weight:800;border-radius:999px;padding:1px 8px;margin-top:3px;background:rgba(255,181,71,.13);color:#ffd08a;border:1px solid rgba(255,181,71,.35);white-space:nowrap;overflow:hidden}

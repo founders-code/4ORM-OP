@@ -29,7 +29,7 @@
 .ribbon .seg{position:absolute;top:4px;bottom:4px;border-radius:6px}
 .ribbon .now{position:absolute;top:0;bottom:0;width:2px;background:var(--red)}
 .rticks{display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-top:4px;font-weight:700}
-.nextcard{margin-top:12px;background:linear-gradient(135deg,#16306f,#2c2e37);border:1px solid #2a4590;border-radius:14px;padding:12px 13px}
+.nextcard{margin-top:12px;background:#18191f;border:1px solid #2a2c35;border-left:3px solid #2e6bf2;border-radius:14px;padding:12px 13px}
 .nextcard .k{font-size:9.5px;font-weight:800;letter-spacing:.1em;color:#9fb4ff}
 .nextcard .t{font-size:14px;font-weight:750;margin:4px 0 2px}
 .nextcard .c-s{font-size:11.5px;color:#b9c6ea}
