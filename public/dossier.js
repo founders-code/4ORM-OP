@@ -50,6 +50,7 @@
     + '#dsr .d-tm a{color:#fff;background:#0a66c2;border-radius:999px;padding:4px 12px;font-weight:800;font-size:11.5px;text-decoration:none;white-space:nowrap}'
     + '#dsr .d-ed{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 4px}#dsr .d-ed label{display:block;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7d859a}'
     + '#dsr .d-ed input{width:100%;background:#18191f;border:1px solid #2a2c35;border-radius:8px;color:#fff;font:inherit;font-size:13px;padding:7px 9px;margin-top:3px}#dsr .d-ed .w{grid-column:span 2}'
+    + '#dsr .d-intel{display:grid;grid-template-columns:1fr;gap:4px}#dsr .d-intel div{display:grid;grid-template-columns:118px 1fr;gap:8px;font-size:12.5px;align-items:baseline}#dsr .d-intel i{font-style:normal;color:#7d859a;font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.06em}#dsr .d-intel span{color:#fff}#dsr .d-intel span.warn{color:#ff8fa3;font-weight:800}'
     + '@media(max-width:820px){#dsr .d-mid{grid-template-columns:1fr}#dsr .d-lft{border-right:0}}';
   var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
   var wrap = document.createElement('div'); wrap.id = 'dsr';
@@ -251,6 +252,14 @@
       + sec('Next touch', '<div class="d-pills" data-nt>' + [['Today', 0], ['Tomorrow', 1], ['This week', 3], ['Next week', 7]].map(function (x) { return '<button type="button" data-days="' + x[1] + '">' + x[0] + '</button>'; }).join('') + '<input type="date" id="dsrFu" style="margin-left:4px"></div>')
       + sec('Open', '<div class="d-pills">' + (rec.email ? '<button type="button" data-a="email">Email</button>' : '') + (li ? '<button type="button" data-a="li">LinkedIn</button>' : '') + '<button type="button" data-a="space">Space</button>'
         + (rec.data && rec.data.contactId ? '<button type="button" disabled style="opacity:.6">In Contacts</button>' : '<button type="button" data-a="addc">Add to Contacts</button>') + '</div>')
+      + sec('Company intel', (EN && ((EN.intel && Object.keys(EN.intel).length) || (EN.notes || []).length)) ? (function () {
+          var LBL = [['penalties', 'Past penalties'], ['president', 'President'], ['ceo', 'CEO'], ['coo', 'COO'], ['cto', 'CTO'], ['cco', 'CCO'], ['founded', 'Founded'], ['years', 'Years in business'], ['agents', 'Agents'], ['size', 'Size'], ['licence', 'Licence']];
+          return '<div class="d-intel">' + LBL.filter(function (k) { return EN.intel && EN.intel[k[0]]; }).map(function (k) {
+            var v = EN.intel[k[0]];
+            return '<div><i>' + esc(k[1]) + '</i><span' + (k[0] === 'penalties' && !/^(none|no )/i.test(v.value) ? ' class="warn"' : '') + '>' + esc(v.value) + (v.url ? ' <a class="d-src" href="' + esc(v.url) + '" target="_blank" rel="noopener">Source</a>' : '') + '</span></div>';
+          }).join('') + '</div>'
+            + ((EN.notes || []).length ? '<ul style="margin-top:6px">' + EN.notes.map(function (n) { return '<li>' + hl(n.text) + (n.url ? ' <a class="d-src" href="' + esc(n.url) + '" target="_blank" rel="noopener">Source</a>' : '') + '</li>'; }).join('') + '</ul>' : '');
+        })() : '<div class="d-muted">Not researched yet.</div>')
       + sec('Leadership', (EN && (EN.website || (EN.team || []).length)) ? ((EN.website || web) ? '<div style="margin-bottom:6px"><a class="d-src" style="font-size:12.5px" href="' + esc(EN.website || web) + '" target="_blank" rel="noopener">' + esc(String(EN.website || web).replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')) + '</a></div>' : '')
           + (EN.team || []).map(function (p) { return '<div class="d-tm"><div><b>' + esc(p.name) + '</b><small>' + esc(p.title || '') + '</small></div>' + (p.linkedin ? '<a href="' + esc(p.linkedin) + '" target="_blank" rel="noopener">LinkedIn</a>' : '<span class="d-muted">No LinkedIn found</span>') + '</div>'; }).join('')
           + '<div class="d-muted" style="font-size:11px;margin-top:4px">Checked ' + esc(EN.checked || '') + '</div>'

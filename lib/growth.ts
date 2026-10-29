@@ -535,7 +535,11 @@ export type Enrich = {
   team: Array<{ name: string; title: string; linkedin: string }>;
   sources: Array<{ text: string; url: string; title: string }>;
   checked: string;
+  intel: Record<string, { value: string; url: string }>;
+  notes: Array<{ text: string; url: string }>;
 };
+/* Company intel fields Chad asked for (29 Oct 2026). Each value carries its source link. */
+export const INTEL_KEYS = ['penalties', 'president', 'ceo', 'coo', 'cto', 'cco', 'founded', 'years', 'agents', 'size', 'licence'] as const;
 const httpsUrl = (v: unknown, max = 500) => { const t = String(v || '').trim().slice(0, max); return /^https:\/\/[^\s<>"]+$/i.test(t) ? t : ''; };
 export function cleanEnrich(e: Record<string, unknown>): Enrich {
   const team = (Array.isArray(e.team) ? e.team : []).map((p) => {
@@ -547,13 +551,25 @@ export function cleanEnrich(e: Record<string, unknown>): Enrich {
     const o = (x || {}) as Record<string, unknown>;
     return { text: s(o.text, 600).trim(), url: httpsUrl(o.url, 600), title: s(o.title, 200).trim() };
   }).filter((x) => x.text && x.url).slice(0, 40);
-  return { website: httpsUrl(e.website), team, sources, checked: new Date().toISOString().slice(0, 10) };
+  const iraw = (e.intel && typeof e.intel === 'object' ? e.intel : {}) as Record<string, unknown>;
+  const intel: Record<string, { value: string; url: string }> = {};
+  INTEL_KEYS.forEach((k) => {
+    const v = iraw[k];
+    const o = (v && typeof v === 'object' ? v : { value: v }) as Record<string, unknown>;
+    const val = s(o.value, 400).trim();
+    if (val) intel[k] = { value: val, url: httpsUrl(o.url, 600) };
+  });
+  const notes = (Array.isArray(e.notes) ? e.notes : []).map((x) => {
+    const o = (x && typeof x === 'object' ? x : { text: x }) as Record<string, unknown>;
+    return { text: s(o.text, 400).trim(), url: httpsUrl(o.url, 600) };
+  }).filter((x) => x.text).slice(0, 8);
+  return { website: httpsUrl(e.website), team, sources, checked: new Date().toISOString().slice(0, 10), intel, notes };
 }
 export async function enrichGrowth(sql: Sql, ownerId: string, id: string, raw: Record<string, unknown>) {
   await ensureGrowth(sql);
   const e = cleanEnrich(raw);
   const rows = await sql`UPDATE growth_records SET
-      data = jsonb_set(COALESCE(data, '{}'::jsonb), '{enrich}', ${JSON.stringify(e)}::jsonb, true),
+      data = jsonb_set(COALESCE(data, '{}'::jsonb), '{enrich}', COALESCE(data->'enrich', '{}'::jsonb) || ${JSON.stringify(Object.fromEntries(Object.entries(e).filter(([, v]) => (Array.isArray(v) ? v.length : v && (typeof v !== 'object' || Object.keys(v).length)))))}::jsonb, true),
       website = CASE WHEN COALESCE(website, '') = '' THEN ${e.website} ELSE website END,
       updated_at = now()
     WHERE owner_id = ${ownerId} AND id = ${s(id, 40)} RETURNING id`;
@@ -580,6 +596,6 @@ export async function enrichExport(sql: Sql, ownerId: string, lists: string[], o
       });
     });
     return { id: r.id, list: r.list, name: r.name, contact: String(r.contact || '').slice(0, 140), website: r.website || '', place: [r.city, r.prov].filter(Boolean).join(', '),
-      done: !!(d.enrich as Record<string, unknown> | undefined)?.checked, statements: st.slice(0, 12) };
+      done: !!(d.enrich as Record<string, unknown> | undefined)?.checked, intelDone: !!(d.enrich as Record<string, unknown> | undefined)?.intel, statements: st.slice(0, 12) };
   });
 }
