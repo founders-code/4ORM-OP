@@ -616,6 +616,7 @@
           if ($('#pnoteAdd')) $('#pnoteAdd').value = '';
           if (note) p.notes = note + (p.notes ? '\n' + p.notes : '');
           p.done = true;
+          if (/Spoke|Interested|Meeting booked|Replied/.test(chosen || '') && p.growth && !p.inContacts && typeof window.offerAddToContacts === 'function') window.offerAddToContacts(p.contactId, p.name);
           if (chosen === 'Call back' && fu) p.callback = fu;
           var want = OUT_STAGE[chosen];
           if (want != null && stageIndex(p.stage) < want) setStage(p, want);
@@ -783,6 +784,7 @@
           + '<td><button type="button" class="stg2" data-a="stage" title="' + esc(S.hint || '') + '" style="color:' + S.color + ';background:' + S.bg + '">' + esc(S.k) + '</button></td>'
           + '<td><div class="pills">'
           + '<button type="button" class="pl cbk" data-a="cb" title="Call back">Call back</button>'
+          + (p.growth && state.mode === 'lists' ? (p.inContacts ? '<span class="pl inc" title="Already in Contacts">In Contacts</span>' : '<button type="button" class="pl addc" data-a="addc" title="Add this person to Contacts">Add to Contacts</button>') : '')
           + '<button type="button" class="pl del" data-a="del">Delete</button>'
           + '</div></td></tr>';
       }).join('') + (all.length > rows.length ? '<tr><td colspan="7" class="more"><button type="button" id="lmore">Show ' + Math.min(150, all.length - rows.length) + ' more of ' + all.length + '</button></td></tr>' : '')
@@ -807,6 +809,15 @@
           }
           if (a === 'space') { ev.stopPropagation(); openOrStartSpace(p); return; }
           if (a === 'del') { ev.stopPropagation(); softDeletePerson(p); return; }
+          if (a === 'addc') {
+            ev.stopPropagation();
+            if (typeof window.addToContacts !== 'function') { toast('Contacts is still loading. Try again.'); return; }
+            actEl.disabled = true; actEl.textContent = 'Adding';
+            window.addToContacts(p.contactId, p.name, function (cid) {
+              if (cid) { p.inContacts = true; renderBody(); } else { actEl.disabled = false; actEl.textContent = 'Add to Contacts'; }
+            }, function (msg, undo) { toast(msg, undo ? function () { undo(); p.inContacts = false; renderBody(); } : undefined); });
+            return;
+          }
           showPerson(p);
         };
       });
@@ -993,7 +1004,9 @@
       return Promise.all([
         api('/api/contacts'),
         api('/api/reach-out?lists=1'),
+        boardPeople.length ? Promise.resolve(null) : api('/api/board'),
       ]).then(function (pair) {
+        if (!boardPeople.length && pair[2] && pair[2].data && Array.isArray(pair[2].data.contacts)) boardPeople = pair[2].data.contacts;
         var extras = (pair[0].data) || {};
         var spaces = extras.spaces || [];
         var lists = (pair[1].data && pair[1].data.lists) || [];
@@ -1011,23 +1024,10 @@
           if (!k) return;
           if (!byKey[k]) byKey[k] = p;
         }
+        /* Contacts are only the people Chad actually knows (the contacts table). List records stay on Lists;
+           each one can be added from Lists, the contact card, or after a conversation. */
+        void fromLists;
         boardPeople.forEach(function (c) { put(mapContactRow(c, spaces)); });
-        fromLists.forEach(function (p) {
-          put({
-            id: p.id,
-            contactId: p.contactId || p.id,
-            name: p.name,
-            company: p.company,
-            role: p.role || '',
-            phone: p.phone,
-            email: p.email,
-            notes: p.notes,
-            stage: p.stage,
-            callback: p.callback || '',
-            spaceId: p.spaceId || p.space_id || '',
-            cold: false,
-          });
-        });
         state.contacts = { people: Object.keys(byKey).map(function (k) { return byKey[k]; }) };
         window.__listsContactsCache = state.contacts;
         state.loading = false;

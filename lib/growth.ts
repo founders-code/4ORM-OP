@@ -339,7 +339,8 @@ const LIST_COLS = (sql: Sql, ownerId: string, list: string | null) => (list
       next_action, plan_day, next_date, last_touch, left(notes, 400) AS notes, grank,
       data->'ranks'->>'VC firm rank' AS vcrank, data->'ghl'->>'stage' AS ghl_stage, data->'ghl'->>'pipeline' AS ghl_pipeline, data->'ranks'->>'Investor rank' AS invrank,
       score, data->'intel'->>'pain_score' AS pain, data->'intel'->>'industry' AS industry, data->'intel'->>'location' AS location,
-      data->'intel'->'fit' AS ifit, left(data->'intel'->'why'->>0, 220) AS iwhy, left(data->'intel'->'backed'->>0, 160) AS ibacked, left(data->'intel'->'pain'->>0, 160) AS ipain
+      data->'intel'->'fit' AS ifit, left(data->'intel'->'why'->>0, 220) AS iwhy, left(data->'intel'->'backed'->>0, 160) AS ibacked, left(data->'intel'->'pain'->>0, 160) AS ipain,
+      data->>'contactId' AS in_contact
       FROM growth_records WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY list, rank`);
 
 export async function listGrowth(sql: Sql, ownerId: string, list: string | null) {
@@ -470,4 +471,60 @@ export async function growthFunnel(sql: Sql, ownerId: string) {
     untouched: { count: untouched.length, ids: untouched },
     planned,
   };
+}
+
+/* Add to Contacts (29 Oct 2026): a list record becomes a real contact once a conversation exists.
+   The contact keeps the list's person, company, email, phone and title; the record remembers the contact id so it is never added twice. */
+const CONTACT_FOR_LIST: Record<string, { category: string; role: string }> = {
+  angels: { category: 'angel', role: 'Angel' },
+  firms_now: { category: 'vc', role: 'VC' }, firms_later: { category: 'vc', role: 'VC' }, new_funds: { category: 'vc', role: 'VC' },
+  design: { category: 'business', role: 'Design partner' }, prospects: { category: 'business', role: 'Design partner' },
+  clients: { category: 'business', role: 'Strategic' }, channels: { category: 'business', role: 'Strategic' },
+  regulators: { category: 'regulator', role: 'Regulator' }, programs: { category: 'grant', role: 'Grant' },
+};
+
+export async function addRecordToContacts(sql: Sql, ownerId: string, contactOwner: string, id: string) {
+  await ensureGrowth(sql);
+  const r = (await sql`SELECT * FROM growth_records WHERE owner_id = ${ownerId} AND id = ${s(id, 40)} LIMIT 1`)[0] as Record<string, unknown> | undefined;
+  if (!r) return null;
+  const data = (r.data || {}) as Record<string, unknown>;
+  const linked = s(data.contactId, 64);
+  if (linked) {
+    const still = await sql`SELECT id FROM contacts WHERE owner_id = ${contactOwner} AND id::text = ${linked} AND deleted_at IS NULL LIMIT 1`;
+    if (still.length) return { contactId: linked, created: false };
+  }
+  const isPerson = r.list === 'angels';
+  const firstPerson = String(r.contact || '').split(/\s*[|;,]\s*/)[0] || '';
+  const person = isPerson ? String(r.name || '') : (firstPerson && !/@|^\+?\d|contact|leadership|executive|operations|team/i.test(firstPerson) ? firstPerson : '');
+  const name = s(person || r.name, 120) || 'Untitled';
+  const company = isPerson ? '' : s(r.name, 120);
+  const email = (String(r.email || '').match(/[^\s<>,;|]+@[^\s<>,;|]+\.[a-z]{2,}/i) || [''])[0].toLowerCase();
+  const phone = s(String(r.phone || '').split(/\s*[;/]\s*/)[0], 40);
+  const map = CONTACT_FOR_LIST[String(r.list)] || { category: 'other', role: '' };
+  const role = s(r.title, 120) ? `${map.role}${map.role ? ' · ' : ''}${s(r.title, 100)}` : map.role;
+  let contactId = '';
+  let created = false;
+  if (email) {
+    const dup = await sql`SELECT id FROM contacts WHERE owner_id = ${contactOwner} AND deleted_at IS NULL AND lower(trim(email)) = ${email} ORDER BY created_at ASC LIMIT 1`;
+    if (dup.length) contactId = String((dup[0] as { id: string }).id);
+  }
+  if (!contactId) {
+    const notes = s([r.city, r.prov].filter(Boolean).join(', ') + (r.notes ? `\n${String(r.notes)}` : ''), 500);
+    const ins = await sql`INSERT INTO contacts (owner_id, name, company, role, email, phone, area, notes, source, type, tier, stage, category)
+      VALUES (${contactOwner}, ${name}, ${company}, ${s(role, 120)}, ${email}, ${phone}, 'other', ${notes}, 'list', 'other', 'B', 'new', ${map.category})
+      RETURNING id`;
+    contactId = String((ins[0] as { id: string }).id);
+    created = true;
+  }
+  await sql`UPDATE growth_records SET data = data || ${JSON.stringify({ contactId })}::jsonb, updated_at = now() WHERE owner_id = ${ownerId} AND id = ${s(id, 40)}`;
+  return { contactId, created };
+}
+
+/** Undo of Add to Contacts: soft-deletes the contact it created and unlinks the record. */
+export async function undoAddToContacts(sql: Sql, ownerId: string, contactOwner: string, id: string, contactId: string) {
+  await ensureGrowth(sql);
+  if (!/^[0-9a-f-]{36}$/i.test(contactId)) return false;
+  await sql`UPDATE contacts SET deleted_at = now() WHERE owner_id = ${contactOwner} AND id = ${contactId}::uuid AND source = 'list' AND deleted_at IS NULL`;
+  await sql`UPDATE growth_records SET data = data - 'contactId', updated_at = now() WHERE owner_id = ${ownerId} AND id = ${s(id, 40)}`;
+  return true;
 }

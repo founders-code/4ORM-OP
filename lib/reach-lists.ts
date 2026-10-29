@@ -40,6 +40,7 @@ export type ReachListPerson = {
   fitLine?: string;
   backed?: string;
   painLine?: string;
+  inContacts?: boolean;
 };
 
 export type ReachList = {
@@ -508,6 +509,7 @@ export async function buildCallLists(sql: Sql, ownerId: string, userId: string):
           fitLine: Array.isArray(r.ifit) ? (r.ifit as string[]).slice(0, 2).join(' · ') : '',
           backed: String(r.ibacked || ''),
           painLine: String(r.ipain || '').replace(/^Drivers:\s*/, ''),
+          inContacts: !!r.in_contact,
         } as ReachListPerson;
       });
       growth.push({

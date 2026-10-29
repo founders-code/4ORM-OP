@@ -174,7 +174,7 @@
       }).join('') + '</div>' : '<div class="d-muted">No touches yet.</div>')
       + '</div></div>'
       + '<div class="d-acts">' + (q && qi > 0 ? '<button data-a="prev">Previous</button>' : '') + (q && qi < q.length - 1 ? '<button data-a="skip">Skip</button>' : '')
-      + '<button data-a="del" style="margin-right:auto;color:#ff8a98;border-color:rgba(255,72,102,.45)">Delete</button><button data-a="lists">Open in Lists</button><button data-a="close">Close</button><button class="pri" data-a="save">' + (q && qi < q.length - 1 ? 'Save and next' : 'Save') + '</button></div></div>';
+      + '<button data-a="del" style="margin-right:auto;color:#ff8a98;border-color:rgba(255,72,102,.45)">Delete</button>' + (rec.data && rec.data.contactId ? '<span class="d-muted" style="align-self:center;font-size:12px">In Contacts</span>' : '<button data-a="addc">Add to Contacts</button>') + '<button data-a="lists">Open in Lists</button><button data-a="close">Close</button><button class="pri" data-a="save">' + (q && qi < q.length - 1 ? 'Save and next' : 'Save') + '</button></div></div>';
     return h;
   }
 
@@ -302,6 +302,14 @@
         go(1);
       }).catch(function () { toast('Could not delete that. Try again.'); });
     };
+    var addc = wrap.querySelector('[data-a="addc"]');
+    if (addc) addc.onclick = function () {
+      addc.disabled = true; addc.textContent = 'Adding…';
+      window.addToContacts(rec.id, rec.name, function (ok) {
+        if (ok) { rec.data = rec.data || {}; rec.data.contactId = ok; var sp = document.createElement('span'); sp.className = 'd-muted'; sp.style.cssText = 'align-self:center;font-size:12px'; sp.textContent = 'In Contacts'; addc.replaceWith(sp); }
+        else { addc.disabled = false; addc.textContent = 'Add to Contacts'; }
+      }, toast);
+    };
     wrap.querySelector('[data-a="lists"]').onclick = function () {
       close();
       try { window.STATE.peopleTab = 'lists'; } catch (e) {}
@@ -321,10 +329,39 @@
           if (stage) api('/api/growth', 'PATCH', { id: rec.id, stage: stage });
           toast('Saved: ' + rec.name + (outcome ? ' · ' + outcome : ''), function () { if (tid) api('/api/growth', 'POST', { action: 'undo-touch', touchId: tid }).then(function () { if (opts.onSaved) opts.onSaved(); }); });
           if (opts.onSaved) opts.onSaved(rec, outcome);
+          if (/Spoke|Interested|Meeting booked|Replied/.test(outcome) && !(rec.data && rec.data.contactId)) window.offerAddToContacts(rec.id, rec.name);
           go(1);
         })
         .catch(function () { toast('Could not save that. Try again.'); });
     };
   }
   window.openDossier = open;
+
+  /* Add to Contacts: a list record becomes a real contact once there is a conversation. Undo removes the contact it made. */
+  window.addToContacts = function (id, name, done, say) {
+    var t = say || toast;
+    api('/api/growth', 'POST', { action: 'add-contact', id: id })
+      .then(function (x) { return x.json().then(function (j) { if (!x.ok || !j.ok) throw 0; return j; }); })
+      .then(function (j) {
+        try { window.__listsContactsCache = null; } catch (e) {}
+        if (j.created) t('Added to Contacts: ' + (name || ''), function () {
+          api('/api/growth', 'POST', { action: 'undo-add-contact', id: id, contactId: j.contactId }).then(function () { t('Removed from Contacts'); });
+        });
+        else t((name || 'This person') + ' is already in Contacts');
+        if (done) done(j.contactId);
+      })
+      .catch(function () { t('Could not add to Contacts. Try again.'); if (done) done(''); });
+  };
+  /* After a real conversation, offer it once in a toast. */
+  window.offerAddToContacts = function (id, name) {
+    var o = document.getElementById('dsrOffer');
+    if (!o) { o = document.createElement('div'); o.id = 'dsrOffer'; o.style.cssText = 'position:fixed;left:50%;bottom:72px;transform:translateX(-50%);z-index:2147483001;background:#111216;color:#fff;border:1px solid #2a2c35;border-radius:10px;padding:9px 14px;font:600 13px Inter,system-ui,sans-serif;display:none;gap:12px;align-items:center;box-shadow:0 12px 30px rgba(0,0,0,.5)'; document.body.appendChild(o); }
+    o.innerHTML = '<span></span><button type="button" style="font:inherit;font-weight:800;color:#00dc86;background:none;border:0;cursor:pointer">Add to Contacts</button><button type="button" style="font:inherit;font-weight:700;color:#aeb6c8;background:none;border:0;cursor:pointer">Not now</button>';
+    o.firstChild.textContent = 'You had a conversation with ' + (name || 'them') + '.';
+    o.style.display = 'flex';
+    var b = o.querySelectorAll('button');
+    b[0].onclick = function () { o.style.display = 'none'; window.addToContacts(id, name); };
+    b[1].onclick = function () { o.style.display = 'none'; };
+    clearTimeout(o._h); o._h = setTimeout(function () { o.style.display = 'none'; }, 12000);
+  };
 })();

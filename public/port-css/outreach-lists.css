@@ -352,3 +352,6 @@ td.reach .em{font-size:11.5px;color:#7fb0ff;font-weight:650;margin-top:3px;overf
 .lfun .fnote{color:#7d859a;font-size:12px}
 .lfun .fclear{font:700 12px Inter,system-ui,sans-serif;border-radius:8px;padding:5px 10px;border:1px solid #2a2c35;background:#18191f;color:#c8d1ea;cursor:pointer;margin-left:8px}
 @media (max-width:1100px){.lfun .fk,.lfun .fg{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.lt2 .pills .addc{color:#5ef0a8;border-color:rgba(0,220,134,.45)}
+.lt2 .pills .inc{color:#7d859a;border-color:#2a2c35;cursor:default}
+.lt2 .pills{flex-wrap:wrap;gap:4px}

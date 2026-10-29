@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
 import {
-  addTouch, callsToday, growthFunnel, finishUpload, replanDays, growthRecord, setGrowthGhl, importGrowth, growthSummary, listGrowth, outreachLog, patchGrowth, planDays, saveUploadPart, undoTouch, vanToday,
+  addTouch, addRecordToContacts, undoAddToContacts, callsToday, growthFunnel, finishUpload, replanDays, growthRecord, setGrowthGhl, importGrowth, growthSummary, listGrowth, outreachLog, patchGrowth, planDays, saveUploadPart, undoTouch, vanToday,
 } from '@/lib/growth';
 import { openBoard, sessionEmail, sessionOwner, type BoardSession } from '@/lib/session';
 import { createOpportunityAt, ensureGhlContact, ghlPlaceFor, moveOpportunityStage } from '@/lib/ghl';
@@ -166,6 +166,14 @@ export async function POST(req: Request) {
       const next = days ? new Date(Date.now() + days * 86400000).toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' }) : '';
       await addTouch(g.sql, g.ownerId, String(rec.id), { channel: 'Email', outcome: 'Sent', note: `Stage package sent: ${String((out as { subject?: string }).subject || '')}`, next_date: next, status: String(rec.status || 'Contacted') });
       return NextResponse.json({ ok: true, to: (out as { to?: string }).to, subject: (out as { subject?: string }).subject });
+    }
+    if (body.action === 'add-contact') {
+      const out = await addRecordToContacts(g.sql, g.ownerId, g.userId, String(body.id || ''));
+      return out ? NextResponse.json({ ok: true, ...out }) : NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+    if (body.action === 'undo-add-contact') {
+      await undoAddToContacts(g.sql, g.ownerId, g.userId, String(body.id || ''), String(body.contactId || ''));
+      return NextResponse.json({ ok: true });
     }
     if (body.action === 'undo-touch') {
       await undoTouch(g.sql, g.ownerId, Number(body.touchId) || 0);
