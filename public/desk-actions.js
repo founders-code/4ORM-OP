@@ -4942,15 +4942,60 @@
 
   /* ---------- Email / Spaces / Pipeline helpers ---------- */
   /* Gmail attachment through the same-origin route (always served as a download). */
+  /* PDFs and images open in a viewer over the page, never a new tab. The file is fetched and shown from a
+     same-page blob, so the sandboxed download headers do not block Chrome's PDF viewer. Esc or Close shuts it. */
+  function openFileViewer(root, url, name) {
+    var old = document.getElementById('fileViewer'); if (old) old.remove();
+    var isPdf = /\.pdf$/i.test(name);
+    var wrap = document.createElement('div');
+    wrap.id = 'fileViewer';
+    wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-label', name);
+    wrap.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:rgba(7,8,11,.82);display:flex;flex-direction:column;padding:18px 24px 24px;box-sizing:border-box;font:600 13px Inter,system-ui,sans-serif';
+    wrap.innerHTML = '<div style="display:flex;align-items:center;gap:10px;color:#fff;margin-bottom:12px"><b style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px"></b>'
+      + '<button type="button" data-fv="dl" style="height:32px;padding:0 14px;border-radius:999px;border:1px solid #3a3d48;background:#18191f;color:#fff;font:700 12px inherit;cursor:pointer">Download</button>'
+      + '<button type="button" data-fv="x" style="height:32px;padding:0 16px;border-radius:999px;border:0;background:#2e6bf2;color:#fff;font:700 12px inherit;cursor:pointer">Close</button></div>'
+      + '<div data-fv="body" style="flex:1;min-height:0;border-radius:12px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;color:#5a6275">Loading</div>';
+    wrap.querySelector('b').textContent = name;
+    document.body.appendChild(wrap);
+    var blobUrl = '';
+    function close() { wrap.remove(); document.removeEventListener('keydown', onKey, true); if (blobUrl) setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 1000); }
+    function onKey(e) { if (e.key === 'Escape') { e.stopPropagation(); close(); } }
+    document.addEventListener('keydown', onKey, true);
+    wrap.addEventListener('click', function (e) { if (e.target === wrap) close(); });
+    wrap.querySelector('[data-fv="x"]').onclick = close;
+    wrap.querySelector('[data-fv="dl"]').onclick = function () {
+      if (!blobUrl) return;
+      var a = document.createElement('a'); a.href = blobUrl; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    };
+    var body = wrap.querySelector('[data-fv="body"]');
+    fetch(url, { credentials: 'same-origin' }).then(function (r) {
+      if (!r.ok) throw new Error('nofile');
+      return r.blob();
+    }).then(function (b) {
+      var typed = isPdf ? new Blob([b], { type: 'application/pdf' }) : b;
+      blobUrl = URL.createObjectURL(typed);
+      body.innerHTML = '';
+      if (isPdf) {
+        var f = document.createElement('iframe');
+        f.src = blobUrl + '#view=FitH'; f.title = name;
+        f.style.cssText = 'width:100%;height:100%;border:0;display:block';
+        body.appendChild(f);
+      } else {
+        var im = document.createElement('img');
+        im.src = blobUrl; im.alt = name;
+        im.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;display:block';
+        body.style.background = '#111216';
+        body.appendChild(im);
+      }
+    }).catch(function () { body.textContent = 'Could not open ' + name + '.'; });
+  }
+  window.openFileViewer = function (url, name) { openFileViewer(null, url, name); };
   function downloadMailAttachment(root, mid, aid, name) {
     if (!mid || !aid) { toast(root, 'That file has no stored copy yet'); return; }
     if (!writeOk()) { toast(root, 'Download (fixture)'); return; }
     var n = String(name || 'file');
     var inline = /\.(pdf|png|jpe?g|gif|webp)$/i.test(n);
-    if (inline) {
-      window.open('/api/mail/attachment?mid=' + encodeURIComponent(mid) + '&aid=' + encodeURIComponent(aid) + '&name=' + encodeURIComponent(n) + '&inline=1', '_blank', 'noopener,noreferrer');
-      return;
-    }
+    if (inline) { openFileViewer(root, '/api/mail/attachment?mid=' + encodeURIComponent(mid) + '&aid=' + encodeURIComponent(aid) + '&name=' + encodeURIComponent(n) + '&inline=1', n); return; }
     toast(root, 'Downloading ' + n);
     api('/api/mail/attachment?mid=' + encodeURIComponent(mid) + '&aid=' + encodeURIComponent(aid) + '&name=' + encodeURIComponent(name || 'attachment'), { method: 'GET' }).then(function (r) {
       var type = (r && r.headers && r.headers.get && r.headers.get('content-type')) || '';

@@ -47,6 +47,13 @@ function stats(list: Stat[]) {
 <div style="${F}font-size:12px;line-height:17px;color:#3b4253;margin-top:4px">${esc(t)}</div></td>`).join('');
   return `<tr><td style="border-top:1px solid ${LINE};padding:0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${cells}</tr></table></td></tr>`;
 }
+function intro() {
+  const p = (t: string) => `<p style="${F}font-size:14px;line-height:21px;color:#2a2f3c;margin:0 0 10px">${esc(t)}</p>`;
+  return `<tr><td style="padding:20px 26px 10px;background:#ffffff">`
+    + p('Businesses are carrying more of the weight of proving suitability, often by rebuilding the record after the decision has already been made. The industry already sees the value in evidence that is captured once and trusted by everyone.')
+    + p("That is the challenge 4orm Finance works on. We help consumers think through a major financial decision and pass only what they choose to share into the firm's existing compliance tools. The professional ends up with an auditable suitability record, built in real time.")
+    + `</td></tr>`;
+}
 function band(text: string, blue: string) {
   return `<tr><td style="background:#14161c;padding:14px 26px"><div style="${F}font-size:14px;line-height:20px;font-weight:bold;color:#ffffff">${esc(text)} <span style="color:#8fb0ff">${esc(blue)}</span></div></td></tr>`;
 }
@@ -102,6 +109,7 @@ const CAVEAT = '4ormIQ is in validation with mortgage firms. Integrations, time 
 function brief(design: Design) {
   if (design === 'brief-broker') {
     return hero('4ORMIQ IN ONE MINUTE', 'Major financial decisions.', 'Easier to understand. Easier to explain.')
+      + intro()
       + stats([
         ['C$500K', 'B.C. brokerage penalty ceiling under new rules from Oct 13, 2026'],
         ['100%', 'of Ontario private mortgage files examined lacked a documented suitability assessment'],
@@ -119,6 +127,7 @@ function brief(design: Design) {
   }
   if (design === 'brief-regulator') {
     return hero('4ORMIQ IN ONE MINUTE', 'Suitability evidence, captured once,', 'as the decision happens.')
+      + intro()
       + stats([
         ['C$20M', 'Max FINTRAC penalty per very serious entity violation, a 40x increase'],
         ['8 to 30', 'FINTRAC penalties issued, 2021 versus 2025'],
@@ -137,6 +146,7 @@ function brief(design: Design) {
   if (design === 'brief-investor') {
     const sup = (n: number) => `<sup style="font-size:9px;color:${MUTED}">${n}</sup>`;
     return hero('4ORM FINANCE INTRODUCES', '4ormIQ', 'Counselling-inspired AI that connects compliance and consumer understanding.')
+      + intro()
       + rows('THE CHALLENGE', [
         ['100%', `of files examined lacked a documented suitability assessment, up from 85%.${sup(1)}`],
         ['73%', `of files examined had missing or inadequate risk disclosure, up from 48%.${sup(1)}`],
@@ -169,7 +179,9 @@ function docCards(docs: Array<{ name: string; url: string }>) {
     const ty = /\.pdf(\?|$)/i.test(d.url) ? 'PDF' : /docs\.google|drive\.google/i.test(d.url) ? 'DOC' : 'LINK';
     return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 8px;border:1px solid ${LINE};border-radius:9px"><tr>
 <td style="padding:10px 12px"><span style="${F}display:inline-block;background:#e8eefc;color:${BLUE};font-size:11px;font-weight:bold;padding:6px 7px;border-radius:5px">${ty}</span></td>
-<td style="padding:10px 14px 10px 0"><a href="${esc(d.url)}" style="${F}font-size:13.5px;font-weight:bold;color:${INK};text-decoration:none">${esc(d.name)}</a><div style="${F}font-size:12px;color:${MUTED}">Open</div></td></tr></table>`;
+<td style="padding:10px 14px 10px 0">${ty === 'PDF'
+  ? `<div style="${F}font-size:13.5px;font-weight:bold;color:${INK}">${esc(d.name)}</div><div style="${F}font-size:12px;color:${MUTED}">Attached to this email</div>`
+  : `<a href="${esc(d.url)}" style="${F}font-size:13.5px;font-weight:bold;color:${INK};text-decoration:none">${esc(d.name)}</a><div style="${F}font-size:12px;color:${MUTED}">Open</div>`}</td></tr></table>`;
   }).join('');
 }
 
