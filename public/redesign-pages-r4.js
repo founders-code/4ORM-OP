@@ -1113,10 +1113,10 @@
       return ['Prep the meeting', 'spaces-card-open'];
     }
     function ringSvg(k) {
+      /* Drawn with a CSS conic gradient: no SVG on this page. */
       var col = k === 5 ? '#00dc86' : (k >= 4 ? '#4272f9' : '#ffa946');
-      var len = (k / 5 * 69.1).toFixed(1);
-      return '<svg class="rb-ring" viewBox="0 0 28 28" width="28" height="28" aria-hidden="true"><circle cx="14" cy="14" r="11" fill="none" stroke="#2a2c35" stroke-width="4"/>'
-        + (k ? '<circle cx="14" cy="14" r="11" fill="none" stroke="' + col + '" stroke-width="4" stroke-dasharray="' + len + ' 69.1" transform="rotate(-90 14 14)"/>' : '') + '</svg>';
+      var deg = Math.round(k / 5 * 360);
+      return '<span class="rb-ring" aria-hidden="true" style="display:inline-block;width:28px;height:28px;border-radius:50%;background:conic-gradient(' + col + ' 0 ' + deg + 'deg,#2a2c35 ' + deg + 'deg 360deg);-webkit-mask:radial-gradient(circle,transparent 9px,#000 9.5px);mask:radial-gradient(circle,transparent 9px,#000 9.5px)"></span>';
     }
     function readyCard(s, ci, si, lane) {
       var k = pctOf(s), m = missingOf(s, lane);
