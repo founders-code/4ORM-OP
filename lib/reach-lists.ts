@@ -33,6 +33,13 @@ export type ReachListPerson = {
   ghlStage?: string;
   ghlPipeline?: string;
   growth?: boolean;
+  pain?: number | null;
+  industry?: string;
+  location?: string;
+  why?: string;
+  fitLine?: string;
+  backed?: string;
+  painLine?: string;
 };
 
 export type ReachList = {
@@ -494,6 +501,13 @@ export async function buildCallLists(sql: Sql, ownerId: string, userId: string):
           ghlStage: String(r.ghl_stage || ''),
           ghlPipeline: String(r.ghl_pipeline || ''),
           growth: true,
+          pain: r.pain === null || r.pain === undefined || r.pain === '' ? null : Number(r.pain),
+          industry: String(r.industry || r.type || ''),
+          location: String(r.location || [r.city, r.prov].filter(Boolean).join(', ') || ''),
+          why: clip(r.iwhy || r.next_action, 220),
+          fitLine: Array.isArray(r.ifit) ? (r.ifit as string[]).slice(0, 2).join(' · ') : '',
+          backed: String(r.ibacked || ''),
+          painLine: String(r.ipain || '').replace(/^Drivers:\s*/, ''),
         } as ReachListPerson;
       });
       growth.push({

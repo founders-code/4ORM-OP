@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
 import {
-  addTouch, callsToday, finishUpload, growthRecord, setGrowthGhl, importGrowth, growthSummary, listGrowth, outreachLog, patchGrowth, planDays, saveUploadPart, undoTouch, vanToday,
+  addTouch, callsToday, finishUpload, replanDays, growthRecord, setGrowthGhl, importGrowth, growthSummary, listGrowth, outreachLog, patchGrowth, planDays, saveUploadPart, undoTouch, vanToday,
 } from '@/lib/growth';
 import { openBoard, sessionEmail, sessionOwner, type BoardSession } from '@/lib/session';
 import { createOpportunityAt, ensureGhlContact, ghlPlaceFor, moveOpportunityStage } from '@/lib/ghl';
@@ -86,6 +86,9 @@ export async function POST(req: Request) {
     if (body.action === 'upload-finish') {
       const id = String(body.upload || '').replace(/[^a-z0-9-]/gi, '').slice(0, 40);
       return NextResponse.json({ ok: true, imported: await finishUpload(g.sql, g.ownerId, id) });
+    }
+    if (body.action === 'replan') {
+      return NextResponse.json({ ok: true, planned: await replanDays(g.sql, g.ownerId) });
     }
     if (body.action === 'plan') {
       const start = /^\d{4}-\d{2}-\d{2}$/.test(String(body.start || '')) ? String(body.start) : vanToday();

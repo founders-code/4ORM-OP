@@ -734,11 +734,11 @@
       var body = $('#lbody');
       if (!body) return;
       if (state.loading && !(state.cur && state.cur.people && state.cur.people.length)) {
-        body.innerHTML = '<tr><td colspan="7" style="padding:18px;color:#a3b0d2">Loading contacts…</td></tr>';
+        body.innerHTML = '<tr><td colspan="8" style="padding:18px;color:#a3b0d2">Loading contacts…</td></tr>';
         return;
       }
       if (!state.cur) {
-        body.innerHTML = '<tr><td colspan="7" style="padding:18px;color:#6f7fa6">No lists yet.</td></tr>';
+        body.innerHTML = '<tr><td colspan="8" style="padding:18px;color:#6f7fa6">No lists yet.</td></tr>';
         return;
       }
       var all = peopleOf();
@@ -758,17 +758,26 @@
         var cb = (p.callback ? '<span class="cb">Call back ' + esc(p.callback) + '</span>' : '')
           + (p.ghlStage ? '<span class="gh" title="' + esc(p.ghlPipeline || 'GoHighLevel') + '">GHL · ' + esc(p.ghlStage) + '</span>' : '');
         var spaceLabel = (p.spaceId || p.space_id) ? 'Open space' : 'Space';
+        /* 29 Oct 2026: every row carries the summarised intel: where, industry, pain or investor fit, and why them. */
+        var painCell = '';
+        if (p.pain != null && isFinite(p.pain)) {
+          painCell = '<span class="pbar">' + [1, 2, 3, 4, 5].map(function (k) { return '<i' + (p.pain >= k * 20 - 10 ? ' class="on"' : '') + '></i>'; }).join('') + '</span><b class="pn">' + esc(String(p.pain)) + '</b>';
+        } else if (p.fitLine) {
+          var inv = (p.fitLine.match(/Can invest in us now:\s*([^·]+)/i) || [])[1] || '';
+          painCell = inv ? '<span class="inv ' + (/yes|likely/i.test(inv) ? 'y' : /no/i.test(inv) ? 'n' : '') + '">Invest now: ' + esc(inv.trim()) + '</span>' : '<small>' + esc(p.fitLine.slice(0, 60)) + '</small>';
+        }
+        var whyTxt = p.why || p.painLine || p.backed || notePreview(p.notes) || '';
         return '<tr class="' + cls + '" data-id="' + esc(p.id) + '">'
           + '<td class="rk">' + esc(String(p.rank || '')) + '</td>'
           + '<td><b title="' + esc(p.name) + '">' + esc(p.name) + '</b><small>' + esc(companyLine(p)) + '</small>'
-          + (email ? '<a class="em" href="mailto:' + esc(email) + '">' + esc(email) + '</a>' : '') + role + cb + '</td>'
-          + '<td>' + (phone ? '<a href="tel:' + esc(telOf(phone)) + '">' + esc(fmtPhone(phone)) + '</a>' : '<small>no phone</small>') + '</td>'
-          + '<td><span class="nt">' + (notePreview(p.notes) ? esc(notePreview(p.notes)) : '<small>none yet</small>') + '</span></td>'
+          + (phone ? '<a class="em" href="tel:' + esc(telOf(phone)) + '">' + esc(fmtPhone(phone)) + '</a>' : (email ? '<a class="em" href="mailto:' + esc(email) + '">' + esc(email) + '</a>' : '')) + cb + '</td>'
+          + '<td><span class="loc">' + esc(p.location || p.city || '') + '</span><small>' + esc(p.industry || '') + '</small></td>'
+          + '<td class="pf">' + painCell + '</td>'
+          + '<td><span class="nt why" title="' + esc(whyTxt) + '">' + (whyTxt ? esc(whyTxt) : '<small>none yet</small>') + '</span>' + (p.backed && p.backed !== whyTxt ? '<small class="bk">Backed: ' + esc(p.backed) + '</small>' : '') + '</td>'
           + '<td class="dy">' + esc(p.day || '') + '</td>'
           + '<td><button type="button" class="stg2" data-a="stage" title="' + esc(S.hint || '') + '" style="color:' + S.color + ';background:' + S.bg + '">' + esc(S.k) + '</button></td>'
           + '<td><div class="pills">'
           + '<button type="button" class="pl cbk" data-a="cb" title="Call back">Call back</button>'
-          + '<button type="button" class="pl go" data-a="space" title="' + ((p.spaceId || p.space_id) ? 'Open this space' : 'Start a space') + '">' + ((p.spaceId || p.space_id) ? 'Open' : 'Space') + '</button>'
           + '<button type="button" class="pl del" data-a="del">Delete</button>'
           + '</div></td></tr>';
       }).join('') + (all.length > rows.length ? '<tr><td colspan="7" class="more"><button type="button" id="lmore">Show ' + Math.min(150, all.length - rows.length) + ' more of ' + all.length + '</button></td></tr>' : '')

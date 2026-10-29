@@ -299,3 +299,19 @@ td.reach .em{font-size:11.5px;color:#7fb0ff;font-weight:650;margin-top:3px;overf
 .reach-lists table.ltab{min-width:860px}
 .reach-lists table.ltab td a.em{font-size:11.5px;color:#8dbaff;margin-top:1px}
 .reach-lists .pop .call textarea{width:100%;margin-top:10px;min-height:64px;box-sizing:border-box}
+
+/* Lists with intel, 29 Oct 2026: where, industry, pain or investor fit, why them. */
+.lt2 td{vertical-align:top}
+.lt2 .loc{display:block;font-weight:700;color:#fff;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lt2 td small{display:block;color:#aeb6c8;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lt2 .pf{white-space:nowrap}
+.lt2 .pbar{display:inline-flex;gap:2px;vertical-align:middle;margin-right:5px}
+.lt2 .pbar i{width:8px;height:8px;border-radius:2px;background:#2a2c35}
+.lt2 .pbar i.on{background:#ff4866}
+.lt2 .pn{font-size:12px;color:#ff8a98}
+.lt2 .inv{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;background:#23252e;color:#c8d1ea;white-space:normal}
+.lt2 .inv.y{background:rgba(0,220,134,.14);color:#5ef0a8}
+.lt2 .inv.n{background:rgba(255,72,102,.14);color:#ff8a98}
+.lt2 .why{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:#e6eaf2;font-size:12px;white-space:normal}
+.lt2 .bk{margin-top:2px}
+.lt2 tbody tr{cursor:pointer}
