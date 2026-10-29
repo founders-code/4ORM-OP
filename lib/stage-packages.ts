@@ -184,7 +184,7 @@ export async function listSpacesLite(sql: Sql, ownerId: string) {
     return (rows as Record<string, unknown>[]).map((r) => ({ id: String(r.id), name: String(r.name || ''), docs: Number(r.docs) || 0 }));
   } catch {
     try {
-      const rows = await sql`SELECT id, name FROM packages WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY name LIMIT 200`;
+      const rows = await sql`SELECT id, name FROM packages WHERE owner_id = ${ownerId} ORDER BY name LIMIT 200`;
       return (rows as Record<string, unknown>[]).map((r) => ({ id: String(r.id), name: String(r.name || ''), docs: 0 }));
     } catch (err) {
       fail('stage_spaces', err);
