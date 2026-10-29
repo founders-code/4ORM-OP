@@ -940,11 +940,22 @@
     return names.map(function (n) { return by[n]; });
   }
   /* Spaces opens By readiness (29 Oct); the choice is remembered on this computer. */
+  /* Category names on the readiness board: the space's group, in Chad's words. */
+  function rbCatName(g) {
+    var s = String(g || 'General').trim();
+    if (/^regulat/i.test(s)) return 'Regulators';
+    if (/venture|^vcs?$/i.test(s)) return 'VCs';
+    if (/angel/i.test(s)) return 'Angels';
+    if (/design partner/i.test(s)) return 'Design partners';
+    return s || 'General';
+  }
+  function rbCatState() { try { return JSON.parse(localStorage.getItem('cr_rb_cats') || '{}') || {}; } catch (e) { return {}; } }
   function spacesView() { try { return localStorage.getItem('cr_spaces_view') === 'groups' ? 'groups' : 'ready'; } catch (e) { return 'ready'; } }
   window.paintSpacesCardsPage = paintSpacesCardsPage;
   function paintSpacesCardsPage(openWanted) {
     var wrap = wrapOf('spacesDesk');
     if (!wrap) return;
+    wrap.classList.remove('rb-withpanel');
     if (P().applyPageCss) P().applyPageCss(wrap, 'spacesCards');
     var CATS = (fixtureOn() ? cardsSample() : liveCards()).map(function (c) { return Object.assign({}, c, { sp: c.sp.slice() }); });
     var all = CATS.reduce(function (n, c) { return n + c.sp.length; }, 0);
@@ -1155,12 +1166,25 @@
           buckets[laneOf(s)].push([s, ci, si]);
         });
       });
+      /* Each column is split by category (Regulators, VCs, Business, People...). Sections open and close;
+         the choice is kept per column on this computer. A section opens by default when it holds 6 or fewer. */
+      var catState = rbCatState();
       el.innerHTML = '<div class="rb-board">' + LANES.map(function (l) {
-        var list = buckets[l[0]], cap = openLanes[l[0]] ? list.length : 8;
+        var list = buckets[l[0]];
+        var groups = [], byName = {};
+        list.forEach(function (x) {
+          var nm = rbCatName(CATS[x[1]] && CATS[x[1]].name);
+          if (!byName[nm]) { byName[nm] = []; groups.push(nm); }
+          byName[nm].push(x);
+        });
+        var body = groups.map(function (nm) {
+          var items = byName[nm], key = l[0] + '|' + nm;
+          var open = Object.prototype.hasOwnProperty.call(catState, key) ? !!catState[key] : items.length <= 6;
+          return '<div class="rb-cat' + (open ? ' open' : '') + '"><button type="button" class="rb-cath" data-action="spaces-rb-cat" data-key="' + esc(key) + '" aria-expanded="' + open + '"><span class="rb-catn">' + esc(nm) + '</span><span class="rb-catc">' + items.length + '</span><span class="rb-catt">' + (open ? 'Close' : 'Open') + '</span></button>'
+            + (open ? '<div class="rb-catb">' + items.map(function (x) { return readyCard(x[0], x[1], x[2], l[0]); }).join('') + '</div>' : '') + '</div>';
+        }).join('');
         return '<div class="rb-col"><div class="rb-ch"><b>' + esc(l[1]) + '</b><span class="' + l[2] + '">' + list.length + '</span></div>'
-          + (list.length ? list.slice(0, cap).map(function (x) { return readyCard(x[0], x[1], x[2], l[0]); }).join('')
-            : '<div class="rb-empty">' + esc(LANE_EMPTY[l[0]] || 'Nothing here.') + '</div>')
-          + (list.length > cap ? '<button type="button" class="rb-more" data-action="spaces-ready-more" data-lane="' + l[0] + '">Show ' + (list.length - cap) + ' more</button>' : '')
+          + (list.length ? body : '<div class="rb-empty">' + esc(LANE_EMPTY[l[0]] || 'Nothing here.') + '</div>')
           + '</div>';
       }).join('') + '</div>';
       paintWin(true);
@@ -1328,7 +1352,9 @@
     function closeRingChk() {
       root.querySelectorAll('.sp .chk.on').forEach(function (n) { n.classList.remove('on'); });
     }
-    root.addEventListener('click', function (e) {
+    /* One click handler per page: a repaint replaces the previous one instead of stacking another. */
+    if (root.__cardsClick) root.removeEventListener('click', root.__cardsClick);
+    root.addEventListener('click', root.__cardsClick = function (e) {
       var t = e.target.closest && e.target.closest('[data-action]');
       var a = t && t.getAttribute('data-action');
       if (!t || (a !== 'spaces-card-ring' && a !== 'spaces-card-chk')) closeRingChk();
@@ -1340,6 +1366,14 @@
         render();
       }
       if (a === 'spaces-ready-more') { openLanes[t.getAttribute('data-lane')] = true; renderReady(); return; }
+      if (a === 'spaces-rb-cat') {
+        var st0 = rbCatState(), k0 = t.getAttribute('data-key') || '';
+        var wasOpen = !!(t.closest('.rb-cat') && t.closest('.rb-cat').classList.contains('open'));
+        st0[k0] = !wasOpen;
+        try { localStorage.setItem('cr_rb_cats', JSON.stringify(st0)); } catch (e3) {}
+        renderReady();
+        return;
+      }
       if (a === 'spaces-bulk-doc') {
         var w = bestWin();
         if (!w || !writeOk()) return;
@@ -1744,7 +1778,21 @@
         return;
       }
       if (qFlag('arrange') && !panel) paintSpacesArrangePage();
-      else if (typeof prevSpaces === 'function') prevSpaces();
+      else if (typeof prevSpaces === 'function') {
+        prevSpaces();
+        /* 29 Oct: with a Space open, keep the readiness board (or By group) behind the panel instead of the old grid.
+           The panel itself is the same element the workbench painted; it is lifted off, the board is drawn, and it goes back on. */
+        if (panel && !fixtureOn()) {
+          var w0 = wrapOf('spacesDesk');
+          var sp = w0 && w0.querySelector('aside.spanel');
+          if (sp) {
+            sp.parentNode.removeChild(sp);
+            paintSpacesCardsPage(false);
+            var w1 = wrapOf('spacesDesk');
+            if (w1) { w1.appendChild(sp); w1.classList.add('rb-withpanel'); }
+          }
+        }
+      }
     });
   };
   var prevWar = window.paintRedesignWar;

@@ -188,3 +188,16 @@
 .rb-dlg .btn[disabled]{opacity:.5;cursor:default}
 .sp .hd .ms{font-size:11px;font-weight:800;letter-spacing:0;width:auto;padding:0 6px}
 .rb-ct b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.25}.rb-ct .rb-rn{align-self:flex-start}
+/* 29 Oct: categories inside each readiness column, open and close */
+.rb-cat{display:flex;flex-direction:column;gap:8px}
+.rb-cat+.rb-cat{border-top:1px solid #23252e;padding-top:8px}
+.rb-cath{display:flex;align-items:center;gap:8px;width:100%;background:#18191f;border:1px solid #2a2c35;border-radius:9px;padding:6px 9px;color:#fff;font:700 12px Inter,system-ui,sans-serif;cursor:pointer;text-align:left}
+.rb-cath:hover{border-color:#4272f9}
+.rb-cath:focus-visible{outline:2px solid #ffa946;outline-offset:2px}
+.rb-catn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rb-catc{font:700 11px "JetBrains Mono",ui-monospace,Menlo,monospace;color:#c8d1ea;background:#20222a;border-radius:6px;padding:1px 6px}
+.rb-catt{font-size:11px;font-weight:700;color:#9db9ff}
+.rb-cat.open .rb-cath{border-color:#3a3d48}
+.rb-catb{display:flex;flex-direction:column;gap:8px}
+/* Board stays behind an open Space panel */
+.rb-withpanel #ready.on,.rb-withpanel #groups.on{opacity:.55}
