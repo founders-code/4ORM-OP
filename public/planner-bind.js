@@ -326,8 +326,13 @@ let mv=null,mvBlock=0;
 function mvToast(msg,undo){let t=window.document.getElementById('mvToast');if(!t){t=window.document.createElement('div');t.id='mvToast';t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:90;background:#0b0c10;color:#e9eefa;border:1px solid rgba(120,150,255,.3);border-radius:10px;padding:9px 14px;font:600 13px Inter,system-ui,sans-serif;display:flex;gap:12px;align-items:center;box-shadow:0 12px 30px rgba(0,0,0,.5)';window.document.body.appendChild(t)}
   t.innerHTML='<span></span><button type="button" style="font:inherit;font-weight:800;color:#8dbaff;background:none;border:0;cursor:pointer">Undo</button>';t.firstChild.textContent=msg;t.style.display='flex';
   t.lastChild.onclick=()=>{t.style.display='none';undo()};clearTimeout(t._h);t._h=setTimeout(()=>{t.style.display='none'},6000)}
+/* The item under the pointer, even when the grab lands on its label or a part that lets clicks through (milestone names). */
+function itemAt(e){const t=e.target;const own=t&&t.closest&&t.closest('[data-id]');if(own&&canvas.contains(own))return own;
+  const trk=t&&t.closest&&t.closest('.trk');if(!trk)return null;let hit=null;
+  trk.querySelectorAll('[data-id]').forEach(el=>{if(hit)return;const boxes=[el.getBoundingClientRect()];el.querySelectorAll('.glab,.blab,span').forEach(s=>boxes.push(s.getBoundingClientRect()));
+    if(boxes.some(r=>r.width>0&&e.clientX>=r.left-2&&e.clientX<=r.right+2&&e.clientY>=r.top-2&&e.clientY<=r.bottom+2))hit=el});return hit}
 canvas.addEventListener('pointerdown',e=>{
-  if(dg||(e.button!=null&&e.button!==0))return;const el=e.target.closest('[data-id]');if(!el||el.classList.contains('series'))return;
+  if(dg||(e.button!=null&&e.button!==0))return;const el=itemAt(e);if(!el||el.classList.contains('series'))return;
   const it=byId[el.dataset.id];if(!it||it.kind==='series')return;
   mv={el,it,x0:e.clientX,on:false,d:0,id:e.pointerId,base:parseFloat(el.style.left)||0};
 });
@@ -678,6 +683,7 @@ function startDragAdd(e){
   if(dg)return;
   const t=e.target;if(!t||!t.closest)return;
   const trk=t.closest('.trk.can-add');if(!trk||(t!==trk&&!(t.classList&&t.classList.contains('range')))||(e.button!=null&&e.button!==0))return;
+  if(itemAt(e))return;
   const row=trk.closest('.row');if(!row)return;
   const r=trk.getBoundingClientRect();const d0=START+Math.floor((e.clientX-r.left)/ppd);
   const g=window.document.createElement('div');g.className='ghost';g.style.setProperty('--c',getComputedStyle(row).getPropertyValue('--c'));g.style.top=Math.max(6,e.clientY-r.top-13)+'px';trk.appendChild(g);
