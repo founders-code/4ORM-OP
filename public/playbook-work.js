@@ -217,8 +217,8 @@
       var per = Math.max(1, Math.round((it.e - it.s) / l.min));
       var rs = all.slice(from, from + per); used[l.key] = from + rs.length;
       h += '<div class="wblk wrk' + (live ? ' now' : '') + (past ? ' past' : '') + '" style="--c:' + l.c + '"><span class="wt">' + hm(it.s) + '</span><div class="wbody"><div class="wlh"><b>' + hm(it.s) + ' - ' + hm(it.e) + ' ' + esc(l.name) + '</b><span>' + rs.length + ' in this block</span></div>'
-        + '<div class="wrow">' + rs.slice(0, 6).map(function (r) { return card(r, l); }).join('') + '</div>'
-        + (rs.length > 6 ? '<div class="wm">+ ' + (rs.length - 6) + ' more in this block</div>' : '')
+        + '<div class="wrow' + (rs.length > 6 ? ' wscroll' : '') + '">' + rs.map(function (r) { return card(r, l); }).join('') + '</div>'
+        + (rs.length > 6 ? '<div class="wm">' + rs.length + ' in this block. Scroll right to see all of them.</div>' : '')
         + (rs.length ? '<button type="button" class="wstart" data-start="' + l.key + '" data-from="' + from + '" data-n="' + rs.length + '">Start this block</button>' : '') + '</div></div>';
     });
     h += '</div><div class="wside"><div class="wlab">Score</div><div class="wbig">' + esc(score()) + '</div>'

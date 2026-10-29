@@ -551,3 +551,7 @@ body.navshut .side{width:0;padding:0;border:0}
 .work .rmore{padding:10px 14px;color:#aeb6c8;font-size:12.5px}.work .rmore button{font:700 12.5px Inter,system-ui,sans-serif;color:#9db9ff;background:none;border:0;cursor:pointer}
 .work .rdonebox{background:#111216;border:1px solid #23252e;border-radius:12px;padding:12px 14px}.work .rdonebox p{margin:6px 0 0;color:#c8d1ea;font-size:12.5px;line-height:1.6}
 @media(max-width:1100px){.work .rrow{grid-template-columns:30px minmax(140px,1fr) auto;grid-auto-rows:auto}.work .rrow .rn,.work .rrow .rtag{display:none}.work .rrow .rmid{grid-column:2/-1}.work .rrow .racts{grid-column:2/-1;justify-content:flex-start;flex-wrap:wrap}}
+/* 29 Oct: a time block shows every contact in it; more than six scroll sideways in two rows */
+.work .wrow.wscroll{grid-template-columns:none;grid-template-rows:repeat(2,auto);grid-auto-flow:column;grid-auto-columns:calc((100% - 12px) / 3);overflow-x:auto;padding-bottom:8px;scroll-snap-type:x proximity}
+.work .wrow.wscroll>*{scroll-snap-align:start;min-width:0}
+.work .wrow.wscroll::-webkit-scrollbar{height:8px}.work .wrow.wscroll::-webkit-scrollbar-thumb{background:#2a2c35;border-radius:4px}

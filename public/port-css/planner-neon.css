@@ -711,3 +711,4 @@ body.th-neon .main{color:#eef2fc}
 .canvas.wlon .row.wldimrow .lab{opacity:.45}
 .canvas.wlon [data-id].wlhit{outline:2px solid #fff;outline-offset:2px;border-radius:6px}
 .canvas.wlon .msi.wldim{opacity:.18}.canvas.wlon .msi.wlhit{outline:2px solid #fff;outline-offset:2px;border-radius:6px}
+.loadrow{margin-bottom:22px;border-bottom:1px solid #23252e}.loadrow .trk{padding-bottom:12px}
