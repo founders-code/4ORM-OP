@@ -478,6 +478,15 @@
       if (!a || !a.src) { toast(root, 'No audio on this card'); return; }
       if (a.paused) { a.play(); el.textContent = 'Pause'; } else { a.pause(); el.textContent = 'Play'; }
     },
+    'rec-seek': function (el, root, ev) {
+      var a = root.getElementById ? root.getElementById('recAudio') : root.querySelector('#recAudio');
+      if (!a || !a.src || !isFinite(a.duration) || !ev) { toast(root, 'Press Play first'); return; }
+      var r = el.getBoundingClientRect();
+      var f = Math.max(0, Math.min(1, (ev.clientX - r.left) / (r.width || 1)));
+      a.currentTime = f * a.duration;
+      var bar = el.querySelector('i'); if (bar) bar.style.width = (f * 100) + '%';
+      if (!a.__tl) { a.__tl = true; a.addEventListener('timeupdate', function () { var b = el.querySelector('i'); if (b && a.duration) b.style.width = (a.currentTime / a.duration * 100) + '%'; }); }
+    },
     'rec-jump': function (el, root) {
       var a = root.getElementById ? root.getElementById('recAudio') : root.querySelector('#recAudio');
       var t = String(el.getAttribute('data-t') || '0:00').split(':');

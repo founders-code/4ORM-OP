@@ -133,7 +133,7 @@ body{margin:0;background:linear-gradient(180deg,#f3f6fc,#e9eef9);color:var(--ink
     }
     document.getElementById('daySub').textContent=list.length?list.length+' openings':'No openings on that day.';
     document.getElementById('slots').innerHTML=list.map(function(s){
-      var t=new Date(s.start).toLocaleTimeString([], {hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'});
+      var t=new Date(s.start).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Vancouver'});
       var on=s.start===start;
       return '<div class="slot'+(on?' pick':'')+'"><button type="button" class="tm" data-start="'+s.start+'">'+t+'</button>'+(on?'<button type="button" class="go" data-next="1">Next</button>':'')+'</div>';
     }).join('');
@@ -141,7 +141,7 @@ body{margin:0;background:linear-gradient(180deg,#f3f6fc,#e9eef9);color:var(--ink
     if(start){
       var a=new Date(start);
       var b=new Date(start+minutes*60000);
-      var fmt=function(d){return d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'});};
+      var fmt=function(d){return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Vancouver'});};
       document.getElementById('when').innerHTML=a.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',timeZone:'America/Los_Angeles'})+' · '+fmt(a)+' - '+fmt(b)+' PT · Zoom';
     }
   }
@@ -174,7 +174,7 @@ body{margin:0;background:linear-gradient(180deg,#f3f6fc,#e9eef9);color:var(--ink
     fetch('/api/book',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:fd.get('name'),email:fd.get('email'),notes:fd.get('notes'),topics:topics.join(', '),start:start,minutes:minutes,tz:tz})}).then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d};});}).then(function(res){
       if(!res.ok){alert(res.d.error||'That slot could not be booked.');return;}
       document.getElementById('form').hidden=true;
-      var when=new Date(res.d.start).toLocaleString([], {weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+      var when=new Date(res.d.start).toLocaleString([], {weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Vancouver'});
       document.getElementById('done').hidden=false;
       document.getElementById('done').innerHTML='<b>You are booked.</b><p>'+when+' · '+tz.replace(/_/g,' ')+'</p>'+(res.d.zoom?('<p>Join: <a href="'+res.d.zoom+'" target="_blank" rel="noopener">'+res.d.zoom+'</a></p>'):'<p>A calendar invite is on the way.</p>');
     }).catch(function(){alert('That slot could not be booked.');});

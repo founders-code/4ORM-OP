@@ -751,7 +751,7 @@
       ['week', 'This week'],
       ['later', 'Later']
     ];
-    board.innerHTML = '<div class="execcard"><div class="sh">Execution <span class="s">everything else - drag, tag Today/Week/Later <button class="xfull" type="button" id="execFull">\u2197 Expand full-screen</button></span></div><div class="exec">' + cols.map(function (col) {
+    board.innerHTML = '<div class="execcard"><div class="sh">Execution <span class="s">everything else - drag, tag Today/Week/Later <button class="xfull" type="button" id="execFull">Expand full-screen</button></span></div><div class="exec">' + cols.map(function (col) {
       var items = liveItems().filter(function (it) {
         var b = bucket(it);
         if (it.status === 'done') return false;
@@ -779,7 +779,7 @@
     var full = document.getElementById('execFull');
     if (full) full.onclick = function () {
       document.body.classList.toggle('exec-full');
-      full.textContent = document.body.classList.contains('exec-full') ? 'Close full-screen' : '\u2197 Expand full-screen';
+      full.textContent = document.body.classList.contains('exec-full') ? 'Close full-screen' : 'Expand full-screen';
     };
     var commit = document.getElementById('focusCommit');
     if (commit) commit.onclick = function () {
@@ -1606,7 +1606,7 @@
     }).join('');
     var ids = Object.keys(picked);
     var menu = STATE.docMenu === 'space' ? '<div class="dmenu">' + ((STATE.packages || []).map(function (p) { return '<button type="button" data-lib-to-space="' + esc(p.id) + '">' + esc(p.name) + '</button>'; }).join('') || '<div class="hintbar">No spaces yet.</div>') + '</div>' : STATE.docMenu === 'move' ? '<div class="dmenu">' + folders.map(function (c) { return '<button type="button" data-lib-move-to="' + esc(c) + '">' + esc(c) + '</button>'; }).join('') + '</div>' : '';
-    var bar = ids.length ? '<div class="selbar"><b>' + ids.length + ' selected</b><div class="sp"><button type="button" class="act go" id="libAddSpace">Add to Space \u25be</button><button type="button" class="act" id="libBuildSpace">Build a Space</button><button type="button" class="act" id="libPushSel">Push to Drive</button><button type="button" class="act" id="libMoveSel">Move \u25be</button><button type="button" class="act" id="libDelSel">Delete</button></div>' + menu + '</div>' : '';
+    var bar = ids.length ? '<div class="selbar"><b>' + ids.length + ' selected</b><div class="sp"><button type="button" class="act go" id="libAddSpace">Add to Space</button><button type="button" class="act" id="libBuildSpace">Build a Space</button><button type="button" class="act" id="libPushSel">Push to Drive</button><button type="button" class="act" id="libMoveSel">Move</button><button type="button" class="act" id="libDelSel">Delete</button></div>' + menu + '</div>' : '';
     var rail = (STATE.packages || []).slice(0, 12).map(function (p) {
       var ini = String(p.name || 'S').replace(/[^A-Za-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean).slice(0, 2).map(function (w) { return w[0]; }).join('').toUpperCase();
       var n = (p.docs || []).length;

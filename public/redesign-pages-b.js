@@ -1563,7 +1563,7 @@
     var defaultW = Math.max(120, Math.min(220, Number((S.prefs && S.prefs.docs_prefs && S.prefs.docs_prefs.size) || 168) || 168));
     var boardMode = view !== 'list';
     var files = fileRows.map(function (f, ix) {
-      var inner = (f[0] === 'ppt' || f[0] === 'img') ? '<div class="sl" style="background:linear-gradient(135deg,#1b2f66,#2e6bf2)">' + esc(String(f[1]).split('|')[0]) + '</div>' : '<div class="pg"><i class="h"></i><i></i><i></i><i style="width:80%"></i><i></i><i style="width:60%"></i></div>';
+      var inner = (f[0] === 'ppt' || f[0] === 'img') ? '<div class="sl" style="background:#20222a">' + esc(String(f[1]).split('|')[0]) + '</div>' : '<div class="pg"><i class="h"></i><i></i><i></i><i style="width:80%"></i><i></i><i style="width:60%"></i></div>';
       if (f[10]) inner = '<img data-thumb="1" alt="" loading="lazy" src="' + esc(f[10]) + '" style="width:100%;height:100%;object-fit:cover;object-position:top;display:block">';
       else if (f[11]) inner = '<iframe src="' + esc(f[11]) + '#page=1&toolbar=0&navpanes=0&view=FitH" loading="lazy" tabindex="-1" title="" aria-hidden="true" style="width:100%;height:100%;border:0;pointer-events:none;background:#fff;display:block"></iframe>';
       var href = absUrl(f[5] || '');
@@ -2116,7 +2116,7 @@
       + (atts ? '<div class="atts">' + atts + '</div>' : '')
       + '<div class="drop" id="composeDrop">Drop files here to attach them</div>'
       + '<input type="file" id="composeFile" multiple hidden style="display:none">'
-      + '<div class="cfoot"><button class="send" data-action="mail-send">Send</button><button class="send2" data-action="mail-schedule">' + (d.schedEditId ? 'Update schedule' : 'Schedule') + ' &#9662;</button>'
+      + '<div class="cfoot"><button class="send" data-action="mail-send">Send</button><button class="send2" data-action="mail-schedule">' + (d.schedEditId ? 'Update schedule' : 'Schedule') + '</button>'
       + '<span class="tog" data-action="mail-tog" data-k="nudge" role="switch" aria-checked="' + d.nudge + '"><span class="sw' + (d.nudge ? '' : ' off') + '"></span>Nudge in 3 days</span>'
       + '<span class="tog" data-action="mail-tog" data-k="log" role="switch" aria-checked="' + d.log + '"><span class="sw' + (d.log ? '' : ' off') + '"></span>Log to Pipeline</span></div></div>'
       + '<div class="side2" id="composeSide">' + composeSide(d) + '</div></aside>';

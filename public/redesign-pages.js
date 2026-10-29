@@ -54,19 +54,19 @@
     + '.smenu .it.red{color:#d6334e}'
     + '.flash-row{box-shadow:0 0 0 3px rgba(127,176,255,.85)!important;transition:box-shadow .2s}';
   var CSS = {
-    room: '/port-css/dashboard.css?v=3', war: '/port-css/war-room.css?v=9', notes: '/port-css/notes.css?v=6',
+    room: '/port-css/dashboard.css?v=4', war: '/port-css/war-room.css?v=10', notes: '/port-css/notes.css?v=6',
     notesCanvas: '/port-css/notes-canvas.css?v=11', spacesArrange: '/port-css/spaces-arrange.css?v=1', spacesCards: '/port-css/spaces-cards.css?v=13', signalsDetail: '/port-css/signals-detail.css?v=4', rec: '/port-css/recordings.css?v=3',
-    contacts: '/port-css/pipeline.css?v=9', work: '/port-css/spaces.css?v=15', spaceOpen: '/port-css/space-open.css?v=2', docs: '/port-css/documents.css?v=9',
-    links: '/port-css/links.css?v=13', mail: '/port-css/email.css?v=9', mailPeople: '/port-css/email-people.css?v=9',
-    playbook: '/port-css/playbook.css?v=12', calendar: '/port-css/calendar.css?v=8', zoom: '/port-css/zoom.css?v=4',
+    contacts: '/port-css/pipeline.css?v=10', work: '/port-css/spaces.css?v=15', spaceOpen: '/port-css/space-open.css?v=3', docs: '/port-css/documents.css?v=11',
+    links: '/port-css/links.css?v=14', mail: '/port-css/email.css?v=10', mailPeople: '/port-css/email-people.css?v=9',
+    playbook: '/port-css/playbook.css?v=12', calendar: '/port-css/calendar.css?v=8', zoom: '/port-css/zoom.css?v=5',
     completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=5',
-    neon: '/port-css/neon.css?v=2', playbookP8: '/port-css/playbook-p8.css?v=22', plannerNeon: '/port-css/planner-neon.css?v=13',
-    calendarNeon: '/port-css/calendar-neon.css?v=12', completedNeon: '/port-css/completed-neon.css?v=5',
-    intNeon: '/port-css/integrations-neon.css?v=5',     vaultOps: '/port-css/vault-ops.css?v=12',
-    sheetViewer: '/port-css/sheet-viewer.css?v=4', notesCanvasP8: '/port-css/notes-canvas-p8.css?v=3',
-    outreach: '/port-css/outreach-lists.css?v=14',
-    vault: '/port-css/vault-ops.css?v=12',
-    ops: '/port-css/vault-ops.css?v=12',
+    neon: '/port-css/neon.css?v=2', playbookP8: '/port-css/playbook-p8.css?v=23', plannerNeon: '/port-css/planner-neon.css?v=14',
+    calendarNeon: '/port-css/calendar-neon.css?v=13', completedNeon: '/port-css/completed-neon.css?v=6',
+    intNeon: '/port-css/integrations-neon.css?v=5',     vaultOps: '/port-css/vault-ops.css?v=13',
+    sheetViewer: '/port-css/sheet-viewer.css?v=5', notesCanvasP8: '/port-css/notes-canvas-p8.css?v=4',
+    outreach: '/port-css/outreach-lists.css?v=15',
+    vault: '/port-css/vault-ops.css?v=13',
+    ops: '/port-css/vault-ops.css?v=13',
     contrastP10: '/port-css/contrast-p10.css?v=6'
   };
   var HOSTS = {
@@ -1102,7 +1102,7 @@
       + '<div class="hl">Today\'s one move' + (hero.committed ? ' &middot; committed' : '') + '</div><h2>' + esc(hero.title) + '</h2>'
       + '<div class="why">' + esc(hero.why) + '</div></div>'
       + '<div class="ring"><svg viewBox="0 0 112 112"><circle cx="56" cy="56" r="48" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="8"/><circle cx="56" cy="56" r="48" fill="none" stroke="#5b8cff" stroke-width="8" stroke-dasharray="301.6" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 56 56)"/></svg><div><div><b>25:00</b><span>focus</span></div></div></div></div>'
-      + '<div class="hbtns"><button class="hb1 go" data-action="focus-toggle">&#9654; Start 25-min focus</button><button class="hb2" data-action="focus-stop" hidden>Stop</button><button class="hb1" data-action="hero-commit" data-id="' + esc(hero.id || '') + '" data-title="' + esc(hero.title || '') + '">' + (hero.committed ? 'Committed &#10003;' : 'Commit as my one thing') + '</button><button class="hb2" data-action="hero-plan" data-id="' + esc(hero.id || '') + '" data-title="' + esc(hero.title || '') + '">Plan</button><button class="hb2" data-action="hero-cancel" data-id="' + esc(hero.id || '') + '">Cancel this move</button></div>'
+      + '<div class="hbtns"><button class="hb1 go" data-action="focus-toggle">Start 25-min focus</button><button class="hb2" data-action="focus-stop" hidden>Stop</button><button class="hb1" data-action="hero-commit" data-id="' + esc(hero.id || '') + '" data-title="' + esc(hero.title || '') + '">' + (hero.committed ? 'Committed &#10003;' : 'Commit as my one thing') + '</button><button class="hb2" data-action="hero-plan" data-id="' + esc(hero.id || '') + '" data-title="' + esc(hero.title || '') + '">Plan</button><button class="hb2" data-action="hero-cancel" data-id="' + esc(hero.id || '') + '">Cancel this move</button></div>'
       + '<div class="moves"><div class="mh"><h3>4orm Intelligence &middot; CEO ranked moves</h3><span class="s">' + (data.rebuiltAt ? 'rebuilt ' + esc(data.rebuiltAt) : '') + '</span><button class="rr" data-action="moves-rerun">Re-run</button></div>'
       + moves.map(function (m, i) {
         var mid = String(m.id || ('m' + i));

@@ -255,8 +255,8 @@
     var goBtn = root.querySelector('[data-action="focus-toggle"]');
     if (goBtn) {
       if (f.running && !f.paused) goBtn.innerHTML = '&#10073;&#10073; Pause';
-      else if (f.paused) goBtn.innerHTML = '&#9654; Resume';
-      else goBtn.innerHTML = '&#9654; Start 25-min focus';
+      else if (f.paused) goBtn.innerHTML = 'Resume';
+      else goBtn.innerHTML = 'Start 25-min focus';
     }
     var stop = root.querySelector('[data-action="focus-stop"]');
     if (stop) stop.hidden = !(f.running || f.paused);
@@ -1192,7 +1192,7 @@
       var names = typeof window.__noteCategoryNames === 'function' ? window.__noteCategoryNames() : [];
       var curCat = attr(el, 'data-cat');
       openPop(root, el, names.map(function (n) {
-        return '<button type="button" data-action="note-cat-pick" data-id="' + esc(id) + '" data-source="' + esc(src) + '" data-cat="' + esc(n) + '">' + (n === curCat ? '&#10003; ' : '') + esc(n) + '</button>';
+        return '<button type="button" data-action="note-cat-pick" data-id="' + esc(id) + '" data-source="' + esc(src) + '" data-cat="' + esc(n) + '">' + esc(n) + (n === curCat ? ' (current)' : '') + '</button>';
       }).join('') + (curCat ? '<button type="button" data-action="note-cat-pick" data-id="' + esc(id) + '" data-source="' + esc(src) + '" data-cat="">No category</button>' : '')
         + '<button type="button" data-action="note-cat-pick" data-id="' + esc(id) + '" data-source="' + esc(src) + '" data-cat="__new__">+ New category</button>');
     },

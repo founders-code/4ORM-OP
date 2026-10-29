@@ -50,11 +50,11 @@ button{font:inherit;cursor:pointer}
 .note p{flex:1;min-height:0;overflow:hidden;-webkit-mask-image:linear-gradient(#000 80%,transparent)}
 .note .nrz{position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 50%,rgba(16,26,51,.28) 50%);border-bottom-right-radius:14px;opacity:0;transition:opacity .15s}
 .note:hover .nrz,.note.sel .nrz{opacity:1}
-.note .sz{position:absolute;right:22px;bottom:4px;font-size:10.5px;font-weight:800;color:rgba(16,26,51,.45);display:none}
+.note .sz{position:absolute;right:22px;bottom:4px;font-size:11px;font-weight:800;color:rgba(16,26,51,.45);display:none}
 .note.rs .sz{display:block}
 .note.sel{outline:3px solid #2e6bf2;outline-offset:2px}
 .y{background:#fff6c9}.p{background:#ffe1ea}.g{background:#ddf5e6}.b{background:#e1ecff}.o{background:#ffe6cf}.v{background:#ece4ff}.w{background:#fff}
-.ty{display:inline-block;font-size:10.5px;font-weight:800;border-radius:6px;padding:2px 8px;background:rgba(16,26,51,.08);color:var(--ink2);margin-bottom:7px}
+.ty{display:inline-block;font-size:11px;font-weight:800;border-radius:6px;padding:2px 8px;background:rgba(16,26,51,.08);color:var(--ink2);margin-bottom:7px}
 .ty.todo{background:#2e6bf2;color:#fff}.ty.idea{background:#c98408;color:#fff}.ty.person{background:#12a36a;color:#fff}.ty.dec{background:#6b4fd8;color:#fff}
 .note h4{margin:0 0 4px;font-size:14px;font-weight:800;line-height:1.3;color:var(--ink)}
 .note p{margin:0;font-size:12.5px;line-height:1.5;color:#33405a}

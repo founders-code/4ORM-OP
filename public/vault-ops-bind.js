@@ -205,6 +205,23 @@
       if (foot) foot.innerHTML = '<span class="msg">' + x.id + ' · ' + x.n + '</span><button class="btn" type="button" data-action="vault-assign">Assign an owner</button><label class="btn pri">Upload a new version<input type="file" id="vup" hidden></label>';
       openDrawer(root);
       var key = x.uuid || x.id;
+      var asg = foot && foot.querySelector('[data-action="vault-assign"]');
+      if (asg) asg.onclick = function () {
+        var box = document.createElement('span');
+        box.innerHTML = '<input type="text" placeholder="Owner name" value="' + String(x.own || '').replace(/"/g, '&quot;') + '" style="height:32px;border-radius:8px;border:1px solid #2a2c35;background:#18191f;color:#fff;padding:0 10px;font:inherit;margin-right:6px"><button class="btn pri" type="button">Save owner</button>';
+        asg.replaceWith(box);
+        var inp = box.querySelector('input'); inp.focus();
+        function save() {
+          var v = inp.value.trim(); if (!v) return;
+          var fn = window.authFetch || fetch;
+          fn('/api/vault', { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: key, owner: v }) })
+            .then(function (r) { return r && r.ok ? r.json() : null; })
+            .then(function (j) { if (!j || !j.saved) throw 0; x.own = v; toast(root, 'Owner set: ' + v); openDoc(id); })
+            .catch(function () { toast(root, 'Could not save the owner. Try again.'); });
+        }
+        box.querySelector('button').onclick = save;
+        inp.onkeydown = function (e) { if (e.key === 'Enter') save(); };
+      };
       api('/api/vault/' + encodeURIComponent(key)).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {
         var paper = $(root, '#vpaper');
         if (!paper) return;
@@ -222,12 +239,18 @@
         } else if (b.kind === 'md' || b.text) {
           paper.innerHTML = '<h5>' + x.n + '</h5><div>' + String(b.text || x.note || '').replace(/\n/g, '<br>') + '</div>';
         } else paper.innerHTML = '<h5>' + x.n + '</h5><p>' + (x.note || 'No stored copy to preview yet.') + '</p>';
+        var srcBtn = body && body.querySelector('[data-action="vault-source"]');
+        if (srcBtn) {
+          var srcUrl = b.url || (d && (d.url || d.driveUrl)) || '';
+          if (srcUrl) srcBtn.onclick = function () { window.open(srcUrl, '_blank', 'noopener'); };
+          else { srcBtn.disabled = true; srcBtn.textContent = 'No source file yet'; }
+        }
         var vers = $(root, '#vvers');
         if (vers) {
           var vs = (d && d.versions) || [];
           vers.innerHTML = '<h4>Versions</h4>' + (vs.length ? vs.map(function (v) {
             return '<div>' + (v.version || '-') + ' · ' + (v.superseded_at ? 'superseded' : 'current') + ' · ' + (v.file || '') + '</div>';
-          }).join('') : '<div>Current ' + (x.v || '-') + '</div>') + '<div>+ Upload a new version</div>';
+          }).join('') : '<div>Current ' + (x.v || '-') + '</div>') + '<label for="vup" style="cursor:pointer;color:#9db9ff;display:block;margin-top:4px">Upload a new version</label>';
         }
         var dep = $(root, '#vdep');
         if (dep) {

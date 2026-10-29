@@ -621,7 +621,7 @@ const ZOOM_URL='https://us06web.zoom.us/j/7783632424';
 function tzOffset(inst,tz){var u=new Date(inst.toLocaleString('en-US',{timeZone:'UTC'}));var z=new Date(inst.toLocaleString('en-US',{timeZone:tz}));return z.getTime()-u.getTime();}
 function zonedInstant(y,mo,d,H,M,tz){var asUTC=Date.UTC(y,mo,d,H,M,0);var off=tzOffset(new Date(asUTC),tz);return new Date(asUTC-off);}
 function meetingInstant(dow,H,M){var n=new Date();var d=new Date(n.getFullYear(),n.getMonth(),n.getDate());var gu=0;while(d.getDay()!==dow&&gu<14){d.setDate(d.getDate()+1);gu++;}return zonedInstant(d.getFullYear(),d.getMonth(),d.getDate(),H,M,'America/Los_Angeles');}
-function meetingWhen(m){var inst=meetingInstant(m.dow,m.h,m.m);var wd=new Date(inst).toLocaleString(undefined,{weekday:'long'});var tm=new Date(inst).toLocaleString(undefined,{hour:'numeric',minute:'2-digit',timeZoneName:'short'});return wd+'s &middot; '+tm;}
+function meetingWhen(m){var inst=meetingInstant(m.dow,m.h,m.m);var wd=new Date(inst).toLocaleString(undefined,{weekday:'long'});var tm=new Date(inst).toLocaleString(undefined,{hour:'2-digit',minute:'2-digit',hour12:false,timeZoneName:'short'});return wd+'s &middot; '+tm;}
 function reviewDateStr(){var r=window.REVIEW_DATE?new Date(window.REVIEW_DATE):(function(){var d=new Date(firstLogin);d.setMonth(d.getMonth()+6);return d;})();return r.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});}
 function renderLegend(){
  var rows=MEETINGS.slice(); var oo=ONEONONE[CURRENT_EMAIL]; if(oo)rows.push(oo);

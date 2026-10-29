@@ -112,7 +112,7 @@ table.t tr.gh.today td{background:#eaf1fe}
 .dtop .bc{font-size:12.5px;font-weight:700;color:var(--ink3)}.dtop .bc b{color:var(--ink)}
 .dtop .r{margin-left:auto;display:flex;gap:6px}
 .dbody{overflow:auto;padding:16px 18px 110px;display:flex;flex-direction:column;gap:12px}
-.hero{background:linear-gradient(140deg,#1a3a8f,#2e6bf2);color:#fff;border-radius:16px;padding:18px 20px;display:flex;gap:16px;align-items:flex-start}
+.hero{background:#18191f;border:1px solid #2a2c35;border-left:3px solid #2e6bf2;color:#fff;border-radius:16px;padding:18px 20px;display:flex;gap:16px;align-items:flex-start}
 .hero .av{width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:850;flex:none}
 .hero h2{margin:6px 0 4px;font-size:24px;font-weight:850;letter-spacing:-.02em}
 .hero .who{font-size:13.5px;font-weight:600;color:#dfe8ff}

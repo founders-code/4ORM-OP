@@ -272,9 +272,9 @@
       gid('popSw').style.background = col;
       gid('popT').textContent = r.n;
       gid('popS').textContent = rm[0] + ' · ' + (st === D ? 'done — light is off' : st === N ? 'later today' : 'due now');
-      var goBtn = gid('popGo'); goBtn.textContent = 'Go to ' + rm[0] + ' →'; goBtn.style.background = col;
+      var goBtn = gid('popGo'); goBtn.textContent = 'Go to ' + rm[0] ; goBtn.style.background = col;
       goBtn.setAttribute('data-view', r.room || 'dash');
-      gid('popDone').innerHTML = st === D ? '↺ Turn back on' : '✓ Mark done';
+      gid('popDone').innerHTML = st === D ? 'Turn back on' : 'Mark done';
       var b = p.getBoundingClientRect();
       pop.style.left = Math.min(b.left, window.innerWidth - 260) + 'px';
       pop.style.top = (b.bottom + 8) + 'px';
@@ -489,7 +489,7 @@
         { c: 'var(--green)', t: 'Reach out to 5', k: '3 / 5', cls: 'g', r: 4, v: '3/5' },
         { c: 'var(--sky)', t: 'Engage 10 min', k: '4 / 5', cls: 'g', r: 3, v: '4/5' },
         { c: 'var(--blue)', t: 'Send Kevin the GTM deck', k: '+ Execution · Tue', cls: 'b' },
-        { c: 'var(--amber)', t: 'Newsletter: RPAA deadline angle', k: 'note → Newsletter', cls: 'a' }
+        { c: 'var(--amber)', t: 'Newsletter: RPAA deadline angle', k: 'note to Newsletter', cls: 'a' }
       ];
       heard.innerHTML = items.map(function (x, i3) { return '<label class="hi"><input type="checkbox" checked data-i="' + i3 + '"><span class="sw" style="background:' + x.c + '"></span>' + x.t + '<span class="k ' + x.cls + '">' + x.k + '</span></label>'; }).join('');
       heard._items = items; cnt.textContent = items.length + ' items'; sv.disabled = ds.disabled = false;
@@ -505,7 +505,7 @@
       });
       if (typeof render === 'function') render(); if (typeof count === 'function') count();
       var hm = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Vancouver', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
-      root.getElementById('vHist').insertAdjacentHTML('afterbegin', '<div class="vrow"><span class="pl">&#9654;</span><span class="tm">' + hm + '</span><span>&ldquo;' + tx.textContent.slice(0, 90) + '&hellip;&rdquo;</span><span class="c">' + plays + ' plays &middot; ' + tasks + ' task &middot; ' + notes + ' note</span></div>');
+      root.getElementById('vHist').insertAdjacentHTML('afterbegin', '<div class="vrow"><span class="pl">Play</span><span class="tm">' + hm + '</span><span>&ldquo;' + tx.textContent.slice(0, 90) + '&hellip;&rdquo;</span><span class="c">' + plays + ' plays &middot; ' + tasks + ' task &middot; ' + notes + ' note</span></div>');
       toast("Saved to today’s log - " + plays + ' plays updated'); ds.onclick();
     };
   }
@@ -524,7 +524,7 @@
         var at = Date.parse(x.created_at || x.createdAt || x.at || '');
         var t = String(x.transcript || '');
         var n = asList(x.items).length;
-        return '<div class="vrow"><span class="pl">&#9654;</span><span class="tm">' + fmt.format(new Date(at)) + '</span><span>&ldquo;' + esc(t.slice(0, 90)) + (t.length > 90 ? '&hellip;' : '') + '&rdquo;</span><span class="c">' + n + ' item' + (n === 1 ? '' : 's') + '</span></div>';
+        return '<div class="vrow"><span class="pl">Play</span><span class="tm">' + fmt.format(new Date(at)) + '</span><span>&ldquo;' + esc(t.slice(0, 90)) + (t.length > 90 ? '&hellip;' : '') + '&rdquo;</span><span class="c">' + n + ' item' + (n === 1 ? '' : 's') + '</span></div>';
       }).join('');
     }).catch(function () {});
   }
@@ -613,7 +613,7 @@
       var dest = (root.querySelector('.dest em.on') || {}).textContent || "Today’s log";
       auth('/api/voice/logs', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ transcript: tx.textContent, items: it, destination: dest, duration_s: Math.floor((Date.now() - t0) / 1000) }) }).catch(function () {});
       var hm = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Vancouver', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
-      root.getElementById('vHist').insertAdjacentHTML('afterbegin', '<div class="vrow"><span class="pl">&#9654;</span><span class="tm">' + hm + '</span><span>&ldquo;' + esc(tx.textContent.slice(0, 90)) + '&hellip;&rdquo;</span><span class="c">' + plays + ' plays &middot; ' + tasks + ' task &middot; ' + notes + ' note</span></div>');
+      root.getElementById('vHist').insertAdjacentHTML('afterbegin', '<div class="vrow"><span class="pl">Play</span><span class="tm">' + hm + '</span><span>&ldquo;' + esc(tx.textContent.slice(0, 90)) + '&hellip;&rdquo;</span><span class="c">' + plays + ' plays &middot; ' + tasks + ' task &middot; ' + notes + ' note</span></div>');
       toast("Saved to today’s log - " + plays + ' plays updated'); ds.onclick();
     };
   }

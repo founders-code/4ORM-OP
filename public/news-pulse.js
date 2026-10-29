@@ -48,7 +48,7 @@ const PULSE={
  mkt:[
   {k:'Bank of Canada rate',v:'2.25%',d:'0.00',dir:'fl',s:[2.25,2.25,2.25,2.25,2.25,2.25,2.25,2.25]},
   {k:'5-year Canada bond',v:'2.94%',d:'+0.06',dir:'up',s:[2.81,2.84,2.83,2.88,2.86,2.9,2.91,2.94]},
-  {k:'Prime rate',v:'4.45%',d:'0.00',dir:'fl',s:[4.45,4.45,4.45,4.45,4.45,4.45,4.45,4.45]},
+  {k:'5-year posted mortgage',v:'Loading',d:'',dir:'fl',s:[4.45,4.45,4.45,4.45,4.45,4.45,4.45,4.45]},
   {k:'CAD per USD',v:'1.382',d:'-0.004',dir:'dn',s:[1.391,1.389,1.387,1.388,1.385,1.384,1.386,1.382]}
  ]};
 
@@ -123,7 +123,7 @@ window.bindNewsPulse = function(root, pulse){
     const ntop=q(root,'.hero .ntop, #hTop'); if(ntop) ntop.textContent=top||'Top release today';
     const h=q(root,'.hero h2, #hH'); if(h && s && s.h) h.textContent=s.h;
     const dek=q(root,'.hero .sum, .hero .dek, #hDek'); if(dek && s) dek.textContent=s.dek||'';
-    const wim=q(root,'.hero .take, #hWim'); if(wim && s) wim.innerHTML = (s.wim&&String(s.wim).indexOf('<b>')===0)?s.wim:('<b>Why it matters to 4orm:</b> '+(s.wim||''));
+    const wim=q(root,'.hero .take, #hWim'); if(wim && s){ const w=String(s.wim||'').replace(/<[^>]*>/g,'').replace(/Why it matters to 4orm:?/i,'').trim(); wim.style.display = w ? '' : 'none'; if(w) wim.innerHTML = (String(s.wim).indexOf('<b>')===0)?s.wim:('<b>Why it matters to 4orm:</b> '+s.wim); }
     const im=q(root,'.hero img, #hImg'); if(im && s && s.img){ im.style.visibility=''; im.src=s.img; }
     const chip=q(root,'.hero .chipc, .hero .cat, #hChip'); if(chip && s && s.chip) chip.textContent=s.chip;
   }

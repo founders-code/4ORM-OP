@@ -12,7 +12,7 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,s
 .btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 12px;font-size:12px;font-weight:600;color:#33405a;cursor:pointer}
 .bar .s{margin-left:auto;display:flex;align-items:center;gap:8px}
 .bar .search{width:220px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 12px;color:var(--muted);font-size:12px}
-.bar .sweep{font-size:10px;color:#9aa3b5;letter-spacing:.04em}
+.bar .sweep{font-size:11px;color:#9aa3b5;letter-spacing:.04em}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .chip{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;background:#fff;color:#44506a;cursor:pointer;white-space:nowrap}
 .chip.on{background:#eaf0ff;border-color:#c9d8ff;color:var(--blue);font-weight:650}
@@ -22,9 +22,9 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,s
 .cover .thumb,.cv .thumb{position:absolute;inset:0;width:100%;height:100%}
 .cover .ov{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,10,26,0) 35%,rgba(6,10,26,.72) 100%)}
 .cover>.z,.cv>.z{position:relative;z-index:2}
-.kick{font-size:10px;font-weight:750;letter-spacing:.09em;text-transform:uppercase;opacity:.92;margin-bottom:6px}
+.kick{font-size:11px;font-weight:750;letter-spacing:.09em;text-transform:uppercase;opacity:.92;margin-bottom:6px}
 .cover h2{font-size:23px;font-weight:760;margin:0;line-height:1.15;max-width:82%;text-shadow:0 1px 10px rgba(0,0,0,.35)}
-.tag{position:absolute;top:12px;right:14px;z-index:3;font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border-radius:6px;padding:4px 9px}
+.tag{position:absolute;top:12px;right:14px;z-index:3;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border-radius:6px;padding:4px 9px}
 .t-reg{background:#efeaff;color:#5b3bc0}.t-opp{background:#e3f6ea;color:#107a43}.t-threat{background:#fde6e2;color:#c0392b}
 .herobody{padding:14px 16px}
 .wim{font-size:12.5px;line-height:1.5}.wim b{color:var(--ink)}
@@ -36,34 +36,34 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,s
 .card{background:#fff;border:1px solid var(--line);border-radius:13px;overflow:hidden;box-shadow:0 1px 6px rgba(16,24,40,.04);display:flex;flex-direction:column}
 .card .cv{position:relative;height:104px;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;overflow:hidden}
 .card .cv .ov{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,10,26,0) 38%,rgba(6,10,26,.68) 100%)}
-.card .cat{font-size:9px;font-weight:750;letter-spacing:.07em;text-transform:uppercase;opacity:.95}
+.card .cat{font-size:10.5px;font-weight:750;letter-spacing:.07em;text-transform:uppercase;opacity:.95}
 .card .cv h3{font-size:12.5px;font-weight:700;margin:3px 0 0;line-height:1.18;text-shadow:0 1px 8px rgba(0,0,0,.4)}
-.card .cat{font-size:8.5px!important}
+.card .cat{font-size:10px!important}
 .card .wim2{font-size:11px}
 .card .body{padding:11px 12px;display:flex;flex-direction:column;gap:7px;flex:1}
 .card .wim2{font-size:11.5px;line-height:1.45;color:#33405a}
-.card .foot{display:flex;align-items:center;justify-content:space-between;margin-top:auto;font-size:10.5px;color:var(--muted)}
+.card .foot{display:flex;align-items:center;justify-content:space-between;margin-top:auto;font-size:11px;color:var(--muted)}
 .card .save{color:var(--blue);font-weight:650;cursor:pointer}
-.rel{display:inline-block;font-size:9px;font-weight:700;color:#9a6a00;background:#fff4de;border-radius:5px;padding:2px 6px}
+.rel{display:inline-block;font-size:10.5px;font-weight:700;color:#9a6a00;background:#fff4de;border-radius:5px;padding:2px 6px}
 .rail{display:flex;flex-direction:column;gap:12px}
 .panel{background:#fff;border:1px solid var(--line);border-radius:13px;padding:13px}
 .panel h4{margin:0 0 10px;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:space-between}
-.panel h4 .mini{font-size:10px;color:#9aa3b5;font-weight:600}
+.panel h4 .mini{font-size:11px;color:#9aa3b5;font-weight:600}
 .brief{display:flex;gap:9px;padding:7px 0;border-bottom:1px solid #f0f2f7;font-size:11.5px;line-height:1.35}
 .brief:last-child{border:none}.brief .n{color:var(--blue);font-weight:750}
 .cw{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:11.5px;border-bottom:1px solid #f0f2f7}
 .cw:last-child{border:none}.cw .d{width:7px;height:7px;border-radius:50%}
-.cw .st{margin-left:auto;font-size:10.5px;color:var(--muted)}
+.cw .st{margin-left:auto;font-size:11px;color:var(--muted)}
 .trend{display:flex;gap:6px;flex-wrap:wrap}
-.trend span{font-size:10.5px;border:1px solid var(--line);border-radius:999px;padding:4px 9px;color:#44506a}
+.trend span{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 9px;color:#44506a}
 .badge{width:20px;height:20px;border-radius:5px;background:var(--navy);color:#fff;display:inline-grid;place-items:center;font-size:11px;font-weight:700;margin-right:6px}
-.note{font-size:10.5px;color:#9aa3b5;margin-top:10px;text-align:center}
+.note{font-size:11px;color:#9aa3b5;margin-top:10px;text-align:center}
 
 .nwx .top{display:flex;align-items:center;gap:10px;margin-bottom:12px;background:none!important;border:0!important;position:static!important;height:auto!important;padding:0!important}
 .nwx .t{font-size:19px;font-weight:750;margin:0;color:var(--ink)}
 .nwx .right{margin-left:auto;display:flex;align-items:center;gap:8px}
 .nwx .search{width:220px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 12px;color:var(--muted);font-size:12px}
-.nwx .sweeps{font-size:10px;color:#9aa3b5;letter-spacing:.04em}
+.nwx .sweeps{font-size:11px;color:#9aa3b5;letter-spacing:.04em}
 .nwx .wrap{display:grid;grid-template-columns:1fr 268px;gap:14px}
 .nwx .main{min-width:0}
 .nwx .rail{display:flex;flex-direction:column;gap:12px}
@@ -83,11 +83,11 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,s
 .nwx .card.hero .img{height:100%;min-height:300px;aspect-ratio:auto}
 .nwx .card .img img.ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .nwx .card .img .tile{display:none}
-.nwx .card .img.noimg .tile{display:flex;position:absolute;inset:0;align-items:flex-end;padding:10px;background:linear-gradient(160deg,#2c2e37,#16357a)}
+.nwx .card .img.noimg .tile{display:flex;position:absolute;inset:0;align-items:flex-end;padding:10px;background:#20222a}
 .nwx .card .img .shade{position:absolute;inset:0;pointer-events:none}
 .nwx .card.hero .img .shade{background:linear-gradient(180deg,rgba(6,10,26,0) 35%,rgba(6,10,26,.72) 100%)}
 .nwx .card.story .img .shade{background:none}
-.nwx .card .img .cat,.nwx .card .img .kick{position:absolute;top:10px;left:10px;z-index:3;font-size:9px;font-weight:750;letter-spacing:.07em;text-transform:uppercase;background:rgba(255,255,255,.94);color:#24324d;border-radius:6px;padding:4px 9px;max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nwx .card .img .cat,.nwx .card .img .kick{position:absolute;top:10px;left:10px;z-index:3;font-size:10.5px;font-weight:750;letter-spacing:.07em;text-transform:uppercase;background:rgba(255,255,255,.94);color:#24324d;border-radius:6px;padding:4px 9px;max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nwx .card .img .tag,.nwx .card .img .impact,.nwx .card .img .h{display:none}
 .nwx .card.story .b{padding:12px 13px;display:flex;flex-direction:column;gap:7px;flex:1;min-width:0}
 .nwx .card.story .tk{font-size:12px;line-height:1.45;color:#33405a;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -99,7 +99,7 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,s
 .nwx .rail .card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:13px;overflow:visible;box-shadow:0 1px 6px rgba(16,24,40,.04);display:flex;flex-direction:column}
 .nwx .rail .card .ch{display:flex;align-items:center;gap:8px;padding:0 0 10px;margin:0}
 .nwx .rail .card .ch .t{font-size:14px;font-weight:700;color:var(--ink);margin:0;letter-spacing:0}
-.nwx .rail .card .ch .s{font-size:10px;color:#9aa3b5;font-weight:600;margin-left:auto}
+.nwx .rail .card .ch .s{font-size:11px;color:#9aa3b5;font-weight:600;margin-left:auto}
 .nwx .rail .card .ch .mk,.nwx .rail .badge{width:20px;height:20px;border-radius:5px;background:var(--navy);color:#fff;display:inline-grid;place-items:center;font-size:11px;font-weight:700;margin-right:2px;flex:none}
 .nwx .brief{display:flex;flex-direction:column;gap:0;padding:0}
 .nwx .brief .r{display:flex;gap:9px;padding:7px 0;border-bottom:1px solid #f0f2f7;font-size:11.5px;line-height:1.35;width:100%;text-align:left;background:none;border-left:0;border-right:0;border-top:0;cursor:pointer;align-items:flex-start;color:var(--ink)}
@@ -109,20 +109,20 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,s
 .nwx .comp .comprow:last-child{border:none}
 .nwx .comp .d{width:7px;height:7px;border-radius:50%;flex:none}
 .nwx .comp .cl{flex:1;min-width:0;line-height:1.35}
-.nwx .comp .mt{margin-left:auto;font-size:10.5px;color:var(--muted);flex:none}
+.nwx .comp .mt{margin-left:auto;font-size:11px;color:var(--muted);flex:none}
 .nwx .trend{display:flex;gap:6px;flex-wrap:wrap}
-.nwx .trend .tp{font-size:10.5px;border:1px solid var(--line);border-radius:999px;padding:4px 9px;color:#44506a;background:#fff;cursor:pointer}
+.nwx .trend .tp{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 9px;color:#44506a;background:#fff;cursor:pointer}
 .nwx .trend .tp.on{background:#eaf0ff;border-color:#c9d8ff;color:var(--blue);font-weight:650}
 .nwx .prio .pr{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-bottom:1px solid #f0f2f7;width:100%;text-align:left;background:none;border-left:0;border-right:0;border-top:0;cursor:pointer}
 .nwx .prio .pr:last-child{border:none}
-.nwx .prio .pl{font-size:9.5px;font-weight:750;border-radius:6px;padding:3px 7px;flex:none}
+.nwx .prio .pl{font-size:11px;font-weight:750;border-radius:6px;padding:3px 7px;flex:none}
 .nwx .prio .pl.threat{background:#fde6e2;color:#c0392b}
 .nwx .prio .pl.reg{background:#efeaff;color:#5b3bc0}
 .nwx .prio .pl.opp{background:#e3f6ea;color:#107a43}
 .nwx .prio .pt{display:flex;flex-direction:column;gap:2px;font-size:11.5px;color:var(--ink)}
 .nwx .prio .pt b{font-size:12px;font-weight:700}
 .nwx .prio .pt span{color:var(--muted);font-size:11px}
-.nwx .pr-empty,.nwx .nw-empty,.nwx .brief .r:only-child{font-size:10.5px;color:#9aa3b5;padding:4px 0}
+.nwx .pr-empty,.nwx .nw-empty,.nwx .brief .r:only-child{font-size:11px;color:#9aa3b5;padding:4px 0}
 .nwx .card.nw-empty{padding:18px 16px;color:#9aa3b5;font-size:12px}
 .nwx .card .img.shimmer::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#e8edf5 0%,#f6f8fc 45%,#e8edf5 100%);background-size:200% 100%;animation:nwsh 1.2s ease infinite}
 @keyframes nwsh{from{background-position:100% 0}to{background-position:-100% 0}}
@@ -163,9 +163,9 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,s
 .b2.ai{background:#f3efff;border-color:#e2d9ff;color:var(--violet)}
 .svlist{display:flex;flex-direction:column;gap:10px}
 .si{background:#fff;border-radius:14px;box-shadow:0 8px 22px rgba(3,10,30,.18);display:grid;grid-template-columns:150px minmax(0,1fr) 190px;overflow:hidden}
-.si .th{position:relative;background:linear-gradient(135deg,#1b3a8f,#2e6bf2)}
+.si .th{position:relative;background:#20222a}
 .si .th img{width:100%;height:100%;object-fit:cover;display:block}
-.si .th span{position:absolute;left:8px;bottom:8px;font-size:10.5px;font-weight:800;color:#fff;background:rgba(5,12,34,.6);border-radius:6px;padding:2px 7px}
+.si .th span{position:absolute;left:8px;bottom:8px;font-size:11px;font-weight:800;color:#fff;background:rgba(5,12,34,.6);border-radius:6px;padding:2px 7px}
 .si .bd{padding:12px 14px;min-width:0}
 .si h3{margin:0 0 4px;font-size:15px;font-weight:800;line-height:1.3}
 .si .src{font-size:12px;color:var(--ink3);font-weight:600}
@@ -274,7 +274,7 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,s
 .rr h4 span,.mk h4 span{font-size:11.5px;color:#6b7488;font-weight:600}
 .rrg{display:grid;grid-template-columns:96px repeat(8,minmax(0,1fr)) minmax(0,3fr);gap:3px 4px;align-items:center;font-size:12px}
 .rrg .rn{font-weight:750;color:#101828;white-space:nowrap}
-.rrg .wk{font-size:10.5px;color:#9aa3b5;text-align:center;font-variant-numeric:tabular-nums}
+.rrg .wk{font-size:11px;color:#9aa3b5;text-align:center;font-variant-numeric:tabular-nums}
 .rrg .c{height:18px;border-radius:4px;cursor:pointer}
 .rrg .c:hover{box-shadow:0 0 0 2px #1f5fff}
 .h0{background:#f1f4f9}.h1{background:#cfe0fd}.h2{background:#8db4fb}.h3{background:#4b84f4}.h4{background:#1b4abe}
