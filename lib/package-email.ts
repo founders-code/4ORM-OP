@@ -14,7 +14,7 @@ export function cleanDesign(v: unknown): Design {
   return (DESIGNS.find((x) => x.id === d)?.id ?? '') as Design;
 }
 
-const SITE = 'https://4ormop.com';
+const SITE = 'https://www.4ormop.com';
 const BLUE = '#2E6BF2';
 const INK = '#14161c';
 const MUTED = '#5a6275';
