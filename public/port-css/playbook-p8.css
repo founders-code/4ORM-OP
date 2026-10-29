@@ -510,3 +510,10 @@ body.navshut .side{width:0;padding:0;border:0}
 .work .wtiles{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
 .work .wnext{grid-column:1/-1;margin-top:10px;max-height:420px;overflow:auto}
 .work .wnext .wlh{position:sticky;top:0;background:#111216;padding:4px 0 8px;z-index:1}
+/* Audit 29 Oct: header stays on one line per control and wraps as a row when narrow */
+.pbwrap>.head{flex-wrap:wrap;row-gap:10px;gap:10px 12px}
+.pbwrap>.head .wk,.pbwrap>.head .play,.pbwrap>.head .plan30,.pbwrap>.head .ctr button,.pbwrap>.head .calbtn{white-space:nowrap}
+.pbwrap>.head .plan30{margin-left:0}
+.pbwrap>.head .score .s{white-space:nowrap}
+.pbwrap>.head .play .tri{display:none}
+.pbwrap>.head .play{padding:11px 18px}

@@ -504,7 +504,7 @@ export async function buildCallLists(sql: Sql, ownerId: string, userId: string):
           pain: r.pain === null || r.pain === undefined || r.pain === '' ? null : Number(r.pain),
           industry: String(r.industry || r.type || ''),
           location: String(r.location || [r.city, r.prov].filter(Boolean).join(', ') || ''),
-          why: clip(r.iwhy || r.next_action, 220),
+          why: clip(String(r.iwhy || r.next_action || '').split(/;\s*|\.\s+/).map((x) => x.trim()).filter((x) => x && !/\b\d+\s*\/\s*\d+\b/.test(x) && !/unknown fields|limited poi/i.test(x)).join('; '), 220),
           fitLine: Array.isArray(r.ifit) ? (r.ifit as string[]).slice(0, 2).join(' · ') : '',
           backed: String(r.ibacked || ''),
           painLine: String(r.ipain || '').replace(/^Drivers:\s*/, ''),

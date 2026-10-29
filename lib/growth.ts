@@ -395,7 +395,10 @@ export async function callsToday(sql: Sql, ownerId: string) {
       AND (at AT TIME ZONE 'America/Vancouver')::date = ${today}::date`)[0] as { n?: number } | undefined;
   const name = Object.fromEntries(GROWTH_LISTS.map((l) => [l.key, l.name]));
   const chan = Object.fromEntries(GROWTH_LISTS.map((l) => [l.key, l.channel]));
-  const shape = (r: Record<string, unknown>) => ({ ...r, listName: name[String(r.list)] || String(r.list), channel: chan[String(r.list)] || 'Call' });
+  /* Scoring breakdowns ("thesis 25/25; access 0/15") are for ranking, not for reading on a call card. */
+  const cleanWhy = (v: unknown) => String(v || '').split(/;\s*|\.\s+/).map((x) => x.trim())
+    .filter((x) => x && !/\b\d+\s*\/\s*\d+\b/.test(x) && !/unknown fields|limited poi/i.test(x)).join('; ');
+  const shape = (r: Record<string, unknown>) => ({ ...r, why: cleanWhy(r.why), listName: name[String(r.list)] || String(r.list), channel: chan[String(r.list)] || 'Call' });
   return { today, due: due.map(shape), planned: planned.map(shape), doneToday: Number(done?.n) || 0 };
 }
 
