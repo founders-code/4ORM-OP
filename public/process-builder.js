@@ -208,25 +208,26 @@
   };
 
   /* Confirm before a stage package goes out. Resolves { send: true|false } to move, or null to cancel. */
-  window.stageGate = function (recordId, stage) {
+  window.stageGate = function (recordId, stage, gopts) {
+    var only = !!(gopts && gopts.sendOnly);
     return api('/api/processes?preview=1&record=' + encodeURIComponent(recordId) + '&stage=' + encodeURIComponent(stage.id))
       .then(function (j) { return j.preview; }).catch(function () { return null; })
       .then(function (pv) {
-        if (!pv) return { send: false };
+        if (!pv) return only ? null : { send: false };
         return new Promise(function (resolve) {
           var m = document.createElement('div'); m.className = 'sgx';
-          m.innerHTML = '<div class="bx"><div class="hd"><h3>Move to ' + esc(stage.name) + '</h3><div class="sub">This stage has a package. Here is exactly what goes out.</div></div><div class="bd">'
+          m.innerHTML = '<div class="bx"><div class="hd"><h3>' + (only ? 'Send the ' + esc(stage.name) + ' package' : 'Move to ' + esc(stage.name)) + '</h3><div class="sub">' + (only ? 'Here is exactly what goes out.' : 'This stage has a package. Here is exactly what goes out.') + '</div></div><div class="bd">'
             + '<div class="k">To</div><div>' + esc(pv.toName) + (pv.to ? ' &lt;' + esc(pv.to) + '&gt;' : '') + '</div>'
             + '<div class="k">Subject</div><div><b>' + esc(pv.subject) + '</b></div>'
             + '<div class="k">Email</div><pre>' + esc(pv.body) + '</pre>'
             + (pv.docs.length ? '<div class="k">Documents</div><ul>' + pv.docs.map(function (d) { return '<li>' + esc(d.name) + '</li>'; }).join('') + '</ul>' : '')
             + ((pv.followDays || pv.task) ? '<div class="k">Then</div><div>' + (pv.followDays ? 'Follow up in ' + pv.followDays + ' days. ' : '') + (pv.task ? 'GoHighLevel task: ' + esc(pv.task) : '') + '</div>' : '')
-            + (pv.ready ? '' : '<div class="why">Cannot send: ' + esc(pv.why) + '. You can still move the stage.</div>')
-            + '</div><div class="ft"><button type="button" data-c>Cancel</button><button type="button" data-o>Move only</button>' + (pv.ready ? '<button type="button" class="pri" data-s>Move and send</button>' : '') + '</div></div>';
+            + (pv.ready ? '' : '<div class="why">Cannot send: ' + esc(pv.why) + (only ? '.' : '. You can still move the stage.') + '</div>')
+            + '</div><div class="ft"><button type="button" data-c>Cancel</button>' + (only ? (pv.ready ? '<button type="button" class="pri" data-s>Send</button>' : '') : '<button type="button" data-o>Move only</button>' + (pv.ready ? '<button type="button" class="pri" data-s>Move and send</button>' : '')) + '</div></div>';
           document.body.appendChild(m);
           function done(v) { m.remove(); resolve(v); }
           m.querySelector('[data-c]').onclick = function () { done(null); };
-          m.querySelector('[data-o]').onclick = function () { done({ send: false }); };
+          var ob = m.querySelector('[data-o]'); if (ob) ob.onclick = function () { done({ send: false }); };
           var sb = m.querySelector('[data-s]'); if (sb) sb.onclick = function () { done({ send: true }); };
           m.onclick = function (e) { if (e.target === m) done(null); };
         });

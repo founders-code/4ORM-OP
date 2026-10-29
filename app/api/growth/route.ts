@@ -151,6 +151,21 @@ export async function POST(req: Request) {
       }
       return NextResponse.json({ ok: true, opportunityId: oppId, place, sent });
     }
+    if (body.action === 'send-package') {
+      /* Send the package of the stage they sit on now. Chad has seen the exact email in the confirm card. */
+      const rec = (await growthRecord(g.sql, g.ownerId, String(body.id || ''))) as Record<string, unknown> | null;
+      if (!rec) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      if (!(await ghlWriteAllowed(g, rec))) return NextResponse.json({ error: 'Test account: GoHighLevel writes only for TEST rows' }, { status: 403 });
+      const stageId = String(body.stageId || '').slice(0, 64);
+      const creds = await loadCredsFor(g.userId);
+      const known = ((rec.data as Record<string, unknown>)?.ghl || {}) as Record<string, unknown>;
+      const out = await withCreds(creds, () => sendStagePackage(g.sql, g.ownerId, rec, stageId, { contactId: String(known.contactId || ''), spaceOwner: g.userId }));
+      if (!out.ok) return NextResponse.json({ error: out.note }, { status: 502 });
+      const days = Number((out as { followDays?: number }).followDays) || 0;
+      const next = days ? new Date(Date.now() + days * 86400000).toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' }) : '';
+      await addTouch(g.sql, g.ownerId, String(rec.id), { channel: 'Email', outcome: 'Sent', note: `Stage package sent: ${String((out as { subject?: string }).subject || '')}`, next_date: next, status: String(rec.status || 'Contacted') });
+      return NextResponse.json({ ok: true, to: (out as { to?: string }).to, subject: (out as { subject?: string }).subject });
+    }
     if (body.action === 'undo-touch') {
       await undoTouch(g.sql, g.ownerId, Number(body.touchId) || 0);
       return NextResponse.json({ ok: true });

@@ -36,6 +36,10 @@ export async function GET(req: Request) {
       if (!rec) return NextResponse.json({ error: 'Not found' }, { status: 404 });
       return NextResponse.json({ preview: await previewStageSend(g.sql, g.ownerId, rec, stage, g.userId) });
     }
+    if (u.searchParams.get('packages')) {
+      const list = await listStagePackages(g.sql, g.ownerId);
+      return NextResponse.json({ packages: list.map((p) => ({ stageId: p.stageId, stageName: p.stageName, pipelineId: p.pipelineId, subject: p.subject, active: p.active, docs: p.docs.length })) });
+    }
     if (u.searchParams.get('sends')) return NextResponse.json({ sends: await recentSends(g.sql, g.ownerId, stage) });
     const creds = await loadCredsFor(g.userId);
     const [pipes, packages, stats, spaces] = await Promise.all([

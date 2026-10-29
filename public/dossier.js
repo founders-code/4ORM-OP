@@ -25,7 +25,12 @@
     + '#dsr .d-muted{color:#7d859a}#dsr .d-acts{display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #23252e}'
     + '#dsr .d-q{color:#aeb6c8;font-size:12px}#dsr .d-stg{position:relative;display:inline-block}#dsr .d-stgb{background:rgba(255,169,70,.14);border-color:rgba(255,169,70,.45);color:#ffc98a;padding:3px 10px;font-size:11px}'
     + '#dsr .d-stgp{position:absolute;top:30px;left:0;z-index:5;background:#18191f;border:1px solid #2a2c35;border-radius:12px;padding:10px;width:300px;box-shadow:0 18px 40px rgba(0,0,0,.55)}#dsr .d-stgp .d-sl{display:flex;flex-direction:column;gap:5px;margin-top:6px}'
-    + '#dsr .d-stgp .d-sl button{text-align:left}#dsr .d-stgp select{width:100%;background:#111216;color:#fff;border:1px solid #2a2c35;border-radius:8px;padding:5px;font:inherit}@media(max-width:820px){#dsr .d-mid{grid-template-columns:1fr}#dsr .d-lft{border-right:0}}';
+    + '#dsr .d-stgp .d-sl button{text-align:left}#dsr .d-stgp select{width:100%;background:#111216;color:#fff;border:1px solid #2a2c35;border-radius:8px;padding:5px;font:inherit}#dsr .d-pipe{background:#18191f;border:1px solid #2a2c35;border-radius:12px;padding:10px 12px;margin-bottom:14px;transition:box-shadow .3s}#dsr .d-pipe.flash{box-shadow:0 0 0 2px #ffa946}'
+    + '#dsr .d-prow{display:flex;gap:8px;align-items:center;margin-bottom:8px}#dsr .d-prow select{flex:1;min-width:0;background:#111216;color:#fff;border:1px solid #2a2c35;border-radius:8px;padding:6px 8px;font:inherit}'
+    + '#dsr .d-now{font-size:12px;color:#c8d1ea;white-space:nowrap}#dsr .d-now b{color:#ffc98a}'
+    + '#dsr .d-sl2{display:flex;flex-wrap:wrap;gap:6px}#dsr .d-sl2 button{font-size:11.5px;padding:5px 9px}#dsr .d-sl2 button.on{background:rgba(255,169,70,.18);border-color:#ffa946;color:#ffc98a}'
+    + '#dsr .d-sl2 em{font-style:normal;font-size:10.5px;font-weight:800;margin-left:6px;color:#5ef0a8}#dsr .d-sendpk{margin-top:10px;width:100%;background:#00dc86!important;border-color:#00dc86!important;color:#03170d!important}'
+    + '@media(max-width:820px){#dsr .d-mid{grid-template-columns:1fr}#dsr .d-lft{border-right:0}}';
   var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
   var wrap = document.createElement('div'); wrap.id = 'dsr';
   function mount() { if (!wrap.isConnected) document.body.appendChild(wrap); }
@@ -159,6 +164,7 @@
       + sec('People', bullets(peopleRows, false))
       + sec('Intel', bullets(intel, true))
       + '</div><div class="d-rgt">'
+      + '<div class="d-pipe" id="dsrPipe"><div class="d-k">Pipeline stage</div><div class="d-muted">Loading GoHighLevel…</div></div>'
       + '<div class="d-k">Outcome</div><div class="d-outs">' + (OUTS[ch] || OUTS.Email).map(function (o) { return '<button type="button" data-o="' + esc(o) + '">' + esc(o) + '</button>'; }).join('') + '</div>'
       + '<div class="d-k" style="margin-top:10px">Notes</div><textarea id="dsrNote" placeholder="Type while you talk"></textarea>'
       + '<div style="display:flex;gap:10px;align-items:center;margin-top:8px"><span class="d-k" style="margin:0">Follow up</span><input type="date" id="dsrFu"></div>'
@@ -218,45 +224,75 @@
     var pv = wrap.querySelector('[data-a="prev"]'); if (pv) pv.onclick = function () { go(-1); };
     var sk = wrap.querySelector('[data-a="skip"]'); if (sk) sk.onclick = function () { go(1); };
     var sb = wrap.querySelector('[data-a="stages"]');
+    var pbox = wrap.querySelector('#dsrPipe');
     if (sb) sb.onclick = function (e) {
       e.stopPropagation();
-      var holder = sb.parentNode, old = holder.querySelector('.d-stgp');
-      if (old) { old.remove(); return; }
-      var pop = document.createElement('div'); pop.className = 'd-stgp'; pop.innerHTML = '<span class="d-muted">Loading GoHighLevel stages…</span>';
-      holder.appendChild(pop);
-      pop.onclick = function (ev) { ev.stopPropagation(); };
-      api('/api/growth?ghl=' + encodeURIComponent(rec.id)).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (g) {
-        if (!g || !g.connected) { pop.innerHTML = '<span class="d-muted">GoHighLevel is not connected.</span>'; return; }
+      if (pbox) { pbox.scrollIntoView({ behavior: 'smooth', block: 'center' }); pbox.classList.add('flash'); setTimeout(function () { pbox.classList.remove('flash'); }, 900); }
+    };
+    /* Pipeline stage, on every card: where they sit in GoHighLevel, every stage of that pipeline, which stages carry a package.
+       Moving onto a package stage asks first and shows exactly what goes out; the current stage's package can be sent again. */
+    var PK = {};
+    function paintPipe() {
+      if (!pbox) return;
+      Promise.all([
+        api('/api/growth?ghl=' + encodeURIComponent(rec.id)).then(function (r) { return r && r.ok ? r.json() : null; }),
+        api('/api/processes?packages=1').then(function (r) { return r && r.ok ? r.json() : null; }).catch(function () { return null; })
+      ]).then(function (res) {
+        var g = res[0]; PK = {};
+        ((res[1] && res[1].packages) || []).forEach(function (p) { if (p.active) PK[p.stageId] = p; });
+        if (!g || !g.connected) { pbox.innerHTML = '<div class="d-k">Pipeline stage</div><div class="d-muted">GoHighLevel is not connected.</div>'; return; }
         var opp = (g.opps || [])[0] || null, pipes = g.pipelines || [];
         function draw(pipeId) {
           var pipe = pipes.filter(function (x) { return x.id === pipeId; })[0] || pipes[0];
-          if (!pipe) { pop.innerHTML = '<span class="d-muted">No pipelines in GoHighLevel yet.</span>'; return; }
-          pop.innerHTML = '<div class="d-k" style="margin:0">' + (opp ? esc(opp.pipeline || pipe.name) + ' · now at ' + esc(opp.stage || '?') : 'Not in a pipeline yet. Pick a stage to add them.') + '</div>'
-            + (!opp && pipes.length > 1 ? '<select>' + pipes.map(function (x) { return '<option value="' + esc(x.id) + '"' + (x.id === pipe.id ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select>' : '')
-            + '<div class="d-sl">' + (pipe.stages || []).map(function (st) { return '<button type="button" data-sid="' + esc(st.id) + '" class="' + (opp && opp.stageId === st.id ? 'on' : '') + '">' + esc(st.name) + '</button>'; }).join('') + '</div>';
-          var sel = pop.querySelector('select'); if (sel) sel.onchange = function () { draw(sel.value); };
-          pop.querySelectorAll('[data-sid]').forEach(function (b) {
+          if (!pipe) { pbox.innerHTML = '<div class="d-k">Pipeline stage</div><div class="d-muted">No pipelines in GoHighLevel yet.</div>'; return; }
+          var cur = opp && opp.pipelineId === pipe.id ? opp.stageId : '';
+          var curPk = cur && PK[cur];
+          pbox.innerHTML = '<div class="d-k">Pipeline stage</div>'
+            + '<div class="d-prow"><select data-pp>' + pipes.map(function (x) { return '<option value="' + esc(x.id) + '"' + (x.id === pipe.id ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select>'
+            + '<span class="d-now">' + (cur ? 'Now: <b>' + esc(opp.stage || '') + '</b>' : (opp ? 'In ' + esc(opp.pipeline || 'another pipeline') + ' at ' + esc(opp.stage || '?') : 'Not in a pipeline yet')) + '</span></div>'
+            + '<div class="d-sl2">' + (pipe.stages || []).map(function (st) {
+              return '<button type="button" data-sid="' + esc(st.id) + '" class="' + (cur === st.id ? 'on' : '') + '">' + esc(st.name) + (PK[st.id] ? '<em>package</em>' : '') + '</button>';
+            }).join('') + '</div>'
+            + (curPk ? '<button type="button" class="d-sendpk" data-sendpk>Send the ' + esc(opp.stage || 'stage') + ' package</button>' : '')
+            + '<div class="d-muted" style="margin-top:6px;font-size:11.5px">Moves write straight to GoHighLevel. Stages marked package send their email after you confirm.</div>';
+          pbox.querySelector('[data-pp]').onchange = function () { draw(this.value); };
+          pbox.querySelectorAll('[data-sid]').forEach(function (b) {
             b.onclick = function () {
               var st = (pipe.stages || []).filter(function (x) { return x.id === b.getAttribute('data-sid'); })[0];
-              b.textContent = 'Checking…';
+              if (cur === st.id) return;
+              var label = b.innerHTML; b.textContent = 'Checking…';
               (window.stageGate ? window.stageGate(rec.id, st) : Promise.resolve({ send: false })).then(function (g8) {
-                if (!g8) { b.textContent = st.name; return; }
+                if (!g8) { b.innerHTML = label; return; }
                 b.textContent = g8.send ? 'Moving and sending…' : 'Moving…';
-                return api('/api/growth', 'POST', { action: 'ghl-move', id: rec.id, pipelineId: pipe.id, stageId: st.id, stageName: st.name, opportunityId: opp ? opp.id : '', send: !!g8.send })
+                return api('/api/growth', 'POST', { action: 'ghl-move', id: rec.id, pipelineId: pipe.id, stageId: st.id, stageName: st.name, opportunityId: opp && opp.pipelineId === pipe.id ? opp.id : (opp ? opp.id : ''), send: !!g8.send })
                   .then(function (x) { return x.json().then(function (j) { if (!x.ok) throw new Error(j.error || 'GoHighLevel did not move it'); return j; }); })
                   .then(function (j) {
-                    sb.textContent = 'Stages: ' + st.name; pop.remove();
+                    if (sb) sb.textContent = 'Stages: ' + st.name;
                     var s8 = j && j.sent;
                     toast('Moved in GoHighLevel: ' + st.name + (s8 ? (s8.ok ? '. Sent to ' + s8.to : '. Not sent: ' + (s8.note || 'GoHighLevel refused')) : ''));
+                    opp = { id: j.opportunityId || (opp && opp.id) || '', pipelineId: pipe.id, pipeline: pipe.name, stageId: st.id, stage: st.name };
+                    draw(pipe.id);
                     if (opts.onSaved) opts.onSaved(rec, '');
                   });
-              }).catch(function (err) { b.textContent = st.name; toast(String(err && err.message || 'Could not move it in GoHighLevel')); });
+              }).catch(function (err) { b.innerHTML = label; toast(String(err && err.message || 'Could not move it in GoHighLevel')); });
             };
           });
+          var spb = pbox.querySelector('[data-sendpk]');
+          if (spb) spb.onclick = function () {
+            var st = { id: cur, name: opp.stage || '' };
+            (window.stageGate ? window.stageGate(rec.id, st, { sendOnly: true }) : Promise.resolve(null)).then(function (g8) {
+              if (!g8 || !g8.send) return;
+              spb.disabled = true; spb.textContent = 'Sending…';
+              return api('/api/growth', 'POST', { action: 'send-package', id: rec.id, stageId: cur })
+                .then(function (x) { return x.json().then(function (j) { if (!x.ok) throw new Error(j.error || 'Not sent'); return j; }); })
+                .then(function (j) { toast('Sent to ' + (j.to || 'them') + ': ' + (j.subject || '')); spb.textContent = 'Sent'; if (opts.onSaved) opts.onSaved(rec, ''); });
+            }).catch(function (err) { spb.disabled = false; spb.textContent = 'Send the ' + (opp.stage || 'stage') + ' package'; toast(String(err && err.message || 'Not sent')); });
+          };
         }
         draw(opp ? opp.pipelineId : (pipes[0] && pipes[0].id));
-      }).catch(function () { pop.innerHTML = '<span class="d-muted">Could not reach GoHighLevel.</span>'; });
-    };
+      }).catch(function () { pbox.innerHTML = '<div class="d-k">Pipeline stage</div><div class="d-muted">Could not reach GoHighLevel.</div>'; });
+    }
+    paintPipe();
     wrap.querySelector('[data-a="del"]').onclick = function () {
       api('/api/growth', 'PATCH', { id: rec.id, deleted: true }).then(function (x) {
         if (!x || !x.ok) throw 0;
