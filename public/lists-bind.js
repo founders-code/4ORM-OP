@@ -544,10 +544,14 @@
         var pick = pipes.length > 1 && !opp
           ? '<select id="pghlpipe" aria-label="Pipeline">' + pipes.map(function (x) { return '<option value="' + esc(x.id) + '"' + (x.id === pipe.id ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select>'
           : '';
-        box.innerHTML = head + pick + '<div class="stgs">' + pipe.stages.map(function (st) {
+        /* One Stages pill; the stages open in a pop-up list (28 Oct 2026). */
+        box.innerHTML = head + '<button type="button" class="stgtog" style="margin-top:6px;font:inherit;font-size:11.5px;font-weight:800;padding:4px 11px;border-radius:8px;border:1px solid rgba(255,169,70,.45);background:rgba(255,169,70,.14);color:#ffc98a;cursor:pointer">Stages: ' + esc(opp ? (opp.stage || 'pick') : 'pick') + '</button>'
+          + '<div class="stgpop" hidden style="margin-top:6px;background:#18191f;border:1px solid #2a2c35;border-radius:10px;padding:8px">' + pick + '<div class="stgs" style="display:flex;flex-direction:column;gap:5px">' + pipe.stages.map(function (st) {
           var on = opp && opp.stageId === st.id;
           return '<button type="button" class="' + (on ? 'on' : '') + '" data-st="' + esc(st.id) + '">' + esc(st.name) + '</button>';
-        }).join('') + '</div>';
+        }).join('') + '</div></div>';
+        var tog = box.querySelector('.stgtog'), popEl = box.querySelector('.stgpop');
+        if (tog && popEl) tog.onclick = function () { popEl.hidden = !popEl.hidden; };
         var sel = $('#pghlpipe');
         if (sel) sel.onchange = function () { box.setAttribute('data-pipe', sel.value); paintGhlFrom(p, g, sel.value); };
         bindGhlStages(p, g, pipe, opp);
@@ -632,6 +636,12 @@
     }
 
     function showPerson(p) {
+      /* Growth list contacts open the full contact card (dossier.js) with every note from the research. */
+      if (p.growth && p.contactId && window.openDossier) {
+        var ids = peopleOf().filter(function (x) { return x.growth && x.contactId; }).map(function (x) { return x.contactId; });
+        window.openDossier(p.contactId, { queue: ids.indexOf(p.contactId) >= 0 ? ids : null, onSaved: function () { load(); } });
+        return;
+      }
       var pc0 = $('#pcall'); if (pc0) pc0.innerHTML = '';
       var pg0 = $('#pghl'); if (pg0) { pg0.innerHTML = ''; pg0.removeAttribute('data-pipe'); }
       $('#pn').textContent = p.name || 'Person';

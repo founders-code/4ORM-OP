@@ -210,7 +210,7 @@
       if (!force && FX.calls && Date.now() - FX.at < 90000) return;
       FX.at = Date.now();
       apiCall('/api/growth?calls=1', 'GET').then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {
-        if (d) { FX.calls = d; if (isFocus()) paintCalls(); }
+        if (d) { FX.calls = d; paintCalls(); }
       }).catch(function () {});
     }
     function fmtTel(v) { return String(v || '').split(/\s*(?:;|\/|,|\bor\b)\s*/)[0].replace(/[^\d+]/g, ''); }
@@ -387,7 +387,7 @@
       var on = isFocus();
       todo.classList.toggle('fx', on);
       if (!on) {
-        var cp = $('fxCalls'); if (cp) cp.hidden = true;
+        paintCalls();
         ['today', 'week', 'next'].forEach(function (b) { var c = $('cnt-' + b); setTitle(b, TITLES[b], c ? c.textContent : ''); });
         return;
       }
@@ -451,7 +451,14 @@
       var fp = e.target.closest && e.target.closest('[data-fxplay]');
       if (fp && !(e.target.closest('a'))) { var pr = FX.plays[+fp.getAttribute('data-fxplay')]; if (pr) openPlay(pr); return; }
       var fc = e.target.closest && e.target.closest('[data-fxcall]');
-      if (fc) { openCall(fc.getAttribute('data-fxcall')); return; }
+      if (fc) {
+        var cid = fc.getAttribute('data-fxcall');
+        if (window.openDossier) {
+          var all = ((FX.calls && FX.calls.due) || []).concat((FX.calls && FX.calls.planned) || []).map(function (r) { return r.id; });
+          window.openDossier(cid, { queue: all, onSaved: function () { loadCalls(true); } });
+        } else openCall(cid);
+        return;
+      }
       var fa = e.target.closest && e.target.closest('[data-fxall]');
       if (fa) { var ch = $('fxCalls'); if (ch) { ch._all = true; paintCalls(); } return; }
       var open = e.target.closest && e.target.closest('[data-open]');
@@ -555,9 +562,11 @@
     }
     if (ctr) ctr.querySelectorAll('button').forEach(function (x) {
       x.addEventListener('click', function () {
-        document.body.classList.remove('focusday', 'compact');
+        var MODES = ['focusday', 'compact', 'lanes', 'blocks', 'sprint'];
+        MODES.forEach(function (m) { document.body.classList.remove(m); });
         var port = modeHost();
-        if (port && port.classList) port.classList.remove('focusday', 'compact');
+        if (port && port.classList) MODES.forEach(function (m) { port.classList.remove(m); });
+        if (window.PBWork && window.PBWork.setMode) window.PBWork.setMode(x.getAttribute('data-m'));
         if (x.getAttribute('data-m') !== 'full') {
           document.body.classList.add(x.getAttribute('data-m'));
           if (port && port.classList) port.classList.add(x.getAttribute('data-m'));
@@ -578,7 +587,7 @@
     });
     /* Two views: Full week (the compact grid, where the page opens) and Focus today. Keep whichever is on across repaints. */
     if (ctr) {
-      var want = document.body.classList.contains('focusday') ? 'focusday' : 'compact';
+      var want = ['lanes', 'blocks', 'sprint'].filter(function (m) { return document.body.classList.contains(m); })[0] || 'compact';
       var btn = ctr.querySelector('button[data-m="' + want + '"]');
       if (btn && !(document.body.classList.contains(want) && btn.classList.contains('on'))) btn.click();
     }
@@ -609,6 +618,7 @@
         }).catch(function () { note('Snapshot taken.'); });
       } else note(n + ' applied');
     });
+    if (window.PBWork && window.PBWork.bind) window.PBWork.bind(root, { event: openEvent, play: openPlay, todo: openTodo, toast: undoToast });
     window.tdRender = render;
     window.TDL = TD;
     render();

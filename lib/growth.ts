@@ -165,7 +165,14 @@ export async function importGrowth(sql: Sql, ownerId: string, records: Array<Rec
         linkedin = CASE WHEN growth_records.edited ? 'linkedin' THEN growth_records.linkedin ELSE EXCLUDED.linkedin END,
         next_action = CASE WHEN growth_records.edited ? 'next_action' THEN growth_records.next_action ELSE EXCLUDED.next_action END,
         why = EXCLUDED.why, constraint_note = EXCLUDED.constraint_note, evidence = EXCLUDED.evidence,
-        sources = EXCLUDED.sources, data = EXCLUDED.data, updated_at = now()
+        sources = EXCLUDED.sources,
+        city = CASE WHEN growth_records.edited ? 'city' OR growth_records.city <> '' THEN growth_records.city ELSE EXCLUDED.city END,
+        prov = CASE WHEN growth_records.edited ? 'prov' OR growth_records.prov <> '' THEN growth_records.prov ELSE EXCLUDED.prov END,
+        type = CASE WHEN growth_records.edited ? 'type' OR growth_records.type <> '' THEN growth_records.type ELSE EXCLUDED.type END,
+        website = CASE WHEN growth_records.edited ? 'website' OR growth_records.website <> '' THEN growth_records.website ELSE EXCLUDED.website END,
+        route = CASE WHEN growth_records.edited ? 'route' OR growth_records.route <> '' THEN growth_records.route ELSE EXCLUDED.route END,
+        /* Research refreshes; the GoHighLevel link and anything else already on the record stays. */
+        data = growth_records.data || EXCLUDED.data, updated_at = now()
     `;
     n += chunk.length;
   }
@@ -338,9 +345,9 @@ export async function setGrowthGhl(sql: Sql, ownerId: string, id: string, ghl: R
 export async function callsToday(sql: Sql, ownerId: string) {
   await ensureGrowth(sql);
   const today = vanToday();
-  const due = (await sql`SELECT id, list, name, contact, title, email, phone, city, prov, plan_day, next_date, status, stage, left(notes, 240) AS notes, last_touch, linkedin, data->'ghl'->>'stage' AS ghl_stage FROM growth_records WHERE owner_id = ${ownerId} AND deleted_at IS NULL
+  const due = (await sql`SELECT id, list, name, contact, title, email, phone, city, prov, plan_day, next_date, status, stage, left(notes, 240) AS notes, last_touch, linkedin, data->'ghl'->>'stage' AS ghl_stage, type, score, priority, route, left(why, 220) AS why, COALESCE(data->'research'->0->>'Pain Score', data->'research'->0->>'4orm Pain Score') AS pain, left(COALESCE(data->'research'->0->>'Pain Drivers', data->'research'->0->>'4orm Pain Drivers', ''), 160) AS pain_drivers, left(COALESCE(data->'research'->0->>'Who they have backed', data->'newfund'->>'Who they have backed', ''), 160) AS backed, COALESCE(data->'research'->0->>'Industry', data->'research'->0->>'4orm Industry', type) AS industry FROM growth_records WHERE owner_id = ${ownerId} AND deleted_at IS NULL
       AND next_date IS NOT NULL AND next_date <= ${today}::date ORDER BY next_date, rank LIMIT 60`) as Array<Record<string, unknown>>;
-  const planned = (await sql`SELECT id, list, name, contact, title, email, phone, city, prov, plan_day, next_date, status, stage, left(notes, 240) AS notes, last_touch, linkedin, data->'ghl'->>'stage' AS ghl_stage FROM growth_records WHERE owner_id = ${ownerId} AND deleted_at IS NULL
+  const planned = (await sql`SELECT id, list, name, contact, title, email, phone, city, prov, plan_day, next_date, status, stage, left(notes, 240) AS notes, last_touch, linkedin, data->'ghl'->>'stage' AS ghl_stage, type, score, priority, route, left(why, 220) AS why, COALESCE(data->'research'->0->>'Pain Score', data->'research'->0->>'4orm Pain Score') AS pain, left(COALESCE(data->'research'->0->>'Pain Drivers', data->'research'->0->>'4orm Pain Drivers', ''), 160) AS pain_drivers, left(COALESCE(data->'research'->0->>'Who they have backed', data->'newfund'->>'Who they have backed', ''), 160) AS backed, COALESCE(data->'research'->0->>'Industry', data->'research'->0->>'4orm Industry', type) AS industry FROM growth_records WHERE owner_id = ${ownerId} AND deleted_at IS NULL
       AND plan_day IS NOT NULL AND plan_day <= ${today}::date AND last_touch IS NULL
       AND (next_date IS NULL OR next_date > ${today}::date)
       ORDER BY array_position(ARRAY['design','clients','regulators','new_funds','firms_now','programs','prospects','channels','angels']::text[], list), plan_day, rank LIMIT 120`) as Array<Record<string, unknown>>;
