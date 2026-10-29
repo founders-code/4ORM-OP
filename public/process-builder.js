@@ -21,7 +21,7 @@
     + '.pbx{position:fixed;inset:0;z-index:2147481500;background:#07080b;color:#fff;font:500 12.5px/1.45 Inter,-apple-system,system-ui,sans-serif;display:none;flex-direction:column}'
     + '.pbx.open{display:flex}'
     + '.pbx .x-top{display:flex;align-items:center;gap:14px;padding:16px 24px;border-bottom:1px solid #1d1f26}'
-    + '.pbx h1{font-size:22px;font-weight:850;margin:0}.pbx .x-sub{color:#aeb6c8}.pbx .x-sp{flex:1}'
+    + '.pbx h1{font-size:22px;font-weight:850;margin:0;color:#fff!important;white-space:nowrap}.pbx .x-top button{white-space:nowrap}.pbx .x-sub{color:#aeb6c8}.pbx .x-sp{flex:1}'
     + '.pbx button{font:inherit;font-size:12px;font-weight:800;padding:8px 12px;border-radius:9px;border:1px solid #2a2c35;background:#18191f;color:#fff;cursor:pointer}'
     + '.pbx button:hover{border-color:#4272f9}.pbx button.pri{background:#00dc86;border-color:#00dc86;color:#03170d}.pbx button.warn{color:#ff8a9c}'
     + '.pbx button[disabled]{opacity:.5;cursor:default}'
@@ -50,7 +50,7 @@
     + '.pbx .empty{color:#7d859a;padding:30px 0}.pbx .tog{display:flex;align-items:center;gap:8px;margin-top:12px;color:#c8d1ea}.pbx .tog input{width:auto}'
     + '.pbx .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#20222a;border:1px solid #2a2c35;border-radius:10px;padding:10px 14px;display:none;gap:12px;align-items:center;z-index:5}'
     + '.pbx .toast.on{display:flex}'
-    + '@media(max-width:1100px){.pbx .x-body{grid-template-columns:1fr}.pbx .x-left,.pbx .x-ed{border:0}}'
+    + '@media(max-width:1100px){.pbx .x-body{display:block;overflow:auto}.pbx .x-left,.pbx .x-map,.pbx .x-ed{overflow:visible;border:0}.pbx .x-top{flex-wrap:wrap}}'
     /* the confirm card */
     + '.sgx{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.65);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto;font:500 12.5px/1.45 Inter,-apple-system,system-ui,sans-serif;color:#fff}'
     + '.sgx *{box-sizing:border-box;letter-spacing:normal}.sgx .bx{width:min(640px,100%);background:#111216;border:1px solid #2a2c35;border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.6)}'
@@ -123,7 +123,7 @@
       return '<button type="button" class="st' + (s.id === S.stage ? ' on' : '') + '" data-st="' + esc(s.id) + '"><span class="n">STAGE ' + (i + 1) + '</span><b>' + esc(s.name) + '</b><span class="cnt">' + s.count + ' here now</span>'
         + (m ? '<span class="ms">Sent ' + m.sent30 + ' in 30 days · ' + m.sent + ' all time' + (m.failed ? ' · ' + m.failed + ' did not go' : '') + '</span>' : '') + pk + '</button>';
     }).join('') + '</div>';
-    el('.x-map').querySelectorAll('[data-st]').forEach(function (b) { b.onclick = function () { S.stage = b.getAttribute('data-st'); S.draft = null; paint(); }; });
+    el('.x-map').querySelectorAll('[data-st]').forEach(function (b) { b.onclick = function () { S.stage = b.getAttribute('data-st'); S.draft = null; paint(); if (window.innerWidth <= 1100) el('.x-ed').scrollIntoView({ behavior: 'smooth', block: 'start' }); }; });
     paintEditor();
   }
 
