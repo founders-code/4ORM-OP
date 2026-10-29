@@ -31,6 +31,8 @@ export async function POST(req: Request) {
       }),
       signal: AbortSignal.timeout(20000),
     });
+    /* OpenAI out of credit or down: fall back to the simple reader rather than returning nothing. */
+    if (!res.ok) return NextResponse.json({ items: heuristic(transcript, rhythms), fallback: true });
     const json = await res.json().catch(() => null) as { choices?: Array<{ message?: { content?: string } }> } | null;
     const raw = String(json?.choices?.[0]?.message?.content || '');
     const parsed = JSON.parse(raw.replace(/^```json\s*|\s*```$/g, '')) as { items?: unknown[] };
