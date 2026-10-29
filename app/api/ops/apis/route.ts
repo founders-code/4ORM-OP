@@ -1,3 +1,4 @@
+import { zoomConfigured } from '@/lib/zoom';
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
 import { outbound, recordCall, tape } from '@/lib/outbound';
@@ -101,13 +102,13 @@ export async function GET(req: Request) {
         const s = agg.get(a.key) || { ms: null, callsToday: 0, errors24h: 0 };
         return {
           ...a,
-          status: a.key === 'openai' && !process.env.OPENAI_API_KEY ? 'DOWN' : 'LIVE',
+          status: (a.key === 'openai' && !process.env.OPENAI_API_KEY) || (a.key === 'zoom' && !zoomConfigured()) ? 'DOWN' : 'LIVE',
           ms: s.ms,
           spark: spark.get(a.key) || [],
           callsToday: s.callsToday,
           errors24h: s.errors24h,
-          keyValid: a.key === 'openai' ? !!process.env.OPENAI_API_KEY : true,
-          reason: s.ms == null ? 'no sample yet' : '',
+          keyValid: a.key === 'openai' ? !!process.env.OPENAI_API_KEY : a.key === 'zoom' ? zoomConfigured() : true,
+          reason: a.key === 'zoom' && !zoomConfigured() ? 'Zoom keys missing in Vercel (ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET)' : s.ms == null ? 'no sample yet' : '',
         };
       }),
     });
