@@ -28,9 +28,13 @@ export type StagePackage = {
   updatedAt: string;
 };
 
-let ready = false;
-export async function ensureStagePackages(sql: Sql) {
-  if (ready) return;
+let ready: Promise<void> | null = null;
+/* One shared promise, so parallel callers never race the CREATE statements. */
+export function ensureStagePackages(sql: Sql) {
+  if (!ready) ready = createTables(sql).catch((err) => { ready = null; throw err; });
+  return ready;
+}
+async function createTables(sql: Sql) {
   await sql`CREATE TABLE IF NOT EXISTS stage_packages (
     id text PRIMARY KEY,
     owner_id text NOT NULL,
@@ -66,7 +70,6 @@ export async function ensureStagePackages(sql: Sql) {
     at timestamptz NOT NULL DEFAULT now()
   )`;
   await sql`CREATE INDEX IF NOT EXISTS stage_sends_owner_stage ON stage_sends (owner_id, stage_id, at DESC)`;
-  ready = true;
 }
 
 function cleanDocs(v: unknown): StageDoc[] {
@@ -162,9 +165,15 @@ async function spaceDocs(sql: Sql, ownerId: string, spaceId: string): Promise<St
     const rows = await sql`SELECT d.name, d.url FROM package_docs d JOIN packages p ON p.id = d.package_id
       WHERE p.id = ${spaceId} AND p.owner_id = ${ownerId} AND p.deleted_at IS NULL AND d.deleted_at IS NULL ORDER BY d.name`;
     return cleanDocs(rows);
-  } catch (err) {
-    fail('stage_space_docs', err);
-    return [];
+  } catch {
+    try {
+      const rows = await sql`SELECT d.name, d.url FROM package_docs d JOIN packages p ON p.id = d.package_id
+        WHERE p.id = ${spaceId} AND p.owner_id = ${ownerId} ORDER BY d.name`;
+      return cleanDocs(rows);
+    } catch (err) {
+      fail('stage_space_docs', err);
+      return [];
+    }
   }
 }
 
@@ -174,7 +183,13 @@ export async function listSpacesLite(sql: Sql, ownerId: string) {
       FROM packages p WHERE p.owner_id = ${ownerId} AND p.deleted_at IS NULL ORDER BY p.name LIMIT 200`;
     return (rows as Record<string, unknown>[]).map((r) => ({ id: String(r.id), name: String(r.name || ''), docs: Number(r.docs) || 0 }));
   } catch {
-    return [];
+    try {
+      const rows = await sql`SELECT id, name FROM packages WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY name LIMIT 200`;
+      return (rows as Record<string, unknown>[]).map((r) => ({ id: String(r.id), name: String(r.name || ''), docs: 0 }));
+    } catch (err) {
+      fail('stage_spaces', err);
+      return [];
+    }
   }
 }
 
