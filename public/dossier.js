@@ -242,15 +242,30 @@
     clearTimeout(t._h); t._h = setTimeout(function () { t.style.display = 'none'; }, 6000);
   }
 
+  /* Speed: the card, its GoHighLevel stage and the package list load at the same time, are kept for a
+     couple of minutes, and the next two cards in the list load in the background, so Next is instant. */
+  var C = { rec: {}, ghl: {}, pk: null, pkAt: 0 };
+  function json(r) { return r && r.ok ? r.json() : null; }
+  function getRec(id) { var c = C.rec[id]; if (!c || Date.now() - c.at > 120000) c = C.rec[id] = { at: Date.now(), p: api('/api/growth?id=' + encodeURIComponent(id)).then(json).catch(function () { delete C.rec[id]; return null; }) }; return c.p; }
+  function getGhl(id) { var c = C.ghl[id]; if (!c || Date.now() - c.at > 120000) c = C.ghl[id] = { at: Date.now(), p: api('/api/growth?ghl=' + encodeURIComponent(id)).then(json).catch(function () { delete C.ghl[id]; return null; }) }; return c.p; }
+  function getPk() { if (!C.pk || Date.now() - C.pkAt > 300000) { C.pkAt = Date.now(); C.pk = api('/api/processes?packages=1').then(json).catch(function () { C.pk = null; return null; }); } return C.pk; }
+  function forget(id) { delete C.rec[id]; delete C.ghl[id]; }
+  function prefetch(opts, id) {
+    var q = opts && opts.queue; if (!q) return;
+    var i = q.indexOf(id);
+    [q[i + 1], q[i + 2], q[i - 1]].forEach(function (n) { if (n) { getRec(n); getGhl(n); } });
+  }
   function open(id, opts) {
     opts = opts || {};
     mount();
     wrap.innerHTML = '<div class="d-bx" style="padding:30px;color:#aeb6c8">Loading the card…</div>';
     wrap.classList.add('open');
-    api('/api/growth?id=' + encodeURIComponent(id)).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (rec) {
+    getGhl(id); getPk();
+    getRec(id).then(function (rec) {
       if (!rec || !rec.id) { wrap.innerHTML = '<div class="d-bx" style="padding:30px">Could not load this contact. <button data-a="close">Close</button></div>'; bindClose(); return; }
       wrap.innerHTML = render(rec, opts);
       bind(rec, opts);
+      prefetch(opts, rec.id);
     }).catch(function () { wrap.innerHTML = '<div class="d-bx" style="padding:30px">Could not load this contact. <button data-a="close">Close</button></div>'; bindClose(); });
   }
   function close() { wrap.classList.remove('open'); wrap.innerHTML = ''; }
@@ -290,8 +305,8 @@
     function paintPipe() {
       if (!pbox) return;
       Promise.all([
-        api('/api/growth?ghl=' + encodeURIComponent(rec.id)).then(function (r) { return r && r.ok ? r.json() : null; }),
-        api('/api/processes?packages=1').then(function (r) { return r && r.ok ? r.json() : null; }).catch(function () { return null; })
+        getGhl(rec.id),
+        getPk()
       ]).then(function (res) {
         var g = res[0]; PK = {};
         ((res[1] && res[1].packages) || []).forEach(function (p) { if (p.active) PK[p.stageId] = p; });
@@ -339,6 +354,7 @@
                   toast('Moved in GoHighLevel: ' + st.name + (s8 ? (s8.ok ? '. Sent to ' + s8.to : '. Not sent: ' + (s8.note || 'GoHighLevel refused')) : ''));
                   opp = { id: j.opportunityId || (opp && opp.id) || '', pipelineId: pipe.id, pipeline: pipe.name, stageId: st.id, stage: st.name };
                   picked = '';
+                  forget(rec.id);
                   draw(pipe.id);
                   if (opts.onSaved) opts.onSaved(rec, '');
                 });
@@ -425,6 +441,7 @@
         .then(function (x) { if (!x || !x.ok) throw 0; return x.json(); })
         .then(function (res) {
           var tid = res && res.touch && res.touch.id;
+          forget(rec.id);
           var stage = /Meeting booked/.test(outcome) ? 'Meeting booked' : /Interested|Replied|Spoke|Connected/.test(outcome) ? 'Engaged' : (/Not interested|Not a fit|Wrong number/.test(outcome) ? 'Not a fit' : ((!rec.stage || rec.stage === 'Cold') ? 'Contacted' : ''));
           if (stage) api('/api/growth', 'PATCH', { id: rec.id, stage: stage });
           toast('Saved: ' + rec.name + (outcome ? ' · ' + outcome : ''), function () { if (tid) api('/api/growth', 'POST', { action: 'undo-touch', touchId: tid }).then(function () { if (opts.onSaved) opts.onSaved(); }); });
