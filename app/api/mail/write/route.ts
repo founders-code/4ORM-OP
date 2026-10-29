@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
 import { takeRateLimit } from '@/lib/rate-limit';
 import { openBoard, sessionOwner } from '@/lib/session';
+import { outbound } from '@/lib/outbound';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,7 +68,7 @@ export async function POST(req: Request) {
       ? `Rewrite this email. Tone: ${TONES[tone]}\nRecipient: ${who || 'unknown'}\nSubject: ${subject || '(none)'}\n\nEmail:\n${draft}`
       : `Write the email. Instruction: ${ask}\nRecipient: ${who || 'unknown'}\nSubject: ${subject || '(none)'}${draft ? `\n\nCurrent draft to build on:\n${draft}` : ''}`;
     try {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      const res = await outbound('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
         body: JSON.stringify({

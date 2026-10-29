@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
 import { openBoard, sessionOwner } from '@/lib/session';
+import { outbound } from '@/lib/outbound';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -20,13 +21,19 @@ export async function POST(req: Request) {
     const body = new FormData();
     body.append('file', file, 'voice.webm');
     body.append('model', 'gpt-4o-transcribe');
-    const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    const res = await outbound('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: { authorization: `Bearer ${key}` },
       body,
       signal: AbortSignal.timeout(45000),
     });
-    const json = await res.json().catch(() => null) as { text?: string } | null;
+    const json = await res.json().catch(() => null) as { text?: string; error?: { message?: string; code?: string } } | null;
+    if (!res.ok) {
+      /* Say why instead of handing back an empty transcript: no credit, a bad key and a bad file each read differently. */
+      const why = json?.error?.code === 'insufficient_quota' ? 'OpenAI has no credit on this account' : res.status === 401 ? 'The OpenAI key was not accepted' : String(json?.error?.message || 'OpenAI did not take the audio').slice(0, 200);
+      fail('voice_transcribe_openai', new Error(`${res.status} ${why}`));
+      return NextResponse.json({ transcript: '', error: why }, { status: 502 });
+    }
     return NextResponse.json({ transcript: String(json?.text || '') });
   } catch (err) {
     fail('voice_transcribe', err);

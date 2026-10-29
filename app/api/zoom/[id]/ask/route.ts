@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
 import { openBoard, sessionOwner } from '@/lib/session';
 import { ensureZoomExtra } from '@/lib/zoom-notes';
+import { outbound } from '@/lib/outbound';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +40,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const key = process.env.OPENAI_API_KEY || '';
     if (key) {
       try {
-        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        const res = await outbound('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
           body: JSON.stringify({

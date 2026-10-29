@@ -1,5 +1,6 @@
 import type { Sql } from './db';
 import { fail } from './log';
+import { outbound } from './outbound';
 
 /* Production log: what got done and what was made, day by day (Vancouver days).
    Each source is read on its own so one missing table never blanks the log.
@@ -69,7 +70,7 @@ async function aiSummary(day?: { day: string; entries: Entry[] }) {
   if (!key || !day || !day.entries.length) return '';
   try {
     const list = day.entries.slice(0, 60).map((e) => `${e.kind}: ${e.title}`).join('\n');
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    const r = await outbound('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
       body: JSON.stringify({

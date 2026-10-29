@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
 import { openBoard, sessionOwner } from '@/lib/session';
+import { outbound } from '@/lib/outbound';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ export async function POST(req: Request) {
     if (!key) {
       return NextResponse.json({ items: heuristic(transcript, rhythms) });
     }
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await outbound('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
       body: JSON.stringify({

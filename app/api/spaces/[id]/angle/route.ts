@@ -3,6 +3,7 @@ import { fail } from '@/lib/log';
 import { takeRateLimit } from '@/lib/rate-limit';
 import { openBoard, sessionOwner } from '@/lib/session';
 import { readSpace, spaceIdOk } from '@/lib/spaces';
+import { outbound } from '@/lib/outbound';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       people.length ? `People: ${people.join('; ')}` : '',
       files.length ? `Files in the bundle: ${files.join('; ')}` : '',
     ].filter(Boolean).join('\n').slice(0, 6000);
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await outbound('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
       body: JSON.stringify({
