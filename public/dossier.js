@@ -36,6 +36,15 @@
     + '#dsr .d-hl{color:#fff;font-weight:800;background:rgba(66,114,249,.24);border-radius:4px;padding:0 4px}#dsr .d-hg{color:#7ff0c2;font-weight:800}'
     + '#dsr li{font-size:13px;line-height:1.5}#dsr .d-chips{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 6px}#dsr .d-chips span{padding:4px 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:rgba(255,72,102,.14);color:#ff8fa3}'
     + '#dsr .d-pills{display:flex;flex-wrap:wrap;gap:6px}#dsr .d-pills button{border-radius:999px}#dsr .d-sl2 button.pick{background:rgba(66,114,249,.22);border-color:#4272f9;color:#fff}'
+    + '#dsr .d-scb{margin-left:6px;padding:3px 12px;font-size:11px;border-radius:999px;background:#4272f9!important;border-color:#4272f9!important;color:#fff}'
+    + '#dsrScript{position:fixed;top:0;right:0;bottom:0;width:min(560px,100vw);z-index:2147482500;background:#0c0d11;border-left:1px solid #2a2c35;box-shadow:-20px 0 60px rgba(0,0,0,.55);overflow:auto;color:#e6eaf2;font:500 13.5px/1.55 Inter,-apple-system,system-ui,sans-serif;padding:0 0 30px}'
+    + '#dsrScript .s-hd{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#0c0d11;border-bottom:1px solid #23252e}#dsrScript .s-hd b{font-size:16px;font-weight:900;color:#fff}'
+    + '#dsrScript .s-hd button{font:inherit;font-size:12px;font-weight:800;padding:6px 14px;border-radius:999px;border:1px solid #2a2c35;background:#18191f;color:#fff;cursor:pointer}'
+    + '#dsrScript .s-b{padding:4px 20px}#dsrScript h4{margin:18px 0 8px;font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#7d859a}'
+    + '#dsrScript .s-line{background:#15161c;border:1px solid #23252e;border-radius:12px;padding:11px 14px;margin:0 0 8px;font-size:15px;line-height:1.5;color:#fff}#dsrScript .s-line.q{border-color:rgba(66,114,249,.55);background:rgba(66,114,249,.1)}'
+    + '#dsrScript .s-line small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#9db9ff;margin-bottom:3px}'
+    + '#dsrScript ul{margin:0;padding-left:16px}#dsrScript li{margin:4px 0;list-style:disc}#dsrScript li b{color:#fff}#dsrScript .s-n{color:#7ff0c2;font-weight:900}#dsrScript .s-src{color:#7d859a;font-size:11.5px}'
+    + '#dsrScript .s-bn{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 6px}#dsrScript .s-bn div{background:#15161c;border:1px solid #23252e;border-radius:10px;padding:8px 10px;font-size:12.5px}#dsrScript .s-bn div i{display:block;font-style:normal;font-size:10px;font-weight:800;letter-spacing:.1em;color:#7d859a}#dsrScript .s-bn div.n{border-color:rgba(255,72,102,.45)}#dsrScript .s-bn div.n i{color:#ff8fa3}'
     + '@media(max-width:820px){#dsr .d-mid{grid-template-columns:1fr}#dsr .d-lft{border-right:0}}';
   var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
   var wrap = document.createElement('div'); wrap.id = 'dsr';
@@ -201,7 +210,8 @@
     }
     var h = '<div class="d-bx">' + nav + '<div class="d-top"><div><span class="d-chip ' + chipCls + '">' + esc(ch === 'LinkedIn' ? 'LinkedIn in GoHighLevel' : ch) + '</span>'
       + '<span class="d-chip">' + esc(meta[0]) + '</span>' + (rec.priority ? '<span class="d-chip">' + esc(rec.priority) + (rec.score ? ' · score ' + esc(rec.score) : '') + '</span>' : '')
-      + '<span class="d-stg"><button type="button" class="d-stgb" data-a="stages">Stages: ' + esc(ghl || stage) + '</button></span></div>'
+      + '<span class="d-stg"><button type="button" class="d-stgb" data-a="stages">Stages: ' + esc(ghl || stage) + '</button></span>'
+      + (ch === 'Call' ? '<button type="button" class="d-scb" data-a="script">Script</button>' : '') + '</div>'
       + '<span class="d-q">' + (rec.last_touch ? 'Last touch ' + esc(new Date(rec.last_touch).toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' })) : 'Never touched') + '</span></div>'
       + '<div class="d-mid"><div class="d-lft">'
       + '<h2>' + esc(rec.name) + '</h2><div class="d-who">' + esc([person && person !== rec.name ? person : '', role, place, industry].filter(Boolean).join(' · ')) + '</div>'
@@ -255,6 +265,49 @@
     var i = q.indexOf(id);
     [q[i + 1], q[i + 2], q[i - 1]].forEach(function (n) { if (n) { getRec(n); getGhl(n); } });
   }
+  /* Script, on every call card: the opener and questions on top, then what changed, the pressure and what
+     better workflows delivered (from the Business Pain and Value one-pager, reviewed 25 Sep 2026). */
+  function scriptHtml(rec) {
+    var L = function (lab, t, q) { return '<div class="s-line' + (q ? ' q' : '') + '">' + (lab ? '<small>' + esc(lab) + '</small>' : '') + esc(t) + '</div>'; };
+    var BN = function (k, was, now) { return '<div style="font-weight:800;color:#fff;margin:8px 0 4px">' + esc(k) + '</div><div class="s-bn"><div><i>BEFORE</i>' + esc(was) + '</div><div class="n"><i>NOW</i>' + esc(now) + '</div></div>'; };
+    return '<div class="s-hd"><b>Script · ' + esc(rec.name || '') + '</b><button type="button" data-sx>Close</button></div><div class="s-b">'
+      + '<h4>Open</h4>'
+      + L('Permission', 'Would you reward me for my honesty about this being a cold call?', true)
+      + L('Who', "My name's Chad, I'm with 4orm Finance. This is not a sales call. We're developing 4ormIQ to help financial businesses' clients show and understand suitability, while helping protect the business from increased fines and workload to stay compliant.")
+      + L('The challenge', "As you know, the risk and liability of the new suitability mandates falls on the business. Agents have more documents and more admin work. But how can a business show suitability when it can't show what its client understood?")
+      + L('Our approach', "We use counselling-style AI to help clients better understand their decisions. Our greatest asset will be building it alongside experts in the space, and we're only looking to partner with 2 to 3 firms for design advisory.")
+      + '<h4>Ask</h4>'
+      + L('', 'Would there be anything holding you back from exploring this further with you and your firm?', true)
+      + L('', 'Would you say intake or post-meeting admin work is more challenging now?', true)
+      + L('', 'How do you recreate the evidence needed in the event of an audit?', true)
+      + '<h4>What changed</h4>'
+      + BN('Mortgage AML duties', 'Mortgage brokers, lenders and administrators were not FINTRAC reporting entities', 'Since Oct 11, 2024: compliance program, training, records and reporting, even when the lender does it too')
+      + BN('FINTRAC penalties', 'Up to C$500K per very serious violation', 'Up to C$20M per very serious violation, 40x higher')
+      + BN('B.C. mortgage rules', 'Mortgage Brokers Act', 'Mortgage Services Act from Oct 13, 2026: brokerage penalties up to C$500K (C$250K for individuals)')
+      + BN('Suitability files (Ontario)', '85% of private mortgage files lacked a documented suitability assessment', '100% lacked one')
+      + '<h4>The pressure on firms</h4><ul>'
+      + '<li><span class="s-n">94%</span> of Canadian firms say compliance got <b>more complex</b> in 3 years <span class="s-src">PwC 2025</span></li>'
+      + '<li>Compliance costs <span class="s-n">+81%</span>: C$416M to C$753M, 2022 to 2024, 24 P&amp;C insurers <span class="s-src">IBC</span></li>'
+      + '<li><span class="s-n">+26%</span> more <b>full-time compliance staff</b> needed, same insurers <span class="s-src">IBC</span></li>'
+      + '<li><span class="s-n">47%</span> of 1,637 mortgage respondents: yes/no income checks <b>not enough</b>, they want verified documents <span class="s-src">CRA</span></li>'
+      + '<li>Most common dealer gap: policies <b>not detailed or business-specific</b> enough <span class="s-src">CIRO, client-focused reforms</span></li>'
+      + '</ul><h4>What better workflows delivered</h4><ul>'
+      + '<li><b>Key Group</b> (UK): quality reviews <span class="s-n">90 to 15 min</span> a case, 100% coverage, no extra staff <span class="s-src">Aveni</span></li>'
+      + '<li><b>Connective</b> (AU mortgage network): audit <span class="s-n">4-5 months to 5 weeks</span>, lender answers 2.5-3 hours to ~30 seconds <span class="s-src">Drata</span></li>'
+      + '<li><b>Attivo</b> (UK planning): file-checking costs <span class="s-n">-40%</span> in a year, planner capacity <span class="s-n">+30%</span> <span class="s-src">Recordsure</span></li>'
+      + '<li><b>KBH</b> (Canada): <span class="s-n">1 hour</span> a day back per employee, 30,000 pages not printed <span class="s-src">Docusign</span></li>'
+      + '<li><b>Desjardins</b> (Canada): costs <span class="s-n">-10%+</span> over 4 years, recommendation score <span class="s-n">+11</span>, online sales 25% to ~40% <span class="s-src">Bain</span></li>'
+      + '</ul><div class="s-src" style="margin-top:12px">Case studies are supplier or consultant reported, not 4orm results or guaranteed savings. Surveys cover their stated respondents. Reviewed 25 Sep 2026.</div>'
+      + '</div>';
+  }
+  function openScript(rec) {
+    var el = document.getElementById('dsrScript');
+    if (el) { el.remove(); return; }
+    el = document.createElement('div'); el.id = 'dsrScript';
+    el.innerHTML = scriptHtml(rec);
+    document.body.appendChild(el);
+    el.querySelector('[data-sx]').onclick = function () { el.remove(); };
+  }
   window.dossierPrefetch = function (id) { if (id) { getRec(id); getGhl(id); getPk(); } };
   function open(id, opts) {
     opts = opts || {};
@@ -269,7 +322,7 @@
       prefetch(opts, rec.id);
     }).catch(function () { wrap.innerHTML = '<div class="d-bx" style="padding:30px">Could not load this contact. <button data-a="close">Close</button></div>'; bindClose(); });
   }
-  function close() { wrap.classList.remove('open'); wrap.innerHTML = ''; }
+  function close() { wrap.classList.remove('open'); wrap.innerHTML = ''; var sc = document.getElementById('dsrScript'); if (sc) sc.remove(); }
   function bindClose() { wrap.querySelectorAll('[data-a="close"]').forEach(function (b) { b.onclick = close; }); }
   wrap.addEventListener('click', function (e) { if (e.target === wrap) close(); var p = wrap.querySelector('.d-stgp'); if (p && !p.contains(e.target)) p.remove(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && wrap.classList.contains('open')) close(); });
@@ -379,6 +432,9 @@
       }).catch(function () { pbox.innerHTML = '<div class="d-k">Pipeline stage</div><div class="d-muted">Could not reach GoHighLevel.</div>'; });
     }
     paintPipe();
+    var scb = wrap.querySelector('[data-a="script"]');
+    if (scb) scb.onclick = function (e) { e.stopPropagation(); openScript(rec); };
+    var oldS = document.getElementById('dsrScript'); if (oldS) { oldS.innerHTML = scriptHtml(rec); oldS.querySelector('[data-sx]').onclick = function () { oldS.remove(); }; }
     wrap.querySelectorAll('[data-days]').forEach(function (b) {
       b.onclick = function () {
         var fu = wrap.querySelector('#dsrFu');
