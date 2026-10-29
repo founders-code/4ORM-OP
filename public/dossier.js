@@ -119,6 +119,23 @@
       return ['', String(p)];
     }).filter(function (x) { return x[1]; });
 
+    /* The summarised intel from every source list (data.intel) wins when it is there. */
+    var I = rec.data && rec.data.intel;
+    var questions = [];
+    if (I && typeof I === 'object') {
+      var two = function (a) { return (a || []).map(function (x) { var m = String(x).match(/^([^:]{1,32}):\s+(.+)$/); return m ? [m[1], m[2]] : ['', String(x)]; }); };
+      if (I.location) place = I.location;
+      if (I.industry) industry = I.industry;
+      if (I.pain_score != null) pain = Number(I.pain_score);
+      if ((I.why || []).length) why = two(I.why);
+      painRows = two(I.pain);
+      if ((I.fit || []).length) fit = two(I.fit);
+      if ((I.backed || []).length) backed = two(I.backed);
+      opener = I.opener ? [['', I.opener]] : opener;
+      if ((I.people || []).length) peopleRows = two(I.people);
+      intel = two(I.intel);
+      questions = two(I.questions);
+    }
     var touches = rec.touches || [];
     var stage = rec.stage || 'Cold', ghl = (rec.data && rec.data.ghl && rec.data.ghl.stage) || '';
     var q = opts && opts.queue ? opts.queue : null, qi = q ? q.indexOf(rec.id) : -1;
@@ -138,6 +155,7 @@
       + sec('Why they fit', bullets(fit, true))
       + sec('What they have invested in', bullets(backed, false))
       + sec('Opening line', opener.length ? '<div class="d-open">' + esc(opener[0][1]) + '</div>' : '')
+      + sec('Questions to ask', bullets(questions, false))
       + sec('People', bullets(peopleRows, false))
       + sec('Intel', bullets(intel, true))
       + '</div><div class="d-rgt">'
