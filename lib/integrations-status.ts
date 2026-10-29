@@ -155,7 +155,7 @@ export async function integrationStatus(sql: Sql | null, userId: string): Promis
     letter: 'Z',
     color: '#2d8cff',
     what: 'Recordings and transcripts for Zoom notes and what you owe.',
-    feeds: ['Zoom notes', 'War Room commitments'],
+    feeds: ['Zoom notes', 'Planner commitments'],
     group: zoomOn ? 'connected' : 'available',
     word: zoomOn ? 'Connected' : 'Not connected',
     detail: [zoomCount ? `${zoomCount} meetings` : '', zoomIso ? `synced ${vanTime(zoomIso)}` : ''].filter(Boolean).join(' · '),
@@ -167,7 +167,7 @@ export async function integrationStatus(sql: Sql | null, userId: string): Promis
   });
 
   const keyed = [
-    { key: 'anthropic', name: 'Anthropic', letter: 'A', color: '#d97757', envVar: 'ANTHROPIC_API_KEY', what: '4orm Intelligence: CEO moves, summaries, drafts in your voice.', feeds: ['War Room', 'Email', 'Zoom'], needed: 'Without it, CEO moves, summaries and drafts fall back to plain rules.' },
+    { key: 'anthropic', name: 'Anthropic', letter: 'A', color: '#d97757', envVar: 'ANTHROPIC_API_KEY', what: '4orm Intelligence: CEO moves, summaries, drafts in your voice.', feeds: ['Planner', 'Email', 'Zoom'], needed: 'Without it, CEO moves, summaries and drafts fall back to plain rules.' },
     { key: 'openai', name: 'OpenAI', letter: 'O', color: '#10a37f', envVar: 'OPENAI_API_KEY', what: 'Voice-log transcription and one-line news summaries.', feeds: ['Playbook voice log', 'News'], needed: "Without it, the voice log can't transcribe and News cards show the article's own description instead of a \"why it matters\" line." },
   ];
   const synced = [
@@ -226,7 +226,7 @@ export async function integrationStatus(sql: Sql | null, userId: string): Promis
     letter: 'M',
     color: '#1b7bb5',
     what: 'Weekday 06:00 America/Edmonton summary of mail, calendar and pipeline.',
-    feeds: ['War Room', 'Signals'],
+    feeds: ['Planner', 'Signals'],
     group: process.env.CRON_SECRET ? (brief && !ok(brief.status) ? 'attention' : 'connected') : 'attention',
     word: process.env.CRON_SECRET ? (brief ? SYNC_WORD[brief.status] || 'Scheduled' : 'Scheduled') : 'Not scheduled',
     detail: brief?.at ? `ran ${vanTime(brief.at)}` : process.env.CRON_SECRET ? 'runs on the Vercel schedule' : 'CRON_SECRET not set',

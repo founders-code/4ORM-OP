@@ -135,6 +135,8 @@ export async function applyGmailHistory(sql: Sql, ownerId: string) {
     return { added: full.added, linkedin: full.linkedin, mode: 'expired' as const };
   }
   if (history.historyId) await saveWatch(sql, ownerId, 'gmail', { historyId: history.historyId });
+  /* The incremental pass is a real sync: stamp it so Integrations does not show the last full pull as the last sync. */
+  await sql`UPDATE sync_state SET synced_at = now() WHERE owner_id = ${ownerId} AND source = 'gmail'`.catch(() => null);
   if (!history.ids.length) return { added: 0, linkedin: 0, mode: 'history' as const };
   const classified = await classifyGmailIds(history.ids);
   const prior = (await readMailCache(sql, ownerId)) || { messages: [], linkedin: [] };

@@ -214,7 +214,7 @@
         });
         var noKey = r.status === 'waiting' || peerWait || window.__openaiMissing !== false || /waiting for transcription|openai/i.test(String(r.step || ''));
         var stepLab = noKey ? 'Waiting for transcription - add OPENAI_API_KEY in Vercel' : (r.step || 'Transcribing');
-        h += '<div class="rw proc" data-action="rec-open" data-id="' + esc(r.id) + '"><span class="t">' + esc(timeOf(r)) + '</span><div style="min-width:0"><h4>' + esc(stepLab) + '</h4>' + (noKey ? '' : '<div class="prog"><i style="width:' + (r.pct || 35) + '%"></i></div>') + '</div><span class="src' + (src === 'mic' ? ' mic' : '') + '">' + (src === 'mic' ? 'Mic' : 'Computer and mic') + '</span><span class="d">' + mins + ' m</span></div>';
+        h += '<div class="rw proc" data-action="rec-open" data-id="' + esc(r.id) + '"><span class="t">' + esc(timeOf(r)) + '</span><div style="min-width:0"><h4>' + esc(stepLab) + '</h4>' + (noKey ? '' : '<div class="prog"><i style="width:' + (r.pct || 35) + '%"></i></div>') + '</div><span class="src' + (src === 'mic' ? ' mic' : '') + '">' + (src === 'mic' ? 'Mic' : 'Computer and mic') + '</span><span class="d">' + esc(fmtDur(r.duration_s)) + '</span></div>';
         return;
       }
       var line = r.summary || '';

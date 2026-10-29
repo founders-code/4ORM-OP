@@ -36,3 +36,6 @@
 .port-body table th{background:#111216;color:#7f8db5;border-bottom-color:#23252c}
 .port-body table td{border-bottom-color:#18191f;color:#e9eefa}
 .why{color:#ffd08a!important;background:rgba(255,181,71,.12)!important}
+/* Audit 29 Oct: the summary strip is charcoal so every number shows */
+.port-body .sumr{background:#111216!important;border:1px solid #23252e;box-shadow:none}
+.port-body .sx{border-right-color:#23252e!important}.port-body .sx b{color:#fff}.port-body .sx.g b{color:#00dc86}.port-body .sx.a b{color:#ffa946}.port-body .sx span{color:#aeb6c8!important}

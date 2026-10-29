@@ -1938,6 +1938,15 @@
       }).join('') + ((data.wall || []).length ? '' : '<div class="hint">No links here yet.</div>') + '</div>'
       + '<div class="hint">Hover a tile to edit, move or delete it.</div></section></div>';
     wrap.querySelectorAll('.lg img.thumb').forEach(function (img) {
+      /* A thumbnail that fails to load shows the site name instead of a broken image. */
+      function broken() {
+        var tile = img.closest('.tile'); var u = tile ? String(tile.getAttribute('data-url') || '') : '';
+        var host = u.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+        var box = document.createElement('i'); box.className = 'noload'; box.innerHTML = '<span><b></b>preview not available</span>';
+        box.querySelector('b').textContent = host; img.replaceWith(box);
+      }
+      img.addEventListener('error', broken);
+      if (img.complete && img.naturalWidth === 0 && img.src) broken();
       function markLogo() {
         var w = img.naturalWidth || 0, h = img.naturalHeight || 0;
         var wide = h > 0 && w / h >= 1.55;

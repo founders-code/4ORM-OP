@@ -45,7 +45,7 @@
 .tl.g b{color:#2ee59d;text-shadow:0 0 12px rgba(46,229,157,.6)}.tl.r b{color:#ff5a6e;text-shadow:0 0 12px rgba(255,90,110,.6)}
 .sec{border-color:rgba(255,255,255,.08);background:#111216}
 .li{border-top-color:#18191f}.li i{color:#2ee59d;text-shadow:0 0 8px rgba(46,229,157,.6)}
-.moved{background:linear-gradient(135deg,#23252c,#0b0c10);border-color:rgba(91,140,255,.3)}.moved b{color:#7fb0ff}.moved p{color:#e9eefa}
+.moved{background:#18191f;border-color:#2a2c35;border-left:3px solid #2e6bf2}.moved b{color:#7fb0ff}.moved p{color:#e9eefa}
 .t1{background:#23252c;color:#7fb0ff}.t2{background:#2a2112;color:#ffb547}.t3{background:#0f2e24;color:#2ee59d}.t4{background:#23252c;color:#b794ff}
 .pads span{box-shadow:0 0 12px color-mix(in srgb,currentColor 0%,transparent)}
 .pads span:not(.off){box-shadow:0 0 12px rgba(255,255,255,.12)}
@@ -62,3 +62,6 @@
 .port-body.neon .tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:16px}
 .port-body.neon .det{min-width:0;overflow:auto}
 .port-body.neon .card{min-width:0}
+/* Audit 29 Oct: a long meeting name never squeezes the quote to one word per line */
+.li em{max-width:180px;overflow:hidden;text-overflow:ellipsis}
+.li>span:not(.tag){min-width:0}

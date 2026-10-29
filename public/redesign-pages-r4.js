@@ -615,7 +615,22 @@
       fit();
       requestAnimationFrame(function () { requestAnimationFrame(function () { fit(); }); });
     } else if (!savedPan && !root.__didCenter) { root.__didCenter = true; centerLatest(); }
-    else apply();
+    else {
+      apply();
+      /* A saved view that shows no notes (stale pan, other screen size) falls back to Fit all once. */
+      if (!root.__fitChecked) {
+        root.__fitChecked = true;
+        requestAnimationFrame(function () {
+          var sr = stage && stage.getBoundingClientRect();
+          if (!sr || sr.width < 40) return;
+          var any = Array.prototype.some.call(root.querySelectorAll('#world .note, #world .cl'), function (el) {
+            var b = el.getBoundingClientRect();
+            return b.right > sr.left && b.left < sr.right && b.bottom > sr.top && b.top < sr.bottom;
+          });
+          if (!any) fit();
+        });
+      }
+    }
   }
 
   /* ---------- Spaces arrange ---------- */

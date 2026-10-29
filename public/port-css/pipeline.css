@@ -95,3 +95,6 @@
 .why2.amb{color:#ffd08a!important;background:rgba(255,181,71,.14)!important}
 @media (max-width:1500px){.ndg{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .needtog{margin-left:10px;border:1px solid #23252c;background:#18191f;color:#dfe6ff;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:750;cursor:pointer}.needtog:hover{border-color:#4d7cff}
+/* Audit 29 Oct: the pipeline picker sits on charcoal like the rest of the page */
+.port-body div.picker{background:#111216!important;border:1px solid #23252e!important;box-shadow:none!important}
+.port-body div.picker .ro,.port-body div.picker .clock{color:#aeb6c8!important}
