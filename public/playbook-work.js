@@ -136,10 +136,12 @@
 
   /* ---------- D: 15-minute sprint ---------- */
   var KEYS = [['1', 'No answer'], ['2', 'Left voicemail'], ['3', 'Spoke'], ['4', 'Meeting booked'], ['5', 'Call back'], ['6', 'Not interested']];
-  function sprintNew(laneKey) {
+  /* A sprint is the next 15 not yet logged; the rest of today's list waits underneath for the next sprint. */
+  function sprintPool(l) { return inLane(l).filter(function (r) { return l.key !== 'call' || tel(r.phone); }); }
+  function sprintNew(laneKey, skip) {
     var l = laneOf(laneKey || 'call');
-    var rs = inLane(l).filter(function (r) { return l.key !== 'call' || tel(r.phone); }).slice(0, 15);
-    S.sprint = { lane: l.key, list: rs, i: 0, left: 15 * 60, run: false, res: {}, timer: null };
+    var pool = sprintPool(l).filter(function (r) { return !(skip && skip[r.id]); });
+    S.sprint = { lane: l.key, list: pool.slice(0, 15), rest: pool.slice(15), i: 0, left: 15 * 60, run: false, res: {}, timer: null, done: skip || {} };
   }
   function paintSprint() {
     var sp = S.sprint;
@@ -166,7 +168,10 @@
     h += '</div><div class="wtiles">' + sp.list.map(function (x, k) {
       var o = sp.res[x.id];
       return '<div class="wtile' + (k === sp.i ? ' cur' : '') + (o ? ' done' : '') + '" data-tile="' + k + '"><b>' + esc(x.name) + '</b><span>' + esc(whoOf(x).split(' · ')[0] || x.city || '') + '</span><i>' + esc(o || (x.pain ? 'Pain ' + x.pain : '')) + '</i></div>';
-    }).join('') + '</div></div></div>';
+    }).join('') + '</div>'
+      + ((sp.rest || []).length ? '<div class="wnext"><div class="wlh"><b style="color:#aeb6c8">Up next · ' + sp.rest.length + ' more today</b><button type="button" class="wstart" data-sp="next15">Load the next ' + Math.min(15, sp.rest.length) + '</button></div>'
+        + sp.rest.map(function (x) { return '<div class="wcard" style="--c:#2a2c35" data-who="' + esc(x.id) + '"><div class="wn"><b>' + esc(x.name) + '</b>' + (x.pain ? '<span class="wpn">Pain ' + esc(x.pain) + '</span>' : '') + '</div><div class="ws">' + esc([whoOf(x), x.city].filter(Boolean).join(' · ')) + '</div></div>'; }).join('') + '</div>' : '')
+      + '</div></div>';
     return h;
   }
   function sprintTick() {
@@ -231,7 +236,11 @@
         var a = sp.getAttribute('data-sp');
         if (a === 'go') { S.sprint.run = true; sprintTick(); paint(); }
         if (a === 'pause') { S.sprint.run = false; sprintTick(); paint(); }
-        if (a === 'again') { sprintNew(S.sprint.lane); load(true, paint); }
+        if (a === 'again' || a === 'next15') {
+          var seen = Object.assign({}, S.sprint.done || {});
+          S.sprint.list.forEach(function (r) { seen[r.id] = 1; });
+          clearInterval(S.sprint.timer); sprintNew(S.sprint.lane, seen); paint();
+        }
         return;
       }
       var out = t.closest('[data-out]'); if (out) { sprintLog(out.getAttribute('data-out')); return; }

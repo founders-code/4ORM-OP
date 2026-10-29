@@ -500,3 +500,13 @@ body.navshut .side{width:0;padding:0;border:0}
 .work .wsp .wtop .wbox{flex:1;min-width:84px}
 .work .wsp .wtop .wclock{flex:2.2}
 .work .wnow .wlab{display:block;background:none;border:0;padding:0}
+
+/* Sprint fit on narrow windows, 29 Oct 2026: score boxes wrap into a grid; today's remaining calls list under the 15. */
+.work .wsp .wtop{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px}
+.work .wsp .wtop .wclock{grid-column:span 2;min-width:0}
+.work .wsp .wtop .wbox{min-width:0}
+.work .wsp .wtop select{max-width:100%}
+.work .wspm>*{min-width:0}
+.work .wtiles{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.work .wnext{grid-column:1/-1;margin-top:10px;max-height:420px;overflow:auto}
+.work .wnext .wlh{position:sticky;top:0;background:#111216;padding:4px 0 8px;z-index:1}
