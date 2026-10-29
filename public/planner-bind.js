@@ -491,7 +491,7 @@ function openDrawer(id){const i=byId[id];if(!i)return;const p=pipe(i.p);const ph
     sub=`${rel(i.e-TODAY)} · ${pct}% of the work feeding it is done`;pg=`<div class="prog"><i style="width:${pct}%;background:var(--gold)"></i></div>`;
     extra=`<h3>Feeding this milestone</h3>`+(f.length?f.map(j=>linkBtn(j.id,late.includes(j))).join(''):'<p class="none">Nothing yet. In the list, pick this milestone on any row.</p>');
     drawer.style.setProperty('--c','var(--gold-ink)');
-    drawer.innerHTML=`<div class="dtop"><button class="ed" data-dsave="${id}">Save changes</button><button id="dClose">Close</button></div><div class="dp">Milestone</div><h2>${esc(i.n)}</h2><div class="dd">${when}</div>
+    drawer.innerHTML=`<div class="dtop"><button class="ed" data-dsave="${id}">Save changes</button><span style="display:flex;gap:8px"><button class="ddel" data-ddel="${id}">Delete</button><button id="dClose">Close</button></span></div><div class="dp">Milestone</div><h2>${esc(i.n)}</h2><div class="dd">${when}</div>
       <div class="stbig${late.length||ph==='overdue'?' bad':''}" style="${late.length?'':'background:var(--gold-soft)'}"><b>${big}</b><span>${sub}</span>${pg}</div>
       ${drawEdit(i)}<div class="dlist">${extra}</div>`;
     drawer.hidden=false;scrim.hidden=false;pinned=id;applyFocus(id);return}
@@ -504,7 +504,7 @@ function openDrawer(id){const i=byId[id];if(!i)return;const p=pipe(i.p);const ph
     if(ph==='active'||i.tasks.length)pg=`<div class="prog"><i style="width:${prog(i,Math.max(i.s,START)).toFixed(1)}%"></i></div>`}
   if(bd.length){big='Slipping';sub=`Waits on something that lands after ${fmt(i.s)}`}
   drawer.style.setProperty('--c',`var(${p.c})`);
-  drawer.innerHTML=`<div class="dtop"><button class="ed" data-dsave="${id}">Save changes</button><button id="dClose">Close</button></div>
+  drawer.innerHTML=`<div class="dtop"><button class="ed" data-dsave="${id}">Save changes</button><span style="display:flex;gap:8px"><button class="ddel" data-ddel="${id}">Delete</button><button id="dClose">Close</button></span></div>
    <div class="dp">${p.name} &middot; ${esc(i.t)}</div><h2>${esc(i.n)}</h2><div class="dd">${when}</div>
    <div class="stbig${bd.length||ph==='overdue'?' bad':''}"><b>${big}</b><span>${sub}</span>${pg}</div>
    ${drawEdit(i)}
@@ -543,6 +543,19 @@ function saveDrawer(id){const i=byId[id];if(!i)return;const v={};
   save();persistItem(i);rerender();openDrawer(id);
   const b=drawer.querySelector('[data-dsave]');if(b){b.textContent='Saved';setTimeout(()=>{if(b.isConnected)b.textContent='Save changes'},1400)}}
 drawer.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches&&e.target.matches('input[data-de]')){e.preventDefault();const b=drawer.querySelector('[data-dsave]');if(b)saveDrawer(b.dataset.dsave)}});
+/* Delete from the card: soft delete on the server (archived), gone from the Timeline and Lists at once, Undo for 6 seconds. */
+function deleteItem(id){const i=byId[id];if(!i)return;const idx=ITEMS.indexOf(i);const snap=JSON.parse(JSON.stringify(i));
+  const fed=ITEMS.filter(j=>j.g===id).map(j=>j.id);
+  const deps=i.dep.map(d=>({item_id:id,depends_on_id:d})).concat(ITEMS.filter(j=>j.dep.includes(id)).map(j=>({item_id:j.id,depends_on_id:id})));
+  ITEMS.splice(idx,1);ITEMS.forEach(j=>{if(j.g===id)j.g='';j.dep=j.dep.filter(d=>d!==id)});
+  closeDrawer();index();renderAll();if(state.view==='timeline')requestAnimationFrame(drawLinks);
+  const live=liveOk()&&!(String(id).indexOf('n')===0&&String(id).length<20);
+  if(live)window.authFetch('/api/timeline/items/'+encodeURIComponent(id),{method:'DELETE',credentials:'same-origin'}).catch(function(){});
+  mvToast('Deleted '+i.n,()=>{ITEMS.splice(Math.min(idx,ITEMS.length),0,snap);
+    fed.forEach(f=>{const it=ITEMS.find(x=>x.id===f);if(it)it.g=id});
+    deps.forEach(d=>{const it=ITEMS.find(x=>x.id===d.item_id);if(it&&!it.dep.includes(d.depends_on_id))it.dep.push(d.depends_on_id)});
+    index();renderAll();if(state.view==='timeline')requestAnimationFrame(drawLinks);
+    if(live)window.authFetch('/api/timeline/items/'+encodeURIComponent(id),{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({restore:true,deps:deps})}).then(()=>{fed.forEach(f=>{const it=byId[f];if(it)persistItem(it)})}).catch(function(){})})}
 function closeDrawer(){drawer.hidden=true;scrim.hidden=true;pinned=null;clearFocus()}
 function reveal(id){const i=byId[id];let ch=false;
   if(i.kind!=='goal'){if(state.hidden.has(i.p)){state.hidden.delete(i.p);ch=true}if(!state.open.has(i.p)){state.open.add(i.p);ch=true}}
@@ -593,6 +606,7 @@ document.addEventListener('click',e=>{
   if(t.id==='dClose'){closeDrawer();return}
   if(t.dataset.edit){editInList(t.dataset.edit);return}
   if(t.dataset.dsave){saveDrawer(t.dataset.dsave);return}
+  if(t.dataset.ddel){deleteItem(t.dataset.ddel);return}
   if(t.dataset.open){const id=t.dataset.open;closePops();if(t.dataset.reveal)reveal(id);openDrawer(id);return}
   if(t.dataset.toggle){const id=t.dataset.toggle;state.open.has(id)?state.open.delete(id):state.open.add(id);save();renderAll();return}
   if(t.dataset.solo){state.hidden=new Set(PIPES.filter(p=>p.id!==t.dataset.solo).map(p=>p.id));state.open.add(t.dataset.solo);save();renderAll();return}
@@ -694,14 +708,14 @@ function askName(row,trk,g,a,b){const pid=row.dataset.pipe||row.getAttribute('da
   const first=Math.round(Date.UTC(y,m,1)/DAY);const lead=(D(first).getUTCDay()+6)%7;const sel=val(field);let h=['Mo','Tu','We','Th','Fr','Sa','Su'].map(d=>`<span>${d}</span>`).join('');
   for(let k=0;k<42;k++){const d=first-lead+k;const dd=D(d);h+=`<button data-day="${d}" class="${dd.getUTCMonth()!==m?'out ':''}${d===TODAY?'tdy ':''}${d===sel?'sel':''}">${dd.getUTCDate()}</button>`}
   document.getElementById('dpG').innerHTML=h;
-  const isStart=field.dataset.f==='s'||field.dataset.newdate==='s';document.getElementById('dpClear').textContent=isStart?'No start (key date)':'Clear';
+  const isStart=field.dataset.f==='s'||field.dataset.newdate==='s'||field.dataset.de==='s';document.getElementById('dpClear').textContent=isStart?'No start (key date)':'Clear';
   document.getElementById('dpL').textContent=field.getAttribute('aria-label')||''}
  function open(f){field=f;const v=val(f);const base=v==null?TODAY:v;const x=D(base);view=Math.round(Date.UTC(x.getUTCFullYear(),x.getUTCMonth(),1)/DAY);draw();
   const r=f.getBoundingClientRect();dp.classList.add('on');const w=dp.offsetWidth,h=dp.offsetHeight;let left=r.left+window.scrollX,top=r.bottom+window.scrollY+6;
   if(left+w>window.scrollX+window.innerWidth-12)left=window.scrollX+window.innerWidth-w-12;if(r.bottom+h+12>window.innerHeight)top=r.top+window.scrollY-h-6;dp.style.left=left+'px';dp.style.top=top+'px'}
  function close(){dp.classList.remove('on');field=null}
  function commit(text){const f=field;f.value=text;close();if(f.dataset.f){f.dispatchEvent(new Event('change',{bubbles:true}))}}
- document.addEventListener('click',e=>{const f=e.target.closest('input.dt');if(f){open(f);return}
+ document.addEventListener('click',e=>{const f=e.target.closest('input.dt,input[data-de="s"],input[data-de="e"],input[data-de="ps"],input[data-de="gs"]');if(f){open(f);return}
   if(!dp.contains(e.target)){close();return}
   const b=e.target.closest('button');if(!b)return;
   if(b.dataset.day){const d=+b.dataset.day;commit(fmt(d));return}

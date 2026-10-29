@@ -260,3 +260,9 @@ button{font:inherit;cursor:pointer}
 /* Week view: the day header stays pinned while the hours scroll under it. */
 .wkb .whead{position:sticky;top:0;z-index:6;background:#0b0c10;box-shadow:0 6px 10px -8px rgba(0,0,0,.6)}
 .wkb .allday{position:sticky;top:53px;z-index:5;background:#0b0c10}
+
+/* Calendar text fully white, 28 Oct 2026: darken the event fill with an inset shade instead of dimming the whole block, so the words stay pure white. Suggested plays stay dashed but no longer fade. */
+.ev.real{filter:saturate(1.15)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35),inset 0 0 0 999px rgba(0,0,0,.28),0 0 14px var(--glow,rgba(59,130,255,.55))!important}
+.ev.real .tt,.ev.real .tm,.ev .tt,.ev .tm{color:#fff!important;opacity:1!important}
+.ev.sug{opacity:1!important}
+.ev .tm{font-size:10px!important}
