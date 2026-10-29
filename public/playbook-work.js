@@ -338,6 +338,11 @@
     if (S.host.hidden) return;
     if (!S.calls) { S.host.innerHTML = '<div class="wm" style="padding:20px">Loading today’s lists…</div>'; load(false, paint); return; }
     S.host.innerHTML = mode === 'lanes' ? paintLanes() : mode === 'blocks' ? paintBlocks() : paintSprint();
+    /* The first card in each category loads in the background, so Open first is instant. */
+    if (mode === 'sprint' && window.dossierPrefetch && !S.warm) {
+      S.warm = 1;
+      groups().forEach(function (g) { var r = g.rows.filter(function (x) { return !isDone(x); })[0]; if (r) window.dossierPrefetch(r.id); });
+    }
   }
   function startQueue(laneKey, from, n) {
     var rs = inLane(laneOf(laneKey));
@@ -392,6 +397,11 @@
       var ev = t.closest('[data-ev]'); if (ev && S.open.event) { var e2 = events()[+ev.getAttribute('data-ev')]; if (e2) S.open.event(e2); return; }
       var pl = t.closest('[data-play]'); if (pl && S.open.play) { var p2 = plays()[+pl.getAttribute('data-play')]; if (p2) S.open.play(p2); return; }
       var td = t.closest('[data-todo]'); if (td && S.open.todo) { S.open.todo(td.getAttribute('data-todo')); return; }
+    });
+    /* Hovering a box starts loading its card. */
+    host.addEventListener('mouseover', function (e) {
+      var g = e.target.closest && e.target.closest('[data-gid]');
+      if (g && window.dossierPrefetch && g.__warm !== 1) { g.__warm = 1; window.dossierPrefetch(g.getAttribute('data-gid')); }
     });
     host.addEventListener('change', function (e) {
       if (e.target.matches && e.target.matches('select[data-sp="lane"]')) { if (S.sprint) clearInterval(S.sprint.timer); sprintNew(e.target.value); paint(); }

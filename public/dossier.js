@@ -255,6 +255,7 @@
     var i = q.indexOf(id);
     [q[i + 1], q[i + 2], q[i - 1]].forEach(function (n) { if (n) { getRec(n); getGhl(n); } });
   }
+  window.dossierPrefetch = function (id) { if (id) { getRec(id); getGhl(id); getPk(); } };
   function open(id, opts) {
     opts = opts || {};
     mount();
