@@ -272,13 +272,13 @@
     var BN = function (k, was, now) { return '<div style="font-weight:800;color:#fff;margin:8px 0 4px">' + esc(k) + '</div><div class="s-bn"><div><i>BEFORE</i>' + esc(was) + '</div><div class="n"><i>NOW</i>' + esc(now) + '</div></div>'; };
     return '<div class="s-hd"><b>Script · ' + esc(rec.name || '') + '</b><button type="button" data-sx>Close</button></div><div class="s-b">'
       + '<h4>Open</h4>'
-      + L('Permission', 'Would you reward me for my honesty about this being a cold call?', true)
-      + L('Who', "My name's Chad, I'm with 4orm Finance. This is not a sales call. We're developing 4ormIQ to help financial businesses' clients show and understand suitability, while helping protect the business from increased fines and workload to stay compliant.")
-      + L('The challenge', "As you know, the risk and liability of the new suitability mandates falls on the business. Agents have more documents and more admin work. But how can a business show suitability when it can't show what its client understood?")
-      + L('Our approach', "We use counselling-style AI to help clients better understand their decisions. Our greatest asset will be building it alongside experts in the space, and we're only looking to partner with 2 to 3 firms for design advisory.")
+      + L('', 'Would you reward me for my honesty about this being a cold call?', true)
+      + L('', "My name's Chad, I am with 4orm Finance. This is not a sales call. We are currently developing 4ormIQ to help financial business clients show and understand suitability while helping protect the business from increased fines and work load to stay compliant.")
+      + L('', "As you know, the risk and liability of new suitability mandates falls on the business. We are asking, agents have more documents, more administrative work, but how can a business show suitability when they can't show what their client's understanding about suitability is?")
+      + L('', 'We have a unique approach leveraging counselling styled AI to help clients better understand their decisions. Our greatest asset will be in building it alongside specific experts in the space. We are only looking to partner with 2-3 firms for design advisory.')
       + '<h4>Ask</h4>'
       + L('', 'Would there be anything holding you back from exploring this further with you and your firm?', true)
-      + L('', 'Would you say intake or post-meeting admin work is more challenging now?', true)
+      + L('', 'Would you say intake or post admin work is more challenging now?', true)
       + L('', 'How do you recreate the evidence needed in the event of an audit?', true)
       + '<h4>What changed</h4>'
       + BN('Mortgage AML duties', 'Mortgage brokers, lenders and administrators were not FINTRAC reporting entities', 'Since Oct 11, 2024: compliance program, training, records and reporting, even when the lender does it too')
