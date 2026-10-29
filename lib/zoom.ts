@@ -70,7 +70,7 @@ export async function createZoomMeeting(startIso: string, durMin: number, topic:
       type: 2,
       start_time: startIso,
       duration: Math.max(15, Math.min(Number(durMin) || 30, 120)),
-      timezone: 'America/Los_Angeles',
+      timezone: 'America/Vancouver',
       settings: { join_before_host: true, waiting_room: false },
     }),
     signal: AbortSignal.timeout(9000),

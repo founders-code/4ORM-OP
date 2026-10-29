@@ -1,3 +1,4 @@
+import { createZoomMeeting } from '@/lib/zoom';
 import { NextResponse } from 'next/server';
 import { claimBudget } from '@/lib/db';
 import { withCreds } from '@/lib/creds';
@@ -216,6 +217,16 @@ export async function POST(req: Request) {
     if ('error' in target) return target.error;
     if (!id && title) {
       const input = readEditorFields(body, 'create');
+      /* Every invite (an event with guests) gets its own Zoom link unless it already carries a meeting link or the editor opted out. */
+      let zoomUrl = '';
+      const hasLink = /zoom\.us\/j\/|meet\.google\.com|teams\.microsoft\.com/i.test(`${input.location || ''} ${input.description || ''}`);
+      if ((input.attendees || []).length && !hasLink && body.zoom !== false) {
+        zoomUrl = (await createZoomMeeting(new Date(start).toISOString(), dur, title).catch(() => null)) || '';
+        if (zoomUrl) {
+          input.location = input.location ? input.location : zoomUrl;
+          input.description = `Join Zoom: ${zoomUrl}${input.description ? `\n\n${input.description}` : ''}`;
+        }
+      }
       const created = target.id
         ? await withCreds(creds, () => createOnCalendar(target.id, start, dur, title, input))
         : await withCreds(creds, () => createEvent(start, dur, title, input));
@@ -234,6 +245,7 @@ export async function POST(req: Request) {
         reminders: input.reminders || null,
         attachments: input.attachments || [],
         extendedProperties: { private: input.privateProps || {} },
+        zoom: zoomUrl,
       });
     }
     if (!EVENT_ID.test(id)) {
