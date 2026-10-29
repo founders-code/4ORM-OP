@@ -141,6 +141,12 @@ function brief(design: Design) {
         ['A record that holds', 'Reasoning and suitability evidence stay with the decision.'],
       ])
       + twoList('WHERE IT APPLIES', ['Mortgage companies', 'Insurance companies', 'Investment dealers', 'Auto finance', 'Banks and credit unions', 'Payments and money services'])
+      + tiles('WHAT THE RECORD SHOWS', [
+        ['73%', 'of files examined had missing or inadequate risk disclosure, up from 48%', 'FSRA 2025-26, Ontario private mortgages'],
+        ['C$177M', 'FINTRAC penalty imposed on Cryptomus, Oct 2025', 'FINTRAC 2025-26'],
+        ['+81%', 'compliance costs in two years across 24 Canadian P&C insurers', 'Insurance Bureau of Canada'],
+        ['59%', 'of Canadians comfortable with bank AI under meaningful human oversight', 'TD / Ipsos, June 2026'],
+      ], 'Figures are penalty ceilings and published samples; periods differ. Not 4orm results.')
       + lockup();
   }
   if (design === 'brief-investor') {
