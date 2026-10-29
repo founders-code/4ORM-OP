@@ -769,6 +769,8 @@
         att: attNames(row),
         tag: tagLabel(asList(row.tags)[0]),
         needsNow: !!row.needsNow,
+        col: String(row.column || ''),
+        tags: asList(row.tags).map(String),
         junk: junkOf(row, board.rules)
       };
     });
@@ -2636,11 +2638,175 @@
     var a = root && root.activeElement;
     return !!(a && a.closest && a.closest('#compose'));
   }
+
+  /* ---------- Email, 29 Oct (approved design C): splits and list on the left, one reply card in the middle,
+     who they are and what is done on the right. The reply editor is the same compose machinery (#compose),
+     so Send, attachments from Documents / Spaces / Drive, links, signature and AI drafting all work as before.
+     Nothing sends until Chad presses Send and confirms. ---------- */
+  function efSplitOf(m, cols) {
+    var hay = (m.col + ' ' + asList(m.tags).join(' ') + ' ' + (m.tag || '')).toLowerCase();
+    var out = [];
+    if (m.needsNow && !m.junk && !m.bulk) out.push('needs');
+    if (/invest|vc|angel|capital/.test(hay)) out.push('investors');
+    if (/design|partner/.test(hay)) out.push('design');
+    if (/regulat/.test(hay)) out.push('regulators');
+    cols.forEach(function (c) { if (asList(c.ids).map(String).indexOf(String(m.id)) >= 0) out.push('col:' + c.id); });
+    return out;
+  }
+  function efWaiting(m) {
+    if (!m.at) return '';
+    var d = Math.floor((Date.now() - m.at) / 86400000);
+    return d >= 1 ? 'Waiting ' + d + (d === 1 ? ' day' : ' days') : 'Today';
+  }
+  function efShort(text, n) {
+    var s = String(text || '').replace(/\r/g, '').split(/\n\s*\n|\nOn .{0,80}wrote:|\nFrom: /)[0].replace(/\s+/g, ' ').trim();
+    if (s.length > (n || 260)) s = s.slice(0, n || 260).replace(/\s+\S*$/, '') + '...';
+    return s;
+  }
+  function paintEmailFocus(wrap, data, S) {
+    var msgs = asList(data.messages);
+    var cols = asList(data.cols);
+    var handled = S.mailHandled || (S.mailHandled = {});
+    var doneList = S.mailDoneList || (S.mailDoneList = []);
+    var splits = [['needs', 'Needs reply'], ['investors', 'Investors'], ['design', 'Design partners'], ['regulators', 'Regulators']]
+      .concat(cols.map(function (c) { return ['col:' + c.id, c.n]; }))
+      .concat([['other', 'Other'], ['all', 'Everything']]);
+    function inSplit(m, k) {
+      if (k === 'junk') return !!m.junk;
+      if (m.junk) return false;
+      if (k === 'all') return true;
+      var s = efSplitOf(m, cols);
+      if (k === 'other') return !s.length;
+      return s.indexOf(k) >= 0;
+    }
+    var counts = {};
+    splits.concat([['junk', 'Junk']]).forEach(function (sp) { counts[sp[0]] = msgs.filter(function (m) { return inSplit(m, sp[0]); }).length; });
+    var split = S.mailSplit || (counts.needs ? 'needs' : 'all');
+    if (!splits.some(function (sp) { return sp[0] === split; }) && split !== 'junk') split = 'all';
+    var q = String(S.mailQ || '').trim().toLowerCase();
+    var list = msgs.filter(function (m) { return inSplit(m, split); }).filter(function (m) {
+      return !q || (m.f + ' ' + m.e + ' ' + m.sj + ' ' + m.pv).toLowerCase().indexOf(q) >= 0;
+    });
+    /* The card shows the email Chad opened, otherwise the first one in this split he has not handled. */
+    var o = S.mailOpen || null;
+    var focus = o ? (msgs.filter(function (m) { return String(m.id) === String(o.id); })[0] || null) : null;
+    if (!focus) focus = list.filter(function (m) { return !handled[m.id]; })[0] || null;
+    if (focus && (!o || String(o.id) !== String(focus.id)) && typeof window.__mailOpenRow === 'function' && S.mailAutoOpen !== focus.id) {
+      S.mailAutoOpen = focus.id;
+      setTimeout(function () { window.__mailOpenRow(focus); }, 0);
+    }
+    var th = focus && S.mailOpen && String(S.mailOpen.id) === String(focus.id) ? S.mailOpenThread : null;
+    /* One reply draft per focused email; the full drawer (Compose, Edit) takes over while it is open. */
+    if (focus && !S.composeOpen) {
+      var d0 = S.composeDraft;
+      if (!d0 || d0.forId !== focus.id) {
+        S.composeDraft = { forId: focus.id, to: focus.e ? [{ email: focus.e, name: focus.f }] : [], reply: true,
+          subject: /^re:/i.test(focus.sj) ? focus.sj : 'Re: ' + focus.sj, threadId: focus.threadId || '', messageId: focus.messageId || '',
+          body: '', attachments: [], nudge: false, log: false };
+      }
+    }
+    var needTotal = counts.needs || 0;
+    var head = '<div class="bar"><h1>Email</h1>'
+      + '<div class="seg"><span class="on" data-action="mail-layout" data-layout="focus">Inbox</span><span data-action="mail-layout" data-layout="board">Columns</span><span data-action="mail-view" data-view="people">People</span><span data-action="mail-sched-list">Scheduled' + ((S.mailSchedCount | 0) > 0 ? ' <em>' + (S.mailSchedCount | 0) + '</em>' : '') + '</span></div>'
+      + '<div class="cnt"><span><b>' + needTotal + '</b> need a reply</span><span><b>' + esc(data.unread != null ? data.unread : 0) + '</b> unread</span><span>junk hidden</span></div>'
+      + '<div class="r"><span class="ef-prog"><b>' + doneList.length + '</b> done this session</span><input class="search" data-action="mail-search" placeholder="Search mail" value="' + esc(S.mailQ || '') + '"><button class="btn" data-action="mail-filters">Filters</button><button class="btn pri" id="composeBtn" data-action="mail-compose">Compose</button></div></div>';
+    var splitHtml = splits.map(function (sp) {
+      if (sp[0] !== 'needs' && sp[0] !== 'all' && sp[0] !== 'other' && !counts[sp[0]] && sp[0].indexOf('col:') !== 0) return '';
+      return '<button type="button" class="ef-sp' + (split === sp[0] ? ' on' : '') + '" data-action="mail-split" data-split="' + esc(sp[0]) + '"><span>' + esc(sp[1]) + '</span><b>' + (counts[sp[0]] || 0) + '</b></button>';
+    }).join('') + '<button type="button" class="ef-sp junk' + (split === 'junk' ? ' on' : '') + '" data-action="mail-split" data-split="junk"><span>Junk and codes</span><b>' + (counts.junk || 0) + '</b></button>';
+    var lastDay = '';
+    var rows = list.map(function (m) {
+      var day = m.day && m.day !== lastDay ? '<div class="ef-day">' + esc(m.day) + '</div>' : '';
+      if (m.day) lastDay = m.day;
+      var sp = efSplitOf(m, cols);
+      var chip = handled[m.id] === 'sent' ? '<span class="ef-ch ok">Replied</span>' : handled[m.id] === 'skip' ? '<span class="ef-ch">Skipped</span>'
+        : sp.indexOf('needs') >= 0 ? '<span class="ef-ch need">Needs reply</span>' : sp.indexOf('investors') >= 0 ? '<span class="ef-ch inv">Investor</span>' : sp.indexOf('design') >= 0 ? '<span class="ef-ch dp">Design partner</span>' : '';
+      var att = asList(m.att).length ? '<span class="ef-ch">' + esc(String((String(asList(m.att)[0].name || asList(m.att)[0] || '').match(/\.([a-z0-9]{2,5})$/i) || [, 'File'])[1]).toUpperCase()) + ' attached</span>' : '';
+      return day + '<div class="ef-row' + (focus && String(focus.id) === String(m.id) ? ' on' : '') + (m.un ? ' un' : '') + (handled[m.id] ? ' done' : '') + '" data-action="mail-open"' + mailRowAttrs(m) + '>'
+        + '<span class="av" style="background:' + esc(m.c) + '">' + esc(iniOf(m.f)) + '</span><div class="ef-rm"><div class="ef-l1"><b>' + esc(m.f) + '</b><span>' + esc(m.t) + '</span></div><div class="ef-sj">' + esc(m.sj) + '</div><div class="ef-pv">' + esc(m.pv) + '</div>'
+        + (chip || att ? '<div class="ef-chs">' + chip + att + '</div>' : '') + '</div>'
+        + '<span class="ef-ra"><span class="rowact" data-action="mail-junk" data-junk="' + (m.junk ? '0' : '1') + '"' + mailRowAttrs(m) + '>' + (m.junk ? 'Not junk' : 'Junk') + '</span><span class="rowact del" data-action="mail-trash"' + mailRowAttrs(m) + '>Delete</span></span></div>';
+    }).join('') || '<div class="ef-empty">' + (S.mailBoard ? (split === 'needs' ? 'Nothing needs a reply. Pick another split.' : 'Nothing here.') : 'Loading your mail...') + '</div>';
+    var card = '';
+    if (!focus) {
+      card = '<div class="ef-card ef-none"><h2>' + (msgs.length ? 'All caught up in this split' : 'Loading your mail...') + '</h2><p>Pick another split on the left, or press Compose for a new email.</p></div>';
+    } else {
+      var c = contactFor(focus.e);
+      var body = th && th.text ? String(th.text) : '';
+      var summary = efShort(body || focus.pv, 280);
+      var pos = list.filter(function (m) { return !handled[m.id] || String(m.id) === String(focus.id); });
+      var idx = pos.map(function (m) { return String(m.id); }).indexOf(String(focus.id));
+      var theirAtts = asList((th && th.attachments) || focus.att).map(function (a) {
+        var n = typeof a === 'string' ? a : (a && (a.name || a.filename)) || 'File';
+        var aid = (a && typeof a === 'object' && a.attachmentId) || '';
+        var ext = (n.match(/\.([a-z0-9]{2,5})$/i) || [, 'file'])[1].toUpperCase();
+        return '<span class="ef-att"' + (aid ? ' data-action="mail-att-open" data-mid="' + esc((th && th.id) || focus.id) + '" data-aid="' + esc(aid) + '" data-name="' + esc(n) + '" title="Download"' : '') + '><i>' + esc(ext) + '</i>' + esc(n) + '</span>';
+      }).join('');
+      var d = composeDraft();
+      var bodyHtml = d.bodyHtml != null && d.bodyHtmlFor === d.body ? d.bodyHtml : esc(d.body).replace(/\n/g, '<br>');
+      var MC = window.__mailCompose || {};
+      var mine = d.attachments.map(function (a, i) {
+        var nm = String(a.name || 'File');
+        var real = attIsReal(a);
+        var ext = (nm.match(/\.([a-z0-9]{2,5})$/i) || [])[1] || (a.url ? 'LINK' : a.driveFileId ? 'DRIVE' : 'FILE');
+        return '<span class="att' + (a.busy ? ' busy' : '') + '"><span class="ty">' + esc(String(ext).toUpperCase()) + '</span>' + esc(nm) + (real ? '' : ' <span class="sz">link</span>') + '<span class="x2" data-action="mail-att-remove" data-i="' + i + '" title="Remove">Remove</span></span>';
+      }).join('');
+      var intents = [['yes', 'Interested, send details'], ['later', 'Not now, maybe later'], ['pass', 'Pass politely'], ['meet', 'Book a time to talk'], ['thanks', 'Thanks, got it']];
+      card = '<div class="ef-card">'
+        + '<div class="ef-ch1"><span class="av" style="background:' + esc(focus.c) + '">' + esc(iniOf(focus.f)) + '</span><div class="ef-who"><h2>' + esc(focus.sj) + '</h2><div class="ef-meta"><b>' + esc(focus.f) + '</b>' + (focus.e ? ' &middot; ' + esc(focus.e) : '') + ' &middot; ' + esc(focus.t) + '</div></div>'
+        + '<span class="ef-wait">' + esc(efWaiting(focus)) + '</span><span class="ef-pos">' + (idx >= 0 ? (idx + 1) + ' of ' + pos.length : '') + '</span></div>'
+        + '<div class="ef-sum"><div class="ef-k">In short</div><p>' + esc(summary || 'Loading the email...') + '</p>'
+        + (body && body.length > summary.length + 20 ? '<details class="ef-full"><summary>Show the whole email</summary><div class="ef-body">' + esc(body) + '</div></details>' : '')
+        + (theirAtts ? '<div class="ef-atts">' + theirAtts + '</div>' : '') + '</div>'
+        + '<div class="ef-k">Quick answer, drafted in your voice</div><div class="ef-int">' + intents.map(function (x) { return '<button type="button" data-action="mail-intent" data-intent="' + esc(x[1]) + '">' + esc(x[1]) + '</button>'; }).join('') + '</div>'
+        + (S.composeOpen ? '<div class="ef-none2" style="padding:14px 0">This reply is open in the full editor. Close it to come back here.</div>' : '<section class="ef-comp" id="compose"><div class="cw">'
+        + '<div class="ef-to"><span>To</span><b>' + esc(d.to.map(function (r) { return r.name ? r.name + ' <' + r.email + '>' : r.email; }).join(', ') || 'No address') + '</b></div>'
+        + '<div class="ef-subj"><span>Subject</span><input data-action="mail-subject" value="' + esc(d.subject) + '" placeholder="Subject"></div>'
+        + '<div class="tbar"><span class="tx" data-action="mail-link" title="Select text, then add a link">Link</span><span class="tx" data-action="mail-attach-pick" title="Attach from Documents, Spaces or Drive">Attach from Documents, Spaces or Drive</span><span class="tx" data-action="mail-attach-file" title="Attach a file from this computer">This computer</span></div>'
+        + '<div class="body" contenteditable="true" data-action="mail-body" data-placeholder="Write your reply, or pick a quick answer above">' + bodyHtml + '</div>'
+        + sigBlockHtml(d)
+        + '<div class="ef-attbox"><div class="ef-k">Attached' + (d.attachments.length ? ' &middot; ' + d.attachments.length : '') + '</div>'
+        + (mine ? '<div class="atts">' + mine + '</div>' : '<div class="ef-none2">No attachments yet. PDFs from Documents and Drive files go as links (or as files when Drive allows).</div>')
+        + '<div class="ef-paste"><input id="efPaste" data-action="mail-paste-url" placeholder="Paste a link (PDF, Drive, DocSend, calendar) and press Add" autocomplete="off"><button type="button" data-action="mail-paste-add">Add link</button></div></div>'
+        + '<div class="drop" id="composeDrop">Drop files here to attach them</div><input type="file" id="composeFile" multiple hidden style="display:none">'
+        + '<div class="ef-ai"><input data-action="mail-ask-input" placeholder="Or tell me what to write" value="' + esc(d.ask || '') + '"><button type="button" data-action="mail-ai-write">Draft it</button>'
+        + ['warm', 'direct', 'shorter', 'formal'].map(function (tn) { return '<span class="ef-tone' + (d.tone === tn ? ' on' : '') + '" data-action="mail-tone" data-tone="' + tn + '">' + (tn === 'formal' ? 'More formal' : tn.charAt(0).toUpperCase() + tn.slice(1)) + '</span>'; }).join('') + '</div>'
+        + (d.aiNote ? '<div class="ef-note">' + esc(d.aiNote) + '</div>' : '')
+        + '<div class="cfoot"><button class="send" data-action="mail-send">Send</button><button class="send2" data-action="mail-inline-edit">Open in full editor</button><button class="send2" data-action="mail-skip"' + mailRowAttrs(focus) + '>Skip for now</button><button class="send2" data-action="mail-snooze" data-id="' + esc(focus.id) + '">Snooze a day</button><button class="send2" data-action="mail-done" data-id="' + esc(focus.id) + '">Mark done</button><button class="send2" data-action="mail-full"' + mailRowAttrs(focus) + '>Open full thread</button><button class="send2" data-action="mail-forward"' + mailRowAttrs(focus) + '>Forward</button></div>'
+        + '</div></section>') + '</div>';
+      var who = c
+        ? '<div class="kv"><span>Name</span><b>' + esc(c.name || focus.f) + '</b></div>' + (c.company ? '<div class="kv"><span>Company</span><b>' + esc(c.company) + '</b></div>' : '')
+          + '<div class="kv"><span>Category</span><b>' + esc(normCat(c.category || c.type || 'Contact')) + '</b></div><div class="kv"><span>Stage</span><b>' + esc(c.ghlStage || c.stage || 'new') + '</b></div>'
+          + '<div class="kv"><span>Last touch</span><b>' + (daysAgo(c.lastTouch || c.last_touch) >= 99 ? 'none on record' : daysAgo(c.lastTouch || c.last_touch) + ' days ago') + '</b></div>'
+        : '<div class="kv"><span>Name</span><b>' + esc(focus.f) + '</b></div><div class="kv"><span>Email</span><b>' + esc(focus.e || 'unknown') + '</b></div><div class="kv"><span>In Contacts</span><b>Not yet</b></div>';
+      S.__efWho = who;
+    }
+    var upNext = list.filter(function (m) { return !handled[m.id] && (!focus || String(m.id) !== String(focus.id)); }).slice(0, 4).map(function (m) {
+      return '<div class="ef-nx" data-action="mail-open"' + mailRowAttrs(m) + '><span>' + esc(m.f) + ' &middot; ' + esc(m.sj) + '</span><em>' + esc(m.t) + '</em></div>';
+    }).join('') || '<div class="ef-none2">Nothing else in this split.</div>';
+    var done = doneList.slice().reverse().slice(0, 8).map(function (x) {
+      return '<div class="ef-dn"><span>' + esc(x.who) + ' &middot; ' + esc(x.what) + '</span><em>' + esc(x.at) + '</em></div>';
+    }).join('') || '<div class="ef-none2">Replies you send here land in this list.</div>';
+    var rail = '<aside class="ef-rail">' + (focus ? '<div class="ef-box"><h4>Who this is</h4>' + (S.__efWho || '') + '</div>' : '')
+      + '<div class="ef-box"><h4>Done this session <b>' + doneList.length + '</b></h4>' + done + '</div>'
+      + '<div class="ef-box"><h4>Up next</h4>' + upNext + '</div></aside>';
+    wrap.innerHTML = head
+      + '<div class="ef-lay"><section class="ef-left"><div class="ef-sps">' + splitHtml + '</div><div class="ef-list" id="feed">' + rows + '</div></section>'
+      + '<section class="ef-main">' + card + '</section>' + rail + '</div>'
+      + '<div class="pop" id="pop"><h6>Add to a column</h6><p id="popwho"></p><div id="popopts"></div><label class="always"><input type="checkbox" id="always" data-action="mail-always" checked><span>Always put mail from <b id="popfrom"></b> here</span></label></div>'
+      + '<div class="scrim' + (S.mailFullOpen || S.composeOpen ? ' open' : '') + '" id="scrim" data-action="mail-close"></div>'
+      + (S.mailFullOpen ? readerHtml(S) : '<aside class="reader" id="reader"><span class="grab"></span></aside>')
+      + (S.composeOpen ? composeHtml(true) : '');
+    if (P().finishPaint) P().finishPaint(wrap);
+    else if (typeof window.stampDeskControls === 'function') window.stampDeskControls(wrap.getRootNode());
+    if (typeof window.__mailComposeAfterPaint === 'function') { try { window.__mailComposeAfterPaint(wrap); } catch (e) {} }
+    markReady('mailDesk');
+  }
   function paintEmailLive() {
     var wrap = wrapOf('mailDesk');
     if (!wrap) return;
     var S = window.STATE || {};
-    if (S.composeOpen && !S.mailPaintForce && composeBusy(wrap)) return;
+    if ((S.composeOpen || S.mailInline) && !S.mailPaintForce && composeBusy(wrap)) return;
     S.mailPaintForce = false;
     var data = emailData();
     var view = mailViewName();
@@ -2650,6 +2816,9 @@
       return;
     }
     if (P().applyPageCss) P().applyPageCss(wrap, 'mail');
+    /* 29 Oct: the inbox opens as list plus reply card. The column board stays one click away (Columns). */
+    if (!fixtureOn() && !S.mailSchedOpen && S.mailLayout !== 'board') { S.mailInline = true; paintEmailFocus(wrap, data, S); return; }
+    S.mailInline = false;
     var tab = S.mailFeedTab || data.feedTab || 'everything';
     var openCompose = /(?:^|[?&])(?:compose=1|state=compose)(?:&|$)/.test(String(location.search || '')) || !!(S.composeOpen);
     if (openCompose && fixtureOn() && !(S.composeDraft && S.composeDraft.body)) {
@@ -2716,7 +2885,7 @@
         + '<span class="ncrow"><button type="button" class="ncadd" data-action="mail-col-add">Add</button><span class="nchint">Enter adds &middot; Esc cancels</span></span></div>';
     wrap.innerHTML =
       '<div class="bar"><h1>Email</h1>'
-      + '<div class="seg"><span class="' + (view === 'inbox' && !S.mailSchedOpen ? 'on' : '') + '" data-action="mail-view" data-view="inbox">Inbox</span><span class="' + (view === 'people' && !S.mailSchedOpen ? 'on' : '') + '" data-action="mail-view" data-view="people">People</span>' + schedSeg + '</div>'
+      + '<div class="seg"><span class="' + (view === 'inbox' && !S.mailSchedOpen && S.mailLayout !== 'board' ? 'on' : '') + '" data-action="mail-layout" data-layout="focus">Inbox</span><span class="' + (view === 'inbox' && !S.mailSchedOpen && S.mailLayout === 'board' ? 'on' : '') + '" data-action="mail-layout" data-layout="board">Columns</span><span class="' + (view === 'people' && !S.mailSchedOpen ? 'on' : '') + '" data-action="mail-view" data-view="people">People</span>' + schedSeg + '</div>'
       + '<div class="cnt"><span><b>' + esc(data.unread != null ? data.unread : msgs.filter(function (m) { return m.un; }).length) + '</b> unread</span><span><b>' + esc(data.need != null ? data.need : 0) + '</b> need a reply</span><span><b>' + esc(cols.length) + '</b> columns</span></div>'
       + '<div class="r"><input class="search" data-action="mail-search" placeholder="Search all mail" value="' + esc(S.mailQ || '') + '"><button class="btn" data-action="mail-filters">Filters</button><button class="btn pri" id="composeBtn" data-action="mail-compose">Compose</button></div></div>'
       + '<div class="lay"><section class="feed"><div class="fh"><h3>' + (S.mailQ ? 'Search: ' + esc(S.mailQ) : 'All mail') + '</h3><span class="s">one feed, newest first</span><div class="tabs">'

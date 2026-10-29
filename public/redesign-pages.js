@@ -57,7 +57,7 @@
     room: '/port-css/dashboard.css?v=4', war: '/port-css/war-room.css?v=10', notes: '/port-css/notes.css?v=6',
     notesCanvas: '/port-css/notes-canvas.css?v=11', spacesArrange: '/port-css/spaces-arrange.css?v=1', spacesCards: '/port-css/spaces-cards.css?v=17', signalsDetail: '/port-css/signals-detail.css?v=4', rec: '/port-css/recordings.css?v=3',
     contacts: '/port-css/pipeline.css?v=11', work: '/port-css/spaces.css?v=15', spaceOpen: '/port-css/space-open.css?v=3', docs: '/port-css/documents.css?v=11',
-    links: '/port-css/links.css?v=14', mail: '/port-css/email.css?v=10', mailPeople: '/port-css/email-people.css?v=9',
+    links: '/port-css/links.css?v=14', mail: '/port-css/email.css?v=11', mailPeople: '/port-css/email-people.css?v=9',
     playbook: '/port-css/playbook.css?v=12', calendar: '/port-css/calendar.css?v=9', zoom: '/port-css/zoom.css?v=5',
     completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=5',
     neon: '/port-css/neon.css?v=2', playbookP8: '/port-css/playbook-p8.css?v=25', plannerNeon: '/port-css/planner-neon.css?v=17',

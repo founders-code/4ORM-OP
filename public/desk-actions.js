@@ -3257,7 +3257,12 @@
         if (d.nudge) nudgeLater(root, name, to, d.subject);
         if (d.log) logToPipeline(root, name, to);
         toast(root, (res.drafted && !res.ok ? 'Saved as a Gmail draft' : 'Sent from Gmail') + (d.nudge ? ' · nudge set for 3 days' : '') + (d.log ? ' · logging to Pipeline' : ''));
-        closeComposeDrawer(root);
+        if (d.forId) {
+          (S().mailHandled || (S().mailHandled = {}))[d.forId] = 'sent';
+          (S().mailDoneList || (S().mailDoneList = [])).push({ who: name, what: d.subject || 'Reply', at: new Date().toLocaleTimeString('en-GB', { timeZone: 'America/Vancouver', hour: '2-digit', minute: '2-digit', hour12: false }) });
+        }
+        if (S().composeOpen || !d.forId) closeComposeDrawer(root);
+        else { S().composeDraft = null; S().mailOpen = null; S().mailOpenThread = null; repaintMail(); }
       }).catch(function (err) { toast(root, errText(err, 'Gmail did not take that send')); });
     },
     'intel-ask': function () {},
@@ -3508,12 +3513,14 @@
     /* ---------- Email: reader ---------- */
     'mail-open': function (el) {
       var id = attr(el, 'data-id');
+      if (S().mailOpen && S().mailOpen.id === id && S().mailOpenThread) { refresh('mail'); return; }
       S().mailOpen = { id: id, threadId: attr(el, 'data-thread'), messageId: attr(el, 'data-mid'), email: attr(el, 'data-email'), from: attr(el, 'data-from'), subject: attr(el, 'data-subject'), preview: attr(el, 'data-preview') };
       S().mailOpenThread = null;
       S().mailOpenFailed = false;
       refresh('mail');
       if (!GMAIL_ID.test(id) || !writeOk()) return;
-      markMailRead(id);
+      /* Opened by Chad's click: mark read. Opened automatically by the Email card: leave Gmail as it is. */
+      if (!S().__mailAutoOpening) markMailRead(id);
       loadThread(id).then(function (th) {
         if (!S().mailOpen || S().mailOpen.id !== id) return;
         S().mailOpenThread = th;
@@ -3524,7 +3531,70 @@
         refresh('mail');
       });
     },
+    /* ---------- Email list plus card (29 Oct) ---------- */
+    'mail-layout': function (el) {
+      S().mailLayout = attr(el, 'data-layout') === 'board' ? 'board' : 'focus';
+      S().mailView = 'inbox';
+      S().mailSchedOpen = false;
+      repaintMail();
+    },
+    'mail-split': function (el) {
+      S().mailSplit = attr(el, 'data-split') || 'all';
+      S().mailOpen = null;
+      S().mailOpenThread = null;
+      S().mailAutoOpen = null;
+      repaintMail();
+    },
+    'mail-full': function (el) {
+      if (!S().mailOpen) actions['mail-open'](el);
+      S().mailFullOpen = true;
+      repaintMail();
+    },
+    'mail-skip': function (el) {
+      var id = attr(el, 'data-id');
+      if (id) (S().mailHandled || (S().mailHandled = {}))[id] = 'skip';
+      S().mailOpen = null;
+      S().mailOpenThread = null;
+      S().composeDraft = null;
+      repaintMail();
+    },
+    'mail-inline-edit': function (el, root) {
+      syncCompose(root);
+      S().composeOpen = true;
+      repaintMail();
+      setTimeout(function () { focusComposeField(''); }, 80);
+    },
+    'mail-paste-url': function () {},
+    'mail-paste-add': function (el, root) {
+      var input = root.getElementById && root.getElementById('efPaste');
+      var url = String((input && input.value) || '').trim();
+      if (!url) { toast(root, 'Paste a link first'); return; }
+      if (!/^[a-z][a-z0-9+.-]*:/i.test(url)) url = 'https://' + url;
+      if (!/^https?:\/\/\S+$/i.test(url)) { toast(root, 'That is not a web address'); return; }
+      syncCompose(root);
+      var d = composeState();
+      if (d.attachments.some(function (a) { return a.url === url; })) { toast(root, 'That link is already attached'); return; }
+      var name = url.replace(/^https?:\/\/(www\.)?/i, '').split(/[?#]/)[0];
+      var file = decodeURIComponent((name.split('/').pop() || '')).trim();
+      d.attachments.push({ name: /\.[a-z0-9]{2,5}$/i.test(file) ? file : name.slice(0, 80), url: url });
+      if (input) input.value = '';
+      repaintMail();
+      toast(root, 'Link attached. It goes in the email as a link.');
+    },
+    'mail-intent': function (el, root) {
+      var cp = root.getElementById && root.getElementById('compose');
+      var askEl = cp && cp.querySelector('[data-action="mail-ask-input"]');
+      var th = S().mailOpenThread || {};
+      var o = S().mailOpen || {};
+      var theirs = String(th.text || o.preview || '').replace(/\s+/g, ' ').trim().slice(0, 1500);
+      var ask = 'Reply to this email. My answer: ' + attr(el, 'data-intent') + '. Keep it short and in my voice.' + (theirs ? ' Their email said: ' + theirs : '');
+      if (askEl) askEl.value = ask;
+      mailAiWrite(root, 'write', '');
+    },
     'mail-close': function () {
+      S().mailFullOpen = false;
+      if (S().mailInline && !S().composeOpen) { repaintMail(); return; }
+      if (S().mailInline && S().composeOpen) { S().composeOpen = false; S().composeDraft = null; repaintMail(); return; }
       S().mailOpen = null;
       S().mailOpenThread = null;
       if (S().composeOpen) { S().composeOpen = false; S().composeDraft = null; }
@@ -3554,6 +3624,8 @@
       var id = attr(el, 'data-id') || (S().mailOpen && S().mailOpen.id) || '';
       if (!id || !writeOk()) { toast(root, 'Marked done (fixture)'); return; }
       api('/api/mail/act', { method: 'POST', body: { action: 'done', id: id } }).then(ok).then(function () {
+        (S().mailHandled || (S().mailHandled = {}))[id] = 'done';
+        if (S().mailInline && S().mailOpen && S().mailOpen.id === id) { S().mailOpen = null; S().mailOpenThread = null; S().composeDraft = null; }
         toast(root, 'Marked done'); refresh('mail');
       }).catch(function () { toast(root, 'Could not mark that done'); });
     },
@@ -4842,6 +4914,15 @@
   }
   var EMAIL_RE = /^[^\s@,<>]+@[^\s@,<>]+\.[^\s@,<>]+$/;
   var GMAIL_ID = /^[A-Za-z0-9_-]{6,64}$/;
+  /* The Email card opens the first email of a split on its own (loads its thread, marks it read). */
+  window.__mailOpenRow = function (m) {
+    if (!m || !m.id) return;
+    var el = document.createElement('span');
+    el.setAttribute('data-id', m.id); el.setAttribute('data-thread', m.threadId || ''); el.setAttribute('data-mid', m.messageId || '');
+    el.setAttribute('data-email', m.e || ''); el.setAttribute('data-from', m.f || ''); el.setAttribute('data-subject', m.sj || ''); el.setAttribute('data-preview', m.pv || '');
+    S().__mailAutoOpening = true;
+    try { actions['mail-open'](el); } finally { S().__mailAutoOpening = false; }
+  };
   var UUID_RE = /^[0-9a-f-]{36}$/i;
   function mailRoot() {
     var host = document.getElementById('mailDesk');
@@ -5624,6 +5705,8 @@
       actions[e.key === 'Escape' ? 'mail-link-cancel' : 'mail-link-apply'](el, root, e);
       return;
     }
+    if (fieldAct === 'mail-paste-url' && e.key === 'Enter') { e.preventDefault(); actions['mail-paste-add'](el, root, e); return; }
+    if (fieldAct === 'mail-ask-input' && e.key === 'Enter' && root && root.querySelector && root.querySelector('.ef-comp')) { e.preventDefault(); mailAiWrite(root, 'write', ''); return; }
     if (fieldAct === 'mail-pick-q' && (e.key === 'Enter' || e.key === 'Escape')) {
       e.preventDefault();
       if (e.key === 'Escape') actions['mail-pick-close'](el, root, e);
