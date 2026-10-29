@@ -51,6 +51,14 @@
     + '#dsr .d-ed{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 4px}#dsr .d-ed label{display:block;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7d859a}'
     + '#dsr .d-ed input{width:100%;background:#18191f;border:1px solid #2a2c35;border-radius:8px;color:#fff;font:inherit;font-size:13px;padding:7px 9px;margin-top:3px}#dsr .d-ed .w{grid-column:span 2}'
     + '#dsr .d-intel{display:grid;grid-template-columns:1fr;gap:4px}#dsr .d-intel div{display:grid;grid-template-columns:118px 1fr;gap:8px;font-size:12.5px;align-items:baseline}#dsr .d-intel i{font-style:normal;color:#7d859a;font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.06em}#dsr .d-intel span{color:#fff}#dsr .d-intel span.warn{color:#ff8fa3;font-weight:800}'
+    + '#dsr .d-prof{padding:12px 20px 14px;border-bottom:1px solid #23252e;background:#0f1014}'
+    + '#dsr .d-exs{display:flex;flex-wrap:wrap;gap:8px}#dsr .d-ex{display:flex;align-items:center;gap:8px;background:#18191f;border:1px solid #2a2c35;border-radius:12px;padding:7px 10px}'
+    + '#dsr .d-ex i{font-style:normal;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#9db9ff}#dsr .d-ex b{font-size:13px;color:#fff}'
+    + '#dsr a.d-li{color:#fff;background:#0a66c2;border-radius:999px;padding:3px 10px;font-weight:800;font-size:11px;text-decoration:none}'
+    + '#dsr .d-facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}#dsr .d-fact{background:#18191f;border:1px solid #2a2c35;border-radius:12px;padding:7px 11px;min-width:120px}'
+    + '#dsr .d-fact i{display:block;font-style:normal;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7d859a}#dsr .d-fact b{display:block;font-size:14px;color:#fff;margin:1px 0 2px}'
+    + '#dsr .d-fact.warn{border-color:rgba(255,72,102,.55)}#dsr .d-fact.warn b{color:#ff8fa3}'
+    + '#dsr .d-pn{margin-top:8px}#dsr .d-pm{display:flex;gap:12px;align-items:center;margin-top:8px;color:#7d859a;font-size:11px}'
     + '@media(max-width:820px){#dsr .d-mid{grid-template-columns:1fr}#dsr .d-lft{border-right:0}}';
   var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
   var wrap = document.createElement('div'); wrap.id = 'dsr';
@@ -159,6 +167,41 @@
     return isFinite(n) && raw !== undefined ? n : null;
   }
 
+  /* Profile band, top of every card: executives with LinkedIn, then the company facts, each with its source. */
+  var ROLE_ORDER = [['ceo', 'CEO'], ['president', 'President'], ['coo', 'COO'], ['cfo', 'CFO'], ['cto', 'CTO'], ['cco', 'CCO']];
+  var FACTS = [['years', 'Years in business'], ['founded', 'Founded'], ['size', 'Size'], ['agents', 'Agents'], ['volume', 'Volume'], ['revenue', 'Revenue'], ['aum', 'Assets'], ['licence', 'Licence'], ['penalties', 'Past penalties']];
+  function rank(title) {
+    var t = String(title || '').toLowerCase();
+    var r = [/\bceo\b|chief executive/, /president/, /\bcoo\b|chief operating/, /\bcfo\b|chief financial/, /\bcto\b|chief technology/, /\bcco\b|chief compliance/, /founder|owner|principal|managing|partner|director/];
+    for (var i = 0; i < r.length; i++) if (r[i].test(t)) return i;
+    return 9;
+  }
+  function profileBand(EN, web) {
+    if (!EN) return '<div class="d-prof"><div class="d-muted">Company profile not researched yet.' + (web ? ' <a class="d-src" href="' + esc(web) + '" target="_blank" rel="noopener">Website</a>' : '') + '</div></div>';
+    var I = EN.intel || {}, people = (EN.team || []).map(function (p) { return { name: p.name, title: p.title, li: p.linkedin, url: '' }; });
+    ROLE_ORDER.forEach(function (r) {
+      var v = I[r[0]]; if (!v || !v.value) return;
+      var nm = String(v.value).trim(), hit = people.filter(function (p) { return p.name && nm.toLowerCase().indexOf(String(p.name).toLowerCase()) >= 0; })[0];
+      if (hit) { if (rank(hit.title) > rank(r[1])) hit.title = r[1] + (hit.title ? ' · ' + hit.title : ''); if (!hit.url) hit.url = v.url; }
+      else people.push({ name: nm, title: r[1], li: '', url: v.url });
+    });
+    people.sort(function (a, b) { return rank(a.title) - rank(b.title); });
+    var ex = people.slice(0, 6).map(function (p) {
+      return '<div class="d-ex"><i>' + esc(p.title || 'Leader') + '</i><b>' + esc(p.name) + '</b>' + (p.li ? '<a class="d-li" href="' + esc(p.li) + '" target="_blank" rel="noopener">LinkedIn</a>' : (p.url ? '<a class="d-src" href="' + esc(p.url) + '" target="_blank" rel="noopener">Source</a>' : '<span class="d-muted" style="font-size:11px">No LinkedIn yet</span>')) + '</div>';
+    }).join('');
+    var facts = FACTS.filter(function (f) { return I[f[0]] && I[f[0]].value; }).map(function (f) {
+      var v = I[f[0]], bad = f[0] === 'penalties' && !/^(none|no )/i.test(v.value);
+      return '<div class="d-fact' + (bad ? ' warn' : '') + '"><i>' + esc(f[1]) + '</i><b>' + esc(v.value) + '</b>' + (v.url ? '<a class="d-src" href="' + esc(v.url) + '" target="_blank" rel="noopener">Source</a>' : '') + '</div>';
+    }).join('');
+    var site = EN.website || web;
+    var notes = (EN.notes || []).length ? '<ul class="d-pn">' + EN.notes.map(function (n) { return '<li>' + hl(n.text) + (n.url ? ' <a class="d-src" href="' + esc(n.url) + '" target="_blank" rel="noopener">Source</a>' : '') + '</li>'; }).join('') + '</ul>' : '';
+    return '<div class="d-prof">'
+      + (ex ? '<div class="d-exs">' + ex + '</div>' : '<div class="d-muted">No executives found yet.</div>')
+      + (facts ? '<div class="d-facts">' + facts + '</div>' : '')
+      + notes
+      + '<div class="d-pm">' + (site ? '<a class="d-src" href="' + esc(site) + '" target="_blank" rel="noopener">' + esc(String(site).replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')) + '</a>' : '') + '<span>Researched ' + esc(EN.checked || '') + '</span></div>'
+      + '</div>';
+  }
   function render(rec, opts) {
     var M = merged(rec), used = {};
     var EN = (rec.data && rec.data.enrich) || null;
@@ -231,6 +274,7 @@
       + '<span class="d-stg"><button type="button" class="d-stgb" data-a="stages">Stages: ' + esc(ghl || stage) + '</button></span>'
       + (ch === 'Call' ? '<button type="button" class="d-scb" data-a="script">Script</button>' : '') + '</div>'
       + '<span class="d-q">' + (rec.last_touch ? 'Last touch ' + esc(new Date(rec.last_touch).toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' })) : 'Never touched') + '</span></div>'
+      + profileBand(EN, url(rec.website))
       + '<div class="d-mid"><div class="d-lft">'
       + '<div id="dsrHead">'
       + '<div style="display:flex;align-items:center;gap:10px"><h2>' + esc(rec.name) + '</h2><button type="button" data-a="edit" style="padding:3px 12px;font-size:11px;border-radius:999px">Edit</button></div><div class="d-who">' + esc([person && person !== rec.name ? person : '', role, place, industry].filter(Boolean).join(' · ')) + '</div>'
@@ -252,18 +296,6 @@
       + sec('Next touch', '<div class="d-pills" data-nt>' + [['Today', 0], ['Tomorrow', 1], ['This week', 3], ['Next week', 7]].map(function (x) { return '<button type="button" data-days="' + x[1] + '">' + x[0] + '</button>'; }).join('') + '<input type="date" id="dsrFu" style="margin-left:4px"></div>')
       + sec('Open', '<div class="d-pills">' + (rec.email ? '<button type="button" data-a="email">Email</button>' : '') + (li ? '<button type="button" data-a="li">LinkedIn</button>' : '') + '<button type="button" data-a="space">Space</button>'
         + (rec.data && rec.data.contactId ? '<button type="button" disabled style="opacity:.6">In Contacts</button>' : '<button type="button" data-a="addc">Add to Contacts</button>') + '</div>')
-      + sec('Company intel', (EN && ((EN.intel && Object.keys(EN.intel).length) || (EN.notes || []).length)) ? (function () {
-          var LBL = [['penalties', 'Past penalties'], ['president', 'President'], ['ceo', 'CEO'], ['coo', 'COO'], ['cto', 'CTO'], ['cco', 'CCO'], ['founded', 'Founded'], ['years', 'Years in business'], ['agents', 'Agents'], ['size', 'Size'], ['licence', 'Licence']];
-          return '<div class="d-intel">' + LBL.filter(function (k) { return EN.intel && EN.intel[k[0]]; }).map(function (k) {
-            var v = EN.intel[k[0]];
-            return '<div><i>' + esc(k[1]) + '</i><span' + (k[0] === 'penalties' && !/^(none|no )/i.test(v.value) ? ' class="warn"' : '') + '>' + esc(v.value) + (v.url ? ' <a class="d-src" href="' + esc(v.url) + '" target="_blank" rel="noopener">Source</a>' : '') + '</span></div>';
-          }).join('') + '</div>'
-            + ((EN.notes || []).length ? '<ul style="margin-top:6px">' + EN.notes.map(function (n) { return '<li>' + hl(n.text) + (n.url ? ' <a class="d-src" href="' + esc(n.url) + '" target="_blank" rel="noopener">Source</a>' : '') + '</li>'; }).join('') + '</ul>' : '');
-        })() : '<div class="d-muted">Not researched yet.</div>')
-      + sec('Leadership', (EN && (EN.website || (EN.team || []).length)) ? ((EN.website || web) ? '<div style="margin-bottom:6px"><a class="d-src" style="font-size:12.5px" href="' + esc(EN.website || web) + '" target="_blank" rel="noopener">' + esc(String(EN.website || web).replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')) + '</a></div>' : '')
-          + (EN.team || []).map(function (p) { return '<div class="d-tm"><div><b>' + esc(p.name) + '</b><small>' + esc(p.title || '') + '</small></div>' + (p.linkedin ? '<a href="' + esc(p.linkedin) + '" target="_blank" rel="noopener">LinkedIn</a>' : '<span class="d-muted">No LinkedIn found</span>') + '</div>'; }).join('')
-          + '<div class="d-muted" style="font-size:11px;margin-top:4px">Checked ' + esc(EN.checked || '') + '</div>'
-        : '<div class="d-muted">Not researched yet.' + (web ? ' <a class="d-src" href="' + esc(web) + '" target="_blank" rel="noopener">Website</a>' : '') + '</div>')
       + (rec.notes ? sec('Earlier notes', '<div class="d-muted" style="white-space:pre-wrap">' + esc(String(rec.notes).slice(0, 1600)) + '</div>') : '')
       + sec('History', touches.length ? '<div class="d-hist">' + touches.slice(0, 8).map(function (t) {
         return '<div><small>' + esc(new Date(t.at).toLocaleString('en-CA', { timeZone: 'America/Vancouver', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })) + ' · ' + esc(t.channel || '') + '</small>' + esc([t.outcome, t.note].filter(Boolean).join(' · ')) + '</div>';

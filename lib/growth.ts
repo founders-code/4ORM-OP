@@ -539,7 +539,7 @@ export type Enrich = {
   notes: Array<{ text: string; url: string }>;
 };
 /* Company intel fields Chad asked for (29 Oct 2026). Each value carries its source link. */
-export const INTEL_KEYS = ['penalties', 'president', 'ceo', 'coo', 'cto', 'cco', 'founded', 'years', 'agents', 'size', 'licence'] as const;
+export const INTEL_KEYS = ['penalties', 'president', 'ceo', 'coo', 'cfo', 'cto', 'cco', 'founded', 'years', 'agents', 'size', 'volume', 'revenue', 'aum', 'licence'] as const;
 const httpsUrl = (v: unknown, max = 500) => { const t = String(v || '').trim().slice(0, max); return /^https:\/\/[^\s<>"]+$/i.test(t) ? t : ''; };
 export function cleanEnrich(e: Record<string, unknown>): Enrich {
   const team = (Array.isArray(e.team) ? e.team : []).map((p) => {
