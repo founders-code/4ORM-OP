@@ -65,25 +65,119 @@
   function todos() { return (window.TDL || []).filter(function (x) { return x.b === 'today' && !x.done && !x.gone; }); }
   function score() { var d = S.calls || {}; return (d.doneToday || 0) + ' done · ' + people().length + ' to go'; }
 
-  /* ---------- A: Lanes ---------- */
-  function paintLanes() {
-    var evs = events();
-    var h = '<div class="wtop"><div class="wbox"><span class="wlab">Today</span><b>' + esc(score()) + '</b></div>'
-      + '<div class="wbox wgrow"><span class="wlab">Calendar</span>' + (evs.length ? evs.map(function (ev, k) { return '<a class="wev" data-ev="' + k + '">' + vanHM(ev.start) + ' ' + esc(ev.title || 'Event') + '</a>'; }).join('') : '<span class="wm">Nothing on the calendar today</span>') + '</div></div>';
-    h += '<div class="wlanes">';
+  /* ---------- A: Run sheet (replaces Lanes, 29 Oct 2026) ----------
+     Everything for today on one list: every number to call, every LinkedIn touch, every email and form,
+     the to-dos and the rhythms. A box on every line. Logging an outcome ticks the box; Undo puts it back. */
+  var OUTS = {
+    call: [['No answer', 'No answer'], ['Left voicemail', 'Voicemail'], ['Spoke', 'Spoke'], ['Meeting booked', 'Booked']],
+    li: [['Sent in GoHighLevel', 'Sent'], ['Replied', 'Replied']],
+    mail: [['Sent', 'Sent'], ['Form sent', 'Form sent'], ['Replied', 'Replied']]
+  };
+  var CHK = { call: 'Called', li: 'Sent in GoHighLevel', mail: 'Sent' };
+  function R() { if (!S.run) S.run = { flt: 'all', list: '', hide: false, done: {}, touch: {}, more: {}, items: {} }; return S.run; }
+  function runRows() {
+    var run = R(), rows = [];
     LANES.forEach(function (l) {
-      var rs = inLane(l);
-      h += '<div class="wlane" style="--c:' + l.c + '"><div class="wlh"><b>' + esc(l.name) + '</b><span>' + rs.length + ' to go</span></div>'
-        + (rs.length ? '<button type="button" class="wstart" data-start="' + l.key + '">Start ' + esc(l.key === 'call' ? 'calling' : l.key === 'li' ? 'LinkedIn' : 'email and forms') + '</button>' : '')
-        + (rs.length ? rs.map(function (r) { return card(r, l); }).join('') : '<div class="wm">Nobody planned here today.</div>') + '</div>';
+      inLane(l).forEach(function (r) { rows.push({ kind: l.key, id: r.id, r: r, list: r.listName || r.list || '' }); });
     });
-    var ps = plays(), ts = todos();
-    h += '<div class="wlane" style="--c:#ffa946"><div class="wlh"><b>Plays and to-dos</b><span>' + ps.length + ' plays · ' + ts.length + ' due</span></div>'
-      + ps.map(function (r, k) { return '<div class="wcard" style="--c:' + esc(r.c && String(r.c).indexOf('--') === 0 ? 'var(' + r.c + ')' : (r.c || '#ffa946')) + '" data-play="' + k + '"><div class="wn"><b>' + esc(r.n) + '</b></div><div class="ws">' + esc(r.grp || 'Daily') + '</div></div>'; }).join('')
-      + ts.map(function (x) { return '<div class="wcard" style="--c:#ff4866" data-todo="' + esc(x.id) + '"><div class="wn"><b>' + esc(x.t) + '</b></div><div class="ws">To-do' + (x.from ? ' · ' + esc(x.from) : '') + '</div></div>'; }).join('')
-      + (!ps.length && !ts.length ? '<div class="wm">All clear.</div>' : '') + '</div>';
-    h += '</div>';
+    /* Rows logged this session stay on the sheet, struck through. */
+    Object.keys(run.items).forEach(function (id) { if (!rows.some(function (x) { return x.id === id; })) rows.push(run.items[id]); });
+    todos().concat((window.TDL || []).filter(function (x) { return x.b === 'today' && run.done['td:' + x.id]; }).filter(function (x, i, arr) { return arr.indexOf(x) === i; }))
+      .forEach(function (x) { if (!rows.some(function (y) { return y.id === 'td:' + x.id; })) rows.push({ kind: 'todo', id: 'td:' + x.id, x: x, list: 'To-dos' }); });
+    var M = window.__playMount || {}, ti = M.todayIdx == null ? 0 : M.todayIdx;
+    (M.rows || []).filter(function (r) { return r && !r.s && r.d && (r.d[ti] === 'due' || r.d[ti] === 'next' || run.done['pl:' + (r.id || r.n)]); })
+      .forEach(function (r) { rows.push({ kind: 'play', id: 'pl:' + (r.id || r.n), p: r, list: 'Rhythms' }); });
+    return rows;
+  }
+  function isDone(row) {
+    var run = R();
+    if (run.done[row.id]) return true;
+    if (row.kind === 'play') { var M = window.__playMount || {}, ti = M.todayIdx == null ? 0 : M.todayIdx; return row.p.d && row.p.d[ti] === 'done'; }
+    if (row.kind === 'todo') return !!row.x.done;
+    return false;
+  }
+  var BLOCKS = [['call', 'Calls', '#00dc86'], ['li', 'LinkedIn through GoHighLevel', '#4272f9'], ['mail', 'Email and forms', '#ffa946'], ['todo', 'To-dos', '#9771f9'], ['play', 'Rhythms left today', '#c8d1ea']];
+  function rowHtml(row, n) {
+    var run = R(), done = isDone(row), k = row.kind;
+    var box = '<button type="button" class="rcb' + (done ? ' on' : '') + '" data-rck="' + esc(row.id) + '" aria-label="' + (done ? 'Done' : 'Mark done') + '">' + (done ? 'Done' : '') + '</button>';
+    var num = '<span class="rn">' + n + '</span>';
+    if (k === 'todo') {
+      var x = row.x;
+      return '<div class="rrow' + (done ? ' rdone' : '') + '">' + box + num + '<div class="rwho"><b>' + esc(x.t) + '</b><small>' + esc(x.from || 'To-do') + '</small></div><span class="rtag">To-do</span><span class="rmid"></span>'
+        + '<div class="racts">' + (done ? '<span class="rlog">Done</span>' : '<button type="button" data-rtodo="' + esc(x.id) + '">Open</button>') + '</div></div>';
+    }
+    if (k === 'play') {
+      var p = row.p;
+      return '<div class="rrow' + (done ? ' rdone' : '') + '">' + box + num + '<div class="rwho"><b>' + esc(p.n) + '</b><small>' + esc(p.grp || 'Daily') + '</small></div><span class="rtag">Rhythm</span><span class="rmid">' + (done ? 'Done' : 'Due today') + '</span>'
+        + '<div class="racts">' + (done ? '<span class="rlog">Done</span>' : '<button type="button" data-rplay="' + esc(row.id) + '">Open</button>') + '</div></div>';
+    }
+    var r = row.r, ph = tel(r.phone), shown = String(r.phone || '').split(/\s*[;/]\s*/)[0];
+    var sub = [whoOf(r), r.city].filter(Boolean).join(' · ');
+    var mid = k === 'call' ? (ph ? '<a class="rph" href="tel:' + esc(ph) + '">' + esc(shown) + '</a>' : '<span class="rph none">No phone yet</span>')
+      : '<span class="rline">' + esc(String(r.why || r.pain_drivers || r.backed || r.email || '').slice(0, 90)) + '</span>';
+    var pain = (r.pain != null && r.pain !== '') ? painBar(r.pain) : '';
+    var outs = done ? '<span class="rlog">' + esc(run.done[row.id] || 'Logged') + '</span>'
+      : (OUTS[k] || []).map(function (o) { return '<button type="button" data-rout="' + esc(o[0]) + '" data-rid="' + esc(row.id) + '">' + esc(o[1]) + '</button>'; }).join('')
+        + '<button type="button" class="rgo" data-who="' + esc(r.id) + '" data-lane="' + k + '">' + (k === 'call' && ph ? 'Call' : 'Open card') + '</button>';
+    return '<div class="rrow' + (done ? ' rdone' : '') + '">' + box + num + '<div class="rwho"><b>' + esc(r.name) + '</b><small>' + esc(sub) + '</small></div><span class="rtag">' + esc(row.list) + '</span>'
+      + '<span class="rmid">' + mid + (pain ? '<span class="rpain">' + pain + '</span>' : '') + '</span><div class="racts">' + outs + '</div></div>';
+  }
+  function paintLanes() {
+    var run = R(), rows = runRows();
+    var lists = []; rows.forEach(function (x) { if ((x.kind === 'call' || x.kind === 'li' || x.kind === 'mail') && x.list && lists.indexOf(x.list) < 0) lists.push(x.list); });
+    var all = rows.length, dn = rows.filter(isDone).length;
+    var cnt = {}; BLOCKS.forEach(function (b) { cnt[b[0]] = rows.filter(function (x) { return x.kind === b[0]; }); });
+    var h = '<div class="rhead"><div class="rh1"><div><span class="wlab">Run sheet · ' + esc(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', weekday: 'short', day: 'numeric', month: 'short' }).format(new Date())) + '</span>'
+      + '<h3>Everything for today, one list, check it off</h3></div><div class="rbig"><b>' + dn + '</b><span>of ' + all + ' done</span></div></div>'
+      + '<div class="rbar">' + BLOCKS.map(function (b) { var c = cnt[b[0]], d = c.filter(isDone).length; return c.length ? '<i style="flex:' + c.length + ';--c:' + b[2] + '"><em style="width:' + Math.round(d / c.length * 100) + '%"></em></i>' : ''; }).join('') + '</div>'
+      + '<div class="rflt"><button type="button" data-rf="all" class="' + (run.flt === 'all' ? 'on' : '') + '">All ' + all + '</button>'
+      + BLOCKS.map(function (b) { var c = cnt[b[0]]; return c.length ? '<button type="button" data-rf="' + b[0] + '" class="' + (run.flt === b[0] ? 'on' : '') + '">' + esc(b[0] === 'play' ? 'Rhythms' : b[0] === 'li' ? 'LinkedIn' : b[0] === 'mail' ? 'Email' : b[1]) + ' ' + c.length + '</button>' : ''; }).join('')
+      + '<span class="rsp"></span>' + lists.map(function (l) { return '<button type="button" data-rl="' + esc(l) + '" class="' + (run.list === l ? 'on' : '') + '">' + esc(l) + '</button>'; }).join('')
+      + '<button type="button" data-rhide="1" class="' + (run.hide ? 'on' : '') + '">Hide done</button></div></div>';
+    BLOCKS.forEach(function (b) {
+      if (run.flt !== 'all' && run.flt !== b[0]) return;
+      var rs = cnt[b[0]].filter(function (x) { return !run.list || x.list === run.list || x.kind === 'todo' || x.kind === 'play'; });
+      if (run.list && (b[0] === 'todo' || b[0] === 'play')) return;
+      if (!rs.length) return;
+      var d = rs.filter(isDone).length;
+      var vis = rs.filter(function (x) { return !(run.hide && isDone(x)); });
+      var lim = run.more[b[0]] ? vis.length : 15;
+      var firstOpen = rs.filter(function (x) { return !isDone(x); })[0];
+      h += '<section class="rblk" style="--c:' + b[2] + '"><div class="rbh"><i></i><b>' + esc(b[1]) + '</b><span>' + d + ' of ' + rs.length + '</span><span class="rmini"><em style="width:' + Math.round(d / rs.length * 100) + '%"></em></span>'
+        + (b[0] === 'call' && firstOpen ? '<button type="button" class="rstart" data-start="call">Start calling</button>' : '') + '</div>'
+        + vis.slice(0, lim).map(function (x) { return rowHtml(x, rs.indexOf(x) + 1); }).join('')
+        + (vis.length > lim ? '<div class="rmore">' + (vis.length - lim) + ' more in this block <button type="button" data-rmore="' + b[0] + '">Show all ' + vis.length + '</button></div>' : '')
+        + '</section>';
+    });
+    var doneRows = rows.filter(isDone);
+    h += '<div class="rdonebox"><span class="wlab">Done today · ' + ((S.calls && S.calls.doneToday) || 0) + ' contacts logged</span><p>' + (doneRows.length ? doneRows.map(function (x) {
+      return esc(x.kind === 'todo' ? x.x.t : x.kind === 'play' ? x.p.n : x.r.name + (run.done[x.id] ? ', ' + run.done[x.id].toLowerCase() : ''));
+    }).join(' · ') : 'Nothing checked off yet.') + '</p></div>';
     return h;
+  }
+  function runLog(id, outcome) {
+    var run = R(), row = runRows().filter(function (x) { return x.id === id; })[0];
+    if (!row || !row.r) return;
+    var ch = row.kind === 'call' ? 'Call' : row.kind === 'li' ? 'LinkedIn' : 'Email';
+    if (outcome === 'Spoke' && window.openDossier) {
+      window.openDossier(row.r.id, { channel: 'Call', onSaved: function (rec, o) { if (o) { run.done[id] = o; run.items[id] = row; } load(true, paint); } });
+      return;
+    }
+    run.done[id] = outcome; run.items[id] = row; paint();
+    var fu = /voicemail|No answer/i.test(outcome) ? vanDay(Date.now() + 2 * 86400000) : '';
+    api('/api/growth', 'POST', { action: 'touch', id: row.r.id, channel: ch, outcome: outcome, note: '', next_date: fu }).then(function (x) { return x && x.ok ? x.json() : null; }).then(function (res) {
+      var tid = res && res.touch && res.touch.id;
+      if (!res) { delete run.done[id]; paint(); if (S.toast) S.toast('Could not log that. Try again.', function () {}); return; }
+      if (S.calls) S.calls.doneToday = (S.calls.doneToday || 0) + 1;
+      if (S.toast) S.toast(row.r.name + ' · ' + outcome, function () { if (tid) api('/api/growth', 'POST', { action: 'undo-touch', touchId: tid }); delete run.done[id]; delete run.items[id]; if (S.calls) S.calls.doneToday = Math.max(0, (S.calls.doneToday || 1) - 1); paint(); });
+    }).catch(function () { delete run.done[id]; paint(); });
+  }
+  function runCheck(id) {
+    var run = R(), row = runRows().filter(function (x) { return x.id === id; })[0];
+    if (!row || isDone(row)) return;
+    if (row.kind === 'todo') { run.done[id] = 'Done'; paint(); if (S.open.todoDone) S.open.todoDone(row.x.id); return; }
+    if (row.kind === 'play') { run.done[id] = 'Done'; paint(); if (S.open.playDone) S.open.playDone(row.p, function () { delete run.done[id]; paint(); }); return; }
+    runLog(id, CHK[row.kind] || 'Done');
   }
 
   /* ---------- C: Time blocks ---------- */
@@ -244,6 +338,14 @@
         return;
       }
       var out = t.closest('[data-out]'); if (out) { sprintLog(out.getAttribute('data-out')); return; }
+      var rck = t.closest('[data-rck]'); if (rck) { runCheck(rck.getAttribute('data-rck')); return; }
+      var ro = t.closest('[data-rout]'); if (ro) { runLog(ro.getAttribute('data-rid'), ro.getAttribute('data-rout')); return; }
+      var rf = t.closest('[data-rf]'); if (rf) { R().flt = rf.getAttribute('data-rf'); R().list = ''; paint(); return; }
+      var rl = t.closest('[data-rl]'); if (rl) { var L = rl.getAttribute('data-rl'); R().list = R().list === L ? '' : L; R().flt = 'all'; paint(); return; }
+      var rh = t.closest('[data-rhide]'); if (rh) { R().hide = !R().hide; paint(); return; }
+      var rm = t.closest('[data-rmore]'); if (rm) { R().more[rm.getAttribute('data-rmore')] = 1; paint(); return; }
+      var rt = t.closest('[data-rtodo]'); if (rt && S.open.todo) { S.open.todo(rt.getAttribute('data-rtodo')); return; }
+      var rp = t.closest('[data-rplay]'); if (rp && S.open.play) { var pr = runRows().filter(function (x) { return x.id === rp.getAttribute('data-rplay'); })[0]; if (pr) S.open.play(pr.p); return; }
       var tile = t.closest('[data-tile]'); if (tile && S.sprint) { S.sprint.i = +tile.getAttribute('data-tile'); paint(); return; }
       var st = t.closest('[data-start]'); if (st) { startQueue(st.getAttribute('data-start'), st.hasAttribute('data-from') ? +st.getAttribute('data-from') : null, +st.getAttribute('data-n') || 0); return; }
       var who = t.closest('[data-who]');

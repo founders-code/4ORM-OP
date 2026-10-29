@@ -517,3 +517,37 @@ body.navshut .side{width:0;padding:0;border:0}
 .pbwrap>.head .score .s{white-space:nowrap}
 .pbwrap>.head .play .tri{display:none}
 .pbwrap>.head .play{padding:11px 18px}
+/* ===== Run sheet (replaces Lanes, 29 Oct 2026): everything for today, one list, check it off ===== */
+.work .rhead{position:sticky;top:0;z-index:4;background:#07080b;padding:4px 0 12px;margin-bottom:12px;border-bottom:1px solid #23252e}
+.work .rh1{display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+.work .rh1 h3{margin:4px 0 0;font-size:20px;font-weight:850;color:#fff}
+.work .rbig{display:flex;align-items:baseline;gap:6px;white-space:nowrap}.work .rbig b{font-size:34px;font-weight:900;color:#fff;line-height:1}.work .rbig span{color:#aeb6c8;font-weight:700;font-size:13px}
+.work .rbar{display:flex;gap:3px;height:6px;margin:12px 0 10px}.work .rbar i{display:block;height:100%;border-radius:4px;background:#23252e;overflow:hidden}.work .rbar i em{display:block;height:100%;background:var(--c)}
+.work .rflt{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.work .rflt .rsp{flex:1}
+.work .rflt button{font:700 12px Inter,system-ui,sans-serif;color:#c8d1ea;background:#111216;border:1px solid #2a2c35;border-radius:999px;padding:6px 12px;cursor:pointer;white-space:nowrap}
+.work .rflt button.on{background:#fff;color:#0b0c10;border-color:#fff}
+.work .rblk{background:#111216;border:1px solid #23252e;border-radius:12px;margin-bottom:12px;overflow:hidden}
+.work .rbh{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #23252e}
+.work .rbh>i{width:9px;height:9px;border-radius:2px;background:var(--c)}.work .rbh b{font-size:15px;color:#fff}.work .rbh span{color:#aeb6c8;font-weight:700;font-size:12.5px}
+.work .rbh .rmini{flex:0 0 120px;margin-left:auto;height:5px;border-radius:4px;background:#23252e;overflow:hidden}.work .rbh .rmini em{display:block;height:100%;background:var(--c)}
+.work .rstart{font:800 12px Inter,system-ui,sans-serif;background:#00dc86;color:#03170d;border:0;border-radius:9px;padding:7px 12px;cursor:pointer}
+.work .rrow{display:grid;grid-template-columns:30px 26px minmax(170px,1.3fr) minmax(110px,auto) minmax(150px,1fr) auto;gap:10px;align-items:center;padding:9px 14px;border-bottom:1px solid #1b1d24}
+.work .rrow:last-child{border-bottom:0}
+.work .rcb{width:24px;height:24px;border-radius:7px;border:2px solid #3a3d48;background:transparent;cursor:pointer;color:transparent;font-size:0;padding:0}
+.work .rcb.on{background:#00dc86;border-color:#00dc86;position:relative}.work .rcb.on::after{content:"";position:absolute;left:7px;top:3px;width:6px;height:11px;border:solid #03170d;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.work .rn{font:700 11px "JetBrains Mono",ui-monospace,Menlo,monospace;color:#7d859a}
+.work .rwho{min-width:0}.work .rwho b{display:block;color:#fff;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.work .rwho small{display:block;color:#aeb6c8;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.work .rtag{font-size:11px;font-weight:800;color:#c8d1ea;background:#18191f;border:1px solid #2a2c35;border-radius:6px;padding:2px 8px;white-space:nowrap;justify-self:start}
+.work .rmid{display:flex;align-items:center;gap:10px;min-width:0;color:#aeb6c8;font-size:12px}
+.work .rph{font:700 13px "JetBrains Mono",ui-monospace,Menlo,monospace;color:#fff!important;text-decoration:none;white-space:nowrap}.work .rph.none{color:#7d859a!important;font-weight:600}
+.work .rline{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.work .rpain{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.work .racts{display:flex;gap:5px;justify-content:flex-end;flex-wrap:nowrap}
+.work .racts button{font:700 11.5px Inter,system-ui,sans-serif;color:#c8d1ea;background:#18191f;border:1px solid #2a2c35;border-radius:8px;padding:5px 9px;cursor:pointer;white-space:nowrap}
+.work .racts button:hover{border-color:#4272f9;color:#fff}
+.work .racts .rgo{background:#00dc86;border-color:#00dc86;color:#03170d}
+.work .rlog{font-size:12px;font-weight:700;color:#5ef0a8}
+.work .rrow.rdone .rwho b{text-decoration:line-through;color:#7d859a}.work .rrow.rdone .rwho small,.work .rrow.rdone .rph{opacity:.55}
+.work .rmore{padding:10px 14px;color:#aeb6c8;font-size:12.5px}.work .rmore button{font:700 12.5px Inter,system-ui,sans-serif;color:#9db9ff;background:none;border:0;cursor:pointer}
+.work .rdonebox{background:#111216;border:1px solid #23252e;border-radius:12px;padding:12px 14px}.work .rdonebox p{margin:6px 0 0;color:#c8d1ea;font-size:12.5px;line-height:1.6}
+@media(max-width:1100px){.work .rrow{grid-template-columns:30px minmax(140px,1fr) auto;grid-auto-rows:auto}.work .rrow .rn,.work .rrow .rtag{display:none}.work .rrow .rmid{grid-column:2/-1}.work .rrow .racts{grid-column:2/-1;justify-content:flex-start;flex-wrap:wrap}}

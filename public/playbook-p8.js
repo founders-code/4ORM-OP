@@ -618,7 +618,30 @@
         }).catch(function () { note('Snapshot taken.'); });
       } else note(n + ' applied');
     });
-    if (window.PBWork && window.PBWork.bind) window.PBWork.bind(root, { event: openEvent, play: openPlay, todo: openTodo, toast: undoToast });
+    /* Run sheet tick-offs: the same saves the grid and the to-do list make, with Undo. */
+    function playDoneQuick(r, onUndo) {
+      var M = window.__playMount || {};
+      var ti = M.todayIdx == null ? 0 : M.todayIdx;
+      var day = r.pads && r.pads[ti] && r.pads[ti].day;
+      if (!r.d) return;
+      r.d[ti] = 'done';
+      if (typeof M.render === 'function') M.render();
+      paintFocus();
+      if (LIVE && r.id && day) apiCall('/api/playbook', 'POST', { rhythmId: r.id, day: day, status: 'done' }).then(function (x) { return x && x.ok ? x.json() : null; })
+        .then(function (d) { if (d && d.rows && window.STATE) window.STATE.playbook = d; }).catch(function () { note('Could not save that play'); });
+      undoToast(r.n + ' done', function () {
+        r.d[ti] = 'due'; if (typeof M.render === 'function') M.render(); paintFocus();
+        if (LIVE && r.id && day) apiCall('/api/playbook', 'POST', { rhythmId: r.id, day: day, status: 'open' });
+        if (onUndo) onUndo();
+      });
+    }
+    function todoDoneQuick(id) {
+      var x = TD.filter(function (y) { return String(y.id) === String(id); })[0];
+      if (!x) return;
+      if (LIVE) { completeLive(x, null); return; }
+      x.done = true; doneToday += 1; render();
+    }
+    if (window.PBWork && window.PBWork.bind) window.PBWork.bind(root, { event: openEvent, play: openPlay, todo: openTodo, toast: undoToast, playDone: playDoneQuick, todoDone: todoDoneQuick });
     window.tdRender = render;
     window.TDL = TD;
     render();
