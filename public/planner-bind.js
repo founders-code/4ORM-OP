@@ -229,7 +229,7 @@ function renderBoard(){
   if(!vis.length)h+=`<div class="row"><div class="lab"><span class="ltitle">Nothing shown</span></div><div class="trk empty" style="width:${W}px">Turn a pipeline on above.</div></div>`;
   h+=`<div style="height:18px"></div>`;
   canvas.style.setProperty('--lw',LW+'px');canvas.style.width=(LW+W)+'px';
-  canvas.innerHTML=h;
+  canvas.innerHTML=h;applyWl();
   requestAnimationFrame(()=>{drawLinks();if(pinned)applyFocus(pinned);if(typeof stickGoalLabels==='function')stickGoalLabels();applyWl()});
 }
 function hdrRow(){let t='';const vis0=Math.floor((scroller.scrollLeft||0)/ppd)+START-3,vis1=vis0+Math.ceil(trackW()/ppd)+6;
