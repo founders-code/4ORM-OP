@@ -6,7 +6,7 @@
   function prefs() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } }
   function savePrefs(p) { try { localStorage.setItem(KEY, JSON.stringify(p)); } catch (e) {} }
   var CSS = '.st-bar{display:flex;justify-content:flex-end;gap:6px;margin:0 0 8px}'
-    + '.st-bar button{border:1px solid #2f4180;background:#111a3a;color:#c9d4f2;border-radius:999px;padding:3px 11px;font:700 11.5px/1.4 Inter,system-ui,sans-serif;cursor:pointer}'
+    + '.st-bar button{border:1px solid #23252c;background:#111216;color:#c9d4f2;border-radius:999px;padding:3px 11px;font:700 11.5px/1.4 Inter,system-ui,sans-serif;cursor:pointer}'
     + '.st-bar button:hover{border-color:#4d7cff;color:#fff}.st-bar button.off{background:#4d7cff;border-color:#4d7cff;color:#fff}'
     + '.st-hide{display:none!important}';
   function narrow(el) { return el && el.offsetWidth > 120 && el.offsetWidth <= 340; }

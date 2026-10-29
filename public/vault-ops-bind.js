@@ -378,18 +378,18 @@
       for (i = 0; i <= 10; i++) {
         var t = 180 + i * 18;
         var r1 = 58, r2 = i % 5 === 0 ? 48 : 53;
-        ticks += '<line x1="' + (80 + r1 * Math.cos(t * Math.PI / 180)).toFixed(1) + '" y1="' + (84 + r1 * Math.sin(t * Math.PI / 180)).toFixed(1) + '" x2="' + (80 + r2 * Math.cos(t * Math.PI / 180)).toFixed(1) + '" y2="' + (84 + r2 * Math.sin(t * Math.PI / 180)).toFixed(1) + '" stroke="#2a3a72" stroke-width="' + (i % 5 === 0 ? 1.6 : 1) + '"/>';
+        ticks += '<line x1="' + (80 + r1 * Math.cos(t * Math.PI / 180)).toFixed(1) + '" y1="' + (84 + r1 * Math.sin(t * Math.PI / 180)).toFixed(1) + '" x2="' + (80 + r2 * Math.cos(t * Math.PI / 180)).toFixed(1) + '" y2="' + (84 + r2 * Math.sin(t * Math.PI / 180)).toFixed(1) + '" stroke="#2a2c35" stroke-width="' + (i % 5 === 0 ? 1.6 : 1) + '"/>';
       }
       var shown = has ? (num % 1 ? num.toFixed(2) : String(num)) : '-';
       var note = d.note || (has ? '' : 'no sample yet');
       return '<div class="dial ' + col + '" data-k="' + d.key + '" data-note="' + String(note).replace(/"/g, '') + '" title="' + note + '"><span class="rl">0–' + (d.red != null ? d.red : '-') + '</span><svg viewBox="0 0 160 100">'
-        + '<path d="' + arc(80, 84, 58, 180, 360) + '" stroke="#141c3d" stroke-width="9" fill="none" stroke-linecap="round"/>'
+        + '<path d="' + arc(80, 84, 58, 180, 360) + '" stroke="#23252c" stroke-width="9" fill="none" stroke-linecap="round"/>'
         + '<path d="' + arc(80, 84, 58, amb, red) + '" stroke="#3a2a12" stroke-width="9" fill="none"/>'
         + '<path d="' + arc(80, 84, 58, red, 360) + '" stroke="#3a1420" stroke-width="9" fill="none" stroke-linecap="round"/>'
         + '<path class="fill" d="' + arc(80, 84, 58, 180, a) + '" stroke="' + C + '" stroke-width="9" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 8px ' + C + 'aa)"/>'
         + ticks
         + '<line class="ndl" x1="80" y1="84" x2="' + nx.toFixed(1) + '" y2="' + ny.toFixed(1) + '" stroke="#e9eefa" stroke-width="2.2" stroke-linecap="round"/>'
-        + '<circle cx="80" cy="84" r="4" fill="#0b1026" stroke="' + C + '" stroke-width="2"/></svg>'
+        + '<circle cx="80" cy="84" r="4" fill="#111216" stroke="' + C + '" stroke-width="2"/></svg>'
         + '<div class="val" style="color:' + C + ';text-shadow:0 0 12px ' + C + '">' + shown + '<span>' + (d.unit || '') + '</span></div><div class="lab">' + (d.label || d.key) + '</div></div>';
     }
     function paintDials(dials) {
@@ -410,7 +410,7 @@
       }
       var c = st === 'DOWN' ? '#ff4d6d' : (st === 'SLOW' ? '#ffb547' : '#3b82ff');
       var g = '';
-      for (var i = 1; i < 4; i++) g += '<line x1="0" y1="' + (i * 9) + '" x2="220" y2="' + (i * 9) + '" stroke="#141c3d" stroke-width="1"/>';
+      for (var i = 1; i < 4; i++) g += '<line x1="0" y1="' + (i * 9) + '" x2="220" y2="' + (i * 9) + '" stroke="#23252c" stroke-width="1"/>';
       return '<svg class="spark" viewBox="0 0 220 38" preserveAspectRatio="none">' + g
         + (pts ? '<polyline points="' + pts + '" fill="none" stroke="' + c + '" stroke-width="1.8"></polyline>' : '')
         + '</svg>';

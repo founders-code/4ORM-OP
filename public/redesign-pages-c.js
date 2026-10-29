@@ -636,7 +636,7 @@
       markReady('playDesk');
       return;
     }
-    loadSnip('/pbwrap-snippet.html?v=8', function (html) {
+    loadSnip('/pbwrap-snippet.html?v=9', function (html) {
       try {
         wrap.innerHTML = html || '<div class="pbwrap"></div>';
         if (!fixtureOn()) {
@@ -873,7 +873,7 @@
     /* Opening from the sidebar always lands on today unless a focusDate was passed. */
     var keepFocus = focusDate || null;
     if (!wrap.querySelector('.calwrap')) wrap.innerHTML = '<div class="card" style="padding:28px 24px">Loading&hellip;</div>';
-    loadSnip('/calwrap-snippet.html?v=2', function (html) {
+    loadSnip('/calwrap-snippet.html?v=3', function (html) {
       var live = !fixtureOn();
       function go(events) {
         try {

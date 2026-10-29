@@ -8,7 +8,7 @@
    ?fixture=mockup paints the design's own sample data (redesign-fixture-d.js, loaded only then).
    No icons, no emoji, 24-hour times. */
 (function () {
-  var TOKEN = ':host{--ground:#0b1430;--ground2:#13224a;--side:#08102a;--card:#fff;--ink:#101a33;--ink2:#4a5672;--ink3:#7a86a0;--line:#e8ecf3;--soft:#f5f7fb;--blue:#2e6bf2;--blue50:#eaf1fe;--green:#12a36a;--green50:#e4f6ee;--amber:#c98408;--amber50:#fff4e0;--red:#e0364f;--red50:#fde9ec;--violet:#6b4fd8;display:block;min-width:0;color:var(--ink);font-size:16px;line-height:normal;font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}'
+  var TOKEN = ':host{--ground:#0b0c10;--ground2:#0b0c10;--side:#07080b;--card:#fff;--ink:#101a33;--ink2:#4a5672;--ink3:#7a86a0;--line:#e8ecf3;--soft:#f5f7fb;--blue:#2e6bf2;--blue50:#eaf1fe;--green:#12a36a;--green50:#e4f6ee;--amber:#c98408;--amber50:#fff4e0;--red:#e0364f;--red50:#fde9ec;--violet:#6b4fd8;display:block;min-width:0;color:var(--ink);font-size:16px;line-height:normal;font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}'
     + '*{box-sizing:border-box}button{font:inherit;cursor:pointer}[hidden]{display:none!important}[data-action]{cursor:pointer}'
     + '.card{background:var(--card);border-radius:16px;box-shadow:0 10px 30px rgba(3,10,30,.22);min-width:0}'
     + '.ch{display:flex;align-items:center;gap:8px;padding:14px 16px 10px}.ch h3{margin:0;font-size:14px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ch .s{margin-left:auto;font-size:12px;color:var(--ink3);font-weight:600;white-space:nowrap}'
@@ -18,9 +18,9 @@
     /* design shell av-fix: avatar initials are white and bold on every page */
     + '.av{color:#fff!important;font-size:11.5px!important;font-weight:800!important}'
     + '.av{color:#fff;font-weight:800;font-size:11px}'
-    + '.desk-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:95;background:#142036;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;display:none;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(3,10,30,.28)}'
+    + '.desk-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:95;background:#18191f;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;display:none;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(3,10,30,.28)}'
     + '.desk-toast.show{display:flex}.desk-toast button{background:#fff;color:#142036;border:0;border-radius:8px;padding:4px 10px;font-weight:800}';
-  var CSS = { drive: '/port-css/drive.css?v=2', int: '/port-css/integrations.css?v=2', neon: '/port-css/neon.css?v=1', intNeon: '/port-css/integrations-neon.css?v=3' };
+  var CSS = { drive: '/port-css/drive.css?v=2', int: '/port-css/integrations.css?v=2', neon: '/port-css/neon.css?v=2', intNeon: '/port-css/integrations-neon.css?v=5' };
   var cssText = {};
   var PAGE_ROWS = 12;
   var TOP_DRIVES = 14;
@@ -123,7 +123,7 @@
     if (!fixtureLoading) {
       fixtureLoading = new Promise(function (res) {
         var tag = document.createElement('script');
-        tag.src = '/redesign-fixture-d.js?v=1';
+        tag.src = '/redesign-fixture-d.js?v=2';
         tag.onload = res; tag.onerror = res;
         document.head.appendChild(tag);
       });

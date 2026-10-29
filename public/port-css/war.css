@@ -1,38 +1,38 @@
 :host{display:block;color-scheme:inherit;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif}
 :host([hidden]){display:none!important}
 .port-body{font-family:inherit}
-*,*::before,*::after{box-sizing:border-box}:host,.port-body{--navy:#0b1326;--navy2:#13224a;--ink:#101828;--muted:#6b7488;--line:#e7ebf2;--blue:#1f5fff;--gold:#c79a3a;--green:#1a9d5a;
+*,*::before,*::after{box-sizing:border-box}:host,.port-body{--navy:#111216;--navy2:#0b0c10;--ink:#111216;--muted:#6b7488;--line:#e7ebf2;--blue:#1f5fff;--gold:#c79a3a;--green:#1a9d5a;
 font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;}
-*{box-sizing:border-box}:host{margin:0;display:block}.port-body{margin:0;background:linear-gradient(160deg,#0a1326,#0e1c3f);color:var(--ink);padding:14px 16px;font-size:13px}
+*{box-sizing:border-box}:host{margin:0;display:block}.port-body{margin:0;background:linear-gradient(160deg,#111216,#23252c);color:var(--ink);padding:14px 16px;font-size:13px}
 .card{background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.18)}
 .lbl{font-size:10px;font-weight:700;letter-spacing:.05em;color:#8a93a6}
 /* ribbon */
-.ribbon{display:flex;align-items:center;gap:22px;background:#0a1326;border:1px solid #22325f;border-radius:12px;padding:10px 16px;color:#fff;margin-bottom:11px}
+.ribbon{display:flex;align-items:center;gap:22px;background:#111216;border:1px solid #22325f;border-radius:12px;padding:10px 16px;color:#fff;margin-bottom:11px}
 .ribbon .it{display:flex;flex-direction:column}
 .ribbon .k{font-size:9.5px;letter-spacing:.06em;color:#8fa0c8;text-transform:uppercase}
 .ribbon .v{font-size:15px;font-weight:750}
 .ribbon .v.red{color:#ff6a5a}.ribbon .spacer{flex:1}
-.ribbon .streak{background:#17224a;border-radius:8px;padding:5px 11px;font-size:12px;font-weight:650}
+.ribbon .streak{background:#23252c;border-radius:8px;padding:5px 11px;font-size:12px;font-weight:650}
 /* top grid */
 .top{display:grid;grid-template-columns:1.55fr 1fr;gap:11px;margin-bottom:11px}
 /* hero */
-.hero{background:linear-gradient(135deg,#0c1836,#142a5c);border-radius:14px;padding:14px 16px;color:#fff;position:relative;overflow:hidden}
+.hero{background:linear-gradient(135deg,#18191f,#142a5c);border-radius:14px;padding:14px 16px;color:#fff;position:relative;overflow:hidden}
 .hero .k{font-size:9.5px;letter-spacing:.07em;color:#8fa0c8;text-transform:uppercase}
 .hero h2{font-size:17px;font-weight:750;margin:3px 0 2px;line-height:1.15;max-width:78%}
 .hero .why{font-size:11.5px;color:#aeb9d6;margin-bottom:9px}
 .hero .ring{position:absolute;top:13px;right:14px;width:62px;height:62px;border-radius:50%;border:4px solid #26386e;display:grid;place-items:center;font-size:14px;font-weight:750;color:#fff}
 .hero .ring small{display:block;font-size:8px;color:#8fa0c8;font-weight:600}
 .steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-.steps .s{font-size:10.5px;background:#17224a;border:1px solid #27386c;border-radius:7px;padding:5px 9px;color:#cdd8f2}
+.steps .s{font-size:10.5px;background:#23252c;border:1px solid #27386c;border-radius:7px;padding:5px 9px;color:#cdd8f2}
 .hbtns{display:flex;gap:6px;flex-wrap:wrap}
 .hbtns button{border:none;border-radius:8px;padding:7px 11px;font-size:11.5px;font-weight:650;cursor:pointer}
-.hbtns .pri{background:var(--blue);color:#fff}.hbtns .w{background:#fff;color:#16213f}.hbtns .g{background:#17224a;color:#cdd8f2;border:1px solid #27386c}
+.hbtns .pri{background:var(--blue);color:#fff}.hbtns .w{background:#fff;color:#16213f}.hbtns .g{background:#23252c;color:#cdd8f2;border:1px solid #27386c}
 /* needle movers inline */
 .nm{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
-.nm .slot{background:#0e1a3a;border:1px solid #22325f;border-radius:10px;padding:9px 10px;color:#fff}
+.nm .slot{background:#18191f;border:1px solid #22325f;border-radius:10px;padding:9px 10px;color:#fff}
 .nm .slot .h{font-size:8.5px;font-weight:750;letter-spacing:.06em;color:#7f8fc0;text-transform:uppercase;margin-bottom:3px}
 .nm .slot .t{font-size:11.5px;font-weight:600;line-height:1.25}
-.nm .slot .tag{font-size:8.5px;background:#17224a;border-radius:4px;padding:1px 6px;color:#aeb9d6;margin-top:5px;display:inline-block}
+.nm .slot .tag{font-size:8.5px;background:#23252c;border-radius:4px;padding:1px 6px;color:#aeb9d6;margin-top:5px;display:inline-block}
 /* meetings panel (NEW) */
 .mtg{padding:13px 14px;display:flex;flex-direction:column}
 .mtg h3{font-size:13px;font-weight:720;margin:0;display:flex;align-items:center;gap:7px}

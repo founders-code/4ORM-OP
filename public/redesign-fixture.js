@@ -425,9 +425,9 @@
       crumbN: 9,
       wall: [
         ['Lumo', 'proton.me/lumo', '#6d4aff', 'Private AI assistant from Proton', 1],
-        ['Riverside', 'riverside.fm', '#111827', 'Record the 30-min videos'],
+        ['Riverside', 'riverside.fm', '#111216', 'Record the 30-min videos'],
         ['Neon', 'neon.tech', '#00a77e', 'Database for 4ormop'],
-        ['Vercel', 'vercel.com', '#111827', 'Hosting + deploys'],
+        ['Vercel', 'vercel.com', '#111216', 'Hosting + deploys'],
         ['Cursor', 'cursor.com', '#2b2b2b', 'Build the site from prompts'],
         ['Perplexity', 'perplexity.ai', '#1f6f78', ''],
         ['ChatGPT', 'chatgpt.com', '#10a37f', ''],

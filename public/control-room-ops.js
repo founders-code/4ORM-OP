@@ -609,7 +609,7 @@
       off += len;
       return node;
     }).join('');
-    return '<svg viewBox="0 0 120 120" width="180" height="180">' + arcs + '<text x="60" y="66" text-anchor="middle" font-size="18" font-weight="650" fill="#102033">' + (centre || 0) + '</text></svg>';
+    return '<svg viewBox="0 0 120 120" width="180" height="180">' + arcs + '<text x="60" y="66" text-anchor="middle" font-size="18" font-weight="650" fill="#18191f">' + (centre || 0) + '</text></svg>';
   }
 
   function bucketPicks(it) {
@@ -2070,7 +2070,7 @@
     if (!host) return;
     var rows = STATE.notes || [];
     host.innerHTML = rows.map(function (note) {
-      return '<div class="exec-card" style="background:#1A2332;color:#E7EEF6"><div style="flex:1"><div class="kick">' + esc(note.body || '') + '</div><b>' + esc(note.title || '') + '</b></div><button type="button" data-note-edit="' + esc(note.id) + '">Edit</button><button type="button" data-note-del="' + esc(note.id) + '">Delete</button></div>';
+      return '<div class="exec-card" style="background:#18191f;color:#E7EEF6"><div style="flex:1"><div class="kick">' + esc(note.body || '') + '</div><b>' + esc(note.title || '') + '</b></div><button type="button" data-note-edit="' + esc(note.id) + '">Edit</button><button type="button" data-note-del="' + esc(note.id) + '">Delete</button></div>';
     }).join('');
     host.querySelectorAll('[data-note-del]').forEach(function (btn) {
       btn.onclick = function () {

@@ -3,9 +3,9 @@
 
 
 :host,:root{
-  --tl-ground:#0B1431; --gfg:#E9EEFA; --gmuted:#8E9AC2; --gline:#1E2B55;
+  --tl-ground:#18191f; --gfg:#E9EEFA; --gmuted:#8E9AC2; --gline:#2c2e37;
   --surface:#FFFFFF; --raise:#EEF2F9; --band:#F0F3FA; --edge:#D6DDEC;
-  --fg:#0C1430; --muted:#56618A; --faint:#8F9AB8; --on-c:#FFFFFF;
+  --fg:#18191f; --muted:#56618A; --faint:#8F9AB8; --on-c:#FFFFFF;
   --accent:#2E6BF2; --bad:#D63B3B; --good:#14A06F;
   --p1:#4A58A8; --p2:#2E6BF2; --p3:#13916A; --p4:#C73A84; --p5:#7347D6; --p6:#C47A10; --p7:#0A8597; --p8:#D4513A;
   --display:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
@@ -28,7 +28,7 @@ h1{font-size:clamp(30px,3.6vw,42px);font-weight:800;letter-spacing:-.03em;line-h
 .stats b{color:#fff;font-weight:600}
 .stats em{font-style:normal;color:#FF8C8C}
 .ctrls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.seg{display:inline-flex;background:#17244C;border-radius:11px;padding:3px}
+.seg{display:inline-flex;background:#23252c;border-radius:11px;padding:3px}
 .seg button{border:0;background:transparent;font-weight:600;font-size:12.5px;color:#AFBAE0;padding:7px 12px;border-radius:8px;cursor:pointer}
 .seg button[aria-pressed="true"]{background:#fff;color:var(--fg)}
 .gbtn{border:1.5px solid #2A3A6E;background:transparent;color:#E3E9FA;font-weight:600;font-size:12.5px;padding:7px 12px;border-radius:10px;cursor:pointer}
@@ -41,12 +41,12 @@ h1{font-size:clamp(30px,3.6vw,42px);font-weight:800;letter-spacing:-.03em;line-h
 .capture select{border:1.5px solid var(--edge);border-radius:10px;padding:8px 10px;background:#fff;font-weight:600}
 .capture button{border:0;background:var(--accent);color:#fff;font-weight:700;border-radius:10px;padding:9px 22px;cursor:pointer}
 .strip{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:16px}
-.move{background:linear-gradient(160deg,#16245A,#0F1A42);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px 18px;align-items:center}
+.move{background:linear-gradient(160deg,#16245A,#23252c);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px 18px;align-items:center}
 .move .lbl{font:600 11px var(--mono);color:#7FA4FF}
 .move h3{margin:6px 0 4px;font-size:21px;font-weight:800;letter-spacing:-.02em;line-height:1.15;color:#fff;text-wrap:balance}
 .move .sub{font-size:12.5px;color:var(--gmuted)}
 .ring{width:108px;height:108px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#5B8CFF var(--deg,360deg),#24346A 0);position:relative}
-.ring::after{content:"";position:absolute;inset:8px;border-radius:50%;background:#111C46}
+.ring::after{content:"";position:absolute;inset:8px;border-radius:50%;background:#23252c}
 .ring div{position:relative;z-index:1;text-align:center;font:600 24px var(--mono);color:#fff}
 .ring small{display:block;font:500 11px var(--display);color:var(--gmuted)}
 .move .acts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
@@ -328,7 +328,7 @@ svg.links{position:absolute;top:0;z-index:1;pointer-events:none;overflow:visible
 .cmd h1{margin:0;font-size:32px}
 .cmd .capture{flex:1 1 420px;padding:6px}
 .cmd .capture input{padding:8px 10px}
-.focusbar{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;background:linear-gradient(160deg,#16245A,#101B44);border-radius:14px;box-shadow:var(--shadow);position:relative}
+.focusbar{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;background:linear-gradient(160deg,#16245A,#23252c);border-radius:14px;box-shadow:var(--shadow);position:relative}
 .fb{display:flex;align-items:center;gap:10px;padding:10px 16px;min-width:0;border:0;background:transparent;color:var(--gfg);text-align:left;font-size:13.5px}
 .fb+.fb{box-shadow:inset 1px 0 0 #26356B}
 .fb .k{font:600 10.5px var(--mono);color:#7FA4FF;white-space:nowrap}

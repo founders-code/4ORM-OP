@@ -129,8 +129,8 @@ function shape(){const box=root.querySelector&&root.querySelector('.shape');cons
  const ws=add(weekStart(TODAY),7);const keys=[...Array(7)].map((_,i)=>ymd(add(ws,i)));
  let meet=0,focusH=0,plays=0;E.forEach(x=>{if(!x.all&&keys.indexOf(x.d)>=0)meet+=x.e-x.s});S.forEach(x=>{if(keys.indexOf(x.d)<0)return;if(/^Focus/.test(x.t))focusH+=x.e-x.s;else plays+=x.e-x.s});
  const free=Math.max(0,5*10-meet-focusH-plays);const r=v=>Math.round(v*10)/10;
- box.innerHTML=`<i style="flex:${meet||0.01};background:var(--meet)"></i><i style="flex:${focusH||0.01};background:var(--blue)"></i><i style="flex:${plays||0.01};background:var(--green)"></i><i style="flex:${free||0.01};background:#26324f"></i>`;
- leg.innerHTML=`<span><em style="background:var(--meet)"></em>Meetings <b>${r(meet)}h</b></span><span><em style="background:var(--blue)"></em>Focus <b>${r(focusH)}h</b></span><span><em style="background:var(--green)"></em>Plays <b>${r(plays)}h</b></span><span><em style="background:#26324f"></em>Free <b>${r(free)}h</b></span>`;
+ box.innerHTML=`<i style="flex:${meet||0.01};background:var(--meet)"></i><i style="flex:${focusH||0.01};background:var(--blue)"></i><i style="flex:${plays||0.01};background:var(--green)"></i><i style="flex:${free||0.01};background:#23252c"></i>`;
+ leg.innerHTML=`<span><em style="background:var(--meet)"></em>Meetings <b>${r(meet)}h</b></span><span><em style="background:var(--blue)"></em>Focus <b>${r(focusH)}h</b></span><span><em style="background:var(--green)"></em>Plays <b>${r(plays)}h</b></span><span><em style="background:#23252c"></em>Free <b>${r(free)}h</b></span>`;
 }
 // ---------- VIEWS ----------
 const body=gid('body'),title=gid('title');
@@ -149,7 +149,7 @@ function timeGrid(days,showSug){
  return h+`</div>`;
 }
 function aiBanner(ws){const keys=[...Array(7)].map((_,i)=>ymd(add(ws,i)));const n=E.filter(x=>!x.all&&keys.indexOf(x.d)>=0).length;const plays=S.filter(x=>keys.indexOf(x.d)>=0);const f=plays.filter(x=>/^Focus/.test(x.t)).reduce((a,x)=>a+x.e-x.s,0);
- return `<div class="ai"><span class="sp"></span><div><b>4orm Intelligence planned this week around your ${n} meeting${n==1?'':'s'}</b> - ${plays.length} plays placed in the gaps, ${Math.round(f*10)/10}h of protected focus. Dashed = suggested. Hover a play for Keep / Later / Drop, drag it to another time, or click it to edit before keeping. Enter keeps, Delete drops.</div><div class="acts"><button data-action="cal-accept" style="background:var(--blue);color:#fff">Accept all</button><button data-action="cal-replan" style="background:#1d2b55;color:#cfd8f0">Re-plan</button></div></div>`}
+ return `<div class="ai"><span class="sp"></span><div><b>4orm Intelligence planned this week around your ${n} meeting${n==1?'':'s'}</b> - ${plays.length} plays placed in the gaps, ${Math.round(f*10)/10}h of protected focus. Dashed = suggested. Hover a play for Keep / Later / Drop, drag it to another time, or click it to edit before keeping. Enter keeps, Delete drops.</div><div class="acts"><button data-action="cal-accept" style="background:var(--blue);color:#fff">Accept all</button><button data-action="cal-replan" style="background:#2c2e37;color:#cfd8f0">Re-plan</button></div></div>`}
 function wkPill(ws,we,tws){const n=Math.round((ws-tws)/6048e5);let p='';
  if(n==0)p='<em class="now">this week</em>';else if(n==1)p='<em>next week</em>';else if(n>1)p=`<em>${n} weeks out</em>`;else if(n==-1)p='<em class="past">last week</em>';else p=`<em class="past">${-n} weeks ago</em>`;
  for(let k=1;k<=3;k++){const t=new Date(TODAY.getFullYear(),TODAY.getMonth()+k,TODAY.getDate());if(t>=ws&&t<=we)p+=`<em class="mo">${k} month${k>1?'s':''} out</em>`;}

@@ -1657,7 +1657,7 @@ window.REDESIGN_FIXTURE_D = {
    "key": "riverside",
    "name": "Riverside",
    "letter": "R",
-   "color": "#111827",
+   "color": "#111216",
    "what": "Pull your 30-minute videos into the Studio for clips.",
    "feeds": [],
    "group": "available",

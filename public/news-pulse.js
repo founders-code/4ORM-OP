@@ -66,7 +66,7 @@ function dialSVG(v,c){
   for(let i=0;i<=10;i++){const t=i*10,ang=a(t),r1=r+6,r2=r+(i%5===0?12:9);
     ticks+=`<line x1="${(cx+r1*Math.cos(ang)).toFixed(1)}" y1="${(cy-r1*Math.sin(ang)).toFixed(1)}" x2="${(cx+r2*Math.cos(ang)).toFixed(1)}" y2="${(cy-r2*Math.sin(ang)).toFixed(1)}" stroke="rgba(163,176,210,.5)" stroke-width="1"/>`;}
   const na=a(vv),nx=cx+(r-8)*Math.cos(na),ny=cy-(r-8)*Math.sin(na);
-  return `<svg viewBox="0 0 118 66" aria-hidden="true">${arc(0,100,'#141c3d',7)}${arc(0,50,'rgba(25,211,138,.3)',2.5)}${arc(50,75,'rgba(255,181,71,.45)',2.5)}${arc(75,100,'rgba(255,77,109,.55)',2.5)}${vv>0.01?arc(0.01,vv,c,7,` style="filter:drop-shadow(0 0 5px ${c}aa)" class="arc"`):''}${ticks}<line class="ndl" x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="4.5" fill="#0a0f26" stroke="${c}" stroke-width="2"/></svg>`;
+  return `<svg viewBox="0 0 118 66" aria-hidden="true">${arc(0,100,'#23252c',7)}${arc(0,50,'rgba(25,211,138,.3)',2.5)}${arc(50,75,'rgba(255,181,71,.45)',2.5)}${arc(75,100,'rgba(255,77,109,.55)',2.5)}${vv>0.01?arc(0.01,vv,c,7,` style="filter:drop-shadow(0 0 5px ${c}aa)" class="arc"`):''}${ticks}<line class="ndl" x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="4.5" fill="#0a0b0e" stroke="${c}" stroke-width="2"/></svg>`;
 }
 window.bindNewsPulse = function(root, pulse){
   if(!root) return;

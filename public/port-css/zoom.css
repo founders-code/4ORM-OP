@@ -1,6 +1,6 @@
 /* ===== ZOOM ===== */
 
-.zwrap{--ink:#142036;--ink2:#46556E;--ink3:#6a7891;--line:#E6EBF3;--soft:#F4F7FB;--blue:#2E6BF2;--blue50:#EAF1FE;--gold:#C9962B;--goldbg:#FFF8EA;--green:#0E8A5F;--greenbg:#E3F6EE;--violet:#6B4FD8;--violetbg:#EFEBFF;
+.zwrap{--ink:#18191f;--ink2:#46556E;--ink3:#6a7891;--line:#E6EBF3;--soft:#F4F7FB;--blue:#2E6BF2;--blue50:#EAF1FE;--gold:#C9962B;--goldbg:#FFF8EA;--green:#0E8A5F;--greenbg:#E3F6EE;--violet:#6B4FD8;--violetbg:#EFEBFF;
 font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}
 *{box-sizing:border-box}
 .zwrap{color:var(--ink)}

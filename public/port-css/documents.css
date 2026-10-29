@@ -30,7 +30,7 @@
 .files.list .fl{display:grid;grid-template-columns:88px minmax(0,1fr);align-items:center}
 .sel.on{opacity:1;background:var(--blue);border-color:var(--blue)}
 /* Prompt 13 free board — scrolls so every document is reachable */
-.board{position:relative;min-height:520px;height:620px;margin:10px 16px 8px;background:#0a0f26;border:1px solid rgba(120,150,255,.14);border-radius:12px;overflow:auto;background-image:radial-gradient(rgba(120,150,255,.12) 1px,transparent 1px);background-size:24px 24px}
+.board{position:relative;min-height:520px;height:620px;margin:10px 16px 8px;background:#0a0b0e;border:1px solid rgba(120,150,255,.14);border-radius:12px;overflow:auto;background-image:radial-gradient(rgba(120,150,255,.12) 1px,transparent 1px);background-size:24px 24px}
 .board .board-doc{position:absolute;display:flex;flex-direction:column;cursor:grab;user-select:none;touch-action:none;margin:0;transform:none!important}
 .board .board-doc.drag{cursor:grabbing;box-shadow:0 0 0 2px #3b82ff,0 18px 50px rgba(0,0,0,.6);z-index:5}
 .board .board-doc .th{flex:1;min-height:0;aspect-ratio:auto;height:auto}
@@ -75,7 +75,7 @@
 
 /* ===== DOC VIEWER ===== */
 .vscrim{position:fixed;inset:0;background:rgba(5,10,28,.7);backdrop-filter:blur(6px);z-index:60}
-.vwin{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:1180px;height:780px;z-index:61;background:#0f1a3a;border-radius:20px;box-shadow:0 40px 100px rgba(0,0,0,.6);display:grid;grid-template-rows:56px minmax(0,1fr);overflow:hidden;border:1px solid rgba(255,255,255,.1)}
+.vwin{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:1180px;height:780px;z-index:61;background:#18191f;border-radius:20px;box-shadow:0 40px 100px rgba(0,0,0,.6);display:grid;grid-template-rows:56px minmax(0,1fr);overflow:hidden;border:1px solid rgba(255,255,255,.1)}
 .vtop{display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.08);color:#fff}
 .vtop .vty{position:static!important;font-size:10.5px;font-weight:850;background:#e36b1c;border-radius:6px;padding:3px 7px}
 .vtop b{font-size:15px;font-weight:800}
@@ -89,8 +89,8 @@
 .vthumbs div.on{border-color:#9db9ff}
 .vthumbs div span{position:absolute;left:-2px;bottom:-18px;font-size:10.5px;color:#9fb0d0}
 .vthumbs div:nth-child(2n){background:linear-gradient(135deg,#f5f7fb,#dfe7f7)}
-.vstage{display:grid;place-items:center;padding:26px;background:#0b1430;position:relative}
-.slide{width:100%;max-width:700px;aspect-ratio:16/9;border-radius:10px;background:radial-gradient(120% 120% at 0 0,#2e6bf2,#1b3a8f 45%,#0b1430);box-shadow:0 20px 50px rgba(0,0,0,.5);padding:40px;color:#fff;display:flex;flex-direction:column;justify-content:flex-end}
+.vstage{display:grid;place-items:center;padding:26px;background:#0b0c10;position:relative}
+.slide{width:100%;max-width:700px;aspect-ratio:16/9;border-radius:10px;background:radial-gradient(120% 120% at 0 0,#2e6bf2,#1b3a8f 45%,#0b0c10);box-shadow:0 20px 50px rgba(0,0,0,.5);padding:40px;color:#fff;display:flex;flex-direction:column;justify-content:flex-end}
 .slide small{font-size:12px;font-weight:800;color:#9db9ff;letter-spacing:.06em}
 .slide h1{margin:6px 0 8px;font-size:38px;font-weight:900;letter-spacing:-.03em;line-height:1.05}
 .slide p{margin:0;color:#c9d6f5;font-size:15px}
@@ -112,18 +112,18 @@
 .port-body.neon .fd.on{color:#9db9ff!important;background:rgba(46,107,242,.16)!important}
 .port-body.neon .fd .n,.port-body .fd .n{color:#7f8db5!important}
 .port-body.neon .lh{color:#aebbe0!important}
-.port-body.neon .fl{background:#0a0f26!important;border:1px solid rgba(120,150,255,.12)!important;color:#e9eefa!important}
+.port-body.neon .fl{background:#0a0b0e!important;border:1px solid rgba(120,150,255,.12)!important;color:#e9eefa!important}
 .port-body.neon .fl .nm,.port-body .fl .nm{color:#e9eefa!important}
 .port-body.neon .fl .mt,.port-body .fl .mt{color:#aebbe0!important}
 .port-body.neon .seg span{color:#aebbe0!important}
 .port-body.neon .seg span.on{background:#ff4d8d!important;color:#160308!important}
-.port-body.neon .chip{background:#0e1430!important;border-color:rgba(120,150,255,.18)!important;color:#c8d1ea!important}
+.port-body.neon .chip{background:#0b0c10!important;border-color:rgba(120,150,255,.18)!important;color:#c8d1ea!important}
 .port-body.neon .chip.on{background:#e9eefa!important;color:#0c1430!important}
 .port-body.neon .sizer{color:#aebbe0!important}
-.port-body.neon .btn{background:#0e1430!important;border-color:rgba(120,150,255,.18)!important;color:#e9eefa!important}
+.port-body.neon .btn{background:#0b0c10!important;border-color:rgba(120,150,255,.18)!important;color:#e9eefa!important}
 .port-body.neon .btn.pri{background:#2e6bf2!important;border-color:#2e6bf2!important;color:#fff!important}
 .port-body.neon .drop{border-color:rgba(120,150,255,.22)!important;color:#aebbe0!important}
-.port-body.neon .ch{background:#080c1f!important;border:1px solid rgba(120,150,255,.14)!important}
+.port-body.neon .ch{background:#07080b!important;border:1px solid rgba(120,150,255,.14)!important}
 /* Laptop widths: all three columns fit; the middle one flexes. */
 .lay{grid-template-columns:220px minmax(0,1fr) 260px}
 @media (max-width:1180px){.lay{grid-template-columns:220px minmax(0,1fr)}}

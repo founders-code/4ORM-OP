@@ -2,7 +2,7 @@
    ONE render path: data = fixtureOn() ? REDESIGN_FIXTURE.page : live*State().
    Fixture is data only. Parts B/C/D must use this same split. */
 (function () {
-  var TOKEN = ':host,:root{--ground:#0b1430;--ground2:#13224a;--side:#08102a;--card:#fff;--ink:#101a33;--ink2:#4a5672;--ink3:#7a86a0;--line:#e8ecf3;--soft:#f5f7fb;--blue:#2e6bf2;--blue50:#eaf1fe;--green:#12a36a;--green50:#e4f6ee;--amber:#c98408;--amber50:#fff4e0;--red:#e0364f;--red50:#fde9ec;--violet:#6b4fd8;font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}'
+  var TOKEN = ':host,:root{--ground:#0b0c10;--ground2:#0b0c10;--side:#07080b;--card:#fff;--ink:#101a33;--ink2:#4a5672;--ink3:#7a86a0;--line:#e8ecf3;--soft:#f5f7fb;--blue:#2e6bf2;--blue50:#eaf1fe;--green:#12a36a;--green50:#e4f6ee;--amber:#c98408;--amber50:#fff4e0;--red:#e0364f;--red50:#fde9ec;--violet:#6b4fd8;font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}'
     + '*{box-sizing:border-box}'
     + ':host{display:block;min-width:0;color:var(--ink);font-size:16px;line-height:normal;font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}'
     + 'button{font:inherit;cursor:pointer}'
@@ -13,7 +13,7 @@
     + '.lnk{color:var(--blue);font-weight:700;font-size:12.5px;white-space:nowrap;cursor:pointer}'
     + '.foot{padding:10px 16px 14px;font-size:12.5px;color:var(--ink3);border-top:1px solid var(--line)}'
     + '.port-body{display:block;min-width:0}'
-    + '.desk-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:80;background:#142036;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;display:none;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(3,10,30,.28)}'
+    + '.desk-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:80;background:#18191f;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;display:none;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(3,10,30,.28)}'
     + '.desk-toast.show{display:flex}'
     + '.desk-toast button{background:#fff;color:#142036;border:0;border-radius:8px;padding:4px 10px;font-weight:800;cursor:pointer}'
     + '.col.drop-on{outline:2px dashed var(--blue);outline-offset:-2px}'
@@ -54,20 +54,20 @@
     + '.smenu .it.red{color:#d6334e}'
     + '.flash-row{box-shadow:0 0 0 3px rgba(127,176,255,.85)!important;transition:box-shadow .2s}';
   var CSS = {
-    room: '/port-css/dashboard.css?v=2', war: '/port-css/war-room.css?v=8', notes: '/port-css/notes.css?v=5',
-    notesCanvas: '/port-css/notes-canvas.css?v=10', spacesArrange: '/port-css/spaces-arrange.css?v=1', spacesCards: '/port-css/spaces-cards.css?v=12', signalsDetail: '/port-css/signals-detail.css?v=4', rec: '/port-css/recordings.css?v=3',
-    contacts: '/port-css/pipeline.css?v=8', work: '/port-css/spaces.css?v=14', spaceOpen: '/port-css/space-open.css?v=1', docs: '/port-css/documents.css?v=8',
-    links: '/port-css/links.css?v=12', mail: '/port-css/email.css?v=8', mailPeople: '/port-css/email-people.css?v=8',
-    playbook: '/port-css/playbook.css?v=10', calendar: '/port-css/calendar.css?v=7', zoom: '/port-css/zoom.css?v=3',
-    completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=4',
-    neon: '/port-css/neon.css?v=1', playbookP8: '/port-css/playbook-p8.css?v=17', plannerNeon: '/port-css/planner-neon.css?v=8',
-    calendarNeon: '/port-css/calendar-neon.css?v=8', completedNeon: '/port-css/completed-neon.css?v=3',
-    intNeon: '/port-css/integrations-neon.css?v=3',     vaultOps: '/port-css/vault-ops.css?v=11',
-    sheetViewer: '/port-css/sheet-viewer.css?v=2', notesCanvasP8: '/port-css/notes-canvas-p8.css?v=1',
-    outreach: '/port-css/outreach-lists.css?v=11',
-    vault: '/port-css/vault-ops.css?v=11',
-    ops: '/port-css/vault-ops.css?v=11',
-    contrastP10: '/port-css/contrast-p10.css?v=5'
+    room: '/port-css/dashboard.css?v=3', war: '/port-css/war-room.css?v=9', notes: '/port-css/notes.css?v=6',
+    notesCanvas: '/port-css/notes-canvas.css?v=11', spacesArrange: '/port-css/spaces-arrange.css?v=1', spacesCards: '/port-css/spaces-cards.css?v=13', signalsDetail: '/port-css/signals-detail.css?v=4', rec: '/port-css/recordings.css?v=3',
+    contacts: '/port-css/pipeline.css?v=9', work: '/port-css/spaces.css?v=15', spaceOpen: '/port-css/space-open.css?v=2', docs: '/port-css/documents.css?v=9',
+    links: '/port-css/links.css?v=13', mail: '/port-css/email.css?v=9', mailPeople: '/port-css/email-people.css?v=9',
+    playbook: '/port-css/playbook.css?v=12', calendar: '/port-css/calendar.css?v=8', zoom: '/port-css/zoom.css?v=4',
+    completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=5',
+    neon: '/port-css/neon.css?v=2', playbookP8: '/port-css/playbook-p8.css?v=18', plannerNeon: '/port-css/planner-neon.css?v=10',
+    calendarNeon: '/port-css/calendar-neon.css?v=10', completedNeon: '/port-css/completed-neon.css?v=5',
+    intNeon: '/port-css/integrations-neon.css?v=5',     vaultOps: '/port-css/vault-ops.css?v=12',
+    sheetViewer: '/port-css/sheet-viewer.css?v=3', notesCanvasP8: '/port-css/notes-canvas-p8.css?v=2',
+    outreach: '/port-css/outreach-lists.css?v=12',
+    vault: '/port-css/vault-ops.css?v=12',
+    ops: '/port-css/vault-ops.css?v=12',
+    contrastP10: '/port-css/contrast-p10.css?v=6'
   };
   var HOSTS = {
     opsDash: 'room', warDesk: 'war', notesDesk: 'notes',

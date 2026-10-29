@@ -5,7 +5,7 @@
    (handlers are added to window.deskActions; inputs use the __deskInputExt / __deskKeyExt hooks).
    ?fixture=mockup paints the design's own sample data. No icons, no emoji, 24-hour times. */
 (function () {
-  var TOKEN = ':host{--ground:#0b1430;--ground2:#13224a;--side:#08102a;--card:#fff;--ink:#101a33;--ink2:#4a5672;--ink3:#7a86a0;--line:#e8ecf3;--soft:#f5f7fb;--blue:#2e6bf2;--blue50:#eaf1fe;--green:#12a36a;--green50:#e4f6ee;--amber:#c98408;--amber50:#fff4e0;--red:#e0364f;--red50:#fde9ec;--violet:#6b4fd8;display:block;min-width:0;color:var(--ink);font-size:16px;line-height:normal;font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}'
+  var TOKEN = ':host{--ground:#0b0c10;--ground2:#0b0c10;--side:#07080b;--card:#fff;--ink:#101a33;--ink2:#4a5672;--ink3:#7a86a0;--line:#e8ecf3;--soft:#f5f7fb;--blue:#2e6bf2;--blue50:#eaf1fe;--green:#12a36a;--green50:#e4f6ee;--amber:#c98408;--amber50:#fff4e0;--red:#e0364f;--red50:#fde9ec;--violet:#6b4fd8;display:block;min-width:0;color:var(--ink);font-size:16px;line-height:normal;font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}'
     + '*{box-sizing:border-box}button{font:inherit;cursor:pointer}[hidden]{display:none!important}[data-action]{cursor:pointer}'
     + '.card{background:var(--card);border-radius:16px;box-shadow:0 10px 30px rgba(3,10,30,.22);min-width:0}'
     + '.ch{display:flex;align-items:center;gap:8px;padding:14px 16px 10px}.ch h3{margin:0;font-size:14px;font-weight:800}.ch .s{margin-left:auto;font-size:12px;color:var(--ink3);font-weight:600;white-space:nowrap}'
@@ -15,7 +15,7 @@
     /* design shell av-fix: avatar initials are white and bold on every page */
     + '.av{color:#fff!important;font-size:11.5px!important;font-weight:800!important}'
     + '.av{color:#fff;font-weight:800;font-size:11px}'
-    + '.desk-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:95;background:#142036;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;display:none;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(3,10,30,.28)}'
+    + '.desk-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:95;background:#18191f;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;display:none;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(3,10,30,.28)}'
     + '.desk-toast.show{display:flex}.desk-toast button{background:#fff;color:#142036;border:0;border-radius:8px;padding:4px 10px;font-weight:800}'
     + '.tbl tr.picked td{background:var(--blue50)}.tbl tr[data-action]{cursor:pointer}'
     + '.pk{font-size:11px;font-weight:800;color:var(--blue);margin-left:6px}'
@@ -32,7 +32,7 @@
     + '.pbox textarea{min-height:150px;resize:vertical}.pbox .er{color:var(--red);font-size:12.5px;font-weight:700;min-height:16px}'
     + '.pbox .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}'
     + '.btn[disabled]{opacity:.55;cursor:default}';
-  var CSS = { contacts: '/port-css/contacts.css?v=2', finance: '/port-css/financials.css?v=3', outreach: '/port-css/outreach-lists.css?v=13', neon: '/port-css/neon.css?v=1', contrastP10: '/port-css/contrast-p10.css?v=5' };
+  var CSS = { contacts: '/port-css/contacts.css?v=3', finance: '/port-css/financials.css?v=4', outreach: '/port-css/outreach-lists.css?v=14', neon: '/port-css/neon.css?v=2', contrastP10: '/port-css/contrast-p10.css?v=6' };
   var cssText = {};
   var NA = 'Fills in from the master finance sheet once it\'s connected';
   var COLD_DAYS = 21;
@@ -782,7 +782,7 @@
       + '.xpw table{width:100%;border-collapse:collapse}.xpw th{font-size:11px;letter-spacing:.07em;color:#a3b0d2;text-align:left;padding:7px 8px;border-bottom:1px solid rgba(120,150,255,.14)}.xpw td{padding:8px;border-bottom:1px solid rgba(120,150,255,.1);color:#c8d1ea;font-size:13px}.xpw td b{color:#e9eefa}'
       + '.xpw .fq{font-size:11px;font-weight:800;border-radius:6px;padding:2px 7px}.xpw .fq.m{background:rgba(255,181,71,.13);color:#ffd08a}.xpw .fq.y{background:rgba(161,115,255,.14);color:#d6c2ff}'
       + '.xpw .lk{font:inherit;font-size:12px;font-weight:750;background:none;border:0;color:#8dbaff;cursor:pointer;padding:2px 6px}.xpw .lk.del{color:#ff9fb0}'
-      + '.xpw input,.xpw select{font:inherit;font-size:13px;background:#0b1030;border:1px solid rgba(120,150,255,.28);border-radius:7px;color:#e9eefa;padding:5px 7px;width:100%}'
+      + '.xpw input,.xpw select{font:inherit;font-size:13px;background:#18191f;border:1px solid rgba(120,150,255,.28);border-radius:7px;color:#e9eefa;padding:5px 7px;width:100%}'
       + '.xpw .add{margin-top:10px}.xpw .er{color:#ff9fb0;font-size:12.5px;margin-top:6px}.xpw .nt{font-size:12.5px;color:#a3b0d2;margin-top:10px}'
       + '@media(max-width:700px){.xpw .xk{grid-template-columns:1fr 1fr}}</style>';
     if (!d) return css + '<section class="card xpw"><div class="ch"><h3>Monthly expenses</h3><span class="s">loading</span></div></section>';

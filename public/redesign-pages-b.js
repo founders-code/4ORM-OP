@@ -1929,7 +1929,7 @@
           ? '<img alt="" loading="lazy" src="' + esc(thumb) + '" class="thumb">'
           : (status === 'failed'
             ? '<i class="noload" title="Preview not available"><span><b>' + esc(String(href).replace(/^https?:\/\/(www\.)?/, '').split('/')[0]) + '</b>preview not available</span></i>'
-            : '<i class="wait" style="background:#152040" aria-hidden="true"></i>');
+            : '<i class="wait" style="background:#23252c" aria-hidden="true"></i>');
         var listOn = (window.STATE && window.STATE.prefs && window.STATE.prefs.links_prefs && window.STATE.prefs.links_prefs.view) === 'list';
         return '<a class="tile' + (listOn ? ' row' : '') + '" data-action="link-open" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" data-id="' + id + '" data-url="' + esc(href) + '">' + (w[4] == 2 ? '<span class="dup">Duplicate</span>' : '')
           + '<div class="lg" style="background:' + w[2] + '14">' + cover + '</div>'

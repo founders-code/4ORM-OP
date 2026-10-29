@@ -1,9 +1,9 @@
 
 /* ===== SHELL (shared by every page) ===== */
-:root{--ground:#0b1430;--ground2:#13224a;--side:#08102a;--card:#fff;--ink:#101a33;--ink2:#4a5672;--ink3:#7a86a0;--line:#e8ecf3;--soft:#f5f7fb;
+:root{--ground:#0b0c10;--ground2:#0b0c10;--side:#07080b;--card:#fff;--ink:#101a33;--ink2:#4a5672;--ink3:#7a86a0;--line:#e8ecf3;--soft:#f5f7fb;
 --blue:#2e6bf2;--blue50:#eaf1fe;--green:#12a36a;--green50:#e4f6ee;--amber:#c98408;--amber50:#fff4e0;--red:#e0364f;--red50:#fde9ec;--violet:#6b4fd8;
 font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif}
-*{box-sizing:border-box}html,body{margin:0}html{background:#0d1838}
+*{box-sizing:border-box}html,body{margin:0}html{background:#0b0c10}
 body{background:linear-gradient(165deg,var(--ground),var(--ground2)) fixed;color:var(--ink);min-height:100vh;display:grid;grid-template-columns:224px minmax(0,1fr);grid-template-rows:56px auto}
 button{font:inherit;cursor:pointer}
 .top{grid-column:1/-1;height:56px;background:#fff;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid var(--line)}

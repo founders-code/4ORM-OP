@@ -323,7 +323,7 @@ canvas.addEventListener('pointerleave',()=>{hov=null;clearTimeout(hovT);hovT=set
 /* Grab any item on the timeline and drag it left or right. It moves by whole days, keeps its length,
    pushes anything that depends on it forward if they would now overlap, saves every changed item, and offers Undo. */
 let mv=null,mvBlock=0;
-function mvToast(msg,undo){let t=window.document.getElementById('mvToast');if(!t){t=window.document.createElement('div');t.id='mvToast';t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:90;background:#0e1430;color:#e9eefa;border:1px solid rgba(120,150,255,.3);border-radius:10px;padding:9px 14px;font:600 13px Inter,system-ui,sans-serif;display:flex;gap:12px;align-items:center;box-shadow:0 12px 30px rgba(0,0,0,.5)';window.document.body.appendChild(t)}
+function mvToast(msg,undo){let t=window.document.getElementById('mvToast');if(!t){t=window.document.createElement('div');t.id='mvToast';t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:90;background:#0b0c10;color:#e9eefa;border:1px solid rgba(120,150,255,.3);border-radius:10px;padding:9px 14px;font:600 13px Inter,system-ui,sans-serif;display:flex;gap:12px;align-items:center;box-shadow:0 12px 30px rgba(0,0,0,.5)';window.document.body.appendChild(t)}
   t.innerHTML='<span></span><button type="button" style="font:inherit;font-weight:800;color:#8dbaff;background:none;border:0;cursor:pointer">Undo</button>';t.firstChild.textContent=msg;t.style.display='flex';
   t.lastChild.onclick=()=>{t.style.display='none';undo()};clearTimeout(t._h);t._h=setTimeout(()=>{t.style.display='none'},6000)}
 canvas.addEventListener('pointerdown',e=>{

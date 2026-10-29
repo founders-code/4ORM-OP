@@ -1,7 +1,7 @@
 :host{display:block;color-scheme:inherit;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif}
 :host([hidden]){display:none!important}
 .port-body{font-family:inherit}
-*,*::before,*::after{box-sizing:border-box}:host,.port-body{--bg:#f4f6fb;--ink:#101828;--muted:#6b7488;--line:#e7ebf2;--blue:#1f5fff;--navy:#0b1f55;
+*,*::before,*::after{box-sizing:border-box}:host,.port-body{--bg:#f4f6fb;--ink:#111216;--muted:#6b7488;--line:#e7ebf2;--blue:#1f5fff;--navy:#2c2e37;
 font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,system-ui,sans-serif;}
 *{box-sizing:border-box}:host{margin:0;display:block}.port-body{margin:0;background:var(--bg);color:var(--ink);font-size:13px;padding:14px 18px}
 .bar{display:flex;align-items:center;gap:10px;margin-bottom:12px}
@@ -78,12 +78,12 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,s
 .nwx .card.hero .acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto}
 .nwx .card.hero .acts .a{appearance:none;-webkit-appearance:none;font:inherit;font-size:11.5px;font-weight:650;border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 11px;height:32px;cursor:pointer;color:#33405a;white-space:nowrap}
 .nwx .card.hero .acts .a.pri{background:var(--blue);border-color:var(--blue);color:#fff}
-.nwx .card.hero .img,.nwx .card.story .img{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:#0b1f55}
+.nwx .card.hero .img,.nwx .card.story .img{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:#2c2e37}
 .nwx .card.story .img{height:auto;min-height:104px}
 .nwx .card.hero .img{height:100%;min-height:300px;aspect-ratio:auto}
 .nwx .card .img img.ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .nwx .card .img .tile{display:none}
-.nwx .card .img.noimg .tile{display:flex;position:absolute;inset:0;align-items:flex-end;padding:10px;background:linear-gradient(160deg,#0b1f55,#16357a)}
+.nwx .card .img.noimg .tile{display:flex;position:absolute;inset:0;align-items:flex-end;padding:10px;background:linear-gradient(160deg,#2c2e37,#16357a)}
 .nwx .card .img .shade{position:absolute;inset:0;pointer-events:none}
 .nwx .card.hero .img .shade{background:linear-gradient(180deg,rgba(6,10,26,0) 35%,rgba(6,10,26,.72) 100%)}
 .nwx .card.story .img .shade{background:none}
@@ -133,7 +133,7 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,s
 @media(max-width:820px){.nwx .grid{grid-template-columns:repeat(2,minmax(0,1fr));}.nwx .wrap{grid-template-columns:1fr}}
 
 /* ===== NEWS SAVED (13b-news-saved.html, verbatim below the token block) ===== */
-.nsv{--ink2:#4a5672;--ink3:#7a86a0;--soft:#f5f7fb;--violet:#6b4fd8;--green:#12a36a;--green50:#e4f6ee;--blue50:#eaf1fe;--card:#fff;background:linear-gradient(165deg,#0b1430,#13224a);border-radius:16px;padding:14px;margin-top:4px}
+.nsv{--ink2:#4a5672;--ink3:#7a86a0;--soft:#f5f7fb;--violet:#6b4fd8;--green:#12a36a;--green50:#e4f6ee;--blue50:#eaf1fe;--card:#fff;background:linear-gradient(165deg,#0b0c10,#0b0c10);border-radius:16px;padding:14px;margin-top:4px}
 .nsv-msg{color:#9fb0d0;padding:20px;font-size:13px}
 .nsv-msg button{margin-left:8px}
 .pop .opt i{font-size:0}
@@ -204,7 +204,7 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,s
 .pop .pf{display:flex;gap:8px;margin-top:8px;align-items:center}
 .pop .pf a{font-size:12.5px;font-weight:750;color:var(--blue);cursor:pointer}
 .pop .pf .b2{margin-left:auto;height:32px}
-.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);opacity:0;background:#0f1a3a;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:650;transition:.25s;box-shadow:0 12px 30px rgba(0,0,0,.35);z-index:50}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);opacity:0;background:#18191f;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:650;transition:.25s;box-shadow:0 12px 30px rgba(0,0,0,.35);z-index:50}
 .toast.show{opacity:1;transform:translateX(-50%)}
 .pop,.toast{--ink:#101a33;--ink2:#4a5672;--ink3:#7a86a0;--soft:#f5f7fb;--violet:#6b4fd8;--line:#e8ecf3;--blue:#2e6bf2;font-family:inherit}
 /* design 13: the page sits on the dark ground (no white sheet), white 24px title, 290px rail */
@@ -226,7 +226,7 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,s
 /* ===== NEWS PULSE (13c) ===== */
 .pzs{display:flex;background:#f3f6fb;border:1px solid #e3e8f1;border-radius:10px;padding:2px}
 .pzs button{border:0;background:none;font:inherit;font-size:12.5px;font-weight:750;padding:5px 13px;border-radius:8px;color:#6a7690;cursor:pointer}
-.pzs button[aria-pressed="true"]{background:#0b1f55;color:#fff}
+.pzs button[aria-pressed="true"]{background:#2c2e37;color:#fff}
 .fx{display:flex;gap:2px;height:30px;border-radius:8px;overflow:hidden;margin:4px 0 10px}
 .fx i{display:flex;align-items:center;justify-content:center;font-style:normal;font-size:11.5px;font-weight:800;color:#fff;min-width:0;overflow:hidden;white-space:nowrap;cursor:pointer}
 .fx i:hover{filter:brightness(1.08);box-shadow:inset 0 0 0 2px #fff}
@@ -291,7 +291,7 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,s
 .mt .v .up{color:#b02a1c}.mt .v .dn{color:#0e7a4f}.mt .v .fl{color:#6b7488}
 .mt svg{width:100%;height:22px;display:block;margin-top:4px}
 .mk .src2{font-size:11px;color:#9aa3b5;margin-top:8px}
-.ztip{position:fixed;z-index:60;background:#0f1a3a;color:#fff;font-size:12px;line-height:1.4;border-radius:9px;padding:8px 10px;max-width:280px;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 10px 24px rgba(0,0,0,.3)}
+.ztip{position:fixed;z-index:60;background:#18191f;color:#fff;font-size:12px;line-height:1.4;border-radius:9px;padding:8px 10px;max-width:280px;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 10px 24px rgba(0,0,0,.3)}
 .ztip.on{opacity:1}.ztip b{color:#9cc0ff}
 .nwrap .card.dim{opacity:.35}
 .hero.swap .bd{animation:hs .45s cubic-bezier(.22,.61,.36,1)}
@@ -302,12 +302,12 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,s
 .nwx .hero .ntop{font-size:11.5px;font-weight:800;color:#6b7488;letter-spacing:.04em;text-transform:none}
 
 /* ===== 13d: Market pulse in the Playbook dark style. News cards stay white. ===== */
-.pz{background:#111a3a;border:1px solid rgba(120,150,255,.16);box-shadow:0 14px 40px rgba(0,0,0,.35);border-radius:18px;padding:18px 20px 16px}
+.pz{background:#111216;border:1px solid rgba(120,150,255,.16);box-shadow:0 14px 40px rgba(0,0,0,.35);border-radius:18px;padding:18px 20px 16px}
 .pzh h3{color:#fff;font-size:17px}.pzh .s{color:#8fa0c8}.pzh .samp{display:none}
-.pzs{background:#0b1430;border-color:rgba(255,255,255,.1)}.pzs button{color:#8fa0c8}.pzs button[aria-pressed="true"]{background:#2e6bf2;color:#fff}
+.pzs{background:#0b0c10;border-color:rgba(255,255,255,.1)}.pzs button{color:#8fa0c8}.pzs button[aria-pressed="true"]{background:#2e6bf2;color:#fff}
 .gg .gc:nth-child(1){--c:#3b82ff}.gg .gc:nth-child(2){--c:#ff4d6d}.gg .gc:nth-child(3){--c:#a173ff}.gg .gc:nth-child(4){--c:#19d38a}
 .pz.consumer .gg .gc:nth-child(1){--c:#ff8a3d}.pz.consumer .gg .gc:nth-child(2){--c:#f5c443}.pz.consumer .gg .gc:nth-child(3){--c:#ff5fa8}.pz.consumer .gg .gc:nth-child(4){--c:#22d3c5}
-.gc{background:#0a0f26;border:1px solid rgba(120,150,255,.14);color:#fff;box-shadow:none;border-radius:12px}
+.gc{background:#0a0b0e;border:1px solid rgba(120,150,255,.14);color:#fff;box-shadow:none;border-radius:12px}
 .gc:hover{border-color:var(--c);box-shadow:0 8px 24px rgba(0,0,0,.3)}
 .gc.on{border-color:var(--c);box-shadow:0 0 0 1px var(--c)}
 .gc .gt{color:#e9eefa}
@@ -315,12 +315,12 @@ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,s
 .gc .gd,.gc .num small.gd{color:#a3b0d2}.gc .gd .up{color:#ff6b7d}.gc .gd .dn{color:#2ee59d}.gc .gd .fl{color:#a3b0d2}
 .gc .lead,.gc .why{color:#a3b0d2;border:0}.gc .why b{color:#fff}
 .gc .sp i{background:var(--c);opacity:.35}.gc .sp i.now{opacity:1}
-.rr,.mk{background:#16214a;border:1px solid rgba(255,255,255,.07)}
+.rr,.mk{background:#18191f;border:1px solid rgba(255,255,255,.07)}
 .rr h4,.mk h4{color:#fff}.rr h4 span,.mk h4 span{color:#8fa0c8}
 .rrg .rn{color:#e3e9f8}.rrg .wk{color:#6f7fa6}.rrg .la{color:#aebbe0}.rrg .la b{color:#fff}
 .h0{background:rgba(255,255,255,.05)}.h1{background:#1d3a86}.h2{background:#2a5bd6}.h3{background:#3b82ff}.h4{background:#8fb8ff}
 .rkey{color:#8fa0c8}
-.mt{background:#0f1838;border:1px solid rgba(255,255,255,.06)}.mt .k{color:#8fa0c8}.mt .v b{color:#fff}
+.mt{background:#18191f;border:1px solid rgba(255,255,255,.06)}.mt .k{color:#8fa0c8}.mt .v b{color:#fff}
 .mt .v .up{color:#ff6b7d}.mt .v .dn{color:#2ee59d}.mt .v .fl{color:#8fa0c8}.mt svg polyline{stroke:#5b8cff}
 .mk .src2{color:#6f7fa6}
 /* clean header: topic filters as quiet text tabs, not pills */

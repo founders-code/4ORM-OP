@@ -13,7 +13,7 @@
 .sg .n{margin-left:auto;font-size:11.5px;color:var(--ink3);font-weight:700}
 .sg .n.hot{color:var(--red)}
 .sepl{height:1px;background:var(--line);margin:6px 0}
-.cold{background:linear-gradient(120deg,#0e1a3d,#16295a);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:14px 16px;margin-bottom:16px;color:#eaf0ff}
+.cold{background:linear-gradient(120deg,#23252c,#16295a);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:14px 16px;margin-bottom:16px;color:#eaf0ff}
 .coldh{display:flex;align-items:center;gap:10px;margin-bottom:10px}.coldh b{font-size:14px;font-weight:800}.coldh span{font-size:12.5px;color:#9fb0d0}.coldh .lnk{margin-left:auto;color:#9db9ff}
 .cg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .cc{background:rgba(5,12,32,.5);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px;min-width:0}

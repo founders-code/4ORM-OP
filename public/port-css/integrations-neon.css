@@ -21,18 +21,18 @@
 .eyeT,.bellT{font-size:11px;font-weight:800;color:#4a5672;background:#f5f7fb;border-radius:6px;padding:2px 7px;cursor:pointer;white-space:nowrap}.eye{border:none;background:none;padding:0}
 
 /* ===== 17e: Integrations in Neon ===== */
-.port-body{--card:#080c1f;--ink:#e9eefa;--ink2:#aebbe0;--ink3:#7f8db5;--line:#1a2450;--soft:#0e1430;--blue50:#13204a;--green50:#0f2e24;--amber50:#2a2112;--red50:#2a1424;color:#e9eefa}
-.port-body .card{background:#080c1f;border:1px solid rgba(120,150,255,.14);box-shadow:0 14px 40px rgba(0,0,0,.4)}
+.port-body{--card:#07080b;--ink:#e9eefa;--ink2:#aebbe0;--ink3:#7f8db5;--line:#23252c;--soft:#0b0c10;--blue50:#23252c;--green50:#0f2e24;--amber50:#2a2112;--red50:#2a1424;color:#e9eefa}
+.port-body .card{background:#07080b;border:1px solid rgba(120,150,255,.14);box-shadow:0 14px 40px rgba(0,0,0,.4)}
 .port-body .bar .sub,.port-body .sub{color:#8fa0c8}
 .port-body h2,.port-body h3,.port-body h4,.port-body b{color:#fff}
-.port-body .btn,.port-body button{background:#0e1430;border-color:#2a3a72;color:#e9eefa}
+.port-body .btn,.port-body button{background:#0b0c10;border-color:#2a2c35;color:#e9eefa}
 .port-body .btn.pri,.port-body button.pri{background:#2e6bf2;border-color:#2e6bf2;color:#fff;box-shadow:0 0 14px rgba(46,107,242,.45)}
-.port-body input,.port-body select{background:#0b1430;border-color:#2a3a72;color:#fff}
-.port-body .tile,.port-body .row,.port-body .it,.port-body .conn{background:#0e1430;border-color:rgba(255,255,255,.07)}
-.port-body .tile:hover,.port-body .row:hover{background:#13204a}
+.port-body input,.port-body select{background:#0b0c10;border-color:#2a2c35;color:#fff}
+.port-body .tile,.port-body .row,.port-body .it,.port-body .conn{background:#0b0c10;border-color:rgba(255,255,255,.07)}
+.port-body .tile:hover,.port-body .row:hover{background:#23252c}
 .port-body .ok,.port-body .on{color:#2ee59d}.port-body .off,.port-body .bad{color:#ff6b7d}
-.port-body .pill,.port-body .tag{background:#13204a;color:#9db9ff}
+.port-body .pill,.port-body .tag{background:#23252c;color:#9db9ff}
 .port-body .mut,.port-body small{color:#8fa0c8}
-.port-body table th{background:#0b1026;color:#7f8db5;border-bottom-color:#1a2450}
-.port-body table td{border-bottom-color:#141c3c;color:#e9eefa}
+.port-body table th{background:#111216;color:#7f8db5;border-bottom-color:#23252c}
+.port-body table td{border-bottom-color:#18191f;color:#e9eefa}
 .why{color:#ffd08a!important;background:rgba(255,181,71,.12)!important}

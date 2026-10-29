@@ -164,7 +164,7 @@
 /* Role chips on soft pads need dark ink even when the page ramp is dark */
 .port-body .role.r-net{color:#3a4560!important;background:#f5f7fb}
 .port-body.neon .role.r-net,
-.port-body.lists .role.r-net{color:#c8d1ea!important;background:#13204a!important}
+.port-body.lists .role.r-net{color:#c8d1ea!important;background:#23252c!important}
 
 .light-surface h1,
 .light-surface h2,
@@ -237,7 +237,7 @@
 .port-body.neon .fl,
 .port-body.neon .fl .nm,
 .port-body .fl .nm{color:var(--ink)!important}
-.port-body.neon .fl{background:#0a0f26!important;border-color:rgba(120,150,255,.12)!important}
+.port-body.neon .fl{background:#0a0b0e!important;border-color:rgba(120,150,255,.12)!important}
 .port-body.neon .bar .sub,
 .port-body .bar .sub{color:var(--ink2)!important}
 
@@ -349,7 +349,7 @@
 .port-body.neon table.t th,
 .port-body.lists table.t th,
 .port-body.neon .tbl th,
-.port-body.lists .tbl th{color:var(--ink3)!important;background:#0b1026!important}
+.port-body.lists .tbl th{color:var(--ink3)!important;background:#111216!important}
 /* Prompt 13: Contacts table hover must stay on the dark surface (prompt 12 surface rule). */
 .port-body.neon .tbl tr:hover td,
 .port-body.lists .tbl tr:hover td,
