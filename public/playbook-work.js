@@ -69,7 +69,7 @@
      Everything for today on one list: every number to call, every LinkedIn touch, every email and form,
      the to-dos and the rhythms. A box on every line. Logging an outcome ticks the box; Undo puts it back. */
   var OUTS = {
-    call: [['No answer', 'No answer'], ['Left voicemail', 'Voicemail'], ['Spoke', 'Spoke'], ['Meeting booked', 'Booked']],
+    call: [['No answer', 'No answer'], ['Left voicemail', 'Voicemail'], ['Talked to gatekeeper', 'Gatekeeper'], ['Talked to decision maker', 'Decision maker'], ['Meeting booked', 'Booked']],
     li: [['Sent in GoHighLevel', 'Sent'], ['Replied', 'Replied']],
     mail: [['Sent', 'Sent'], ['Form sent', 'Form sent'], ['Replied', 'Replied']]
   };
@@ -159,7 +159,7 @@
     var run = R(), row = runRows().filter(function (x) { return x.id === id; })[0];
     if (!row || !row.r) return;
     var ch = row.kind === 'call' ? 'Call' : row.kind === 'li' ? 'LinkedIn' : 'Email';
-    if (outcome === 'Spoke' && window.openDossier) {
+    if ((outcome === 'Spoke' || outcome === 'Talked to decision maker') && window.openDossier) {
       window.openDossier(row.r.id, { channel: 'Call', onSaved: function (rec, o) { if (o) { run.done[id] = o; run.items[id] = row; } load(true, paint); } });
       return;
     }
@@ -242,7 +242,7 @@
     if (!sp) { sprintNew('call'); sp = S.sprint; }
     var l = laneOf(sp.lane), r = sp.list[sp.i];
     var c = { n: 0, talk: 0, vm: 0, na: 0, book: 0 };
-    Object.keys(sp.res).forEach(function (k) { var o = sp.res[k]; c.n++; if (o === 'Spoke') c.talk++; if (o === 'Left voicemail') c.vm++; if (o === 'No answer') c.na++; if (o === 'Meeting booked') c.book++; });
+    Object.keys(sp.res).forEach(function (k) { var o = sp.res[k]; c.n++; if (o === 'Spoke' || /^Talked/.test(o)) c.talk++; if (o === 'Left voicemail') c.vm++; if (o === 'No answer') c.na++; if (o === 'Meeting booked') c.book++; });
     var mm = Math.floor(sp.left / 60), ss = sp.left % 60;
     var h = '<div class="wsp"><div class="wtop"><div class="wbox wclock"><span class="wlab">Time left</span><b class="wtime">' + mm + ':' + String(ss).padStart(2, '0') + '</b>'
       + '<button type="button" class="wstart" data-sp="' + (sp.run ? 'pause' : 'go') + '">' + (sp.run ? 'Pause' : (sp.left < 900 ? 'Resume' : 'Start the clock')) + '</button></div>'

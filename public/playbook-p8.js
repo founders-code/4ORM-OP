@@ -204,7 +204,7 @@
 
     /* ---------- Focus today: calls, and a pop-up for every item ---------- */
     var FX = { evs: [], plays: [], ti: 0, calls: null, at: 0 };
-    var OUTS = ['No answer', 'Left voicemail', 'Spoke', 'Interested', 'Call back', 'Not interested', 'Wrong number', 'Meeting booked'];
+    var OUTS = ['No answer', 'Left voicemail', 'Talked to gatekeeper', 'Talked to decision maker', 'Interested', 'Call back', 'Not interested', 'Wrong number', 'Meeting booked'];
     function loadCalls(force) {
       if (!LIVE) return;
       if (!force && FX.calls && Date.now() - FX.at < 90000) return;

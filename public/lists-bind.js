@@ -458,8 +458,8 @@
       });
     }
 
-    var OUTCOMES = ['No answer', 'Left voicemail', 'Spoke', 'Interested', 'Call back', 'Not interested', 'Wrong number', 'Meeting booked'];
-    var OUT_STAGE = { 'Spoke': 1, 'Interested': 1, 'Call back': 1, 'Meeting booked': 5 };
+    var OUTCOMES = ['No answer', 'Left voicemail', 'Talked to gatekeeper', 'Talked to decision maker', 'Interested', 'Call back', 'Not interested', 'Wrong number', 'Meeting booked'];
+    var OUT_STAGE = { 'Spoke': 1, 'Talked to gatekeeper': 1, 'Talked to decision maker': 1, 'Interested': 1, 'Call back': 1, 'Meeting booked': 5 };
 
     /* Every field in the card saves when it changes. */
     function bindFields(p) {
@@ -617,7 +617,7 @@
           if ($('#pnoteAdd')) $('#pnoteAdd').value = '';
           if (note) p.notes = note + (p.notes ? '\n' + p.notes : '');
           p.done = true;
-          if (/Spoke|Interested|Meeting booked|Replied/.test(chosen || '') && p.growth && !p.inContacts && typeof window.offerAddToContacts === 'function') window.offerAddToContacts(p.contactId, p.name);
+          if (/Spoke|decision maker|Interested|Meeting booked|Replied/.test(chosen || '') && p.growth && !p.inContacts && typeof window.offerAddToContacts === 'function') window.offerAddToContacts(p.contactId, p.name);
           if (chosen === 'Call back' && fu) p.callback = fu;
           var want = OUT_STAGE[chosen];
           if (want != null && stageIndex(p.stage) < want) setStage(p, want);

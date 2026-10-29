@@ -407,7 +407,7 @@ export { vanToday, addWeekdays };
 
 /* Lists funnel (29 Oct 2026): the whole outreach system as one funnel, from every record to booked meetings.
    Masters, fit scored, work lists, contacted, talked, booked. Every step carries the record ids behind it, so the page can open them. */
-const TALKED = /^(spoke|interested|connected|replied|call back|meeting booked|not interested|feedback)$/i;
+const TALKED = /^(spoke|talked to gatekeeper|talked to decision maker|interested|connected|replied|call back|meeting booked|not interested|feedback)$/i;
 const BOOKED = /meeting booked/i;
 export async function growthFunnel(sql: Sql, ownerId: string) {
   await ensureGrowth(sql);

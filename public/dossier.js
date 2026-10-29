@@ -64,7 +64,7 @@
     angels: ['Angels (people)', 'LinkedIn'], firms_now: ['Firms and funds: reach now', 'Form'], new_funds: ['New funds 2024-26', 'Email'], firms_later: ['Firms and funds: later', 'Email'],
     programs: ['Grants and programs', 'Form'], regulators: ['Regulators', 'Email'], index: ['Wider contact index', 'Email'] };
   var OUTS = {
-    Call: ['No answer', 'Left voicemail', 'Spoke', 'Interested', 'Call back', 'Meeting booked', 'Not interested', 'Wrong number'],
+    Call: ['No answer', 'Left voicemail', 'Talked to gatekeeper', 'Talked to decision maker', 'Interested', 'Call back', 'Meeting booked', 'Not interested', 'Wrong number'],
     LinkedIn: ['Sent in GoHighLevel', 'Connected', 'Replied', 'Interested', 'Meeting booked', 'Not interested'],
     Email: ['Sent', 'Replied', 'Interested', 'Meeting booked', 'Bounced', 'Not interested'],
     Form: ['Form sent', 'Replied', 'Interested', 'Meeting booked', 'Not a fit']
@@ -552,11 +552,11 @@
         .then(function (res) {
           var tid = res && res.touch && res.touch.id;
           forget(rec.id);
-          var stage = /Meeting booked/.test(outcome) ? 'Meeting booked' : /Interested|Replied|Spoke|Connected/.test(outcome) ? 'Engaged' : (/Not interested|Not a fit|Wrong number/.test(outcome) ? 'Not a fit' : ((!rec.stage || rec.stage === 'Cold') ? 'Contacted' : ''));
+          var stage = /Meeting booked/.test(outcome) ? 'Meeting booked' : /Interested|Replied|Spoke|Connected|decision maker/.test(outcome) ? 'Engaged' : (/Not interested|Not a fit|Wrong number/.test(outcome) ? 'Not a fit' : ((!rec.stage || rec.stage === 'Cold') ? 'Contacted' : ''));
           if (stage) api('/api/growth', 'PATCH', { id: rec.id, stage: stage });
           toast('Saved: ' + rec.name + (outcome ? ' · ' + outcome : ''), function () { if (tid) api('/api/growth', 'POST', { action: 'undo-touch', touchId: tid }).then(function () { if (opts.onSaved) opts.onSaved(); }); });
           if (opts.onSaved) opts.onSaved(rec, outcome);
-          if (/Spoke|Interested|Meeting booked|Replied/.test(outcome) && !(rec.data && rec.data.contactId)) window.offerAddToContacts(rec.id, rec.name);
+          if (/Spoke|decision maker|Interested|Meeting booked|Replied/.test(outcome) && !(rec.data && rec.data.contactId)) window.offerAddToContacts(rec.id, rec.name);
           go(1);
         })
         .catch(function () { toast('Could not save that. Try again.'); });
