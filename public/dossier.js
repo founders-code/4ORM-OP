@@ -3,28 +3,29 @@
    Outcomes log a touch (Undo), set the follow-up date and move the stage. With a queue, the next contact loads after each save. */
 (function () {
   if (window.openDossier) return;
-  var CSS = '#dsr{position:fixed;inset:0;z-index:2147482000;background:rgba(0,0,0,.6);display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:28px 16px}'
-    + '#dsr.open{display:flex}#dsr .bx{width:min(1080px,100%);background:#111216;border:1px solid #2a2c35;border-radius:16px;color:#fff;font:500 12.5px/1.45 Inter,-apple-system,system-ui,sans-serif;box-shadow:0 30px 80px rgba(0,0,0,.6)}'
-    + '#dsr .top{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #23252e}'
-    + '#dsr .chip{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:6px;background:#18191f;color:#aeb6c8;margin-right:6px}'
-    + '#dsr .chip.c{background:rgba(0,220,134,.14);color:#00dc86}#dsr .chip.l{background:rgba(66,114,249,.16);color:#9db9ff}#dsr .chip.e{background:rgba(151,113,249,.16);color:#c3adff}'
-    + '#dsr .mid{display:grid;grid-template-columns:1.35fr 1fr;gap:0}#dsr .lft{padding:18px 20px;border-right:1px solid #23252e}#dsr .rgt{padding:18px 20px}'
-    + '#dsr h2{font-size:22px;font-weight:850;margin:0}#dsr .who{color:#aeb6c8;font-size:13px;margin-top:2px}'
-    + '#dsr .tel{font-size:30px;font-weight:850;margin:12px 0 6px;font-variant-numeric:tabular-nums}#dsr .tel a{color:#fff;text-decoration:none}'
-    + '#dsr .links a{color:#9db9ff;font-weight:700;margin-right:14px;text-decoration:none}#dsr .links a:hover{text-decoration:underline}'
-    + '#dsr .sec{margin-top:14px}#dsr .k{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#7d859a;margin-bottom:5px}'
+  var CSS = '#dsr *{box-sizing:border-box;letter-spacing:normal}#dsr h2{color:#fff!important;opacity:1!important;display:block}#dsr .d-sec{display:block!important;margin-top:14px}#dsr .d-k{display:block!important;width:auto!important}#dsr ul{display:block}#dsr li{display:list-item;list-style:disc}#dsr .d-chip,#dsr .d-stgb{opacity:1!important;filter:none!important}'
+    + '#dsr{position:fixed;inset:0;z-index:2147482000;background:rgba(0,0,0,.6);display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:28px 16px}'
+    + '#dsr.open{display:flex}#dsr .d-bx{width:min(1080px,100%);background:#111216;border:1px solid #2a2c35;border-radius:16px;color:#fff;font:500 12.5px/1.45 Inter,-apple-system,system-ui,sans-serif;box-shadow:0 30px 80px rgba(0,0,0,.6)}'
+    + '#dsr .d-top{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #23252e}'
+    + '#dsr .d-chip{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:6px;background:#18191f;color:#aeb6c8;margin-right:6px}'
+    + '#dsr .d-chip.c{background:rgba(0,220,134,.14);color:#00dc86}#dsr .d-chip.l{background:rgba(66,114,249,.16);color:#9db9ff}#dsr .d-chip.e{background:rgba(151,113,249,.16);color:#c3adff}'
+    + '#dsr .d-mid{display:grid;grid-template-columns:1.35fr 1fr;gap:0}#dsr .d-lft{padding:18px 20px;border-right:1px solid #23252e}#dsr .d-rgt{padding:18px 20px}'
+    + '#dsr h2{font-size:22px;font-weight:850;margin:0}#dsr .d-who{color:#aeb6c8;font-size:13px;margin-top:2px}'
+    + '#dsr .d-tel{font-size:30px;font-weight:850;margin:12px 0 6px;font-variant-numeric:tabular-nums}#dsr .d-tel a{color:#fff;text-decoration:none}'
+    + '#dsr .d-links a{color:#9db9ff;font-weight:700;margin-right:14px;text-decoration:none}#dsr .d-links a:hover{text-decoration:underline}'
+    + '#dsr .d-sec{margin-top:14px}#dsr .d-k{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#7d859a;margin-bottom:5px}'
     + '#dsr ul{margin:0;padding-left:16px}#dsr li{margin:2px 0;color:#e6eaf2}#dsr li b{color:#fff}'
-    + '#dsr .pain{display:inline-flex;gap:3px;vertical-align:middle;margin-right:8px}#dsr .pain i{width:10px;height:10px;border-radius:2px;background:#2a2c35}#dsr .pain i.on{background:#ff4866}'
-    + '#dsr .open{color:#e6eaf2;background:#18191f;border-radius:10px;padding:10px 12px}'
-    + '#dsr .outs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}#dsr button{font:inherit;font-size:12px;font-weight:800;padding:7px 11px;border-radius:9px;border:1px solid #2a2c35;background:#18191f;color:#fff;cursor:pointer}'
+    + '#dsr .d-pain{display:inline-flex;gap:3px;vertical-align:middle;margin-right:8px}#dsr .d-pain i{width:10px;height:10px;border-radius:2px;background:#2a2c35}#dsr .d-pain i.on{background:#ff4866}'
+    + '#dsr .d-open{color:#e6eaf2;background:#18191f;border-radius:10px;padding:10px 12px}'
+    + '#dsr .d-outs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}#dsr button{font:inherit;font-size:12px;font-weight:800;padding:7px 11px;border-radius:9px;border:1px solid #2a2c35;background:#18191f;color:#fff;cursor:pointer}'
     + '#dsr button:hover{border-color:#4272f9}#dsr button.on{background:#4272f9;border-color:#4272f9}#dsr button.pri{background:#00dc86;border-color:#00dc86;color:#03170d}'
     + '#dsr textarea{width:100%;min-height:84px;background:#18191f;border:1px solid #2a2c35;border-radius:10px;color:#fff;font:inherit;padding:9px 10px;resize:vertical}'
     + '#dsr input[type=date]{background:#18191f;border:1px solid #2a2c35;border-radius:8px;color:#fff;font:inherit;padding:6px 8px}'
-    + '#dsr .hist div{border-left:2px solid #2a2c35;padding:2px 0 6px 10px;color:#c8d1ea}#dsr .hist small{color:#7d859a;display:block}'
-    + '#dsr .muted{color:#7d859a}#dsr .acts{display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #23252e}'
-    + '#dsr .q{color:#aeb6c8;font-size:12px}#dsr .stg{position:relative;display:inline-block}#dsr .stgb{background:rgba(255,169,70,.14);border-color:rgba(255,169,70,.45);color:#ffc98a;padding:3px 10px;font-size:11px}'
-    + '#dsr .stgp{position:absolute;top:30px;left:0;z-index:5;background:#18191f;border:1px solid #2a2c35;border-radius:12px;padding:10px;width:300px;box-shadow:0 18px 40px rgba(0,0,0,.55)}#dsr .stgp .sl{display:flex;flex-direction:column;gap:5px;margin-top:6px}'
-    + '#dsr .stgp .sl button{text-align:left}#dsr .stgp select{width:100%;background:#111216;color:#fff;border:1px solid #2a2c35;border-radius:8px;padding:5px;font:inherit}@media(max-width:820px){#dsr .mid{grid-template-columns:1fr}#dsr .lft{border-right:0}}';
+    + '#dsr .d-hist div{border-left:2px solid #2a2c35;padding:2px 0 6px 10px;color:#c8d1ea}#dsr .d-hist small{color:#7d859a;display:block}'
+    + '#dsr .d-muted{color:#7d859a}#dsr .d-acts{display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #23252e}'
+    + '#dsr .d-q{color:#aeb6c8;font-size:12px}#dsr .d-stg{position:relative;display:inline-block}#dsr .d-stgb{background:rgba(255,169,70,.14);border-color:rgba(255,169,70,.45);color:#ffc98a;padding:3px 10px;font-size:11px}'
+    + '#dsr .d-stgp{position:absolute;top:30px;left:0;z-index:5;background:#18191f;border:1px solid #2a2c35;border-radius:12px;padding:10px;width:300px;box-shadow:0 18px 40px rgba(0,0,0,.55)}#dsr .d-stgp .d-sl{display:flex;flex-direction:column;gap:5px;margin-top:6px}'
+    + '#dsr .d-stgp .d-sl button{text-align:left}#dsr .d-stgp select{width:100%;background:#111216;color:#fff;border:1px solid #2a2c35;border-radius:8px;padding:5px;font:inherit}@media(max-width:820px){#dsr .d-mid{grid-template-columns:1fr}#dsr .d-lft{border-right:0}}';
   var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
   var wrap = document.createElement('div'); wrap.id = 'dsr';
   function mount() { if (!wrap.isConnected) document.body.appendChild(wrap); }
@@ -75,7 +76,7 @@
     if (!rows.length) return '';
     return '<ul>' + rows.map(function (x) { return '<li>' + (withLabel && x[0] ? '<b>' + esc(x[0]) + ':</b> ' : '') + esc(x[1]) + '</li>'; }).join('') + '</ul>';
   }
-  function sec(title, body) { return body ? '<div class="sec"><div class="k">' + esc(title) + '</div>' + body + '</div>' : ''; }
+  function sec(title, body) { return body ? '<div class="d-sec"><div class="d-k">' + esc(title) + '</div>' + body + '</div>' : ''; }
   function tel(v) { return String(v || '').split(/\s*(?:;|\/|,|\bor\b)\s*/)[0].replace(/[^\d+]/g, ''); }
   function url(v) { v = String(v || '').trim(); if (!v) return ''; return /^https?:/i.test(v) ? v : (/^[\w.-]+\.[a-z]{2,}/i.test(v) ? 'https://' + v : ''); }
   function painScore(M) {
@@ -123,32 +124,32 @@
     var q = opts && opts.queue ? opts.queue : null, qi = q ? q.indexOf(rec.id) : -1;
     var chipCls = ch === 'Call' ? 'c' : ch === 'LinkedIn' ? 'l' : 'e';
 
-    var h = '<div class="bx"><div class="top"><div><span class="chip ' + chipCls + '">' + esc(ch === 'LinkedIn' ? 'LinkedIn in GoHighLevel' : ch) + (q ? ' · ' + (qi + 1) + ' of ' + q.length : '') + '</span>'
-      + '<span class="chip">' + esc(meta[0]) + '</span>' + (rec.priority ? '<span class="chip">' + esc(rec.priority) + (rec.score ? ' · score ' + esc(rec.score) : '') + '</span>' : '')
-      + '<span class="stg"><button type="button" class="stgb" data-a="stages">Stages: ' + esc(ghl || stage) + '</button></span></div>'
-      + '<span class="q">' + (rec.last_touch ? 'Last touch ' + esc(new Date(rec.last_touch).toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' })) : 'Never touched') + '</span></div>'
-      + '<div class="mid"><div class="lft">'
-      + '<h2>' + esc(rec.name) + '</h2><div class="who">' + esc([person && person !== rec.name ? person : '', role, place, industry].filter(Boolean).join(' · ')) + '</div>'
-      + (phone ? '<div class="tel"><a href="tel:' + esc(phone) + '">' + esc(String(rec.phone).split(/\s*[;/]\s*/)[0]) + '</a></div>' : '<div style="height:10px"></div>')
-      + '<div class="links">' + (li ? '<a href="' + esc(li) + '" target="_blank" rel="noopener">LinkedIn</a>' : '') + (rec.email ? '<a href="mailto:' + esc(rec.email) + '">' + esc(rec.email) + '</a>' : '')
+    var h = '<div class="d-bx"><div class="d-top"><div><span class="d-chip ' + chipCls + '">' + esc(ch === 'LinkedIn' ? 'LinkedIn in GoHighLevel' : ch) + (q ? ' · ' + (qi + 1) + ' of ' + q.length : '') + '</span>'
+      + '<span class="d-chip">' + esc(meta[0]) + '</span>' + (rec.priority ? '<span class="d-chip">' + esc(rec.priority) + (rec.score ? ' · score ' + esc(rec.score) : '') + '</span>' : '')
+      + '<span class="d-stg"><button type="button" class="d-stgb" data-a="stages">Stages: ' + esc(ghl || stage) + '</button></span></div>'
+      + '<span class="d-q">' + (rec.last_touch ? 'Last touch ' + esc(new Date(rec.last_touch).toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' })) : 'Never touched') + '</span></div>'
+      + '<div class="d-mid"><div class="d-lft">'
+      + '<h2>' + esc(rec.name) + '</h2><div class="d-who">' + esc([person && person !== rec.name ? person : '', role, place, industry].filter(Boolean).join(' · ')) + '</div>'
+      + (phone ? '<div class="d-tel"><a href="tel:' + esc(phone) + '">' + esc(String(rec.phone).split(/\s*[;/]\s*/)[0]) + '</a></div>' : '<div style="height:10px"></div>')
+      + '<div class="d-links">' + (li ? '<a href="' + esc(li) + '" target="_blank" rel="noopener">LinkedIn</a>' : '') + (rec.email ? '<a href="mailto:' + esc(rec.email) + '">' + esc(rec.email) + '</a>' : '')
       + (form ? '<a href="' + esc(form) + '" target="_blank" rel="noopener">Contact form</a>' : '') + (web ? '<a href="' + esc(web) + '" target="_blank" rel="noopener">Website</a>' : '') + '</div>'
       + sec("Why we're reaching out", bullets(why, true))
-      + sec('Pain', (pain != null ? '<div style="margin-bottom:4px"><span class="pain">' + [1, 2, 3, 4, 5].map(function (i) { return '<i' + (pain >= i * 20 - 10 ? ' class="on"' : '') + '></i>'; }).join('') + '</span><b>' + esc(pain) + ' / 100</b></div>' : '') + bullets(painRows, true))
+      + sec('Pain', (pain != null ? '<div style="margin-bottom:4px"><span class="d-pain">' + [1, 2, 3, 4, 5].map(function (i) { return '<i' + (pain >= i * 20 - 10 ? ' class="on"' : '') + '></i>'; }).join('') + '</span><b>' + esc(pain) + ' / 100</b></div>' : '') + bullets(painRows, true))
       + sec('Why they fit', bullets(fit, true))
       + sec('What they have invested in', bullets(backed, false))
-      + sec('Opening line', opener.length ? '<div class="open">' + esc(opener[0][1]) + '</div>' : '')
+      + sec('Opening line', opener.length ? '<div class="d-open">' + esc(opener[0][1]) + '</div>' : '')
       + sec('People', bullets(peopleRows, false))
       + sec('Intel', bullets(intel, true))
-      + '</div><div class="rgt">'
-      + '<div class="k">Outcome</div><div class="outs">' + (OUTS[ch] || OUTS.Email).map(function (o) { return '<button type="button" data-o="' + esc(o) + '">' + esc(o) + '</button>'; }).join('') + '</div>'
-      + '<div class="k" style="margin-top:10px">Notes</div><textarea id="dsrNote" placeholder="Type while you talk"></textarea>'
-      + '<div style="display:flex;gap:10px;align-items:center;margin-top:8px"><span class="k" style="margin:0">Follow up</span><input type="date" id="dsrFu"></div>'
-      + (rec.notes ? sec('Earlier notes', '<div class="muted" style="white-space:pre-wrap">' + esc(String(rec.notes).slice(0, 1600)) + '</div>') : '')
-      + sec('History', touches.length ? '<div class="hist">' + touches.slice(0, 8).map(function (t) {
+      + '</div><div class="d-rgt">'
+      + '<div class="d-k">Outcome</div><div class="d-outs">' + (OUTS[ch] || OUTS.Email).map(function (o) { return '<button type="button" data-o="' + esc(o) + '">' + esc(o) + '</button>'; }).join('') + '</div>'
+      + '<div class="d-k" style="margin-top:10px">Notes</div><textarea id="dsrNote" placeholder="Type while you talk"></textarea>'
+      + '<div style="display:flex;gap:10px;align-items:center;margin-top:8px"><span class="d-k" style="margin:0">Follow up</span><input type="date" id="dsrFu"></div>'
+      + (rec.notes ? sec('Earlier notes', '<div class="d-muted" style="white-space:pre-wrap">' + esc(String(rec.notes).slice(0, 1600)) + '</div>') : '')
+      + sec('History', touches.length ? '<div class="d-hist">' + touches.slice(0, 8).map(function (t) {
         return '<div><small>' + esc(new Date(t.at).toLocaleString('en-CA', { timeZone: 'America/Vancouver', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })) + ' · ' + esc(t.channel || '') + '</small>' + esc([t.outcome, t.note].filter(Boolean).join(' · ')) + '</div>';
-      }).join('') + '</div>' : '<div class="muted">No touches yet.</div>')
+      }).join('') + '</div>' : '<div class="d-muted">No touches yet.</div>')
       + '</div></div>'
-      + '<div class="acts">' + (q && qi > 0 ? '<button data-a="prev">Previous</button>' : '') + (q && qi < q.length - 1 ? '<button data-a="skip">Skip</button>' : '')
+      + '<div class="d-acts">' + (q && qi > 0 ? '<button data-a="prev">Previous</button>' : '') + (q && qi < q.length - 1 ? '<button data-a="skip">Skip</button>' : '')
       + '<button data-a="del" style="margin-right:auto;color:#ff8a98;border-color:rgba(255,72,102,.45)">Delete</button><button data-a="lists">Open in Lists</button><button data-a="close">Close</button><button class="pri" data-a="save">' + (q && qi < q.length - 1 ? 'Save and next' : 'Save') + '</button></div></div>';
     return h;
   }
@@ -165,17 +166,17 @@
   function open(id, opts) {
     opts = opts || {};
     mount();
-    wrap.innerHTML = '<div class="bx" style="padding:30px;color:#aeb6c8">Loading the card…</div>';
+    wrap.innerHTML = '<div class="d-bx" style="padding:30px;color:#aeb6c8">Loading the card…</div>';
     wrap.classList.add('open');
     api('/api/growth?id=' + encodeURIComponent(id)).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (rec) {
-      if (!rec || !rec.id) { wrap.innerHTML = '<div class="bx" style="padding:30px">Could not load this contact. <button data-a="close">Close</button></div>'; bindClose(); return; }
+      if (!rec || !rec.id) { wrap.innerHTML = '<div class="d-bx" style="padding:30px">Could not load this contact. <button data-a="close">Close</button></div>'; bindClose(); return; }
       wrap.innerHTML = render(rec, opts);
       bind(rec, opts);
-    }).catch(function () { wrap.innerHTML = '<div class="bx" style="padding:30px">Could not load this contact. <button data-a="close">Close</button></div>'; bindClose(); });
+    }).catch(function () { wrap.innerHTML = '<div class="d-bx" style="padding:30px">Could not load this contact. <button data-a="close">Close</button></div>'; bindClose(); });
   }
   function close() { wrap.classList.remove('open'); wrap.innerHTML = ''; }
   function bindClose() { wrap.querySelectorAll('[data-a="close"]').forEach(function (b) { b.onclick = close; }); }
-  wrap.addEventListener('click', function (e) { if (e.target === wrap) close(); var p = wrap.querySelector('.stgp'); if (p && !p.contains(e.target)) p.remove(); });
+  wrap.addEventListener('click', function (e) { if (e.target === wrap) close(); var p = wrap.querySelector('.d-stgp'); if (p && !p.contains(e.target)) p.remove(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && wrap.classList.contains('open')) close(); });
 
   function bind(rec, opts) {
@@ -201,20 +202,20 @@
     var sb = wrap.querySelector('[data-a="stages"]');
     if (sb) sb.onclick = function (e) {
       e.stopPropagation();
-      var holder = sb.parentNode, old = holder.querySelector('.stgp');
+      var holder = sb.parentNode, old = holder.querySelector('.d-stgp');
       if (old) { old.remove(); return; }
-      var pop = document.createElement('div'); pop.className = 'stgp'; pop.innerHTML = '<span class="muted">Loading GoHighLevel stages…</span>';
+      var pop = document.createElement('div'); pop.className = 'd-stgp'; pop.innerHTML = '<span class="d-muted">Loading GoHighLevel stages…</span>';
       holder.appendChild(pop);
       pop.onclick = function (ev) { ev.stopPropagation(); };
       api('/api/growth?ghl=' + encodeURIComponent(rec.id)).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (g) {
-        if (!g || !g.connected) { pop.innerHTML = '<span class="muted">GoHighLevel is not connected.</span>'; return; }
+        if (!g || !g.connected) { pop.innerHTML = '<span class="d-muted">GoHighLevel is not connected.</span>'; return; }
         var opp = (g.opps || [])[0] || null, pipes = g.pipelines || [];
         function draw(pipeId) {
           var pipe = pipes.filter(function (x) { return x.id === pipeId; })[0] || pipes[0];
-          if (!pipe) { pop.innerHTML = '<span class="muted">No pipelines in GoHighLevel yet.</span>'; return; }
-          pop.innerHTML = '<div class="k" style="margin:0">' + (opp ? esc(opp.pipeline || pipe.name) + ' · now at ' + esc(opp.stage || '?') : 'Not in a pipeline yet. Pick a stage to add them.') + '</div>'
+          if (!pipe) { pop.innerHTML = '<span class="d-muted">No pipelines in GoHighLevel yet.</span>'; return; }
+          pop.innerHTML = '<div class="d-k" style="margin:0">' + (opp ? esc(opp.pipeline || pipe.name) + ' · now at ' + esc(opp.stage || '?') : 'Not in a pipeline yet. Pick a stage to add them.') + '</div>'
             + (!opp && pipes.length > 1 ? '<select>' + pipes.map(function (x) { return '<option value="' + esc(x.id) + '"' + (x.id === pipe.id ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select>' : '')
-            + '<div class="sl">' + (pipe.stages || []).map(function (st) { return '<button type="button" data-sid="' + esc(st.id) + '" class="' + (opp && opp.stageId === st.id ? 'on' : '') + '">' + esc(st.name) + '</button>'; }).join('') + '</div>';
+            + '<div class="d-sl">' + (pipe.stages || []).map(function (st) { return '<button type="button" data-sid="' + esc(st.id) + '" class="' + (opp && opp.stageId === st.id ? 'on' : '') + '">' + esc(st.name) + '</button>'; }).join('') + '</div>';
           var sel = pop.querySelector('select'); if (sel) sel.onchange = function () { draw(sel.value); };
           pop.querySelectorAll('[data-sid]').forEach(function (b) {
             b.onclick = function () {
@@ -228,7 +229,7 @@
           });
         }
         draw(opp ? opp.pipelineId : (pipes[0] && pipes[0].id));
-      }).catch(function () { pop.innerHTML = '<span class="muted">Could not reach GoHighLevel.</span>'; });
+      }).catch(function () { pop.innerHTML = '<span class="d-muted">Could not reach GoHighLevel.</span>'; });
     };
     wrap.querySelector('[data-a="del"]').onclick = function () {
       api('/api/growth', 'PATCH', { id: rec.id, deleted: true }).then(function (x) {
