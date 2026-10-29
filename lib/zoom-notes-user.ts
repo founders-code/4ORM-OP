@@ -230,8 +230,11 @@ export async function syncMyNotes(sql: Sql, ownerId: string, known: Set<string>,
   result.connected = true;
   const instances = await pastInstances(token);
   result.meetings = instances.length;
-  const todo = instances.filter((m) => !known.has(m.uuid)).slice(0, limit);
+  /* Meetings with no My Notes are skipped quickly; the cap counts notes landed, and the run stops at 40 s. */
+  const todo = instances.filter((m) => !known.has(m.uuid));
+  const started = Date.now();
   for (const m of todo) {
+    if (result.added >= limit || Date.now() - started > 40_000) break;
     try {
       const list = await zget<{ notes?: Array<{ note_id?: string; note_name?: string; note_link?: string }> }>(
         token,
