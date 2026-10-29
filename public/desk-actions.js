@@ -3581,6 +3581,58 @@
       repaintMail();
       toast(root, 'Link attached. It goes in the email as a link.');
     },
+    /* Email rail, Pipeline stage box: pick a pipeline, then a stage to move this sender (or add them to GoHighLevel at it). */
+    'mail-pipe-pipeline': function (el, root) {
+      var box = el.closest && el.closest('#efPipe');
+      var email = box ? String(box.getAttribute('data-email') || '').toLowerCase() : '';
+      var ent = efPlaceCache()[email];
+      if (!ent) return;
+      ent.pipeSel = attr(el, 'data-pipe');
+      efPipePaint(box);
+    },
+    'mail-pipe-stage': function (el, root) {
+      var box = el.closest && el.closest('#efPipe');
+      if (!box || box.__busy) return;
+      var email = String(box.getAttribute('data-email') || '').toLowerCase();
+      var name = String(box.getAttribute('data-name') || '');
+      var ent = efPlaceCache()[email];
+      var data = ent && ent.data;
+      if (!data) return;
+      var pipe = efPipeSel(ent);
+      var stageId = attr(el, 'data-stage');
+      var st = pipe && (pipe.stages || []).filter(function (x) { return x.id === stageId; })[0];
+      if (!pipe || !st) return;
+      var opps = data.opps || [];
+      var opp = opps.filter(function (o) { return o.pipelineId === pipe.id; })[0] || opps[0] || null;
+      if (opp && opp.stageId === st.id) { toast(root, 'Already at ' + st.name); return; }
+      function busy(on, msg) {
+        box.__busy = on;
+        box.classList.toggle('busy', !!on);
+        var n = box.querySelector('.ef-pipenote');
+        if (n) n.textContent = msg || '';
+      }
+      function finish(r) {
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          busy(false);
+          if (!r.ok || !j.ok) { toast(root, (j && (j.error || j.note)) || 'GoHighLevel did not take that stage'); efPipePaint(box); return; }
+          toast(root, (opp ? 'Moved ' : 'Added ') + (name || email) + ' to ' + st.name + (j.sent ? '. Package sent.' : ''));
+          delete efPlaceCache()[email];
+          efPipeFetch(box);
+        });
+      }
+      function fail() { busy(false); toast(root, 'GoHighLevel did not take that stage'); efPipePaint(box); }
+      if (data.growthId) {
+        var gate = typeof window.stageGate === 'function' ? window.stageGate(data.growthId, st) : Promise.resolve({ send: false });
+        gate.then(function (g8) {
+          if (!g8) return;
+          busy(true, 'Moving to ' + st.name + '...');
+          return api('/api/growth', { method: 'POST', body: { action: 'ghl-move', id: data.growthId, pipelineId: pipe.id, stageId: st.id, stageName: st.name, opportunityId: opp ? opp.id : '', send: !!g8.send } }).then(finish);
+        }).catch(fail);
+        return;
+      }
+      busy(true, (opp ? 'Moving to ' : 'Adding at ') + st.name + '...');
+      api('/api/mail/place', { method: 'POST', body: { email: email, name: name, pipelineId: pipe.id, stageId: st.id, opportunityId: opp ? opp.id : '' } }).then(finish).catch(fail);
+    },
     'mail-intent': function (el, root) {
       var cp = root.getElementById && root.getElementById('compose');
       var askEl = cp && cp.querySelector('[data-action="mail-ask-input"]');
@@ -5257,6 +5309,69 @@
     });
   }
   /* After every Email paint: keep the editor selection for Link, wire the file input, load the signature once. */
+  /* ---------- Email rail: where the sender sits in GoHighLevel ---------- */
+  function efPlaceCache() { var s = S(); return s.efPlace || (s.efPlace = {}); }
+  function efPipeSel(ent) {
+    var d = (ent && ent.data) || {};
+    var pipes = d.pipelines || [];
+    var want = ent.pipeSel || ((d.opps || [])[0] || {}).pipelineId || '';
+    return pipes.filter(function (p) { return p.id === want; })[0] || pipes[0] || null;
+  }
+  function efPipeInner(email) {
+    email = String(email || '').toLowerCase();
+    if (!email) return '<div class="ef-none2">This message has no sender address.</div>';
+    var ent = efPlaceCache()[email];
+    if (!ent || ent.loading) return '<div class="ef-none2">Checking GoHighLevel...</div>';
+    if (ent.err) return '<div class="ef-none2">Could not reach GoHighLevel. Open this email again to retry.</div>';
+    var d = ent.data || {};
+    if (!d.connected) return '<div class="ef-none2">GoHighLevel is not connected. Connect it in Integrations.</div>';
+    var pipes = d.pipelines || [];
+    if (!pipes.length) return '<div class="ef-none2">No pipelines in GoHighLevel yet.</div>';
+    var opps = d.opps || [];
+    var pipe = efPipeSel(ent);
+    var opp = opps.filter(function (o) { return o.pipelineId === pipe.id; })[0] || null;
+    var now = opps.length
+      ? opps.map(function (o) { return '<div class="kv"><span>' + esc(o.pipeline || 'Pipeline') + '</span><b>' + esc(o.stage || 'No stage') + '</b></div>'; }).join('')
+      : '<div class="ef-pipeout">' + (d.contactId ? 'In GoHighLevel, not in a pipeline yet.' : 'Not in GoHighLevel yet.') + '</div>';
+    var choose = pipes.length > 1
+      ? '<div class="ef-pipes">' + pipes.map(function (p) { return '<button type="button" class="ef-pp' + (p.id === pipe.id ? ' on' : '') + '" data-action="mail-pipe-pipeline" data-pipe="' + esc(p.id) + '">' + esc(p.name) + '</button>'; }).join('') + '</div>'
+      : '<div class="ef-pipek">' + esc(pipe.name) + '</div>';
+    var lead = opps.length ? (opp ? 'Move to a stage' : 'Move into this pipeline') : 'Add to GoHighLevel at a stage';
+    var stages = (pipe.stages || []).map(function (st) {
+      var on = opp && opp.stageId === st.id;
+      return '<button type="button" class="ef-st' + (on ? ' on' : '') + '" data-action="mail-pipe-stage" data-stage="' + esc(st.id) + '">' + esc(st.name) + (on ? ' <em>now</em>' : '') + '</button>';
+    }).join('');
+    return now + '<div class="ef-pipelead">' + lead + '</div>' + choose + '<div class="ef-sts">' + stages + '</div><div class="ef-pipenote"></div>';
+  }
+  function efPipePaint(box) {
+    if (!box) return;
+    var inn = box.querySelector('.ef-pipein');
+    if (inn) inn.innerHTML = efPipeInner(box.getAttribute('data-email'));
+  }
+  function efPipeFetch(box) {
+    var email = String(box.getAttribute('data-email') || '').toLowerCase();
+    if (!email) { efPipePaint(box); return; }
+    var cache = efPlaceCache();
+    if (cache[email] && (cache[email].loading || cache[email].data)) { efPipePaint(box); return; }
+    cache[email] = { loading: true };
+    efPipePaint(box);
+    api('/api/mail/place?email=' + encodeURIComponent(email)).then(function (r) {
+      return r.json().catch(function () { return null; }).then(function (j) {
+        cache[email] = r.ok && j ? { data: j } : { err: true };
+      });
+    }).catch(function () { cache[email] = { err: true }; }).then(function () {
+      /* The page may have repainted while this loaded: paint whichever box is showing this sender now. */
+      var root = box.getRootNode ? box.getRootNode() : document;
+      var live = (root.getElementById && root.getElementById('efPipe')) || box;
+      if (String(live.getAttribute('data-email') || '').toLowerCase() === email) efPipePaint(live);
+      if (cache[email] && cache[email].err) setTimeout(function () { if (cache[email] && cache[email].err) delete cache[email]; }, 30000);
+    });
+  }
+  window.__efPipeHtml = efPipeInner;
+  window.__efPipeLoad = function (wrap) {
+    var box = wrap && wrap.querySelector && wrap.querySelector('#efPipe');
+    if (box) efPipeFetch(box);
+  };
   window.__mailComposeAfterPaint = function (wrap) {
     var root = wrap && wrap.getRootNode ? wrap.getRootNode() : null;
     var cp = root && root.getElementById ? root.getElementById('compose') : null;

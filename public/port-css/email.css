@@ -259,3 +259,29 @@
 .ef-tools .tx{display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:9px;border:1px solid #2a2c35;background:#18191f;color:#fff;font-weight:700;font-size:12.5px;cursor:pointer}
 .ef-tools .tx:first-child{background:#4272f9;border-color:#4272f9}
 .ef-tools .tx:hover{border-color:#4272f9}
+
+/* Reply card: two add rows under the subject, the whole email in its own scroll area, and the Pipeline stage box in the rail. */
+.ef-adds{display:flex;flex-direction:column;gap:6px;margin:10px 0 12px}
+.ef-addrow{display:flex;align-items:center;gap:8px;min-width:0}
+.ef-addk{flex:0 0 108px;font-size:12px;font-weight:800;color:#aeb6c8}
+.ef-addb{height:32px;padding:0 14px;border-radius:9px;border:1px solid #2a2c35;background:#18191f;color:#fff;font:700 12px Inter,system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.ef-addb:hover{border-color:#4272f9}
+.ef-addrow input{flex:1;min-width:0;height:32px;background:#18191f;border:1px solid #2a2c35;border-radius:9px;color:#fff;padding:0 10px;font:500 12.5px Inter,system-ui,sans-serif}
+.ef-addrow input:focus{outline:none;border-color:#4272f9}
+.ef-sum .ef-body{max-height:420px;overflow:auto;padding:10px 12px;background:#111216;border:1px solid #23252e;border-radius:10px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.55;color:#c8d1ea}
+.ef-pipe{min-width:0}
+.ef-pipe.busy{opacity:.7;pointer-events:none}
+.ef-pipeout{font-size:12.5px;color:#aeb6c8;padding:2px 0 4px}
+.ef-pipelead{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7d859a;margin:10px 0 6px}
+.ef-pipek{font-size:12px;font-weight:700;color:#c8d1ea;margin-bottom:6px}
+.ef-pipes{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.ef-pp{max-width:100%;height:26px;padding:0 10px;border-radius:7px;border:1px solid #2a2c35;background:#18191f;color:#c8d1ea;font:700 11px Inter,system-ui,sans-serif;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ef-pp.on{background:#4272f9;border-color:#4272f9;color:#fff}
+.ef-sts{display:flex;flex-direction:column;gap:4px;max-height:260px;overflow:auto}
+.ef-st{display:flex;justify-content:space-between;align-items:center;gap:6px;width:100%;min-height:28px;padding:4px 10px;border-radius:8px;border:1px solid #2a2c35;background:#18191f;color:#fff;font:600 12px Inter,system-ui,sans-serif;text-align:left;cursor:pointer;overflow-wrap:anywhere}
+.ef-st:hover{border-color:#4272f9}
+.ef-st.on{border-color:#00dc86;cursor:default}
+.ef-st em{font-style:normal;font-size:11px;font-weight:800;color:#00dc86}
+.ef-pipenote{font-size:11.5px;color:#aeb6c8;margin-top:6px}
+.ef-pipenote:empty{display:none}
+.seg span em{font-style:normal;font-size:11px;font-weight:800;margin-left:4px;padding:0 6px;border-radius:6px;background:rgba(255,255,255,.12)}

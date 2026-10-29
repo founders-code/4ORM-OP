@@ -288,3 +288,8 @@
 .bx:hover .bh .acts,.bx:focus-within .bh .acts{opacity:1}
 
 .pb{position:relative}.pb .h .acts,.pb .acts{position:absolute;top:10px;right:10px;display:flex;gap:6px;opacity:0;transition:opacity .15s;background:#fff;padding-left:6px;z-index:2}.pb:hover .acts,.pb:focus-within .acts{opacity:1}.pb .acts .m,.pb .acts .x{width:auto;height:26px;padding:0 9px;font-size:12px;font-weight:750;border-radius:8px;display:inline-grid;place-items:center;color:var(--ink2);background:var(--soft);cursor:pointer;white-space:nowrap}
+/* Same top bar as Inbox and Columns; the People-only controls sit on their own row under it. */
+.bar{flex-wrap:wrap;row-gap:8px}
+.bar .ef-prog{font-size:12px;color:#aeb6c8;white-space:nowrap}.bar .ef-prog b{color:#00dc86}
+.seg span em{font-style:normal;font-size:11px;font-weight:800;margin-left:4px;padding:0 6px;border-radius:6px;background:rgba(255,255,255,.12)}
+.ppbar{display:flex;justify-content:flex-end;gap:8px;margin:-4px 0 12px}
