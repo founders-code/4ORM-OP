@@ -15,7 +15,8 @@ type Tokens = { access: string; refresh: string; until: number };
 type Turn = { who: string; text: string };
 
 const DAYS_BACK = 60;
-const PER_SYNC = 12;
+/* Each new note costs one summary call (about 10 s); keep a run inside the 60 s function limit. */
+const PER_SYNC = 4;
 export let notesError = '';
 
 function material() {
@@ -221,7 +222,7 @@ const SELF = new Set(['chad johnston', 'chad']);
 export type NotesSyncResult = { connected: boolean; meetings: number; added: number; reason: string };
 
 /** Pull My Notes for past meetings not yet on the desk. known = note ids already holding content. */
-export async function syncMyNotes(sql: Sql, ownerId: string, known: Set<string>): Promise<NotesSyncResult> {
+export async function syncMyNotes(sql: Sql, ownerId: string, known: Set<string>, limit = PER_SYNC): Promise<NotesSyncResult> {
   const result: NotesSyncResult = { connected: false, meetings: 0, added: 0, reason: '' };
   if (!zoomNotesConfigured()) return { ...result, reason: 'ZOOM_OAUTH_CLIENT_ID / ZOOM_OAUTH_CLIENT_SECRET missing' };
   const token = await accessToken(sql, ownerId);
@@ -229,7 +230,7 @@ export async function syncMyNotes(sql: Sql, ownerId: string, known: Set<string>)
   result.connected = true;
   const instances = await pastInstances(token);
   result.meetings = instances.length;
-  const todo = instances.filter((m) => !known.has(m.uuid)).slice(0, PER_SYNC);
+  const todo = instances.filter((m) => !known.has(m.uuid)).slice(0, limit);
   for (const m of todo) {
     try {
       const list = await zget<{ notes?: Array<{ note_id?: string; note_name?: string; note_link?: string }> }>(

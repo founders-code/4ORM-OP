@@ -345,7 +345,7 @@ export async function safetySweep(sql: Sql, ownerId: string, origin = '') {
   const notesAt = await sql`SELECT synced_at FROM sync_state WHERE owner_id = ${ownerId} AND source = 'zoom_notes'`.then((r) => (r[0]?.synced_at ? new Date(String(r[0].synced_at)).getTime() : 0)).catch(() => 0);
   if (Date.now() - notesAt > 30 * 60 * 1000) {
     const fresh = await filledZoomIds(sql, ownerId).catch(() => new Set<string>());
-    const mn = await syncMyNotes(sql, ownerId, fresh).catch((err) => {
+    const mn = await syncMyNotes(sql, ownerId, fresh, 2).catch((err) => {
       fail('live_zoom_notes', err);
       return { added: 0 };
     });
