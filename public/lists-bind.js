@@ -7,6 +7,7 @@
     { k: 'Send package', hint: 'to-do', color: '#ffd08a', bg: 'rgba(255,181,71,.16)' },
     { k: 'Book meeting', hint: 'to-do', color: '#ff9fc4', bg: 'rgba(255,77,141,.16)' },
     { k: 'Meeting booked', hint: '', color: '#7ff0c2', bg: 'rgba(25,211,138,.16)' },
+    { k: 'Info pack sent', hint: '', color: '#9fd8ff', bg: 'rgba(66,170,255,.16)' },
   ];
 
   function esc(s) {

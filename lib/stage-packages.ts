@@ -1,6 +1,7 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { addGhlTask, ensureGhlContact, sendViaGhl } from './ghl';
 import { fail } from './log';
+import { cleanDesign, renderPackageEmail, packageText, type Design } from './package-email';
 
 type Sql = NeonQueryFunction<false, false>;
 
@@ -25,6 +26,7 @@ export type StagePackage = {
   followDays: number;
   task: string;
   active: boolean;
+  design: Design;
   updatedAt: string;
 };
 
@@ -69,6 +71,7 @@ async function createTables(sql: Sql) {
     test boolean NOT NULL DEFAULT false,
     at timestamptz NOT NULL DEFAULT now()
   )`;
+  await sql`ALTER TABLE stage_packages ADD COLUMN IF NOT EXISTS design text NOT NULL DEFAULT ''`;
   await sql`CREATE INDEX IF NOT EXISTS stage_sends_owner_stage ON stage_sends (owner_id, stage_id, at DESC)`;
 }
 
@@ -94,6 +97,7 @@ function shape(r: Record<string, unknown>): StagePackage {
     followDays: Number(r.follow_days) || 0,
     task: String(r.task || ''),
     active: r.active !== false,
+    design: cleanDesign(r.design),
     updatedAt: r.updated_at ? new Date(String(r.updated_at)).toISOString() : '',
   };
 }
@@ -118,12 +122,12 @@ export async function saveStagePackage(sql: Sql, ownerId: string, b: Record<stri
   const id = `${ownerId.slice(0, 24)}:${stageId}`.slice(0, 120);
   const docs = JSON.stringify(cleanDocs(b.docs));
   const follow = Math.max(0, Math.min(90, Math.round(Number(b.followDays) || 0)));
-  const rows = await sql`INSERT INTO stage_packages (id, owner_id, pipeline_id, pipeline_name, stage_id, stage_name, subject, body, docs, space_id, follow_days, task, active, deleted_at, updated_at)
+  const rows = await sql`INSERT INTO stage_packages (id, owner_id, pipeline_id, pipeline_name, stage_id, stage_name, subject, body, docs, space_id, follow_days, task, active, design, deleted_at, updated_at)
     VALUES (${id}, ${ownerId}, ${pipelineId}, ${s(b.pipelineName, 80)}, ${stageId}, ${s(b.stageName, 80)}, ${s(b.subject, 200)}, ${s(b.body, 8000)},
-      ${docs}::jsonb, ${s(b.spaceId, 64)}, ${follow}, ${s(b.task, 200)}, ${b.active !== false}, NULL, now())
+      ${docs}::jsonb, ${s(b.spaceId, 64)}, ${follow}, ${s(b.task, 200)}, ${b.active !== false}, ${cleanDesign(b.design)}, NULL, now())
     ON CONFLICT (owner_id, stage_id) DO UPDATE SET pipeline_id = EXCLUDED.pipeline_id, pipeline_name = EXCLUDED.pipeline_name, stage_name = EXCLUDED.stage_name,
       subject = EXCLUDED.subject, body = EXCLUDED.body, docs = EXCLUDED.docs, space_id = EXCLUDED.space_id, follow_days = EXCLUDED.follow_days,
-      task = EXCLUDED.task, active = EXCLUDED.active, deleted_at = NULL, updated_at = now()
+      task = EXCLUDED.task, active = EXCLUDED.active, design = EXCLUDED.design, deleted_at = NULL, updated_at = now()
     RETURNING *`;
   return shape(rows[0] as Record<string, unknown>);
 }
@@ -218,6 +222,7 @@ export async function previewStageSend(sql: Sql, ownerId: string, rec: Record<st
     docs,
     followDays: pkg.followDays,
     task: pkg.task,
+    design: pkg.design,
     ready: !!to && !!pkg.subject.trim() && !!pkg.body.trim(),
     why: !to ? 'No email on this contact' : !pkg.subject.trim() || !pkg.body.trim() ? 'The package has no subject or body yet' : '',
   };
@@ -266,7 +271,9 @@ export async function sendStagePackage(
     await log('failed', 'GoHighLevel did not find or add the contact');
     return { ok: false, note: 'GoHighLevel did not find or add the contact' };
   }
-  const sent = await sendViaGhl({ contactId, email: to, subject: (opts.test ? '[TEST] ' : '') + pv.subject, html: toHtml(pv.body, pv.docs) });
+  const html = pv.design ? renderPackageEmail(pv.design, pv.body, pv.docs) : toHtml(pv.body, pv.docs);
+  const attachments = pv.design ? pv.docs.filter((d) => /\.pdf(\?|$)/i.test(d.url)).map((d) => d.url) : [];
+  const sent = await sendViaGhl({ contactId, email: to, subject: (opts.test ? '[TEST] ' : '') + pv.subject, html, text: packageText(pv.body, pv.docs), attachments });
   if (!sent) {
     await log('failed', 'GoHighLevel did not send it');
     return { ok: false, note: 'GoHighLevel did not send it' };
@@ -276,4 +283,11 @@ export async function sendStagePackage(
   }
   await log('sent', opts.test ? 'Test to Chad' : '');
   return { ok: true, to, subject: pv.subject, followDays: pv.followDays, docs: pv.docs.length };
+}
+
+/** The exact HTML a package sends, for the builder's Preview. Nothing is sent. */
+export async function renderStagePreview(sql: Sql, ownerId: string, rec: Record<string, unknown>, stageId: string, spaceOwner = ownerId) {
+  const pv = await previewStageSend(sql, ownerId, rec, stageId, spaceOwner);
+  if (!pv) return '';
+  return pv.design ? renderPackageEmail(pv.design, pv.body, pv.docs) : `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:23px;max-width:600px;margin:24px auto">${toHtml(pv.body, pv.docs)}</div>`;
 }

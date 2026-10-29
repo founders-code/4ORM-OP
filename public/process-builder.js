@@ -142,16 +142,17 @@
       + (dr.fresh ? '<label>Start from</label><div class="starters">' + STARTERS.map(function (s, i) { return '<button type="button" data-start="' + i + '">' + esc(s.name) + '</button>'; }).join('') + '</div>' : '')
       + '<label for="pbSub">Subject</label><input id="pbSub" value="' + esc(dr.subject) + '" maxlength="200">'
       + '<label for="pbBody">Email</label><textarea id="pbBody">' + esc(dr.body) + '</textarea><div class="hint">{{first_name}}, {{company}} and {{name}} fill in per contact. Document links are added under the email.</div>'
+      + '<label for="pbDesign">Design</label><select id="pbDesign">' + (((S.data && S.data.designs) || [{ id: '', name: 'Plain email' }]).map(function (d) { return '<option value="' + esc(d.id) + '"' + (d.id === (dr.design || '') ? ' selected' : '') + '>' + esc(d.name) + '</option>'; }).join('')) + '</select><div class="hint">An info pack puts your note on top and a one-minute brief with the numbers underneath, ready to forward. PDF links also go as attachments.</div>'
       + '<label>Documents</label><div id="pbDocs">' + (dr.docs || []).map(function (d, i) {
         return '<div class="doc"><input data-dn="' + i + '" value="' + esc(d.name) + '" placeholder="Name"><input data-du="' + i + '" value="' + esc(d.url) + '" placeholder="https://drive.google.com/..."><button type="button" class="fit warn" data-dx="' + i + '">Remove</button></div>';
       }).join('') + '</div><button type="button" data-adddoc>Add a document link</button>'
       + '<label for="pbSpace">Also send a Space\'s documents</label><select id="pbSpace"><option value="">None</option>' + spaces.map(function (s) { return '<option value="' + esc(s.id) + '"' + (s.id === dr.spaceId ? ' selected' : '') + '>' + esc(s.name) + ' (' + s.docs + ')</option>'; }).join('') + '</select>'
       + '<div class="row"><div><label for="pbFu">Follow up after (days)</label><input id="pbFu" type="number" min="0" max="90" value="' + (dr.followDays || 0) + '"></div><div><label for="pbTask">GoHighLevel task</label><input id="pbTask" value="' + esc(dr.task) + '" placeholder="Optional"></div></div>'
       + '<div class="tog"><input type="checkbox" id="pbOn"' + (dr.active ? ' checked' : '') + '><label for="pbOn" style="margin:0;text-transform:none;letter-spacing:0;font-size:12.5px;color:#c8d1ea">Send when a contact lands here (you always confirm first)</label></div>'
-      + '<div class="acts"><button type="button" class="pri" data-save>Save package</button>' + (p ? '<button type="button" data-test>Send me a test</button><button type="button" class="warn" data-rm>Remove package</button>' : '') + '</div>'
+      + '<div class="acts"><button type="button" class="pri" data-save>Save package</button>' + (p ? '<button type="button" data-view>Preview saved email</button><button type="button" data-test>Send me a test</button><button type="button" class="warn" data-rm>Remove package</button>' : '') + '</div>'
       + '<div class="k" style="margin-top:20px">Sent from this stage</div><div class="log" id="pbLog"><span class="hint">Loading…</span></div>';
     function grab() {
-      dr.subject = el('#pbSub').value; dr.body = el('#pbBody').value; dr.spaceId = el('#pbSpace').value;
+      dr.subject = el('#pbSub').value; dr.body = el('#pbBody').value; dr.spaceId = el('#pbSpace').value; dr.design = el('#pbDesign').value;
       dr.followDays = Number(el('#pbFu').value) || 0; dr.task = el('#pbTask').value; dr.active = el('#pbOn').checked;
       ed.querySelectorAll('[data-dn]').forEach(function (x) { dr.docs[+x.getAttribute('data-dn')].name = x.value; });
       ed.querySelectorAll('[data-du]').forEach(function (x) { dr.docs[+x.getAttribute('data-du')].url = x.value; });
@@ -166,12 +167,14 @@
       var bad = (dr.docs || []).filter(function (d) { return (d.name || d.url) && !(d.name && /^https:\/\//i.test(d.url)); });
       if (bad.length) { toast('Each document needs a name and a link starting with https://'); return; }
       var b = this; b.disabled = true; b.textContent = 'Saving…';
-      api('/api/processes', 'POST', { action: 'save', pipelineId: pipe.id, pipelineName: pipe.name, stageId: stg.id, stageName: stg.name, subject: dr.subject, body: dr.body, docs: dr.docs, spaceId: dr.spaceId, followDays: dr.followDays, task: dr.task, active: dr.active })
+      api('/api/processes', 'POST', { action: 'save', pipelineId: pipe.id, pipelineName: pipe.name, stageId: stg.id, stageName: stg.name, subject: dr.subject, body: dr.body, docs: dr.docs, spaceId: dr.spaceId, followDays: dr.followDays, task: dr.task, active: dr.active, design: dr.design || '' })
         .then(function (j) {
           S.data.packages = S.data.packages.filter(function (x) { return x.stageId !== stg.id; }).concat([j.package]);
           S.draft = null; paint(); toast('Saved: ' + stg.name);
         }).catch(function (e) { b.disabled = false; b.textContent = 'Save package'; toast(e.message); });
     };
+    var vb = ed.querySelector('[data-view]');
+    if (vb) vb.onclick = function () { window.open('/api/processes?render=1&stage=' + encodeURIComponent(stg.id), '_blank', 'noopener'); };
     var tb = ed.querySelector('[data-test]');
     if (tb) tb.onclick = function () {
       var to = (S.data && S.data.testTo) || 'your inbox';

@@ -6,8 +6,9 @@ import { withCreds } from '@/lib/creds';
 import { loadCredsFor } from '@/lib/vault';
 import { growthRecord } from '@/lib/growth';
 import { TEST_SEND_TO } from '@/lib/send-gate.mjs';
+import { DESIGNS } from '@/lib/package-email';
 import {
-  listSpacesLite, listStagePackages, previewStageSend, recentSends, removeStagePackage, saveStagePackage, sendStagePackage, stageStats,
+  listSpacesLite, listStagePackages, previewStageSend, recentSends, removeStagePackage, renderStagePreview, saveStagePackage, sendStagePackage, stageStats,
 } from '@/lib/stage-packages';
 
 export const dynamic = 'force-dynamic';
@@ -30,6 +31,13 @@ export async function GET(req: Request) {
   try {
     const u = new URL(req.url);
     const stage = String(u.searchParams.get('stage') || '').slice(0, 64);
+    if (u.searchParams.get('render')) {
+      /* The exact email HTML, shown in the builder's Preview frame. Nothing is sent. */
+      const html = await renderStagePreview(g.sql, g.ownerId, SAMPLE, stage, g.userId);
+      return new NextResponse(html || '<p style="font-family:Arial">No package on this stage yet.</p>', {
+        headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'content-security-policy': "default-src 'none'; img-src https: data:; style-src 'unsafe-inline'" },
+      });
+    }
     if (u.searchParams.get('preview')) {
       const recId = String(u.searchParams.get('record') || '');
       const rec = recId ? ((await growthRecord(g.sql, g.ownerId, recId)) as Record<string, unknown> | null) : SAMPLE;
@@ -38,7 +46,7 @@ export async function GET(req: Request) {
     }
     if (u.searchParams.get('packages')) {
       const list = await listStagePackages(g.sql, g.ownerId);
-      return NextResponse.json({ packages: list.map((p) => ({ stageId: p.stageId, stageName: p.stageName, pipelineId: p.pipelineId, subject: p.subject, active: p.active, docs: p.docs.length })) });
+      return NextResponse.json({ packages: list.map((p) => ({ stageId: p.stageId, stageName: p.stageName, pipelineId: p.pipelineId, subject: p.subject, active: p.active, design: p.design, docs: p.docs.length })) });
     }
     if (u.searchParams.get('sends')) return NextResponse.json({ sends: await recentSends(g.sql, g.ownerId, stage) });
     const creds = await loadCredsFor(g.userId);
@@ -52,7 +60,7 @@ export async function GET(req: Request) {
       id: p.id, name: p.name, total: p.total,
       stages: p.stages.map((st) => ({ id: st.id, name: st.name, count: st.count })),
     }));
-    return NextResponse.json({ connected: pipes.status !== 'unavailable', pipelines, packages, stats, spaces, testTo: TEST_SEND_TO });
+    return NextResponse.json({ connected: pipes.status !== 'unavailable', pipelines, packages, stats, spaces, designs: DESIGNS, testTo: TEST_SEND_TO });
   } catch (err) {
     fail('processes_get', err);
     return NextResponse.json({ error: 'Could not load' }, { status: 500 });
