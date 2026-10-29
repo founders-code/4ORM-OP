@@ -385,3 +385,41 @@ body.navshut .side{width:0;padding:0;border:0}
 #todo .tdc .ti.fxpl,#todo .tdc .ti.fxev{padding:9px 11px!important;margin-bottom:6px!important}
 #todo .fxppl li{font-size:12.5px;padding:1px 0}
 .plan30{height:34px;border-radius:999px;border:1px solid #2f4180;background:#16214a;color:#fff;font:800 13px Inter,system-ui,sans-serif;padding:0 16px;cursor:pointer;margin-left:8px}.plan30:hover{border-color:#4d7cff}
+/* Focus today, 29 Oct 2026: smaller cards, a calls panel, and every card opens. */
+:host-context(body.focusday) .ti, .port-body.focusday .ti{padding:7px 10px!important;margin-bottom:5px;cursor:pointer}
+:host-context(body.focusday) .ti .tt, .port-body.focusday .ti .tt{font-size:12.5px!important;line-height:1.3}
+:host-context(body.focusday) .tdc[data-b="today"] .ti .tt, .port-body.focusday .tdc[data-b="today"] .ti .tt{font-size:12.5px!important}
+:host-context(body.focusday) .ti .meta, .port-body.focusday .ti .meta{font-size:11px}
+:host-context(body.focusday) .tdc h4, .port-body.focusday .tdc h4{font-size:11px!important}
+:host-context(body.focusday) .td .tdh h3, .port-body.focusday .td .tdh h3{font-size:17px!important}
+#todo .fxt{font-size:12px}
+#todo .ti:hover{border-color:#2f4180}
+#todo .fxrh{font-size:10.5px;font-weight:850;letter-spacing:.12em;text-transform:uppercase;color:#ffb547;margin:12px 2px 6px}
+.fxcalls{margin-top:14px;background:#0e1636;border:1px solid rgba(120,150,255,.16);border-radius:12px;padding:12px 14px}
+.fxcalls[hidden]{display:none}
+.fxcalls .fxch{display:flex;align-items:center;justify-content:space-between}
+.fxcalls h4{margin:0;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#ff9f43}
+.fxcalls h4 i{font-style:normal;color:#a3b0d2;letter-spacing:0;text-transform:none;font-weight:700;margin-left:6px}
+.fxc{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) auto auto auto;gap:10px;align-items:center;padding:6px 8px;border-radius:8px;cursor:pointer;font-size:12.5px;border-bottom:1px solid rgba(120,150,255,.08)}
+.fxc:hover{background:#16214a}
+.fxc .nm{min-width:0}.fxc .nm b{display:block;color:#fff;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fxc .nm small{display:block;color:#8fa0c8;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fxc .ls{color:#a3b0d2;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fxc .late{color:#ffb547;font-size:11px;font-weight:700;white-space:nowrap}
+.fxc .gh{color:#7ff0c2;font-size:11px;font-weight:700;white-space:nowrap}
+.fxc .act{display:flex;gap:6px;align-items:center}
+.fxc .act a{color:#8dbaff;font-weight:800;text-decoration:none;font-size:12px}
+.fxc .act button,.fxall{font:inherit;font-size:11.5px;font-weight:750;background:#16214a;border:1px solid #2f4180;color:#dfe6ff;border-radius:999px;padding:3px 10px;cursor:pointer}
+.fxall{margin:10px auto 0;display:block}
+.tdbox .tn.ro{font-size:17px;font-weight:800;color:#fff;margin:4px 0 10px}
+.tdbox .fxwho,.tdbox .fxdesc{font-size:12.5px;color:#c8d1ea;margin:6px 0 10px;line-height:1.45;white-space:pre-wrap}
+.tdbox .fxwho small{color:#8fa0c8;font-weight:700;margin-right:4px}
+.tdbox .outs{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 8px}
+.tdbox .outs button{font:inherit;font-size:12px;font-weight:700;border-radius:999px;padding:4px 10px;border:1px solid rgba(120,150,255,.26);background:rgba(255,255,255,.04);color:#c8d1ea;cursor:pointer}
+.tdbox .outs button.on{background:#3b82ff;border-color:#3b82ff;color:#fff}
+.tdbox .fu{display:flex;align-items:center;gap:8px;margin:8px 0}.tdbox .fu small{color:#8fa0c8;font-weight:700}
+.tdbox .fu input{background:#080c1f;border:1px solid rgba(120,150,255,.26);border-radius:8px;color:#e9eefa;padding:5px 8px;font:inherit;color-scheme:dark}
+.tdbox .acts a.btnl{display:inline-flex;align-items:center;text-decoration:none}
+.tdbox .facts2 a{color:#8dbaff;text-decoration:none}
+.tdbox .acts a.btnl{border:1px solid #19d38a;background:#19d38a;color:#04210f;border-radius:9px;padding:8px 12px;font-size:12.5px;font-weight:800}
+.tdbox #fxNote{min-height:70px}

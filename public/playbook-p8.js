@@ -66,43 +66,6 @@
       if (then) then();
     }).catch(function () {});
   }
-  /* Today's reach-outs from the call lists (regulators, VCs, angels, design partners...). */
-  var REACH = null, reachAt = 0;
-  function vanLabel(d) {
-    var p = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', weekday: 'short', day: 'numeric', month: 'short' }).formatToParts(d);
-    var g = function (t) { var x = p.filter(function (y) { return y.type === t; })[0]; return x ? x.value.replace('.', '') : ''; };
-    return g('weekday') + ' ' + g('day') + ' ' + g('month');
-  }
-  var MON = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Sept: 8, Oct: 9, Nov: 10, Dec: 11 };
-  function labelKey(lab) {
-    var m = /(\d{1,2})\s+([A-Za-z]{3,4})/.exec(String(lab || ''));
-    if (!m || MON[m[2]] == null) return null;
-    return MON[m[2]] * 40 + Number(m[1]);
-  }
-  function loadReach(then) {
-    if (REACH && Date.now() - reachAt < 120000) { if (then) then(); return; }
-    var fn = typeof window.authFetch === 'function' ? window.authFetch : fetch;
-    fn('/api/reach-out?lists=1', { credentials: 'same-origin' }).then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {
-      var lists = d && (d.lists || d.callLists || d);
-      if (Array.isArray(lists)) { REACH = lists; reachAt = Date.now(); }
-      if (then) then();
-    }).catch(function () {});
-  }
-  function reachToday() {
-    if (!Array.isArray(REACH)) return [];
-    var todayLab = vanLabel(new Date());
-    var tk = labelKey(todayLab);
-    return REACH.map(function (l) {
-      var ppl = (l.people || []).filter(function (p) {
-        if (!p || p.done) return false;
-        if (p.day === todayLab) return true;
-        var k = labelKey(p.day);
-        return k != null && tk != null && k < tk && tk - k < 40;
-      });
-      var due = ppl.filter(function (p) { return p.day === todayLab; }).length;
-      return { key: l.key, name: l.name || 'List', people: ppl, today: due, carried: ppl.length - due };
-    }).filter(function (g) { return g.people.length; });
-  }
   window.bindPlaybookP8 = function (root) {
     if (!root || !root.querySelector) return;
     var todo = root.querySelector('#todo');
@@ -238,10 +201,182 @@
       if (h) h.innerHTML = escT(text) + ' <i id="cnt-' + b + '">' + (n == null ? '' : n) + '</i>';
       col.style.setProperty('--cc', b === 'week' && todo.classList.contains('fx') ? '#4d7cff' : b === 'next' && todo.classList.contains('fx') ? '#2fe08b' : ({ today: '#ff5a6e', week: '#ffb547', next: '#3b82ff' })[b]);
     }
+
+    /* ---------- Focus today: calls, and a pop-up for every item ---------- */
+    var FX = { evs: [], plays: [], ti: 0, calls: null, at: 0 };
+    var OUTS = ['No answer', 'Left voicemail', 'Spoke', 'Interested', 'Call back', 'Not interested', 'Wrong number', 'Meeting booked'];
+    function loadCalls(force) {
+      if (!LIVE) return;
+      if (!force && FX.calls && Date.now() - FX.at < 90000) return;
+      FX.at = Date.now();
+      apiCall('/api/growth?calls=1', 'GET').then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {
+        if (d) { FX.calls = d; if (isFocus()) paintCalls(); }
+      }).catch(function () {});
+    }
+    function fmtTel(v) { return String(v || '').split(/\s*(?:;|\/|,|\bor\b)\s*/)[0].replace(/[^\d+]/g, ''); }
+    function callRow(r, kind) {
+      var who = r.list === 'angels' ? r.name : (String(r.contact || '').split(/\s*[|;]\s*/)[0] || '');
+      if (/^(existing contact|leadership|executive|business contact|principal broker)/i.test(who) || /@|^\+?\d/.test(who)) who = '';
+      var tel = fmtTel(r.phone);
+      var dueTxt = kind === 'due' ? ('<span class="late">' + escT(r.status && r.status !== 'Not contacted' ? r.status : 'Follow up') + '</span>')
+        : (r.plan_day && String(r.plan_day).slice(0, 10) < FX.calls.today ? '<span class="late">carried over</span>' : '');
+      return '<div class="fxc" data-fxcall="' + escT(r.id) + '"><div class="nm"><b>' + escT(r.list === 'angels' ? r.name : (who || r.name)) + '</b>'
+        + '<small>' + escT(r.list === 'angels' ? (r.title || '') : (who ? r.name : (r.title || ''))) + '</small></div>'
+        + '<span class="ls">' + escT(r.listName || '') + '</span>' + dueTxt
+        + (r.ghl_stage ? '<span class="gh">GHL · ' + escT(r.ghl_stage) + '</span>' : '')
+        + '<span class="act">' + (tel ? '<a href="tel:' + escT(tel) + '" data-stop="1">Call</a>' : r.email ? '<a href="mailto:' + escT(r.email) + '" data-stop="1">Email</a>' : '') + '<button type="button">Log</button></span></div>';
+    }
+    function paintCalls() {
+      var host = $('fxCalls');
+      if (!host) {
+        var grid = todo.querySelector('.tdg');
+        if (!grid) return;
+        grid.insertAdjacentHTML('afterend', '<div class="fxcalls" id="fxCalls"></div>');
+        host = $('fxCalls');
+      }
+      host.hidden = false;
+      loadCalls(false);
+      var d = FX.calls;
+      if (!d) { host.innerHTML = '<h4>Calls today</h4><div class="fxnone">Loading your call list…</div>'; return; }
+      var due = d.due || [], planned = d.planned || [];
+      var cap = host._all ? 999 : 12;
+      host.innerHTML = '<div class="fxch"><h4>Calls today <i>' + (due.length + planned.length) + ' to go · ' + (d.doneToday || 0) + ' done</i></h4>'
+        + '<a href="#" class="fxj" data-golist="w-design">Open Lists</a></div>'
+        + (due.length ? '<div class="fxrh">Call-backs and follow-ups due</div>' + due.slice(0, cap).map(function (r) { return callRow(r, 'due'); }).join('') : '')
+        + '<div class="fxrh">Reach out today</div>' + (planned.length ? planned.slice(0, cap).map(function (r) { return callRow(r, 'plan'); }).join('') : '<div class="fxnone">Nobody planned for today. The Lists page plans the next days.</div>')
+        + ((due.length > cap || planned.length > cap) ? '<button type="button" class="fxall" data-fxall="1">Show all ' + (due.length + planned.length) + '</button>' : '');
+    }
+    function fxModal(html, bind) {
+      var box = $('tdbox'), m = $('tdm');
+      if (!box || !m) return;
+      box.style.setProperty('--sc', '#4d7cff');
+      box.innerHTML = html;
+      m.classList.add('open');
+      m.onclick = function (e) { if (e.target === m) m.classList.remove('open'); };
+      box.querySelectorAll('[data-a="close"]').forEach(function (b) { b.onclick = function () { m.classList.remove('open'); }; });
+      if (bind) bind(box, function () { m.classList.remove('open'); });
+    }
+    function openEvent(ev) {
+      var end = ev.start + (Number(ev.dur) || 30) * 60000;
+      var people = (ev.attendees || ev.people || []).map(function (a) { return typeof a === 'string' ? a : (a.name || a.email || ''); }).filter(Boolean);
+      fxModal('<div class="k">Calendar · today</div><div class="tn ro">' + escT(ev.title || 'Event') + '</div>'
+        + '<div class="facts2"><div><small>When</small><span>' + vanTime(ev.start) + ' to ' + vanTime(end) + '</span></div><div><small>Length</small><span>' + (Number(ev.dur) || 30) + ' min</span></div><div><small>Where</small><span>' + escT(ev.location || (ev.join ? 'Online' : '-')) + '</span></div></div>'
+        + (people.length ? '<div class="fxwho"><small>With</small> ' + escT(people.slice(0, 8).join(', ')) + '</div>' : '')
+        + (ev.description ? '<div class="fxdesc">' + escT(String(ev.description).slice(0, 600)) + '</div>' : '')
+        + '<div class="acts">' + (ev.join ? '<a class="pri btnl" href="' + escT(ev.join) + '" target="_blank" rel="noopener">Join</a>' : '')
+        + '<button data-a="prep">Prep to-do for today</button><button data-a="follow">Follow-up to-do tomorrow</button><button data-a="cal">Open in Calendar</button><button data-a="close">Close</button></div>',
+        function (box, close) {
+          box.querySelector('[data-a="prep"]').onclick = function () { close(); addLive('Prep: ' + (ev.title || 'meeting'), 'today'); };
+          box.querySelector('[data-a="follow"]').onclick = function () {
+            close();
+            var d = new Date(); d.setDate(d.getDate() + 1); d.setHours(12, 0, 0, 0);
+            apiCall('/api/items', 'POST', { title: 'Follow up: ' + (ev.title || 'meeting'), area: 'other', priority: 'normal', due: d.toISOString() })
+              .then(function (r) { if (!r || !r.ok) throw 0; return r.json(); }).then(function (row) { var S0 = window.STATE || {}; S0.items = S0.items || []; if (row && row.id) S0.items.unshift(row); render(); note('Follow-up added for tomorrow'); })
+              .catch(function () { note('Could not add that. Try again.'); });
+          };
+          box.querySelector('[data-a="cal"]').onclick = function () { close(); if (typeof window.switchView === 'function') window.switchView('calendar'); try { history.replaceState({}, '', '/calendar'); } catch (e) {} };
+        });
+    }
+    function openPlay(r) {
+      var M = window.__playMount || {};
+      var ti = FX.ti;
+      var lab = (r.lab && r.lab[ti]) || '';
+      var go = r.room && r.room[1] ? r.room[1] : '';
+      var day = r.pads && r.pads[ti] && r.pads[ti].day;
+      fxModal('<div class="k">Play · ' + escT(r.grp || 'Daily') + '</div><div class="tn ro">' + escT(r.n || 'Play') + '</div>'
+        + '<div class="facts2"><div><small>Target</small><span>' + escT(r.target || (lab && !/^go$/i.test(lab) ? lab : '-')) + '</span></div><div><small>Today</small><span>' + (r.d && r.d[ti] === 'done' ? 'Done' : 'Still to do') + '</span></div><div><small>Where</small><span>' + escT((r.room && r.room[0]) || '-') + '</span></div></div>'
+        + (r.how ? '<div class="fxdesc">' + escT(r.how) + '</div>' : '')
+        + '<div class="acts"><button class="pri" data-a="done">Done today</button>' + (go ? '<button data-a="go">Open</button>' : '') + '<button data-a="later">Later today</button><button data-a="close">Close</button></div>',
+        function (box, close) {
+          function save(status) {
+            r.d[ti] = status === 'done' ? 'done' : 'next';
+            if (typeof M.render === 'function') M.render();
+            paintFocus();
+            if (!LIVE || !r.id || !day) return;
+            apiCall('/api/playbook', 'POST', { rhythmId: r.id, day: day, status: status }).then(function (x) { return x && x.ok ? x.json() : null; })
+              .then(function (d) { if (d && d.rows && window.STATE) window.STATE.playbook = d; }).catch(function () { note('Could not save that play'); });
+          }
+          box.querySelector('[data-a="done"]').onclick = function () { close(); save('done'); undoToast(r.n + ' done', function () { r.d[ti] = 'due'; if (typeof M.render === 'function') M.render(); paintFocus(); if (LIVE && r.id && day) apiCall('/api/playbook', 'POST', { rhythmId: r.id, day: day, status: 'open' }); }); };
+          box.querySelector('[data-a="later"]').onclick = function () { close(); save('snoozed'); note(r.n + ' moved to later today'); };
+          var g = box.querySelector('[data-a="go"]'); if (g) g.onclick = function () { close(); window.location.href = go; };
+        });
+    }
+    function openCall(id) {
+      var d = FX.calls || {};
+      var r = (d.due || []).concat(d.planned || []).filter(function (x) { return String(x.id) === String(id); })[0];
+      if (!r) return;
+      var tel = fmtTel(r.phone);
+      var chosen = '';
+      fxModal('<div class="k">' + escT(r.listName || 'Call list') + (r.ghl_stage ? ' · GoHighLevel ' + escT(r.ghl_stage) : '') + '</div><div class="tn ro">' + escT(r.name) + '</div>'
+        + '<div class="facts2"><div><small>Contact</small><span>' + escT(String(r.contact || '-').split(/\s*[|;]\s*/)[0]) + '</span></div><div><small>Phone</small><span>' + (tel ? '<a href="tel:' + escT(tel) + '">' + escT(r.phone) + '</a>' : '-') + '</span></div><div><small>Email</small><span>' + (r.email ? '<a href="mailto:' + escT(r.email) + '">' + escT(r.email) + '</a>' : '-') + '</span></div></div>'
+        + (r.notes ? '<div class="fxdesc">' + escT(r.notes) + '</div>' : '')
+        + '<div class="outs">' + OUTS.map(function (o) { return '<button type="button" data-o="' + escT(o) + '">' + escT(o) + '</button>'; }).join('') + '</div>'
+        + '<textarea id="fxNote" placeholder="Call notes"></textarea>'
+        + '<div class="fu"><small>Follow up</small><input type="date" id="fxFu"></div>'
+        + '<div class="acts"><button class="pri" data-a="save">Save call</button><button data-a="list">Open in Lists</button><button data-a="close">Close</button></div>',
+        function (box, close) {
+          box.querySelectorAll('[data-o]').forEach(function (b) {
+            b.onclick = function () {
+              chosen = chosen === b.getAttribute('data-o') ? '' : b.getAttribute('data-o');
+              box.querySelectorAll('[data-o]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-o') === chosen); });
+              var fu = box.querySelector('#fxFu');
+              if (chosen === 'Call back' && fu && !fu.value) { var t = new Date(Date.now() + 86400000); fu.value = t.toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' }); }
+            };
+          });
+          box.querySelector('[data-a="save"]').onclick = function () {
+            var noteTxt = String(box.querySelector('#fxNote').value || '').trim();
+            var fu = box.querySelector('#fxFu').value || '';
+            if (!chosen && !noteTxt) { note('Pick an outcome or write a note'); return; }
+            close();
+            apiCall('/api/growth', 'POST', { action: 'touch', id: r.id, channel: 'Call', outcome: chosen, note: noteTxt, next_date: fu })
+              .then(function (x) { if (!x || !x.ok) throw 0; return x.json(); })
+              .then(function (res) {
+                var tid = res && res.touch && res.touch.id;
+                if (chosen === 'Meeting booked') apiCall('/api/growth', 'PATCH', { id: r.id, stage: 'Meeting booked' });
+                else if (!r.stage || r.stage === 'Cold') apiCall('/api/growth', 'PATCH', { id: r.id, stage: 'Contacted' });
+                loadCalls(true);
+                undoToast('Call saved: ' + r.name, function () { if (tid) apiCall('/api/growth', 'POST', { action: 'undo-touch', touchId: tid }).then(function () { loadCalls(true); }); });
+              })
+              .catch(function () { note('Could not save the call. Try again.'); });
+          };
+          box.querySelector('[data-a="list"]').onclick = function () {
+            close();
+            try { window.STATE.peopleTab = 'lists'; } catch (e) {}
+            if (typeof window.switchView === 'function') window.switchView('people');
+            try { history.replaceState({}, '', '/lists'); } catch (e) {}
+          };
+        });
+    }
+    /* Planner steps open the same pop-up as a to-do. Today, This week and Next week move the step's date on the Planner. */
+    function openPlanStep(x) {
+      var id = String(x.id).slice(3);
+      var item = PLAN.filter(function (i) { return String(i.id) === id; })[0] || {};
+      fxModal('<div class="k">Planner · ' + escT(x.from || '') + '</div><div class="tn ro">' + escT(x.t) + '</div>'
+        + '<div class="facts2"><div><small>Due</small><span>' + (isFinite(x.due) ? escT(new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Vancouver', weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(x.due))) : '-') + '</span></div><div><small>Late</small><span>' + (x.w ? x.w + ' days' : 'no') + '</span></div><div><small>Owner</small><span>' + escT(item.o || 'Chad') + '</span></div></div>'
+        + (item.note ? '<div class="fxdesc">' + escT(item.note) + '</div>' : '')
+        + '<div class="acts"><button class="pri" data-a="done">Done</button><button data-a="today">Today</button><button data-a="week">This week</button><button data-a="next">Next week</button><button data-a="planner">To the Planner</button><button data-a="close">Close</button></div>',
+        function (box, close) {
+          box.querySelector('[data-a="done"]').onclick = function () { close(); setStatusLive(x, 'done', 'Done. It is in Completed.'); };
+          ['today', 'week', 'next'].forEach(function (b) {
+            box.querySelector('[data-a="' + b + '"]').onclick = function () {
+              close();
+              var iso = dueFor(b).slice(0, 10);
+              var dayN = Math.floor(Date.parse(iso + 'T12:00:00Z') / 86400000);
+              var body = { due_date: iso };
+              if (item.s != null && item.s > dayN) body.start_date = iso;
+              PLAN.forEach(function (i) { if (String(i.id) === id) { i.e = dayN; if (i.s > dayN) i.s = dayN; } });
+              apiCall('/api/timeline/items/' + encodeURIComponent(id), 'PATCH', body).then(function (r) { if (!r || !r.ok) throw 0; note('Moved on the Planner'); }).catch(function () { note('Could not move that step. Try again.'); loadPlan(render); });
+              render();
+            };
+          });
+          box.querySelector('[data-a="planner"]').onclick = function () { close(); if (typeof window.switchView === 'function') window.switchView('planner'); try { history.replaceState({}, '', '/planner'); } catch (e) {} };
+        });
+    }
     function paintFocus() {
       var on = isFocus();
       todo.classList.toggle('fx', on);
       if (!on) {
+        var cp = $('fxCalls'); if (cp) cp.hidden = true;
         ['today', 'week', 'next'].forEach(function (b) { var c = $('cnt-' + b); setTitle(b, TITLES[b], c ? c.textContent : ''); });
         return;
       }
@@ -251,11 +386,12 @@
         return ev && ev.start && vanDay(ev.start) === today && !(ev.dur >= 1440);
       }).sort(function (a, b) { return a.start - b.start; });
       var now = Date.now();
+      FX.evs = evs;
       var calHost = $('b-week');
-      if (calHost) calHost.innerHTML = evs.map(function (ev) {
+      if (calHost) calHost.innerHTML = evs.map(function (ev, k) {
         var end = ev.start + (Number(ev.dur) || 30) * 60000;
         var live = now >= ev.start && now < end;
-        return '<div class="ti fxev' + (live ? ' now' : '') + (end < now ? ' past' : '') + '" style="--sc:#4d7cff"><span class="fxt">' + vanTime(ev.start) + '</span><div class="tt">' + escT(ev.title || 'Event')
+        return '<div class="ti fxev' + (live ? ' now' : '') + (end < now ? ' past' : '') + '" data-fxev="' + k + '" style="--sc:#4d7cff"><span class="fxt">' + vanTime(ev.start) + '</span><div class="tt">' + escT(ev.title || 'Event')
           + '</div><div class="meta"><span>' + (Number(ev.dur) || 30) + ' min</span>' + (ev.join ? '<a class="fxj" href="' + escT(ev.join) + '" target="_blank" rel="noopener">Join</a>' : '') + (live ? '<span class="late">now</span>' : '') + '</div></div>';
       }).join('') || '<div class="fxnone">Nothing on the calendar today.</div>';
       setTitle('week', 'Calendar', evs.length);
@@ -264,30 +400,17 @@
       var rows = (M.rows || []).filter(function (r) { return r && !r.s && r.d; });
       var ti = M.todayIdx == null ? 0 : M.todayIdx;
       var due = rows.filter(function (r) { var st = r.d[ti]; return st === 'due' || st === 'next'; });
+      FX.plays = due; FX.ti = ti;
       var playHost = $('b-next');
-      if (playHost) playHost.innerHTML = due.map(function (r) {
+      if (playHost) playHost.innerHTML = due.map(function (r, k) {
         var lab = (r.lab && r.lab[ti]) || '';
         var go = r.room && r.room[1] ? r.room[1] : '';
-        return '<div class="ti fxpl" style="--sc:' + escT(r.c || '#2fe08b') + '"><div class="tt">' + escT(r.n || 'Play') + '</div><div class="meta"><span>' + escT(r.grp || 'Daily') + '</span>'
+        return '<div class="ti fxpl" data-fxplay="' + k + '" style="--sc:' + escT(r.c || '#2fe08b') + '"><div class="tt">' + escT(r.n || 'Play') + '</div><div class="meta"><span>' + escT(r.grp || 'Daily') + '</span>'
           + (lab && !/^go$/i.test(lab) ? '<span>' + escT(lab) + '</span>' : (r.target ? '<span>' + escT(r.target) + '</span>' : ''))
           + (go ? '<a class="fxj" href="' + escT(go) + '">Open</a>' : '') + '</div></div>';
       }).join('') || '<div class="fxnone">' + (rows.length ? 'Every play for today is done.' : 'Plays load with the Playbook grid.') + '</div>';
-      var groups = reachToday();
-      var reachN = 0;
-      if (playHost && groups.length) {
-        playHost.insertAdjacentHTML('beforeend', '<div class="fxrh">Reach out today</div>' + groups.map(function (g) {
-          reachN += g.people.length;
-          var names = g.people.slice(0, 6).map(function (p) {
-            var how = p.phone ? '<a class="fxj" href="tel:' + escT(p.phone) + '">Call</a>' : p.email ? '<a class="fxj" href="mailto:' + escT(p.email) + '">Email</a>' : '';
-            return '<li><span>' + escT(p.name || 'Contact') + '</span>' + (p.company ? '<em>' + escT(p.company) + '</em>' : '') + how + '</li>';
-          }).join('');
-          var more = g.people.length > 6 ? '<li class="fxmore">+' + (g.people.length - 6) + ' more</li>' : '';
-          return '<div class="ti fxpl fxrc" style="--sc:#ffb547"><div class="tt">' + escT(g.name) + '</div><div class="meta"><span>' + g.today + ' today</span>'
-            + (g.carried ? '<span class="late">' + g.carried + ' carried over</span>' : '') + '<a class="fxj" href="#" data-golist="' + escT(g.key) + '">Open list</a></div><ul class="fxppl">' + names + more + '</ul></div>';
-        }).join(''));
-      }
-      if (!REACH) loadReach(function () { if (isFocus()) paintFocus(); });
-      setTitle('next', "Today's plays", due.length + reachN);
+      paintCalls();
+      setTitle('next', "Today's plays", due.length);
       var c = $('cnt-today');
       setTitle('today', 'To-dos due today', c ? c.textContent : '');
     }
@@ -311,8 +434,20 @@
         if (typeof window.switchView === 'function') window.switchView('people');
         return;
       }
+      if (e.target.closest && e.target.closest('[data-stop]')) return;
+      var fe = e.target.closest && e.target.closest('[data-fxev]');
+      if (fe && !(e.target.closest('a'))) { var ev = FX.evs[+fe.getAttribute('data-fxev')]; if (ev) openEvent(ev); return; }
+      var fp = e.target.closest && e.target.closest('[data-fxplay]');
+      if (fp && !(e.target.closest('a'))) { var pr = FX.plays[+fp.getAttribute('data-fxplay')]; if (pr) openPlay(pr); return; }
+      var fc = e.target.closest && e.target.closest('[data-fxcall]');
+      if (fc) { openCall(fc.getAttribute('data-fxcall')); return; }
+      var fa = e.target.closest && e.target.closest('[data-fxall]');
+      if (fa) { var ch = $('fxCalls'); if (ch) { ch._all = true; paintCalls(); } return; }
       var open = e.target.closest && e.target.closest('[data-open]');
-      if (open) openTodo(open.getAttribute('data-open'));
+      if (open) { openTodo(open.getAttribute('data-open')); return; }
+      /* In Focus today the whole card opens, not only its title. */
+      var card = isFocus() && e.target.closest && e.target.closest('.ti[data-id]');
+      if (card && !e.target.closest('a')) openTodo(card.getAttribute('data-id'));
     });
     todo.querySelectorAll('.tdc').forEach(function (c) {
       c.addEventListener('dragover', function (e) { e.preventDefault(); c.classList.add('drop'); });
@@ -353,7 +488,7 @@
     });
     function openTodo(id) {
       var x = TD.filter(function (y) { return String(y.id) === String(id); })[0];
-      if (x && x.plan) { if (typeof window.switchView === 'function') window.switchView('planner'); try { history.replaceState({}, '', '/planner'); } catch (e) {} return; }
+      if (x && x.plan) { openPlanStep(x); return; }
       var box = $('tdbox'), m = $('tdm');
       var t0 = x ? x.t : '', n0 = x ? (x.n || '') : '';
       function saveEdits() {
