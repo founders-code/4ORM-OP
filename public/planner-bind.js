@@ -271,7 +271,7 @@ function loadRow(vis){
     +`<div class="wlkeys">${key}</div></div><div class="trk" style="width:${W}px;padding-top:6px">${s}</div></div>`}
 function applyWl(){
   canvas.classList.toggle('wlon',!!WL);
-  canvas.querySelectorAll('[data-id]').forEach(el=>{const it=byId[el.dataset.id];el.classList.remove('wldim','wlhit');if(!WL||!it)return;
+  canvas.querySelectorAll('[data-id],.msi[data-open]').forEach(el=>{const it=byId[el.dataset.id||el.dataset.open];el.classList.remove('wldim','wlhit');if(!WL||!it)return;
     if(it.p!==WL.p){el.classList.add('wldim');return}
     if(WL.w!=null&&it.s<=WL.w+6&&it.e>=WL.w)el.classList.add('wlhit')});
   canvas.querySelectorAll('.row.lane,.row.trackrow').forEach(r=>{r.classList.toggle('wldimrow',!!WL&&r.dataset.pipe!==WL.p)});
