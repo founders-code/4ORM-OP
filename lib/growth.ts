@@ -528,3 +528,54 @@ export async function undoAddToContacts(sql: Sql, ownerId: string, contactOwner:
   await sql`UPDATE growth_records SET data = data - 'contactId', updated_at = now() WHERE owner_id = ${ownerId} AND id = ${s(id, 40)}`;
   return true;
 }
+
+/* ---------- Enrichment (29 Oct 2026): website, leadership LinkedIn and a source link per statement ---------- */
+export type Enrich = {
+  website: string;
+  team: Array<{ name: string; title: string; linkedin: string }>;
+  sources: Array<{ text: string; url: string; title: string }>;
+  checked: string;
+};
+const httpsUrl = (v: unknown, max = 500) => { const t = String(v || '').trim().slice(0, max); return /^https:\/\/[^\s<>"]+$/i.test(t) ? t : ''; };
+export function cleanEnrich(e: Record<string, unknown>): Enrich {
+  const team = (Array.isArray(e.team) ? e.team : []).map((p) => {
+    const o = (p || {}) as Record<string, unknown>;
+    const li = httpsUrl(o.linkedin);
+    return { name: s(o.name, 120).trim(), title: s(o.title, 160).trim(), linkedin: /linkedin\.com\/in\//i.test(li) ? li : '' };
+  }).filter((p) => p.name).slice(0, 5);
+  const sources = (Array.isArray(e.sources) ? e.sources : []).map((x) => {
+    const o = (x || {}) as Record<string, unknown>;
+    return { text: s(o.text, 600).trim(), url: httpsUrl(o.url, 600), title: s(o.title, 200).trim() };
+  }).filter((x) => x.text && x.url).slice(0, 40);
+  return { website: httpsUrl(e.website), team, sources, checked: new Date().toISOString().slice(0, 10) };
+}
+export async function enrichGrowth(sql: Sql, ownerId: string, id: string, raw: Record<string, unknown>) {
+  await ensureGrowth(sql);
+  const e = cleanEnrich(raw);
+  const rows = await sql`UPDATE growth_records SET
+      data = jsonb_set(COALESCE(data, '{}'::jsonb), '{enrich}', ${JSON.stringify(e)}::jsonb, true),
+      website = CASE WHEN COALESCE(website, '') = '' THEN ${e.website} ELSE website END,
+      updated_at = now()
+    WHERE owner_id = ${ownerId} AND id = ${s(id, 40)} RETURNING id`;
+  return rows.length > 0;
+}
+/** Compact export for research: the checkable statements on each record, no personal notes. */
+export async function enrichExport(sql: Sql, ownerId: string, lists: string[], offset: number, limit: number) {
+  await ensureGrowth(sql);
+  const rows = await sql`SELECT id, list, name, contact, website, city, prov, linkedin, data FROM growth_records
+    WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND list = ANY(${lists}) ORDER BY list, rank, id OFFSET ${offset} LIMIT ${limit}`;
+  return (rows as Record<string, unknown>[]).map((r) => {
+    const d = (r.data || {}) as Record<string, unknown>;
+    const I = (d.intel || {}) as Record<string, unknown>;
+    const st: string[] = [];
+    ['why', 'pain', 'fit', 'backed', 'intel'].forEach((k) => {
+      const a = I[k];
+      (Array.isArray(a) ? a : []).forEach((x) => {
+        const t = String(x || '');
+        if (/\d|launched|acquired|announced|says|reported|notes|appointed|partnered|merged|opened|expanded/i.test(t) && !/score|fit \d|\/\d{2}\b|weighted/i.test(t)) st.push(t.slice(0, 260));
+      });
+    });
+    return { id: r.id, list: r.list, name: r.name, contact: String(r.contact || '').slice(0, 140), website: r.website || '', place: [r.city, r.prov].filter(Boolean).join(', '),
+      done: !!(d.enrich as Record<string, unknown> | undefined)?.checked, statements: st.slice(0, 12) };
+  });
+}

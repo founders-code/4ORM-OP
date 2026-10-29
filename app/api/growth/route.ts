@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
 import {
-  addTouch, addRecordToContacts, undoAddToContacts, callsToday, growthFunnel, finishUpload, replanDays, growthRecord, setGrowthGhl, importGrowth, growthSummary, listGrowth, outreachLog, patchGrowth, planDays, saveUploadPart, undoTouch, vanToday,
+  addTouch, addRecordToContacts, enrichExport, enrichGrowth, undoAddToContacts, callsToday, growthFunnel, finishUpload, replanDays, growthRecord, setGrowthGhl, importGrowth, growthSummary, listGrowth, outreachLog, patchGrowth, planDays, saveUploadPart, undoTouch, vanToday,
 } from '@/lib/growth';
 import { openBoard, sessionEmail, sessionOwner, type BoardSession } from '@/lib/session';
 import { createOpportunityAt, ensureGhlContact, ghlPlaceFor, moveOpportunityStage } from '@/lib/ghl';
@@ -56,6 +56,10 @@ export async function GET(req: Request) {
       if (!rec) return NextResponse.json({ error: 'Not found' }, { status: 404 });
       return NextResponse.json(await ghlPlace(g, rec as Record<string, unknown>));
     }
+    if (u.searchParams.get('enrich-export')) {
+      const lists = String(u.searchParams.get('enrich-export')).split(',').map((x) => x.trim()).filter((x) => /^[a-z_]{2,20}$/.test(x)).slice(0, 12);
+      return NextResponse.json({ rows: await enrichExport(g.sql, g.ownerId, lists, Math.max(0, Number(u.searchParams.get('offset')) || 0), Math.min(200, Number(u.searchParams.get('limit')) || 50)) });
+    }
     if (u.searchParams.get('funnel')) return NextResponse.json(await growthFunnel(g.sql, g.ownerId));
     if (u.searchParams.get('calls')) return NextResponse.json(await callsToday(g.sql, g.ownerId));
     if (u.searchParams.get('log')) return NextResponse.json({ log: await outreachLog(g.sql, g.ownerId, Number(u.searchParams.get('days')) || 60) });
@@ -88,6 +92,13 @@ export async function POST(req: Request) {
     if (body.action === 'upload-finish') {
       const id = String(body.upload || '').replace(/[^a-z0-9-]/gi, '').slice(0, 40);
       return NextResponse.json({ ok: true, imported: await finishUpload(g.sql, g.ownerId, id) });
+    }
+    if (body.action === 'enrich') {
+      /* Research results: website, leaders with LinkedIn, and a source link per statement. Up to 50 records a call. */
+      const items = (Array.isArray(body.items) ? body.items : []).slice(0, 50) as Record<string, unknown>[];
+      let saved = 0;
+      for (const it of items) if (await enrichGrowth(g.sql, g.ownerId, String(it.id || ''), it)) saved += 1;
+      return NextResponse.json({ ok: true, saved });
     }
     if (body.action === 'replan') {
       return NextResponse.json({ ok: true, planned: await replanDays(g.sql, g.ownerId) });

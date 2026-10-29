@@ -45,6 +45,9 @@
     + '#dsrScript .s-line small{display:block;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#9db9ff;margin-bottom:3px}'
     + '#dsrScript ul{margin:0;padding-left:16px}#dsrScript li{margin:4px 0;list-style:disc}#dsrScript li b{color:#fff}#dsrScript .s-n{color:#7ff0c2;font-weight:900}#dsrScript .s-src{color:#7d859a;font-size:11.5px}'
     + '#dsrScript .s-bn{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 6px}#dsrScript .s-bn div{background:#15161c;border:1px solid #23252e;border-radius:10px;padding:8px 10px;font-size:12.5px}#dsrScript .s-bn div i{display:block;font-style:normal;font-size:10px;font-weight:800;letter-spacing:.1em;color:#7d859a}#dsrScript .s-bn div.n{border-color:rgba(255,72,102,.45)}#dsrScript .s-bn div.n i{color:#ff8fa3}'
+    + '#dsr a.d-src{color:#9db9ff;font-weight:800;font-size:11px;text-decoration:none;border:1px solid rgba(66,114,249,.4);border-radius:999px;padding:0 7px;margin-left:4px;white-space:nowrap}#dsr a.d-src:hover{background:rgba(66,114,249,.2)}'
+    + '#dsr .d-tm{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#18191f;border:1px solid #2a2c35;border-radius:10px;padding:7px 10px;margin-bottom:6px}#dsr .d-tm b{display:block;font-size:13px}#dsr .d-tm small{display:block;color:#aeb6c8;font-size:11.5px}'
+    + '#dsr .d-tm a{color:#fff;background:#0a66c2;border-radius:999px;padding:4px 12px;font-weight:800;font-size:11.5px;text-decoration:none;white-space:nowrap}'
     + '@media(max-width:820px){#dsr .d-mid{grid-template-columns:1fr}#dsr .d-lft{border-right:0}}';
   var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
   var wrap = document.createElement('div'); wrap.id = 'dsr';
@@ -114,10 +117,18 @@
     return t.split(/;\s+|\.\s+(?=[A-Z0-9])/).map(function (x) { return tidy(x.replace(/[\s.;]+$/, '').trim()); }).filter(Boolean)
       .map(function (x, i) { return [i === 0 ? label : '', x.charAt(0).toUpperCase() + x.slice(1)]; });
   }
+  var SRC = {};
+  function norm(t) { return String(t || '').toLowerCase().replace(/[^a-z0-9$%]+/g, ' ').trim(); }
+  function srcFor(x) {
+    var full = norm((x[0] ? x[0] + ': ' : '') + x[1]), bare = norm(x[1]);
+    return SRC[full] || SRC[bare] || null;
+  }
+  function srcLink(src) { return src ? ' <a class="d-src" href="' + esc(src.url) + '" target="_blank" rel="noopener" title="' + esc(src.title || src.url) + '">Source</a>' : ''; }
   function bullets(rows, withLabel) {
     if (!rows.length) return '';
     var li = [];
     rows.forEach(function (x) {
+      var src = srcFor(x), n0 = li.length;
       var lab = withLabel ? String(x[0] || '') : '';
       if (/driver/i.test(lab)) { li.push('<li style="list-style:none;margin-left:-16px"><div class="d-chips">' + String(x[1]).split(/\s*,\s*/).filter(Boolean).map(function (d) { return '<span>' + esc(d) + '</span>'; }).join('') + '</div></li>'); return; }
       var pts = points(x[1]), score = [];
@@ -132,6 +143,7 @@
         li.push('<li>' + (l2 ? '<b' + (/next step|ask|signal/i.test(l2) ? ' class="d-hg"' : '') + '>' + esc(l2) + ':</b> ' : '') + hl(v) + '</li>');
       });
       flush();
+      if (src && li.length > n0) li[li.length - 1] = li[li.length - 1].replace(/<\/li>$/, srcLink(src) + '</li>');
     });
     return '<ul>' + li.join('') + '</ul>';
   }
@@ -146,6 +158,9 @@
 
   function render(rec, opts) {
     var M = merged(rec), used = {};
+    var EN = (rec.data && rec.data.enrich) || null;
+    SRC = {};
+    ((EN && EN.sources) || []).forEach(function (x) { if (x && x.text && x.url) SRC[norm(x.text)] = x; });
     var meta = LISTS[rec.list] || [rec.list, 'Email'];
     var ch = (opts && opts.channel) || meta[1];
     var parts = String(rec.contact || '').split(/\s*\|\s*/);
@@ -233,6 +248,10 @@
       + sec('Next touch', '<div class="d-pills" data-nt>' + [['Today', 0], ['Tomorrow', 1], ['This week', 3], ['Next week', 7]].map(function (x) { return '<button type="button" data-days="' + x[1] + '">' + x[0] + '</button>'; }).join('') + '<input type="date" id="dsrFu" style="margin-left:4px"></div>')
       + sec('Open', '<div class="d-pills">' + (rec.email ? '<button type="button" data-a="email">Email</button>' : '') + (li ? '<button type="button" data-a="li">LinkedIn</button>' : '') + '<button type="button" data-a="space">Space</button>'
         + (rec.data && rec.data.contactId ? '<button type="button" disabled style="opacity:.6">In Contacts</button>' : '<button type="button" data-a="addc">Add to Contacts</button>') + '</div>')
+      + sec('Leadership', (EN && (EN.website || (EN.team || []).length)) ? ((EN.website || web) ? '<div style="margin-bottom:6px"><a class="d-src" style="font-size:12.5px" href="' + esc(EN.website || web) + '" target="_blank" rel="noopener">' + esc(String(EN.website || web).replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')) + '</a></div>' : '')
+          + (EN.team || []).map(function (p) { return '<div class="d-tm"><div><b>' + esc(p.name) + '</b><small>' + esc(p.title || '') + '</small></div>' + (p.linkedin ? '<a href="' + esc(p.linkedin) + '" target="_blank" rel="noopener">LinkedIn</a>' : '<span class="d-muted">No LinkedIn found</span>') + '</div>'; }).join('')
+          + '<div class="d-muted" style="font-size:11px;margin-top:4px">Checked ' + esc(EN.checked || '') + '</div>'
+        : '<div class="d-muted">Not researched yet.' + (web ? ' <a class="d-src" href="' + esc(web) + '" target="_blank" rel="noopener">Website</a>' : '') + '</div>')
       + (rec.notes ? sec('Earlier notes', '<div class="d-muted" style="white-space:pre-wrap">' + esc(String(rec.notes).slice(0, 1600)) + '</div>') : '')
       + sec('History', touches.length ? '<div class="d-hist">' + touches.slice(0, 8).map(function (t) {
         return '<div><small>' + esc(new Date(t.at).toLocaleString('en-CA', { timeZone: 'America/Vancouver', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })) + ' · ' + esc(t.channel || '') + '</small>' + esc([t.outcome, t.note].filter(Boolean).join(' · ')) + '</div>';
