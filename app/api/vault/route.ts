@@ -38,7 +38,7 @@ export async function GET() {
       await seedVaultDocs(gate.session.sql, ownerId);
     }
     const docs = await gate.session.sql`
-      SELECT id, org, kind, doc_id, name, version, status, verified_at, owner, note, source_url, drive_id, json_path
+      SELECT id, org, kind, doc_id, name, version, status, verified_at, owner, CASE WHEN org = 'Library' THEN left(note, 200) ELSE note END AS note, source_url, drive_id, json_path
       FROM vault_docs WHERE owner_id = ${ownerId} ORDER BY name
     `;
     return NextResponse.json({ locked: false, docs: docs || [], reason: !docs || !docs.length ? 'no documents in the vault yet' : '' });

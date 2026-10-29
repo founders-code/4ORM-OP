@@ -1,5 +1,27 @@
 /* Live Vault + Control room. Snippet HTML is chrome only — numbers come from /api. */
 (function () {
+  /* Library entries are markdown: escaped first, then headings, lists, bold, code and links. */
+  function mdEsc(v) { return String(v == null ? '' : v).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function mdInline(t) {
+    return t.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+      .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  }
+  function mdRender(src) {
+    var out = [], inCode = false, inList = false;
+    String(src).split(/\r?\n/).forEach(function (line) {
+      if (/^```/.test(line)) { if (inList) { out.push('</ul>'); inList = false; } out.push(inCode ? '</pre>' : '<pre>'); inCode = !inCode; return; }
+      if (inCode) { out.push(mdEsc(line) + '\n'); return; }
+      var e = mdEsc(line), m;
+      if ((m = e.match(/^\s*[-*] (.*)$/))) { if (!inList) { out.push('<ul>'); inList = true; } out.push('<li>' + mdInline(m[1]) + '</li>'); return; }
+      if (inList) { out.push('</ul>'); inList = false; }
+      if ((m = e.match(/^(#{1,4}) (.*)$/))) { out.push('<h' + (m[1].length + 2) + '>' + mdInline(m[2]) + '</h' + (m[1].length + 2) + '>'); return; }
+      if (/^---+$/.test(line.trim())) { out.push('<hr>'); return; }
+      out.push(e.trim() ? '<p>' + mdInline(e) + '</p>' : '');
+    });
+    if (inList) out.push('</ul>'); if (inCode) out.push('</pre>');
+    return out.join('');
+  }
+
   function $(root, s) { return root.querySelector(s); }
   function $$(root, s) { return Array.prototype.slice.call(root.querySelectorAll(s)); }
   function api(url, opts) {
@@ -68,7 +90,7 @@
 
   function bindVault(root) {
     var org = 'all', kind = 'all', q = '', docs = [], reason = 'no documents in the vault yet';
-    var ORGS = ['4ormIQ', '4ormop', '4orm Finance', 'Important documents'];
+    var ORGS = ['Library', '4ormIQ', '4ormop', '4orm Finance', 'Important documents'];
     function rowOf(d) {
       return {
         org: d.org || 'Important documents',
@@ -159,7 +181,7 @@
       var un = rows.filter(function (r) { return r.own === 'Unassigned' || r.own === '-'; }).length;
       var kp = $(root, '#vkp');
       if (kp) kp.innerHTML = '<div class="kt g"><b>' + (docs.length ? cur : '-') + '</b><span>current or live</span></div><div class="kt a"><b>' + (docs.length ? dr : '-') + '</b><span>drafts</span></div><div class="kt r"><b>' + (docs.length ? due : '-') + '</b><span>due or scheduled</span></div><div class="kt r"><b>' + (docs.length ? un : '-') + '</b><span>with no owner</span></div>';
-      var KIND_ORDER = ['Audits', 'Registers', 'Corporate', 'Agreements', 'Capital'];
+      var KIND_ORDER = ['Index', '4orm skills', 'House rules', 'Design and build rules', 'Processes', 'CEO brain', 'Design skills', 'Business advisory skills', 'Audits', 'Registers', 'Corporate', 'Agreements', 'Capital'];
       var groups = [];
       var seen = {};
       rows.forEach(function (r) {
@@ -237,7 +259,7 @@
             }).join('') + '</table>';
           }).catch(function () { paper.textContent = x.n; });
         } else if (b.kind === 'md' || b.text) {
-          paper.innerHTML = '<h5>' + x.n + '</h5><div>' + String(b.text || x.note || '').replace(/\n/g, '<br>') + '</div>';
+          paper.innerHTML = '<h5>' + mdEsc(x.n) + '</h5><div class="vmd">' + mdRender(String(b.text || x.note || '')) + '</div>';
         } else paper.innerHTML = '<h5>' + x.n + '</h5><p>' + (x.note || 'No stored copy to preview yet.') + '</p>';
         var srcBtn = body && body.querySelector('[data-action="vault-source"]');
         if (srcBtn) {

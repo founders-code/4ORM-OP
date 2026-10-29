@@ -17,7 +17,7 @@ export async function GET() {
     }
     if (!session.sql) return NextResponse.json({ docs: [], reason: 'no database url' });
     const docs = await session.sql`
-      SELECT id, org, kind, doc_id, name, version, status, verified_at, owner, note, source_url, drive_id, json_path
+      SELECT id, org, kind, doc_id, name, version, status, verified_at, owner, CASE WHEN org = 'Library' THEN left(note, 200) ELSE note END AS note, source_url, drive_id, json_path
       FROM vault_docs WHERE owner_id = ${ownerId} ORDER BY name
     `;
     return NextResponse.json({

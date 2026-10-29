@@ -543,3 +543,12 @@ table.v td.mut{color:#aebbe0}
 .vg-empty,.vg-dim{font-size:12.5px;color:#aeb6c8;padding:6px 2px}
 .vg-cats .vg-empty{grid-column:1/-1;background:#111216;border:1px solid #23252e;border-radius:12px;padding:16px}
 @media (max-width:1100px){.vg-cats{grid-template-columns:repeat(2,minmax(0,1fr))}.vg-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.vg-low{grid-template-columns:1fr}.vg-note{margin-left:0;text-align:left}}
+/* Library markdown, 29 Oct 2026 */
+.paper .vmd{font-size:13.5px;line-height:1.6;max-height:72vh;overflow:auto;padding-right:6px}
+.paper .vmd h3,.paper .vmd h4,.paper .vmd h5,.paper .vmd h6{margin:16px 0 6px;font-weight:800}
+.paper .vmd h3{font-size:18px}.paper .vmd h4{font-size:15.5px}.paper .vmd h5,.paper .vmd h6{font-size:13.5px}
+.paper .vmd p{margin:4px 0}.paper .vmd ul{margin:4px 0 8px;padding-left:18px}.paper .vmd li{margin:2px 0}
+.paper .vmd pre{white-space:pre-wrap;background:rgba(127,127,127,.12);border-radius:8px;padding:10px 12px;font:12px ui-monospace,Menlo,monospace}
+.paper .vmd code{background:rgba(127,127,127,.15);border-radius:4px;padding:0 4px;font:12px ui-monospace,Menlo,monospace}
+.paper .vmd hr{border:0;border-top:1px solid rgba(127,127,127,.3);margin:14px 0}
+.paper .vmd a{color:#2e6bf2;font-weight:700}

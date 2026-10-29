@@ -27,6 +27,7 @@ const nextConfig = {
     '/api/spaces/[id]': ['./data/spaces_seed.json'],
     '/design/[...path]': ['./design-reference/**/*'],
     '/api/private-doc': ['./private-docs/**/*'],
+    '/api/vault/library': ['./data/library.enc'],
   },
   },
   // Serve the public landing at "/" so the look is preserved exactly.
