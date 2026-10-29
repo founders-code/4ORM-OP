@@ -48,6 +48,8 @@
     + '#dsr a.d-src{color:#9db9ff;font-weight:800;font-size:11px;text-decoration:none;border:1px solid rgba(66,114,249,.4);border-radius:999px;padding:0 7px;margin-left:4px;white-space:nowrap}#dsr a.d-src:hover{background:rgba(66,114,249,.2)}'
     + '#dsr .d-tm{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#18191f;border:1px solid #2a2c35;border-radius:10px;padding:7px 10px;margin-bottom:6px}#dsr .d-tm b{display:block;font-size:13px}#dsr .d-tm small{display:block;color:#aeb6c8;font-size:11.5px}'
     + '#dsr .d-tm a{color:#fff;background:#0a66c2;border-radius:999px;padding:4px 12px;font-weight:800;font-size:11.5px;text-decoration:none;white-space:nowrap}'
+    + '#dsr .d-ed{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 4px}#dsr .d-ed label{display:block;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7d859a}'
+    + '#dsr .d-ed input{width:100%;background:#18191f;border:1px solid #2a2c35;border-radius:8px;color:#fff;font:inherit;font-size:13px;padding:7px 9px;margin-top:3px}#dsr .d-ed .w{grid-column:span 2}'
     + '@media(max-width:820px){#dsr .d-mid{grid-template-columns:1fr}#dsr .d-lft{border-right:0}}';
   var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
   var wrap = document.createElement('div'); wrap.id = 'dsr';
@@ -229,10 +231,11 @@
       + (ch === 'Call' ? '<button type="button" class="d-scb" data-a="script">Script</button>' : '') + '</div>'
       + '<span class="d-q">' + (rec.last_touch ? 'Last touch ' + esc(new Date(rec.last_touch).toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' })) : 'Never touched') + '</span></div>'
       + '<div class="d-mid"><div class="d-lft">'
-      + '<h2>' + esc(rec.name) + '</h2><div class="d-who">' + esc([person && person !== rec.name ? person : '', role, place, industry].filter(Boolean).join(' · ')) + '</div>'
+      + '<div id="dsrHead">'
+      + '<div style="display:flex;align-items:center;gap:10px"><h2>' + esc(rec.name) + '</h2><button type="button" data-a="edit" style="padding:3px 12px;font-size:11px;border-radius:999px">Edit</button></div><div class="d-who">' + esc([person && person !== rec.name ? person : '', role, place, industry].filter(Boolean).join(' · ')) + '</div>'
       + (phone ? '<div class="d-tel"><a href="tel:' + esc(phone) + '">' + esc(String(rec.phone).split(/\s*[;/]\s*/)[0]) + '</a></div>' : '<div style="height:10px"></div>')
       + '<div class="d-links">' + (li ? '<a href="' + esc(li) + '" target="_blank" rel="noopener">LinkedIn</a>' : '') + (rec.email ? '<a href="mailto:' + esc(rec.email) + '">' + esc(rec.email) + '</a>' : '')
-      + (form ? '<a href="' + esc(form) + '" target="_blank" rel="noopener">Contact form</a>' : '') + (web ? '<a href="' + esc(web) + '" target="_blank" rel="noopener">Website</a>' : '') + '</div>'
+      + (form ? '<a href="' + esc(form) + '" target="_blank" rel="noopener">Contact form</a>' : '') + (web ? '<a href="' + esc(web) + '" target="_blank" rel="noopener">Website</a>' : '') + '</div></div>'
       + sec("Why we're reaching out", bullets(why, true))
       + sec('Pain', (pain != null ? '<div style="margin-bottom:4px"><span class="d-pain">' + [1, 2, 3, 4, 5].map(function (i) { return '<i' + (pain >= i * 20 - 10 ? ' class="on"' : '') + '></i>'; }).join('') + '</span><b>' + esc(pain) + ' / 100</b></div>' : '') + bullets(painRows, true))
       + sec('Why they fit', bullets(fit, true))
@@ -451,6 +454,28 @@
       }).catch(function () { pbox.innerHTML = '<div class="d-k">Pipeline stage</div><div class="d-muted">Could not reach GoHighLevel.</div>'; });
     }
     paintPipe();
+    /* Edit the basics on the card: name, contact person and role, phone, email, website, LinkedIn, city. Saved fields are kept through re-imports. */
+    var edb = wrap.querySelector('[data-a="edit"]');
+    if (edb) edb.onclick = function () {
+      var head = wrap.querySelector('#dsrHead');
+      var parts = String(rec.contact || '').split(/\s*\|\s*/);
+      var F = [['name', 'Name', rec.name, 1], ['person', 'Contact person', /@|^\+?\d/.test(parts[0] || '') ? '' : (parts[0] || '')], ['role', 'Role', rec.title || parts[1] || ''],
+        ['phone', 'Phone', rec.phone], ['email', 'Email', rec.email], ['website', 'Website', rec.website], ['linkedin', 'LinkedIn', rec.linkedin], ['city', 'City', rec.city], ['prov', 'Province', rec.prov]];
+      head.innerHTML = '<div class="d-ed">' + F.map(function (f) { return '<div' + (f[3] ? ' class="w"' : '') + '><label>' + esc(f[1]) + '<input data-f="' + f[0] + '" value="' + esc(f[2] || '') + '"></label></div>'; }).join('') + '</div>'
+        + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:6px"><button type="button" data-ex="cancel">Cancel</button><button type="button" class="pri" data-ex="save">Save details</button></div>';
+      head.querySelector('[data-ex="cancel"]').onclick = function () { open(rec.id, opts); };
+      head.querySelector('[data-ex="save"]').onclick = function () {
+        var v = {}; head.querySelectorAll('[data-f]').forEach(function (i) { v[i.getAttribute('data-f')] = i.value.trim(); });
+        if (!v.name) { toast('The name cannot be empty'); return; }
+        var rest = parts.slice(2).filter(function (x) { return x && x !== v.phone && x !== v.email; });
+        var body = { id: rec.id, name: v.name, title: v.role, phone: v.phone, email: v.email, website: v.website, linkedin: v.linkedin, city: v.city, prov: v.prov,
+          contact: [v.person, v.role].concat(rest).filter(Boolean).join(' | ') };
+        this.disabled = true; this.textContent = 'Saving…';
+        api('/api/growth', 'PATCH', body).then(function (x) { if (!x || !x.ok) throw 0; forget(rec.id); toast('Saved: ' + v.name); if (opts.onSaved) opts.onSaved(rec, ''); open(rec.id, opts); })
+          .catch(function () { toast('Could not save those details. Try again.'); open(rec.id, opts); });
+      };
+      var first = head.querySelector('[data-f="phone"]'); if (first) first.focus();
+    };
     var scb = wrap.querySelector('[data-a="script"]');
     if (scb) scb.onclick = function (e) { e.stopPropagation(); openScript(rec); };
     var oldS = document.getElementById('dsrScript'); if (oldS) { oldS.innerHTML = scriptHtml(rec); oldS.querySelector('[data-sx]').onclick = function () { oldS.remove(); }; }
