@@ -907,6 +907,7 @@
       links: Number(pkg.linkCount != null ? pkg.linkCount : links.length) || 0,
       notes: pkg.notes || pkg.description || '',
       people: (pkg.recipients || pkg.people || []).map(function (p) { return p.name || p.email || ''; }).filter(Boolean),
+      sent: !!(pkg.sentAt || pkg.sent_at),
       files: docs,
       linkItems: links,
       history: pkg.history || []
@@ -938,6 +939,8 @@
     if (!names.length) return [{ name: 'General', min: false, sp: [] }];
     return names.map(function (n) { return by[n]; });
   }
+  /* Spaces opens By readiness (29 Oct); the choice is remembered on this computer. */
+  function spacesView() { try { return localStorage.getItem('cr_spaces_view') === 'groups' ? 'groups' : 'ready'; } catch (e) { return 'ready'; } }
   window.paintSpacesCardsPage = paintSpacesCardsPage;
   function paintSpacesCardsPage(openWanted) {
     var wrap = wrapOf('spacesDesk');
@@ -951,11 +954,11 @@
       ? '<span><b>53</b> spaces</span><span class="hot"><b>2</b> ready to send</span><span><b>4</b> need docs</span><span><b>0</b> sent this week</span><span><b>0</b> replies</span><span><b>0</b> meetings booked</span>'
       : '<span><b>' + all + '</b> spaces</span><span class="hot"><b>' + readyN + '</b> ready to send</span><span><b>' + needDocs + '</b> need docs</span><span><b>0</b> sent this week</span><span><b>0</b> replies</span><span><b>0</b> meetings booked</span>';
     wrap.innerHTML =
-      '<div class="bar"><h1>Spaces</h1><span class="sub">Every send-bundle, grouped by who it\'s for</span>'
-      + '<div class="r"><input class="search" id="q" data-action="spaces-search" placeholder="Search spaces or people"><div class="seg" id="seg"><span class="on" data-action="spaces-arr-view" data-v="groups">Groups</span><span data-action="spaces-arr-view" data-v="board">Board</span></div>'
+      '<div class="bar"><h1>Spaces</h1><span class="sub">Every send-bundle on one board, sorted by what it still needs</span>'
+      + '<div class="r"><input class="search" id="q" data-action="spaces-search" placeholder="Search spaces or people"><div class="seg" id="seg"><span' + (spacesView() === 'ready' ? ' class="on"' : '') + ' data-action="spaces-arr-view" data-v="ready">By readiness</span><span' + (spacesView() === 'groups' ? ' class="on"' : '') + ' data-action="spaces-arr-view" data-v="groups">By group</span></div>'
       + '<button class="btn ghost" data-action="spaces-arr-minall" id="minAll">Collapse all</button><button class="btn pri" data-action="spaces-new">+ New space</button></div></div>'
       + '<div class="kpis">' + kpiHtml + '</div>'
-      + '<section class="view on" id="groups"><div id="cats"></div></section><section class="view" id="board"></section>'
+      + '<div id="rbWin"></div><section class="view" id="ready"></section><section class="view" id="groups"><div id="cats"></div></section><section class="view" id="board"></section><div id="rbBulk"></div>'
       + '<div class="scrim" id="scrim" data-action="spaces-card-close"></div>'
       + '<aside class="qw" id="qw" role="dialog" aria-label="Space">'
       + '<div class="qh"><span class="cr" id="qCr"></span><div class="r">'
@@ -967,7 +970,7 @@
       + '<button class="btn sm" data-action="space-drive" id="drive">Move to Drive</button>'
       + '<button class="btn sm" data-action="space-book" id="book">Book 20 min</button>'
       + '<button class="btn sm" data-action="space-email" id="email">Email them</button>'
-      + '<button class="btn sm" data-action="space-menu" id="qMore">&middot;&middot;&middot;</button>'
+      + '<button class="btn sm" data-action="space-menu" id="qMore">More</button>'
       + '<button class="btn sm pri" data-action="space-send" id="send">Send bundle</button></div></aside>'
       + '<div class="menu" id="menu"><div class="lbl">Move to</div><div data-action="space-move-group" data-group="General">General</div><div data-action="space-move-group" data-group="Venture Capital">Venture Capital</div><div data-action="space-move-group" data-group="Business">Business</div><div data-action="space-move-group" data-group="Regulators">Regulators</div><div data-action="space-rename">Rename</div><div class="del" data-action="space-archive">Delete</div></div>'
       + '<div class="toast" id="toast"></div>';
@@ -1019,7 +1022,7 @@
         + '</div>';
       return '<div class="sp" draggable="true" data-action="spaces-card-open" data-c="' + ci + '" data-s="' + si + '"' + (s.id ? ' data-id="' + esc(s.id) + '"' : '') + '>'
         + '<div class="hd"><span class="av" style="background:' + CARD_COL[(ci * 3 + si) % 6] + '">' + esc(iniOf(s.n)) + '</span><div style="min-width:0"><h4>' + esc(s.n) + '</h4><div class="org">' + esc(s.o) + '</div></div>'
-        + '<span class="ms" title="More" data-action="space-menu" data-id="' + esc(s.id || '') + '">&middot;&middot;&middot;</span>'
+        + '<span class="ms" title="More" data-action="space-menu" data-id="' + esc(s.id || '') + '">More</span>'
         + '<span class="ring" style="--p:' + (k * 20) + '%;--c:' + c + '" data-action="spaces-card-ring" data-c="' + ci + '" data-s="' + si + '"><span>' + k + '/5</span></span></div>'
         + chk
         + '<p class="why">' + (s.why ? esc(s.why) : '<span data-action="spaces-card-open" data-c="' + ci + '" data-s="' + si + '">Add an angle</span>') + '</p>'
@@ -1055,17 +1058,160 @@
     }
     function activeView() {
       var on = root.querySelector('#seg span.on');
-      return (on && on.getAttribute('data-v')) || 'groups';
+      return (on && on.getAttribute('data-v')) || 'ready';
     }
     function render() {
       var v = activeView();
       var g = root.querySelector('#groups');
       var b = root.querySelector('#board');
+      var rd = root.querySelector('#ready');
       if (g) g.classList.toggle('on', v === 'groups');
       if (b) b.classList.toggle('on', v === 'board');
-      if (v === 'groups') { renderGroups(); if (b) b.innerHTML = ''; }
-      else { renderBoard(); var cats = root.querySelector('#cats'); if (cats) cats.innerHTML = ''; }
+      if (rd) rd.classList.toggle('on', v === 'ready');
+      var mn = root.querySelector('#minAll'); if (mn) mn.hidden = v === 'ready';
+      var cats0 = root.querySelector('#cats');
+      if (v === 'ready') { renderReady(); if (cats0) cats0.innerHTML = ''; if (b) b.innerHTML = ''; }
+      else if (v === 'groups') { renderGroups(); if (b) b.innerHTML = ''; if (rd) rd.innerHTML = ''; paintWin(false); }
+      else { renderBoard(); if (cats0) cats0.innerHTML = ''; if (rd) rd.innerHTML = ''; paintWin(false); }
       if (cur) markCur();
+    }
+
+    /* ---------- By readiness (29 Oct): one board, columns by what each space still needs ---------- */
+    var LANES = [
+      ['docs', 'Needs documents', 'amb'], ['intro', 'Needs intro', 'amb'], ['ready', 'Ready to send', 'grn'],
+      ['sent', 'Sent', ''], ['replied', 'Replied', ''], ['meet', 'Meeting', '']
+    ];
+    var LANE_EMPTY = {
+      ready: 'Spaces with all five steps done land here.',
+      sent: 'Nothing out yet. Sent spaces wait here for a reply.',
+      replied: 'Replies land here and move the GoHighLevel stage.',
+      meet: 'Booked meetings close the loop.'
+    };
+    var openLanes = {};
+    function laneOf(s) {
+      var st = String(s.stage || '').toLowerCase();
+      if (/meeting/.test(st)) return 'meet';
+      if (/repl|interested|contact made/.test(st)) return 'replied';
+      if (s.sent || /\bsent\b|info pack/.test(st)) return 'sent';
+      if (pctOf(s) === 5) return 'ready';
+      if (!(s.d || [])[2]) return 'docs';
+      return 'intro';
+    }
+    /* The one missing thing, in words, and what clicking it does. */
+    function missingOf(s, lane) {
+      var d = s.d || [];
+      if (lane === 'docs') return ['Attach a document', 'space-docs'];
+      if (lane === 'intro') {
+        if (!d[0]) return ['Add the person', 'space-people'];
+        if (!d[1]) return ['Add notes', 'spaces-card-open'];
+        if (!d[3]) return ['Add the link', 'space-link'];
+        return ['Write a 3-line intro', 'spaces-card-open'];
+      }
+      if (lane === 'ready') return ['Send now', 'spaces-card-open'];
+      if (lane === 'sent') return ['Waiting for a reply', 'spaces-card-open'];
+      if (lane === 'replied') return ['Reply and book a time', 'spaces-card-open'];
+      return ['Prep the meeting', 'spaces-card-open'];
+    }
+    function ringSvg(k) {
+      var col = k === 5 ? '#00dc86' : (k >= 4 ? '#4272f9' : '#ffa946');
+      var len = (k / 5 * 69.1).toFixed(1);
+      return '<svg class="rb-ring" viewBox="0 0 28 28" width="28" height="28" aria-hidden="true"><circle cx="14" cy="14" r="11" fill="none" stroke="#2a2c35" stroke-width="4"/>'
+        + (k ? '<circle cx="14" cy="14" r="11" fill="none" stroke="' + col + '" stroke-width="4" stroke-dasharray="' + len + ' 69.1" transform="rotate(-90 14 14)"/>' : '') + '</svg>';
+    }
+    function readyCard(s, ci, si, lane) {
+      var k = pctOf(s), m = missingOf(s, lane);
+      var idAttr = s.id ? ' data-id="' + esc(s.id) + '"' : '';
+      var mAttr = m[1] === 'spaces-card-open' ? ' data-action="spaces-card-open" data-c="' + ci + '" data-s="' + si + '"' : ' data-action="' + m[1] + '"' + idAttr;
+      return '<div class="rb-cd" data-action="spaces-card-open" data-c="' + ci + '" data-s="' + si + '"' + idAttr + ' tabindex="0">'
+        + '<div class="rb-ct">' + ringSvg(k) + '<div><b>' + esc(s.n) + '</b><small>' + esc(CATS[ci].name) + '</small></div><span class="rb-rn">' + k + ' of 5</span></div>'
+        + '<div class="rb-miss ' + (lane === 'ready' ? 'g' : (lane === 'docs' || lane === 'intro') ? 'a' : 'n') + '"' + mAttr + '>' + esc(m[0]) + '</div></div>';
+    }
+    /* Fastest win: the group with the most spaces missing documents, fixed in one step. */
+    function bestWin() {
+      var best = null;
+      CATS.forEach(function (c) {
+        var ids = c.sp.filter(function (s) { return laneOf(s) === 'docs' && s.id && /^[0-9a-f-]{36}$/i.test(String(s.id)); });
+        if (ids.length >= 3 && (!best || ids.length > best.list.length)) best = { name: c.name, list: ids };
+      });
+      return best;
+    }
+    function paintWin(on) {
+      var host = root.querySelector('#rbWin');
+      if (!host) return;
+      var w = on ? bestWin() : null;
+      host.innerHTML = w ? '<div class="rb-win"><div><b>Fastest win.</b> ' + w.list.length + ' ' + esc(w.name) + ' spaces have no documents yet. Attach one document to all ' + w.list.length + ' in one step, then each only needs its intro.</div>'
+        + '<button type="button" class="btn pri" data-action="spaces-bulk-doc">Attach a document to all ' + w.list.length + '</button></div>' : '';
+    }
+    function renderReady() {
+      var el = root.querySelector('#ready');
+      if (!el) return;
+      var qEl = root.querySelector('#q');
+      var q = String((qEl && qEl.value) || '').toLowerCase();
+      var buckets = {};
+      LANES.forEach(function (l) { buckets[l[0]] = []; });
+      CATS.forEach(function (c, ci) {
+        c.sp.forEach(function (s, si) {
+          if (q && (s.n + ' ' + (s.o || '') + ' ' + c.name).toLowerCase().indexOf(q) < 0) return;
+          buckets[laneOf(s)].push([s, ci, si]);
+        });
+      });
+      el.innerHTML = '<div class="rb-board">' + LANES.map(function (l) {
+        var list = buckets[l[0]], cap = openLanes[l[0]] ? list.length : 8;
+        return '<div class="rb-col"><div class="rb-ch"><b>' + esc(l[1]) + '</b><span class="' + l[2] + '">' + list.length + '</span></div>'
+          + (list.length ? list.slice(0, cap).map(function (x) { return readyCard(x[0], x[1], x[2], l[0]); }).join('')
+            : '<div class="rb-empty">' + esc(LANE_EMPTY[l[0]] || 'Nothing here.') + '</div>')
+          + (list.length > cap ? '<button type="button" class="rb-more" data-action="spaces-ready-more" data-lane="' + l[0] + '">Show ' + (list.length - cap) + ' more</button>' : '')
+          + '</div>';
+      }).join('') + '</div>';
+      paintWin(true);
+    }
+    /* Bulk attach: pick one library document, see every space it goes to, then attach one by one with progress. */
+    var bulk = null;
+    function bulkHost() { return root.querySelector('#rbBulk'); }
+    function bulkClose() { bulk = null; var h = bulkHost(); if (h) h.innerHTML = ''; }
+    function bulkPaint() {
+      var h = bulkHost();
+      if (!h || !bulk) return;
+      var head = '<div class="rb-scrim" data-action="spaces-bulk-close"></div><div class="rb-dlg" role="dialog" aria-label="Attach a document">';
+      if (bulk.step === 'pick') {
+        var q = String(bulk.q || '').toLowerCase();
+        var docs = (bulk.docs || []).filter(function (d) { return !q || String(d.name || '').toLowerCase().indexOf(q) >= 0; });
+        h.innerHTML = head + '<h3>Attach one document to ' + bulk.list.length + ' ' + esc(bulk.group) + ' spaces</h3>'
+          + '<input id="rbQ" type="search" placeholder="Search your documents" value="' + esc(bulk.q || '') + '">'
+          + '<div class="rb-docs">' + (bulk.loading ? '<div class="rb-empty">Loading your documents…</div>' : docs.length ? docs.slice(0, 200).map(function (d) {
+            return '<button type="button" class="rb-doc' + (bulk.pick && String(bulk.pick.id) === String(d.id) ? ' on' : '') + '" data-action="spaces-bulk-pick" data-doc="' + esc(d.id) + '"><b>' + esc(d.name || 'File') + '</b><small>' + esc(d.category || '') + '</small></button>';
+          }).join('') : '<div class="rb-empty">No documents in your library yet. Add them on the Documents page first.</div>') + '</div>'
+          + '<div class="rb-acts"><button type="button" class="btn" data-action="spaces-bulk-close">Cancel</button><button type="button" class="btn pri" data-action="spaces-bulk-next"' + (bulk.pick ? '' : ' disabled') + '>Next</button></div></div>';
+        var qi = h.querySelector('#rbQ');
+        if (qi) { qi.oninput = function () { bulk.q = qi.value; var pos = qi.selectionStart; bulkPaint(); var n = h.querySelector('#rbQ'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} } }; }
+        return;
+      }
+      var done = bulk.done || 0, fail = bulk.fail || 0, running = bulk.step === 'run', finished = bulk.step === 'done';
+      h.innerHTML = head + '<h3>' + (finished ? 'Attached' : 'Attach') + ' ' + esc(bulk.pick.name || 'the document') + '</h3>'
+        + '<p class="rb-sub">' + (finished ? (done + ' of ' + bulk.list.length + ' spaces now have it' + (fail ? '. ' + fail + ' did not save; open those and try again.' : '.'))
+          : running ? 'Attaching ' + (done + fail + 1) + ' of ' + bulk.list.length + '…' : 'It goes into each of these ' + bulk.list.length + ' spaces:') + '</p>'
+        + '<div class="rb-docs">' + bulk.list.map(function (s) { var st = (bulk.state || {})[s.id] || ''; return '<div class="rb-row"><b>' + esc(s.n) + '</b><small>' + (st === 'ok' ? 'Attached' : st === 'fail' ? 'Did not save' : '') + '</small></div>'; }).join('') + '</div>'
+        + '<div class="rb-acts">' + (finished ? '<button type="button" class="btn pri" data-action="spaces-bulk-close">Done</button>'
+          : '<button type="button" class="btn" data-action="spaces-bulk-close"' + (running ? ' disabled' : '') + '>Cancel</button><button type="button" class="btn pri" data-action="spaces-bulk-go"' + (running ? ' disabled' : '') + '>Attach to ' + bulk.list.length + ' spaces</button>') + '</div></div>';
+    }
+    function bulkRun() {
+      bulk.step = 'run'; bulk.done = 0; bulk.fail = 0; bulk.state = {};
+      bulkPaint();
+      var i = 0;
+      (function next() {
+        if (!bulk) return;
+        if (i >= bulk.list.length) {
+          bulk.step = 'done'; bulkPaint();
+          if (typeof window.loadPackages === 'function') window.loadPackages();
+          return;
+        }
+        var s = bulk.list[i++];
+        api('/api/spaces/' + encodeURIComponent(s.id), { method: 'POST', body: { action: 'add-doc', stagedId: bulk.pick.id } })
+          .then(function (r) { return r && r.ok ? r.json() : null; })
+          .then(function (d) { if (!d || d.saved === false) throw 0; bulk.done += 1; bulk.state[s.id] = 'ok'; })
+          .catch(function () { if (bulk) { bulk.fail += 1; bulk.state[s.id] = 'fail'; } })
+          .then(function () { bulkPaint(); next(); });
+      })();
     }
     function fillWindow() {
       if (!cur || !CATS[cur.ci] || !CATS[cur.ci].sp[cur.si]) return;
@@ -1190,8 +1336,24 @@
       if (a === 'spaces-arr-view') {
         var v = t.getAttribute('data-v');
         root.querySelectorAll('#seg span').forEach(function (s) { s.classList.toggle('on', s.getAttribute('data-v') === v); });
+        try { localStorage.setItem('cr_spaces_view', v === 'groups' ? 'groups' : 'ready'); } catch (e2) {}
         render();
       }
+      if (a === 'spaces-ready-more') { openLanes[t.getAttribute('data-lane')] = true; renderReady(); return; }
+      if (a === 'spaces-bulk-doc') {
+        var w = bestWin();
+        if (!w || !writeOk()) return;
+        bulk = { step: 'pick', group: w.name, list: w.list, docs: [], loading: true, q: '' };
+        bulkPaint();
+        api('/api/documents').then(function (r) { return r && r.ok ? r.json() : null; }).then(function (d) {
+          if (!bulk) return; bulk.docs = (d && d.docs) || []; bulk.loading = false; bulkPaint();
+        }).catch(function () { if (bulk) { bulk.loading = false; bulkPaint(); } });
+        return;
+      }
+      if (a === 'spaces-bulk-pick') { var did = t.getAttribute('data-doc'); bulk.pick = (bulk.docs || []).filter(function (x) { return String(x.id) === String(did); })[0] || null; bulkPaint(); return; }
+      if (a === 'spaces-bulk-next') { if (bulk && bulk.pick) { bulk.step = 'confirm'; bulkPaint(); } return; }
+      if (a === 'spaces-bulk-go') { if (bulk && bulk.pick && bulk.step === 'confirm') bulkRun(); return; }
+      if (a === 'spaces-bulk-close') { if (!bulk || bulk.step !== 'run') bulkClose(); return; }
       if (a === 'spaces-arr-minall') {
         var anyOpen = CATS.some(function (c) { return !c.min; });
         CATS.forEach(function (c) { c.min = anyOpen; });
