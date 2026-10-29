@@ -2762,7 +2762,7 @@
         + (S.composeOpen ? '<div class="ef-none2" style="padding:14px 0">This reply is open in the full editor. Close it to come back here.</div>' : '<section class="ef-comp" id="compose"><div class="cw">'
         + '<div class="ef-to"><span>To</span><b>' + esc(d.to.map(function (r) { return r.name ? r.name + ' <' + r.email + '>' : r.email; }).join(', ') || 'No address') + '</b></div>'
         + '<div class="ef-subj"><span>Subject</span><input data-action="mail-subject" value="' + esc(d.subject) + '" placeholder="Subject"></div>'
-        + '<div class="tbar"><span class="tx" data-action="mail-link" title="Select text, then add a link">Link</span><span class="tx" data-action="mail-attach-pick" title="Attach from Documents, Spaces or Drive">Attach from Documents, Spaces or Drive</span><span class="tx" data-action="mail-attach-file" title="Attach a file from this computer">This computer</span></div>'
+        + '<div class="tbar ef-tools"><span class="tx" data-action="mail-attach-pick" title="Add a document from Documents, Spaces or Drive">Add document</span><span class="tx" data-action="mail-attach-file" title="Upload a file from this computer">Upload file</span><span class="tx" data-action="mail-link" title="Select words in the email, then add a link">Add link</span></div>'
         + '<div class="body" contenteditable="true" data-action="mail-body" data-placeholder="Write your reply, or pick a quick answer above">' + bodyHtml + '</div>'
         + sigBlockHtml(d)
         + '<div class="ef-attbox"><div class="ef-k">Attached' + (d.attachments.length ? ' &middot; ' + d.attachments.length : '') + '</div>'

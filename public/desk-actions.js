@@ -5260,7 +5260,8 @@
   window.__mailComposeAfterPaint = function (wrap) {
     var root = wrap && wrap.getRootNode ? wrap.getRootNode() : null;
     var cp = root && root.getElementById ? root.getElementById('compose') : null;
-    if (!cp || !cp.classList.contains('open')) return;
+    /* The full editor (#compose.open) and the reply card's composer (#compose.ef-comp) both get the same wiring. */
+    if (!cp || !(cp.classList.contains('open') || cp.classList.contains('ef-comp'))) { loadMailSig(root); return; }
     var bar = cp.querySelector('.tbar');
     if (bar && !bar.__keepSel) {
       bar.__keepSel = true;
