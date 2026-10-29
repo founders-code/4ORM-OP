@@ -65,3 +65,4 @@
 /* Audit 29 Oct: a long meeting name never squeezes the quote to one word per line */
 .li em{max-width:180px;overflow:hidden;text-overflow:ellipsis}
 .li>span:not(.tag){min-width:0}
+.li em{grid-column:2/-1;justify-self:start;max-width:100%;margin-top:-4px}
