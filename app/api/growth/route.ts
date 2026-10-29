@@ -141,7 +141,7 @@ export async function POST(req: Request) {
       /* Chad confirmed the stage package on screen; only then does it go out. */
       let sent: Record<string, unknown> | null = null;
       if (body.send === true) {
-        const out = await withCreds(creds, () => sendStagePackage(g.sql, g.ownerId, rec, stageId, { contactId: place.contactId }));
+        const out = await withCreds(creds, () => sendStagePackage(g.sql, g.ownerId, rec, stageId, { contactId: place.contactId, spaceOwner: g.userId }));
         sent = out;
         if (out.ok) {
           const days = Number((out as { followDays?: number }).followDays) || 0;

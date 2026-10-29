@@ -34,7 +34,7 @@ export async function GET(req: Request) {
       const recId = String(u.searchParams.get('record') || '');
       const rec = recId ? ((await growthRecord(g.sql, g.ownerId, recId)) as Record<string, unknown> | null) : SAMPLE;
       if (!rec) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-      return NextResponse.json({ preview: await previewStageSend(g.sql, g.ownerId, rec, stage) });
+      return NextResponse.json({ preview: await previewStageSend(g.sql, g.ownerId, rec, stage, g.userId) });
     }
     if (u.searchParams.get('sends')) return NextResponse.json({ sends: await recentSends(g.sql, g.ownerId, stage) });
     const creds = await loadCredsFor(g.userId);
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
       withCreds(creds, () => listPipelines()).catch(() => ({ status: 'unavailable' as const, pipelines: [] })),
       listStagePackages(g.sql, g.ownerId),
       stageStats(g.sql, g.ownerId),
-      listSpacesLite(g.sql, g.ownerId),
+      listSpacesLite(g.sql, g.userId),
     ]);
     const pipelines = (pipes.pipelines || []).map((p) => ({
       id: p.id, name: p.name, total: p.total,
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     if (b.action === 'test') {
       /* A test only ever goes to Chad's own address. */
       const creds = await loadCredsFor(g.userId);
-      const out = await withCreds(creds, () => sendStagePackage(g.sql, g.ownerId, SAMPLE, String(b.stageId || ''), { test: true, testTo: TEST_SEND_TO }));
+      const out = await withCreds(creds, () => sendStagePackage(g.sql, g.ownerId, SAMPLE, String(b.stageId || ''), { test: true, testTo: TEST_SEND_TO, spaceOwner: g.userId }));
       return out.ok ? NextResponse.json({ ok: true, to: TEST_SEND_TO }) : NextResponse.json({ error: out.note }, { status: 502 });
     }
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });

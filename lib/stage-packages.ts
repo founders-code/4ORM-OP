@@ -211,10 +211,10 @@ function fill(text: string, rec: Record<string, unknown>) {
 }
 
 /** Exactly what would go out for this record at this stage. Nothing is sent here. */
-export async function previewStageSend(sql: Sql, ownerId: string, rec: Record<string, unknown>, stageId: string) {
+export async function previewStageSend(sql: Sql, ownerId: string, rec: Record<string, unknown>, stageId: string, spaceOwner = ownerId) {
   const pkg = await stagePackageFor(sql, ownerId, stageId);
   if (!pkg) return null;
-  const docs = [...pkg.docs, ...(await spaceDocs(sql, ownerId, pkg.spaceId))];
+  const docs = [...pkg.docs, ...(await spaceDocs(sql, spaceOwner, pkg.spaceId))];
   const to = firstEmail(rec.email);
   return {
     packageId: pkg.id,
@@ -251,9 +251,9 @@ export async function sendStagePackage(
   ownerId: string,
   rec: Record<string, unknown>,
   stageId: string,
-  opts: { contactId?: string; test?: boolean; testTo?: string } = {},
+  opts: { contactId?: string; test?: boolean; testTo?: string; spaceOwner?: string } = {},
 ) {
-  const pv = await previewStageSend(sql, ownerId, rec, stageId);
+  const pv = await previewStageSend(sql, ownerId, rec, stageId, opts.spaceOwner || ownerId);
   if (!pv) return { ok: false, note: 'No package on this stage' };
   const to = opts.test ? firstEmail(opts.testTo) : pv.to;
   const log = async (status: string, note: string) => {
