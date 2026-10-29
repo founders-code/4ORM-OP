@@ -214,6 +214,17 @@
       }).catch(function () {});
     }
     function fmtTel(v) { return String(v || '').split(/\s*(?:;|\/|,|\bor\b)\s*/)[0].replace(/[^\d+]/g, ''); }
+    /* How to reach them: LinkedIn for the angels list, else the phone, else email. */
+    function reachLink(r) {
+      var tel = fmtTel(r.phone);
+      var li = String(r.linkedin || '');
+      if (li && !/^https?:/i.test(li)) li = 'https://' + li;
+      if (r.channel === 'LinkedIn' && li) return '<a href="' + escT(li) + '" target="_blank" rel="noopener" data-stop="1">LinkedIn</a>';
+      if (tel) return '<a href="tel:' + escT(tel) + '" data-stop="1">Call</a>';
+      if (r.email) return '<a href="mailto:' + escT(r.email) + '" data-stop="1">Email</a>';
+      if (li) return '<a href="' + escT(li) + '" target="_blank" rel="noopener" data-stop="1">LinkedIn</a>';
+      return '';
+    }
     function callRow(r, kind) {
       var who = r.list === 'angels' ? r.name : (String(r.contact || '').split(/\s*[|;]\s*/)[0] || '');
       if (/^(existing contact|leadership|executive|business contact|principal broker)/i.test(who) || /@|^\+?\d/.test(who)) who = '';
@@ -222,9 +233,9 @@
         : (r.plan_day && String(r.plan_day).slice(0, 10) < FX.calls.today ? '<span class="late">carried over</span>' : '');
       return '<div class="fxc" data-fxcall="' + escT(r.id) + '"><div class="nm"><b>' + escT(r.list === 'angels' ? r.name : (who || r.name)) + '</b>'
         + '<small>' + escT(r.list === 'angels' ? (r.title || '') : (who ? r.name : (r.title || ''))) + '</small></div>'
-        + '<span class="ls">' + escT(r.listName || '') + '</span>' + dueTxt
+        + '<span class="ls">' + escT(r.listName || '') + ' · ' + escT(r.channel || 'Call') + '</span>' + dueTxt
         + (r.ghl_stage ? '<span class="gh">GHL · ' + escT(r.ghl_stage) + '</span>' : '')
-        + '<span class="act">' + (tel ? '<a href="tel:' + escT(tel) + '" data-stop="1">Call</a>' : r.email ? '<a href="mailto:' + escT(r.email) + '" data-stop="1">Email</a>' : '') + '<button type="button">Log</button></span></div>';
+        + '<span class="act">' + reachLink(r) + '<button type="button">Log</button></span></div>';
     }
     function paintCalls() {
       var host = $('fxCalls');
@@ -284,7 +295,7 @@
       var go = r.room && r.room[1] ? r.room[1] : '';
       var day = r.pads && r.pads[ti] && r.pads[ti].day;
       fxModal('<div class="k">Play · ' + escT(r.grp || 'Daily') + '</div><div class="tn ro">' + escT(r.n || 'Play') + '</div>'
-        + '<div class="facts2"><div><small>Target</small><span>' + escT(r.target || (lab && !/^go$/i.test(lab) ? lab : '-')) + '</span></div><div><small>Today</small><span>' + (r.d && r.d[ti] === 'done' ? 'Done' : 'Still to do') + '</span></div><div><small>Where</small><span>' + escT((r.room && r.room[0]) || '-') + '</span></div></div>'
+        + '<div class="facts2"><div><small>Target</small><span>' + escT(r.target || (lab && !/^go$/i.test(lab) ? lab : '-')) + '</span></div><div><small>Today</small><span>' + (r.d && r.d[ti] === 'done' ? 'Done' : 'Still to do') + '</span></div><div><small>Open</small><span>' + (go ? '<a href="' + escT(go) + '">' + escT(go.replace(/^\//, '')) + '</a>' : '-') + '</span></div></div>'
         + (r.how ? '<div class="fxdesc">' + escT(r.how) + '</div>' : '')
         + '<div class="acts"><button class="pri" data-a="done">Done today</button>' + (go ? '<button data-a="go">Open</button>' : '') + '<button data-a="later">Later today</button><button data-a="close">Close</button></div>',
         function (box, close) {
@@ -308,7 +319,7 @@
       var tel = fmtTel(r.phone);
       var chosen = '';
       fxModal('<div class="k">' + escT(r.listName || 'Call list') + (r.ghl_stage ? ' · GoHighLevel ' + escT(r.ghl_stage) : '') + '</div><div class="tn ro">' + escT(r.name) + '</div>'
-        + '<div class="facts2"><div><small>Contact</small><span>' + escT(String(r.contact || '-').split(/\s*[|;]\s*/)[0]) + '</span></div><div><small>Phone</small><span>' + (tel ? '<a href="tel:' + escT(tel) + '">' + escT(r.phone) + '</a>' : '-') + '</span></div><div><small>Email</small><span>' + (r.email ? '<a href="mailto:' + escT(r.email) + '">' + escT(r.email) + '</a>' : '-') + '</span></div></div>'
+        + '<div class="facts2"><div><small>Reach by</small><span>' + (reachLink(r) || escT(r.channel || '-')) + '</span></div><div><small>Contact</small><span>' + escT(String(r.contact || '-').split(/\s*[|;]\s*/)[0]) + '</span></div><div><small>Phone</small><span>' + (tel ? '<a href="tel:' + escT(tel) + '">' + escT(r.phone) + '</a>' : '-') + '</span></div><div><small>Email</small><span>' + (r.email ? '<a href="mailto:' + escT(r.email) + '">' + escT(r.email) + '</a>' : '-') + '</span></div></div>'
         + (r.notes ? '<div class="fxdesc">' + escT(r.notes) + '</div>' : '')
         + '<div class="outs">' + OUTS.map(function (o) { return '<button type="button" data-o="' + escT(o) + '">' + escT(o) + '</button>'; }).join('') + '</div>'
         + '<textarea id="fxNote" placeholder="Call notes"></textarea>'

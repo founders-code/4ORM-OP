@@ -338,15 +338,17 @@ export async function setGrowthGhl(sql: Sql, ownerId: string, id: string, ghl: R
 export async function callsToday(sql: Sql, ownerId: string) {
   await ensureGrowth(sql);
   const today = vanToday();
-  const due = (await sql`SELECT id, list, name, contact, title, email, phone, city, prov, plan_day, next_date, status, stage, left(notes, 240) AS notes, last_touch, data->'ghl'->>'stage' AS ghl_stage FROM growth_records WHERE owner_id = ${ownerId} AND deleted_at IS NULL
+  const due = (await sql`SELECT id, list, name, contact, title, email, phone, city, prov, plan_day, next_date, status, stage, left(notes, 240) AS notes, last_touch, linkedin, data->'ghl'->>'stage' AS ghl_stage FROM growth_records WHERE owner_id = ${ownerId} AND deleted_at IS NULL
       AND next_date IS NOT NULL AND next_date <= ${today}::date ORDER BY next_date, rank LIMIT 60`) as Array<Record<string, unknown>>;
-  const planned = (await sql`SELECT id, list, name, contact, title, email, phone, city, prov, plan_day, next_date, status, stage, left(notes, 240) AS notes, last_touch, data->'ghl'->>'stage' AS ghl_stage FROM growth_records WHERE owner_id = ${ownerId} AND deleted_at IS NULL
+  const planned = (await sql`SELECT id, list, name, contact, title, email, phone, city, prov, plan_day, next_date, status, stage, left(notes, 240) AS notes, last_touch, linkedin, data->'ghl'->>'stage' AS ghl_stage FROM growth_records WHERE owner_id = ${ownerId} AND deleted_at IS NULL
       AND plan_day IS NOT NULL AND plan_day <= ${today}::date AND last_touch IS NULL
-      AND (next_date IS NULL OR next_date > ${today}::date) ORDER BY plan_day, list, rank LIMIT 120`) as Array<Record<string, unknown>>;
+      AND (next_date IS NULL OR next_date > ${today}::date)
+      ORDER BY array_position(ARRAY['design','clients','regulators','new_funds','firms_now','programs','prospects','channels','angels']::text[], list), plan_day, rank LIMIT 120`) as Array<Record<string, unknown>>;
   const done = (await sql`SELECT count(DISTINCT record_id)::int AS n FROM growth_touches WHERE owner_id = ${ownerId} AND deleted_at IS NULL
       AND (at AT TIME ZONE 'America/Vancouver')::date = ${today}::date`)[0] as { n?: number } | undefined;
   const name = Object.fromEntries(GROWTH_LISTS.map((l) => [l.key, l.name]));
-  const shape = (r: Record<string, unknown>) => ({ ...r, listName: name[String(r.list)] || String(r.list) });
+  const chan = Object.fromEntries(GROWTH_LISTS.map((l) => [l.key, l.channel]));
+  const shape = (r: Record<string, unknown>) => ({ ...r, listName: name[String(r.list)] || String(r.list), channel: chan[String(r.list)] || 'Call' });
   return { today, due: due.map(shape), planned: planned.map(shape), doneToday: Number(done?.n) || 0 };
 }
 
