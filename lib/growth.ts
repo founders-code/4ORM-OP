@@ -456,7 +456,8 @@ export async function growthFunnel(sql: Sql, ownerId: string) {
   const contactedByList = work.map((w) => ({ label: w.name, count: w.ids.filter((id) => touchedIds.has(id)).length })).filter((x) => x.count);
   const talked = [...talkedIds].filter((id) => byId.has(id));
   const booked = [...bookedIds].filter((id) => byId.has(id));
-  const planned = rows.filter((r) => r.plan_day && String(r.plan_day).slice(0, 10) <= today && !r.last_touch).length;
+  const dayOf = (v: unknown) => (v instanceof Date ? v.toISOString().slice(0, 10) : String(v || '').slice(0, 10));
+  const planned = rows.filter((r) => r.plan_day && dayOf(r.plan_day) <= today && !r.last_touch).length;
   return {
     today,
     total: rows.length,
