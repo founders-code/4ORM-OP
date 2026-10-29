@@ -246,27 +246,59 @@
     var mm = Math.floor(sp.left / 60), ss = sp.left % 60;
     var h = '<div class="wsp"><div class="wtop"><div class="wbox wclock"><span class="wlab">Time left</span><b class="wtime">' + mm + ':' + String(ss).padStart(2, '0') + '</b>'
       + '<button type="button" class="wstart" data-sp="' + (sp.run ? 'pause' : 'go') + '">' + (sp.run ? 'Pause' : (sp.left < 900 ? 'Resume' : 'Start the clock')) + '</button></div>'
-      + '<div class="wbox"><span class="wlab">List</span><select data-sp="lane">' + LANES.map(function (x) { return '<option value="' + x.key + '"' + (x.key === sp.lane ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select></div>'
+      + '<div class="wbox"><span class="wlab">Today</span><b>' + people().length + ' to work · ' + groups().length + ' lists</b></div>'
       + '<div class="wbox"><span class="wlab">Dialled</span><b>' + c.n + '</b></div><div class="wbox"><span class="wlab">Talked</span><b style="color:#00dc86">' + c.talk + '</b></div>'
       + '<div class="wbox"><span class="wlab">Voicemail</span><b style="color:#ffa946">' + c.vm + '</b></div><div class="wbox"><span class="wlab">No answer</span><b>' + c.na + '</b></div><div class="wbox"><span class="wlab">Booked</span><b style="color:#9771f9">' + c.book + '</b></div></div>';
-    h += '<div class="wspm"><div class="wnow">';
-    if (r) {
-      h += '<div class="wlab" style="color:' + l.c + '">Now · ' + (sp.i + 1) + ' of ' + sp.list.length + '</div><div class="wnm" data-who="' + esc(r.id) + '">' + esc(r.name) + '</div><div class="ws">' + esc([whoOf(r), r.city, r.industry].filter(Boolean).join(' · ')) + '</div>'
-        + (tel(r.phone) ? '<a class="wtel" href="tel:' + esc(tel(r.phone)) + '">' + esc(String(r.phone).split(/\s*[;/]\s*/)[0]) + '</a>' : (r.email ? '<a class="wtel sm" href="mailto:' + esc(r.email) + '">' + esc(r.email) + '</a>' : ''))
-        + (r.pain || r.pain_drivers ? '<div class="wl">' + painBar(r.pain) + esc(r.pain_drivers || '') + '</div>' : '')
-        + (r.why ? '<div class="wl">' + esc(r.why) + '</div>' : '')
-        + '<div class="wkeys">' + KEYS.map(function (k) { return '<button type="button" data-out="' + esc(k[1]) + '"><kbd>' + k[0] + '</kbd>' + esc(k[1] === 'Spoke' ? 'Talked (opens the card)' : k[1]) + '</button>'; }).join('') + '<button type="button" data-out="skip"><kbd>S</kbd>Skip</button><button type="button" data-who="' + esc(r.id) + '">Open the full card</button></div>';
-    } else {
-      h += '<div class="wnm">Sprint done</div><div class="wl">' + c.n + ' dialled · ' + c.talk + ' talked · ' + c.book + ' booked. Call-backs are in the follow-ups.</div><button type="button" class="wstart" data-sp="again">Another sprint</button>';
-    }
-    h += '</div><div class="wtiles">' + sp.list.map(function (x, k) {
-      var o = sp.res[x.id];
-      return '<div class="wtile' + (k === sp.i ? ' cur' : '') + (o ? ' done' : '') + '" data-tile="' + k + '"><b>' + esc(x.name) + '</b><span>' + esc(whoOf(x).split(' · ')[0] || x.city || '') + '</span><i>' + esc(o || (x.pain ? 'Pain ' + x.pain : '')) + '</i></div>';
-    }).join('') + '</div>'
-      + ((sp.rest || []).length ? '<div class="wnext"><div class="wlh"><b style="color:#aeb6c8">Up next · ' + sp.rest.length + ' more today</b><button type="button" class="wstart" data-sp="next15">Load the next ' + Math.min(15, sp.rest.length) + '</button></div>'
-        + sp.rest.map(function (x) { return '<div class="wcard" style="--c:#2a2c35" data-who="' + esc(x.id) + '"><div class="wn"><b>' + esc(x.name) + '</b>' + (x.pain ? '<span class="wpn">Pain ' + esc(x.pain) + '</span>' : '') + '</div><div class="ws">' + esc([whoOf(x), x.city].filter(Boolean).join(' · ')) + '</div></div>'; }).join('') + '</div>' : '')
-      + '</div></div>';
+    /* Today's work in categories (29 Oct 2026): every call, LinkedIn touch, email and form, grouped.
+       A box opens the full card; the card's Back and Next walk that category until it is done. */
+    var gs = groups();
+    h += '<div class="wcats">' + gs.map(function (g) {
+      var left = g.rows.filter(function (x) { return !isDone(x); });
+      return '<div class="wcat"><div class="wch"><i style="background:' + g.c + '"></i><b>' + esc(g.name) + '</b><span class="wchan">' + esc(g.ch) + '</span><span class="wct">' + g.rows.length + (g.rows.length - left.length ? ' · ' + (g.rows.length - left.length) + ' done' : '') + '</span>'
+        + (left.length ? '<button type="button" class="wopen" data-gopen="' + esc(g.key) + '">Open first</button>' : '') + '</div>'
+        + '<div class="wgrid">' + g.rows.map(function (x) {
+          var o = sp.res[x.id];
+          return '<div class="wtile' + (isDone(x) ? ' done' : '') + '" data-gq="' + esc(g.key) + '" data-gid="' + esc(x.id) + '"><b>' + esc(x.name) + '</b><span>' + esc(whoOf(x).split(' · ')[0] || x.city || '') + '</span><i>' + esc(o || (isDone(x) ? 'Done' : (x.pain ? 'Pain ' + x.pain : ''))) + '</i></div>';
+        }).join('') + '</div></div>';
+    }).join('') + (gs.length ? '' : '<div class="wm" style="padding:16px">Nothing planned for today.</div>') + '</div></div>';
     return h;
+  }
+  var GROUP_META = {
+    design: ['Design partners', '#00dc86'], clients: ['Mortgage prospects', '#3fc6ff'], angels: ['VCs and angels', '#9771f9'],
+    firms_now: ['Funds: reach now', '#ffa946'], new_funds: ['New funds', '#ff4d8d'], regulators: ['Regulators', '#a3b0d2'],
+    prospects: ['Prospects', '#3fc6ff'], channels: ['Distribution channels', '#4272f9'], programs: ['Grants and programs', '#ffd08a'], firms_later: ['Funds: later', '#ffa946']
+  };
+  var GROUP_ORDER = ['design', 'clients', 'angels', 'firms_now', 'new_funds', 'regulators'];
+  function groups() {
+    var by = {};
+    people().forEach(function (r) { var k = r.list || 'other'; (by[k] = by[k] || []).push(r); });
+    var keys = Object.keys(by).sort(function (a, b) {
+      var ia = GROUP_ORDER.indexOf(a), ib = GROUP_ORDER.indexOf(b);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+    });
+    return keys.map(function (k) {
+      var rows = by[k].sort(function (a, b) { var pa = Number(a.pain) || 0, pb = Number(b.pain) || 0; return pb !== pa ? pb - pa : (Number(b.score) || 0) - (Number(a.score) || 0); });
+      var m = GROUP_META[k] || [rows[0].listName || k, '#4272f9'];
+      var chans = {}; rows.forEach(function (r) { chans[r.channel || 'Email'] = 1; });
+      return { key: k, name: m[0], c: m[1], ch: Object.keys(chans).join(' · '), rows: rows };
+    });
+  }
+  function isDone(r) {
+    var sp = S.sprint || { res: {} };
+    if (sp.res[r.id]) return true;
+    return !!(r.last_touch && vanDay(Date.parse(r.last_touch)) === today());
+  }
+  function openGroup(key, id) {
+    var g = groups().filter(function (x) { return x.key === key; })[0];
+    if (!g || !window.openDossier) return;
+    var ids = g.rows.map(function (r) { return r.id; });
+    var names = {}; g.rows.forEach(function (r) { names[r.id] = r.name; });
+    var first = id || (g.rows.filter(function (r) { return !isDone(r); })[0] || g.rows[0]).id;
+    var row = g.rows.filter(function (r) { return r.id === first; })[0] || g.rows[0];
+    window.openDossier(first, { queue: ids, names: names, group: g.name, channel: row.channel, onSaved: function (rec, o) {
+      if (rec && o && o !== 'deleted' && S.sprint) S.sprint.res[rec.id] = o;
+      paint();
+    } });
   }
   function sprintTick() {
     var sp = S.sprint; if (!sp) return;
@@ -346,6 +378,8 @@
       var rm = t.closest('[data-rmore]'); if (rm) { R().more[rm.getAttribute('data-rmore')] = 1; paint(); return; }
       var rt = t.closest('[data-rtodo]'); if (rt && S.open.todo) { S.open.todo(rt.getAttribute('data-rtodo')); return; }
       var rp = t.closest('[data-rplay]'); if (rp && S.open.play) { var pr = runRows().filter(function (x) { return x.id === rp.getAttribute('data-rplay'); })[0]; if (pr) S.open.play(pr.p); return; }
+      var gq = t.closest('[data-gq]'); if (gq) { openGroup(gq.getAttribute('data-gq'), gq.getAttribute('data-gid')); return; }
+      var go1 = t.closest('[data-gopen]'); if (go1) { openGroup(go1.getAttribute('data-gopen')); return; }
       var tile = t.closest('[data-tile]'); if (tile && S.sprint) { S.sprint.i = +tile.getAttribute('data-tile'); paint(); return; }
       var st = t.closest('[data-start]'); if (st) { startQueue(st.getAttribute('data-start'), st.hasAttribute('data-from') ? +st.getAttribute('data-from') : null, +st.getAttribute('data-n') || 0); return; }
       var who = t.closest('[data-who]');
@@ -366,9 +400,7 @@
       if (S.mode !== 'sprint' || !S.host || S.host.hidden) return;
       if (document.getElementById('dsr') && document.getElementById('dsr').classList.contains('open')) return;
       var tg = e.target; if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.isContentEditable)) return;
-      var k = KEYS.filter(function (x) { return x[0] === e.key; })[0];
-      if (k) { e.preventDefault(); sprintLog(k[1]); }
-      else if (e.key === 's' || e.key === 'S') { e.preventDefault(); sprintLog('skip'); }
+      return;
     });
   };
   PBW.setMode = function (mode) {

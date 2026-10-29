@@ -5076,6 +5076,11 @@
     repaintMail();
     setTimeout(function () { focusComposeField(composeState().to.length ? '' : 'to'); }, 80);
   }
+  /* The contact card's Email button opens compose here, addressed. */
+  window.openComposeTo = function (email, name) {
+    if (typeof window.switchView === 'function') { try { window.switchView('mail'); } catch (e) {} }
+    openCompose({ to: email ? [{ email: String(email).trim().toLowerCase(), name: String(name || '').trim() }] : [] });
+  };
   function focusComposeField(field) {
     var root = mailRoot();
     if (!root) return;

@@ -30,6 +30,12 @@
     + '#dsr .d-now{font-size:12px;color:#c8d1ea;white-space:nowrap}#dsr .d-now b{color:#ffc98a}'
     + '#dsr .d-sl2{display:flex;flex-wrap:wrap;gap:6px}#dsr .d-sl2 button{font-size:11.5px;padding:5px 9px}#dsr .d-sl2 button.on{background:rgba(255,169,70,.18);border-color:#ffa946;color:#ffc98a}'
     + '#dsr .d-sl2 em{font-style:normal;font-size:10.5px;font-weight:800;margin-left:6px;color:#5ef0a8}#dsr .d-sendpk{margin-top:10px;width:100%;background:#00dc86!important;border-color:#00dc86!important;color:#03170d!important}'
+    + '#dsr .d-nav{display:flex;align-items:center;gap:10px;padding:10px 16px;background:#0c0d11;border-bottom:1px solid #23252e;border-radius:16px 16px 0 0}#dsr .d-nav .d-pos{font-weight:800;color:#c8d1ea;white-space:nowrap}#dsr .d-nav .d-pos b{color:#fff}'
+    + '#dsr .d-prog{flex:1;height:6px;border-radius:9px;background:#23252e;overflow:hidden}#dsr .d-prog i{display:block;height:100%;background:#00dc86;border-radius:9px}'
+    + '#dsr .d-nav button{border-radius:999px;padding:7px 14px}#dsr .d-nav button.nx{background:#4272f9;border-color:#4272f9;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+    + '#dsr .d-hl{color:#fff;font-weight:800;background:rgba(66,114,249,.24);border-radius:4px;padding:0 4px}#dsr .d-hg{color:#7ff0c2;font-weight:800}'
+    + '#dsr li{font-size:13px;line-height:1.5}#dsr .d-chips{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 6px}#dsr .d-chips span{padding:4px 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:rgba(255,72,102,.14);color:#ff8fa3}'
+    + '#dsr .d-pills{display:flex;flex-wrap:wrap;gap:6px}#dsr .d-pills button{border-radius:999px}#dsr .d-sl2 button.pick{background:rgba(66,114,249,.22);border-color:#4272f9;color:#fff}'
     + '@media(max-width:820px){#dsr .d-mid{grid-template-columns:1fr}#dsr .d-lft{border-right:0}}';
   var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
   var wrap = document.createElement('div'); wrap.id = 'dsr';
@@ -77,9 +83,30 @@
     });
     return r;
   }
+  /* Point form: long research text split into short bullets, filler labels dropped, key words highlighted. Nothing is cut. */
+  var HL = /(FINTRAC|BCFSA|FSRA|CIRO|OSFI|FCAC|BC MSA|MSA|AML|PIPA|suitability(?: rationale| record| evidence| assessment)?|(?:manual |file )?reconstruction|transaction record|evidence layer|evidence|pilot|design partner|trust accounts?|supervision|disclosures?|redacted [a-z]+ journey|workflow assessment|warm introduction|\$[\d.,]+\s?[KMB]?\+?|\d+(?:\.\d+)?%|\b\d+\/\d+\b|#\d+|\b(?:19|20)\d{2}(?:\s?[-\u2013]\s?(?:19|20)\d{2})?\b|Oct(?:ober)?\.? 13)/gi;
+  function hl(text) { return esc(text).replace(HL, '<span class="d-hl">$1</span>'); }
+  function points(v) {
+    var t = String(v == null ? '' : v).trim();
+    var label = '';
+    var m = t.match(/^(?:hypothesis \(not verified\)|unverified hypothesis)\s*:\s*(?:unverified hypothesis\s*:\s*)?/i);
+    if (m) { label = 'Unverified'; t = t.slice(m[0].length); }
+    t = t.replace(/^first-call judgement\s*:\s*/i, '');
+    return t.split(/;\s+|\.\s+(?=[A-Z0-9])/).map(function (x) { return x.replace(/[\s.;]+$/, '').trim(); }).filter(Boolean)
+      .map(function (x, i) { return [i === 0 ? label : '', x.charAt(0).toUpperCase() + x.slice(1)]; });
+  }
   function bullets(rows, withLabel) {
     if (!rows.length) return '';
-    return '<ul>' + rows.map(function (x) { return '<li>' + (withLabel && x[0] ? '<b>' + esc(x[0]) + ':</b> ' : '') + esc(x[1]) + '</li>'; }).join('') + '</ul>';
+    var li = [];
+    rows.forEach(function (x) {
+      var lab = withLabel ? String(x[0] || '') : '';
+      if (/driver/i.test(lab)) { li.push('<li style="list-style:none;margin-left:-16px"><div class="d-chips">' + String(x[1]).split(/\s*,\s*/).filter(Boolean).map(function (d) { return '<span>' + esc(d) + '</span>'; }).join('') + '</div></li>'); return; }
+      points(x[1]).forEach(function (pt, i) {
+        var l2 = i === 0 ? (lab || pt[0]) : pt[0];
+        li.push('<li>' + (l2 ? '<b' + (/next step|ask/i.test(l2) ? ' class="d-hg"' : '') + '>' + esc(l2) + ':</b> ' : '') + hl(pt[1]) + '</li>');
+      });
+    });
+    return '<ul>' + li.join('') + '</ul>';
   }
   function sec(title, body) { return body ? '<div class="d-sec"><div class="d-k">' + esc(title) + '</div>' + body + '</div>' : ''; }
   function tel(v) { return String(v || '').split(/\s*(?:;|\/|,|\bor\b)\s*/)[0].replace(/[^\d+]/g, ''); }
@@ -146,7 +173,15 @@
     var q = opts && opts.queue ? opts.queue : null, qi = q ? q.indexOf(rec.id) : -1;
     var chipCls = ch === 'Call' ? 'c' : ch === 'LinkedIn' ? 'l' : 'e';
 
-    var h = '<div class="d-bx"><div class="d-top"><div><span class="d-chip ' + chipCls + '">' + esc(ch === 'LinkedIn' ? 'LinkedIn in GoHighLevel' : ch) + (q ? ' · ' + (qi + 1) + ' of ' + q.length : '') + '</span>'
+    var nav = '';
+    if (q && q.length > 1) {
+      var nextName = opts.names && q[qi + 1] ? opts.names[q[qi + 1]] : '';
+      nav = '<div class="d-nav"><button type="button" data-a="prev"' + (qi > 0 ? '' : ' disabled style="opacity:.4"') + '>Back</button><span class="d-pos"><b>' + (qi + 1) + ' of ' + q.length + '</b>' + (opts.group ? ' · ' + esc(opts.group) : '') + '</span>'
+        + '<span class="d-prog"><i style="width:' + Math.round((qi + 1) / q.length * 100) + '%"></i></span>'
+        + (qi < q.length - 1 ? '<button type="button" class="nx" data-a="skip">Next' + (nextName ? ': ' + esc(nextName) : '') + '</button>' : '<button type="button" disabled style="opacity:.5">Last one</button>')
+        + '<button type="button" data-a="close">Close</button></div>';
+    }
+    var h = '<div class="d-bx">' + nav + '<div class="d-top"><div><span class="d-chip ' + chipCls + '">' + esc(ch === 'LinkedIn' ? 'LinkedIn in GoHighLevel' : ch) + (q ? ' · ' + (qi + 1) + ' of ' + q.length : '') + '</span>'
       + '<span class="d-chip">' + esc(meta[0]) + '</span>' + (rec.priority ? '<span class="d-chip">' + esc(rec.priority) + (rec.score ? ' · score ' + esc(rec.score) : '') + '</span>' : '')
       + '<span class="d-stg"><button type="button" class="d-stgb" data-a="stages">Stages: ' + esc(ghl || stage) + '</button></span></div>'
       + '<span class="d-q">' + (rec.last_touch ? 'Last touch ' + esc(new Date(rec.last_touch).toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' })) : 'Never touched') + '</span></div>'
@@ -163,18 +198,20 @@
       + sec('Questions to ask', bullets(questions, false))
       + sec('People', bullets(peopleRows, false))
       + sec('Intel', bullets(intel, true))
+      + sec(ch === 'Call' ? 'Log the call' : 'Outcome', '<div class="d-outs">' + (OUTS[ch] || OUTS.Email).map(function (o) { return '<button type="button" data-o="' + esc(o) + '">' + esc(o === 'Spoke' ? 'Talked' : o) + '</button>'; }).join('') + '</div>')
       + '</div><div class="d-rgt">'
       + '<div class="d-pipe" id="dsrPipe"><div class="d-k">Pipeline stage</div><div class="d-muted">Loading GoHighLevel…</div></div>'
-      + '<div class="d-k">Outcome</div><div class="d-outs">' + (OUTS[ch] || OUTS.Email).map(function (o) { return '<button type="button" data-o="' + esc(o) + '">' + esc(o) + '</button>'; }).join('') + '</div>'
       + '<div class="d-k" style="margin-top:10px">Notes</div><textarea id="dsrNote" placeholder="Type while you talk"></textarea>'
-      + '<div style="display:flex;gap:10px;align-items:center;margin-top:8px"><span class="d-k" style="margin:0">Follow up</span><input type="date" id="dsrFu"></div>'
+      + sec('Next touch', '<div class="d-pills" data-nt>' + [['Today', 0], ['Tomorrow', 1], ['This week', 3], ['Next week', 7]].map(function (x) { return '<button type="button" data-days="' + x[1] + '">' + x[0] + '</button>'; }).join('') + '<input type="date" id="dsrFu" style="margin-left:4px"></div>')
+      + sec('Open', '<div class="d-pills">' + (rec.email ? '<button type="button" data-a="email">Email</button>' : '') + (li ? '<button type="button" data-a="li">LinkedIn</button>' : '') + '<button type="button" data-a="space">Space</button>'
+        + (rec.data && rec.data.contactId ? '<button type="button" disabled style="opacity:.6">In Contacts</button>' : '<button type="button" data-a="addc">Add to Contacts</button>') + '</div>')
       + (rec.notes ? sec('Earlier notes', '<div class="d-muted" style="white-space:pre-wrap">' + esc(String(rec.notes).slice(0, 1600)) + '</div>') : '')
       + sec('History', touches.length ? '<div class="d-hist">' + touches.slice(0, 8).map(function (t) {
         return '<div><small>' + esc(new Date(t.at).toLocaleString('en-CA', { timeZone: 'America/Vancouver', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })) + ' · ' + esc(t.channel || '') + '</small>' + esc([t.outcome, t.note].filter(Boolean).join(' · ')) + '</div>';
       }).join('') + '</div>' : '<div class="d-muted">No touches yet.</div>')
       + '</div></div>'
-      + '<div class="d-acts">' + (q && qi > 0 ? '<button data-a="prev">Previous</button>' : '') + (q && qi < q.length - 1 ? '<button data-a="skip">Skip</button>' : '')
-      + '<button data-a="del" style="margin-right:auto;color:#ff8a98;border-color:rgba(255,72,102,.45)">Delete</button>' + (rec.data && rec.data.contactId ? '<span class="d-muted" style="align-self:center;font-size:12px">In Contacts</span>' : '<button data-a="addc">Add to Contacts</button>') + '<button data-a="lists">Open in Lists</button><button data-a="close">Close</button><button class="pri" data-a="save">' + (q && qi < q.length - 1 ? 'Save and next' : 'Save') + '</button></div></div>';
+      + '<div class="d-acts">'
+      + '<button data-a="del" style="margin-right:auto;color:#ff8a98;border-color:rgba(255,72,102,.45)">Delete</button><button data-a="lists">Open in Lists</button><button data-a="close">Close</button><button class="pri" data-a="save">' + (q && qi < q.length - 1 ? 'Save and next' : 'Save') + '</button></div></div>';
     return h;
   }
 
@@ -231,7 +268,7 @@
     };
     /* Pipeline stage, on every card: where they sit in GoHighLevel, every stage of that pipeline, which stages carry a package.
        Moving onto a package stage asks first and shows exactly what goes out; the current stage's package can be sent again. */
-    var PK = {};
+    var PK = {}, picked = '';
     function paintPipe() {
       if (!pbox) return;
       Promise.all([
@@ -251,34 +288,48 @@
             + '<div class="d-prow"><select data-pp>' + pipes.map(function (x) { return '<option value="' + esc(x.id) + '"' + (x.id === pipe.id ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select>'
             + '<span class="d-now">' + (cur ? 'Now: <b>' + esc(opp.stage || '') + '</b>' : (opp ? 'In ' + esc(opp.pipeline || 'another pipeline') + ' at ' + esc(opp.stage || '?') : 'Not in a pipeline yet')) + '</span></div>'
             + '<div class="d-sl2">' + (pipe.stages || []).map(function (st) {
-              return '<button type="button" data-sid="' + esc(st.id) + '" class="' + (cur === st.id ? 'on' : '') + '">' + esc(st.name) + (PK[st.id] ? '<em>package</em>' : '') + '</button>';
+              return '<button type="button" data-sid="' + esc(st.id) + '" class="' + (cur === st.id ? 'on' : '') + (picked === st.id ? ' pick' : '') + '">' + esc(st.name) + (PK[st.id] ? '<em>pack</em>' : '') + '</button>';
             }).join('') + '</div>'
-            + (curPk ? '<button type="button" class="d-sendpk" data-sendpk>Send the ' + esc(opp.stage || 'stage') + ' package</button>' : '')
-            + '<div class="d-muted" style="margin-top:6px;font-size:11.5px">Moves write straight to GoHighLevel. Stages marked package send their email after you confirm.</div>';
-          pbox.querySelector('[data-pp]').onchange = function () { draw(this.value); };
+            + '<button type="button" class="d-sendpk" data-sendpk>' + esc(moveLabel()) + '</button>'
+            + '<div class="d-muted" style="margin-top:6px;font-size:11.5px">Pick a stage, then move. Stages marked pack send their email after you confirm.</div>';
+          function moveLabel() {
+            var ps = picked && (pipe.stages || []).filter(function (x) { return x.id === picked; })[0];
+            if (ps) return 'Move to ' + ps.name + (PK[ps.id] ? ' and send pack' : '');
+            if (curPk) return 'Send the ' + (opp.stage || 'stage') + ' pack';
+            return 'Move and send pack';
+          }
+          pbox.querySelector('[data-pp]').onchange = function () { picked = ''; draw(this.value); };
           pbox.querySelectorAll('[data-sid]').forEach(function (b) {
             b.onclick = function () {
-              var st = (pipe.stages || []).filter(function (x) { return x.id === b.getAttribute('data-sid'); })[0];
-              if (cur === st.id) return;
-              var label = b.innerHTML; b.textContent = 'Checking…';
-              (window.stageGate ? window.stageGate(rec.id, st) : Promise.resolve({ send: false })).then(function (g8) {
-                if (!g8) { b.innerHTML = label; return; }
-                b.textContent = g8.send ? 'Moving and sending…' : 'Moving…';
-                return api('/api/growth', 'POST', { action: 'ghl-move', id: rec.id, pipelineId: pipe.id, stageId: st.id, stageName: st.name, opportunityId: opp && opp.pipelineId === pipe.id ? opp.id : (opp ? opp.id : ''), send: !!g8.send })
-                  .then(function (x) { return x.json().then(function (j) { if (!x.ok) throw new Error(j.error || 'GoHighLevel did not move it'); return j; }); })
-                  .then(function (j) {
-                    if (sb) sb.textContent = 'Stages: ' + st.name;
-                    var s8 = j && j.sent;
-                    toast('Moved in GoHighLevel: ' + st.name + (s8 ? (s8.ok ? '. Sent to ' + s8.to : '. Not sent: ' + (s8.note || 'GoHighLevel refused')) : ''));
-                    opp = { id: j.opportunityId || (opp && opp.id) || '', pipelineId: pipe.id, pipeline: pipe.name, stageId: st.id, stage: st.name };
-                    draw(pipe.id);
-                    if (opts.onSaved) opts.onSaved(rec, '');
-                  });
-              }).catch(function (err) { b.innerHTML = label; toast(String(err && err.message || 'Could not move it in GoHighLevel')); });
+              var sid = b.getAttribute('data-sid');
+              picked = (picked === sid || cur === sid) ? '' : sid;
+              draw(pipe.id);
             };
           });
+          function doMove(b) {
+            var st = (pipe.stages || []).filter(function (x) { return x.id === picked; })[0];
+            if (!st) return;
+            var label = b.textContent; b.textContent = 'Checking…';
+            (window.stageGate ? window.stageGate(rec.id, st) : Promise.resolve({ send: false })).then(function (g8) {
+              if (!g8) { b.textContent = label; return; }
+              b.textContent = g8.send ? 'Moving and sending…' : 'Moving…';
+              return api('/api/growth', 'POST', { action: 'ghl-move', id: rec.id, pipelineId: pipe.id, stageId: st.id, stageName: st.name, opportunityId: opp && opp.pipelineId === pipe.id ? opp.id : (opp ? opp.id : ''), send: !!g8.send })
+                .then(function (x) { return x.json().then(function (j) { if (!x.ok) throw new Error(j.error || 'GoHighLevel did not move it'); return j; }); })
+                .then(function (j) {
+                  if (sb) sb.textContent = 'Stages: ' + st.name;
+                  var s8 = j && j.sent;
+                  toast('Moved in GoHighLevel: ' + st.name + (s8 ? (s8.ok ? '. Sent to ' + s8.to : '. Not sent: ' + (s8.note || 'GoHighLevel refused')) : ''));
+                  opp = { id: j.opportunityId || (opp && opp.id) || '', pipelineId: pipe.id, pipeline: pipe.name, stageId: st.id, stage: st.name };
+                  picked = '';
+                  draw(pipe.id);
+                  if (opts.onSaved) opts.onSaved(rec, '');
+                });
+            }).catch(function (err) { b.textContent = label; toast(String(err && err.message || 'Could not move it in GoHighLevel')); });
+          }
           var spb = pbox.querySelector('[data-sendpk]');
           if (spb) spb.onclick = function () {
+            if (picked) { doMove(spb); return; }
+            if (!curPk) { toast('Pick a stage first'); return; }
             var st = { id: cur, name: opp.stage || '' };
             (window.stageGate ? window.stageGate(rec.id, st, { sendOnly: true }) : Promise.resolve(null)).then(function (g8) {
               if (!g8 || !g8.send) return;
@@ -286,13 +337,44 @@
               return api('/api/growth', 'POST', { action: 'send-package', id: rec.id, stageId: cur })
                 .then(function (x) { return x.json().then(function (j) { if (!x.ok) throw new Error(j.error || 'Not sent'); return j; }); })
                 .then(function (j) { toast('Sent to ' + (j.to || 'them') + ': ' + (j.subject || '')); spb.textContent = 'Sent'; if (opts.onSaved) opts.onSaved(rec, ''); });
-            }).catch(function (err) { spb.disabled = false; spb.textContent = 'Send the ' + (opp.stage || 'stage') + ' package'; toast(String(err && err.message || 'Not sent')); });
+            }).catch(function (err) { spb.disabled = false; spb.textContent = 'Send the ' + (opp.stage || 'stage') + ' pack'; toast(String(err && err.message || 'Not sent')); });
           };
         }
         draw(opp ? opp.pipelineId : (pipes[0] && pipes[0].id));
       }).catch(function () { pbox.innerHTML = '<div class="d-k">Pipeline stage</div><div class="d-muted">Could not reach GoHighLevel.</div>'; });
     }
     paintPipe();
+    wrap.querySelectorAll('[data-days]').forEach(function (b) {
+      b.onclick = function () {
+        var fu = wrap.querySelector('#dsrFu');
+        fu.value = new Date(Date.now() + Number(b.getAttribute('data-days')) * 86400000).toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' });
+        wrap.querySelectorAll('[data-days]').forEach(function (x) { x.classList.toggle('on', x === b); });
+      };
+    });
+    var em = wrap.querySelector('[data-a="email"]');
+    if (em) em.onclick = function () {
+      var person = String(rec.contact || '').split(/\s*\|\s*/)[0];
+      if (typeof window.openComposeTo === 'function') { close(); window.openComposeTo(rec.email, /@|^\+?\d/.test(person) ? rec.name : person); }
+      else location.href = 'mailto:' + encodeURIComponent(rec.email);
+    };
+    var lk = wrap.querySelector('[data-a="li"]');
+    if (lk) lk.onclick = function () { window.open(url(rec.linkedin), '_blank', 'noopener'); };
+    var spc = wrap.querySelector('[data-a="space"]');
+    if (spc) spc.onclick = function () {
+      spc.textContent = 'Finding…';
+      api('/api/spaces').then(function (r) { return r && r.ok ? r.json() : null; }).then(function (j) {
+        var nm = String(rec.name || '').toLowerCase();
+        var person = String(rec.contact || '').split(/\s*\|\s*/)[0].toLowerCase();
+        var hit = ((j && j.spaces) || []).filter(function (x) { var n = String(x.name || '').toLowerCase(); return n && (n === nm || n === person || (nm.length > 4 && n.indexOf(nm) >= 0)); })[0];
+        spc.textContent = 'Space';
+        if (!hit) { toast('No Space for ' + rec.name + ' yet'); return; }
+        close();
+        if (typeof window.switchView === 'function') window.switchView('work');
+        try { history.replaceState({}, '', '/spaces'); } catch (e) {}
+        var act = window.deskActions && window.deskActions['space-open'];
+        if (act) { var tag = document.createElement('span'); tag.setAttribute('data-id', hit.id); act(tag, document); }
+      }).catch(function () { spc.textContent = 'Space'; toast('Could not reach Spaces'); });
+    };
     wrap.querySelector('[data-a="del"]').onclick = function () {
       api('/api/growth', 'PATCH', { id: rec.id, deleted: true }).then(function (x) {
         if (!x || !x.ok) throw 0;

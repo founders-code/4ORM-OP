@@ -555,3 +555,15 @@ body.navshut .side{width:0;padding:0;border:0}
 .work .wrow.wscroll{grid-template-columns:none;grid-template-rows:repeat(2,auto);grid-auto-flow:column;grid-auto-columns:calc((100% - 12px) / 3);overflow-x:auto;padding-bottom:8px;scroll-snap-type:x proximity}
 .work .wrow.wscroll>*{scroll-snap-align:start;min-width:0}
 .work .wrow.wscroll::-webkit-scrollbar{height:8px}.work .wrow.wscroll::-webkit-scrollbar-thumb{background:#2a2c35;border-radius:4px}
+/* Sprint by category, 29 Oct 2026 */
+.work .wcats{display:grid;gap:12px}
+.work .wcat{background:#111216;border:1px solid #23252e;border-radius:14px;padding:12px 14px 14px}
+.work .wch{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.work .wch i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.work .wch b{font-size:14.5px;font-weight:900;color:#fff}
+.work .wchan{padding:2px 10px;border-radius:999px;font-size:11.5px;font-weight:800;background:#18191f;color:#c8d1ea}
+.work .wct{font-size:11.5px;font-weight:800;color:#aeb6c8}
+.work .wopen{margin-left:auto;font:inherit;font-size:12px;font-weight:800;padding:6px 14px;border-radius:999px;border:0;background:#4272f9;color:#fff;cursor:pointer}
+.work .wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.work .wgrid .wtile{min-height:66px}
+.work .wgrid .wtile:hover{border-color:#4272f9}
