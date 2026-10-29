@@ -319,3 +319,36 @@ td.reach .em{font-size:11.5px;color:#7fb0ff;font-weight:650;margin-top:3px;overf
 .lt2 td:nth-child(6){padding-left:6px!important;padding-right:4px!important;font-size:12px;white-space:nowrap}
 .lt2 th:nth-child(6){padding-left:6px!important}
 .lt2 .why{-webkit-line-clamp:3}
+/* ===== Funnel of lists (29 Oct 2026) ===== */
+.lfun{display:flex;flex-direction:column;gap:12px;margin:0 0 14px;color:#fff;font-family:Inter,-apple-system,system-ui,sans-serif}
+.lfun .fk{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.lfun .fk div{background:#111216;border:1px solid #23252e;border-radius:12px;padding:12px 14px;min-width:0}
+.lfun .fk b{display:block;font-size:24px;font-weight:850;font-variant-numeric:tabular-nums;color:#fff}
+.lfun .fk span{color:#aeb6c8;font-size:12px}
+.lfun .fk .warn{border-color:rgba(255,169,70,.5)}.lfun .fk .warn b{color:#ffa946}
+.lfun .fbar{background:#111216;border:1px solid #23252e;border-radius:12px;padding:12px 14px 8px}
+.lfun .fbar svg{display:block;width:100%;height:96px}
+.lfun .fbar small{display:block;color:#7d859a;font-size:11px;margin-top:2px}
+.lfun .fg{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.lfun .st{background:#111216;border:1px solid #23252e;border-radius:12px;padding:0 12px 12px;display:flex;flex-direction:column;min-width:0;cursor:pointer;text-align:left;font:inherit;color:inherit}
+.lfun .st:hover{background:#18191f}.lfun .st.on{border-color:#4272f9;box-shadow:0 0 0 1px #4272f9 inset}
+.lfun .st:focus-visible{outline:2px solid #ffa946;outline-offset:2px}
+.lfun .sh{display:flex;flex-direction:column;gap:2px;padding:10px 0;border-top:3px solid #3a3d48;border-bottom:1px solid #23252e;margin:0 -12px 8px;padding-left:12px;padding-right:12px;border-radius:12px 12px 0 0}
+.lfun .t-blue .sh{border-top-color:#4272f9}.lfun .t-amber .sh{border-top-color:#ffa946}.lfun .t-green .sh{border-top-color:#00dc86}
+.lfun .sn{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#7d859a}
+.lfun .sc{font-size:28px;font-weight:850;font-variant-numeric:tabular-nums;color:#fff}
+.lfun .ss{color:#aeb6c8;font-size:12px}
+.lfun .st ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;flex:1}
+.lfun .st li{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:#c8d1ea;border-radius:6px;padding:1px 4px;margin:0 -4px}
+.lfun .st li[data-pick]:hover{background:#20222a;color:#fff}
+.lfun .st li span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lfun .st li b{color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lfun .cv{margin-top:10px;font-size:12px;color:#aeb6c8;background:#18191f;border-radius:8px;padding:6px 8px}
+.lfun .leak{border-color:rgba(255,169,70,.55)}.lfun .leak .cv{color:#ffc98a;background:rgba(255,169,70,.1)}
+.lfun .act{display:flex;gap:10px;align-items:center;background:#111216;border:1px solid #23252e;border-radius:12px;padding:12px 14px;flex-wrap:wrap}
+.lfun .act div{flex:1;min-width:260px;color:#c8d1ea}.lfun .act b{color:#fff}
+.lfun .act button{font:700 12.5px Inter,system-ui,sans-serif;border-radius:9px;padding:9px 14px;border:1px solid #2a2c35;background:#18191f;color:#fff;cursor:pointer}
+.lfun .act button.pri{background:#4272f9;border-color:#4272f9}
+.lfun .fnote{color:#7d859a;font-size:12px}
+.lfun .fclear{font:700 12px Inter,system-ui,sans-serif;border-radius:8px;padding:5px 10px;border:1px solid #2a2c35;background:#18191f;color:#c8d1ea;cursor:pointer;margin-left:8px}
+@media (max-width:1100px){.lfun .fk,.lfun .fg{grid-template-columns:repeat(3,minmax(0,1fr))}}

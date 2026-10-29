@@ -273,9 +273,51 @@
     if (vq) vq.oninput = function (e) { q = String(e.target.value || '').toLowerCase(); render(); };
     var dc = $(root, '#dclose'); if (dc) dc.onclick = function () { closeDrawer(root); };
     var sc = $(root, '#scrim'); if (sc) sc.onclick = function () { closeDrawer(root); };
+    /* Locked: Register behind glass. The vault's shape shows (categories, counts, health flags, a safe audit log)
+       from /api/vault/summary, which never sends a document name, ID or content. The register opens with the code. */
+    function esc2(v) { return String(v == null ? '' : v).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function vanStamp(iso) {
+      var d = new Date(iso); if (isNaN(d.getTime())) return '';
+      var day = d.toLocaleDateString('en-CA', { timeZone: 'America/Vancouver', weekday: 'short', day: '2-digit', month: 'short' }).replace(/,/g, '');
+      var hm = d.toLocaleTimeString('en-GB', { timeZone: 'America/Vancouver', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+      return day + ' ' + hm;
+    }
     function paintGate(msg) {
       var host = $(root, '#pg-vault') || root;
-      host.innerHTML = '<div class="gate"><div class="gatebox" id="gbox"><b>Vault</b><small>Enter the four-digit code. Unlocking Financials does not open this page.</small><div class="pin" id="vpin"><i class="f"></i><i></i><i></i><i></i></div><small id="ver">' + (msg || '') + '</small></div></div>';
+      window.__vaultOpen = false;
+      host.innerHTML = '<div class="vg">'
+        + '<div class="vg-head" id="gbox"><div class="vg-t"><b>Vault</b><span class="vg-lock">Locked</span></div>'
+        + '<div class="vg-note">Structure and health are shown. Names and contents stay behind the code.</div>'
+        + '<div class="vg-pin" id="vpin" aria-label="Four-digit code"><i class="f"></i><i></i><i></i><i></i></div>'
+        + '<button type="button" class="vg-go" id="vgGo">Unlock</button></div>'
+        + '<div class="vg-msg" id="ver" role="status">' + esc2(msg || '') + '</div>'
+        + '<div class="vg-stats" id="vgStats"><div class="vg-st"><b>-</b><span>documents in the register</span></div><div class="vg-st"><b>-</b><span>drafts, not final</span></div><div class="vg-st"><b>-</b><span>due or set for rebuild</span></div><div class="vg-st"><b>-</b><span>not verified in 90 days</span></div></div>'
+        + '<div class="vg-cats" id="vgCats"><div class="vg-empty">Loading the register shape…</div></div>'
+        + '<div class="vg-low"><div class="vg-box"><h4>Audit log, safe view</h4><div id="vgAudit" class="vg-audit"><div class="vg-dim">Loading…</div></div></div>'
+        + '<div class="vg-box"><h4>How the lock works</h4><p>Four-digit code, <b>separate from Financials</b>. Type the digits on your keyboard; the vault opens at the fourth. It stays open on this browser until you close it. Three wrong codes in 30 seconds start a <b>30-second wait</b>. Every unlock, lock and wrong code is written to the log on the left.</p></div></div>'
+        + '</div>';
+      api('/api/vault/summary').then(function (r) { return r && r.ok ? r.json() : null; }).then(function (s) {
+        var cats = $(host, '#vgCats'), st = $(host, '#vgStats'), au = $(host, '#vgAudit');
+        if (!s || s.total == null) {
+          if (cats) cats.innerHTML = '<div class="vg-empty">The register shape is not available right now. The code still opens the vault.</div>';
+          if (au) au.innerHTML = '<div class="vg-dim">No log available.</div>';
+          return;
+        }
+        var f = s.flags || {};
+        if (st) st.innerHTML = [[s.total, 'documents in the register', ''], [f.drafts, 'drafts, not final', f.drafts ? 'amb' : ''], [f.due, 'due or set for rebuild', f.due ? 'amb' : ''], [f.stale, 'not verified in 90 days', f.stale ? 'amb' : '']]
+          .map(function (x) { return '<div class="vg-st ' + x[2] + '"><b>' + esc2(x[0] == null ? '-' : x[0]) + '</b><span>' + esc2(x[1]) + '</span></div>'; }).join('');
+        if (cats) cats.innerHTML = (s.categories || []).length ? s.categories.map(function (c) {
+          var chips = Object.keys(c.statuses || {}).sort(function (a, b) { return c.statuses[b] - c.statuses[a]; }).map(function (k) {
+            var warn = /draft|due|rebuild|scheduled/i.test(k);
+            return '<span class="vg-chip' + (warn ? ' amb' : '') + '">' + esc2(c.statuses[k]) + ' ' + esc2(k.toLowerCase()) + '</span>';
+          }).join('');
+          var lines = ''; for (var i = 0; i < Math.min(3, c.n); i++) lines += '<i style="width:' + [78, 62, 70][i] + '%"></i>';
+          return '<div class="vg-cat"><div class="vg-ch"><b>' + esc2(c.kind) + '</b><span>' + esc2(c.n) + ' doc' + (c.n === 1 ? '' : 's') + '</span></div><div class="vg-chips">' + chips + '</div><div class="vg-glass" aria-hidden="true">' + lines + '</div><div class="vg-un">Unlock to read</div></div>';
+        }).join('') : '<div class="vg-empty">No documents in the register yet.</div>';
+        if (au) au.innerHTML = (s.audit || []).length ? s.audit.map(function (e) { return '<div><span>' + esc2(vanStamp(e.at)) + '</span>' + esc2(e.what) + '</div>'; }).join('') : '<div class="vg-dim">Nothing logged yet. Unlocks, locks and wrong codes will show here.</div>';
+      }).catch(function () {
+        var cats = $(host, '#vgCats'); if (cats) cats.innerHTML = '<div class="vg-empty">The register shape is not available right now. The code still opens the vault.</div>';
+      });
       var digits = [];
       var fails = 0;
       var lockedUntil = 0;
@@ -284,10 +326,11 @@
         cells.forEach(function (c, i) {
           c.textContent = digits[i] ? '·' : '';
           c.classList.toggle('f', i === digits.length);
+          c.classList.toggle('on', !!digits[i]);
         });
       }
       function submit() {
-        if (Date.now() < lockedUntil) return;
+        if (Date.now() < lockedUntil) { shake('Wait 30 seconds'); return; }
         api('/api/vault', { method: 'POST', body: JSON.stringify({ code: digits.join('') }), headers: { 'content-type': 'application/json' } }).then(function (r) {
           if (r && r.status === 429) { fails = 3; lockedUntil = Date.now() + 30000; shake('Wait 30 seconds'); return null; }
           if (!r || !r.ok) { fails += 1; if (fails >= 3) lockedUntil = Date.now() + 30000; shake(fails >= 3 ? 'Wait 30 seconds' : 'That code did not match.'); return null; }
@@ -305,15 +348,21 @@
         digits = [];
         draw();
       }
-      document.addEventListener('keydown', function onKey(e) {
+      var go = $(host, '#vgGo');
+      if (go) go.onclick = function () { if (digits.length === 4) submit(); else { var er = $(host, '#ver'); if (er) er.textContent = 'Type the four digits on your keyboard.'; } };
+      if (window.__vaultGateKey) document.removeEventListener('keydown', window.__vaultGateKey);
+      window.__vaultGateKey = function onKey(e) {
         if (!(window.STATE && window.STATE.desk === 'vault')) return;
+        if (window.__vaultOpen) return;
         if (e.key === 'Backspace') { digits.pop(); draw(); return; }
+        if (e.key === 'Enter' && digits.length === 4) { submit(); return; }
         if (/^\d$/.test(e.key)) {
           if (digits.length < 4) digits.push(e.key);
           draw();
           if (digits.length === 4) submit();
         }
-      });
+      };
+      document.addEventListener('keydown', window.__vaultGateKey);
       draw();
     }
     api('/api/vault').then(function (r) {

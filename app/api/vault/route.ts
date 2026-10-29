@@ -4,6 +4,7 @@ import { financeCodeOk, VAULT_COOKIE, vaultUnlockValue, vaultUnlocked } from '@/
 import { fail } from '@/lib/log';
 import { takeRateLimit } from '@/lib/rate-limit';
 import { openBoard, sessionOwner } from '@/lib/session';
+import { logVault } from '@/lib/vault-audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,18 +54,22 @@ export async function POST(req: Request) {
     if ('error' in gate) return gate.error;
     const body = ((await req.json().catch(() => null)) || {}) as Record<string, unknown>;
     if (body.lock === true) {
+      await logVault(gate.session.sql, gate.ownerId, 'Vault locked');
       const res = NextResponse.json({ locked: true });
       res.cookies.set(VAULT_COOKIE, '', { ...COOKIE_OPTIONS, maxAge: 0 });
       return res;
     }
     if (gate.session.sql && !(await takeRateLimit(gate.session.sql, 'vault-unlock', gate.session.userId, 3, 30))) {
+      await logVault(gate.session.sql, gate.ownerId, 'Three wrong codes, 30-second wait started');
       return NextResponse.json({ locked: true, error: 'Too many tries. Wait 30 seconds.' }, { status: 429 });
     }
     if (!(await financeCodeOk(gate.session.sql, gate.ownerId, body.code))) {
+      await logVault(gate.session.sql, gate.ownerId, 'Wrong code entered');
       return NextResponse.json({ locked: true, error: 'That code did not match.' }, { status: 403 });
     }
     const value = vaultUnlockValue(gate.session.userId);
     if (!value) return NextResponse.json({ error: 'Vault unlock is not configured.' }, { status: 503 });
+    await logVault(gate.session.sql, gate.ownerId, 'Vault unlocked');
     const res = NextResponse.json({ locked: false });
     res.cookies.set(VAULT_COOKIE, value, COOKIE_OPTIONS);
     return res;

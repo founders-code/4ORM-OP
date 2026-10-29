@@ -403,3 +403,70 @@ export async function callsToday(sql: Sql, ownerId: string) {
 }
 
 export { vanToday, addWeekdays };
+
+/* Lists funnel (29 Oct 2026): the whole outreach system as one funnel, from every record to booked meetings.
+   Masters, fit scored, work lists, contacted, talked, booked. Every step carries the record ids behind it, so the page can open them. */
+const TALKED = /^(spoke|interested|connected|replied|call back|meeting booked|not interested|feedback)$/i;
+const BOOKED = /meeting booked/i;
+export async function growthFunnel(sql: Sql, ownerId: string) {
+  await ensureGrowth(sql);
+  const rows = await listGrowth(sql, ownerId, null);
+  const today = vanToday();
+  const touches = (await sql`SELECT DISTINCT ON (record_id, outcome) record_id, outcome, at FROM growth_touches
+    WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY record_id, outcome, at DESC`) as Array<{ record_id: string; outcome: string; at: string }>;
+  const talkedIds = new Set<string>();
+  const bookedIds = new Set<string>();
+  const touchedIds = new Set<string>();
+  const lastTalk = new Map<string, string>();
+  for (const t of touches) {
+    touchedIds.add(String(t.record_id));
+    if (TALKED.test(String(t.outcome || '').trim())) { talkedIds.add(String(t.record_id)); lastTalk.set(String(t.record_id), String(t.outcome)); }
+    if (BOOKED.test(String(t.outcome || ''))) bookedIds.add(String(t.record_id));
+  }
+  for (const r of rows) {
+    const st = String(r.stage || '');
+    if (r.last_touch) touchedIds.add(String(r.id));
+    if (BOOKED.test(st) || BOOKED.test(String(r.ghl_stage || ''))) { bookedIds.add(String(r.id)); talkedIds.add(String(r.id)); }
+  }
+  const masters = GROWTH_VIEWS.filter((v) => v.master).map((v) => ({ key: v.key, name: v.name.replace(/^Master:\s*/, ''), count: v.pick(rows).length }));
+  const work = GROWTH_VIEWS.filter((v) => !v.master).map((v) => {
+    const picked = v.pick(rows);
+    return { key: v.key, name: v.name.replace(': ', ' '), count: picked.length, ids: picked.map((r) => String(r.id)) };
+  });
+  const workIds = new Set<string>(work.flatMap((w) => w.ids));
+  const scored = rows.filter((r) => r.pain != null && r.pain !== '' || (Array.isArray(r.ifit) && (r.ifit as unknown[]).length) || (r.ifit && !Array.isArray(r.ifit) && String(r.ifit) !== 'null'));
+  const fitText = (r: Record<string, unknown>) => (Array.isArray(r.ifit) ? (r.ifit as string[]).join(' | ') : String(r.ifit || '')).toLowerCase();
+  const revenue = new Set(['design', 'clients', 'prospects', 'channels']);
+  const fitRows = [
+    { label: 'Pain 80+ (revenue)', ids: scored.filter((r) => revenue.has(String(r.list)) && Number(r.pain) >= 80).map((r) => String(r.id)) },
+    { label: 'Can invest now', ids: scored.filter((r) => /can invest in us now: (yes|likely)/.test(fitText(r))).map((r) => String(r.id)) },
+    { label: 'Pre-revenue OK', ids: scored.filter((r) => /pre-revenue ok: (yes|likely)/.test(fitText(r))).map((r) => String(r.id)) },
+    { label: 'BC first', ids: scored.filter((r) => String(r.prov || '').toUpperCase() === 'BC').map((r) => String(r.id)) },
+    { label: 'Thesis match', ids: scored.filter((r) => !revenue.has(String(r.list)) && /fintech|financial|compliance|regtech|insur|wealth|lending|mortgage/.test(fitText(r))).map((r) => String(r.id)) },
+  ].map((f) => ({ label: f.label, count: f.ids.length, ids: f.ids }));
+  const byId = new Map(rows.map((r) => [String(r.id), r]));
+  const name = (id: string) => {
+    const r = byId.get(id);
+    if (!r) return id;
+    const person = String(r.contact || '').split(/\s*[|;,]\s*/)[0] || '';
+    return r.list === 'angels' ? String(r.name || '') : (person && !/@|^\+?\d|contact|leadership|executive/i.test(person) ? person + ', ' + String(r.name || '') : String(r.name || ''));
+  };
+  const workTouched = [...workIds].filter((id) => touchedIds.has(id));
+  const untouched = [...workIds].filter((id) => !touchedIds.has(id));
+  const contactedByList = work.map((w) => ({ label: w.name, count: w.ids.filter((id) => touchedIds.has(id)).length })).filter((x) => x.count);
+  const talked = [...talkedIds].filter((id) => byId.has(id));
+  const booked = [...bookedIds].filter((id) => byId.has(id));
+  const planned = rows.filter((r) => r.plan_day && String(r.plan_day).slice(0, 10) <= today && !r.last_touch).length;
+  return {
+    today,
+    total: rows.length,
+    masters,
+    scored: { count: scored.length, ids: scored.map((r) => String(r.id)), rows: fitRows },
+    work: { count: workIds.size, lists: work.map((w) => ({ key: w.key, name: w.name, count: w.count })), ids: [...workIds] },
+    contacted: { count: workTouched.length, ids: workTouched, rows: contactedByList, all: touchedIds.size },
+    talked: { count: talked.length, ids: talked, rows: talked.slice(0, 6).map((id) => ({ label: name(id), note: lastTalk.get(id) || '' })) },
+    booked: { count: booked.length, ids: booked, rows: booked.slice(0, 6).map((id) => ({ label: name(id) })) },
+    untouched: { count: untouched.length, ids: untouched },
+    planned,
+  };
+}

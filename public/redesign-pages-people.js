@@ -32,7 +32,7 @@
     + '.pbox textarea{min-height:150px;resize:vertical}.pbox .er{color:var(--red);font-size:12.5px;font-weight:700;min-height:16px}'
     + '.pbox .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}'
     + '.btn[disabled]{opacity:.55;cursor:default}';
-  var CSS = { contacts: '/port-css/contacts.css?v=4', finance: '/port-css/financials.css?v=5', outreach: '/port-css/outreach-lists.css?v=19', neon: '/port-css/neon.css?v=2', contrastP10: '/port-css/contrast-p10.css?v=6' };
+  var CSS = { contacts: '/port-css/contacts.css?v=4', finance: '/port-css/financials.css?v=5', outreach: '/port-css/outreach-lists.css?v=20', neon: '/port-css/neon.css?v=2', contrastP10: '/port-css/contrast-p10.css?v=6' };
   var cssText = {};
   var NA = 'Fills in from the master finance sheet once it\'s connected';
   var COLD_DAYS = 21;
@@ -372,7 +372,7 @@
       S().__listsPaint = listsToken;
       var mode = S().peopleTab === 'lists' ? 'lists' : 'contacts';
       /* The list frame is cached after the first load so switching Contacts and Lists never flashes blank. */
-      var snip = window.__listsSnippet ? Promise.resolve(window.__listsSnippet) : fetch('/lists-snippet.html?v=16').then(function (r) { return r.ok ? r.text() : ''; });
+      var snip = window.__listsSnippet ? Promise.resolve(window.__listsSnippet) : fetch('/lists-snippet.html?v=17').then(function (r) { return r.ok ? r.text() : ''; });
       snip.then(function (html) {
         if (html) window.__listsSnippet = html;
         if (S().__listsPaint !== listsToken) return;

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
 import {
-  addTouch, callsToday, finishUpload, replanDays, growthRecord, setGrowthGhl, importGrowth, growthSummary, listGrowth, outreachLog, patchGrowth, planDays, saveUploadPart, undoTouch, vanToday,
+  addTouch, callsToday, growthFunnel, finishUpload, replanDays, growthRecord, setGrowthGhl, importGrowth, growthSummary, listGrowth, outreachLog, patchGrowth, planDays, saveUploadPart, undoTouch, vanToday,
 } from '@/lib/growth';
 import { openBoard, sessionEmail, sessionOwner, type BoardSession } from '@/lib/session';
 import { createOpportunityAt, ensureGhlContact, ghlPlaceFor, moveOpportunityStage } from '@/lib/ghl';
@@ -56,6 +56,7 @@ export async function GET(req: Request) {
       if (!rec) return NextResponse.json({ error: 'Not found' }, { status: 404 });
       return NextResponse.json(await ghlPlace(g, rec as Record<string, unknown>));
     }
+    if (u.searchParams.get('funnel')) return NextResponse.json(await growthFunnel(g.sql, g.ownerId));
     if (u.searchParams.get('calls')) return NextResponse.json(await callsToday(g.sql, g.ownerId));
     if (u.searchParams.get('log')) return NextResponse.json({ log: await outreachLog(g.sql, g.ownerId, Number(u.searchParams.get('days')) || 60) });
     if (u.searchParams.get('summary')) return NextResponse.json(await growthSummary(g.sql, g.ownerId));

@@ -812,10 +812,121 @@
       });
     }
 
+    /* ===== Funnel of lists (29 Oct 2026): the outreach system as one funnel on top of the table. ===== */
+    function fmtN(n) { return Number(n || 0).toLocaleString('en-CA'); }
+    function pct(a, b) { return b ? Math.round(a / b * 100) : 0; }
+    function peopleById() {
+      var map = {};
+      (state.lists || []).forEach(function (l) {
+        (l.people || []).forEach(function (p) { if (p.growth && p.contactId && !map[p.contactId]) map[p.contactId] = p; });
+      });
+      return map;
+    }
+    /* Show the people behind a funnel number in the table below. */
+    function showIds(label, ids) {
+      var map = peopleById();
+      var people = [];
+      (ids || []).forEach(function (id) { if (map[id]) people.push(map[id]); });
+      state.cur = { key: 'funnel:' + label, name: label, people: people, count: people.length, virtual: true, ids: (ids || []).slice() };
+      state.cap = 150;
+      state.filt = 'all';
+      var fb = $('#lfilt'); if (fb) fb.querySelectorAll('button[data-f]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-f') === 'all'); });
+      render();
+      var tb = root.querySelector('.tbl'); if (tb && tb.scrollIntoView) tb.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    function showList(key) {
+      var l = (state.lists || []).find(function (x) { return x.key === key; });
+      if (!l) return;
+      state.cur = l; state.cap = 150; render();
+      var tb = root.querySelector('.tbl'); if (tb && tb.scrollIntoView) tb.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    function paintFunnel() {
+      var box = $('#lfunnel');
+      if (!box) return;
+      box.hidden = state.mode !== 'lists';
+      var F = state.funnel;
+      if (state.mode !== 'lists') return;
+      if (!F) { box.innerHTML = '<div class="fnote">Loading the funnel…</div>'; return; }
+      var steps = [F.total, F.scored.count, F.work.count, F.contacted.count, F.talked.count, F.booked.count];
+      var cols = ['#3a3d48', '#3a3d48', '#4272f9', '#ffa946', '#3a3d48', '#00dc86'];
+      var maxLog = Math.log10(Math.max(10, F.total + 1));
+      var w = 1120, seg = w / 6, bw = seg - 12;
+      var svg = steps.map(function (n, i) {
+        var h = Math.max(6, Math.round(Math.log10(n + 1) / maxLog * 90));
+        var y = Math.round((102 - h) / 2);
+        return '<rect x="' + Math.round(i * seg) + '" y="' + y + '" width="' + Math.round(bw) + '" height="' + h + '" rx="6" fill="' + cols[i] + '"/>'
+          + (i < 5 ? '<rect x="' + Math.round(i * seg + bw) + '" y="47" width="12" height="8" fill="#23252e"/>' : '');
+      }).join('');
+      var leakPct = pct(F.contacted.count, F.work.count);
+      var perDay = Math.max(1, F.planned || 35);
+      var days = Math.ceil(F.untouched.count / perDay);
+      function li(label, val, pick) { return '<li' + (pick ? ' data-pick="' + esc(pick) + '"' : '') + '><span>' + esc(label) + '</span><b>' + esc(val) + '</b></li>'; }
+      var curKey = state.cur && state.cur.key;
+      function col(id, cls, name, count, sub, list, cv) {
+        return '<button type="button" class="st ' + cls + (curKey === 'funnel:' + name ? ' on' : '') + '" data-col="' + id + '"><div class="sh"><span class="sn">' + esc(name) + '</span><span class="sc">' + fmtN(count) + '</span><span class="ss">' + esc(sub) + '</span></div><ul>' + list + '</ul>' + (cv ? '<div class="cv">' + esc(cv) + '</div>' : '') + '</button>';
+      }
+      box.innerHTML = '<div class="fk">'
+        + '<div><b>' + fmtN(F.total) + '</b><span>records in</span></div>'
+        + '<div><b>' + fmtN(F.work.count) + '</b><span>on work lists</span></div>'
+        + '<div><b>' + fmtN(F.contacted.all) + '</b><span>touched</span></div>'
+        + '<div class="' + (leakPct < 25 ? 'warn' : '') + '"><b>' + leakPct + '%</b><span>touched of work lists</span></div>'
+        + '<div><b>' + fmtN(F.booked.count) + '</b><span>booked</span></div>'
+        + '<div><b>' + fmtN(F.planned) + '</b><span>calls planned today</span></div></div>'
+        + '<div class="fbar"><svg viewBox="0 0 1120 102" preserveAspectRatio="none" aria-hidden="true">' + svg + '</svg><small>Bar height on a log scale so ' + fmtN(F.total) + ' and ' + fmtN(F.booked.count) + ' fit on one line. Click any column to see the people behind it.</small></div>'
+        + '<div class="fg">'
+        + col('masters', 't-grey', 'Masters', F.total, 'records across ' + F.masters.length + ' master lists', F.masters.slice().sort(function (a, b) { return b.count - a.count; }).map(function (m) { return li(m.name.charAt(0).toUpperCase() + m.name.slice(1), fmtN(m.count), 'list:' + m.key); }).join(''), '')
+        + col('scored', 't-grey', 'Fit scored', F.scored.count, 'scored from the summarised intel', F.scored.rows.map(function (r, i) { return li(r.label, fmtN(r.count), 'fit:' + i); }).join(''), pct(F.scored.count, F.total) + '% of masters scored')
+        + col('work', 't-blue', 'Work lists', F.work.count, 'chunks you call now', F.work.lists.map(function (w) { return li(w.name, fmtN(w.count), 'list:' + w.key); }).join(''), pct(F.work.count, F.scored.count || F.total) + '% of scored')
+        + col('contacted', 't-amber' + (leakPct < 25 ? ' leak' : ''), 'Contacted', F.contacted.count, 'at least one touch logged', F.contacted.rows.map(function (r) { return li(r.label, fmtN(r.count)); }).join('') || '<li><span>No touches yet</span><b></b></li>', leakPct + '% of work lists.' + (leakPct < 25 ? ' The leak is here.' : ''))
+        + col('talked', 't-grey', 'Talked', F.talked.count, 'a real conversation', F.talked.rows.map(function (r) { return li(r.label, r.note); }).join('') || '<li><span>None logged yet</span><b></b></li>', pct(F.talked.count, F.contacted.all) + '% of contacted')
+        + col('booked', 't-green', 'Booked', F.booked.count, 'meeting booked', F.booked.rows.map(function (r) { return li(r.label, ''); }).join('') || '<li><span>None yet</span><b></b></li>', pct(F.booked.count, F.talked.count) + '% of talked')
+        + '</div>'
+        + '<div class="act"><div><b>Biggest leak: work lists to contacted.</b> ' + fmtN(F.untouched.count) + ' people sit on work lists with no touch. At ' + perDay + ' calls a day that clears in ' + days + ' working day' + (days === 1 ? '' : 's') + '.'
+        + (state.cur && state.cur.virtual ? '<button type="button" class="fclear" data-fx="clear">Back to ' + esc((pickCur(state.lists) || {}).name || 'the list') + '</button>' : '') + '</div>'
+        + '<button type="button" class="pri" data-fx="queue">Open the ' + fmtN(F.untouched.count) + ' as a call queue</button><button type="button" data-fx="untouched">Show who has not been touched</button></div>';
+      box.querySelectorAll('li[data-pick]').forEach(function (el) {
+        el.onclick = function (e) {
+          e.stopPropagation();
+          var v = el.getAttribute('data-pick');
+          if (v.indexOf('list:') === 0) { showList(v.slice(5)); return; }
+          if (v.indexOf('fit:') === 0) { var r = F.scored.rows[Number(v.slice(4))]; if (r) showIds(r.label, r.ids); }
+        };
+      });
+      box.querySelectorAll('[data-col]').forEach(function (el) {
+        el.onclick = function () {
+          var c = el.getAttribute('data-col');
+          if (c === 'masters') { showList((F.masters[0] || {}).key); return; }
+          if (c === 'scored') { showIds('Fit scored', F.scored.ids); return; }
+          if (c === 'work') { showIds('Work lists', F.work.ids); return; }
+          if (c === 'contacted') { showIds('Contacted', F.contacted.ids); return; }
+          if (c === 'talked') { showIds('Talked', F.talked.ids); return; }
+          if (c === 'booked') { showIds('Booked', F.booked.ids); return; }
+        };
+      });
+      box.querySelectorAll('[data-fx]').forEach(function (el) {
+        el.onclick = function () {
+          var x = el.getAttribute('data-fx');
+          if (x === 'untouched') { showIds('Not touched yet', F.untouched.ids); return; }
+          if (x === 'clear') { state.cur = pickCur(state.lists); render(); return; }
+          if (x === 'queue') {
+            var ids = F.untouched.ids || [];
+            if (!ids.length) { toast('Everyone on the work lists has a touch.'); return; }
+            if (window.openDossier) window.openDossier(ids[0], { queue: ids.slice(), channel: 'Call', onSaved: function () { load(); } });
+          }
+        };
+      });
+    }
+    function loadFunnel() {
+      if (state.mode !== 'lists') return;
+      api('/api/growth?funnel=1').then(function (r) {
+        if (r && r.ok && r.data && r.data.masters) { state.funnel = r.data; paintFunnel(); }
+      }).catch(function () {});
+    }
+
     function render() {
       if (state.mode === 'contacts') state.cur = contactsAsList();
       else if (!state.cur && state.lists.length) state.cur = pickCur(state.lists);
-      if (state.mode === 'lists' && state.cur && state.cur.key) KEEP.cur = state.cur.key;
+      if (state.mode === 'lists' && state.cur && state.cur.key && !state.cur.virtual) KEEP.cur = state.cur.key;
       KEEP.role = state.role; KEEP.filt = state.filt; KEEP.q = state.q;
       renderNav();
       var name = $('#lname');
@@ -833,6 +944,7 @@
         if (prog) prog.style.width = (people.length ? (moved / people.length * 100) : 0) + '%';
       }
       renderBody();
+      paintFunnel();
     }
 
     function mapContactRow(c, spaces) {
@@ -940,11 +1052,17 @@
         state.loading = false;
         render();
       }
+      loadFunnel();
       return api('/api/reach-out?lists=1').then(function (r) {
         var lists = (r.data && r.data.lists) || [];
         state.lists = lists;
         state.loading = false;
-        state.cur = pickCur(lists);
+        if (!(state.cur && state.cur.virtual)) state.cur = pickCur(lists);
+        else {
+          var vmap = peopleById();
+          state.cur.people = (state.cur.ids || []).map(function (id) { return vmap[id]; }).filter(Boolean);
+          state.cur.count = state.cur.people.length;
+        }
         if (window.STATE) window.STATE.peopleLists = lists;
         render();
         return lists;

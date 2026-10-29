@@ -62,11 +62,11 @@
     completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=5',
     neon: '/port-css/neon.css?v=2', playbookP8: '/port-css/playbook-p8.css?v=24', plannerNeon: '/port-css/planner-neon.css?v=16',
     calendarNeon: '/port-css/calendar-neon.css?v=14', completedNeon: '/port-css/completed-neon.css?v=8',
-    intNeon: '/port-css/integrations-neon.css?v=6',     vaultOps: '/port-css/vault-ops.css?v=13',
+    intNeon: '/port-css/integrations-neon.css?v=6',     vaultOps: '/port-css/vault-ops.css?v=14',
     sheetViewer: '/port-css/sheet-viewer.css?v=5', notesCanvasP8: '/port-css/notes-canvas-p8.css?v=4',
-    outreach: '/port-css/outreach-lists.css?v=17',
-    vault: '/port-css/vault-ops.css?v=13',
-    ops: '/port-css/vault-ops.css?v=13',
+    outreach: '/port-css/outreach-lists.css?v=18',
+    vault: '/port-css/vault-ops.css?v=14',
+    ops: '/port-css/vault-ops.css?v=14',
     contrastP10: '/port-css/contrast-p10.css?v=6'
   };
   var HOSTS = {
