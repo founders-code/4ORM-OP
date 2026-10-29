@@ -27,6 +27,8 @@ export function zoomConfigured() {
 }
 
 let cached: { token: string; until: number } | null = null;
+/** Last reason Zoom gave for refusing a token (status and Zoom's own words, never the keys). */
+export let zoomTokenError = '';
 
 async function zoomToken() {
   if (cached && cached.until > Date.now() + 60_000) return cached.token;
@@ -38,7 +40,12 @@ async function zoomToken() {
     headers: { authorization: `Basic ${Buffer.from(`${id}:${secret}`).toString('base64')}` },
     signal: AbortSignal.timeout(8000),
   }).catch(() => null);
-  if (!res?.ok) return '';
+  if (!res?.ok) {
+    const why = res ? ((await res.json().catch(() => null)) as { reason?: string; error?: string } | null) : null;
+    zoomTokenError = res ? `${res.status} ${why?.reason || why?.error || ''}`.trim() : 'no response';
+    return '';
+  }
+  zoomTokenError = '';
   const json = (await res.json().catch(() => null)) as { access_token?: string; expires_in?: number } | null;
   if (!json?.access_token) return '';
   cached = { token: json.access_token, until: Date.now() + (json.expires_in || 3000) * 1000 };
@@ -289,16 +296,16 @@ async function saveNote(sql: Sql, ownerId: string, note: Note) {
   return rows[0]?.inserted ? ('added' as const) : ('filled' as const);
 }
 
-export type ZoomSyncResult = { added: number; filled: number; seen: number; zoom: 'connected' | 'not_connected' | 'unavailable' };
+export type ZoomSyncResult = { added: number; filled: number; seen: number; zoom: 'connected' | 'not_connected' | 'unavailable'; reason?: string };
 
 /** Pull every recent Zoom recording, transcript, and summary not yet on the desk. */
 export async function syncZoomApi(sql: Sql, ownerId: string, known: Set<string>): Promise<ZoomSyncResult> {
   const result: ZoomSyncResult = { added: 0, filled: 0, seen: 0, zoom: 'not_connected' };
   if (!zoomConfigured()) return result;
   const token = await zoomToken();
-  if (!token) return { ...result, zoom: 'unavailable' };
+  if (!token) return { ...result, zoom: 'unavailable', reason: `token: ${zoomTokenError}` };
   const meetings = await listMeetings(token);
-  if (!meetings) return { ...result, zoom: 'unavailable' };
+  if (!meetings) return { ...result, zoom: 'unavailable', reason: 'recordings list refused' };
   result.zoom = 'connected';
   result.seen = meetings.length;
   const me = await zget<{ display_name?: string; first_name?: string; last_name?: string }>(token, `/users/${zoomUser()}`);

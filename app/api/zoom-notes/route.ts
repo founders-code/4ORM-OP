@@ -60,6 +60,7 @@ export async function POST() {
       filled: api.filled,
       seen: api.seen,
       zoom: api.zoom,
+      reason: 'reason' in api ? api.reason || '' : '',
       gmail: mails ? 'connected' : 'unavailable',
       notes,
     });
