@@ -694,3 +694,6 @@ body.th-neon .main{color:#eef2fc}
 .drw .dst.go{background:rgba(77,124,255,.16)!important;color:#9db9ff!important}
 .drw .dgm{color:#f5c542!important}
 .drw.dgl{background:#1b1d24!important;box-shadow:inset 3px 0 0 #f5c542}
+/* 29 Oct: milestone names sit above the diamond and stay readable */
+.gspan .glab{z-index:3;background:rgba(7,8,11,.6);padding:1px 7px;border-radius:6px}
+.gspan .gdia{z-index:2}
