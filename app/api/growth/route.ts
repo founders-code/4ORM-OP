@@ -7,6 +7,7 @@ import { openBoard, sessionEmail, sessionOwner, type BoardSession } from '@/lib/
 import { createOpportunityAt, ensureGhlContact, ghlPlaceFor, moveOpportunityStage } from '@/lib/ghl';
 import { withCreds } from '@/lib/creds';
 import { loadCredsFor } from '@/lib/vault';
+import { sendStagePackage } from '@/lib/stage-packages';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -137,7 +138,18 @@ export async function POST(req: Request) {
       const fixed = { id: oppId, name: hit?.name || String(rec.name || ''), pipelineId, pipeline: pipe?.name || '', stageId, stage: stage?.name || stageName, status: hit?.status || 'open' };
       place.opps = [fixed, ...place.opps.filter((o) => o.id !== oppId)];
       await setGrowthGhl(g.sql, g.ownerId, String(rec.id), { contactId: place.contactId, opportunityId: oppId, pipeline: fixed.pipeline, stage: fixed.stage, checked: new Date().toISOString() });
-      return NextResponse.json({ ok: true, opportunityId: oppId, place });
+      /* Chad confirmed the stage package on screen; only then does it go out. */
+      let sent: Record<string, unknown> | null = null;
+      if (body.send === true) {
+        const out = await withCreds(creds, () => sendStagePackage(g.sql, g.ownerId, rec, stageId, { contactId: place.contactId }));
+        sent = out;
+        if (out.ok) {
+          const days = Number((out as { followDays?: number }).followDays) || 0;
+          const next = days ? new Date(Date.now() + days * 86400000).toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' }) : '';
+          await addTouch(g.sql, g.ownerId, String(rec.id), { channel: 'Email', outcome: 'Sent', note: `Stage package sent (${fixed.stage}): ${String((out as { subject?: string }).subject || '')}`, next_date: next, status: String(rec.status || 'Contacted') });
+        }
+      }
+      return NextResponse.json({ ok: true, opportunityId: oppId, place, sent });
     }
     if (body.action === 'undo-touch') {
       await undoTouch(g.sql, g.ownerId, Number(body.touchId) || 0);

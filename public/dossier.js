@@ -238,11 +238,19 @@
           pop.querySelectorAll('[data-sid]').forEach(function (b) {
             b.onclick = function () {
               var st = (pipe.stages || []).filter(function (x) { return x.id === b.getAttribute('data-sid'); })[0];
-              b.textContent = 'Moving…';
-              api('/api/growth', 'POST', { action: 'ghl-move', id: rec.id, pipelineId: pipe.id, stageId: st.id, stageName: st.name, opportunityId: opp ? opp.id : '' })
-                .then(function (x) { return x.json().then(function (j) { if (!x.ok) throw new Error(j.error || 'GoHighLevel did not move it'); return j; }); })
-                .then(function () { sb.textContent = 'Stages: ' + st.name; pop.remove(); toast('Moved in GoHighLevel: ' + st.name); if (opts.onSaved) opts.onSaved(rec, ''); })
-                .catch(function (err) { b.textContent = st.name; toast(String(err && err.message || 'Could not move it in GoHighLevel')); });
+              b.textContent = 'Checking…';
+              (window.stageGate ? window.stageGate(rec.id, st) : Promise.resolve({ send: false })).then(function (g8) {
+                if (!g8) { b.textContent = st.name; return; }
+                b.textContent = g8.send ? 'Moving and sending…' : 'Moving…';
+                return api('/api/growth', 'POST', { action: 'ghl-move', id: rec.id, pipelineId: pipe.id, stageId: st.id, stageName: st.name, opportunityId: opp ? opp.id : '', send: !!g8.send })
+                  .then(function (x) { return x.json().then(function (j) { if (!x.ok) throw new Error(j.error || 'GoHighLevel did not move it'); return j; }); })
+                  .then(function (j) {
+                    sb.textContent = 'Stages: ' + st.name; pop.remove();
+                    var s8 = j && j.sent;
+                    toast('Moved in GoHighLevel: ' + st.name + (s8 ? (s8.ok ? '. Sent to ' + s8.to : '. Not sent: ' + (s8.note || 'GoHighLevel refused')) : ''));
+                    if (opts.onSaved) opts.onSaved(rec, '');
+                  });
+              }).catch(function (err) { b.textContent = st.name; toast(String(err && err.message || 'Could not move it in GoHighLevel')); });
             };
           });
         }

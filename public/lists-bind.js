@@ -572,12 +572,17 @@
           if (opp && opp.stageId === b.getAttribute('data-st')) return;
           var name = b.textContent;
           box.querySelectorAll('button[data-st]').forEach(function (x) { x.disabled = true; });
-          b.textContent = name + ' · saving';
-          api('/api/growth', { method: 'POST', body: { action: 'ghl-move', id: p.contactId, opportunityId: opp ? opp.id : '', pipelineId: pipe.id, stageId: b.getAttribute('data-st'), stageName: name } }).then(function (r) {
-            if (!r.ok) { toast((r.data && r.data.error) || 'GoHighLevel did not take that stage'); paintGhl(p); return; }
-            p.ghlStage = name; p.ghlPipeline = pipe.name;
-            toast((opp ? 'Moved to ' : 'Added to GoHighLevel at ') + name);
-            paintGhlPlace(p, r.data.place); paintHistory(p); renderBody();
+          b.textContent = name + ' · checking';
+          (window.stageGate ? window.stageGate(p.contactId, { id: b.getAttribute('data-st'), name: name }) : Promise.resolve({ send: false })).then(function (g8) {
+            if (!g8) { b.textContent = name; box.querySelectorAll('button[data-st]').forEach(function (x) { x.disabled = false; }); return; }
+            b.textContent = name + (g8.send ? ' · moving and sending' : ' · saving');
+            api('/api/growth', { method: 'POST', body: { action: 'ghl-move', id: p.contactId, opportunityId: opp ? opp.id : '', pipelineId: pipe.id, stageId: b.getAttribute('data-st'), stageName: name, send: !!g8.send } }).then(function (r) {
+              if (!r.ok) { toast((r.data && r.data.error) || 'GoHighLevel did not take that stage'); paintGhl(p); return; }
+              p.ghlStage = name; p.ghlPipeline = pipe.name;
+              var s8 = r.data && r.data.sent;
+              toast((opp ? 'Moved to ' : 'Added to GoHighLevel at ') + name + (s8 ? (s8.ok ? '. Sent to ' + s8.to : '. Not sent: ' + (s8.note || 'GoHighLevel refused')) : ''));
+              paintGhlPlace(p, r.data.place); paintHistory(p); renderBody();
+            });
           });
         };
       });
