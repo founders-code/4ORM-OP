@@ -562,8 +562,12 @@ export async function enrichGrowth(sql: Sql, ownerId: string, id: string, raw: R
 /** Compact export for research: the checkable statements on each record, no personal notes. */
 export async function enrichExport(sql: Sql, ownerId: string, lists: string[], offset: number, limit: number) {
   await ensureGrowth(sql);
+  /* 'all' walks every list in working order: the lists Chad calls from first. */
+  const ORDER = ['design', 'clients', 'regulators', 'new_funds', 'channels', 'programs', 'prospects', 'firms_now', 'angels', 'index', 'firms_later'];
+  const all = lists.includes('all');
   const rows = await sql`SELECT id, list, name, contact, website, city, prov, linkedin, data FROM growth_records
-    WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND list = ANY(${lists}) ORDER BY list, rank, id OFFSET ${offset} LIMIT ${limit}`;
+    WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND (${all} OR list = ANY(${lists}))
+    ORDER BY COALESCE(array_position(${ORDER}::text[], list), 99), rank, id OFFSET ${offset} LIMIT ${limit}`;
   return (rows as Record<string, unknown>[]).map((r) => {
     const d = (r.data || {}) as Record<string, unknown>;
     const I = (d.intel || {}) as Record<string, unknown>;
