@@ -56,6 +56,13 @@
     if (r === 'dash') return 'dash';
     return 'dash';
   }
+  /* Playbook pills, 28 Oct 2026: five colours only, the same as the cadence bars (green, blue, violet, red, amber), cycled down the plays so neighbours differ. */
+  var PILL5 = ['#00dc86', '#4272f9', '#9771f9', '#ff4866', '#ffa946'];
+  function pillCol(rows, r) {
+    var plays = rows.filter(function (x) { return !x.s; });
+    var k = plays.indexOf(r);
+    return PILL5[(k < 0 ? 0 : k) % 5];
+  }
   function colorVar(c) {
     var s = String(c || '');
     if (s.indexOf('--') === 0) return s;
@@ -202,7 +209,7 @@
     if (wk && data.weekLabel) wk.textContent = data.weekLabel;
     var pct = gid('pct');
     if (pct && data.pct) pct.textContent = data.pct;
-    function colOf(r) { return r.c === '--white' ? '#ffffff' : 'var(' + r.c + ')'; }
+    function colOf(r) { return pillCol(rows, r); }
     var g = gid('g');
     function todayCol() { return (Number(todayIdx) || 0) + 2; /* col 1 = labels; days start at 2 */ }
     function render() {
@@ -424,7 +431,7 @@
       { name: 'November 2026', days: 30, start: 6, stat: 'upcoming', ms: { 3: ['Mktg drop', 'var(--green)'], 17: ['Mktg drop', 'var(--green)'], 30: ['Newsletter', 'var(--blue)'] } },
       { name: 'December 2026', days: 31, start: 1, stat: 'upcoming', ms: { 1: ['Mktg drop', 'var(--green)'], 15: ['Mktg drop', 'var(--green)'], 31: ['Q4 letter', 'var(--amber)'] } }
     ];
-    function colOf(r) { return r.c === '--white' ? '#ffffff' : 'var(' + r.c + ')'; }
+    function colOf(r) { return pillCol(rows, r); }
     function rnd(n) { return Math.abs(Math.sin(n * 12.9898) * 43758.5453) % 1; }
     var H = '';
     months.forEach(function (mo, mi) {
