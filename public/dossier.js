@@ -84,15 +84,25 @@
     return r;
   }
   /* Point form: long research text split into short bullets, filler labels dropped, key words highlighted. Nothing is cut. */
-  var HL = /(FINTRAC|BCFSA|FSRA|CIRO|OSFI|FCAC|BC MSA|MSA|AML|PIPA|suitability(?: rationale| record| evidence| assessment)?|(?:manual |file )?reconstruction|transaction record|evidence layer|evidence|pilot|design partner|trust accounts?|supervision|disclosures?|redacted [a-z]+ journey|workflow assessment|warm introduction|\$[\d.,]+\s?[KMB]?\+?|\d+(?:\.\d+)?%|\b\d+\/\d+\b|#\d+|\b(?:19|20)\d{2}(?:\s?[-\u2013]\s?(?:19|20)\d{2})?\b|Oct(?:ober)?\.? 13)/gi;
+  var HL = /(FINTRAC|BCFSA|FSRA|CIRO|OSFI|FCAC|BC MSA|\bMSA\b|PIPA|transaction record|evidence layer|(?:manual |file )?reconstruction|trust accounts?|design partner|pilot|redacted [a-z]+ journey|workflow assessment|warm introduction|\$[\d.,]+\s?[KMB]?\+?|\d+(?:\.\d+)?%|\b\d+\/\d+\b|(?<!&)#\d+)/gi;
   function hl(text) { return esc(text).replace(HL, '<span class="d-hl">$1</span>'); }
   function points(v) {
     var t = String(v == null ? '' : v).trim();
     var label = '';
     var m = t.match(/^(?:hypothesis \(not verified\)|unverified hypothesis)\s*:\s*(?:unverified hypothesis\s*:\s*)?/i);
     if (m) { label = 'Unverified'; t = t.slice(m[0].length); }
-    t = t.replace(/^first-call judgement\s*:\s*/i, '');
-    return t.split(/;\s+|\.\s+(?=[A-Z0-9])/).map(function (x) { return x.replace(/[\s.;]+$/, '').trim(); }).filter(Boolean)
+    t = t.replace(/^first-call judgement\s*:\s*/i, '')
+      .replace(/Oct;\s*13\s*B\.C;\s*MSA/g, 'Oct 13 B.C. MSA')
+      .replace(/existing relationship or local workflow access takes priority/gi, 'priority: existing relationship or local access')
+      .replace(/They appear to have enough operating structure to feel the pain but /gi, 'Big enough to feel the pain, but ')
+      .replace(/\bcurrently notes\b/gi, 'notes');
+    function tidy(x) {
+      return x.replace(/^Use the public signal as the reason for the call:\s*/i, 'Signal: ')
+        .replace(/^Connect (.+?) into one transaction record/i, 'One transaction record: $1')
+        .replace(/^Explore whether 4orm can add (.+?) without replacing existing ([a-z ]+?) tools/i, 'Add $1, keeping their $2 tools')
+        .replace(/^Workflow fit (\d)/i, 'Workflow $1');
+    }
+    return t.split(/;\s+|\.\s+(?=[A-Z0-9])/).map(function (x) { return tidy(x.replace(/[\s.;]+$/, '').trim()); }).filter(Boolean)
       .map(function (x, i) { return [i === 0 ? label : '', x.charAt(0).toUpperCase() + x.slice(1)]; });
   }
   function bullets(rows, withLabel) {
@@ -101,10 +111,18 @@
     rows.forEach(function (x) {
       var lab = withLabel ? String(x[0] || '') : '';
       if (/driver/i.test(lab)) { li.push('<li style="list-style:none;margin-left:-16px"><div class="d-chips">' + String(x[1]).split(/\s*,\s*/).filter(Boolean).map(function (d) { return '<span>' + esc(d) + '</span>'; }).join('') + '</div></li>'); return; }
-      points(x[1]).forEach(function (pt, i) {
+      var pts = points(x[1]), score = [];
+      function flush() { if (score.length) { li.push('<li><b>Fit:</b> ' + score.map(hl).join(' · ') + '</li>'); score = []; } }
+      pts.forEach(function (pt, i) {
+        var v = pt[1];
+        if (/^[A-Za-z][\w ]{0,28} \d+\/\d+(?: weighted \d+%)?$/.test(v)) { score.push(v.charAt(0).toLowerCase() + v.slice(1)); return; }
+        flush();
         var l2 = i === 0 ? (lab || pt[0]) : pt[0];
-        li.push('<li>' + (l2 ? '<b' + (/next step|ask/i.test(l2) ? ' class="d-hg"' : '') + '>' + esc(l2) + ':</b> ' : '') + hl(pt[1]) + '</li>');
+        var m2 = !l2 && v.match(/^([A-Z][\w /'-]{1,26}):\s+(.+)$/);
+        if (m2) { l2 = m2[1]; v = m2[2].charAt(0).toUpperCase() + m2[2].slice(1); }
+        li.push('<li>' + (l2 ? '<b' + (/next step|ask|signal/i.test(l2) ? ' class="d-hg"' : '') + '>' + esc(l2) + ':</b> ' : '') + hl(v) + '</li>');
       });
+      flush();
     });
     return '<ul>' + li.join('') + '</ul>';
   }
@@ -181,7 +199,7 @@
         + (qi < q.length - 1 ? '<button type="button" class="nx" data-a="skip">Next' + (nextName ? ': ' + esc(nextName) : '') + '</button>' : '<button type="button" disabled style="opacity:.5">Last one</button>')
         + '<button type="button" data-a="close">Close</button></div>';
     }
-    var h = '<div class="d-bx">' + nav + '<div class="d-top"><div><span class="d-chip ' + chipCls + '">' + esc(ch === 'LinkedIn' ? 'LinkedIn in GoHighLevel' : ch) + (q ? ' · ' + (qi + 1) + ' of ' + q.length : '') + '</span>'
+    var h = '<div class="d-bx">' + nav + '<div class="d-top"><div><span class="d-chip ' + chipCls + '">' + esc(ch === 'LinkedIn' ? 'LinkedIn in GoHighLevel' : ch) + '</span>'
       + '<span class="d-chip">' + esc(meta[0]) + '</span>' + (rec.priority ? '<span class="d-chip">' + esc(rec.priority) + (rec.score ? ' · score ' + esc(rec.score) : '') + '</span>' : '')
       + '<span class="d-stg"><button type="button" class="d-stgb" data-a="stages">Stages: ' + esc(ghl || stage) + '</button></span></div>'
       + '<span class="d-q">' + (rec.last_touch ? 'Last touch ' + esc(new Date(rec.last_touch).toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' })) : 'Never touched') + '</span></div>'
