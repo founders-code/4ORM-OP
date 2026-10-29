@@ -68,8 +68,8 @@
   /* ---------- A: Lanes ---------- */
   function paintLanes() {
     var evs = events();
-    var h = '<div class="wtop"><div class="wbox"><span class="wk">Today</span><b>' + esc(score()) + '</b></div>'
-      + '<div class="wbox wgrow"><span class="wk">Calendar</span>' + (evs.length ? evs.map(function (ev, k) { return '<a class="wev" data-ev="' + k + '">' + vanHM(ev.start) + ' ' + esc(ev.title || 'Event') + '</a>'; }).join('') : '<span class="wm">Nothing on the calendar today</span>') + '</div></div>';
+    var h = '<div class="wtop"><div class="wbox"><span class="wlab">Today</span><b>' + esc(score()) + '</b></div>'
+      + '<div class="wbox wgrow"><span class="wlab">Calendar</span>' + (evs.length ? evs.map(function (ev, k) { return '<a class="wev" data-ev="' + k + '">' + vanHM(ev.start) + ' ' + esc(ev.title || 'Event') + '</a>'; }).join('') : '<span class="wm">Nothing on the calendar today</span>') + '</div></div>';
     h += '<div class="wlanes">';
     LANES.forEach(function (l) {
       var rs = inLane(l);
@@ -127,9 +127,9 @@
         + (rs.length > 6 ? '<div class="wm">+ ' + (rs.length - 6) + ' more in this block</div>' : '')
         + (rs.length ? '<button type="button" class="wstart" data-start="' + l.key + '" data-from="' + from + '" data-n="' + rs.length + '">Start this block</button>' : '') + '</div></div>';
     });
-    h += '</div><div class="wside"><div class="wk">Score</div><div class="wbig">' + esc(score()) + '</div>'
-      + '<div class="wk" style="margin-top:12px">Plays</div>' + plays().map(function (r, k) { return '<div class="wcard" style="--c:#ffa946" data-play="' + k + '"><div class="wn"><b>' + esc(r.n) + '</b></div></div>'; }).join('')
-      + '<div class="wk" style="margin-top:12px">To-dos due</div>' + (todos().map(function (x) { return '<div class="wcard" style="--c:#ff4866" data-todo="' + esc(x.id) + '"><div class="wn"><b>' + esc(x.t) + '</b></div></div>'; }).join('') || '<div class="wm">None due.</div>')
+    h += '</div><div class="wside"><div class="wlab">Score</div><div class="wbig">' + esc(score()) + '</div>'
+      + '<div class="wlab" style="margin-top:12px">Plays</div>' + plays().map(function (r, k) { return '<div class="wcard" style="--c:#ffa946" data-play="' + k + '"><div class="wn"><b>' + esc(r.n) + '</b></div></div>'; }).join('')
+      + '<div class="wlab" style="margin-top:12px">To-dos due</div>' + (todos().map(function (x) { return '<div class="wcard" style="--c:#ff4866" data-todo="' + esc(x.id) + '"><div class="wn"><b>' + esc(x.t) + '</b></div></div>'; }).join('') || '<div class="wm">None due.</div>')
       + '</div></div>';
     return h;
   }
@@ -148,14 +148,14 @@
     var c = { n: 0, talk: 0, vm: 0, na: 0, book: 0 };
     Object.keys(sp.res).forEach(function (k) { var o = sp.res[k]; c.n++; if (o === 'Spoke') c.talk++; if (o === 'Left voicemail') c.vm++; if (o === 'No answer') c.na++; if (o === 'Meeting booked') c.book++; });
     var mm = Math.floor(sp.left / 60), ss = sp.left % 60;
-    var h = '<div class="wsp"><div class="wtop"><div class="wbox wclock"><span class="wk">Time left</span><b class="wtime">' + mm + ':' + String(ss).padStart(2, '0') + '</b>'
+    var h = '<div class="wsp"><div class="wtop"><div class="wbox wclock"><span class="wlab">Time left</span><b class="wtime">' + mm + ':' + String(ss).padStart(2, '0') + '</b>'
       + '<button type="button" class="wstart" data-sp="' + (sp.run ? 'pause' : 'go') + '">' + (sp.run ? 'Pause' : (sp.left < 900 ? 'Resume' : 'Start the clock')) + '</button></div>'
-      + '<div class="wbox"><span class="wk">List</span><select data-sp="lane">' + LANES.map(function (x) { return '<option value="' + x.key + '"' + (x.key === sp.lane ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select></div>'
-      + '<div class="wbox"><span class="wk">Dialled</span><b>' + c.n + '</b></div><div class="wbox"><span class="wk">Talked</span><b style="color:#00dc86">' + c.talk + '</b></div>'
-      + '<div class="wbox"><span class="wk">Voicemail</span><b style="color:#ffa946">' + c.vm + '</b></div><div class="wbox"><span class="wk">No answer</span><b>' + c.na + '</b></div><div class="wbox"><span class="wk">Booked</span><b style="color:#9771f9">' + c.book + '</b></div></div>';
+      + '<div class="wbox"><span class="wlab">List</span><select data-sp="lane">' + LANES.map(function (x) { return '<option value="' + x.key + '"' + (x.key === sp.lane ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select></div>'
+      + '<div class="wbox"><span class="wlab">Dialled</span><b>' + c.n + '</b></div><div class="wbox"><span class="wlab">Talked</span><b style="color:#00dc86">' + c.talk + '</b></div>'
+      + '<div class="wbox"><span class="wlab">Voicemail</span><b style="color:#ffa946">' + c.vm + '</b></div><div class="wbox"><span class="wlab">No answer</span><b>' + c.na + '</b></div><div class="wbox"><span class="wlab">Booked</span><b style="color:#9771f9">' + c.book + '</b></div></div>';
     h += '<div class="wspm"><div class="wnow">';
     if (r) {
-      h += '<div class="wk" style="color:' + l.c + '">Now · ' + (sp.i + 1) + ' of ' + sp.list.length + '</div><div class="wnm" data-who="' + esc(r.id) + '">' + esc(r.name) + '</div><div class="ws">' + esc([whoOf(r), r.city, r.industry].filter(Boolean).join(' · ')) + '</div>'
+      h += '<div class="wlab" style="color:' + l.c + '">Now · ' + (sp.i + 1) + ' of ' + sp.list.length + '</div><div class="wnm" data-who="' + esc(r.id) + '">' + esc(r.name) + '</div><div class="ws">' + esc([whoOf(r), r.city, r.industry].filter(Boolean).join(' · ')) + '</div>'
         + (tel(r.phone) ? '<a class="wtel" href="tel:' + esc(tel(r.phone)) + '">' + esc(String(r.phone).split(/\s*[;/]\s*/)[0]) + '</a>' : (r.email ? '<a class="wtel sm" href="mailto:' + esc(r.email) + '">' + esc(r.email) + '</a>' : ''))
         + (r.pain || r.pain_drivers ? '<div class="wl">' + painBar(r.pain) + esc(r.pain_drivers || '') + '</div>' : '')
         + (r.why ? '<div class="wl">' + esc(r.why) + '</div>' : '')
