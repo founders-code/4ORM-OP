@@ -51,7 +51,7 @@
     + '#dsr .d-ed{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 4px}#dsr .d-ed label{display:block;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7d859a}'
     + '#dsr .d-ed input{width:100%;background:#18191f;border:1px solid #2a2c35;border-radius:8px;color:#fff;font:inherit;font-size:13px;padding:7px 9px;margin-top:3px}#dsr .d-ed .w{grid-column:span 2}'
     + '#dsr .d-intel{display:grid;grid-template-columns:1fr;gap:4px}#dsr .d-intel div{display:grid;grid-template-columns:118px 1fr;gap:8px;font-size:12.5px;align-items:baseline}#dsr .d-intel i{font-style:normal;color:#7d859a;font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.06em}#dsr .d-intel span{color:#fff}#dsr .d-intel span.warn{color:#ff8fa3;font-weight:800}'
-    + '#dsr .d-prof{padding:12px 20px 14px;border-bottom:1px solid #23252e;background:#0f1014}'
+    + '#dsr .d-prof{padding:12px 14px;margin:12px 0 4px;border:1px solid #23252e;border-radius:14px;background:#0f1014}'
     + '#dsr .d-exs{display:flex;flex-wrap:wrap;gap:8px}#dsr .d-ex{display:flex;align-items:center;gap:8px;background:#18191f;border:1px solid #2a2c35;border-radius:12px;padding:7px 10px}'
     + '#dsr .d-ex i{font-style:normal;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#9db9ff}#dsr .d-ex b{font-size:13px;color:#fff}'
     + '#dsr a.d-li{color:#fff;background:#0a66c2;border-radius:999px;padding:3px 10px;font-weight:800;font-size:11px;text-decoration:none}'
@@ -274,13 +274,13 @@
       + '<span class="d-stg"><button type="button" class="d-stgb" data-a="stages">Stages: ' + esc(ghl || stage) + '</button></span>'
       + (ch === 'Call' ? '<button type="button" class="d-scb" data-a="script">Script</button>' : '') + '</div>'
       + '<span class="d-q">' + (rec.last_touch ? 'Last touch ' + esc(new Date(rec.last_touch).toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' })) : 'Never touched') + '</span></div>'
-      + profileBand(EN, url(rec.website))
       + '<div class="d-mid"><div class="d-lft">'
       + '<div id="dsrHead">'
       + '<div style="display:flex;align-items:center;gap:10px"><h2>' + esc(rec.name) + '</h2><button type="button" data-a="edit" style="padding:3px 12px;font-size:11px;border-radius:999px">Edit</button></div><div class="d-who">' + esc([person && person !== rec.name ? person : '', role, place, industry].filter(Boolean).join(' · ')) + '</div>'
       + (phone ? '<div class="d-tel"><a href="tel:' + esc(phone) + '">' + esc(String(rec.phone).split(/\s*[;/]\s*/)[0]) + '</a></div>' : '<div style="height:10px"></div>')
       + '<div class="d-links">' + (li ? '<a href="' + esc(li) + '" target="_blank" rel="noopener">LinkedIn</a>' : '') + (rec.email ? '<a href="mailto:' + esc(rec.email) + '">' + esc(rec.email) + '</a>' : '')
       + (form ? '<a href="' + esc(form) + '" target="_blank" rel="noopener">Contact form</a>' : '') + (web ? '<a href="' + esc(web) + '" target="_blank" rel="noopener">Website</a>' : '') + '</div></div>'
+      + profileBand(EN, url(rec.website))
       + sec("Why we're reaching out", bullets(why, true))
       + sec('Pain', (pain != null ? '<div style="margin-bottom:4px"><span class="d-pain">' + [1, 2, 3, 4, 5].map(function (i) { return '<i' + (pain >= i * 20 - 10 ? ' class="on"' : '') + '></i>'; }).join('') + '</span><b>' + esc(pain) + ' / 100</b></div>' : '') + bullets(painRows, true))
       + sec('Why they fit', bullets(fit, true))
