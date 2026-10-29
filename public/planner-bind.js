@@ -224,13 +224,13 @@ function renderBoard(){
   GL().forEach(g=>{h+=`<div class="gline" style="left:${x(g.e)+ppd/2-1}px"></div>`});
   if(TODAY>=START&&TODAY<=END)h+=`<div class="today" style="left:${x(TODAY)+ppd/2-1}px"></div>`;
   h+=`</div><svg class="links" id="links" style="left:${LW}px" width="${W}" height="10"></svg>`;
-  h+=hdrRow()+goalRow()+loadRow(vis)+msRow(vis);
+  h+=hdrRow()+loadRow(vis)+goalRow()+msRow(vis);
   vis.forEach(p=>{h+=laneRow(p);if(state.open.has(p.id))h+=trackRows(p)});
   if(!vis.length)h+=`<div class="row"><div class="lab"><span class="ltitle">Nothing shown</span></div><div class="trk empty" style="width:${W}px">Turn a pipeline on above.</div></div>`;
   h+=`<div style="height:18px"></div>`;
   canvas.style.setProperty('--lw',LW+'px');canvas.style.width=(LW+W)+'px';
   canvas.innerHTML=h;
-  requestAnimationFrame(()=>{drawLinks();if(pinned)applyFocus(pinned);if(typeof stickGoalLabels==='function')stickGoalLabels()});
+  requestAnimationFrame(()=>{drawLinks();if(pinned)applyFocus(pinned);if(typeof stickGoalLabels==='function')stickGoalLabels();applyWl()});
 }
 function hdrRow(){let t='';const vis0=Math.floor((scroller.scrollLeft||0)/ppd)+START-3,vis1=vis0+Math.ceil(trackW()/ppd)+6;
   if(ppd<4){months().forEach((m,k)=>{t+=`<div class="mo" style="left:${x(m.s)}px">${m.m%3===0?'Q'+(m.m/3+1)+' ':''}${MON[m.m]}${(k===0||m.m===0)?`<span>${m.y}</span>`:''}</div>`})}
@@ -250,16 +250,41 @@ function goalRow(){const gs=GL();const lv=[];let o='';
       +`<span class="glab" style="left:${xs-xp+8}px">${esc(lbl)}<small>${fmt(st)} to ${fmt(en)}${pct?' · '+pct+'%':''}</small></span></div>`});
   const red=gs.filter(risky).length;
   return `<div class="row goalrow master"><div class="lab"><span class="ltitle">Milestones</span><span class="lmeta">${gs.length} big goals${red?` &middot; <em>${red} at risk</em>`:''}</span></div><div class="trk" style="width:${W}px;height:${Math.max(56,16+lv.length*36)}px">${o}</div></div>`}
+/* Workload, first on the timeline: running items per week, stacked by pipeline. Click a colour to light that pipeline's items
+   (the ones running that week get an outline); click it again, or Clear, to show everything. */
+let WL=null;
 function loadRow(vis){
   const spans=WORK().filter(i=>i.kind==='span');let max=1,peak=null;const weeks=[];
   for(let w=START;w<=END;w+=7){const we=Math.min(w+6,END);const seg=vis.map(p=>({p,n:spans.filter(i=>i.p===p.id&&i.s<=we&&i.e>=w).length}));
     const tot=seg.reduce((a,b)=>a+b.n,0);if(tot>max)max=tot;if(!peak||tot>peak.tot)peak={w,tot};weeks.push({w,we,seg})}
-  const H=96,unit=Math.min(11,(H-8)/max);
-  let s=`<svg class="load" width="${W}" height="${H}" role="img" aria-label="Items running per week">`;
+  const H=150,unit=Math.min(14,(H-10)/max);
+  let s=`<svg class="load" width="${W}" height="${H}" role="img" aria-label="Items running per week, by pipeline">`;
   weeks.forEach(wk=>{let y=H-2;const bw=Math.max(2,(wk.we-wk.w+1)*ppd-3);
-    wk.seg.forEach(g=>{if(!g.n)return;const hh=g.n*unit;y-=hh;const rh=Math.max(hh-2.5,1.5);s+=`<rect x="${x(wk.w)+2}" y="${y.toFixed(1)}" width="${Math.max(bw-1,2)}" height="${rh.toFixed(1)}" rx="${Math.min(6,rh/2,bw/2).toFixed(1)}" style="fill:var(${g.p.c});fill-opacity:.92"><title>Week of ${fmt(wk.w)}: ${g.n} ${g.p.name}</title></rect>`})});
+    wk.seg.forEach(g=>{if(!g.n)return;const hh=g.n*unit;y-=hh;const rh=Math.max(hh-2.5,1.5);
+      const on=WL&&WL.p===g.p.id;const dim=WL&&!on;
+      s+=`<rect class="wlseg${on?' on':''}" data-wlp="${g.p.id}" data-wlw="${wk.w}" x="${x(wk.w)+2}" y="${y.toFixed(1)}" width="${Math.max(bw-1,2)}" height="${rh.toFixed(1)}" rx="${Math.min(6,rh/2,bw/2).toFixed(1)}" style="fill:var(${g.p.c});fill-opacity:${dim?.22:.92};cursor:pointer"><title>Week of ${fmt(wk.w)}: ${g.n} ${g.p.name} running. Click to show them.</title></rect>`})});
   s+='</svg>';
-  return `<div class="row master"><div class="lab"><span class="ltitle">Workload</span><span class="lmeta">${peak&&peak.tot?`peak ${peak.tot} running, week of ${fmt(peak.w)}`:'no running items'}</span></div><div class="trk" style="width:${W}px;padding-top:4px">${s}</div></div>`}
+  const P=WL&&pipe(WL.p);
+  const key=vis.map(p=>`<button type="button" class="wlkey${WL&&WL.p===p.id?' on':''}" data-wlp="${p.id}" style="--c:var(${p.c})"><i></i>${esc(p.name)}</button>`).join('');
+  return `<div class="row master loadrow"><div class="lab"><span class="ltitle">Workload</span><span class="lmeta">${peak&&peak.tot?`peak ${peak.tot} running, week of ${fmt(peak.w)}`:'no running items'}</span>`
+    +(P?`<span class="wlnow">Showing <b>${esc(P.name)}</b>${WL.w!=null?` · week of ${fmt(WL.w)}`:''} <button type="button" class="wlclr" data-wlclr="1">Clear</button></span>`:`<span class="lmeta">Click a colour to show its items</span>`)
+    +`<div class="wlkeys">${key}</div></div><div class="trk" style="width:${W}px;padding-top:6px">${s}</div></div>`}
+function applyWl(){
+  canvas.classList.toggle('wlon',!!WL);
+  canvas.querySelectorAll('[data-id]').forEach(el=>{const it=byId[el.dataset.id];el.classList.remove('wldim','wlhit');if(!WL||!it)return;
+    if(it.p!==WL.p){el.classList.add('wldim');return}
+    if(WL.w!=null&&it.s<=WL.w+6&&it.e>=WL.w)el.classList.add('wlhit')});
+  canvas.querySelectorAll('.row.lane,.row.trackrow').forEach(r=>{r.classList.toggle('wldimrow',!!WL&&r.dataset.pipe!==WL.p)});
+}
+canvas.addEventListener('click',e=>{
+  const clr=e.target.closest&&e.target.closest('[data-wlclr]');if(clr){WL=null;renderBoard();return}
+  const seg=e.target.closest&&e.target.closest('[data-wlp]');if(!seg)return;
+  const p=seg.getAttribute('data-wlp'),w=seg.hasAttribute('data-wlw')?Number(seg.getAttribute('data-wlw')):null;
+  if(WL&&WL.p===p&&WL.w===w){WL=null;renderBoard();return}
+  WL={p,w};if(!state.open.has(p)){state.open.add(p);save()}
+  renderBoard();
+  requestAnimationFrame(()=>{const lane=canvas.querySelector(`.row.lane[data-pipe="${p}"]`);const hit=canvas.querySelector('.wlhit')||lane;if(hit)hit.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'})});
+});
 function msRow(vis){
   const ms=WORK().filter(i=>i.kind==='ms'&&!state.hidden.has(i.p)).sort((a,b)=>a.s-b.s);const lv=[];let o='';
   ms.forEach(i=>{const x0=x(i.s)+ppd/2-6;const L=pack(lv,x0,x0+18+tw(i.n)+40,8);
