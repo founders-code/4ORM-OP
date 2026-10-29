@@ -43,7 +43,7 @@ nav.side .nav{
 }
 nav.side .grp{font-size:13.5px!important;font-weight:850!important;color:#5b8cff!important;padding:16px 12px 6px!important;margin-top:6px;border-top:1px solid rgba(255,255,255,.08);letter-spacing:-.01em}
 nav.side .grp:first-child{border-top:none;margin-top:0;padding-top:4px!important}
-nav.side .nav.on{background:rgba(46,107,242,.22)!important;color:#fff!important}
+nav.side .nav.on{background:#20222a!important;color:#fff!important}
 nav.side .nav .nl{font:inherit;color:inherit}
 html.fixture-mockup .arr-row,body.fixture-mockup .arr-row{display:none!important}
 html.fixture-mockup #todayPop,html.fixture-mockup .mic,html.fixture-mockup .heard,

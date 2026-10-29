@@ -18,7 +18,7 @@ button{font:inherit;cursor:pointer}
 .side .sec:first-child{margin-top:0}
 .side .it{display:flex;align-items:center;height:34px;padding:0 12px;border-radius:8px;color:#cfd8ee;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;position:relative;transition:none;border:0;background:none;width:100%;text-align:left}
 .side .it:hover{background:rgba(255,255,255,.05);color:#fff}
-.side .it.on{background:rgba(46,107,242,.22);color:#fff;font-weight:700}
+.side .it.on{background:#20222a;color:#fff;font-weight:700}
 .side .it.on::before{content:"";position:absolute;left:0;top:7px;bottom:7px;width:3px;border-radius:3px;background:#5b8cff}
 .side .it .n{margin-left:auto;min-width:30px;text-align:center;font-size:11px;font-weight:700;color:#b9c6e6;background:rgba(255,255,255,.08);border-radius:999px;padding:1px 0}
 .main{padding:20px 24px 40px;min-width:0}
