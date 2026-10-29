@@ -162,34 +162,26 @@ export async function recentSends(sql: Sql, ownerId: string, stageId: string) {
 async function spaceDocs(sql: Sql, ownerId: string, spaceId: string): Promise<StageDoc[]> {
   if (!/^[0-9a-f-]{36}$/i.test(spaceId)) return [];
   try {
-    const rows = await sql`SELECT d.name, d.url FROM package_docs d JOIN packages p ON p.id = d.package_id
-      WHERE p.id = ${spaceId} AND p.owner_id = ${ownerId} AND p.deleted_at IS NULL AND d.deleted_at IS NULL ORDER BY d.name`;
+    const rows = await sql`SELECT i.name, i.url FROM space_items i JOIN spaces sp ON sp.id = i.space_id
+      WHERE sp.id = ${spaceId}::uuid AND sp.owner_id = ${ownerId} AND sp.deleted_at IS NULL AND i.deleted_at IS NULL
+        AND i.kind NOT IN ('folder', 'note') AND coalesce(i.url, '') <> ''
+      ORDER BY i.position, i.name LIMIT 20`;
     return cleanDocs(rows);
-  } catch {
-    try {
-      const rows = await sql`SELECT d.name, d.url FROM package_docs d JOIN packages p ON p.id = d.package_id
-        WHERE p.id = ${spaceId} AND p.owner_id = ${ownerId} ORDER BY d.name`;
-      return cleanDocs(rows);
-    } catch (err) {
-      fail('stage_space_docs', err);
-      return [];
-    }
+  } catch (err) {
+    fail('stage_space_docs', err);
+    return [];
   }
 }
 
 export async function listSpacesLite(sql: Sql, ownerId: string) {
   try {
-    const rows = await sql`SELECT p.id, p.name, (SELECT count(*) FROM package_docs d WHERE d.package_id = p.id AND d.deleted_at IS NULL) AS docs
-      FROM packages p WHERE p.owner_id = ${ownerId} AND p.deleted_at IS NULL ORDER BY p.name LIMIT 200`;
+    const rows = await sql`SELECT sp.id, sp.name,
+        (SELECT count(*) FROM space_items i WHERE i.space_id = sp.id AND i.deleted_at IS NULL AND i.kind NOT IN ('folder', 'note') AND coalesce(i.url, '') <> '') AS docs
+      FROM spaces sp WHERE sp.owner_id = ${ownerId} AND sp.deleted_at IS NULL ORDER BY sp.name LIMIT 300`;
     return (rows as Record<string, unknown>[]).map((r) => ({ id: String(r.id), name: String(r.name || ''), docs: Number(r.docs) || 0 }));
-  } catch {
-    try {
-      const rows = await sql`SELECT id, name FROM packages WHERE owner_id = ${ownerId} ORDER BY name LIMIT 200`;
-      return (rows as Record<string, unknown>[]).map((r) => ({ id: String(r.id), name: String(r.name || ''), docs: 0 }));
-    } catch (err) {
-      fail('stage_spaces', err);
-      return [];
-    }
+  } catch (err) {
+    fail('stage_spaces', err);
+    return [];
   }
 }
 
