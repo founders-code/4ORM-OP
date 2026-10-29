@@ -30,6 +30,7 @@ import { calendarHookToken, gmailPubsubTopic } from './secrets';
 import { syncCalendar, syncGhl } from './sync';
 import { ingestZoomRecording, filledZoomIds, syncZoomApi } from './zoom';
 import { listZoomNotes } from './zoom-notes';
+import { syncMyNotes } from './zoom-notes-user';
 
 type Sql = NeonQueryFunction<false, false>;
 
@@ -340,6 +341,17 @@ export async function safetySweep(sql: Sql, ownerId: string, origin = '') {
     fail('live_zoom', err);
     return { added: 0, filled: 0 };
   });
+  /* Zoom My Notes (transcripts and AI notes) every 30 minutes; new meetings land with recap and next steps. */
+  const notesAt = await sql`SELECT synced_at FROM sync_state WHERE owner_id = ${ownerId} AND source = 'zoom_notes'`.then((r) => (r[0]?.synced_at ? new Date(String(r[0].synced_at)).getTime() : 0)).catch(() => 0);
+  if (Date.now() - notesAt > 30 * 60 * 1000) {
+    const fresh = await filledZoomIds(sql, ownerId).catch(() => new Set<string>());
+    const mn = await syncMyNotes(sql, ownerId, fresh).catch((err) => {
+      fail('live_zoom_notes', err);
+      return { added: 0 };
+    });
+    await sql`INSERT INTO sync_state (owner_id, source, status, synced_at) VALUES (${ownerId}, 'zoom_notes', 'ok', now()) ON CONFLICT (owner_id, source) DO UPDATE SET synced_at = now()`.catch(() => {});
+    zoom.added = (zoom.added || 0) + (mn.added || 0);
+  }
   if (zoom.added || zoom.filled) {
     await recordChange(sql, ownerId, 'zoom', { added: zoom.added, filled: zoom.filled });
     await listMeetingActions(sql, ownerId).catch((err) => fail('zoom_actions', err));

@@ -5,6 +5,7 @@ import { zoomMail } from '@/lib/google';
 import { fail } from '@/lib/log';
 import { openBoard, sessionOwner } from '@/lib/session';
 import { loadCredsFor } from '@/lib/vault';
+import { syncMyNotes } from '@/lib/zoom-notes-user';
 import { filledZoomIds, lastZoomSync, saveMailNotes, syncZoomApi, zoomConfigured } from '@/lib/zoom';
 import { listZoomNotes, seedZoomNotes } from '@/lib/zoom-notes';
 
@@ -46,6 +47,10 @@ export async function POST() {
       fail('zoom_sync', err);
       return { added: 0, filled: 0, seen: 0, zoom: 'unavailable' as const };
     });
+    const notesSync = await syncMyNotes(sql, session.userId, await filledZoomIds(sql, session.userId)).catch((err) => {
+      fail('zoom_my_notes_sync', err);
+      return { connected: false, meetings: 0, added: 0, reason: 'error' };
+    });
     const mailKnown = new Set([...known].filter((id) => id.startsWith('gmail-')).map((id) => id.slice(6)));
     const creds = await loadCredsFor(session.userId);
     const mails = await withCreds(creds, () => zoomMail(mailKnown, 20)).catch((err) => {
@@ -56,7 +61,8 @@ export async function POST() {
     const notes = await listZoomNotes(sql, session.userId);
     return NextResponse.json({
       ok: true,
-      added: api.added + mailAdded,
+      added: api.added + mailAdded + notesSync.added,
+      myNotes: notesSync,
       filled: api.filled,
       seen: api.seen,
       zoom: api.zoom,
