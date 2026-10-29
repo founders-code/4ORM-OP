@@ -260,6 +260,8 @@ export function classifyMail(
 
 export function needsNow(mail: BoardMail, column: string) {
   if (column === 'quiet' || mail.bulk) return false;
+  /* Codes, receipts and no-reply senders never need a reply. */
+  if (autoJunk(mail)) return false;
   if (mail.unread) return true;
   return ACTION_RE.test((mail.subject || '') + ' ' + (mail.snippet || ''));
 }

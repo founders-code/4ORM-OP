@@ -9,7 +9,7 @@ const KEYS = [
   { key: 'morning_brief', label: 'Morning brief 06:00', sub: 'daily brief' },
   { key: 'market_pulse', label: 'Market pulse x4 a day', sub: '06:00 10:00 14:00 18:00' },
   { key: 'email_sweep', label: 'Email sweep every 15 s', sub: 'inbox poll' },
-  { key: 'voice_log', label: 'Voice log transcription', sub: 'needs OPENAI_API_KEY' },
+  { key: 'voice_log', label: 'Voice log transcription', sub: process.env.OPENAI_API_KEY ? 'OpenAI key set' : 'needs OPENAI_API_KEY' },
   { key: 'sayit_audit', label: 'Snapshot audit on Say it', sub: 'Apply' },
   { key: 'google_sync', label: 'Google two-way sync', sub: 'calendar and mail' },
   { key: 'iq_pull', label: 'Pull 4ormIQ control room', sub: 'every 5 minutes' },

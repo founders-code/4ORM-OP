@@ -1358,7 +1358,10 @@
     var F = window.REDESIGN_FIXTURE || {};
     var live = !fixtureOn();
     var S = window.STATE || {};
-    var need = ((S.mailNeed && S.mailNeed.length) ? S.mailNeed : (S.mail || []).filter(function (m) { return m && (m.needsReply || m.needReply || m.unread); })).slice(0, 5);
+    /* Codes, sign-in notices, trials and no-reply senders never need a reply. */
+    var AUTO = /no-?reply|^system@|notifications?@|security code|verification code|sign-in|signin|trial ends|receipt|invoice #|password reset/i;
+    function human(m) { var k = String(m.email || '') + ' ' + String(m.from || '') + ' ' + String(m.subject || ''); return !AUTO.test(k) && !/@(vercel\.com|skool\.com|openai\.com|github\.com|google\.com|stripe\.com)>?$/i.test(String(m.email || m.from || '').trim()); }
+    var need = ((S.mailNeed && S.mailNeed.length) ? S.mailNeed : (S.mail || []).filter(function (m) { return m && (m.needsReply || m.needReply || m.unread); })).filter(human).slice(0, 5);
     var owed = (S.meetingActions || []).filter(function (x) { return x && x.status !== 'done' && x.status !== 'dismissed' && x.status !== 'handled' && x.status !== 'tasked' && !x.done; }).slice(0, 8);
     var reach = ((S.reachOut && S.reachOut.length) ? S.reachOut : (S.contacts || []).filter(function (c) {
       var last = c.lastTouch || c.last_touch || '';
