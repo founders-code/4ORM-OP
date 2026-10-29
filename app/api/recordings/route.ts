@@ -15,7 +15,7 @@ export async function GET() {
     if (!session.sql) return NextResponse.json({ recordings: [] });
     let recordings = await listRecordings(session.sql, session.userId);
     /* Recordings that waited for a transcription key go through once the key is there: one per visit, so the list stays fast. */
-    const stuck = (recordings as Array<Record<string, unknown>>).find((r) => String(r.status || '') === 'waiting');
+    const stuck = (recordings as Array<Record<string, unknown>>).find((r) => String(r.status || '') === 'waiting' || (String(r.status || '') === 'transcribing' && Date.now() - new Date(String(r.updated_at || r.created_at || 0)).getTime() > 10 * 60 * 1000));
     if (stuck && env('OPENAI_API_KEY')) {
       await processRecording(session.sql, session.userId, String(stuck.id)).catch((err) => fail('recordings_retry', err));
       recordings = await listRecordings(session.sql, session.userId);

@@ -254,8 +254,19 @@ export async function processRecording(sql: Sql, ownerId: string, id: string) {
     await sql`UPDATE recordings SET status = 'waiting', step = 'Waiting for transcription - add OPENAI_API_KEY in Vercel', updated_at = now() WHERE id = ${id}::uuid AND owner_id = ${ownerId}`;
     return getRecording(sql, ownerId, id);
   }
+  if (!String(row.audio_b64 || '').trim()) {
+    await sql`UPDATE recordings SET status = 'failed', step = 'No audio was saved for this recording', updated_at = now() WHERE id = ${id}::uuid AND owner_id = ${ownerId}`;
+    return getRecording(sql, ownerId, id);
+  }
   await sql`UPDATE recordings SET status = 'transcribing', step = 'Transcribing', updated_at = now() WHERE id = ${id}::uuid AND owner_id = ${ownerId}`;
-  const text = await transcribeB64(String(row.audio_b64 || ''));
+  let text = '';
+  try {
+    text = await transcribeB64(String(row.audio_b64 || ''));
+  } catch (err) {
+    fail('recording_transcribe', err);
+    await sql`UPDATE recordings SET status = 'failed', step = 'Transcription did not finish. Open it and try again.', updated_at = now() WHERE id = ${id}::uuid AND owner_id = ${ownerId}`;
+    return getRecording(sql, ownerId, id);
+  }
   await sql`UPDATE recordings SET status = 'summarizing', step = 'Writing the title and summary', transcript = ${JSON.stringify([{ t: '00:00', who: '', text }])}::jsonb, updated_at = now() WHERE id = ${id}::uuid AND owner_id = ${ownerId}`;
   const meta = await summarizeTranscript(text, peopleOf(row.people));
   await sql`UPDATE recordings SET step = 'Finding action items', updated_at = now() WHERE id = ${id}::uuid AND owner_id = ${ownerId}`;
