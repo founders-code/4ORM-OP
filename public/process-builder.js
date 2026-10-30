@@ -222,17 +222,18 @@
 
   /* Put a library block onto a stage: it goes into the draft and the editor opens. Save makes it real. */
   function apply(stageId, key) {
+    if (S.grab && S.stage === stageId && S.draft) S.grab();
     var p = pkgFor(stageId);
     var dr = (S.stage === stageId && S.draft) ? S.draft : (p ? JSON.parse(JSON.stringify(p)) : { subject: '', body: '', docs: [], spaceId: '', followDays: 0, task: '', active: true, fresh: true });
     dr.docs = dr.docs || [];
     var blank = STARTERS[STARTERS.length - 1];
     function ensureEmail() { if (!dr.subject && !dr.body) { dr.subject = '4orm Helps'; dr.body = blank.body; } }
     if (key === 'email') ensureEmail();
-    else if (key.indexOf('starter:') === 0) { var st = STARTERS[+key.split(':')[1]]; dr.subject = '4orm Helps'; dr.body = st.body; dr.followDays = st.follow; dr.task = st.task; }
+    else if (key.indexOf('starter:') === 0) { var st = STARTERS[+key.split(':')[1]]; dr.subject = '4orm Helps'; dr.body = st.body; dr.bodyHtml = ''; dr.followDays = st.follow; dr.task = st.task; }
     else if (key === 'doclink') { ensureEmail(); dr.docs.push({ name: '', url: '' }); }
     else if (key.indexOf('doc:') === 0) { ensureEmail(); var d = (S.libDocs || [])[+key.split(':')[1]]; if (d && !dr.docs.some(function (x) { return x.url === d.url; })) dr.docs.push({ name: d.name, url: d.url }); }
     else if (key === 'wait') { ensureEmail(); dr.followDays = dr.followDays || 3; }
-    else if (key === 'book') { ensureEmail(); dr.body = addBooking(dr.body); }
+    else if (key === 'book') { ensureEmail(); if (dr.bodyHtml && !BOOK_RE.test(dr.bodyHtml)) { var hi = dr.bodyHtml.search(/With Gratitude/i); var line = esc(BOOK_LINE).replace(BOOK_URL, '<a href="' + BOOK_URL + '">' + BOOK_URL + '</a>') + '<br><br>'; dr.bodyHtml = hi >= 0 ? dr.bodyHtml.slice(0, hi) + line + dr.bodyHtml.slice(hi) : dr.bodyHtml + '<br><br>' + line; } dr.body = addBooking(dr.body); }
     else if (key === 'task') { ensureEmail(); dr.task = dr.task || 'Follow up with {{name}}'; }
     dr.fresh = false;
     S.stage = stageId; S.draft = dr; S.dirty = true; S.arm = null;
@@ -240,6 +241,8 @@
   }
 
   function paint() {
+    if (S.grab && S.stage && S.draft) S.grab();
+    S.grab = null;
     var d = S.data || { pipelines: [], packages: [], stats: {} };
     var counts = {};
     (d.packages || []).forEach(function (p) { counts[p.pipelineId] = (counts[p.pipelineId] || 0) + 1; });
@@ -329,7 +332,7 @@
     ed.innerHTML = '<button type="button" class="edx" data-edx>Close</button><div class="k">' + esc(pipe.name) + ' · stage</div><div style="font-size:20px;font-weight:850;padding-right:70px">' + esc(stg.name) + '</div>'
       + (dr.fresh ? '<label>Start from</label><div class="starters">' + STARTERS.map(function (s, i) { return '<button type="button" data-start="' + i + '">' + esc(s.name) + '</button>'; }).join('') + '</div>' : '')
       + '<label for="pbSub">Subject</label><input id="pbSub" value="' + esc(dr.subject) + '" maxlength="200">'
-      + '<label for="pbBody">Email</label><textarea id="pbBody">' + esc(dr.body) + '</textarea><div class="hint">{{first_name}}, {{company}} and {{name}} fill in per contact. Document links are added under the email.</div>'
+      + '<label>Email</label>' + (window.richBar ? window.richBar.html() + '<div id="pbBody" class="rte" contenteditable="true">' + (dr.bodyHtml || window.richBar.textToHtml(dr.body)) + '</div>' : '<textarea id="pbBody">' + esc(dr.body) + '</textarea>') + '<div class="hint">{{first_name}}, {{company}} and {{name}} fill in per contact. Document links are added under the email.</div>'
       + '<label for="pbDesign">Design</label><select id="pbDesign">' + (((S.data && S.data.designs) || [{ id: '', name: 'Plain email' }]).map(function (d) { return '<option value="' + esc(d.id) + '"' + (d.id === (dr.design || '') ? ' selected' : '') + '>' + esc(d.name) + '</option>'; }).join('')) + '</select><div class="hint">An info pack puts your note on top and a one-minute brief with the numbers underneath, ready to forward. PDF links also go as attachments.</div>'
       + '<label>Documents</label><div id="pbDocs">' + (dr.docs || []).map(function (d, i) {
         return '<div class="doc"><input data-dn="' + i + '" value="' + esc(d.name) + '" placeholder="Name"><input data-du="' + i + '" value="' + esc(d.url) + '" placeholder="https://drive.google.com/..."><button type="button" class="fit warn" data-dx="' + i + '">Remove</button></div>';
@@ -341,14 +344,17 @@
       + '<div class="k" style="margin-top:20px">Sent from this stage</div><div class="log" id="pbLog"><span class="hint">Loading…</span></div>';
     ed.querySelector('[data-edx]').onclick = closeEd;
     ed.oninput = ed.onchange = function () { S.dirty = true; };
+    S.grab = function () { try { grab(); } catch (e) {} };
     function grab() {
-      dr.subject = el('#pbSub').value; dr.body = el('#pbBody').value; dr.spaceId = el('#pbSpace').value; dr.design = el('#pbDesign').value;
+      dr.subject = el('#pbSub').value;
+      var bx = el('#pbBody');
+      if (bx.tagName === 'TEXTAREA') dr.body = bx.value; else { dr.body = window.richBar.toText(bx); dr.bodyHtml = bx.innerHTML; } dr.spaceId = el('#pbSpace').value; dr.design = el('#pbDesign').value;
       dr.followDays = Number(el('#pbFu').value) || 0; dr.task = el('#pbTask').value; dr.active = el('#pbOn').checked;
       ed.querySelectorAll('[data-dn]').forEach(function (x) { dr.docs[+x.getAttribute('data-dn')].name = x.value; });
       ed.querySelectorAll('[data-du]').forEach(function (x) { dr.docs[+x.getAttribute('data-du')].url = x.value; });
     }
     ed.querySelectorAll('[data-start]').forEach(function (b) {
-      b.onclick = function () { var s = STARTERS[+b.getAttribute('data-start')]; grab(); dr.subject = s.subject; dr.body = s.body; dr.followDays = s.follow; dr.task = s.task; paintEditor(); };
+      b.onclick = function () { var s = STARTERS[+b.getAttribute('data-start')]; grab(); dr.subject = s.subject; dr.body = s.body; dr.bodyHtml = ''; dr.followDays = s.follow; dr.task = s.task; paintEditor(); };
     });
     ed.querySelector('[data-adddoc]').onclick = function () { grab(); dr.docs = dr.docs || []; dr.docs.push({ name: '', url: '' }); paintEditor(); };
     ed.querySelectorAll('[data-dx]').forEach(function (b) { b.onclick = function () { grab(); dr.docs.splice(+b.getAttribute('data-dx'), 1); paintEditor(); }; });
@@ -357,7 +363,7 @@
       var bad = (dr.docs || []).filter(function (d) { return (d.name || d.url) && !(d.name && /^https:\/\//i.test(d.url)); });
       if (bad.length) { toast('Each document needs a name and a link starting with https://'); return; }
       var b = this; b.disabled = true; b.textContent = 'Saving…';
-      api('/api/processes', 'POST', { action: 'save', pipelineId: pipe.id, pipelineName: pipe.name, stageId: stg.id, stageName: stg.name, subject: dr.subject, body: dr.body, docs: dr.docs, spaceId: dr.spaceId, followDays: dr.followDays, task: dr.task, active: dr.active, design: dr.design || '' })
+      api('/api/processes', 'POST', { action: 'save', pipelineId: pipe.id, pipelineName: pipe.name, stageId: stg.id, stageName: stg.name, subject: dr.subject, body: dr.body, bodyHtml: dr.bodyHtml || '', docs: dr.docs, spaceId: dr.spaceId, followDays: dr.followDays, task: dr.task, active: dr.active, design: dr.design || '' })
         .then(function (j) {
           S.data.packages = S.data.packages.filter(function (x) { return x.stageId !== stg.id; }).concat([j.package]);
           S.draft = null; S.dirty = false; paint(); toast('Saved: ' + stg.name);
