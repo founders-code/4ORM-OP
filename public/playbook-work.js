@@ -357,6 +357,9 @@
     var host = root.getElementById ? root.getElementById('pbWork') : null;
     if (!host) return;
     S.host = host;
+    /* 30 Oct: the Playbook repaints into a fresh shadow root when you come back to it. The mode was already set
+       against the old (detached) host, so paint the new one now instead of leaving it blank. */
+    if (S.mode) { try { paint(); } catch (e0) {} }
     if (host._bound) return;
     host._bound = true;
     host.addEventListener('click', function (e) {

@@ -127,7 +127,11 @@
       return (want && lists.find(function (l) { return l.key === want; })) || (state.cur && lists.find(function (l) { return l.key === state.cur.key; })) || lists[0] || null;
     }
 
-    function $(sel) { return root.querySelector(sel); }
+    /* 30 Oct: Contacts and Lists share one shadow root. A bind from the page you just left must never paint into the new one. */
+    var bindTok = {};
+    root.__lbTok = bindTok;
+    function stale() { return root.__lbTok !== bindTok; }
+    function $(sel) { return stale() ? null : root.querySelector(sel); }
     function toast(m, undo) {
       var t = $('#tmsg');
       var u = $('#tundo');
@@ -188,9 +192,23 @@
       }).join(' · ');
     }
 
+    /* Search covers everyone: in Lists, every list (work lists and masters), not just the one that is open. */
+    function searchPool() {
+      if (state.mode !== 'lists' || !state.q) return null;
+      var seen = {}, out = [];
+      (state.lists || []).forEach(function (l) {
+        (l.people || []).forEach(function (p) {
+          var k = p.id || (p.name + '|' + p.company);
+          if (p._del || seen[k]) return;
+          seen[k] = 1; out.push(p);
+        });
+      });
+      return out;
+    }
     function peopleOf() {
       if (!state.cur) return [];
-      var rows = (state.cur.people || []).slice().filter(function (p) { return !p._del; });
+      var pool = searchPool();
+      var rows = (pool || state.cur.people || []).slice().filter(function (p) { return !p._del; });
       if (state.q) {
         var q = state.q;
         rows = rows.filter(function (p) {
@@ -853,6 +871,7 @@
       var tb = root.querySelector('.tbl'); if (tb && tb.scrollIntoView) tb.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     function paintFunnel() {
+      if (stale()) return;
       var box = $('#lfunnel');
       if (!box) return;
       box.hidden = state.mode !== 'lists';
@@ -884,7 +903,6 @@
         + '<div class="' + (leakPct < 25 ? 'warn' : '') + '"><b>' + leakPct + '%</b><span>touched of work lists</span></div>'
         + '<div><b>' + fmtN(F.booked.count) + '</b><span>booked</span></div>'
         + '<div><b>' + fmtN(F.planned) + '</b><span>calls planned today</span></div></div>'
-        + '<div class="fbar"><svg viewBox="0 0 1120 102" preserveAspectRatio="none" aria-hidden="true">' + svg + '</svg><small>Bar height on a log scale so ' + fmtN(F.total) + ' and ' + fmtN(F.booked.count) + ' fit on one line. Click any column to see the people behind it.</small></div>'
         + '<div class="fg">'
         + col('masters', 't-grey', 'Masters', F.total, 'records across ' + F.masters.length + ' master lists', F.masters.slice().sort(function (a, b) { return b.count - a.count; }).map(function (m) { return li(m.name.charAt(0).toUpperCase() + m.name.slice(1), fmtN(m.count), 'list:' + m.key); }).join(''), '')
         + col('scored', 't-grey', 'Fit scored', F.scored.count, 'scored from the summarised intel', F.scored.rows.map(function (r, i) { return li(r.label, fmtN(r.count), 'fit:' + i); }).join(''), pct(F.scored.count, F.total) + '% of masters scored')
@@ -936,6 +954,7 @@
     }
 
     function render() {
+      if (stale()) return;
       if (state.mode === 'contacts') state.cur = contactsAsList();
       else if (!state.cur && state.lists.length) state.cur = pickCur(state.lists);
       if (state.mode === 'lists' && state.cur && state.cur.key && !state.cur.virtual) KEEP.cur = state.cur.key;
@@ -947,6 +966,9 @@
       if (name && state.cur) name.textContent = state.mode === 'contacts'
         ? (state.role === 'all' ? 'All people' : (state.role === 'cb' ? 'Callbacks due' : (state.role === 'cold' ? 'Going cold' : state.role)))
         : state.cur.name;
+      if (name && state.q) name.textContent = 'Search: ' + state.q + (state.mode === 'lists' ? ' · every list' : '');
+      var sn = $('#lsrchn');
+      if (sn) sn.textContent = state.q ? peopleOf().length + ' found' : '';
       if (stat && state.cur) {
         var people = (state.cur.people || []).filter(function (p) { return !p._del; });
         var moved = people.filter(function (p) { return stageIndex(p.stage) > 0; }).length;
@@ -1078,7 +1100,8 @@
     var search = $('#lsearch');
     if (search && state.q && !search.value) search.value = state.q;
     (function () { var fb = $('#lfilt'); if (!fb || !state.filt) return; fb.querySelectorAll('button[data-f]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-f') === state.filt); }); })();
-    if (search) search.oninput = function (e) { state.q = String(e.target.value || '').toLowerCase(); render(); };
+    if (search) search.oninput = function (e) { state.q = String(e.target.value || '').toLowerCase().trim(); render(); };
+    if (search) search.onkeydown = function (e) { if (e.key === 'Escape') { search.value = ''; state.q = ''; render(); } };
     var filt = $('#lfilt');
     if (filt) filt.querySelectorAll('button[data-f]').forEach(function (b) {
       b.onclick = function () {

@@ -285,3 +285,10 @@
 .ef-pipenote{font-size:11.5px;color:#aeb6c8;margin-top:6px}
 .ef-pipenote:empty{display:none}
 .seg span em{font-style:normal;font-size:11px;font-weight:800;margin-left:4px;padding:0 6px;border-radius:6px;background:rgba(255,255,255,.12)}
+/* 30 Oct: compose never pushes Send off the screen. The column holds its height and the body scrolls. */
+.compose{grid-template-rows:minmax(0,1fr)}
+.compose .cw{min-height:0;overflow:hidden}
+.compose .cw > *{flex-shrink:0}
+.compose .cw > .body{flex:1 1 auto;min-height:120px;overflow:auto}
+.compose .cfoot{position:sticky;bottom:0;z-index:2}
+.compose .sig{max-height:150px;overflow:auto}

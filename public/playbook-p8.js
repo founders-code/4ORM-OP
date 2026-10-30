@@ -589,7 +589,7 @@
     if (ctr) {
       var want = ['lanes', 'blocks', 'sprint', 'compact'].filter(function (m) { return document.body.classList.contains(m); })[0] || 'sprint';
       var btn = ctr.querySelector('button[data-m="' + want + '"]');
-      if (btn && !(document.body.classList.contains(want) && btn.classList.contains('on'))) btn.click();
+      if (btn) btn.click();
     }
     var apply = $('vSave');
     if (apply) apply.addEventListener('click', function () {

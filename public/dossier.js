@@ -35,7 +35,7 @@
     + '#dsr .d-nav button{border-radius:999px;padding:7px 14px}#dsr .d-nav button.nx{background:#4272f9;border-color:#4272f9;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
     + '#dsr .d-hl{color:#fff;font-weight:800;background:rgba(66,114,249,.24);border-radius:4px;padding:0 4px}#dsr .d-hg{color:#7ff0c2;font-weight:800}'
     + '#dsr li{font-size:13px;line-height:1.5}#dsr .d-chips{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 6px}#dsr .d-chips span{padding:4px 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:rgba(255,72,102,.14);color:#ff8fa3}'
-    + '#dsr .d-pills{display:flex;flex-wrap:wrap;gap:6px}#dsr .d-pills button{border-radius:999px}#dsr .d-sl2 button.pick{background:rgba(66,114,249,.22);border-color:#4272f9;color:#fff}'
+    + '#dsr .d-sl2.flash{outline:2px solid #4272f9;outline-offset:4px;border-radius:10px}#dsr .d-pills{display:flex;flex-wrap:wrap;gap:6px}#dsr .d-pills button{border-radius:999px}#dsr .d-sl2 button.pick{background:rgba(66,114,249,.22);border-color:#4272f9;color:#fff}'
     + '#dsr .d-scb{margin-left:6px;padding:3px 12px;font-size:11px;border-radius:999px;background:#4272f9!important;border-color:#4272f9!important;color:#fff}'
     + '#dsrScript{position:fixed;top:0;right:0;bottom:0;width:min(560px,100vw);z-index:2147482500;background:#0c0d11;border-left:1px solid #2a2c35;box-shadow:-20px 0 60px rgba(0,0,0,.55);overflow:auto;color:#e6eaf2;font:500 13.5px/1.55 Inter,-apple-system,system-ui,sans-serif;padding:0 0 30px}'
     + '#dsrScript .s-hd{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#0c0d11;border-bottom:1px solid #23252e}#dsrScript .s-hd b{font-size:16px;font-weight:900;color:#fff}'
@@ -302,7 +302,8 @@
       }).join('') + '</div>' : '<div class="d-muted">No touches yet.</div>')
       + '</div></div>'
       + '<div class="d-acts">'
-      + '<button data-a="del" style="margin-right:auto;color:#ff8a98;border-color:rgba(255,72,102,.45)">Delete</button><button data-a="lists">Open in Lists</button><button data-a="close">Close</button><button class="pri" data-a="save">' + (q && qi < q.length - 1 ? 'Save and next' : 'Save') + '</button></div></div>';
+      + '<button data-a="del" style="margin-right:auto;color:#ff8a98;border-color:rgba(255,72,102,.45)">Delete</button><button data-a="lists">Open in Lists</button>'
+      + (rec.email ? '<button data-a="email2">Open in email</button>' : '<button disabled style="opacity:.55" title="Add an email with Edit">No email on file</button>') + '<button data-a="close">Close</button><button class="pri" data-a="save">' + (q && qi < q.length - 1 ? 'Save and next' : 'Save') + '</button></div></div>';
     return h;
   }
 
@@ -446,7 +447,7 @@
             var ps = picked && (pipe.stages || []).filter(function (x) { return x.id === picked; })[0];
             if (ps) return 'Move to ' + ps.name + (PK[ps.id] ? ' and send pack' : '');
             if (curPk) return 'Send the ' + (opp.stage || 'stage') + ' pack';
-            return 'Move and send pack';
+            return 'Pick a stage above';
           }
           pbox.querySelector('[data-pp]').onchange = function () { picked = ''; draw(this.value); };
           pbox.querySelectorAll('[data-sid]').forEach(function (b) {
@@ -480,7 +481,12 @@
           var spb = pbox.querySelector('[data-sendpk]');
           if (spb) spb.onclick = function () {
             if (picked) { doMove(spb); return; }
-            if (!curPk) { toast('Pick a stage first'); return; }
+            if (!curPk) {
+              var row = pbox.querySelector('.d-sl2');
+              if (row) { row.classList.add('flash'); row.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(function () { row.classList.remove('flash'); }, 900); }
+              toast('Tap the stage to move them to, then press this again. Stages marked pack send their email.');
+              return;
+            }
             var st = { id: cur, name: opp.stage || '' };
             (window.stageGate ? window.stageGate(rec.id, st, { sendOnly: true }) : Promise.resolve(null)).then(function (g8) {
               if (!g8 || !g8.send) return;
@@ -532,6 +538,16 @@
       var person = String(rec.contact || '').split(/\s*\|\s*/)[0];
       if (typeof window.openComposeTo === 'function') { close(); window.openComposeTo(rec.email, /@|^\+?\d/.test(person) ? rec.name : person); }
       else location.href = 'mailto:' + encodeURIComponent(rec.email);
+    };
+    /* Every card, calls included: open a follow-up email to them in Email. */
+    var em2 = wrap.querySelector('[data-a="email2"]');
+    if (em2) em2.onclick = function () {
+      var person = String(rec.contact || '').split(/\s*\|\s*/)[0];
+      var nm = /@|^\+?\d/.test(person) || !person ? rec.name : person;
+      var first = String(nm || '').split(/\s+/)[0];
+      close();
+      if (typeof window.openComposeDraft === 'function') window.openComposeDraft({ to: [{ email: String(rec.email).trim().toLowerCase(), name: nm }], subject: '4orm Helps', body: 'Hi ' + first + ',\n\n' });
+      else if (typeof window.openComposeTo === 'function') window.openComposeTo(rec.email, nm);
     };
     var lk = wrap.querySelector('[data-a="li"]');
     if (lk) lk.onclick = function () { window.open(url(rec.linkedin), '_blank', 'noopener'); };
