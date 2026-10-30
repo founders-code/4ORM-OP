@@ -1,3 +1,4 @@
+import { sanitizeRich, hasFormatting, fillRich } from './rich-html';
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { addGhlTask, ensureGhlContact, sendViaGhl } from './ghl';
 import { fail } from './log';
@@ -21,6 +22,7 @@ export type StagePackage = {
   stageName: string;
   subject: string;
   body: string;
+  bodyHtml: string;
   docs: StageDoc[];
   spaceId: string;
   followDays: number;
@@ -72,6 +74,7 @@ async function createTables(sql: Sql) {
     at timestamptz NOT NULL DEFAULT now()
   )`;
   await sql`ALTER TABLE stage_packages ADD COLUMN IF NOT EXISTS design text NOT NULL DEFAULT ''`;
+  await sql`ALTER TABLE stage_packages ADD COLUMN IF NOT EXISTS body_html text NOT NULL DEFAULT ''`;
   await sql`CREATE INDEX IF NOT EXISTS stage_sends_owner_stage ON stage_sends (owner_id, stage_id, at DESC)`;
 }
 
@@ -92,6 +95,7 @@ function shape(r: Record<string, unknown>): StagePackage {
     stageName: String(r.stage_name || ''),
     subject: String(r.subject || ''),
     body: String(r.body || ''),
+    bodyHtml: String(r.body_html || ''),
     docs: cleanDocs(r.docs),
     spaceId: String(r.space_id || ''),
     followDays: Number(r.follow_days) || 0,
@@ -122,11 +126,13 @@ export async function saveStagePackage(sql: Sql, ownerId: string, b: Record<stri
   const id = `${ownerId.slice(0, 24)}:${stageId}`.slice(0, 120);
   const docs = JSON.stringify(cleanDocs(b.docs));
   const follow = Math.max(0, Math.min(90, Math.round(Number(b.followDays) || 0)));
-  const rows = await sql`INSERT INTO stage_packages (id, owner_id, pipeline_id, pipeline_name, stage_id, stage_name, subject, body, docs, space_id, follow_days, task, active, design, deleted_at, updated_at)
-    VALUES (${id}, ${ownerId}, ${pipelineId}, ${s(b.pipelineName, 80)}, ${stageId}, ${s(b.stageName, 80)}, ${s(b.subject, 200)}, ${s(b.body, 8000)},
+  const rich = sanitizeRich(b.bodyHtml);
+  const bodyHtml = hasFormatting(rich) ? rich : '';
+  const rows = await sql`INSERT INTO stage_packages (id, owner_id, pipeline_id, pipeline_name, stage_id, stage_name, subject, body, body_html, docs, space_id, follow_days, task, active, design, deleted_at, updated_at)
+    VALUES (${id}, ${ownerId}, ${pipelineId}, ${s(b.pipelineName, 80)}, ${stageId}, ${s(b.stageName, 80)}, ${s(b.subject, 200)}, ${s(b.body, 8000)}, ${bodyHtml},
       ${docs}::jsonb, ${s(b.spaceId, 64)}, ${follow}, ${s(b.task, 200)}, ${b.active !== false}, ${cleanDesign(b.design)}, NULL, now())
     ON CONFLICT (owner_id, stage_id) DO UPDATE SET pipeline_id = EXCLUDED.pipeline_id, pipeline_name = EXCLUDED.pipeline_name, stage_name = EXCLUDED.stage_name,
-      subject = EXCLUDED.subject, body = EXCLUDED.body, docs = EXCLUDED.docs, space_id = EXCLUDED.space_id, follow_days = EXCLUDED.follow_days,
+      subject = EXCLUDED.subject, body = EXCLUDED.body, body_html = EXCLUDED.body_html, docs = EXCLUDED.docs, space_id = EXCLUDED.space_id, follow_days = EXCLUDED.follow_days,
       task = EXCLUDED.task, active = EXCLUDED.active, design = EXCLUDED.design, deleted_at = NULL, updated_at = now()
     RETURNING *`;
   return shape(rows[0] as Record<string, unknown>);
@@ -199,11 +205,20 @@ function firstPerson(rec: Record<string, unknown>) {
   return p && !/@|^\+?\d|contact|leadership|executive|operations|team/i.test(p) ? p : '';
 }
 
-function fill(text: string, rec: Record<string, unknown>) {
+function fillVals(rec: Record<string, unknown>) {
   const person = firstPerson(rec);
   const first = person.replace(/\(.*?\)/g, '').trim().split(/\s+/)[0] || 'there';
   const company = rec.list === 'angels' ? '' : String(rec.name || '');
-  return text.replaceAll('{{first_name}}', first).replaceAll('{{company}}', company || 'your team').replaceAll('{{name}}', person || company);
+  return { first, company: company || 'your team', name: person || company };
+}
+function fill(text: string, rec: Record<string, unknown>) {
+  const v = fillVals(rec);
+  return text.replaceAll('{{first_name}}', v.first).replaceAll('{{company}}', v.company).replaceAll('{{name}}', v.name);
+}
+function fillHtml(html: string, rec: Record<string, unknown>) {
+  if (!html) return '';
+  const v = fillVals(rec);
+  return fillRich(html, v.first, v.company, v.name);
 }
 
 /** Every stage email that is ready to use (subject and body written), with its documents, placeholders left in.
@@ -212,7 +227,7 @@ export async function readyStagePackages(sql: Sql, ownerId: string, spaceOwner =
   const list = (await listStagePackages(sql, ownerId)).filter((p) => p.active && p.subject.trim() && p.body.trim());
   const out = [];
   for (const p of list) {
-    out.push({ stageId: p.stageId, stageName: p.stageName, pipelineId: p.pipelineId, pipelineName: p.pipelineName, subject: p.subject, body: p.body,
+    out.push({ stageId: p.stageId, stageName: p.stageName, pipelineId: p.pipelineId, pipelineName: p.pipelineName, subject: p.subject, body: p.body, bodyHtml: p.bodyHtml,
       docs: [...p.docs, ...(await spaceDocs(sql, spaceOwner, p.spaceId))] });
   }
   return out;
@@ -231,6 +246,7 @@ export async function previewStageSend(sql: Sql, ownerId: string, rec: Record<st
     toName: firstPerson(rec) || String(rec.name || ''),
     subject: fill(pkg.subject, rec),
     body: fill(pkg.body, rec),
+    bodyHtml: fillHtml(pkg.bodyHtml, rec),
     docs,
     followDays: pkg.followDays,
     task: pkg.task,
@@ -244,8 +260,8 @@ function escHtml(v: string) {
   return v.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);
 }
 
-function toHtml(body: string, docs: StageDoc[]) {
-  const text = escHtml(body).replace(/\r?\n/g, '<br>');
+function toHtml(body: string, docs: StageDoc[], bodyHtml = '') {
+  const text = bodyHtml || escHtml(body).replace(/\r?\n/g, '<br>');
   if (!docs.length) return text;
   const list = docs.map((d) => `<li><a href="${escHtml(d.url)}">${escHtml(d.name)}</a></li>`).join('');
   return `${text}<br><br><b>Attached</b><ul>${list}</ul>`;
@@ -283,7 +299,7 @@ export async function sendStagePackage(
     await log('failed', 'GoHighLevel did not find or add the contact');
     return { ok: false, note: 'GoHighLevel did not find or add the contact' };
   }
-  const html = pv.design ? renderPackageEmail(pv.design, pv.body, pv.docs) : toHtml(pv.body, pv.docs);
+  const html = pv.design ? renderPackageEmail(pv.design, pv.body, pv.docs, pv.bodyHtml) : toHtml(pv.body, pv.docs, pv.bodyHtml);
   const attachments = pv.design ? pv.docs.filter((d) => /\.pdf(\?|$)/i.test(d.url)).map((d) => d.url) : [];
   const sent = await sendViaGhl({ contactId, email: to, subject: (opts.test ? '[TEST] ' : '') + pv.subject, html, text: packageText(pv.body, pv.docs), attachments });
   if (!sent) {
@@ -301,5 +317,5 @@ export async function sendStagePackage(
 export async function renderStagePreview(sql: Sql, ownerId: string, rec: Record<string, unknown>, stageId: string, spaceOwner = ownerId) {
   const pv = await previewStageSend(sql, ownerId, rec, stageId, spaceOwner);
   if (!pv) return '';
-  return pv.design ? renderPackageEmail(pv.design, pv.body, pv.docs) : `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:23px;max-width:600px;margin:24px auto">${toHtml(pv.body, pv.docs)}</div>`;
+  return pv.design ? renderPackageEmail(pv.design, pv.body, pv.docs, pv.bodyHtml) : `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:23px;max-width:600px;margin:24px auto">${toHtml(pv.body, pv.docs, pv.bodyHtml)}</div>`;
 }

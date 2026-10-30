@@ -1,3 +1,4 @@
+import { cutSignOff } from './rich-html';
 /* Designed info-pack emails. A package with a design wraps Chad's short note in a forwardable one-minute brief.
    Email-safe: one 600px table, inline styles, Arial, live text for every number, only the two logos are images.
    Every figure here comes from the Oct 2026 Business Overview and deck slides 02 and 09; change them there first. */
@@ -200,10 +201,10 @@ function brandMarks(html: string) {
 }
 
 /** Full HTML email: logo, Chad's note, signature, documents, then the forwardable brief. */
-export function renderPackageEmail(design: Design, note: string, docs: Array<{ name: string; url: string }>) {
-  return brandMarks(renderRaw(design, note, docs));
+export function renderPackageEmail(design: Design, note: string, docs: Array<{ name: string; url: string }>, noteRich = '') {
+  return brandMarks(renderRaw(design, note, docs, noteRich));
 }
-function renderRaw(design: Design, note: string, docs: Array<{ name: string; url: string }>) {
+function renderRaw(design: Design, note: string, docs: Array<{ name: string; url: string }>, noteRich = '') {
   const sig = `<div style="${F}font-size:14px;line-height:20px;color:${INK};margin-top:4px"><b>With Gratitude,</b><br><b>Chad R Johnston</b><br><span style="color:${MUTED};font-size:13px">Founder &amp; CEO, 4orm Finance<br>778-363-2423 &middot; chad@4ormfinance.com</span></div>`;
   const body = note.replace(/\n*\s*With Gratitude,[\s\S]*$/i, '').trim();
   const b = brief(design);
@@ -213,7 +214,7 @@ function renderRaw(design: Design, note: string, docs: Array<{ name: string; url
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;background:#ffffff;border:1px solid ${LINE};border-radius:10px">
 <tr><td style="padding:28px 34px 30px">
 <img src="${SITE}/assets/email/4orm-finance.png" alt="4orm Finance" height="40" style="height:40px;width:auto;display:block;border:0;margin:0 0 22px">
-${noteHtml(body)}
+${noteRich ? `<div style="${F}font-size:15px;line-height:23px;color:${INK};margin:0 0 14px">${cutSignOff(noteRich)}</div>` : noteHtml(body)}
 ${sig}
 ${docs.length ? `<div style="margin-top:20px">${docCards(docs)}</div>` : ''}
 ${b ? `<div style="${F}font-size:11px;letter-spacing:2px;font-weight:bold;color:#8a92a6;text-align:center;margin:28px 0 18px">FOR YOUR TEAM &middot; FORWARD AS IS</div>
