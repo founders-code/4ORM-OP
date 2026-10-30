@@ -64,7 +64,7 @@
     calendarNeon: '/port-css/calendar-neon.css?v=14', completedNeon: '/port-css/completed-neon.css?v=8',
     intNeon: '/port-css/integrations-neon.css?v=6',     vaultOps: '/port-css/vault-ops.css?v=15',
     sheetViewer: '/port-css/sheet-viewer.css?v=5', notesCanvasP8: '/port-css/notes-canvas-p8.css?v=4',
-    outreach: '/port-css/outreach-lists.css?v=22',
+    outreach: '/port-css/outreach-lists.css?v=23',
     vault: '/port-css/vault-ops.css?v=15',
     ops: '/port-css/vault-ops.css?v=15',
     contrastP10: '/port-css/contrast-p10.css?v=6'

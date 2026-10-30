@@ -57,6 +57,9 @@ function slot(pool: Array<Record<string, unknown>>, from: number, to: number) {
   return pick;
 }
 export const GROWTH_VIEWS: GrowthView[] = [
+  /* Starred: anyone Chad starred on a card because something turned up. Newest star first; check the notes on each. */
+  { key: 'w-starred', name: 'Starred', sub: 'something turned up · check the notes', kind: 'design', perDay: 0, master: false,
+    pick: (rows) => rows.filter((r) => !!r.starred_at).sort((a, b) => String(b.starred_at).localeCompare(String(a.starred_at))) },
   { key: 'w-design', name: 'Design partners: first 50', sub: '10 calls a day', kind: 'design', perDay: 10, master: false,
     pick: (rows) => slot(byList(rows, ['design']), 0, 50) },
   { key: 'w-clients', name: 'Client targets: first 25', sub: '5 a day', kind: 'design', perDay: 5, master: false,
@@ -123,6 +126,7 @@ export async function ensureGrowth(sql: Sql) {
     PRIMARY KEY (owner_id, id)
   )`;
   await sql`CREATE INDEX IF NOT EXISTS growth_records_list ON growth_records (owner_id, list, rank)`;
+  await sql`ALTER TABLE growth_records ADD COLUMN IF NOT EXISTS starred_at timestamptz`;
   await sql`CREATE TABLE IF NOT EXISTS growth_touches (
     id bigserial PRIMARY KEY,
     owner_id text NOT NULL,
@@ -280,6 +284,7 @@ export async function patchGrowth(sql: Sql, ownerId: string, id: string, body: R
   const setPlan = Object.prototype.hasOwnProperty.call(body, 'plan_day');
   const setNext = Object.prototype.hasOwnProperty.call(body, 'next_date');
   const setDel = Object.prototype.hasOwnProperty.call(body, 'deleted');
+  const setStar = Object.prototype.hasOwnProperty.call(body, 'starred');
   const v = (k: string) => (k in next ? next[k] : cur[k]);
   const rows = await sql`UPDATE growth_records SET
       name = ${v('name')}, contact = ${v('contact')}, title = ${v('title')}, email = ${v('email')}, phone = ${v('phone')},
@@ -289,6 +294,7 @@ export async function patchGrowth(sql: Sql, ownerId: string, id: string, body: R
       plan_day = CASE WHEN ${setPlan} THEN ${setPlan ? dateOrNull(body.plan_day) : null}::date ELSE plan_day END,
       next_date = CASE WHEN ${setNext} THEN ${setNext ? dateOrNull(body.next_date) : null}::date ELSE next_date END,
       deleted_at = CASE WHEN ${setDel} THEN (CASE WHEN ${!!body.deleted} THEN now() ELSE NULL END) ELSE deleted_at END,
+      starred_at = CASE WHEN ${setStar} THEN (CASE WHEN ${!!body.starred} THEN COALESCE(starred_at, now()) ELSE NULL END) ELSE starred_at END,
       edited = ${JSON.stringify(edited)}::jsonb, updated_at = now()
     WHERE owner_id = ${ownerId} AND id = ${id} RETURNING *`;
   return rows[0] || null;
@@ -333,14 +339,14 @@ export async function undoTouch(sql: Sql, ownerId: string, touchId: number) {
 
 const LIST_COLS = (sql: Sql, ownerId: string, list: string | null) => (list
   ? sql`SELECT id, list, grp, rank, grank, priority, score, name, type, contact, title, email, phone, linkedin, website, city, prov,
-      route, next_action, why, constraint_note, evidence, owner_name, status, stage, sources, notes, plan_day, next_date, last_touch, updated_at
+      route, next_action, why, constraint_note, evidence, owner_name, status, stage, sources, notes, plan_day, next_date, last_touch, updated_at, starred_at
       FROM growth_records WHERE owner_id = ${ownerId} AND deleted_at IS NULL AND list = ${list} ORDER BY rank, grank`
   : sql`SELECT id, list, grp, rank, priority, name, contact, title, email, phone, linkedin, website, city, prov, type, status, stage,
       next_action, plan_day, next_date, last_touch, left(notes, 400) AS notes, grank,
       data->'ranks'->>'VC firm rank' AS vcrank, data->'ghl'->>'stage' AS ghl_stage, data->'ghl'->>'pipeline' AS ghl_pipeline, data->'ranks'->>'Investor rank' AS invrank,
       score, data->'intel'->>'pain_score' AS pain, data->'intel'->>'industry' AS industry, data->'intel'->>'location' AS location,
       data->'intel'->'fit' AS ifit, left(data->'intel'->'why'->>0, 220) AS iwhy, left(data->'intel'->'backed'->>0, 160) AS ibacked, left(data->'intel'->'pain'->>0, 160) AS ipain,
-      data->>'contactId' AS in_contact
+      data->>'contactId' AS in_contact, starred_at
       FROM growth_records WHERE owner_id = ${ownerId} AND deleted_at IS NULL ORDER BY list, rank`);
 
 export async function listGrowth(sql: Sql, ownerId: string, list: string | null) {

@@ -35,6 +35,7 @@
     + '#dsr .d-nav button{border-radius:999px;padding:7px 14px}#dsr .d-nav button.nx{background:#4272f9;border-color:#4272f9;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
     + '#dsr .d-hl{color:#fff;font-weight:800;background:rgba(66,114,249,.24);border-radius:4px;padding:0 4px}#dsr .d-hg{color:#7ff0c2;font-weight:800}'
     + '#dsr li{font-size:13px;line-height:1.5}#dsr .d-chips{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 6px}#dsr .d-chips span{padding:4px 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:rgba(255,72,102,.14);color:#ff8fa3}'
+    + '#dsr .d-star{margin-left:8px;font:inherit;font-size:12px;font-weight:800;padding:4px 12px;border-radius:999px;border:1px solid rgba(255,193,59,.5);background:transparent;color:#ffd27a;cursor:pointer}#dsr .d-star.on{background:#ffc13b;border-color:#ffc13b;color:#1d1400}'
     + '#dsr .d-sl2.flash{outline:2px solid #4272f9;outline-offset:4px;border-radius:10px}#dsr .d-pills{display:flex;flex-wrap:wrap;gap:6px}#dsr .d-pills button{border-radius:999px}#dsr .d-sl2 button.pick{background:rgba(66,114,249,.22);border-color:#4272f9;color:#fff}'
     + '#dsr .d-scb{margin-left:6px;padding:3px 12px;font-size:11px;border-radius:999px;background:#4272f9!important;border-color:#4272f9!important;color:#fff}'
     + '#dsrScript{position:fixed;top:0;right:0;bottom:0;width:min(560px,100vw);z-index:2147482500;background:#0c0d11;border-left:1px solid #2a2c35;box-shadow:-20px 0 60px rgba(0,0,0,.55);overflow:auto;color:#e6eaf2;font:500 13.5px/1.55 Inter,-apple-system,system-ui,sans-serif;padding:0 0 30px}'
@@ -273,7 +274,8 @@
     var h = '<div class="d-bx">' + nav + '<div class="d-top"><div><span class="d-chip ' + chipCls + '">' + esc(ch === 'LinkedIn' ? 'LinkedIn in GoHighLevel' : ch) + '</span>'
       + '<span class="d-chip">' + esc(meta[0]) + '</span>' + (rec.priority ? '<span class="d-chip">' + esc(rec.priority) + (rec.score ? ' · score ' + esc(rec.score) : '') + '</span>' : '')
       + '<span class="d-stg"><button type="button" class="d-stgb" data-a="stages">Stages: ' + esc(ghl || stage) + '</button></span>'
-      + (ch === 'Call' ? '<button type="button" class="d-scb" data-a="script">Script</button>' : '') + '</div>'
+      + (ch === 'Call' ? '<button type="button" class="d-scb" data-a="script">Script</button>' : '')
+      + '<button type="button" class="d-star' + (rec.starred_at ? ' on' : '') + '" data-a="star" title="Starred people go on their own list, Starred, so you can come back and check the notes">' + (rec.starred_at ? 'Starred' : 'Star') + '</button>' + '</div>'
       + '<span class="d-q">' + (rec.last_touch ? 'Last touch ' + esc(new Date(rec.last_touch).toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' })) : 'Never touched') + '</span></div>'
       + '<div class="d-mid"><div class="d-lft">'
       + '<div id="dsrHead">'
@@ -599,6 +601,23 @@
       close();
       if (typeof window.openComposeDraft === 'function') window.openComposeDraft({ to: [{ email: String(rec.email).trim().toLowerCase(), name: nm }], subject: '4orm Helps', body: 'Hi ' + first + ',\n\n' });
       else if (typeof window.openComposeTo === 'function') window.openComposeTo(rec.email, nm);
+    };
+    /* Star: something turned up. Starred people collect on their own list (Lists, Starred), newest first. */
+    var stb = wrap.querySelector('[data-a="star"]');
+    if (stb) stb.onclick = function () {
+      var on = !stb.classList.contains('on');
+      stb.classList.toggle('on', on); stb.textContent = on ? 'Starred' : 'Star';
+      api('/api/growth', 'PATCH', { id: rec.id, starred: on }).then(function (x) {
+        if (!x || !x.ok) throw 0;
+        rec.starred_at = on ? new Date().toISOString() : null;
+        forget(rec.id);
+        if (window.STATE) window.STATE.peopleLists = null;
+        toast(on ? rec.name + ' is on your Starred list' : rec.name + ' taken off Starred', function () {
+          api('/api/growth', 'PATCH', { id: rec.id, starred: !on }).then(function () { forget(rec.id); if (window.STATE) window.STATE.peopleLists = null; });
+          stb.classList.toggle('on', !on); stb.textContent = !on ? 'Starred' : 'Star';
+        });
+        if (opts.onSaved) opts.onSaved(rec, '');
+      }).catch(function () { stb.classList.toggle('on', !on); stb.textContent = !on ? 'Starred' : 'Star'; toast('Could not save the star'); });
     };
     var lk = wrap.querySelector('[data-a="li"]');
     if (lk) lk.onclick = function () { window.open(url(rec.linkedin), '_blank', 'noopener'); };

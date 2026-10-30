@@ -41,6 +41,7 @@ export type ReachListPerson = {
   backed?: string;
   painLine?: string;
   inContacts?: boolean;
+  starred?: boolean;
 };
 
 export type ReachList = {
@@ -510,6 +511,7 @@ export async function buildCallLists(sql: Sql, ownerId: string, userId: string):
           backed: String(r.ibacked || ''),
           painLine: String(r.ipain || '').replace(/^Drivers:\s*/, ''),
           inContacts: !!r.in_contact,
+          starred: !!r.starred_at,
         } as ReachListPerson;
       });
       growth.push({

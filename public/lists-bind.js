@@ -802,6 +802,7 @@
           + '<td class="dy">' + esc(p.day || '') + '</td>'
           + '<td><button type="button" class="stg2" data-a="stage" title="' + esc(S.hint || '') + '" style="color:' + S.color + ';background:' + S.bg + '">' + esc(S.k) + '</button></td>'
           + '<td><div class="pills">'
+          + (p.growth ? '<button type="button" class="pl star' + (p.starred ? ' on' : '') + '" data-a="star" title="Star: put them on the Starred list">' + (p.starred ? 'Starred' : 'Star') + '</button>' : '')
           + '<button type="button" class="pl cbk" data-a="cb" title="Call back">Call back</button>'
           + (p.growth && state.mode === 'lists' ? (p.inContacts ? '<span class="pl inc" title="Already in Contacts">In Contacts</span>' : '<button type="button" class="pl addc" data-a="addc" title="Add this person to Contacts">Add to Contacts</button>') : '')
           + '<button type="button" class="pl del" data-a="del">Delete</button>'
@@ -827,6 +828,16 @@
             return;
           }
           if (a === 'space') { ev.stopPropagation(); openOrStartSpace(p); return; }
+          if (a === 'star') {
+            ev.stopPropagation();
+            var on = !p.starred; p.starred = on; renderBody();
+            api('/api/growth', { method: 'PATCH', body: { id: p.contactId, starred: on } }).then(function () {
+              if (window.STATE) window.STATE.peopleLists = null;
+              toast(on ? p.name + ' starred' : p.name + ' taken off Starred');
+              load();
+            }).catch(function () { p.starred = !on; renderBody(); toast('Could not save the star'); });
+            return;
+          }
           if (a === 'del') { ev.stopPropagation(); softDeletePerson(p); return; }
           if (a === 'addc') {
             ev.stopPropagation();
