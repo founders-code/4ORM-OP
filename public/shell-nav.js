@@ -11,6 +11,7 @@
     ['Lists', '', '', 'people', '/lists'],
     ['Spaces', '', '', 'work', '/spaces'],
     ['Pipeline', '', '', 'contacts', '/pipeline'],
+    ['Stage emails', '', '', 'stagemail', '/pipeline?builder=1'],
     ['Library'],
     ['Links', '', '', 'links', '/links'],
     ['Notes', '', '', 'notes', '/notes'],

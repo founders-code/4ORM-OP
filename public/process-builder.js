@@ -461,6 +461,15 @@
     } else if (where === 'builder') window.openProcessBuilder();
   }
   window.jumpTo = jump;
+  /* Left menu: Stage emails opens the builder over the page you are on. */
+  window.addEventListener('click', function (e) {
+    var p = e.composedPath ? e.composedPath() : [];
+    for (var i = 0; i < p.length; i++) {
+      if (p[i] && p[i].getAttribute && p[i].getAttribute('data-name') === 'Stage emails' && p[i].classList.contains('nav')) {
+        e.preventDefault(); e.stopPropagation(); window.openProcessBuilder(); return;
+      }
+    }
+  }, true);
   document.addEventListener('click', function (e) {
     var p = e.composedPath ? e.composedPath() : [];
     for (var i = 0; i < p.length; i++) {
