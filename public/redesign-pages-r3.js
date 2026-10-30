@@ -626,6 +626,15 @@
       + (b ? '<button class="r3-btn red" type="button" data-action="r3-beat-remove" data-id="' + esc(b.id) + '">Remove</button>' : '')
       + '</div><div class="err"></div>';
   }
+  function openBeat(el, root) {
+    var b = beatById(attr(el, 'data-id'));
+    var BP = window.beatPlan;
+    if (!BP || !b || !b.nextDue) { openPop(root, el, beatForm(b)); return; }
+    BP.hooks.edit = function (x) { openPop(root, el, beatForm(beatById(x && x.id) || x)); };
+    BP.hooks.onBeats = function (d) { if (beatsLast && d && Array.isArray(d.beats)) { beatsLast.pb.beats = d.beats; if (S().playbook) S().playbook.beats = d.beats; paintBeats(beatsLast.el, beatsLast.head, beatsLast.pb, beatsLast.today, beatsLast.ahead); } };
+    BP.hooks.toast = function (t) { toast(root, t); };
+    BP.open(b, { onEdit: BP.hooks.edit });
+  }
   function beatsReply(root, d, msg, undo) {
     if (beatsLast && d && Array.isArray(d.beats)) {
       beatsLast.pb.beats = d.beats;
@@ -642,8 +651,9 @@
     else toast(root, msgOf(err, 'Could not save that beat'));
   }
   Object.assign(actions, {
-    'r3-beat': function (el, root) { openPop(root, el, beatForm(beatById(attr(el, 'data-id')))); },
-    'play-beat': function (el, root) { openPop(root, el, beatForm(beatById(attr(el, 'data-id')))); },
+    /* 30 Oct 2026: a beat opens its plan (calendar, days left, steps); Edit beat inside it opens the form. */
+    'r3-beat': function (el, root) { openBeat(el, root); },
+    'play-beat': function (el, root) { openBeat(el, root); },
     'r3-beat-new': function (el, root) { openPop(root, el, beatForm(null)); },
     'r3-beat-save': function (el, root) {
       var id = attr(el, 'data-id');

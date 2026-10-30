@@ -6823,7 +6823,7 @@
   window.__deskMail = { sync: syncCompose, state: composeState, open: openCompose, repaint: repaintMail, bundle: bundleLinksText, toast: toast, root: mailRoot };
   if (!window.__r3Loaded && !document.querySelector('script[data-r3]')) {
     var r3 = document.createElement('script');
-    r3.src = '/redesign-pages-r3.js?v=4';
+    r3.src = '/redesign-pages-r3.js?v=5';
     r3.setAttribute('data-r3', '1');
     document.head.appendChild(r3);
   }

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fail } from '@/lib/log';
-import { addBeat, listBeats, markBeat, patchBeat, readCadence } from '@/lib/playbook-beats';
+import { addBeat, listBeats, markBeat, patchBeat, readCadence, setPlanStep } from '@/lib/playbook-beats';
 import { openBoard, sessionOwner } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -38,6 +38,17 @@ export async function POST(req: Request) {
     if ('error' in g) return g.error;
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     const action = String(body?.action || '');
+    if (action === 'plan') {
+      /* { id, action: 'plan', day, step, done?, note? }: one step of the plan for that due date. */
+      const id = String(body?.id || '');
+      if (!ID.test(id)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      const ok = await setPlanStep(g.sql, g.ownerId, id, String(body?.day || ''), String(body?.step || ''), {
+        done: typeof body?.done === 'boolean' ? body.done : undefined,
+        note: body?.note != null ? String(body.note) : undefined,
+      });
+      if (!ok) return NextResponse.json({ error: 'That step could not be saved.' }, { status: 400 });
+      return NextResponse.json({ ok: true, beats: await listBeats(g.sql, g.ownerId) });
+    }
     if (action === 'done' || action === 'undone') {
       const id = String(body?.id || '');
       if (!ID.test(id)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
