@@ -39,6 +39,7 @@
     + '#dsr .d-scb{margin-left:6px;padding:3px 12px;font-size:11px;border-radius:999px;background:#4272f9!important;border-color:#4272f9!important;color:#fff}'
     + '#dsrScript{position:fixed;top:0;right:0;bottom:0;width:min(560px,100vw);z-index:2147482500;background:#0c0d11;border-left:1px solid #2a2c35;box-shadow:-20px 0 60px rgba(0,0,0,.55);overflow:auto;color:#e6eaf2;font:500 13.5px/1.55 Inter,-apple-system,system-ui,sans-serif;padding:0 0 30px}'
     + '#dsrScript .s-hd{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#0c0d11;border-bottom:1px solid #23252e}#dsrScript .s-hd b{font-size:16px;font-weight:900;color:#fff}'
+    + '#dsrScript .s-b button{font:inherit;font-size:12px;font-weight:800;padding:6px 14px;border-radius:999px;border:1px solid #2a2c35;background:#18191f;color:#fff;cursor:pointer}#dsrScript .s-b button.pri{background:#4272f9;border-color:#4272f9}'
     + '#dsrScript .s-hd button{font:inherit;font-size:12px;font-weight:800;padding:6px 14px;border-radius:999px;border:1px solid #2a2c35;background:#18191f;color:#fff;cursor:pointer}'
     + '#dsrScript .s-b{padding:4px 20px}#dsrScript h4{margin:18px 0 8px;font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#7d859a}'
     + '#dsrScript .s-line{background:#15161c;border:1px solid #23252e;border-radius:12px;padding:11px 14px;margin:0 0 8px;font-size:15px;line-height:1.5;color:#fff}#dsrScript .s-line.q{border-color:rgba(66,114,249,.55);background:rgba(66,114,249,.1)}'
@@ -331,19 +332,61 @@
   }
   /* Script, on every call card: the opener and questions on top, then what changed, the pressure and what
      better workflows delivered (from the Business Pain and Value one-pager, reviewed 25 Sep 2026). */
+  /* 30 Oct: the opener and questions are Chad's own text, edited on the card and saved to his prefs as he refines it. */
+  var DEFAULT_SCRIPT = [
+    '## Open',
+    'Would you reward me for my honesty about this being a cold call?',
+    "My name's Chad, I am with 4orm Finance. This is not a sales call. We are currently developing 4ormIQ to help financial business clients show and understand suitability while helping protect the business from increased fines and work load to stay compliant.",
+    "As you know, the risk and liability of new suitability mandates falls on the business. We are asking, agents have more documents, more administrative work, but how can a business show suitability when they can't show what their client's understanding about suitability is?",
+    'We have a unique approach leveraging counselling styled AI to help clients better understand their decisions. Our greatest asset will be in building it alongside specific experts in the space. We are only looking to partner with 2-3 firms for design advisory.',
+    '## Ask',
+    'Would there be anything holding you back from exploring this further with you and your firm?',
+    'Would you say intake or post admin work is more challenging now?',
+    'How do you recreate the evidence needed in the event of an audit?'
+  ].join('\n');
+  function scriptText() {
+    var p = (window.STATE && window.STATE.prefs) || {};
+    return typeof p.call_script === 'string' && p.call_script.trim() ? p.call_script : DEFAULT_SCRIPT;
+  }
+  function fillScript(t, rec) {
+    var person = String((rec && rec.contact) || '').split(/\s*\|\s*/)[0];
+    var first = (/@|^\+?\d/.test(person) || !person ? '' : person.split(/\s+/)[0]);
+    return String(t).replace(/\{first name\}/gi, first || 'there').replace(/\{company\}/gi, (rec && rec.name) || 'your firm');
+  }
+  function scriptEditable(rec) {
+    var out = '<div style="display:flex;justify-content:flex-end;margin:-4px 0 4px"><button type="button" data-sedit style="font-size:11.5px;padding:3px 12px;border-radius:999px">Edit script</button></div>';
+    String(scriptText()).split(/\n+/).forEach(function (line) {
+      var l = line.trim(); if (!l) return;
+      if (/^##\s*/.test(l)) out += '<h4>' + esc(l.replace(/^##\s*/, '')) + '</h4>';
+      else out += '<div class="s-line' + (/\?\s*$/.test(l) ? ' q' : '') + '">' + esc(fillScript(l, rec)) + '</div>';
+    });
+    return out;
+  }
+  function bindScriptEdit(el, rec) {
+    var host = el.querySelector('#dsrScriptEd');
+    if (!host) return;
+    var eb = host.querySelector('[data-sedit]');
+    if (!eb) return;
+    eb.onclick = function () {
+      host.innerHTML = '<div style="font-size:11.5px;color:#aeb6c8;margin-bottom:6px">One line per sentence. Start a line with ## for a heading. A line ending in ? shows as a question. {first name} and {company} fill in.</div>'
+        + '<textarea id="dsrScriptTx" style="width:100%;min-height:340px;box-sizing:border-box;background:#07080b;color:#e9eefa;border:1px solid #2a2c35;border-radius:10px;padding:10px;font:13px/1.5 Inter,system-ui,sans-serif">' + esc(scriptText()) + '</textarea>'
+        + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button type="button" data-sreset>Back to the original</button><button type="button" data-scancel>Cancel</button><button type="button" class="pri" data-ssave>Save script</button></div>';
+      var tx = host.querySelector('#dsrScriptTx'); tx.focus();
+      host.querySelector('[data-scancel]').onclick = function () { host.innerHTML = scriptEditable(rec); bindScriptEdit(el, rec); };
+      host.querySelector('[data-sreset]').onclick = function () { tx.value = DEFAULT_SCRIPT; };
+      host.querySelector('[data-ssave]').onclick = function () {
+        var v = tx.value;
+        if (window.STATE) { window.STATE.prefs = window.STATE.prefs || {}; window.STATE.prefs.call_script = v; }
+        api('/api/prefs', 'PATCH', { call_script: v }).then(function (x) { toast(x && x.ok ? 'Script saved. Every card uses it now.' : 'Could not save the script'); }).catch(function () { toast('Could not save the script'); });
+        host.innerHTML = scriptEditable(rec); bindScriptEdit(el, rec);
+      };
+    };
+  }
   function scriptHtml(rec) {
     var L = function (lab, t, q) { return '<div class="s-line' + (q ? ' q' : '') + '">' + (lab ? '<small>' + esc(lab) + '</small>' : '') + esc(t) + '</div>'; };
     var BN = function (k, was, now) { return '<div style="font-weight:800;color:#fff;margin:8px 0 4px">' + esc(k) + '</div><div class="s-bn"><div><i>BEFORE</i>' + esc(was) + '</div><div class="n"><i>NOW</i>' + esc(now) + '</div></div>'; };
     return '<div class="s-hd"><b>Script · ' + esc(rec.name || '') + '</b><button type="button" data-sx>Close</button></div><div class="s-b">'
-      + '<h4>Open</h4>'
-      + L('', 'Would you reward me for my honesty about this being a cold call?', true)
-      + L('', "My name's Chad, I am with 4orm Finance. This is not a sales call. We are currently developing 4ormIQ to help financial business clients show and understand suitability while helping protect the business from increased fines and work load to stay compliant.")
-      + L('', "As you know, the risk and liability of new suitability mandates falls on the business. We are asking, agents have more documents, more administrative work, but how can a business show suitability when they can't show what their client's understanding about suitability is?")
-      + L('', 'We have a unique approach leveraging counselling styled AI to help clients better understand their decisions. Our greatest asset will be in building it alongside specific experts in the space. We are only looking to partner with 2-3 firms for design advisory.')
-      + '<h4>Ask</h4>'
-      + L('', 'Would there be anything holding you back from exploring this further with you and your firm?', true)
-      + L('', 'Would you say intake or post admin work is more challenging now?', true)
-      + L('', 'How do you recreate the evidence needed in the event of an audit?', true)
+      + '<div id="dsrScriptEd">' + scriptEditable(rec) + '</div>'
       + '<h4>What changed</h4>'
       + BN('Mortgage AML duties', 'Mortgage brokers, lenders and administrators were not FINTRAC reporting entities', 'Since Oct 11, 2024: compliance program, training, records and reporting, even when the lender does it too')
       + BN('FINTRAC penalties', 'Up to C$500K per very serious violation', 'Up to C$20M per very serious violation, 40x higher')
@@ -371,6 +414,14 @@
     el.innerHTML = scriptHtml(rec);
     document.body.appendChild(el);
     el.querySelector('[data-sx]').onclick = function () { el.remove(); };
+    bindScriptEdit(el, rec);
+    if (!(window.STATE && window.STATE.prefs) || !('call_script' in (window.STATE.prefs || {}))) {
+      api('/api/prefs').then(function (x) { return x && x.ok ? x.json() : null; }).then(function (d) {
+        if (!d || !d.prefs) return;
+        window.STATE = window.STATE || {}; window.STATE.prefs = Object.assign(window.STATE.prefs || {}, d.prefs);
+        var h = el.querySelector('#dsrScriptEd'); if (h && !el.querySelector('#dsrScriptTx')) { h.innerHTML = scriptEditable(rec); bindScriptEdit(el, rec); }
+      }).catch(function () {});
+    }
   }
   window.dossierPrefetch = function (id) { if (id) { getRec(id); getGhl(id); getPk(); } };
   function open(id, opts) {
@@ -525,7 +576,7 @@
     };
     var scb = wrap.querySelector('[data-a="script"]');
     if (scb) scb.onclick = function (e) { e.stopPropagation(); openScript(rec); };
-    var oldS = document.getElementById('dsrScript'); if (oldS) { oldS.innerHTML = scriptHtml(rec); oldS.querySelector('[data-sx]').onclick = function () { oldS.remove(); }; }
+    var oldS = document.getElementById('dsrScript'); if (oldS && !oldS.querySelector('#dsrScriptTx')) { oldS.innerHTML = scriptHtml(rec); oldS.querySelector('[data-sx]').onclick = function () { oldS.remove(); }; bindScriptEdit(oldS, rec); }
     wrap.querySelectorAll('[data-days]').forEach(function (b) {
       b.onclick = function () {
         var fu = wrap.querySelector('#dsrFu');

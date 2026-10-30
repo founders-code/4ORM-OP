@@ -58,9 +58,19 @@ export async function PATCH(req: Request) {
       const zoom: Record<string, number> = Object.assign({}, (cur.grid_zoom as object) || {}) as Record<string, number>;
       for (const [k, v] of Object.entries(body.grid_zoom as Record<string, unknown>)) {
         const n = Math.round(Number(v));
-        if (Number.isFinite(n)) zoom[String(k).slice(0, 40)] = Math.max(3, Math.min(9, n));
+        if (Number.isFinite(n)) zoom[String(k).slice(0, 40)] = Math.max(2, Math.min(9, n));
       }
       patch.grid_zoom = zoom;
+    }
+    /* The call script Chad edits as he goes (dossier card, Script). Plain text: '## ' starts a heading, a line ending '?' is a question. */
+    if (typeof body.call_script === 'string') {
+      patch.call_script = body.call_script.slice(0, 12000);
+      patch.call_script_at = new Date().toISOString();
+      const prev = typeof cur.call_script === 'string' ? cur.call_script : '';
+      if (prev && prev !== body.call_script) {
+        const hist = Array.isArray(cur.call_script_history) ? (cur.call_script_history as unknown[]).slice(0, 9) : [];
+        patch.call_script_history = [{ at: cur.call_script_at || null, text: prev }].concat(hist as never[]);
+      }
     }
     const next = Object.assign({}, cur, patch);
     await session.sql`
