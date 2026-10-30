@@ -25,20 +25,35 @@
     + '.pbx button{font:inherit;font-size:12px;font-weight:800;padding:8px 12px;border-radius:9px;border:1px solid #2a2c35;background:#18191f;color:#fff;cursor:pointer}'
     + '.pbx button:hover{border-color:#4272f9}.pbx button.pri{background:#00dc86;border-color:#00dc86;color:#03170d}.pbx button.warn{color:#ff8a9c}'
     + '.pbx button[disabled]{opacity:.5;cursor:default}'
-    + '.pbx .x-body{flex:1;display:grid;grid-template-columns:250px minmax(0,1fr) 440px;min-height:0}'
-    + '.pbx .x-left{border-right:1px solid #1d1f26;padding:16px;overflow:auto}.pbx .x-map{padding:18px 22px;overflow:auto}.pbx .x-ed{border-left:1px solid #1d1f26;padding:16px 18px;overflow:auto;background:#0d0e12}'
+    + '.pbx .x-pipes{display:flex;gap:6px;flex-wrap:wrap;padding:12px 24px;border-bottom:1px solid #1d1f26}'
+    + '.pbx .pl{display:inline-flex;gap:8px;align-items:center;border-radius:999px;padding:7px 12px;background:#111216}'
+    + '.pbx .pl.on{background:#4272f9;border-color:#4272f9}.pbx .pl small{color:#7d859a;font-weight:700}.pbx .pl.on small{color:#dfe6ff}'
+    + '.pbx .x-body{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 460px;min-height:0}'
+    + '.pbx .x-map{padding:18px 24px 40px;overflow:auto}.pbx .x-ed{border-left:1px solid #1d1f26;padding:16px 18px;overflow:auto;background:#0d0e12}'
     + '.pbx .k{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#7d859a;margin:4px 0 8px}'
-    + '.pbx .pl{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;margin-bottom:6px;background:#111216}'
-    + '.pbx .pl.on{background:#20222a;border-color:#4272f9}.pbx .pl small{color:#7d859a;font-weight:700}'
-    + '.pbx .flow{display:flex;flex-wrap:wrap;gap:26px 30px;align-items:stretch}'
-    + '.pbx .st{position:relative;width:200px;min-height:132px;background:#111216;border:1px solid #2a2c35;border-radius:12px;padding:11px 12px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:4px}'
-    + '.pbx .st:hover{border-color:#4272f9}.pbx .st.on{border-color:#4272f9;box-shadow:0 0 0 2px rgba(66,114,249,.35)}'
-    + '.pbx .st:not(:last-child)::after{content:"";position:absolute;right:-31px;top:50%;width:30px;height:2px;background:#2a2c35}'
-    + '.pbx .st .n{font-size:10px;font-weight:800;letter-spacing:.1em;color:#7d859a}.pbx .st b{font-size:13.5px}'
-    + '.pbx .st .cnt{color:#aeb6c8;font-size:11.5px}'
-    + '.pbx .st .pk{margin-top:auto;border-radius:8px;padding:6px 8px;font-size:11.5px;font-weight:700}'
-    + '.pbx .st .pk.has{background:rgba(0,220,134,.12);color:#5ff0b4}.pbx .st .pk.off{background:rgba(255,169,70,.12);color:#ffc98a}.pbx .st .pk.none{border:1px dashed #2f323c;color:#7d859a}'
-    + '.pbx .st .ms{font-size:11px;color:#7d859a}'
+    + '.pbx .sum{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}.pbx .sum h2{margin:0 12px 0 0;font-size:18px;font-weight:850}'
+    + '.pbx .chip{border-radius:999px;padding:5px 10px;background:#18191f;color:#c8d1ea;font-size:11.5px;font-weight:700}.pbx .chip.g{background:rgba(0,220,134,.12);color:#5ff0b4}'
+    + '.pbx .only{display:flex;align-items:center;gap:6px;margin-left:auto;color:#aeb6c8;font-size:12px;cursor:pointer}.pbx .only input{width:auto}'
+    + '.pbx .heads{display:grid;grid-template-columns:40px minmax(150px,230px) 34px minmax(0,1fr);padding:0 0 6px}.pbx .heads span{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#7d859a}'
+    + '.pbx .grp{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#7d859a;margin:22px 0 6px 40px}'
+    + '.pbx .r{position:relative;display:grid;grid-template-columns:40px minmax(150px,230px) 34px minmax(0,1fr);align-items:stretch;width:100%;padding:0;border:0;background:none;text-align:left;border-radius:0;min-height:64px}'
+    + '.pbx .r:hover{border:0}'
+    + '.pbx .r .sp{position:relative}.pbx .r .sp::before{content:"";position:absolute;left:19px;top:0;bottom:0;width:2px;background:#23252e}'
+    + '.pbx .r.first .sp::before{top:50%}.pbx .r.last .sp::before{bottom:50%}.pbx .r.solo .sp::before{display:none}'
+    + '.pbx .r .dot{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;background:#07080b;border:2px solid #3a3d48;color:#aeb6c8;font-size:10.5px;font-weight:850;display:flex;align-items:center;justify-content:center}'
+    + '.pbx .r.has .dot{background:#00dc86;border-color:#00dc86;color:#03170d}.pbx .r.off .dot{border-color:#ffa946;color:#ffc98a}'
+    + '.pbx .r .sb{margin:5px 0;background:#111216;border:1px solid #2a2c35;border-radius:10px;padding:9px 12px;display:flex;flex-direction:column;justify-content:center;gap:2px}'
+    + '.pbx .r .sb b{font-size:13.5px;line-height:1.25}.pbx .r .sb span{font-size:11.5px;color:#7d859a}.pbx .r .sb span.live{color:#9fb8ff;font-weight:700}'
+    + '.pbx .r .ln{position:relative}.pbx .r .ln::before{content:"";position:absolute;left:0;right:0;top:50%;height:2px;background:#23252e}.pbx .r.has .ln::before{background:#00dc86}.pbx .r.off .ln::before{background:#ffa946;opacity:.6}'
+    + '.pbx .r .em{margin:5px 0;border-radius:10px;padding:9px 12px;display:flex;flex-direction:column;justify-content:center;gap:4px;min-width:0}'
+    + '.pbx .r.has .em{background:rgba(0,220,134,.06);border:1px solid rgba(0,220,134,.35)}.pbx .r.off .em{background:rgba(255,169,70,.06);border:1px solid rgba(255,169,70,.35)}'
+    + '.pbx .r.none .em{border:1px dashed #2f323c;color:#7d859a;font-size:12px}'
+    + '.pbx .r .em .sj{font-size:13px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pbx .r .em .sj small{font-weight:800;font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-right:8px;color:#5ff0b4}.pbx .r.off .em .sj small{color:#ffc98a}'
+    + '.pbx .r .em .pv{font-size:11.5px;color:#aeb6c8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+    + '.pbx .r .em .tg{display:flex;gap:5px;flex-wrap:wrap}.pbx .r .em .tg i{font-style:normal;font-size:10.5px;font-weight:700;border-radius:999px;padding:2px 8px;background:#18191f;color:#c8d1ea}'
+    + '.pbx .r:hover .sb,.pbx .r:hover .em{border-color:#4272f9}'
+    + '.pbx .r.on .sb{border-color:#4272f9;box-shadow:0 0 0 2px rgba(66,114,249,.35)}.pbx .r.on .em{border-color:#4272f9}'
+    + '.pbx .r.ex{min-height:52px}.pbx .r.ex .dot{width:14px;height:14px;left:13px;font-size:0}'
     + '.pbx label{display:block;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7d859a;margin:12px 0 5px}'
     + '.pbx input,.pbx textarea,.pbx select{width:100%;background:#18191f;border:1px solid #2a2c35;border-radius:9px;color:#fff;font:inherit;padding:8px 10px}'
     + '.pbx textarea{min-height:260px;resize:vertical;line-height:1.5}'
@@ -50,7 +65,7 @@
     + '.pbx .empty{color:#7d859a;padding:30px 0}.pbx .tog{display:flex;align-items:center;gap:8px;margin-top:12px;color:#c8d1ea}.pbx .tog input{width:auto}'
     + '.pbx .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#20222a;border:1px solid #2a2c35;border-radius:10px;padding:10px 14px;display:none;gap:12px;align-items:center;z-index:5}'
     + '.pbx .toast.on{display:flex}'
-    + '@media(max-width:1100px){.pbx .x-body{display:block;overflow:auto}.pbx .x-left,.pbx .x-map,.pbx .x-ed{overflow:visible;border:0}.pbx .x-top{flex-wrap:wrap}}'
+    + '@media(max-width:1100px){.pbx .x-body{display:block;overflow:auto}.pbx .x-map{overflow:visible;padding:14px 14px 30px}.pbx .x-ed{overflow:visible;border:1px solid #4272f9;border-radius:12px;margin:4px 0 12px 40px}.pbx .x-top{flex-wrap:wrap}.pbx .x-pipes{padding:10px 14px}.pbx .heads,.pbx .r{grid-template-columns:40px minmax(110px,170px) 18px minmax(0,1fr)}}'
     /* the confirm card */
     + '.sgx{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.65);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto;font:500 12.5px/1.45 Inter,-apple-system,system-ui,sans-serif;color:#fff}'
     + '.sgx *{box-sizing:border-box;letter-spacing:normal}.sgx .bx{width:min(640px,100%);background:#111216;border:1px solid #2a2c35;border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.6)}'
@@ -69,7 +84,7 @@
     { name: 'Blank', subject: '', body: 'Hi {{first_name}},\n\n\n\nWith Gratitude,\nChad R Johnston\nFounder & CEO\n4orm Finance\n778-363-2423', follow: 0, task: '' }
   ];
 
-  var S = { data: null, pipe: '', stage: '', draft: null, undo: null };
+  var S = { data: null, pipe: '', stage: '', draft: null, undo: null, only: false };
   var box = null;
   function el(sel) { return box.querySelector(sel); }
   function toast(msg, undo) {
@@ -86,7 +101,7 @@
     box = document.createElement('div'); box.className = 'pbx';
     box.innerHTML = '<div class="x-top"><h1>Stage emails</h1><span class="x-sub">Each GoHighLevel stage can send its own package. Move a contact onto that stage and you confirm before it goes out.</span><span class="x-sp"></span>'
       + '<button type="button" data-go="sprint">15-min sprint</button><button type="button" data-go="pipeline">Pipeline</button><button type="button" data-close>Close</button></div>'
-      + '<div class="x-body"><div class="x-left"></div><div class="x-map"></div><div class="x-ed"></div></div><div class="toast"></div>';
+      + '<div class="x-pipes"></div><div class="x-body"><div class="x-map"></div><div class="x-ed"></div></div><div class="toast"></div>';
     document.body.appendChild(box);
     box.querySelector('[data-close]').onclick = close;
     box.querySelectorAll('[data-go]').forEach(function (b) { b.onclick = function () { close(); jump(b.getAttribute('data-go')); }; });
@@ -106,24 +121,60 @@
     }).catch(function (e) { el('.x-map').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
   }
 
+  var EXIT = /not now|not interested|parked|cancel|no response|not a fit|nurture|next round|3rd (reach|attempt)/i;
+  function narrow() { return window.innerWidth <= 1100; }
   function paint() {
     var d = S.data || { pipelines: [], packages: [], stats: {} };
+    var ed = el('.x-ed'), body = el('.x-body');
+    if (ed.parentNode !== body) body.appendChild(ed);
     var counts = {};
     (d.packages || []).forEach(function (p) { counts[p.pipelineId] = (counts[p.pipelineId] || 0) + 1; });
-    el('.x-left').innerHTML = '<div class="k">Pipelines</div>' + (d.pipelines.length ? d.pipelines.map(function (p) {
-      return '<button type="button" class="pl' + (p.id === S.pipe ? ' on' : '') + '" data-pipe="' + esc(p.id) + '"><span>' + esc(p.name) + '</span><small>' + (counts[p.id] || 0) + ' / ' + p.stages.length + '</small></button>';
-    }).join('') : '<div class="empty">' + (d.connected ? 'No pipelines in GoHighLevel yet.' : 'GoHighLevel is not connected.') + '</div>')
-      + '<div class="hint">The number is stages with a package, out of all stages.</div>';
-    el('.x-left').querySelectorAll('[data-pipe]').forEach(function (b) { b.onclick = function () { S.pipe = b.getAttribute('data-pipe'); S.stage = ''; S.draft = null; paint(); }; });
+    el('.x-pipes').innerHTML = d.pipelines.length ? d.pipelines.map(function (p) {
+      return '<button type="button" class="pl' + (p.id === S.pipe ? ' on' : '') + '" data-pipe="' + esc(p.id) + '"><span>' + esc(p.name) + '</span><small>' + (counts[p.id] || 0) + ' of ' + p.stages.length + '</small></button>';
+    }).join('') : '<div class="empty">' + (d.connected ? 'No pipelines in GoHighLevel yet.' : 'GoHighLevel is not connected.') + '</div>';
+    el('.x-pipes').querySelectorAll('[data-pipe]').forEach(function (b) { b.onclick = function () { S.pipe = b.getAttribute('data-pipe'); S.stage = ''; S.draft = null; paint(); }; });
     var pipe = curPipe();
     if (!pipe) { el('.x-map').innerHTML = ''; paintEditor(); return; }
-    el('.x-map').innerHTML = '<div class="k">' + esc(pipe.name) + ' · ' + pipe.stages.length + ' stages · ' + pipe.total + ' open</div><div class="flow">' + pipe.stages.map(function (s, i) {
-      var p = pkgFor(s.id), m = (d.stats || {})[s.id];
-      var pk = p ? '<div class="pk ' + (p.active ? 'has' : 'off') + '">' + (p.active ? 'Sends: ' : 'Paused: ') + esc(p.subject || 'no subject yet') + '</div>' : '<div class="pk none">No package. Click to build one.</div>';
-      return '<button type="button" class="st' + (s.id === S.stage ? ' on' : '') + '" data-st="' + esc(s.id) + '"><span class="n">STAGE ' + (i + 1) + '</span><b>' + esc(s.name) + '</b><span class="cnt">' + s.count + ' here now</span>'
-        + (m ? '<span class="ms">Sent ' + m.sent30 + ' in 30 days · ' + m.sent + ' all time' + (m.failed ? ' · ' + m.failed + ' did not go' : '') + '</span>' : '') + pk + '</button>';
-    }).join('') + '</div>';
-    el('.x-map').querySelectorAll('[data-st]').forEach(function (b) { b.onclick = function () { S.stage = b.getAttribute('data-st'); S.draft = null; paint(); if (window.innerWidth <= 1100) el('.x-ed').scrollIntoView({ behavior: 'smooth', block: 'start' }); }; });
+    var main = [], exits = [];
+    pipe.stages.forEach(function (s, i) { (EXIT.test(s.name) ? exits : main).push({ s: s, i: i }); });
+    var withEmail = pipe.stages.filter(function (s) { return pkgFor(s.id); }).length;
+    function row(x, k, list, ex) {
+      var s = x.s, p = pkgFor(s.id), m = (d.stats || {})[s.id];
+      if (S.only && !p && s.id !== S.stage) return '';
+      var cls = p ? (p.active ? 'has' : 'off') : 'none';
+      var pos = list.length === 1 ? ' solo' : k === 0 ? ' first' : k === list.length - 1 ? ' last' : '';
+      var em;
+      if (p) {
+        var first = String(p.body || '').split('\n').map(function (l) { return l.trim(); }).filter(function (l) { return l && !/^(hi|hello|dear)\b/i.test(l); })[0] || '';
+        var tags = [];
+        (p.docs || []).forEach(function (dc) { if (dc && dc.name) tags.push(dc.name); });
+        if (p.spaceId) tags.push('Space documents');
+        if (p.followDays) tags.push('Follow up in ' + p.followDays + (p.followDays === 1 ? ' day' : ' days'));
+        if (p.task) tags.push('Task');
+        if (m && m.sent) tags.push('Sent ' + m.sent + (m.sent30 ? ', ' + m.sent30 + ' this month' : ''));
+        em = '<span class="sj"><small>' + (p.active ? 'Sends' : 'Paused') + '</small>' + esc(p.subject || 'No subject yet') + '</span>'
+          + (first ? '<span class="pv">' + esc(first) + '</span>' : '')
+          + (tags.length ? '<span class="tg">' + tags.map(function (t) { return '<i>' + esc(t) + '</i>'; }).join('') + '</span>' : '');
+      } else em = 'No email. Click to write one.';
+      return '<button type="button" class="r ' + cls + pos + (ex ? ' ex' : '') + (s.id === S.stage ? ' on' : '') + '" data-st="' + esc(s.id) + '">'
+        + '<span class="sp"><span class="dot">' + (x.i + 1) + '</span></span>'
+        + '<span class="sb"><b>' + esc(s.name) + '</b><span' + (s.count ? ' class="live"' : '') + '>' + (s.count ? s.count + ' here now' : 'Empty') + '</span></span>'
+        + '<span class="ln"></span><span class="em">' + em + '</span></button>';
+    }
+    el('.x-map').innerHTML = '<div class="sum"><h2>' + esc(pipe.name) + '</h2><span class="chip">' + pipe.stages.length + ' stages</span><span class="chip">' + pipe.total + ' open</span><span class="chip g">' + withEmail + ' send an email</span>'
+      + '<label class="only"><input type="checkbox" id="pbOnly"' + (S.only ? ' checked' : '') + '>Only stages with an email</label></div>'
+      + '<div class="heads"><span></span><span>Stage</span><span></span><span>Email that goes out when you move someone here</span></div>'
+      + '<div class="grp" style="margin-top:4px">The path</div>' + main.map(function (x, k) { return row(x, k, main, false); }).join('')
+      + (exits.length ? '<div class="grp">Off the path</div>' + exits.map(function (x, k) { return row(x, k, exits, true); }).join('') : '');
+    el('#pbOnly').onchange = function () { S.only = this.checked; paint(); };
+    el('.x-map').querySelectorAll('[data-st]').forEach(function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute('data-st');
+        if (S.stage === id && narrow()) { S.stage = ''; S.draft = null; paint(); return; }
+        S.stage = id; S.draft = null; paint();
+      };
+    });
+    if (narrow() && S.stage) { var on = el('.x-map .r.on'); if (on) on.after(ed); }
     paintEditor();
   }
 
