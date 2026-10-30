@@ -587,7 +587,7 @@
     });
     /* Two views: Full week (the compact grid, where the page opens) and Focus today. Keep whichever is on across repaints. */
     if (ctr) {
-      var want = ['lanes', 'blocks', 'sprint'].filter(function (m) { return document.body.classList.contains(m); })[0] || 'compact';
+      var want = ['lanes', 'blocks', 'sprint', 'compact'].filter(function (m) { return document.body.classList.contains(m); })[0] || 'sprint';
       var btn = ctr.querySelector('button[data-m="' + want + '"]');
       if (btn && !(document.body.classList.contains(want) && btn.classList.contains('on'))) btn.click();
     }
