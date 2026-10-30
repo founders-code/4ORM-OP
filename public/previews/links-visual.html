@@ -27,7 +27,7 @@ h1{margin:0;font-size:34px;font-weight:800;letter-spacing:-.02em}
 .tile{position:relative;border-radius:16px;overflow:hidden;background:#151821;text-decoration:none;color:#fff;display:block;isolation:isolate;transition:transform .18s ease,box-shadow .18s ease}
 .tile:hover{transform:translateY(-3px);box-shadow:0 18px 40px rgba(0,0,0,.55),0 0 0 2px var(--blue2)}
 .tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;z-index:-2}
-.tile .ph{position:absolute;inset:0;z-index:-2;display:grid;place-items:center;font-weight:800;letter-spacing:-.03em;color:rgba(255,255,255,.92);text-align:center;padding:12px}
+.tile .ph{position:absolute;inset:0;z-index:-2;display:grid;place-items:center;padding-bottom:42px!important;font-weight:800;letter-spacing:-.03em;color:rgba(255,255,255,.92);text-align:center;padding:12px}
 .tile::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(5,6,10,.92) 100%)}
 .tile .cap{position:absolute;left:12px;right:12px;bottom:10px}
 .tile .cap b{display:block;font-size:14.5px;line-height:1.25;text-shadow:0 1px 6px rgba(0,0,0,.6)}
@@ -82,7 +82,7 @@ h1{margin:0;font-size:34px;font-weight:800;letter-spacing:-.02em}
     'partners & dev|': ['Build', 'Partners'], 'partners & dev|prospect': ['Build', 'Partners'],
     'chad|': ['Personal', 'Learning'], 'resources|negotiation': ['Personal', 'Learning'], 'music|': ['Personal', 'Music']
   };
-  var PINS = ['4ormop.com', 'app.gohighlevel.com', 'drive.google.com', 'data.4ormfinance.com', 'vercel.com', 'docsend.com', 'app.clickup.com', 'platform.claude.com'];
+  var PINS = [/4orm ops/i, /^gohighlevel . 4orm sub-account/i, /^google drive$/i, /4orm data room/i, /vercel deployments/i, /^docsend$/i, /clickup workspace/i, /claude api/i];
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function host(u) { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return String(u || ''); } }
   function hue(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }
@@ -105,7 +105,7 @@ h1{margin:0;font-size:34px;font-weight:800;letter-spacing:-.02em}
       l._dup = !!seen[key] || (seen[host(l.url)] && /crunchbase|openvc/.test(host(l.url)));
       seen[key] = 1; seen[host(l.url)] = 1;
     });
-    var pins = PINS.map(function (d) { return links.filter(function (l) { return host(l.url) === d; })[0]; }).filter(Boolean);
+    var pins = PINS.map(function (re) { return links.filter(function (l) { return re.test(String(l.title)); })[0]; }).filter(Boolean);
     document.getElementById('hero').innerHTML = pins.map(function (l, i) { return tile(l, i === 0 ? 'Pinned' : ''); }).join('');
     document.getElementById('chips').innerHTML = '<button class="chip on" data-go="">Everything</button>' + SHELF.map(function (s) {
       var n = links.filter(function (l) { return l._sh === s[0] && !l._dup; }).length;

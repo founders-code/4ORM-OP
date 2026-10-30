@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Spaces, landing preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#08090c;--card:#121319;--card2:#171922;--line:rgba(120,150,255,.16);--ink:#e9eefa;--ink2:#a3b0d2;--ink3:#6f7fa8;--blue:#2E6BF2;--blue2:#5B8CFF;--green:#2fe08b;--amber:#ffb340}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:500 14px/1.4 Inter,system-ui,sans-serif}
+.wrap{max-width:1600px;margin:0 auto;padding:22px 24px 80px}
+.note{background:#141a2e;border:1px solid rgba(91,140,255,.35);border-radius:12px;padding:10px 16px;margin-bottom:18px;color:#c8d6ff;font-size:13.5px}.note b{color:#fff}
+.top{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+h1{margin:0;font-size:34px;font-weight:800;letter-spacing:-.02em}
+.search{flex:1;min-width:240px;height:48px;border-radius:14px;border:1px solid var(--line);background:#0f1016;color:var(--ink);font:inherit;font-size:16px;padding:0 18px}
+.search:focus{outline:2px solid var(--blue);border-color:transparent}
+.btn{height:44px;border-radius:12px;border:0;background:var(--blue);color:#fff;font:800 14px Inter;padding:0 18px;cursor:pointer}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 24px}
+.chip{border:1px solid var(--line);background:transparent;color:var(--ink2);font:700 13px Inter;border-radius:999px;padding:8px 14px;cursor:pointer}
+.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.k{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin:0 0 10px}
+/* Up next: the closest to ready, big */
+.next{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:34px}
+.big{border-radius:18px;overflow:hidden;background:var(--card);border:1px solid var(--line);cursor:pointer;transition:transform .16s,box-shadow .16s}
+.big:hover,.sq:hover{transform:translateY(-3px);box-shadow:0 18px 40px rgba(0,0,0,.5),0 0 0 2px var(--blue2)}
+.cover{height:150px;position:relative;display:flex;align-items:flex-end;padding:14px 16px}
+.cover .ini{position:absolute;right:14px;top:10px;font-size:54px;font-weight:800;letter-spacing:-.04em;color:rgba(255,255,255,.22)}
+.cover .cat{position:absolute;left:14px;top:12px;font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;background:rgba(8,9,12,.55);border-radius:6px;padding:3px 8px}
+.cover h3{margin:0;font-size:21px;font-weight:800;line-height:1.15;text-shadow:0 1px 8px rgba(0,0,0,.45)}
+.body{padding:12px 16px 14px}
+.who{color:var(--ink2);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.steps{display:flex;gap:4px;margin:10px 0 6px}
+.steps i{flex:1;height:6px;border-radius:4px;background:#262a37}
+.steps i.on{background:var(--green)}
+.sl{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink3)}
+.do{margin-top:10px;width:100%;border:0;border-radius:10px;background:var(--blue);color:#fff;font:800 13px Inter;padding:9px;cursor:pointer}
+.do.soft{background:#1b2236;color:#cdd8ff}
+/* Groups: square cards */
+.grp{margin-bottom:30px}
+.gh{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
+.gh h2{margin:0;font-size:22px;font-weight:800}
+.gh em{font-style:normal;color:var(--blue2);font-weight:800}
+.gh .more{margin-left:auto;color:var(--ink3);font-weight:700;font-size:13px;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.sq{border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line);cursor:pointer;transition:transform .16s,box-shadow .16s;display:flex;flex-direction:column}
+.sq .cover{height:96px;padding:10px 12px}
+.sq .cover h3{font-size:15.5px}
+.sq .cover .ini{font-size:38px}
+.sq .body{padding:10px 12px 12px}
+.sq .do{padding:7px;font-size:12px}
+.sent{color:var(--green);font-weight:800;font-size:12px;margin-top:8px}
+.dim{display:none}
+.side{position:fixed;top:0;right:0;bottom:0;width:min(520px,92vw);background:#0d0e13;border-left:1px solid var(--line);box-shadow:-30px 0 60px rgba(0,0,0,.5);transform:translateX(105%);transition:transform .22s;padding:22px;z-index:9;overflow:auto}
+.side.on{transform:none}
+.side h2{margin:0 0 4px;font-size:24px}.side .x{position:absolute;top:16px;right:16px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:6px 14px;font:700 13px Inter;cursor:pointer}
+.side p{color:var(--ink2)}
+@media (max-width:1100px){.next{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.next{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="note"><b>Preview only.</b> Spaces as cards again, with your real spaces. The four closest to ready sit big on top. Below, one grid per group. Each card shows the person, five steps (person, document, intro, email, sent) and the one next thing to do. Click a card and the side panel you already have opens.</div>
+  <div class="top"><h1>Spaces</h1><input class="search" id="q" placeholder="Find a space or person" autocomplete="off"><button class="btn" type="button">+ New space</button></div>
+  <div class="chips" id="chips"></div>
+  <div class="k" id="nextK">Up next, closest to ready</div>
+  <div class="next" id="next"></div>
+  <div id="groups"><div class="who">Loading your spaces...</div></div>
+</div>
+<aside class="side" id="side"><button class="x" type="button" id="sx">Close</button><div id="sideIn"></div></aside>
+<script>
+(function () {
+  var COLORS = { VC: [262, 300], Business: [205, 240], Regulatory: [160, 190], General: [220, 250], Other: [30, 10] };
+  var GNAME = { VC: 'Investors', Business: 'Design partners and firms', Regulatory: 'Regulators', General: 'General', Other: 'Other' };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function ini(n) { var p = String(n || '').replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/); return ((p[0] || '')[0] || '') + ((p[1] || '')[0] || ''); }
+  function steps(p) {
+    return [p.recipientCount > 0, p.docCount > 0, !!(p.angle || p.description), !!p.emailSubject, !!p.sentAt];
+  }
+  function nextDo(st) {
+    if (st[4]) return ['Sent', true];
+    if (!st[0]) return ['Add the person', false];
+    if (!st[1]) return ['Attach a document', false];
+    if (!st[2]) return ['Write the intro', false];
+    if (!st[3]) return ['Write the email', false];
+    return ['Send it', false];
+  }
+  function company(p) { var m = /Company:\s*([^(\n]+?)(?:\s*\(|\s+Industry:|$)/.exec(p.description || ''); return m ? m[1].trim() : ''; }
+  function card(p, big) {
+    var g = p._g; var c = COLORS[g] || COLORS.Other;
+    var st = steps(p); var n = st.filter(Boolean).length; var nd = nextDo(st);
+    var sub = [company(p), (p.subjectLabel && p.subjectLabel !== p.name ? p.subjectLabel : '')].filter(Boolean).join(' · ') || (GNAME[g] || g);
+    return '<div class="' + (big ? 'big' : 'sq') + '" data-id="' + esc(p.id) + '" data-s="' + esc((p.name + ' ' + sub + ' ' + g).toLowerCase()) + '">'
+      + '<div class="cover" style="background:linear-gradient(140deg,hsl(' + c[0] + ',62%,40%),hsl(' + c[1] + ',70%,18%))"><span class="cat">' + esc(GNAME[g] || g) + '</span><span class="ini">' + esc(ini(p.name).toUpperCase()) + '</span><h3>' + esc(p.name || 'Untitled space') + '</h3></div>'
+      + '<div class="body"><div class="who">' + esc(sub) + '</div>'
+      + '<div class="steps">' + st.map(function (on) { return '<i' + (on ? ' class="on"' : '') + '></i>'; }).join('') + '</div>'
+      + '<div class="sl"><span>' + n + ' of 5 done</span><span>' + (p.docCount || 0) + ' doc' + (p.docCount === 1 ? '' : 's') + '</span></div>'
+      + (nd[1] ? '<div class="sent">Sent</div>' : '<button class="do' + (n >= 4 ? '' : ' soft') + '" type="button">' + esc(nd[0]) + '</button>') + '</div></div>';
+  }
+  var ALL = [];
+  function paint(list) {
+    list.forEach(function (p) { p._g = p.category || p.spaceCategory || 'Other'; p._n = steps(p).filter(Boolean).length; });
+    ALL = list;
+    var order = ['VC', 'Business', 'Regulatory', 'General', 'Other'];
+    var groups = order.map(function (g) { return [g, list.filter(function (p) { return p._g === g; })]; }).filter(function (x) { return x[1].length; });
+    document.getElementById('chips').innerHTML = '<button class="chip on" data-go="">All ' + list.length + '</button>' + groups.map(function (x) { return '<button class="chip" data-go="' + x[0] + '">' + esc(GNAME[x[0]]) + ' ' + x[1].length + '</button>'; }).join('');
+    var top = list.filter(function (p) { return !p.sentAt; }).slice().sort(function (a, b) { return b._n - a._n; }).slice(0, 4);
+    document.getElementById('next').innerHTML = top.map(function (p) { return card(p, true); }).join('');
+    document.getElementById('groups').innerHTML = groups.map(function (x) {
+      var rows = x[1].slice().sort(function (a, b) { return b._n - a._n; });
+      return '<section class="grp" data-g="' + x[0] + '"><div class="gh"><h2>' + esc(GNAME[x[0]]) + '</h2><em>' + rows.length + '</em></div><div class="grid">' + rows.map(function (p) { return card(p, false); }).join('') + '</div></section>';
+    }).join('');
+  }
+  document.addEventListener('click', function (e) {
+    var c = e.target.closest('.chip');
+    if (c) {
+      document.querySelectorAll('.chip').forEach(function (x) { x.classList.toggle('on', x === c); });
+      var go = c.getAttribute('data-go');
+      document.querySelectorAll('.grp').forEach(function (s) { s.style.display = !go || s.getAttribute('data-g') === go ? '' : 'none'; });
+      document.getElementById('next').style.display = document.getElementById('nextK').style.display = go ? 'none' : '';
+      return;
+    }
+    if (e.target.id === 'sx') { document.getElementById('side').classList.remove('on'); return; }
+    var k = e.target.closest('[data-id]');
+    if (k) {
+      var p = ALL.filter(function (x) { return x.id === k.getAttribute('data-id'); })[0];
+      if (!p) return;
+      document.getElementById('sideIn').innerHTML = '<div class="k">' + esc(GNAME[p._g] || p._g) + '</div><h2>' + esc(p.name) + '</h2><p>' + esc(p.emailSubject || '') + '</p><p>' + esc(String(p.description || '').slice(0, 600)) + '</p><p style="color:var(--ink3)">In the live page this is the side panel you have now: email, documents, notes and tasks.</p>';
+      document.getElementById('side').classList.add('on');
+    }
+  });
+  document.getElementById('q').addEventListener('input', function () {
+    var v = this.value.trim().toLowerCase();
+    document.querySelectorAll('.grid .sq').forEach(function (t) { t.classList.toggle('dim', !!v && t.getAttribute('data-s').indexOf(v) < 0); });
+    document.getElementById('next').style.display = document.getElementById('nextK').style.display = v ? 'none' : '';
+  });
+  fetch('/api/spaces', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
+    var list = (d && (d.packages || d.spaces)) || [];
+    if (!list.length) { document.getElementById('groups').innerHTML = '<div class="who">Sign in to 4ormop in this browser to see your spaces here.</div>'; return; }
+    paint(list);
+  }).catch(function () { document.getElementById('groups').innerHTML = '<div class="who">Sign in to 4ormop in this browser to see your spaces here.</div>'; });
+})();
+</script>
+</body>
+</html>
