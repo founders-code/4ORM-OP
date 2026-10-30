@@ -37,7 +37,7 @@
     + '.pbx .li{display:flex;align-items:center;gap:10px;width:100%;text-align:left;margin-bottom:8px;padding:11px 12px;border-radius:10px;font-weight:700;cursor:grab}'
     + '.pbx .li i{width:10px;height:10px;border-radius:3px;flex:0 0 10px}.pbx .li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}.pbx .li small{color:#7a86a0;font-weight:600;font-size:11.5px}'
     + '.pbx .li.arm{border-color:#2e6bf2;box-shadow:0 0 0 3px rgba(46,107,242,.18)}'
-    + '.pbx .c-stage{background:#2e6bf2}.pbx .c-email{background:#7c4dff}.pbx .c-doc{background:#0f8a6a}.pbx .c-wait{background:#5b6678}.pbx .c-task{background:#b5651d}'
+    + '.pbx .c-stage{background:#2e6bf2}.pbx .c-email{background:#7c4dff}.pbx .c-doc{background:#0f8a6a}.pbx .c-wait{background:#5b6678}.pbx .c-task{background:#b5651d}.pbx .c-book{background:#0a95b5}'
     + '.pbx .x-can{background:#fff;border-radius:16px;display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}'
     + '.pbx .cv-bar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:14px 18px 8px}'
     + '.pbx .lg{display:flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px}.pbx .lg i{width:10px;height:10px;border-radius:3px}'
@@ -50,7 +50,7 @@
     + '.pbx .b{position:absolute;width:158px;height:92px;background:#fff;border:1px solid #d9dfea;border-radius:12px;padding:10px 11px;display:flex;flex-direction:column;gap:3px;text-align:left;cursor:pointer;box-shadow:0 1px 2px rgba(16,26,51,.04)}'
     + '.pbx .b:hover{border-color:#2e6bf2}'
     + '.pbx .b .kk{font:800 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase}'
-    + '.pbx .b.stage .kk{color:#2e6bf2}.pbx .b.email .kk{color:#7c4dff}.pbx .b.dc .kk{color:#0f8a6a}.pbx .b.wait .kk{color:#5b6678}.pbx .b.task .kk{color:#b5651d}'
+    + '.pbx .b.stage .kk{color:#2e6bf2}.pbx .b.email .kk{color:#7c4dff}.pbx .b.dc .kk{color:#0f8a6a}.pbx .b.wait .kk{color:#5b6678}.pbx .b.task .kk{color:#b5651d}.pbx .b.book .kk{color:#0a95b5}'
     + '.pbx .b .tt{font-size:12.5px;font-weight:800;line-height:1.25;color:#101a33;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}'
     + '.pbx .b .cp{margin-top:auto;display:flex;gap:4px;flex-wrap:wrap}.pbx .b .cp em{font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;font-style:normal;background:#eef2f9;color:#344055;border-radius:4px;padding:3px 5px;white-space:nowrap;max-width:132px;overflow:hidden;text-overflow:ellipsis}'
     + '.pbx .b .cp em.live{background:#e6eeff;color:#1f4fc4}.pbx .b .cp em.ns{background:#fff4e0;color:#9a6a12}.pbx .b .cp em.off{background:#fff4e0;color:#9a6a12}'
@@ -113,7 +113,7 @@
       + '<button type="button" data-go="sprint">15-min sprint</button><button type="button" data-go="pipeline">Pipeline</button><button type="button" data-close>Close</button></div>'
       + '<div class="x-pipes"></div>'
       + '<div class="x-body"><div class="x-lib"></div><div class="x-can"><div class="cv-bar">'
-      + '<span class="lg"><i class="c-stage"></i>Stage</span><span class="lg"><i class="c-email"></i>Email</span><span class="lg"><i class="c-doc"></i>Document</span><span class="lg"><i class="c-wait"></i>Follow-up</span><span class="lg"><i class="c-task"></i>Task</span>'
+      + '<span class="lg"><i class="c-stage"></i>Stage</span><span class="lg"><i class="c-email"></i>Email</span><span class="lg"><i class="c-doc"></i>Document</span><span class="lg"><i class="c-wait"></i>Follow-up</span><span class="lg"><i class="c-task"></i>Task</span><span class="lg"><i class="c-book"></i>Booking</span>'
       + '<span class="hintb">Drag a block onto a stage. Click any block to edit it.</span>'
       + '<span class="zm"><button type="button" data-z="-1">Zoom out</button><b class="zp"></b><button type="button" data-z="1">Zoom in</button><button type="button" data-z="0">Fit</button></span></div>'
       + '<div class="cv"><div class="gw"><div class="grid"></div></div></div></div></div>'
@@ -157,6 +157,14 @@
     { n: 'Meet and send', re: /meet|met$|info pack|package|material|notes|summary|follow up|rebooked|feedback|review|lane|terms|scoped|strategy|applied|conversation|documents/i },
     { n: 'Close and keep', re: /./ }
   ];
+  var BOOK_URL = 'https://www.4ormop.com/book';
+  var BOOK_RE = /4ormop\.com\/book\b/i;
+  var BOOK_LINE = 'If it is easier, pick a time that suits you here and the Zoom link comes with the invite: ' + BOOK_URL;
+  function addBooking(body) {
+    if (BOOK_RE.test(body)) return body;
+    var i = body.search(/\n\s*With Gratitude/i);
+    return i >= 0 ? body.slice(0, i).replace(/\s+$/, '') + '\n\n' + BOOK_LINE + '\n' + body.slice(i) : body.replace(/\s+$/, '') + '\n\n' + BOOK_LINE;
+  }
   var W = 158, H = 92, GX = 30, PITCH = H + 70;
   function phaseOf(name) { if (EXIT.test(name)) return -1; for (var i = 0; i < PHASES.length; i++) if (PHASES[i].re.test(name)) return i; return 3; }
   function fill(t) { return String(t || '').replace(/\{\{\s*name\s*\}\}/g, 'them').replace(/\{\{\s*first_name\s*\}\}/g, 'them').replace(/\{\{\s*company\s*\}\}/g, 'their firm'); }
@@ -170,6 +178,7 @@
     var sp = shownPkg(s.id); if (!sp) return out;
     var p = sp.p, tag = sp.draft ? [{ v: 'Not saved', c: 'ns' }] : (p.active ? [] : [{ v: 'Paused', c: 'off' }]);
     out.push({ t: 'email', s: s, kk: 'Email', tt: p.subject || 'No subject yet', cp: tag.concat(p.design ? [{ v: 'Info pack' }] : []), draft: sp.draft, ex: ex });
+    if (BOOK_RE.test(p.body || '')) out.push({ t: 'book', s: s, kk: 'Booking link', tt: 'Pick a time, Zoom included', cp: [{ v: '4ormop.com/book' }], draft: sp.draft, ex: ex });
     (p.docs || []).forEach(function (d) { if (d && (d.name || d.url)) out.push({ t: 'dc', s: s, kk: 'Document', tt: d.name || 'Unnamed link', cp: [{ v: /\.pdf(\?|$)/i.test(d.url || '') ? 'PDF' : 'Link' }], draft: sp.draft, ex: ex }); });
     if (p.spaceId) { var sx = ((S.data && S.data.spaces) || []).filter(function (x) { return x.id === p.spaceId; })[0]; out.push({ t: 'dc', s: s, kk: 'Document', tt: 'Space: ' + (sx ? sx.name : 'documents'), cp: [{ v: (sx ? sx.docs : 0) + ' files' }], draft: sp.draft, ex: ex }); }
     if (p.followDays) out.push({ t: 'wait', s: s, kk: 'Follow-up', tt: 'Follow up in ' + p.followDays + (p.followDays === 1 ? ' day' : ' days'), cp: [], draft: sp.draft, ex: ex });
@@ -199,7 +208,7 @@
     var docs = libItems();
     function it(key, cls, name, small) { return '<button type="button" class="li' + (S.arm === key ? ' arm' : '') + '" draggable="true" data-li="' + esc(key) + '"><i class="' + cls + '"></i><span>' + esc(name) + '</span>' + (small ? '<small>' + esc(small) + '</small>' : '') + '</button>'; }
     el('.x-lib').innerHTML = '<h3>Library</h3><p>Drag onto a stage, or tap one then tap a stage. Nothing is saved until you press Save.</p>'
-      + '<div class="lk">Blocks</div>' + it('email', 'c-email', 'Email') + it('doclink', 'c-doc', 'Document link') + it('wait', 'c-wait', 'Follow-up wait', '3 days') + it('task', 'c-task', 'Task', 'GoHighLevel')
+      + '<div class="lk">Blocks</div>' + it('email', 'c-email', 'Email') + it('doclink', 'c-doc', 'Document link') + it('wait', 'c-wait', 'Follow-up wait', '3 days') + it('task', 'c-task', 'Task', 'GoHighLevel') + it('book', 'c-book', 'Booking link', '4ormop.com/book')
       + '<div class="lk">Emails to start from</div>' + STARTERS.map(function (x, i) { return x.name === 'Blank' ? '' : it('starter:' + i, 'c-email', x.name.replace(': material requested', '')); }).join('')
       + '<div class="lk">Documents</div>' + (docs.length ? docs.map(function (d, i) { return it('doc:' + i, 'c-doc', d.name || d.url); }).join('') : '<p>Documents you add to a stage show here.</p>');
     el('.x-lib').querySelectorAll('[data-li]').forEach(function (b) {
@@ -223,6 +232,7 @@
     else if (key === 'doclink') { ensureEmail(); dr.docs.push({ name: '', url: '' }); }
     else if (key.indexOf('doc:') === 0) { ensureEmail(); var d = (S.libDocs || [])[+key.split(':')[1]]; if (d && !dr.docs.some(function (x) { return x.url === d.url; })) dr.docs.push({ name: d.name, url: d.url }); }
     else if (key === 'wait') { ensureEmail(); dr.followDays = dr.followDays || 3; }
+    else if (key === 'book') { ensureEmail(); dr.body = addBooking(dr.body); }
     else if (key === 'task') { ensureEmail(); dr.task = dr.task || 'Follow up with {{name}}'; }
     dr.fresh = false;
     S.stage = stageId; S.draft = dr; S.dirty = true; S.arm = null;
