@@ -1183,11 +1183,11 @@
     } else { tag = r.src === 'followup' ? 'Follow-up' : r.src === 'plan' ? 'Call day' : r.src === 'star' ? 'Star' : r.src === 'delete' ? 'Removed' : 'Edit'; cls = 't4'; what = r.what || 'Changed'; }
     var who = r.name || 'Contact';
     var person = r.contact && String(r.contact).split(/\s*[|;,]\s*/)[0];
-    return '<div class="li dl-r" data-rid="' + esc(r.record_id || '') + '" style="cursor:pointer">'
+    return '<div class="li dl-r" data-rid="' + esc(r.record_id || '') + '" style="cursor:pointer;grid-template-columns:auto minmax(0,1fr) auto;column-gap:10px;align-items:start">'
       + '<span class="tag ' + cls + '">' + esc(tag) + '</span>'
       + '<span><b>' + esc(who) + '</b>' + (person && person !== who ? ' <span style="opacity:.7">' + esc(person) + '</span>' : '') + ' &middot; ' + esc(what)
       + (det ? '<br><span style="opacity:.75">' + esc(det.length > 220 ? det.slice(0, 220) + '...' : det) + '</span>' : '') + '</span>'
-      + '<em>' + esc(dlTime(r.at)) + '</em></div>';
+      + '<em style="white-space:nowrap;font-variant-numeric:tabular-nums">' + esc(dlTime(r.at)) + '</em></div>';
   }
   function dlLabel(day) {
     var t = vancouverTodayIso();
