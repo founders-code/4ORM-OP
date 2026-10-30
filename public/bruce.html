@@ -113,8 +113,22 @@ textarea.field{min-height:260px;line-height:1.6;resize:vertical}
   var NAV = [['home', 'Home'], ['news', 'News'], ['contacts', 'Contacts'], ['lists', 'Lists'], ['email', 'Email a list'], ['spaces', 'Spaces'], ['pipeline', 'Pipeline']];
   var $ = function (id) { return document.getElementById(id); };
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  /* Sign-in stays alive the same way Ops does it: Clerk issues a fresh token for every call. */
+  function clerkHost(key) { var raw = String(key || '').replace(/^pk_(test|live)_/, '').replace(/-/g, '+').replace(/_/g, '/'); while (raw.length % 4) raw += '='; var host = ''; try { host = atob(raw).replace(/\$$/, ''); } catch (e) { return ''; } return /^[A-Za-z0-9.-]+$/.test(host) && host.indexOf('..') < 0 ? host : ''; }
+  var boot = fetch('/api/clerk-publishable-key', { credentials: 'include' }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (d) {
+    var key = d && d.publishableKey, host = clerkHost(key);
+    if (!key || !host) return null;
+    return new Promise(function (res, rej) { var sc = document.createElement('script'); sc.async = true; sc.crossOrigin = 'anonymous'; sc.src = 'https://' + host + '/npm/@clerk/clerk-js@5/dist/clerk.browser.js'; sc.setAttribute('data-clerk-publishable-key', key); sc.onload = function () { res(window.Clerk); }; sc.onerror = rej; document.head.appendChild(sc); })
+      .then(function (C) { var c = typeof C === 'function' ? new C(key) : C; window.__clerk = c; return c.load ? c.load().then(function () { return c; }) : c; });
+  }).catch(function () { return null; });
+  function token(fresh) { return boot.then(function (c) { return c && c.session && c.session.getToken ? c.session.getToken(fresh ? { skipCache: true } : undefined).catch(function () { return null; }) : null; }); }
+  function authed(url, opts) {
+    opts = opts || {};
+    function go(t) { var h = Object.assign({}, opts.headers || {}); if (t) h.Authorization = 'Bearer ' + t; return fetch(url, Object.assign({}, opts, { credentials: 'include', headers: h })); }
+    return token(false).then(go).then(function (r) { return r.status === 401 ? token(true).then(function (t) { return t ? go(t) : r; }) : r; });
+  }
   function api(body) {
-    return fetch('/api/bw', body ? { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : { credentials: 'same-origin' })
+    return authed('/api/bw', body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {})
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok && !j.note) throw new Error(j.error || 'Something went wrong'); j._ok = r.ok; return j; }); });
   }
   function toast(t) { var el = $('toast'); el.textContent = t; el.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(function () { el.style.display = 'none'; }, 4200); }
@@ -176,7 +190,7 @@ textarea.field{min-height:260px;line-height:1.6;resize:vertical}
   }
   function getNews(cb) {
     if (S.news.length) return cb();
-    fetch('/api/news', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) { S.news = (d.items || []).filter(function (n) { return !n.hidden; }); cb(); }).catch(function () { cb(); });
+    authed('/api/news').then(function (r) { return r.json(); }).then(function (d) { S.news = (d.items || []).filter(function (n) { return !n.hidden; }); cb(); }).catch(function () { cb(); });
   }
   function newsRows(n) {
     var rows = S.news.slice(0, n);
