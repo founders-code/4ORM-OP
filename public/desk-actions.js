@@ -3218,6 +3218,7 @@
     },
     /* B37: rewrite the draft in a tone. B38: write from an instruction. Draft only; Undo restores the old body. */
     'mail-tone': function (el, root) { mailAiWrite(root, 'tone', attr(el, 'data-tone')); },
+    'mail-tpl': function (el, root) { mailTemplate(root, attr(el, 'data-tpl')); },
     'mail-ai-write': function (el, root) { mailAiWrite(root, 'write', ''); },
     'mail-always': function () {},
     'mail-to-pick': function (el) {
@@ -5082,6 +5083,71 @@
   function repaintMail() {
     S().mailPaintForce = true;
     refresh('mail');
+  }
+  /* ---------- Compose: ready emails (30 Oct). Subject, body and files in one click; nothing sends until Send. ---------- */
+  var MAIL_TPL = {
+    first: {
+      subject: '4orm Helps',
+      body: 'Hi {first},\n\nYou probably get a steady stream of people asking for something, so I will keep this short.\n\nOur research shows financial institutions may be approaching consumer suitability backwards. We are building counselling-inspired AI to help consumers understand larger financial decisions, and help businesses understand the consumer better.\n\nI have attached a short overview.\n\nWould it be a terrible idea to get your perspective on it?',
+      files: [/Design Partner Resources/i]
+    },
+    design: {
+      subject: '4orm Helps',
+      body: "Hi {first},\n\nYou probably get a steady stream of vendors asking for something, so I'll keep this short.\n\nIt seems like businesses are carrying more of the weight of proving suitability, often by rebuilding the record after the decision has already been made. The industry already sees the value in evidence that is captured once and trusted by everyone.\n\nThat is the challenge 4orm Finance works on. We help consumers think through a major financial decision and pass only what they choose to share into the firm's existing compliance tools. The professional ends up with an auditable suitability record, built in real time.\n\nWould it be a bad idea to get your view on where this fits for {company}?",
+      files: [/Design Partner Resources/i]
+    },
+    broker: {
+      subject: '4orm Helps',
+      body: "Hi {first},\n\nThanks for getting back to me. You probably get a steady stream of vendors asking for something, so I'll keep this short.\n\nSince 13 October, the Mortgage Services Act has brokers putting material risks in writing and getting the client's written acknowledgement that they understood their options, with the principal broker supervising it. Most files rebuild that record after the decision has already been made.\n\nThat is the challenge 4orm Finance works on. We help consumers think through a major financial decision and pass only what they choose to share into the brokerage's existing tools. The broker ends up with an auditable suitability record, built in real time.\n\nI have attached a short overview. Would it be a bad idea to get your view on where this fits for {company}?",
+      files: [/Design Partner Resources/i]
+    },
+    regulator: {
+      subject: '4orm Helps: request for a short informational meeting',
+      body: "Hello {first},\n\nI'm the founder of 4orm Finance in Calgary.\n\nWe're building counselling-inspired AI that helps a consumer think a major financial decision through privately and share only what they choose with the firm, so the professional has a suitability record made at the time of the decision. 4orm never holds money, never gives advice and never replaces the licensed professional.\n\nWe would value your view on how that record fits the conduct and disclosure rules you oversee.\n\nWould it be a bad idea to set up 30 minutes with someone on your team in the next few weeks?",
+      files: []
+    }
+  };
+  function tplFill(t, d) {
+    var r = (d.to || [])[0] || {};
+    var nm = String(r.name || '').trim();
+    var first = nm && !/@/.test(nm) ? nm.split(/\s+/)[0] : '';
+    var dom = String(r.email || '').split('@')[1] || '';
+    var free = /^(gmail|hotmail|outlook|yahoo|icloud|live|shaw|telus|me)\./i.test(dom);
+    var co = '';
+    try { var hit = (S().contacts || []).filter(function (x) { return String(x.email || '').toLowerCase() === String(r.email || '').toLowerCase(); })[0]; if (hit && hit.company) co = hit.company; } catch (e) {}
+    if (!co && dom && !free) co = dom.split('.')[0].replace(/[-_]/g, ' ').replace(/\b\w/g, function (m) { return m.toUpperCase(); });
+    return t.replace(/\{first\}/g, first || 'there').replace(/Hello there,/, 'Hello,').replace(/\{company\}/g, co || 'your team');
+  }
+  function mailTemplate(root, key) {
+    var T = MAIL_TPL[key];
+    if (!T) return;
+    syncCompose(root);
+    var d = composeState();
+    var before = { subject: d.subject, body: d.body, att: (d.attachments || []).slice(), tpl: d.tpl };
+    function apply() {
+      d.subject = T.subject;
+      d.body = tplFill(T.body, d);
+      d.tpl = key;
+      var lib = (S().staged || []).filter(function (x) { return x && x.kind !== 'folder'; });
+      var added = [];
+      T.files.forEach(function (re) {
+        var doc = lib.filter(function (x) { return re.test(String(x.name || '')); })[0];
+        if (!doc) return;
+        var drive = String(doc.driveFileId || doc.drive || '');
+        var dr = /^[\w-]{8,}$/.test(drive) && !UUID_RE.test(drive) ? drive : '';
+        var item = { name: doc.name || 'File', mime: doc.mime || '', url: doc.url || '', driveFileId: dr, stagedId: !dr && UUID_RE.test(String(doc.id || '')) ? String(doc.id) : '' };
+        var k = item.driveFileId || item.stagedId || item.url || item.name;
+        if (!d.attachments.some(function (a) { return (a.driveFileId || a.stagedId || a.url || a.name) === k; })) { d.attachments.push(item); added.push(item.name); }
+      });
+      S().mailPaintForce = true;
+      repaintMail();
+      var who = ((d.to || [])[0] || {}).name ? '' : ' Add their name in To and press it again to fill the greeting.';
+      toast(root, 'Filled' + (added.length ? ' and attached ' + added.join(', ') : '') + '. Read it, then Send.' + who, function () {
+        d.subject = before.subject; d.body = before.body; d.attachments = before.att; d.tpl = before.tpl; S().mailPaintForce = true; repaintMail();
+      });
+    }
+    if ((S().staged || []).length || !T.files.length || !writeOk()) { apply(); return; }
+    api('/api/documents', { method: 'GET' }).then(ok).then(json).then(function (x) { if (x && Array.isArray(x.docs)) S().staged = x.docs; }).catch(function () {}).then(apply);
   }
   function mailAiWrite(root, mode, tone) {
     var bad = syncCompose(root);

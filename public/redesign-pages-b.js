@@ -2059,7 +2059,11 @@
     var TONES = [['warm', 'Warm'], ['direct', 'Direct'], ['shorter', 'Shorter'], ['formal', 'More formal']];
     var out = '<div class="box ai2"><h4>4orm Intelligence</h4><p>' + (d.aiNote ? esc(d.aiNote) : 'Pick a tone to rewrite the draft, or tell me what to write. You review it before anything goes out.') + '</p>'
       + '<div class="tones">' + TONES.map(function (t) { return '<span' + (d.tone === t[0] ? ' class="on"' : '') + ' data-action="mail-tone" data-tone="' + t[0] + '">' + t[1] + '</span>'; }).join('') + '</div>'
-      + '<div class="ask"><input data-action="mail-ask-input" placeholder="Tell me what to write&hellip;" value="' + esc(d.ask || '') + '"><button type="button" data-action="mail-ai-write">Write</button></div></div>';
+      + '<div class="ask"><input data-action="mail-ask-input" placeholder="Tell me what to write&hellip;" value="' + esc(d.ask || '') + '"><button type="button" data-action="mail-ai-write">Write</button></div>'
+      /* 30 Oct: one click fills the email and attaches the right files. Type their name in To first. */
+      + '<div class="tpl-h">Ready emails, with the files</div><div class="tones tpls">'
+      + [['first', 'First Message'], ['design', 'Design Partner'], ['broker', 'Mortgage Broker'], ['regulator', 'Regulator']].map(function (t) { return '<span' + (d.tpl === t[0] ? ' class="on"' : '') + ' data-action="mail-tpl" data-tpl="' + t[0] + '">' + t[1] + '</span>'; }).join('')
+      + '</div></div>';
     if (c) {
       var touch = daysAgo(c.lastTouch || c.last_touch);
       out += '<div class="box"><h4>' + esc(c.name || first.email) + '</h4>'
