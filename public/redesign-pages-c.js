@@ -1174,20 +1174,34 @@
      Read live from the contact records, so today shows as you work, not only after the 23:55 snapshot. */
   var DAYLOG = {};
   function dlTime(at) { try { return new Date(at).toLocaleTimeString('en-GB', { timeZone: 'America/Vancouver', hour: '2-digit', minute: '2-digit', hour12: false }); } catch (e) { return ''; } }
-  function dlRow(r) {
-    var tag = 'Note', what = '', det = String(r.detail || ''), cls = 't1';
+  /* One row per entry, in columns: time, contact, person, type, outcome, note, follow-up. */
+  function dlCells(r) {
+    var type = 'Note', outcome = '', note = String(r.detail || ''), fu = r.next_date ? String(r.next_date).slice(0, 10) : '', cls = 't1';
     if (r.src === 'touch') {
-      if (r.channel === 'GoHighLevel') { tag = 'Stage'; cls = 't3'; what = det.replace(/^(Moved in|Added to) GoHighLevel:\s*/, 'Moved to '); det = ''; }
-      else { tag = r.channel || 'Call'; what = r.outcome || (det ? 'Note' : 'Contacted'); cls = /answer|voicemail|gatekeeper|wrong/i.test(what) ? 't2' : 't1'; }
-      if (r.next_date) det = (det ? det + ' · ' : '') + 'Follow-up ' + String(r.next_date).slice(0, 10);
-    } else { tag = r.src === 'followup' ? 'Follow-up' : r.src === 'plan' ? 'Call day' : r.src === 'star' ? 'Star' : r.src === 'delete' ? 'Removed' : 'Edit'; cls = 't4'; what = r.what || 'Changed'; }
-    var who = r.name || 'Contact';
-    var person = r.contact && String(r.contact).split(/\s*[|;,]\s*/)[0];
-    return '<div class="li dl-r" data-rid="' + esc(r.record_id || '') + '" style="cursor:pointer">'
-      + '<span class="tag ' + cls + '">' + esc(tag) + '</span>'
-      + '<span><span style="opacity:.6;font-variant-numeric:tabular-nums;margin-right:8px">' + esc(dlTime(r.at)) + '</span><b>' + esc(who) + '</b>' + (person && person !== who ? ' <span style="opacity:.7">' + esc(person) + '</span>' : '') + ' &middot; ' + esc(what)
-      + (det ? '<br><span style="opacity:.75">' + esc(det.length > 220 ? det.slice(0, 220) + '...' : det) + '</span>' : '') + '</span>'
-      + '</div>';
+      if (r.channel === 'GoHighLevel') { type = 'Stage'; cls = 't3'; outcome = note.replace(/^(Moved in|Added to) GoHighLevel:\s*/, 'Moved to '); note = ''; }
+      else { type = r.channel || 'Call'; outcome = r.outcome || (note ? 'Note' : 'Contacted'); cls = /answer|voicemail|gatekeeper|wrong/i.test(outcome) ? 't2' : 't1'; }
+    } else {
+      type = r.src === 'followup' ? 'Follow-up' : r.src === 'plan' ? 'Call day' : r.src === 'star' ? 'Star' : r.src === 'delete' ? 'Removed' : 'Edit'; cls = 't4';
+      outcome = r.what || 'Changed';
+      if (r.src === 'followup' || r.src === 'plan') { fu = note; note = ''; }
+    }
+    var person = r.contact ? String(r.contact).split(/\s*[|;,]\s*/)[0] : '';
+    if (person === r.name) person = '';
+    return { type: type, cls: cls, outcome: outcome, note: note, fu: fu, person: person };
+  }
+  function dlFu(v) { if (!v) return ''; var d = new Date(v + 'T12:00:00'); return isNaN(d) ? v : d.toLocaleDateString('en-CA', { weekday: 'short', day: 'numeric', month: 'short' }); }
+  var DL_TD = 'padding:8px 10px;border-top:1px solid rgba(127,140,170,.18);vertical-align:top;text-align:left';
+  var DL_TH = 'padding:6px 10px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.6;text-align:left;white-space:nowrap';
+  function dlRow(r) {
+    var c = dlCells(r);
+    return '<tr class="dl-r" data-rid="' + esc(r.record_id || '') + '" style="cursor:pointer">'
+      + '<td style="' + DL_TD + ';white-space:nowrap;font-variant-numeric:tabular-nums;opacity:.75">' + esc(dlTime(r.at)) + '</td>'
+      + '<td style="' + DL_TD + ';font-weight:700">' + esc(r.name || 'Contact') + '</td>'
+      + '<td style="' + DL_TD + ';opacity:.8">' + esc(c.person) + '</td>'
+      + '<td style="' + DL_TD + '"><span class="tag ' + c.cls + '">' + esc(c.type) + '</span></td>'
+      + '<td style="' + DL_TD + ';font-weight:650">' + esc(c.outcome) + '</td>'
+      + '<td style="' + DL_TD + ';opacity:.85;min-width:220px">' + esc(c.note.length > 300 ? c.note.slice(0, 300) + '...' : c.note) + '</td>'
+      + '<td style="' + DL_TD + ';white-space:nowrap">' + esc(dlFu(c.fu)) + '</td></tr>';
   }
   function dlLabel(day) {
     var t = vancouverTodayIso();
@@ -1208,7 +1222,10 @@
     var sum = Object.keys(outs).sort(function (a, b) { return outs[b] - outs[a]; }).map(function (k) { return outs[k] + ' ' + k.toLowerCase(); }).join(' · ');
     return '<div class="sh"><b>' + esc(dlLabel(day)) + '</b><span>' + Object.keys(people).length + ' contacts · ' + calls.length + ' logged · ' + moves + ' stage moves · ' + edits + ' edits</span></div>'
       + (sum ? '<div style="margin:2px 0 8px;opacity:.8;font-size:12.5px">' + esc(sum) + '</div>' : '')
-      + (rows.length ? rows.map(dlRow).join('') : '<div class="emp">Nothing logged on a contact this day.</div>');
+      + (rows.length ? '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px;line-height:1.45">'
+        + '<thead><tr><th style="' + DL_TH + '">Time</th><th style="' + DL_TH + '">Contact</th><th style="' + DL_TH + '">Person</th><th style="' + DL_TH + '">Type</th><th style="' + DL_TH + '">Outcome</th><th style="' + DL_TH + '">Note</th><th style="' + DL_TH + '">Follow-up</th></tr></thead>'
+        + '<tbody>' + rows.map(dlRow).join('') + '</tbody></table></div>'
+        : '<div class="emp">Nothing logged on a contact this day.</div>');
   }
   function dlLoad(day, wrap) {
     var c = DAYLOG[day];
