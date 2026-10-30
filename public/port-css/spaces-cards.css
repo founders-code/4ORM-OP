@@ -144,7 +144,7 @@
 .nx{background:#eaf1fe!important;color:#1d3f9e!important}
 .nx.red{background:#8a1f32!important;color:#fff!important}.nx.amb{background:#8a5a08!important;color:#fff!important}.nx.grn{background:#0c6b46!important;color:#fff!important}
 /* Laptop widths: cards keep a readable width (names, stats and Open fit) instead of squeezing to 4 across. */
-@media (max-width:1500px){.grid{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))!important}}
+@media (max-width:700px){.grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))!important}}
 .facts>div{min-width:0}.facts small,.facts span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
 /* Audit 29 Oct: the name gets the room, two lines before it trims */
 .sp .hd>div{flex:1 1 auto;min-width:0}
@@ -201,3 +201,19 @@
 .rb-catb{display:flex;flex-direction:column;gap:8px}
 /* Board stays behind an open Space panel */
 .rb-withpanel #ready.on,.rb-withpanel #groups.on{opacity:.55}
+
+/* Zoom (30 Oct): wide zoom-out reads like a title wall; zoom-in shows the full card. */
+.grid[data-cols="6"] .sp .chk,.grid[data-cols="7"] .sp .chk,.grid[data-cols="8"] .sp .chk,.grid[data-cols="9"] .sp .chk,
+.grid[data-cols="6"] .sp .why,.grid[data-cols="7"] .sp .why,.grid[data-cols="8"] .sp .why,.grid[data-cols="9"] .sp .why,
+.grid[data-cols="6"] .sp .facts,.grid[data-cols="7"] .sp .facts,.grid[data-cols="8"] .sp .facts,.grid[data-cols="9"] .sp .facts,
+.grid[data-cols="6"] .sp .steps,.grid[data-cols="7"] .sp .steps,.grid[data-cols="8"] .sp .steps,.grid[data-cols="9"] .sp .steps{display:none!important}
+.grid[data-cols="7"] .sp .ft,.grid[data-cols="8"] .sp .ft,.grid[data-cols="9"] .sp .ft,
+.grid[data-cols="7"] .sp .org,.grid[data-cols="8"] .sp .org,.grid[data-cols="9"] .sp .org,
+.grid[data-cols="7"] .sp .ms,.grid[data-cols="8"] .sp .ms,.grid[data-cols="9"] .sp .ms{display:none!important}
+.grid[data-cols="7"] .sp .hd,.grid[data-cols="8"] .sp .hd,.grid[data-cols="9"] .sp .hd{padding:10px 10px}
+.grid[data-cols="8"] .sp .av,.grid[data-cols="9"] .sp .av{display:none}
+.grid[data-cols="8"] .sp .hd h4,.grid[data-cols="9"] .sp .hd h4{font-size:13px}
+.grid[data-cols="2"]{gap:18px}
+.zoombtns{display:inline-flex;align-items:center;border:1px solid rgba(120,150,255,.3);border-radius:10px;overflow:hidden;margin-right:8px}
+.zoombtns button{height:36px;min-width:40px;border:0;background:transparent;color:inherit;font:800 16px Inter,system-ui,sans-serif;cursor:pointer}
+.zoombtns span{font-size:12px;font-weight:800;padding:0 8px;opacity:.75}

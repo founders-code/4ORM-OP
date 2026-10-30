@@ -837,7 +837,8 @@
   }
   function pctOf(s) { return ((s && s.d) || []).filter(Boolean).length; }
   function iniOf(n) { return String(n || '').split(' ').map(function (x) { return x[0] || ''; }).join('').slice(0, 2).toUpperCase(); }
-  function ringColor(k) { return k === 5 ? 'var(--green)' : (k >= 3 ? '#2e6bf2' : '#c98408'); }
+  /* Red to yellow to green as the five steps fill (30 Oct). */
+  function ringColor(k) { return ['#e0364f', '#e0364f', '#ff8a3d', '#f5c542', '#9bd84a', '#22c55e'][Math.max(0, Math.min(5, k | 0))]; }
   function fmtDay(iso) {
     if (!iso) return '-';
     var d = new Date(iso);
@@ -950,7 +951,8 @@
     return s || 'General';
   }
   function rbCatState() { try { return JSON.parse(localStorage.getItem('cr_rb_cats') || '{}') || {}; } catch (e) { return {}; } }
-  function spacesView() { try { return localStorage.getItem('cr_spaces_view') === 'groups' ? 'groups' : 'ready'; } catch (e) { return 'ready'; } }
+  /* 30 Oct: the Desk (cards by group) is the only Spaces view; readiness shows on each card's ring. */
+  function spacesView() { return 'groups'; }
   window.paintSpacesCardsPage = paintSpacesCardsPage;
   function paintSpacesCardsPage(openWanted) {
     var wrap = wrapOf('spacesDesk');
@@ -965,8 +967,9 @@
       ? '<span><b>53</b> spaces</span><span class="hot"><b>2</b> ready to send</span><span><b>4</b> need docs</span><span><b>0</b> sent this week</span><span><b>0</b> replies</span><span><b>0</b> meetings booked</span>'
       : '<span><b>' + all + '</b> spaces</span><span class="hot"><b>' + readyN + '</b> ready to send</span><span><b>' + needDocs + '</b> need docs</span><span><b>0</b> sent this week</span><span><b>0</b> replies</span><span><b>0</b> meetings booked</span>';
     wrap.innerHTML =
-      '<div class="bar"><h1>Spaces</h1><span class="sub">Every send-bundle on one board, sorted by what it still needs</span>'
-      + '<div class="r"><input class="search" id="q" data-action="spaces-search" placeholder="Search spaces or people"><div class="seg" id="seg"><span' + (spacesView() === 'ready' ? ' class="on"' : '') + ' data-action="spaces-arr-view" data-v="ready">By readiness</span><span' + (spacesView() === 'groups' ? ' class="on"' : '') + ' data-action="spaces-arr-view" data-v="groups">By group</span></div>'
+      '<div class="bar"><h1>Spaces</h1><span class="sub">Every space by group. Zoom out to see more, zoom in to read more</span>'
+      + '<div class="r"><input class="search" id="q" data-action="spaces-search" placeholder="Search spaces or people"><div class="seg" id="seg"><span class="on" data-action="spaces-arr-view" data-v="groups">Desk</span></div>'
+      + '<span class="zoombtns" title="Zoom: fewer, bigger cards or more, smaller ones"><button type="button" data-zoom="-1" aria-label="Zoom in">+</button><span id="zoomN"></span><button type="button" data-zoom="1" aria-label="Zoom out">&minus;</button></span>'
       + '<button class="btn ghost" data-action="spaces-arr-minall" id="minAll">Collapse all</button><button class="btn pri" data-action="spaces-new">+ New space</button></div></div>'
       + '<div class="kpis">' + kpiHtml + '</div>'
       + '<div id="rbWin"></div><section class="view" id="ready"></section><section class="view" id="groups"><div id="cats"></div></section><section class="view" id="board"></section><div id="rbBulk"></div>'
@@ -996,10 +999,36 @@
         }, 80);
       }
     } catch (e) {}
-    if (typeof window.bindGridZoom === 'function') {
-      wrap.querySelectorAll('.grid').forEach(function (g) { window.bindGridZoom(wrap, g, 'spaces', 4); });
-    }
+    bindSpacesZoom(wrap);
     markReady('spacesDesk');
+  }
+  /* Zoom the Desk: + and - buttons, ctrl/cmd + wheel or pinch on any group; 2 to 9 across, saved per user. */
+  function bindSpacesZoom(wrap) {
+    function grids() { return Array.prototype.slice.call(wrap.querySelectorAll('.grid')); }
+    function label() { var n = typeof window.gridCols === 'function' ? window.gridCols('spaces', 4) : 4; var z = wrap.querySelector('#zoomN'); if (z) z.textContent = n + ' across'; }
+    function apply() {
+      grids().forEach(function (g) {
+        if (typeof window.bindGridZoom === 'function') window.bindGridZoom(wrap, g, 'spaces', 4);
+        if (typeof window.applyGridCols === 'function') window.applyGridCols(g, 'spaces', 4);
+      });
+      label();
+    }
+    apply();
+    window.onGridZoom = function (key) { if (key === 'spaces') { apply(); } };
+    wrap.querySelectorAll('[data-zoom]').forEach(function (b) {
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (typeof window.gridZoomStep === 'function') window.gridZoomStep('spaces', Number(b.getAttribute('data-zoom')), 4, grids());
+        label();
+      });
+    });
+    /* Groups repaint on search and drag; keep the zoom on the new grids. */
+    if (wrap._zoomObs) wrap._zoomObs.disconnect();
+    var cats = wrap.querySelector('#cats');
+    if (cats && typeof MutationObserver === 'function') {
+      wrap._zoomObs = new MutationObserver(function () { grids().forEach(function (g) { if (!g.getAttribute('data-cols') && typeof window.applyGridCols === 'function') { window.applyGridCols(g, 'spaces', 4); if (typeof window.bindGridZoom === 'function') window.bindGridZoom(wrap, g, 'spaces', 4); } }); });
+      wrap._zoomObs.observe(cats, { childList: true, subtree: false });
+    }
   }
   function bindCards(root, CATS, openWanted) {
     var cur = null;

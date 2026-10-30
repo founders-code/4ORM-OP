@@ -8,7 +8,7 @@
   }
   function clamp(n) {
     n = Math.round(Number(n) || 4);
-    return Math.max(3, Math.min(9, n));
+    return Math.max(2, Math.min(9, n));
   }
   function save(key, n) {
     prefs()[key] = n;
@@ -32,9 +32,18 @@
     el.style.setProperty('--cols', String(n));
     el.setAttribute('data-cols', String(n));
   };
+  /* Buttons: one step wider (dir 1, more columns) or closer (dir -1), applied to every grid with that key. */
+  window.gridZoomStep = function (key, dir, fallback, els) {
+    var cur = window.gridCols(key, fallback);
+    var next = clamp(cur + dir);
+    if (next !== cur) save(key, next);
+    (els || []).forEach(function (el) { window.applyGridCols(el, key, fallback); });
+    return next;
+  };
   window.bindGridZoom = function (root, el, key, fallback) {
     if (!el || el._gridZoom) return;
     el._gridZoom = 1;
+    el.setAttribute('data-zoom-key', key);
     window.applyGridCols(el, key, fallback);
     var acc = 0;
     function step(dir) {
@@ -42,7 +51,9 @@
       var next = clamp(cur + dir);
       if (next === cur) return;
       save(key, next);
-      window.applyGridCols(el, key, fallback);
+      var host = el.getRootNode ? el.getRootNode() : document;
+      (host.querySelectorAll ? Array.prototype.slice.call(host.querySelectorAll('[data-zoom-key="' + key + '"]')) : []).concat([el]).forEach(function (g) { window.applyGridCols(g, key, fallback); });
+      if (typeof window.onGridZoom === 'function') window.onGridZoom(key, next);
     }
     el.addEventListener('wheel', function (e) {
       if (!(e.ctrlKey || e.metaKey)) return;
