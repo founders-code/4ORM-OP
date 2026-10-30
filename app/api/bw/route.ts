@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { bwCancel, bwDeleteList, bwImport, bwPatchContact, bwQueue, bwSaveList, bwSettings, bwState, bwTest } from '@/lib/bw';
+import { bwAddContact, bwAddFile, bwCancel, bwDeleteFile, bwDeleteList, bwDeleteSpace, bwHistory, bwImport, bwPatchContact, bwQueue, bwSaveList, bwSaveSpace, bwSettings, bwState, bwTest } from '@/lib/bw';
 import { withCreds } from '@/lib/creds';
 import { fail } from '@/lib/log';
 import { takeRateLimit } from '@/lib/rate-limit';
@@ -19,10 +19,15 @@ async function gate() {
   return { sql: session.sql, ownerId, userId: session.userId };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const g = await gate();
     if ('err' in g) return g.err;
+    const hist = new URL(req.url).searchParams.get('history') || '';
+    if (hist) {
+      if (!/^[0-9a-f-]{36}$/i.test(hist)) return NextResponse.json({ error: 'Bad id' }, { status: 400 });
+      return NextResponse.json({ history: await bwHistory(g.sql, g.ownerId, hist) });
+    }
     return NextResponse.json(await bwState(g.sql, g.ownerId));
   } catch (err) {
     fail('bw_get', err);
@@ -50,17 +55,35 @@ export async function POST(req: Request) {
       await bwDeleteList(g.sql, g.ownerId, id, a === 'list-restore');
       return NextResponse.json({ ok: true });
     }
+    const uuid = (v: unknown) => /^[0-9a-f-]{36}$/i.test(String(v || ''));
+    if (a === 'add-contact') return NextResponse.json({ ok: true, ...(await bwAddContact(g.sql, g.ownerId, (body.contact || {}) as Record<string, unknown>)) });
+    if (a === 'space-save') return NextResponse.json({ ok: true, ...(await bwSaveSpace(g.sql, g.ownerId, (body.space || {}) as Record<string, unknown>)) });
+    if (a === 'space-delete' || a === 'space-restore') {
+      if (!uuid(body.id)) return NextResponse.json({ error: 'Bad id' }, { status: 400 });
+      await bwDeleteSpace(g.sql, g.ownerId, String(body.id), a === 'space-restore');
+      return NextResponse.json({ ok: true });
+    }
+    if (a === 'file-add') {
+      if (!uuid(body.spaceId)) return NextResponse.json({ error: 'Bad id' }, { status: 400 });
+      const out = await bwAddFile(g.sql, g.ownerId, { spaceId: String(body.spaceId), name: String(body.name || ''), mime: String(body.mime || ''), b64: String(body.b64 || '') });
+      return NextResponse.json(out, { status: out.ok ? 200 : 400 });
+    }
+    if (a === 'file-delete' || a === 'file-restore') {
+      if (!uuid(body.id)) return NextResponse.json({ error: 'Bad id' }, { status: 400 });
+      await bwDeleteFile(g.sql, g.ownerId, String(body.id), a === 'file-restore');
+      return NextResponse.json({ ok: true });
+    }
     if (a === 'settings') return NextResponse.json({ ok: true, settings: await bwSettings(g.sql, g.ownerId, (body.settings || {}) as Record<string, unknown>) });
     if (a === 'test') {
       if (!(await takeRateLimit(g.sql, 'bw_test', g.ownerId, 20, 3600))) return NextResponse.json({ ok: false, note: 'Too many tests this hour.' }, { status: 429 });
       const creds = await loadCredsFor(g.userId);
-      const out = await withCreds(creds, () => bwTest(g.sql, g.ownerId, { listId: String(body.listId || ''), subject: String(body.subject || ''), body: String(body.body || '') }));
+      const out = await withCreds(creds, () => bwTest(g.sql, g.ownerId, { listId: String(body.listId || ''), subject: String(body.subject || ''), body: String(body.body || ''), spaceId: String(body.spaceId || '') }));
       return NextResponse.json(out, { status: out.ok ? 200 : 400 });
     }
     if (a === 'send') {
       const id = String(body.listId || '');
       if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ ok: false, note: 'Pick a list.' }, { status: 400 });
-      const out = await bwQueue(g.sql, g.ownerId, { listId: id, subject: String(body.subject || ''), body: String(body.body || '') });
+      const out = await bwQueue(g.sql, g.ownerId, { listId: id, subject: String(body.subject || ''), body: String(body.body || ''), spaceId: String(body.spaceId || '') });
       return NextResponse.json(out, { status: out.ok ? 200 : 400 });
     }
     if (a === 'cancel') {
