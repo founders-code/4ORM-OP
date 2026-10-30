@@ -366,7 +366,7 @@ test('every signed-in API route is allowlisted (sessionOwner) and fails closed',
     if (exempt.test(rel)) continue;
     if (!src.includes('openBoard()')) continue;
     const opens = (src.match(/await openBoard\(\)/g) || []).length;
-    const gates = (src.match(/sessionOwner\(/g) || []).length;
+    const gates = (src.match(/(sessionOwner|teamWorkspaceOwner)\(/g) || []).length;
     if (gates < opens) missing.push(rel);
   }
   assert.deepEqual(missing, []);
@@ -440,8 +440,30 @@ test('control room pages allow only Chad or a Clerk test user', async () => {
   assert.equal(roomAccessFromUser(user('qa@4ormfinance.com', { test: 'yes' })), false);
   assert.equal(roomAccessFromUser(null), false);
   const mw = readFileSync(new URL('../middleware.ts', import.meta.url), 'utf8');
-  assert.match(mw, /isControlRoom\(req\) && !\(await roomAllowed\(/);
-  assert.match(mw, /catch \{\s*return false;/);
+  assert.match(mw, /if \(isControlRoom\(req\)\) \{\s*const access = await roomAccess\(/);
+  assert.match(mw, /if \(access && isTeamPath\(access, path\)\) return NextResponse\.next\(\);\s*return NextResponse\.redirect/);
+  assert.match(mw, /catch \{\s*return '';/);
+});
+
+test('a team member reaches only their own workspace page, by verified primary email', async () => {
+  const { teamHome, teamHomeFromUser, isTeamPath, roomAccessFromUser } = await import('../lib/gate.mjs');
+  assert.equal(teamHome('Bruce@4ormFinance.com'), '/bruce');
+  assert.equal(teamHome('someone@4ormfinance.com'), '');
+  assert.equal(teamHome('bruce@gmail.com'), '');
+  const u = (email, status = 'verified') => ({ primaryEmailAddressId: 'e1', emailAddresses: [{ id: 'e1', emailAddress: email, verification: { status } }, { id: 'e2', emailAddress: 'bruce@4ormfinance.com', verification: { status: 'verified' } }] });
+  assert.equal(teamHomeFromUser(u('bruce@4ormfinance.com')), '/bruce');
+  assert.equal(teamHomeFromUser(u('bruce@4ormfinance.com', 'unverified')), '');
+  assert.equal(teamHomeFromUser(u('other@4ormfinance.com')), '');
+  assert.equal(roomAccessFromUser(u('bruce@4ormfinance.com')), false);
+  assert.equal(isTeamPath('/bruce', '/bruce'), true);
+  assert.equal(isTeamPath('/bruce', '/bruce.html'), true);
+  assert.equal(isTeamPath('/bruce', '/planner'), false);
+  assert.equal(isTeamPath('/bruce', '/bruce-x'), false);
+  assert.equal(isTeamPath('', '/bruce'), false);
+  const ses = readFileSync(new URL('../lib/session.ts', import.meta.url), 'utf8');
+  assert.match(ses, /if \(!teamHomeFromUser\(user\)\) return null;/);
+  const bw = readFileSync(new URL('../app/api/bw/route.ts', import.meta.url), 'utf8');
+  assert.match(bw, /teamWorkspaceOwner\(session\)/);
 });
 
 test('Spaces real send refuses until a test of the same content went to Chad', async () => {

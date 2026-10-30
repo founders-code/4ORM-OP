@@ -1,6 +1,7 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { getSql, ownerForEmail, rememberOwner } from './db';
 import { ROOM_EMAIL } from './room';
+import { teamHomeFromUser } from './gate.mjs';
 
 export { ROOM_EMAIL };
 
@@ -62,4 +63,23 @@ export async function sessionOwner(session: BoardSession): Promise<string | null
   if (!session.sql) return session.userId;
   const owner = await roomOwner(session.sql).catch(() => null);
   return owner || session.userId;
+}
+
+/**
+ * Bruce's workspace and the News it shows (30 Oct 2026). Chad and Clerk test users get their usual owner.
+ * A team member with a workspace (lib/gate.mjs TEAM_HOMES) gets the room owner's id, because that workspace's
+ * rows are kept under the room owner with their own workspace key (bw_* tables only). Everyone else gets null.
+ */
+export async function teamWorkspaceOwner(session: BoardSession): Promise<string | null> {
+  const own = await sessionOwner(session);
+  if (own) return own;
+  let user: Awaited<ReturnType<typeof currentUser>>;
+  try {
+    user = await currentUser();
+  } catch {
+    return null;
+  }
+  if (!user || user.id !== session.userId || !session.sql) return null;
+  if (!teamHomeFromUser(user)) return null;
+  return (await roomOwner(session.sql).catch(() => null)) || null;
 }

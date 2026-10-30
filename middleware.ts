@@ -7,6 +7,8 @@ import {
   isApiPath,
   isPublicApi,
   roomAccessFromClaims,
+  teamHomeFromUser,
+  isTeamPath,
   roomAccessFromUser,
 } from './lib/gate.mjs';
 
@@ -84,25 +86,26 @@ function isGatedPage(req: NextRequest) {
 // Room allowlist answers per user, cached briefly so a page load does not call Clerk every time.
 // A failed lookup is not cached and is refused (fail closed).
 const ACCESS_TTL = 5 * 60 * 1000;
-const accessCache = new Map<string, { ok: boolean; at: number }>();
+const accessCache = new Map<string, { ok: boolean; home: string; at: number }>();
 
-async function roomAllowed(userId: string, claims: unknown): Promise<boolean> {
+/** 'room' for Chad and Clerk test users, a team home path (e.g. '/bruce') for team members, '' for anyone else. */
+async function roomAccess(userId: string, claims: unknown): Promise<string> {
   const fromClaims = roomAccessFromClaims(claims);
-  if (fromClaims !== null) return fromClaims;
+  if (fromClaims === true) return 'room';
   const hit = accessCache.get(userId);
-  if (hit && Date.now() - hit.at < ACCESS_TTL) return hit.ok;
+  if (hit && Date.now() - hit.at < ACCESS_TTL) return hit.ok ? 'room' : hit.home;
   try {
     const client = await clerkClient();
     const user = await client.users.getUser(userId);
     const ok = roomAccessFromUser(user);
+    const home = ok ? '' : teamHomeFromUser(user);
     if (accessCache.size > 500) accessCache.clear();
-    accessCache.set(userId, { ok, at: Date.now() });
-    return ok;
+    accessCache.set(userId, { ok, home, at: Date.now() });
+    return ok ? 'room' : home;
   } catch {
-    return false;
+    return '';
   }
 }
-
 const gated = clerkMiddleware(async (auth, req) => {
   const path = req.nextUrl.pathname;
 
@@ -119,8 +122,10 @@ const gated = clerkMiddleware(async (auth, req) => {
   if (path === '/') {
     const { userId, sessionClaims } = await auth();
     // Only allowlisted users bounce into the room; anyone else stays on the landing page (no loop).
-    if (userId && (await roomAllowed(userId, sessionClaims))) {
-      return NextResponse.redirect(new URL('/planner', req.url));
+    if (userId) {
+      const access = await roomAccess(userId, sessionClaims);
+      if (access === 'room') return NextResponse.redirect(new URL('/planner', req.url));
+      if (access) return NextResponse.redirect(new URL(access, req.url));
     }
     return NextResponse.next();
   }
@@ -135,8 +140,13 @@ const gated = clerkMiddleware(async (auth, req) => {
     }
 
     // 2) Control room: Chad's email or a Clerk test user only. Everyone else goes home with no data.
-    if (isControlRoom(req) && !(await roomAllowed(userId, sessionClaims))) {
-      return NextResponse.redirect(new URL('/', req.url));
+    // Team members (Bruce) reach only their own workspace page; any other room page sends them there.
+    if (isControlRoom(req)) {
+      const access = await roomAccess(userId, sessionClaims);
+      if (access !== 'room') {
+        if (access && isTeamPath(access, path)) return NextResponse.next();
+        return NextResponse.redirect(new URL(access || '/', req.url));
+      }
     }
 
     // 3) Must hold the room's role. Add `roles` to the session token in Clerk

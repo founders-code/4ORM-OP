@@ -3,17 +3,17 @@ import { bwAddContact, bwAddFile, bwCancel, bwDeleteFile, bwDeleteList, bwDelete
 import { withCreds } from '@/lib/creds';
 import { fail } from '@/lib/log';
 import { takeRateLimit } from '@/lib/rate-limit';
-import { openBoard, sessionOwner } from '@/lib/session';
+import { openBoard, teamWorkspaceOwner } from '@/lib/session';
 import { loadCredsFor } from '@/lib/vault';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-/** Bruce's workspace (review build): contacts, lists and group email. Owner-only until it gets its own sign-in. */
+/** Bruce's workspace: contacts, lists and group email. Chad, and Bruce signed in with his 4ormfinance.com Google account. */
 async function gate() {
   const session = await openBoard();
   if (!session) return { err: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
-  const ownerId = await sessionOwner(session);
+  const ownerId = await teamWorkspaceOwner(session);
   if (!ownerId) return { err: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
   if (!session.sql) return { err: NextResponse.json({ error: 'No database' }, { status: 503 }) };
   return { sql: session.sql, ownerId, userId: session.userId };
