@@ -288,8 +288,11 @@
         var dd = l.v ? 'M' + l.x1 + ',' + l.y1 + ' L' + l.x1 + ',' + (l.y1 + 26) + ' L' + l.x2 + ',' + (l.y1 + 26) + ' L' + l.x2 + ',' + (l.y2 - 26) : 'M' + l.x1 + ',' + l.y1 + ' L' + (l.x2 - 2) + ',' + l.y2;
         return '<path d="' + dd + '" fill="none" stroke="#9fb3d9" stroke-width="1.5"' + (l.v ? '' : ' marker-end="url(#pbA)"') + '/>';
       }).join('') + '</svg>';
+    /* keep every block at least four grid dots (72px) from each edge */
+    var PADX = 72, PADT = 60, PADB = 72;
+    gw += PADX * 2 - 60; gh += PADT + PADB;
     g.style.width = gw + 'px'; g.style.height = gh + 'px'; g.__w = gw; g.__h = gh;
-    g.innerHTML = svg + html;
+    g.innerHTML = '<div style="position:absolute;left:' + PADX + 'px;top:' + PADT + 'px">' + svg + html + '</div>';
     setZoom(S.zoom);
     g.querySelectorAll('.b').forEach(function (b) {
       var id = b.getAttribute('data-st');

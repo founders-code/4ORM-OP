@@ -2146,10 +2146,10 @@
       + rcptRow(d, 'to', 'To', '<span class="sm" data-action="mail-cc-toggle">' + (d.showCc ? 'Hide Cc' : 'Cc &nbsp; Bcc') + '</span>')
       + (d.showCc ? rcptRow(d, 'cc', 'Cc') + rcptRow(d, 'bcc', 'Bcc') : '')
       + '<div class="fr subj"><label>Subject</label><div class="val"><input data-action="mail-subject" placeholder="Subject" value="' + esc(d.subject) + '"></div><span></span></div>'
-      + (window.richBar ? '<style>' + window.richBar.css + '.compose .rb{border:0;border-bottom:1px solid var(--line);border-radius:0;padding:6px 14px;background:#fafbfd}</style>' + window.richBar.html() + '<div class="tbar">' : '<div class="tbar"><span data-action="mail-fmt" data-fmt="b" title="Bold">B</span><span data-action="mail-fmt" data-fmt="i" title="Italic"><i>I</i></span><span class="sep"></span>')
-      + '<span class="tx" data-action="mail-link" title="Select text, then add a link">Link</span><span class="sep"></span><span class="tx" data-action="mail-fmt" data-fmt="name" title="Insert first name">First name</span><span class="sep"></span><span class="tx" data-action="mail-attach-file" title="Attach a file from this computer">Attach file</span><span class="tx" data-action="mail-attach-pick" title="Attach from Documents, Spaces or Drive">From Documents</span></div>'
       + '<div class="body" contenteditable="true" data-action="mail-body" data-placeholder="Write your email">' + body + '</div>'
       + sigBlockHtml(d)
+      + (window.richBar ? '<style>' + window.richBar.css + '.compose .rb{border:0;border-top:1px solid var(--line);border-radius:0;padding:6px 14px;background:#fafbfd}.compose .rb + .tbar{border-top:0}.compose .tbar{border-bottom:0;border-top:1px solid var(--line)}</style>' + window.richBar.html('.body') + '<div class="tbar">' : '<div class="tbar"><span data-action="mail-fmt" data-fmt="b" title="Bold">B</span><span data-action="mail-fmt" data-fmt="i" title="Italic"><i>I</i></span><span class="sep"></span>')
+      + '<span class="tx" data-action="mail-link" title="Select text, then add a link">Link</span><span class="sep"></span><span class="tx" data-action="mail-fmt" data-fmt="name" title="Insert first name">First name</span><span class="sep"></span><span class="tx" data-action="mail-attach-file" title="Attach a file from this computer">Attach file</span><span class="tx" data-action="mail-attach-pick" title="Attach from Documents, Spaces or Drive">From Documents</span></div>'
       + (atts ? '<div class="atts">' + atts + '</div>' : '')
       + '<div class="drop" id="composeDrop">Drop files here to attach them</div>'
       + '<input type="file" id="composeFile" multiple hidden style="display:none">'
@@ -2678,7 +2678,7 @@
     var sched = '<span' + (active === 'sched' ? ' class="on"' : '') + ' data-action="mail-sched-list">Scheduled' + ((S.mailSchedCount | 0) > 0 ? ' <em>' + (S.mailSchedCount | 0) + '</em>' : '') + '</span>';
     var search = o.search || '<input class="search" data-action="mail-search" placeholder="Search mail" value="' + esc(S.mailQ || '') + '">';
     return '<div class="bar"><h1>Email</h1>'
-      + '<div class="seg"><span' + (active === 'inbox' ? ' class="on"' : '') + ' data-action="mail-layout" data-layout="focus">Inbox</span><span' + (active === 'people' ? ' class="on"' : '') + ' data-action="mail-view" data-view="people">People</span>' + sched + '<span' + (active === 'prep' ? ' class="on"' : '') + ' data-action="mail-view" data-view="prep">Prep</span></div>'
+      + '<div class="seg"><span' + (active === 'inbox' ? ' class="on"' : '') + ' data-action="mail-layout" data-layout="focus">Inbox</span><span' + (active === 'people' ? ' class="on"' : '') + ' data-action="mail-view" data-view="people">People</span></div>'
       + '<div class="cnt"><span><b>' + esc(need) + '</b> need a reply</span><span><b>' + esc(unread) + '</b> unread</span><span>junk hidden</span></div>'
       + '<div class="r"><span class="ef-prog"><b>' + done + '</b> done this session</span>' + search + '<button class="btn" data-action="mail-filters">Filters</button><button class="btn pri" id="composeBtn" data-action="mail-compose">Compose</button></div></div>';
   }
@@ -2752,7 +2752,10 @@
       var fold = sp[0] === 'sent' || sp[0] === 'allmail';
       if (!fold && sp[0] !== 'needs' && sp[0] !== 'all' && sp[0] !== 'other' && !counts[sp[0]] && sp[0].indexOf('col:') !== 0) return '';
       return '<button type="button" class="ef-sp' + (split === sp[0] ? ' on' : '') + '" data-action="mail-split" data-split="' + esc(sp[0]) + '"><span>' + esc(sp[1]) + '</span><b>' + (fold ? (S.mailFolder === sp[0] && !S.mailFolderLoading ? counts[sp[0]] : '') : (counts[sp[0]] || 0)) + '</b></button>';
-    }).join('') + '<button type="button" class="ef-sp junk' + (split === 'junk' ? ' on' : '') + '" data-action="mail-split" data-split="junk"><span>Junk and codes</span><b>' + (counts.junk || 0) + '</b></button>';
+    }).join('') + '<button type="button" class="ef-sp junk' + (split === 'junk' ? ' on' : '') + '" data-action="mail-split" data-split="junk"><span>Junk and codes</span><b>' + (counts.junk || 0) + '</b></button>'
+      /* Scheduled opens its side list; Prep is the planned-outreach view. Both live here with the filters. */
+      + '<button type="button" class="ef-sp" data-action="mail-sched-list"><span>Scheduled</span><b>' + ((S.mailSchedCount | 0) > 0 ? (S.mailSchedCount | 0) : '') + '</b></button>'
+      + '<button type="button" class="ef-sp" data-action="mail-view" data-view="prep"><span>Prep</span><b></b></button>';
     var lastDay = '';
     var rows = list.map(function (m) {
       var day = m.day && m.day !== lastDay ? '<div class="ef-day">' + esc(m.day) + '</div>' : '';

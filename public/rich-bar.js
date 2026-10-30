@@ -5,7 +5,7 @@
    and survives repaints. Words only, no icons. */
 (function () {
   if (window.richBar) return;
-  var SIZES = [['Small', 12], ['Normal', 15], ['Large', 19], ['Huge', 26]];
+  var POINTS = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72];
   var BLOCKS = [['Normal text', 'p'], ['Heading', 'h2'], ['Subheading', 'h3'], ['Quote', 'blockquote']];
   var COLOURS = [['Black', '#1b2333'], ['4orm blue', '#2e6bf2'], ['Navy', '#1b2a5c'], ['Green', '#0f8a6a'], ['Red', '#c8283f'], ['Orange', '#c2610c'], ['Grey', '#6b7488']];
   var MARKS = [['Yellow', '#fff3a3'], ['Light blue', '#dbe7ff'], ['Light green', '#d9f5e6'], ['Pink', '#ffe0e6'], ['None', 'transparent']];
@@ -20,7 +20,7 @@
     + '.rb .rb-dd.open .rb-menu{display:block}'
     + '.rb .rb-o{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:7px 9px;border:0;border-radius:7px;background:none;color:#1b2333;font:600 13px/1.2 Inter,-apple-system,system-ui,sans-serif;cursor:pointer}'
     + '.rb .rb-o:hover{background:#f2f5fb}.rb .rb-o.on{background:#e6eeff;color:#1f4fc4}'
-    + '.rb .rb-custom{text-transform:none;letter-spacing:0;margin:0;font-weight:600;display:flex;align-items:center;gap:8px;padding:7px 9px;font-size:12.5px;color:#5b6678}.rb .rb-custom input{width:34px;height:24px;border:1px solid #d9dfea;border-radius:6px;padding:0;background:none;cursor:pointer}'
+    + '.rb .rb-pts{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:2px}.rb .rb-o.rb-pt{justify-content:center;padding:6px 0;font-variant-numeric:tabular-nums}.rb .rb-custom{text-transform:none;letter-spacing:0;margin:0;font-weight:600;display:flex;align-items:center;gap:8px;padding:7px 9px;font-size:12.5px;color:#5b6678}.rb .rb-custom input{width:34px;height:24px;border:1px solid #d9dfea;border-radius:6px;padding:0;background:none;cursor:pointer}'
     + '.rte{min-height:260px;border:1px solid #d9dfea;border-radius:0 0 10px 10px;padding:12px 14px;background:#fff;color:#1b2333;font:400 15px/1.55 Arial,Helvetica,sans-serif;outline:none;overflow:auto;white-space:normal;word-wrap:break-word}'
     + '.rte:focus{border-color:#2e6bf2;box-shadow:0 0 0 3px rgba(46,107,242,.15)}'
     + '.rte p{margin:0 0 10px}.rte h2{font-size:22px;margin:6px 0 10px}.rte h3{font-size:18px;margin:6px 0 8px}.rte blockquote{margin:6px 0 10px;padding:4px 12px;border-left:3px solid #c9d4ea;color:#4a5468}.rte ul,.rte ol{margin:0 0 10px;padding-left:22px}.rte a{color:#2e6bf2}';
@@ -29,10 +29,12 @@
   function btn(cmd, label, title, extra) { return '<button type="button" class="rb-b" data-rb="' + cmd + '" title="' + esc(title) + '"' + (extra || '') + '>' + label + '</button>'; }
   function menu(key, label, items) { return '<span class="rb-dd" data-rbdd="' + key + '"><button type="button" class="rb-b" data-rbopen="' + key + '">' + label + '</button><span class="rb-menu">' + items + '</span></span>'; }
 
-  function html() {
-    return '<div class="rb" data-rbbar>'
+  /* target: a selector for the editor when it is not the next one after the bar (compose puts the bar under the email) */
+  function html(target) {
+    return '<div class="rb" data-rbbar' + (target ? ' data-rbtarget="' + esc(target) + '"' : '') + '>'
       + menu('block', '<span data-rblbl="block">Normal text</span>', BLOCKS.map(function (b) { return '<button type="button" class="rb-o" data-rb="block" data-v="' + b[1] + '">' + b[0] + '</button>'; }).join(''))
-      + menu('size', '<span data-rblbl="size">Normal</span>', SIZES.map(function (z) { return '<button type="button" class="rb-o" data-rb="size" data-v="' + z[1] + '" style="font-size:' + Math.min(z[1], 20) + 'px">' + z[0] + '</button>'; }).join(''))
+      + menu('size', '<span data-rblbl="size">11 pt</span>', '<span class="rb-pts">' + POINTS.map(function (z) { return '<button type="button" class="rb-o rb-pt" data-rb="size" data-v="' + z + '">' + z + '</button>'; }).join('') + '</span>'
+        + '<label class="rb-custom">Any size <input type="number" min="6" max="96" step="1" data-rbsize value="11" style="width:58px;height:26px;padding:0 6px;font:600 13px Inter,system-ui,sans-serif"> pt</label>')
       + '<span class="rb-sep"></span>'
       + btn('bold', '<b>B</b>', 'Bold') + btn('italic', '<i style="font-family:Georgia,serif">I</i>', 'Italic') + btn('underline', '<u>U</u>', 'Underline') + btn('strikeThrough', '<s>S</s>', 'Strike through')
       + '<span class="rb-sep"></span>'
@@ -50,6 +52,8 @@
 
   /* the editable the bar controls: the next contenteditable after it */
   function editorFor(bar) {
+    var tg = bar.getAttribute('data-rbtarget');
+    if (tg && bar.parentNode) { var hit = bar.parentNode.querySelector(tg); if (hit) return hit; }
     var n = bar.nextElementSibling;
     while (n) { if (n.isContentEditable || n.getAttribute('contenteditable') === 'true') return n; var inner = n.querySelector && n.querySelector('[contenteditable="true"]'); if (inner) return inner; n = n.nextElementSibling; }
     return null;
@@ -72,11 +76,12 @@
   }
   function exec(cmd, val) { try { document.execCommand('styleWithCSS', false, true); } catch (e) {} try { return document.execCommand(cmd, false, val); } catch (e) { return false; } }
 
-  /* Size: mark the selection with the biggest size, then swap that mark for the exact pixel size. */
-  function setSize(ed, px) {
+  /* Size in points: mark the selection with the biggest size, then swap that mark for the exact point size. */
+  function setSize(ed, pt) {
+    pt = Math.max(6, Math.min(96, Math.round(+pt || 11)));
     exec('fontSize', '7');
-    ed.querySelectorAll('font[size="7"]').forEach(function (f) { var s = document.createElement('span'); s.style.fontSize = px + 'px'; while (f.firstChild) s.appendChild(f.firstChild); f.parentNode.replaceChild(s, f); });
-    ed.querySelectorAll('span').forEach(function (s) { if (s.style.fontSize === 'xxx-large' || s.style.fontSize === '-webkit-xxx-large') s.style.fontSize = px + 'px'; });
+    ed.querySelectorAll('font[size="7"]').forEach(function (f) { var s = document.createElement('span'); s.style.fontSize = pt + 'pt'; while (f.firstChild) s.appendChild(f.firstChild); f.parentNode.replaceChild(s, f); });
+    ed.querySelectorAll('span').forEach(function (s) { if (s.style.fontSize === 'xxx-large' || s.style.fontSize === '-webkit-xxx-large') s.style.fontSize = pt + 'pt'; });
   }
 
   function run(ed, cmd, v) {
@@ -93,7 +98,11 @@
   }
 
   /* Keep the bar honest: show the style, size and toggles where the cursor is. */
-  function barFor(ed) { var p = ed.previousElementSibling; while (p) { if (p.hasAttribute && p.hasAttribute('data-rbbar')) return p; p = p.previousElementSibling; } var host = ed.parentNode; return host && host.querySelector ? host.querySelector('[data-rbbar]') : null; }
+  function barFor(ed) {
+    if (ed.parentNode) { var tb = ed.parentNode.querySelector('[data-rbbar][data-rbtarget]'); if (tb && editorFor(tb) === ed) return tb; }
+    return barFor0(ed);
+  }
+  function barFor0(ed) { var p = ed.previousElementSibling; while (p) { if (p.hasAttribute && p.hasAttribute('data-rbbar')) return p; p = p.previousElementSibling; } var host = ed.parentNode; return host && host.querySelector ? host.querySelector('[data-rbbar]') : null; }
   function refresh(ed) {
     var bar = barFor(ed); if (!bar) return;
     ['bold', 'italic', 'underline', 'strikeThrough', 'insertUnorderedList', 'insertOrderedList'].forEach(function (c) {
@@ -105,11 +114,11 @@
     if (!node || !ed.contains(node)) return;
     var elx = node.nodeType === 1 ? node : node.parentNode;
     var px = parseFloat(getComputedStyle(elx).fontSize) || 15;
-    var name = px <= 13 ? 'Small' : px <= 16.5 ? 'Normal' : px <= 22 ? 'Large' : 'Huge';
+    var name = Math.round(px * 0.75) + ' pt';
     var bl = 'Normal text', x = elx;
     while (x && x !== ed) { var t = (x.tagName || '').toLowerCase(); if (t === 'h2') { bl = 'Heading'; break; } if (t === 'h3') { bl = 'Subheading'; break; } if (t === 'blockquote') { bl = 'Quote'; break; } x = x.parentNode; }
-    if (bl !== 'Normal text') name = bl === 'Heading' ? 'Large' : name;
     var a = bar.querySelector('[data-rblbl="size"]'); if (a) a.textContent = name;
+    var si = bar.querySelector('[data-rbsize]'); if (si && document.activeElement !== si) si.value = Math.round(px * 0.75);
     var b2 = bar.querySelector('[data-rblbl="block"]'); if (b2) b2.textContent = bl;
     var sw = bar.querySelector('[data-rbsw="colour"]'); if (sw) sw.style.background = getComputedStyle(elx).color;
   }
@@ -146,6 +155,21 @@
     var bar = pathHit(e, function (n) { return n.hasAttribute('data-rbbar'); });
     var ed = bar && editorFor(bar); if (!ed) return;
     run(ed, pick.getAttribute('data-rbpick'), pick.value);
+  }, true);
+  /* typed point size: applied when Enter is pressed or the box loses focus */
+  document.addEventListener('change', function (e) {
+    var inp = pathHit(e, function (n) { return n.hasAttribute && n.hasAttribute('data-rbsize'); });
+    if (!inp) return;
+    var bar = pathHit(e, function (n) { return n.hasAttribute('data-rbbar'); });
+    var ed = bar && editorFor(bar); if (!ed) return;
+    closeMenus(null);
+    run(ed, 'size', inp.value);
+  }, true);
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    var inp = pathHit(e, function (n) { return n.hasAttribute && n.hasAttribute('data-rbsize'); });
+    if (!inp) return;
+    e.preventDefault(); inp.blur();
   }, true);
   /* remember the cursor as it moves, and keep the bar in step */
   function onSel(e) {

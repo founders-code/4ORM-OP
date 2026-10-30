@@ -6,7 +6,7 @@
 const ALLOWED = new Set(['b', 'strong', 'i', 'em', 'u', 's', 'strike', 'span', 'font', 'a', 'ul', 'ol', 'li', 'br', 'p', 'div', 'h2', 'h3', 'blockquote']);
 const DROP_WITH_CONTENT = /<(script|style|iframe|object|embed|svg|math|template|noscript|textarea|select|head|title)\b[\s\S]*?<\/\1\s*>/gi;
 const STYLE_OK = new Set(['color', 'background-color', 'font-size', 'font-weight', 'font-style', 'text-decoration', 'text-decoration-line', 'text-align']);
-const SIZE_OK = /^(x-small|small|medium|large|x-large|xx-large|\d{1,2}(\.\d)?px)$/;
+const SIZE_OK = /^(x-small|small|medium|large|x-large|xx-large|\d{1,2}(\.\d)?(px|pt))$/;
 const COLOUR_OK = /^(#[0-9a-f]{3,8}|rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(,\s*[\d.]+\s*)?\)|[a-z]{3,20})$/i;
 
 function esc(v: string) {
