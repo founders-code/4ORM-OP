@@ -3239,6 +3239,9 @@
       repaintMail();
       if (d.showCc) focusComposeField('cc');
     },
+    /* 30 Oct: click an attached file to see it before it goes out. */
+    'mail-att-view': function (el, root) { attPreview(root, composeState().attachments[Number(attr(el, 'data-i')) || 0]); },
+    'mail-att-close': function (el, root) { var o = root.getElementById && root.getElementById('attPv'); if (o) { if (o._url) URL.revokeObjectURL(o._url); o.remove(); } },
     'mail-att-remove': function (el) {
       var d = composeState();
       d.attachments.splice(Number(attr(el, 'data-i')) || 0, 1);
@@ -5347,6 +5350,48 @@
     paintComposeAtts(root);
   }
   /* Repaint only the attachment chips and the side box, so the body, the picker and the caret stay put. */
+  function attPreview(root, a) {
+    if (!a) return;
+    var old = root.getElementById && root.getElementById('attPv'); if (old) old.remove();
+    var o = document.createElement('div');
+    o.id = 'attPv';
+    o.setAttribute('style', 'position:fixed;inset:0;z-index:2147482000;background:rgba(3,8,22,.6);display:flex;align-items:center;justify-content:center;padding:24px');
+    o.innerHTML = '<div style="background:#fff;border-radius:16px;width:min(980px,96vw);height:min(92vh,1200px);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5)">'
+      + '<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #e6ebf3"><b style="font:800 15px Inter,system-ui,sans-serif;color:#101a33;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escText(a.name || 'File') + '</b>'
+      + '<a id="attPvOpen" target="_blank" rel="noopener" style="font:700 13px Inter,system-ui,sans-serif;color:#2e6bf2;text-decoration:none;display:none">Open in a new tab</a>'
+      + '<button type="button" data-action="mail-att-close" style="height:34px;border-radius:999px;border:1px solid #d6deea;background:#fff;font:700 13px Inter,system-ui,sans-serif;padding:0 14px;cursor:pointer">Close</button></div>'
+      + '<div id="attPvBody" style="flex:1;display:flex;align-items:center;justify-content:center;background:#f5f7fb;color:#5b6678;font:600 14px Inter,system-ui,sans-serif">Loading the preview&hellip;</div></div>';
+    o.addEventListener('click', function (e) { if (e.target === o) { if (o._url) URL.revokeObjectURL(o._url); o.remove(); } });
+    (root.nodeType === 11 ? root : document.body).appendChild(o);
+    var body = o.querySelector('#attPvBody');
+    var openA = o.querySelector('#attPvOpen');
+    function frame(src) {
+      body.innerHTML = '';
+      var f = document.createElement('iframe');
+      f.src = src; f.title = a.name || 'Preview';
+      f.setAttribute('style', 'border:0;width:100%;height:100%;background:#fff');
+      body.appendChild(f);
+      openA.href = src; openA.style.display = '';
+    }
+    function blobOf(b64, mime) {
+      var bin = atob(b64), u = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+      return new Blob([u], { type: mime || 'application/octet-stream' });
+    }
+    function fail(msg) { body.textContent = msg; }
+    if (a.data) { o._url = URL.createObjectURL(blobOf(a.data, a.mime || a.type)); frame(o._url); return; }
+    if (a.driveFileId) { frame('https://drive.google.com/file/d/' + encodeURIComponent(a.driveFileId) + '/preview'); return; }
+    if (a.stagedId) {
+      api('/api/documents/file?id=' + encodeURIComponent(a.stagedId), { method: 'GET' }).then(function (r) {
+        if (!r || !r.ok) throw new Error('This file cannot be previewed here. It still attaches.');
+        return r.blob();
+      }).then(function (b) { o._url = URL.createObjectURL(b); frame(o._url); })
+        .catch(function (err) { fail(String((err && err.message) || 'Could not load the preview.')); });
+      return;
+    }
+    if (a.url) { frame(a.url); return; }
+    fail('No preview for this file.');
+  }
   function paintComposeAtts(root) {
     var cp = root && root.getElementById && root.getElementById('compose');
     if (!cp) return;
@@ -5358,7 +5403,7 @@
       var ext = (nm.match(/\.([a-z0-9]{2,5})$/i) || [])[1] || (a.mime && /pdf/i.test(a.mime) ? 'pdf' : 'file');
       var size = Number(a.size) || 0;
       var sz = size ? (size >= 1048576 ? (size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(size / 1024)) + ' KB') : '';
-      return '<span class="att' + (a.busy ? ' busy' : '') + '"><span class="ty" style="background:#2e6bf2">' + escText(String(ext).toUpperCase()) + '</span>' + escText(nm)
+      return '<span class="att' + (a.busy ? ' busy' : '') + '"><span class="ty" style="background:#2e6bf2">' + escText(String(ext).toUpperCase()) + '</span><span class="attn" data-action="mail-att-view" data-i="' + i + '" title="Preview" style="cursor:pointer;text-decoration:underline;text-underline-offset:3px">' + escText(nm) + '</span>'
         + (sz ? ' <span class="sz">' + escText(sz) + '</span>' : '') + (isReal(a) || a.busy ? '' : ' <span class="sz">link</span>')
         + '<span class="x2" data-action="mail-att-remove" data-i="' + i + '" title="Remove">&times;</span></span>';
     }).join('');

@@ -2121,7 +2121,7 @@
     var atts = d.attachments.map(function (a, i) {
       var kind = docKind(a);
       var how = attIsReal(a) ? '' : ' <span class="sz">link</span>';
-      return '<span class="att' + (a.busy ? ' busy' : '') + '"><span class="ty" style="background:#2e6bf2">' + esc(kind === 'img' ? 'IMG' : String(kind || 'file').toUpperCase()) + '</span>' + esc(a.name || 'File') + (a.size ? ' <span class="sz">' + esc(sizeLabel(a.size)) + '</span>' : '') + how + '<span class="x2" data-action="mail-att-remove" data-i="' + i + '" title="Remove">&times;</span></span>';
+      return '<span class="att' + (a.busy ? ' busy' : '') + '"><span class="ty" style="background:#2e6bf2">' + esc(kind === 'img' ? 'IMG' : String(kind || 'file').toUpperCase()) + '</span><span class="attn" data-action="mail-att-view" data-i="' + i + '" title="Preview" style="cursor:pointer;text-decoration:underline;text-underline-offset:3px">' + esc(a.name || 'File') + '</span>' + (a.size ? ' <span class="sz">' + esc(sizeLabel(a.size)) + '</span>' : '') + how + '<span class="x2" data-action="mail-att-remove" data-i="' + i + '" title="Remove">&times;</span></span>';
     }).join('');
     var cw = Number((window.STATE && window.STATE.prefs && window.STATE.prefs.compose_width) || 0) || 760;
     try { if (!cw) cw = Number(localStorage.getItem('compose_w') || 760) || 760; } catch (e) {}
@@ -2774,7 +2774,7 @@
         var nm = String(a.name || 'File');
         var real = attIsReal(a);
         var ext = (nm.match(/\.([a-z0-9]{2,5})$/i) || [])[1] || (a.url ? 'LINK' : a.driveFileId ? 'DRIVE' : 'FILE');
-        return '<span class="att' + (a.busy ? ' busy' : '') + '"><span class="ty">' + esc(String(ext).toUpperCase()) + '</span>' + esc(nm) + (real ? '' : ' <span class="sz">link</span>') + '<span class="x2" data-action="mail-att-remove" data-i="' + i + '" title="Remove">Remove</span></span>';
+        return '<span class="att' + (a.busy ? ' busy' : '') + '"><span class="ty">' + esc(String(ext).toUpperCase()) + '</span><span class="attn" data-action="mail-att-view" data-i="' + i + '" title="Preview" style="cursor:pointer;text-decoration:underline;text-underline-offset:3px">' + esc(nm) + '</span>' + (real ? '' : ' <span class="sz">link</span>') + '<span class="x2" data-action="mail-att-remove" data-i="' + i + '" title="Remove">Remove</span></span>';
       }).join('');
       card = '<div class="ef-card">'
         + '<div class="ef-ch1"><span class="av" style="background:' + esc(focus.c) + '">' + esc(iniOf(focus.f)) + '</span><div class="ef-who"><h2>' + esc(focus.sj) + '</h2><div class="ef-meta"><b>' + esc(focus.f) + '</b>' + (focus.e ? ' &middot; ' + esc(focus.e) : '') + ' &middot; ' + esc(focus.t) + '</div></div>'
