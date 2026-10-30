@@ -1199,7 +1199,7 @@
       + '<td style="' + DL_TD + ';font-weight:700">' + esc(r.name || 'Contact') + '</td>'
       + '<td style="' + DL_TD + ';opacity:.8">' + esc(c.person) + '</td>'
       + '<td style="' + DL_TD + '"><span class="tag ' + c.cls + '">' + esc(c.type) + '</span></td>'
-      + '<td style="' + DL_TD + ';font-weight:650">' + esc(c.outcome) + '</td>'
+      + '<td style="' + DL_TD + ';font-weight:650;white-space:nowrap">' + esc(c.outcome) + '</td>'
       + '<td style="' + DL_TD + ';opacity:.85;min-width:220px">' + esc(c.note.length > 300 ? c.note.slice(0, 300) + '...' : c.note) + '</td>'
       + '<td style="' + DL_TD + ';white-space:nowrap">' + esc(dlFu(c.fu)) + '</td></tr>';
   }
