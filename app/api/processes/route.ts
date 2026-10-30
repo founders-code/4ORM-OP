@@ -8,7 +8,7 @@ import { growthRecord } from '@/lib/growth';
 import { TEST_SEND_TO } from '@/lib/send-gate.mjs';
 import { DESIGNS } from '@/lib/package-email';
 import {
-  listSpacesLite, listStagePackages, previewStageSend, recentSends, removeStagePackage, renderStagePreview, saveStagePackage, sendStagePackage, stageStats,
+  listSpacesLite, listStagePackages, previewStageSend, readyStagePackages, recentSends, removeStagePackage, renderStagePreview, saveStagePackage, sendStagePackage, stageStats,
 } from '@/lib/stage-packages';
 
 export const dynamic = 'force-dynamic';
@@ -44,6 +44,7 @@ export async function GET(req: Request) {
       if (!rec) return NextResponse.json({ error: 'Not found' }, { status: 404 });
       return NextResponse.json({ preview: await previewStageSend(g.sql, g.ownerId, rec, stage, g.userId) });
     }
+    if (u.searchParams.get('ready')) return NextResponse.json({ ready: await readyStagePackages(g.sql, g.ownerId, g.userId) });
     if (u.searchParams.get('packages')) {
       const list = await listStagePackages(g.sql, g.ownerId);
       return NextResponse.json({ packages: list.map((p) => ({ stageId: p.stageId, stageName: p.stageName, pipelineId: p.pipelineId, subject: p.subject, active: p.active, design: p.design, docs: p.docs.length })) });

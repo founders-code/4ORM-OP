@@ -84,7 +84,7 @@
 
   function build() {
     box = document.createElement('div'); box.className = 'pbx';
-    box.innerHTML = '<div class="x-top"><h1>Process builder</h1><span class="x-sub">Each GoHighLevel stage can send its own package. Move a contact onto that stage and you confirm before it goes out.</span><span class="x-sp"></span>'
+    box.innerHTML = '<div class="x-top"><h1>Stage emails</h1><span class="x-sub">Each GoHighLevel stage can send its own package. Move a contact onto that stage and you confirm before it goes out.</span><span class="x-sp"></span>'
       + '<button type="button" data-go="sprint">15-min sprint</button><button type="button" data-go="pipeline">Pipeline</button><button type="button" data-close>Close</button></div>'
       + '<div class="x-body"><div class="x-left"></div><div class="x-map"></div><div class="x-ed"></div></div><div class="toast"></div>';
     document.body.appendChild(box);
@@ -225,12 +225,20 @@
             + (pv.docs.length ? '<div class="k">Documents</div><ul>' + pv.docs.map(function (d) { return '<li>' + esc(d.name) + '</li>'; }).join('') + '</ul>' : '')
             + ((pv.followDays || pv.task) ? '<div class="k">Then</div><div>' + (pv.followDays ? 'Follow up in ' + pv.followDays + ' days. ' : '') + (pv.task ? 'GoHighLevel task: ' + esc(pv.task) : '') + '</div>' : '')
             + (pv.ready ? '' : '<div class="why">Cannot send: ' + esc(pv.why) + (only ? '.' : '. You can still move the stage.') + '</div>')
-            + '</div><div class="ft"><button type="button" data-c>Cancel</button>' + (only ? (pv.ready ? '<button type="button" class="pri" data-s>Send</button>' : '') : '<button type="button" data-o>Move only</button>' + (pv.ready ? '<button type="button" class="pri" data-s>Move and send</button>' : '')) + '</div></div>';
+            + '</div><div class="ft"><button type="button" data-c>Cancel</button>' + (pv.to ? '<button type="button" data-e>' + (only ? 'Edit in email' : 'Move, then edit in email') + '</button>' : '') + (only ? (pv.ready ? '<button type="button" class="pri" data-s>Send</button>' : '') : '<button type="button" data-o>Move only</button>' + (pv.ready ? '<button type="button" class="pri" data-s>Move and send</button>' : '')) + '</div></div>';
           document.body.appendChild(m);
           function done(v) { m.remove(); resolve(v); }
           m.querySelector('[data-c]').onclick = function () { done(null); };
           var ob = m.querySelector('[data-o]'); if (ob) ob.onclick = function () { done({ send: false }); };
           var sb = m.querySelector('[data-s]'); if (sb) sb.onclick = function () { done({ send: true }); };
+          /* Edit before it goes: opens Email with the stage email filled in and its documents attached. Send from there. */
+          var eb = m.querySelector('[data-e]'); if (eb) eb.onclick = function () {
+            done(only ? null : { send: false });
+            if (typeof window.openComposeDraft === 'function') {
+              if (typeof window.switchView === 'function') window.switchView('mail');
+              window.openComposeDraft({ to: [{ email: pv.to, name: pv.toName || '' }], subject: pv.subject, body: pv.body, attachments: (pv.docs || []).filter(function (d) { return d && d.url; }).map(function (d) { return { name: d.name, url: d.url }; }) });
+            }
+          };
           m.onclick = function (e) { if (e.target === m) done(null); };
         });
       });

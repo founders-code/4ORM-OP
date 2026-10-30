@@ -206,6 +206,18 @@ function fill(text: string, rec: Record<string, unknown>) {
   return text.replaceAll('{{first_name}}', first).replaceAll('{{company}}', company || 'your team').replaceAll('{{name}}', person || company);
 }
 
+/** Every stage email that is ready to use (subject and body written), with its documents, placeholders left in.
+    Compose uses these as one-click ready emails, so the stage builder is the one place they are written. */
+export async function readyStagePackages(sql: Sql, ownerId: string, spaceOwner = ownerId) {
+  const list = (await listStagePackages(sql, ownerId)).filter((p) => p.active && p.subject.trim() && p.body.trim());
+  const out = [];
+  for (const p of list) {
+    out.push({ stageId: p.stageId, stageName: p.stageName, pipelineId: p.pipelineId, pipelineName: p.pipelineName, subject: p.subject, body: p.body,
+      docs: [...p.docs, ...(await spaceDocs(sql, spaceOwner, p.spaceId))] });
+  }
+  return out;
+}
+
 /** Exactly what would go out for this record at this stage. Nothing is sent here. */
 export async function previewStageSend(sql: Sql, ownerId: string, rec: Record<string, unknown>, stageId: string, spaceOwner = ownerId) {
   const pkg = await stagePackageFor(sql, ownerId, stageId);

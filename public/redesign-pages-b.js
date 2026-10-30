@@ -818,7 +818,7 @@
     }).join('');
     var bar =
       '<div class="bar"><h1>Pipeline</h1><span class="sub">GoHighLevel runs it &middot; this is where you work it</span>'
-      + '<div class="r"><button type="button" id="sprintGoBtn" style="height:32px;border-radius:999px;border:1px solid #2a2c35;background:#18191f;color:#fff;font:800 12.5px Inter,system-ui,sans-serif;padding:0 14px;cursor:pointer;margin-right:6px;white-space:nowrap">15-min sprint</button><button type="button" id="procGoBtn" style="height:32px;border-radius:999px;border:1px solid #2a2c35;background:#18191f;color:#fff;font:800 12.5px Inter,system-ui,sans-serif;padding:0 14px;cursor:pointer;margin-right:6px;white-space:nowrap">Process builder</button><div class="seg"><span' + (view === 'board' ? ' class="on"' : '') + ' data-action="pipe-view" data-view="board">Board</span><span' + (view === 'table' ? ' class="on"' : '') + ' data-action="pipe-view" data-view="list">List</span><span' + (view === 'funnel' ? ' class="on"' : '') + ' data-action="pipe-view" data-view="funnel">Funnel</span></div><input class="search" data-action="pipe-search" placeholder="Search people or companies" value="' + esc(S.pipeQ || '') + '"></div></div>'
+      + '<div class="r"><button type="button" id="sprintGoBtn" style="height:32px;border-radius:999px;border:1px solid #2a2c35;background:#18191f;color:#fff;font:800 12.5px Inter,system-ui,sans-serif;padding:0 14px;cursor:pointer;margin-right:6px;white-space:nowrap">15-min sprint</button><button type="button" id="procGoBtn" style="height:32px;border-radius:999px;border:1px solid #2a2c35;background:#18191f;color:#fff;font:800 12.5px Inter,system-ui,sans-serif;padding:0 14px;cursor:pointer;margin-right:6px;white-space:nowrap">Stage emails</button><div class="seg"><span' + (view === 'board' ? ' class="on"' : '') + ' data-action="pipe-view" data-view="board">Board</span><span' + (view === 'table' ? ' class="on"' : '') + ' data-action="pipe-view" data-view="list">List</span><span' + (view === 'funnel' ? ' class="on"' : '') + ' data-action="pipe-view" data-view="funnel">Funnel</span></div><input class="search" data-action="pipe-search" placeholder="Search people or companies" value="' + esc(S.pipeQ || '') + '"></div></div>'
       + '<div class="picker">' + (data.pills || []).map(function (p) {
         return '<button class="pl' + (p.on ? ' on' : '') + '" data-action="pipe-pill"' + (p.id ? ' data-pipe="' + esc(p.id) + '"' : '') + '>' + esc(p.name) + ' <b>' + esc(p.n) + '</b></button>';
       }).join('')
@@ -2052,6 +2052,21 @@
     if (!e) return null;
     return asList((window.STATE || {}).contacts).filter(function (c) { return String(c.email || '').toLowerCase() === e; })[0] || null;
   }
+  function readyHtml(d) {
+    var S0 = window.STATE || {};
+    var list = S0.readyPkgs;
+    if (list == null && typeof window.__loadReadyPkgs === 'function') window.__loadReadyPkgs();
+    var head = '<div class="tpl-h">Ready emails, from your stage emails <span data-action="mail-tpl-build" style="float:right;color:var(--blue);cursor:pointer">Edit them</span></div>';
+    if (list == null) return head + '<p style="margin-top:6px">Loading&hellip;</p>';
+    if (!list.length) return head + '<p style="margin-top:6px">None yet. Write them in Stage emails, one per pipeline stage.</p>';
+    var by = {};
+    list.forEach(function (p, i) { var k = String(p.pipelineName || 'Other').replace(/\s*pipeline\s*/i, '').trim(); (by[k] = by[k] || []).push([p, i]); });
+    return head + Object.keys(by).map(function (k) {
+      var nice = k.toLowerCase().replace(/(^|[\s&/-])([a-z])/g, function (m, a, b) { return a + b.toUpperCase(); });
+      return '<div style="font-size:11px;font-weight:800;color:var(--ink3);margin:8px 0 2px">' + esc(nice) + '</div><div class="tones tpls">'
+        + by[k].map(function (x) { return '<span' + (d.tpl === x[0].stageId ? ' class="on"' : '') + ' data-action="mail-tpl" data-tpl="' + x[1] + '" title="' + esc(x[0].subject) + (x[0].docs.length ? ' · ' + esc(x[0].docs.map(function (q) { return q.name; }).join(', ')) : '') + '">' + esc(x[0].stageName) + '</span>'; }).join('') + '</div>';
+    }).join('');
+  }
   function composeSide(d) {
     var first = d.to[0];
     var c = first ? contactFor(first.email) : null;
@@ -2060,10 +2075,8 @@
     var out = '<div class="box ai2"><h4>4orm Intelligence</h4><p>' + (d.aiNote ? esc(d.aiNote) : 'Pick a tone to rewrite the draft, or tell me what to write. You review it before anything goes out.') + '</p>'
       + '<div class="tones">' + TONES.map(function (t) { return '<span' + (d.tone === t[0] ? ' class="on"' : '') + ' data-action="mail-tone" data-tone="' + t[0] + '">' + t[1] + '</span>'; }).join('') + '</div>'
       + '<div class="ask"><input data-action="mail-ask-input" placeholder="Tell me what to write&hellip;" value="' + esc(d.ask || '') + '"><button type="button" data-action="mail-ai-write">Write</button></div>'
-      /* 30 Oct: one click fills the email and attaches the right files. Type their name in To first. */
-      + '<div class="tpl-h">Ready emails, with the files</div><div class="tones tpls">'
-      + [['first', 'First Message'], ['design', 'Design Partner'], ['broker', 'Mortgage Broker'], ['regulator', 'Regulator']].map(function (t) { return '<span' + (d.tpl === t[0] ? ' class="on"' : '') + ' data-action="mail-tpl" data-tpl="' + t[0] + '">' + t[1] + '</span>'; }).join('')
-      + '</div></div>';
+      /* 30 Oct: the stage emails built in Stage emails (Pipeline page) are the ready emails here. One click fills the email and its documents. */
+      + readyHtml(d) + '</div>';
     if (c) {
       var touch = daysAgo(c.lastTouch || c.last_touch);
       out += '<div class="box"><h4>' + esc(c.name || first.email) + '</h4>'
