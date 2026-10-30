@@ -1010,7 +1010,7 @@
     function fit(g) {
       var n = typeof window.gridCols === 'function' ? window.gridCols('spaces', 4) : 4;
       var w = g.clientWidth || (wrap.clientWidth - 40) || 900;
-      var min = n >= 7 ? 120 : n >= 6 ? 170 : 240;
+      var min = n >= 7 ? 140 : n >= 6 ? 170 : 240;
       var eff = Math.max(1, Math.min(n, Math.floor((w + 14) / (min + 14))));
       g.style.setProperty('--cols', String(eff));
     }
@@ -1024,6 +1024,16 @@
     }
     if (!wrap._zoomRs) { wrap._zoomRs = 1; window.addEventListener('resize', function () { grids().forEach(fit); }); }
     apply();
+    /* The saved zoom can arrive after the first paint; apply it once it does. */
+    var S0 = window.STATE || (window.STATE = {});
+    if (!(S0.prefs && S0.prefs.grid_zoom && S0.prefs.grid_zoom.spaces) && !wrap._zoomPref) {
+      wrap._zoomPref = 1;
+      var fx = typeof window.authFetch === 'function' ? window.authFetch : fetch;
+      fx('/api/prefs', { credentials: 'same-origin', quiet: true }).then(function (r) { return r.json(); }).then(function (j) {
+        var gz = (j && (j.prefs || j).grid_zoom) || null;
+        if (gz && gz.spaces) { S0.prefs = S0.prefs || {}; S0.prefs.grid_zoom = Object.assign({}, S0.prefs.grid_zoom || {}, gz); apply(); }
+      }).catch(function () {});
+    }
     window.onGridZoom = function (key) { if (key === 'spaces') { apply(); } };
     setTimeout(function () { grids().forEach(fit); }, 60);
     wrap.querySelectorAll('[data-zoom]').forEach(function (b) {
