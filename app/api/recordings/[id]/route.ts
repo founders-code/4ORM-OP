@@ -53,6 +53,10 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
       await saveChunk(session.sql, session.userId, id, Number(body.n) || 0, String(body.b64 || ''));
       return NextResponse.json({ ok: true });
     }
+    if (body.action === 'reprocess') {
+      const rec = await processRecording(session.sql, session.userId, id);
+      return NextResponse.json(rec || { ok: false }, rec ? undefined : { status: 404 });
+    }
     if (body.action === 'finalize') {
       if (body.b64) await saveAudio(session.sql, session.userId, id, String(body.b64));
       else await assembleChunks(session.sql, session.userId, id);

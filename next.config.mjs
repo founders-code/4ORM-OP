@@ -14,6 +14,7 @@ const nextConfig = {
     '/api/cron/brief': ['./ceo/**/*'],
     '/api/cron/ceo': ['./ceo/**/*'],
     '/api/ceo/daily': ['./ceo/**/*'],
+    '/api/ceo/schedule': ['./ceo/**/*'],
     '/api/ceo/context': ['./ceo/**/*'],
     '/api/finance': ['./ceo/**/*'],
     '/api/snapshots': ['./ceo/**/*'],

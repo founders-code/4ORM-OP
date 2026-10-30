@@ -220,7 +220,6 @@
     if ((d.attachments || []).some(function (a) { return a && a.data; })) { toast(root, 'Files from this computer can only go with Send now. Remove them or attach from Documents to schedule.'); return; }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) { toast(root, 'Pick a date and a 24-hour time, like 08:00'); return; }
     var who = d.to.map(function (r) { return r.email; }).join(', ');
-    if (!window.confirm('Schedule this email to send from your Gmail at ' + date + ' ' + time + ' (Vancouver time)?\n\nTo: ' + who + '\nSubject: ' + (d.subject || '(no subject)') + '\n\nIt sends once, at that time. You can cancel or edit it from Scheduled until then.')) return;
     if (fixtureOn()) { toast(root, 'Scheduled (fixture)'); closePop(root); return; }
     var editing = d.schedEditId;
     var body = schedulePayload(d, date, time);
@@ -790,7 +789,6 @@
         var d = M().state ? M().state() : {};
         if (!d.schedEditId) return orig(el, root, ev);
         var id = d.schedEditId;
-        if (!window.confirm('This email is scheduled. Send it now instead? The scheduled send is cancelled first.')) return;
         call('/api/mail/schedule/' + encodeURIComponent(id), { method: 'POST', body: { action: 'cancel' } }).then(function () {
           delete d.schedEditId;
           refreshSchedCount(true);

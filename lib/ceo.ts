@@ -484,11 +484,11 @@ async function dailyBrainJson(system: string, prompt: string) {
       },
       body: JSON.stringify({
         model: model || 'claude-sonnet-4-5',
-        max_tokens: 900,
+        max_tokens: 1500,
         system,
         messages: [{ role: 'user', content: prompt }],
       }),
-      signal: AbortSignal.timeout(25000),
+      signal: AbortSignal.timeout(45000),
     });
     if (!res.ok) return '';
     const body = await res.json() as { content?: Array<{ type: string; text?: string }> };
@@ -500,10 +500,10 @@ async function dailyBrainJson(system: string, prompt: string) {
       headers: { 'content-type': 'application/json', authorization: `Bearer ${openaiKey}` },
       body: JSON.stringify({
         model: model || 'gpt-4o-mini',
-        max_tokens: 900,
+        max_tokens: 1500,
         messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }],
       }),
-      signal: AbortSignal.timeout(25000),
+      signal: AbortSignal.timeout(45000),
     });
     if (!res.ok) return '';
     const body = await res.json() as { choices?: Array<{ message?: { content?: string } }> };
@@ -1038,4 +1038,75 @@ export async function chatCeo(sql: Sql, ownerId: string, message: string) {
     }
   }
   return { reply: 'Counsel could not be reached.', wrote };
+}
+
+/* ---------- 4IQ on the calendar: where the open work should go this week, from P13 (operating rhythm). ---------- */
+export type SlotSuggestion = { day: string; start: string; minutes: number; title: string; why: string; principle: string };
+
+function vanParts(ms: number) {
+  const f = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
+  const p = Object.fromEntries(f.formatToParts(new Date(ms)).map((x) => [x.type, x.value]));
+  return { day: `${p.year}-${p.month}-${p.day}`, wd: String(p.weekday), hm: `${p.hour === '24' ? '00' : p.hour}:${p.minute}` };
+}
+
+export async function scheduleSuggest(sql: Sql, ownerId: string) {
+  const files = loadCeoFiles();
+  const now = Date.now();
+  let events: Array<{ start: number; dur: number; title: string }> = [];
+  try {
+    events = ((await calendarPayload(sql, ownerId)) as Array<{ start: number; dur: number; title: string }>)
+      .filter((ev) => ev.start >= now - 3600000 && ev.start <= now + 8 * 86400000 && (Number(ev.dur) || 0) < 600)
+      .sort((a, b) => a.start - b.start).slice(0, 60);
+  } catch (err) {
+    fail('ceo_schedule_cal', err);
+  }
+  let work: Array<{ title: string; area: string; priority: string; due: string }> = [];
+  try {
+    const rows = await sql`
+      SELECT title, area, priority, due FROM items
+      WHERE owner_id = ${ownerId} AND status IN ('new', 'open', 'doing', 'waiting')
+      ORDER BY (priority = 'urgent') DESC, (priority = 'high') DESC, due ASC NULLS LAST
+      LIMIT 30
+    `;
+    work = (rows as Array<Record<string, unknown>>).map((r) => ({
+      title: String(r.title || '').slice(0, 140), area: String(r.area || ''), priority: String(r.priority || ''),
+      due: r.due ? vanParts(Date.parse(String(r.due))).day : '',
+    }));
+  } catch (err) {
+    fail('ceo_schedule_items', err);
+  }
+  const ctx = await ceoContext(sql, ownerId).catch(() => null);
+  const today = vanParts(now);
+  const busy = events.map((ev) => { const a = vanParts(ev.start); return `${a.wd} ${a.day} ${a.hm} ${ev.dur}m ${String(ev.title).slice(0, 60)}`; }).join('\n');
+  const todo = work.map((w) => `- ${w.title} [${w.area}, ${w.priority}${w.due ? `, due ${w.due}` : ''}]`).join('\n');
+  const pipes = (ctx?.pipelines || []).map((p) => `${p.name}: ${p.total}`).join('; ');
+  const system = [
+    'You are 4IQ, the scheduling side of Chad Johnston\'s second CEO at 4orm Finance. Chad is in Vernon, BC (Pacific time). He sells to Canadian firms; Eastern is 3 hours ahead of Pacific.',
+    'Place the open work into free time over the next 7 days, following the operating rhythm principle below exactly. Never overlap an existing event. Use 24-hour Pacific times on 15-minute marks. Never invent a meeting with another person; suggest blocks for Chad to do work (calls, email windows, build blocks, prep, follow-ups, weekly review).',
+    'Also flag any existing event that breaks the rhythm (for example cold calls on Friday or over Eastern lunch, or a double booking) as a suggestion with title starting "Move:".',
+    'Return JSON only: {"note": one sentence, "slots": [{"day":"YYYY-MM-DD","start":"HH:MM","minutes":number,"title":"under 60 characters","why":"one line, names the rule","principle":"P13 or another P number"}]}. 6 to 10 slots, earliest first.',
+    '',
+    files.principles.split('# P13')[1] ? '# P13' + files.principles.split('# P13')[1] : files.principles.slice(0, 6000),
+  ].join('\n');
+  const prompt = `Today is ${today.wd} ${today.day}, now ${today.hm} Pacific.\n\nCalendar (busy):\n${busy || '(empty)'}\n\nOpen work:\n${todo || '(none listed)'}\n\nPipelines: ${pipes || 'unknown'}\nRunway days: ${ctx?.runwayDays ?? 'unknown'}`;
+  const raw = await dailyBrainJson(system, prompt);
+  let parsed: { note?: string; slots?: unknown[] } = {};
+  try {
+    const t = String(raw || '');
+    parsed = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
+  } catch {
+    parsed = {};
+  }
+  const slots: SlotSuggestion[] = (Array.isArray(parsed.slots) ? parsed.slots : []).map((row) => {
+    const r = row as Record<string, unknown>;
+    return {
+      day: /^\d{4}-\d{2}-\d{2}$/.test(String(r.day)) ? String(r.day) : '',
+      start: /^([01]\d|2[0-3]):[0-5]\d$/.test(String(r.start)) ? String(r.start) : '',
+      minutes: Math.max(15, Math.min(240, Number(r.minutes) || 30)),
+      title: String(r.title || '').replace(/[–—]/g, '-').slice(0, 80),
+      why: String(r.why || '').replace(/[–—]/g, '-').slice(0, 200),
+      principle: String(r.principle || 'P13').slice(0, 12),
+    };
+  }).filter((s) => s.day && s.start && s.title).slice(0, 12);
+  return { note: String(parsed.note || '').replace(/[–—]/g, '-').slice(0, 300), slots, model: raw ? 'live' : 'none' };
 }

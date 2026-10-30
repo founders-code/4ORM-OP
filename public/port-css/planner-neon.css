@@ -712,3 +712,10 @@ body.th-neon .main{color:#eef2fc}
 .canvas.wlon [data-id].wlhit{outline:2px solid #fff;outline-offset:2px;border-radius:6px}
 .canvas.wlon .msi.wldim{opacity:.18}.canvas.wlon .msi.wlhit{outline:2px solid #fff;outline-offset:2px;border-radius:6px}
 .loadrow{margin-bottom:22px;border-bottom:1px solid #23252e}.loadrow .trk{padding-bottom:12px}
+/* Zoomed out: rows pack tighter, so bars and labels shrink with them (--vz set from the zoom level). */
+.canvas.vzc .bar,.canvas.vzc .msi,.canvas.vzc .sname,.canvas.vzc .series{height:calc(28px*var(--vz));line-height:calc(28px*var(--vz))}
+.canvas.vzc .bar{font-size:calc(13px*max(var(--vz),.86))}
+.canvas.vzc .bar.sm,.canvas.vzc .msi.sm{height:calc(21px*var(--vz));line-height:calc(21px*var(--vz))}
+.canvas.vzc .dot{top:calc(10px*var(--vz))}
+.canvas.vzc .lab{padding-top:4px;padding-bottom:4px}
+.canvas.vzc .goal{height:calc(30px*var(--vz))}

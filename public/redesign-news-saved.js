@@ -266,7 +266,6 @@
   function deleteCollection(id) {
     var c = colById(id);
     if (!c) return;
-    if (!window.confirm('Delete the collection "' + c.name + '"? Its stories stay saved.')) return;
     var list = cols().slice();
     S().newsCols = list.filter(function (x) { return x !== c; });
     if (String(S().newsColCur) === String(id)) S().newsColCur = (cols()[0] || {}).id || '';

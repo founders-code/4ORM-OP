@@ -125,7 +125,8 @@
     ['vc', 'VCs', '#c2560c', true], ['angel', 'Angels', '#e6a817', true], ['strategic', 'Strategic', '#2e6bf2', true],
     ['design', 'Design partners', '#2fd6c6', true], ['regulators', 'Regulators', '#6b4fd8', true], ['advisors', 'Advisors', '#12a36a', true],
     ['network', 'Network', '#7a86a0', true], ['partners', 'Partners', '#b02a54', false], ['grants', 'Grants', '#c79a3a', false],
-    ['facebook', 'Facebook', '#3b5bdb', false], ['personal', 'Personal', '#e0483a', false]
+    ['facebook', 'Facebook', '#3b5bdb', false], ['personal', 'Personal', '#e0483a', false],
+    ['newsletter', 'Newsletter', '#0f8a8a', true]
   ];
   var SMART = [['cold', 'Going cold', true], ['owe', 'Owe a reply', true], ['warm', 'Warm and active', false], ['intro', 'Can intro me', false]];
   var CHIPS = [['all', 'All'], ['vc', 'VCs'], ['angel', 'Angels'], ['strategic', 'Strategic'], ['regulators', 'Regulators']];
@@ -165,6 +166,8 @@
     if (f === 'warm') return warmth(c).dots >= 4;
     if (f === 'intro') return /intro/i.test([c.role, c.nextAction, c.why, c.notes].join(' '));
     if (f === 'facebook') return catOf(c) === 'facebook' || !!c.fbTier;
+    /* Newsletter: every contact with an email is on it, new contacts included, unless tagged no-newsletter. */
+    if (f === 'newsletter') return !!String(c.email || '').trim() && (c.tags || []).map(function (t) { return String(t).toLowerCase(); }).indexOf('no-newsletter') < 0;
     return catIs(catOf(c), f);
   }
   function roleOf(c) {
@@ -521,7 +524,6 @@
       var s = S();
       var ids = Object.keys(s.selPeople || {}).filter(function (id) { return s.selPeople[id] && findContact(id); });
       if (!ids.length) { toast(root, 'Pick people first'); return; }
-      if (!window.confirm('Delete ' + ids.length + ' contact' + (ids.length === 1 ? '' : 's') + '? You can restore them from the dedupe log.')) return;
       var removed = contacts().filter(function (c) { return ids.indexOf(String(c.id)) >= 0; });
       s.contacts = contacts().filter(function (c) { return ids.indexOf(String(c.id)) < 0; });
       s.selPeople = {};

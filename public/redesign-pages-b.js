@@ -467,10 +467,13 @@
     var folders = asList(S.docFolders);
     var counts = { 'All documents': docs.length };
     docs.forEach(function (d) {
-      var cat = d.category || d.folder || 'Other';
-      counts[cat] = (counts[cat] || 0) + 1;
+      var cat = String(d.category || d.folder || 'Other');
+      /* A file counts in its folder and in every parent folder above it (subfolders are "Parent/Child"). */
+      var parts = cat.split('/');
+      for (var pi = 1; pi <= parts.length; pi++) { var key = parts.slice(0, pi).join('/'); counts[key] = (counts[key] || 0) + 1; }
     });
-    var folderRows = [['All documents', docs.length, !S.docFolder || S.docFolder === 'All documents']].concat(folders.map(function (name) {
+    var folderSorted = folders.slice().sort(function (a, b) { return String(a).toLowerCase().localeCompare(String(b).toLowerCase()); });
+    var folderRows = [['All documents', docs.length, !S.docFolder || S.docFolder === 'All documents']].concat(folderSorted.map(function (name) {
       return [name, counts[name] || 0];
     }));
     var live = {};
@@ -493,7 +496,7 @@
     });
     var shown = docs.filter(function (d) {
       var cat = String(d.category || d.folder || 'Other');
-      if (folderOn && cat !== folderOn) return false;
+      if (folderOn && cat !== folderOn && cat.indexOf(folderOn + '/') !== 0) return false;
       if (setOn && asList(setOn.docIds).indexOf(String(d.id || '')) < 0) return false;
       if (typeOn === 'all' || !typeOn) return true;
       if (typeOn === 'drive') return !!(d.driveFileId || d.fileId);
@@ -1599,7 +1602,12 @@
       + '<div class="lay"><section class="card"><div class="lh">Folders <span class="lnk" data-action="docs-new-folder">+ New</span></div>'
       + folderRows.map(function (f) {
         var on = S.docSet ? false : (S.docFolder ? String(S.docFolder) === String(f[0]) : !!f[2]);
-        return '<div class="fd' + (on ? ' on' : '') + '" data-action="docs-folder" data-folder="' + esc(f[0]) + '">' + esc(f[0]) + '<span class="n">' + f[1] + '</span></div>';
+        var path = String(f[0]);
+        var depth = f[2] === undefined || f[2] === false ? (path.split('/').length - 1) : 0;
+        var leaf = path.split('/').pop();
+        var real = path !== 'All documents';
+        var tools = on && real && !fixtureOn() ? '<div class="fdt" style="display:flex;gap:12px;padding:2px 10px 6px ' + (10 + depth * 14) + 'px;font-size:12.5px"><span class="lnk" data-action="docs-sub-folder" data-folder="' + esc(path) + '">+ Subfolder</span><span class="lnk" data-action="docs-folder-delete" data-folder="' + esc(path) + '" style="color:#c0392b">Delete folder</span></div>' : '';
+        return '<div class="fd' + (on ? ' on' : '') + '" data-action="docs-folder" data-folder="' + esc(path) + '"' + (depth ? ' style="padding-left:' + (10 + depth * 14) + 'px"' : '') + '>' + esc(leaf) + '<span class="n">' + f[1] + '</span></div>' + tools;
       }).join('')
       + (folderRows.length <= 1 && !fixtureOn() && !data.loading ? '<div style="padding:6px 10px;font-size:12.5px;opacity:.7">No folders yet</div>' : '')
       + '<div class="sepl"></div><div class="lh">Sets <span class="lnk" data-action="docs-new-set">+ New</span></div><div class="sets">'
@@ -2651,7 +2659,7 @@
     var sched = '<span' + (active === 'sched' ? ' class="on"' : '') + ' data-action="mail-sched-list">Scheduled' + ((S.mailSchedCount | 0) > 0 ? ' <em>' + (S.mailSchedCount | 0) + '</em>' : '') + '</span>';
     var search = o.search || '<input class="search" data-action="mail-search" placeholder="Search mail" value="' + esc(S.mailQ || '') + '">';
     return '<div class="bar"><h1>Email</h1>'
-      + '<div class="seg"><span' + (active === 'inbox' ? ' class="on"' : '') + ' data-action="mail-layout" data-layout="focus">Inbox</span><span' + (active === 'board' ? ' class="on"' : '') + ' data-action="mail-layout" data-layout="board">Columns</span><span' + (active === 'people' ? ' class="on"' : '') + ' data-action="mail-view" data-view="people">People</span>' + sched + '</div>'
+      + '<div class="seg"><span' + (active === 'inbox' ? ' class="on"' : '') + ' data-action="mail-layout" data-layout="focus">Inbox</span><span' + (active === 'people' ? ' class="on"' : '') + ' data-action="mail-view" data-view="people">People</span>' + sched + '</div>'
       + '<div class="cnt"><span><b>' + esc(need) + '</b> need a reply</span><span><b>' + esc(unread) + '</b> unread</span><span>junk hidden</span></div>'
       + '<div class="r"><span class="ef-prog"><b>' + done + '</b> done this session</span>' + search + '<button class="btn" data-action="mail-filters">Filters</button><button class="btn pri" id="composeBtn" data-action="mail-compose">Compose</button></div></div>';
   }
@@ -2682,8 +2690,10 @@
     var doneList = S.mailDoneList || (S.mailDoneList = []);
     var splits = [['needs', 'Needs reply'], ['investors', 'Investors'], ['design', 'Design partners'], ['regulators', 'Regulators']]
       .concat(cols.map(function (c) { return ['col:' + c.id, c.n]; }))
-      .concat([['other', 'Other'], ['all', 'Everything']]);
+      .concat([['other', 'Other'], ['all', 'All inbox'], ['sent', 'Sent'], ['allmail', 'All mail']]);
     function inSplit(m, k) {
+      if (k === 'sent' || k === 'allmail') return S.mailFolder === k;
+      if (S.mailFolder) return false;
       if (k === 'junk') return !!m.junk;
       if (m.junk) return false;
       if (k === 'all') return true;
@@ -2720,8 +2730,9 @@
     var needTotal = counts.needs || 0;
     var head = emailBarHtml(S, 'inbox', { need: needTotal, unread: data.unread != null ? data.unread : 0 });
     var splitHtml = splits.map(function (sp) {
-      if (sp[0] !== 'needs' && sp[0] !== 'all' && sp[0] !== 'other' && !counts[sp[0]] && sp[0].indexOf('col:') !== 0) return '';
-      return '<button type="button" class="ef-sp' + (split === sp[0] ? ' on' : '') + '" data-action="mail-split" data-split="' + esc(sp[0]) + '"><span>' + esc(sp[1]) + '</span><b>' + (counts[sp[0]] || 0) + '</b></button>';
+      var fold = sp[0] === 'sent' || sp[0] === 'allmail';
+      if (!fold && sp[0] !== 'needs' && sp[0] !== 'all' && sp[0] !== 'other' && !counts[sp[0]] && sp[0].indexOf('col:') !== 0) return '';
+      return '<button type="button" class="ef-sp' + (split === sp[0] ? ' on' : '') + '" data-action="mail-split" data-split="' + esc(sp[0]) + '"><span>' + esc(sp[1]) + '</span><b>' + (fold ? (S.mailFolder === sp[0] && !S.mailFolderLoading ? counts[sp[0]] : '') : (counts[sp[0]] || 0)) + '</b></button>';
     }).join('') + '<button type="button" class="ef-sp junk' + (split === 'junk' ? ' on' : '') + '" data-action="mail-split" data-split="junk"><span>Junk and codes</span><b>' + (counts.junk || 0) + '</b></button>';
     var lastDay = '';
     var rows = list.map(function (m) {
@@ -2735,7 +2746,7 @@
         + '<span class="av" style="background:' + esc(m.c) + '">' + esc(iniOf(m.f)) + '</span><div class="ef-rm"><div class="ef-l1"><b>' + esc(m.f) + '</b><span>' + esc(m.t) + '</span></div><div class="ef-sj">' + esc(m.sj) + '</div><div class="ef-pv">' + esc(m.pv) + '</div>'
         + (chip || att ? '<div class="ef-chs">' + chip + att + '</div>' : '') + '</div>'
         + '<span class="ef-ra"><span class="rowact" data-action="mail-junk" data-junk="' + (m.junk ? '0' : '1') + '"' + mailRowAttrs(m) + '>' + (m.junk ? 'Not junk' : 'Junk') + '</span><span class="rowact del" data-action="mail-trash"' + mailRowAttrs(m) + '>Delete</span></span></div>';
-    }).join('') || '<div class="ef-empty">' + (S.mailBoard ? (split === 'needs' ? 'Nothing needs a reply. Pick another split.' : 'Nothing here.') : 'Loading your mail...') + '</div>';
+    }).join('') || '<div class="ef-empty">' + (S.mailFolderLoading ? 'Loading ' + (split === 'sent' ? 'sent mail' : 'all mail') + '...' : S.mailBoard ? (split === 'needs' ? 'Nothing needs a reply. Pick another split.' : 'Nothing here.') : 'Loading your mail...') + '</div>';
     var card = '';
     if (!focus) {
       card = '<div class="ef-card ef-none"><h2>' + (msgs.length ? 'All caught up in this split' : 'Loading your mail...') + '</h2><p>Pick another split on the left, or press Compose for a new email.</p></div>';
@@ -2777,7 +2788,7 @@
         + '<div class="ef-attbox"><div class="ef-k">Attached' + (d.attachments.length ? ' &middot; ' + d.attachments.length : '') + '</div>'
         + (mine ? '<div class="atts">' + mine + '</div>' : '<div class="ef-none2">Nothing attached yet. Use Add document or Add link under the subject.</div>') + '</div>'
         + '<div class="drop" id="composeDrop">Drop files here to attach them</div><input type="file" id="composeFile" multiple hidden style="display:none">'
-        + '<div class="ef-ai"><input data-action="mail-ask-input" placeholder="Or tell me what to write" value="' + esc(d.ask || '') + '"><button type="button" data-action="mail-ai-write">Draft it</button>'
+        + '<div class="ef-ai"><input data-action="mail-ask-input" placeholder="Draft it reads the email. Add a steer here if you want one" value="' + esc(d.ask || '') + '"><button type="button" data-action="mail-ai-write">Draft it</button>'
         + ['warm', 'direct', 'shorter', 'formal'].map(function (tn) { return '<span class="ef-tone' + (d.tone === tn ? ' on' : '') + '" data-action="mail-tone" data-tone="' + tn + '">' + (tn === 'formal' ? 'More formal' : tn.charAt(0).toUpperCase() + tn.slice(1)) + '</span>'; }).join('') + '</div>'
         + (d.aiNote ? '<div class="ef-note">' + esc(d.aiNote) + '</div>' : '')
         + '<div class="cfoot"><button class="send" data-action="mail-send">Send</button><button class="send2" data-action="mail-inline-edit">Open in full editor</button><button class="send2" data-action="mail-skip"' + mailRowAttrs(focus) + '>Skip for now</button><button class="send2" data-action="mail-snooze" data-id="' + esc(focus.id) + '">Snooze a day</button><button class="send2" data-action="mail-done" data-id="' + esc(focus.id) + '">Mark done</button><button class="send2" data-action="mail-full"' + mailRowAttrs(focus) + '>Open full thread</button><button class="send2" data-action="mail-forward"' + mailRowAttrs(focus) + '>Forward</button></div>'
@@ -2827,7 +2838,7 @@
     }
     if (P().applyPageCss) P().applyPageCss(wrap, 'mail');
     /* 29 Oct: the inbox opens as list plus reply card. The column board stays one click away (Columns). */
-    if (!fixtureOn() && !S.mailSchedOpen && S.mailLayout !== 'board') { S.mailInline = true; paintEmailFocus(wrap, data, S); return; }
+    if (!fixtureOn() && !S.mailSchedOpen) { S.mailInline = true; paintEmailFocus(wrap, data, S); return; }
     S.mailInline = false;
     var tab = S.mailFeedTab || data.feedTab || 'everything';
     var openCompose = /(?:^|[?&])(?:compose=1|state=compose)(?:&|$)/.test(String(location.search || '')) || !!(S.composeOpen);
@@ -2987,7 +2998,7 @@
           window.STATE.docsError = false;
         }
         if (key === 'mail') {
-          window.STATE.mailBoard = d;
+          if (window.STATE.mailFolder || window.STATE.mailQ) window.STATE.mailBoardMain = d; else window.STATE.mailBoard = d;
           /* The board payload can come from a cache; the columns/rules routes are the live source. */
           if (window.STATE.mailColsLive) d.columns = window.STATE.mailColsLive;
           if (window.STATE.mailRulesLive) d.rules = window.STATE.mailRulesLive;

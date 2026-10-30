@@ -206,9 +206,19 @@ async function transcribeB64(b64: string) {
     body: form,
     signal: AbortSignal.timeout(90000),
   });
-  const json = await res.json().catch(() => null) as { text?: string } | null;
-  return String(json?.text || '');
+  const json = await res.json().catch(() => null) as { text?: string; error?: { message?: string; code?: string } } | null;
+  if (!res.ok) {
+    /* Say why: an empty transcript marked ready hides the real problem (usually no OpenAI credit). */
+    const why = json?.error?.code === 'insufficient_quota' ? 'OpenAI has no credit on this account. Add credit, then press Transcribe again.'
+      : res.status === 401 ? 'The OpenAI key was not accepted.' : String(json?.error?.message || 'OpenAI did not take the audio.').slice(0, 200);
+    throw new TranscribeError(why);
+  }
+  const text = String(json?.text || '');
+  if (!text.trim()) throw new TranscribeError('No speech was heard in this recording.');
+  return text;
 }
+
+class TranscribeError extends Error {}
 
 async function summarizeTranscript(transcript: string, people: string[]) {
   const key = env('OPENAI_API_KEY');
@@ -264,7 +274,8 @@ export async function processRecording(sql: Sql, ownerId: string, id: string) {
     text = await transcribeB64(String(row.audio_b64 || ''));
   } catch (err) {
     fail('recording_transcribe', err);
-    await sql`UPDATE recordings SET status = 'failed', step = 'Transcription did not finish. Open it and try again.', updated_at = now() WHERE id = ${id}::uuid AND owner_id = ${ownerId}`;
+    const why = err instanceof TranscribeError ? err.message : 'Transcription did not finish. Open it and try again.';
+    await sql`UPDATE recordings SET status = 'failed', step = ${why}, updated_at = now() WHERE id = ${id}::uuid AND owner_id = ${ownerId}`;
     return getRecording(sql, ownerId, id);
   }
   await sql`UPDATE recordings SET status = 'summarizing', step = 'Writing the title and summary', transcript = ${JSON.stringify([{ t: '00:00', who: '', text }])}::jsonb, updated_at = now() WHERE id = ${id}::uuid AND owner_id = ${ownerId}`;

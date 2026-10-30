@@ -204,13 +204,16 @@ export async function POST(req: Request) {
         `;
       }
       if (action === 'remove-folder' && name) {
+        // Files go to the parent folder when one is given (subfolders are "Parent/Child"), otherwise Uncategorized.
+        const toRaw = String(body?.to || '').trim().slice(0, 80);
+        const to = toRaw && toRaw !== name && !toRaw.startsWith(name + '/') ? toRaw : 'Uncategorized';
         await session.sql`
-          UPDATE staged_docs SET category = 'Uncategorized'
+          UPDATE staged_docs SET category = ${to}
           WHERE owner_id = ${session.userId} AND category = ${name}
         `;
         await session.sql`
           INSERT INTO doc_folders (owner_id, name)
-          VALUES (${session.userId}, 'Uncategorized')
+          VALUES (${session.userId}, ${to})
           ON CONFLICT (owner_id, name) DO UPDATE SET deleted_at = NULL
         `;
         await session.sql`

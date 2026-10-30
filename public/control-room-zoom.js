@@ -279,13 +279,14 @@
   }
 
   function delNote(id) {
-    if (!window.confirm('Delete this meeting note? The transcript stays in Zoom.')) return;
     var prev = (STATE.zoomNotes || []).slice();
     STATE.zoomNotes = prev.filter(function (n) { return n.id !== id; });
     if (STATE.zOpenId === id) setDrawer(false);
     renderZNotes();
     if (String(id).indexOf('tmp-') === 0 || String(id).indexOf('fx-') === 0) return;
-    authFetch('/api/zoom/' + id, { method: 'DELETE', quiet: true, credentials: 'same-origin' }).then(function (r) { if (!r.ok) throw 0; }).catch(function () { STATE.zoomNotes = prev; renderZNotes(); toast('Could not delete that note.'); });
+    var commit = function () { authFetch('/api/zoom/' + id, { method: 'DELETE', quiet: true, credentials: 'same-origin' }).then(function (r) { if (!r.ok) throw 0; }).catch(function () { STATE.zoomNotes = prev; renderZNotes(); toast('Could not delete that note.'); }); };
+    if (window.__undoLater) window.__undoLater('Meeting note deleted', commit, function () { STATE.zoomNotes = prev; renderZNotes(); });
+    else commit();
   }
 
   function renderZNotes() {

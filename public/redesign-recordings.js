@@ -247,7 +247,7 @@
       }).join('') : '<div class="sum">No action items in this one.</div>') + '</div>'
       + '<div class="sec">Transcript</div><div class="tr">' + (tr.length ? tr.map(function (line) {
         return '<p><a data-action="rec-jump" data-t="' + esc(line.t || '00:00') + '">' + esc(line.t || '00:00') + '</a><b>' + esc(line.who || '') + (line.who ? ':' : '') + '</b> ' + esc(line.text || '') + '</p>';
-      }).join('') : '<p>Transcript appears after processing.</p>') + '</div></div>';
+      }).join('') : '<p>' + esc(r.step || r.detail || 'No transcript yet.') + '</p>' + (r.fromZoom || fixtureOn() ? '' : '<p><button class="btn sm" data-action="rec-reprocess" data-id="' + esc(r.id) + '">Transcribe again</button></p>')) + '</div></div>';
     dr.classList.add('on');
     if (scrim) scrim.classList.add('on');
   }
@@ -464,6 +464,16 @@
         if (!fixtureOn()) api('/api/recordings/' + id, { method: 'PATCH', body: { status: 'ready', restore: true } });
         paint();
       });
+    },
+    'rec-reprocess': function (el, root) {
+      var id = el.getAttribute('data-id') || recState.openId;
+      if (!id) return;
+      el.textContent = 'Transcribing...';
+      api('/api/recordings/' + encodeURIComponent(id), { method: 'PATCH', body: { action: 'reprocess' } }).then(function () {
+        loadLive(true);
+        setTimeout(function () { openDrawer(root, id); }, 1200);
+        toast(root, 'Done. Check the transcript.');
+      }).catch(function () { toast(root, 'Could not transcribe that one'); el.textContent = 'Transcribe again'; });
     },
     'rec-close': function (el, root) {
       recState.openId = '';

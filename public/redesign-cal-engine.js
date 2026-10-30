@@ -247,6 +247,39 @@ function xpApply(){for(let i=E.length-1;i>=0;i--)if(E[i].xp)E.splice(i,1);
       fn('/api/expense-days',{credentials:'same-origin',quiet:true}).then(r=>r&&r.ok?r.json():{expenses:[]}).then(j=>{XP.list=(j&&j.expenses)||[];XP.busy=false;xpApply();render()}).catch(()=>{XP.list=[];XP.busy=false;render()});return}
     xpApply();render()});
 })();
+/* 4IQ: the second CEO reads the week and suggests where the open work goes (P13 operating rhythm). Nothing is added until Add. */
+(function iqButton(){const vw=gid('views');if(!vw||!vw.parentNode||vw.parentNode.querySelector('.iqbtn'))return;
+  const b=window.document.createElement('button');b.type='button';b.className='xpbtn iqbtn';b.title='4IQ: where should this week go';
+  b.innerHTML='<img src="/assets/email/4-mark.png" alt="" style="height:15px;width:auto;vertical-align:-3px;margin-right:2px">IQ';
+  const xp=vw.parentNode.querySelector('.xpbtn');vw.parentNode.insertBefore(b,xp?xp.nextSibling:vw.nextSibling);
+  let panel=null;
+  function close(){if(panel){panel.remove();panel=null}}
+  function paint(h){if(!panel){panel=window.document.createElement('div');panel.id='iqPanel';
+      panel.style.cssText='position:fixed;top:72px;right:20px;z-index:99990;width:min(440px,calc(100vw - 32px));max-height:calc(100vh - 110px);overflow:auto;background:#0b0c10;color:#e9eefa;border:1px solid rgba(120,150,255,.32);border-radius:14px;box-shadow:0 22px 60px rgba(0,0,0,.55);padding:16px;font:500 13.5px/1.45 Inter,system-ui,sans-serif';
+      window.document.body.appendChild(panel);
+      panel.addEventListener('click',onPanel)}
+    panel.innerHTML='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><img src="/assets/email/4-mark.png" alt="" style="height:22px"><b style="font-size:16px;flex:1">IQ for this week</b><button type="button" data-iq="again" style="'+BTN+'">Ask again</button><button type="button" data-iq="close" style="'+BTN+'">Close</button></div>'+h}
+  const BTN='font:inherit;font-size:12px;font-weight:800;border-radius:999px;padding:5px 12px;border:1px solid rgba(120,150,255,.3);background:transparent;color:#e9eefa;cursor:pointer';
+  let SL=[];
+  function hm(t){const p=String(t).split(':');return Number(p[0])+Number(p[1])/60}
+  function dayLabel(d){const x=new Date(d+'T12:00');return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][x.getDay()]+' '+x.getDate()+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][x.getMonth()]}
+  function list(j){SL=(j&&j.slots)||[];
+    if(!SL.length){paint('<p>'+escH((j&&j.error)||'Nothing to suggest right now.')+'</p>');return}
+    paint((j.note?'<p style="margin:0 0 12px;color:#c8d1ea">'+escH(j.note)+'</p>':'')+SL.map((x,i)=>{const mv=/^Move:/i.test(x.title);
+      return '<div style="border:1px solid rgba(120,150,255,.2);border-radius:10px;padding:10px 12px;margin-bottom:8px;'+(mv?'border-color:rgba(255,120,140,.45)':'')+'">'
+        +'<div style="display:flex;gap:10px;align-items:baseline"><b style="flex:1">'+escH(x.title)+'</b><span style="color:#9fb2e6;font-weight:700;white-space:nowrap">'+escH(dayLabel(x.day))+' '+escH(x.start)+' · '+x.minutes+'m</span></div>'
+        +'<div style="color:#a3b0d2;font-size:12.5px;margin-top:3px">'+escH(x.why)+' <span style="color:#6f7fa8">'+escH(x.principle)+'</span></div>'
+        +(mv?'':'<div style="margin-top:8px"><button type="button" data-iq="add" data-i="'+i+'" style="'+BTN+';background:#2E6BF2;border-color:#2E6BF2">Add to calendar</button></div>')+'</div>'}).join(''))}
+  function load(){paint('<p>Reading your week, open work and pipelines...</p>');
+    const fn=typeof window.authFetch==='function'?window.authFetch:fetch;
+    fn('/api/ceo/schedule',{credentials:'same-origin',quiet:true}).then(r=>r.json().catch(()=>({}))).then(list).catch(()=>paint('<p>4IQ is unavailable right now.</p>'))}
+  function onPanel(e){const t=e.target.closest('[data-iq]');if(!t)return;const a=t.getAttribute('data-iq');
+    if(a==='close')return close();if(a==='again')return load();
+    if(a==='add'){const x=SL[Number(t.getAttribute('data-i'))];if(!x)return;const s0=hm(x.start);
+      const ev={d:x.day,s:s0,e:s0+x.minutes/60,t:x.title,c:'meet'};E.push(ev);render();t.textContent='Added';t.disabled=true;
+      Promise.resolve(liveWrite({type:'create',event:ev})).catch(()=>{})}}
+  on(b,'click',function(){if(panel)close();else load()});
+})();
 // ===== Fantastical-style interactions =====
 const hist=[];
 const snap=h=>Math.round(h*4)/4;

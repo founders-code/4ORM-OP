@@ -178,7 +178,6 @@
     var tb = ed.querySelector('[data-test]');
     if (tb) tb.onclick = function () {
       var to = (S.data && S.data.testTo) || 'your inbox';
-      if (!window.confirm('Send a test of the saved package to ' + to + ' only?')) return;
       tb.disabled = true; tb.textContent = 'Sending test…';
       api('/api/processes', 'POST', { action: 'test', stageId: stg.id }).then(function (j) { toast('Test sent to ' + j.to); loadLog(); })
         .catch(function (e) { toast(e.message); }).then(function () { tb.disabled = false; tb.textContent = 'Send me a test'; });

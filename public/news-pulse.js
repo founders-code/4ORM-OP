@@ -185,9 +185,11 @@ window.bindNewsPulse = function(root, pulse){
   applyTopic();
 };
 window.newsPulseBandHtml = function(sample){
-  return `<section class="pz" id="pz" aria-label="Market pulse">
+  let min=false; try{ min = localStorage.getItem('cr_pulse_min')==='1'; }catch(e){}
+  const tog = `<button type="button" class="pzmin" onclick="var z=this.closest('.pz');z.classList.toggle('min');var m=z.classList.contains('min');this.textContent=m?'Expand':'Collapse';try{localStorage.setItem('cr_pulse_min',m?'1':'0')}catch(e){}" style="font:inherit;font-size:12.5px;font-weight:700;border-radius:999px;padding:4px 12px;border:1px solid currentColor;background:transparent;color:inherit;opacity:.8;cursor:pointer;margin-left:8px">${min?'Expand':'Collapse'}</button>`;
+  return `<style>.pz.min .gg,.pz.min .pzb,.pz.min #pzClr{display:none!important}.pz.min{padding-bottom:10px}</style><section class="pz${min?' min':''}" id="pz" aria-label="Market pulse">
   <div class="pzh"><h3 id="pzT">Market pulse</h3><div class="pzs" role="group" aria-label="Pulse view"><button type="button" data-pv="market" aria-pressed="true" data-action="news-pulse-view">Market</button><button type="button" data-pv="consumer" aria-pressed="false" data-action="news-pulse-view">Consumer</button></div><span class="s" id="pzS">This week against the last 8 weeks &middot; Canadian sources</span><span class="s" id="pzUpd"></span>
-    <div class="r"><span class="clr" id="pzClr" data-action="news-heat-clear">Show everything</span>${sample?'<span class="samp">Sample data</span>':''}</div></div>
+    <div class="r"><span class="clr" id="pzClr" data-action="news-heat-clear">Show everything</span>${sample?'<span class="samp">Sample data</span>':''}${tog}</div></div>
   <div class="gg" id="gg"></div>
   <div class="pzb" id="pzMarket">
     <div class="rr"><h4>Regulator radar <span>what each regulator published, week by week</span></h4><div class="rrg" id="rrg"></div>

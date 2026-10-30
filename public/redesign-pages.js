@@ -60,7 +60,7 @@
     links: '/port-css/links.css?v=14', mail: '/port-css/email.css?v=13', mailPeople: '/port-css/email-people.css?v=10',
     playbook: '/port-css/playbook.css?v=12', calendar: '/port-css/calendar.css?v=9', zoom: '/port-css/zoom.css?v=5',
     completed: '/port-css/completed.css?v=3', planner: '/port-css/planner.css?v=5',
-    neon: '/port-css/neon.css?v=2', playbookP8: '/port-css/playbook-p8.css?v=27', plannerNeon: '/port-css/planner-neon.css?v=18',
+    neon: '/port-css/neon.css?v=2', playbookP8: '/port-css/playbook-p8.css?v=27', plannerNeon: '/port-css/planner-neon.css?v=19',
     calendarNeon: '/port-css/calendar-neon.css?v=14', completedNeon: '/port-css/completed-neon.css?v=8',
     intNeon: '/port-css/integrations-neon.css?v=6',     vaultOps: '/port-css/vault-ops.css?v=15',
     sheetViewer: '/port-css/sheet-viewer.css?v=5', notesCanvasP8: '/port-css/notes-canvas-p8.css?v=4',

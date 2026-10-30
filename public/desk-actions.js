@@ -2657,14 +2657,15 @@
       var gated = true;
       try { gated = !(JSON.parse(localStorage.getItem('cr_space_test') || '{}')[id]); } catch (e) {}
       if (gated) { toast(root, 'Send a test to chad@4ormfinance.com first'); return; }
-      if (!window.confirm('Send this Space via GoHighLevel? Nothing goes out until you confirm.')) return;
       if (!writeOk()) { toast(root, 'Send (fixture)'); return; }
+      window.__undoLater('Sending this Space via GoHighLevel', function () {
       api('/api/spaces/' + encodeURIComponent(id), { method: 'POST', body: { action: 'send-ghl' } }).then(function (r) {
         // The server refuses (409) unless a test of this exact content went first; show its reason.
         return r.json().catch(function () { return null; }).then(function (d) { if (!r.ok && !(d && d.note)) throw new Error('fail'); return d; });
       }).then(function (d) {
         toast(root, d && d.sent ? 'Sent via GHL' : ((d && d.note) || 'GHL did not send that'));
       }).catch(function () { toast(root, 'Could not send that Space'); });
+      }, function () { toast(root, 'Not sent'); });
     },
     'space-drive': function (el, root) {
       var id = attr(el, 'data-id');
@@ -2874,6 +2875,48 @@
         toast(root, 'Folder added');
         refresh('docs');
       }).catch(function () { toast(root, 'Folder is on the desk — not saved yet'); });
+    },
+    'docs-sub-folder': function (el, root) {
+      var parent = attr(el, 'data-folder') || '';
+      if (!parent) return;
+      var name = String(window.prompt('Subfolder name inside ' + parent.split('/').pop()) || '').replace(/\//g, '-').trim();
+      if (!name) return;
+      var path = (parent + '/' + name).slice(0, 80);
+      if ((S().docFolders || []).indexOf(path) < 0) S().docFolders = (S().docFolders || []).concat([path]);
+      S().docFolder = path;
+      refresh('docs');
+      if (!writeOk()) { toast(root, 'Subfolder added'); return; }
+      api('/api/documents', { method: 'POST', body: { action: 'add-folder', name: path } }).then(ok).then(function () {
+        toast(root, 'Subfolder ' + name + ' added');
+      }).catch(function () { toast(root, 'Subfolder is on the desk - not saved yet'); });
+    },
+    'docs-folder-delete': function (el, root) {
+      var path = attr(el, 'data-folder') || '';
+      if (!path) return;
+      var parent = path.indexOf('/') > 0 ? path.slice(0, path.lastIndexOf('/')) : 'Uncategorized';
+      var gone = (S().docFolders || []).filter(function (f) { return f === path || String(f).indexOf(path + '/') === 0; });
+      var prevFolders = (S().docFolders || []).slice();
+      var moved = [];
+      (S().staged || []).forEach(function (d) {
+        var cat = String(d.category || '');
+        if (cat === path || cat.indexOf(path + '/') === 0) { moved.push([d, d.category]); d.category = parent; }
+      });
+      S().docFolders = prevFolders.filter(function (f) { return gone.indexOf(f) < 0; });
+      if (S().docFolders.indexOf(parent) < 0) S().docFolders.push(parent);
+      S().docFolder = parent === 'Uncategorized' ? '' : parent;
+      refresh('docs');
+      if (!writeOk()) { toast(root, 'Folder deleted (fixture)'); return; }
+      window.__undoLater('Folder ' + path.split('/').pop() + ' deleted, ' + moved.length + ' file' + (moved.length === 1 ? '' : 's') + ' moved to ' + parent.split('/').pop(), function () {
+        /* Deepest first, so each subfolder's files land in the parent before that folder goes. */
+        gone.sort(function (a, b) { return b.length - a.length; }).reduce(function (chain, f) {
+          return chain.then(function () { return api('/api/documents', { method: 'POST', body: { action: 'remove-folder', name: f, to: parent } }); });
+        }, Promise.resolve()).then(function () { reloadDocs(); }).catch(function () { toast(root, 'Could not delete that folder'); reloadDocs(); });
+      }, function () {
+        moved.forEach(function (m) { m[0].category = m[1]; });
+        S().docFolders = prevFolders;
+        S().docFolder = path;
+        refresh('docs');
+      });
     },
     'docs-drive': function (el, root) {
       if (!writeOk()) { toast(root, 'Pull from Drive (fixture)'); return; }
@@ -3236,34 +3279,21 @@
         + (d.cc.length ? '\nCc: ' + d.cc.map(function (r) { return r.email; }).join(', ') : '')
         + (bcc.length ? '\nBcc: ' + bcc.join(', ') : '');
       var attLine = realAtts.length ? '\nAttachments: ' + realAtts.map(function (a) { return a.name || 'File'; }).join(', ') : '';
-      if (!window.confirm('Send this email from Gmail?\n\n' + who + '\nSubject: ' + (d.subject || '(no subject)') + attLine + '\n\nNothing goes out until you confirm.')) return;
       if (!writeOk()) { toast(root, 'Send (fixture)'); closeComposeDrawer(root); return; }
-      var reply = !!(d.reply && d.threadId);
-      var attPayload = realAtts.map(function (a) {
-        if (a.data) return { name: a.name || 'File', type: a.type || a.mime || 'application/octet-stream', data: a.data };
-        var st = MC.staged ? MC.staged(a) : '';
-        if (st) return { name: a.name || 'File', stagedId: st };
-        return { name: a.name || 'File', driveFileId: MC.drive ? MC.drive(a) : (a.driveFileId || '') };
-      });
-      var body = { action: reply ? 'reply' : 'compose', to: to, cc: cc.join(', '), bcc: bcc.join(', '), subject: d.subject, text: text, html: html, attachments: attPayload, threadId: reply ? d.threadId : '', messageId: reply ? (d.messageId || '') : '' };
-      if (realAtts.length) toast(root, 'Attaching ' + realAtts.length + ' file' + (realAtts.length === 1 ? '' : 's') + ' and sending…');
-      api('/api/mail/act', { method: 'POST', body: body }).then(function (r) {
-        if (r && r.status === 413) throw new Error('Those files are too big to send from here. Attach them from Documents or Drive instead.');
-        if (r && r.status === 422) return r.json().catch(function () { return {}; }).then(function (j) { throw new Error((j && j.error) || 'Could not attach a file'); });
-        return ok(r);
-      }).then(json).then(function (res) {
-        if (!(res && (res.ok || res.drafted))) { toast(root, 'Gmail did not take it - check the address'); return; }
-        var name = d.to[0].name || to;
-        if (d.nudge) nudgeLater(root, name, to, d.subject);
-        if (d.log) logToPipeline(root, name, to);
-        toast(root, (res.drafted && !res.ok ? 'Saved as a Gmail draft' : 'Sent from Gmail') + (d.nudge ? ' · nudge set for 3 days' : '') + (d.log ? ' · logging to Pipeline' : ''));
-        if (d.forId) {
-          (S().mailHandled || (S().mailHandled = {}))[d.forId] = 'sent';
-          (S().mailDoneList || (S().mailDoneList = [])).push({ who: name, what: d.subject || 'Reply', at: new Date().toLocaleTimeString('en-GB', { timeZone: 'America/Vancouver', hour: '2-digit', minute: '2-digit', hour12: false }) });
-        }
+      /* No confirm: the email leaves after 10 seconds unless Undo is pressed. The page moves on right away. */
+      var snap = { draft: S().composeDraft, open: S().composeOpen, mailOpen: S().mailOpen, thread: S().mailOpenThread };
+      var hideNow = function () {
+        if (d.forId) (S().mailHandled || (S().mailHandled = {}))[d.forId] = 'sent';
         if (S().composeOpen || !d.forId) closeComposeDrawer(root);
         else { S().composeDraft = null; S().mailOpen = null; S().mailOpenThread = null; repaintMail(); }
-      }).catch(function (err) { toast(root, errText(err, 'Gmail did not take that send')); });
+      };
+      hideNow();
+      window.__undoLater('Sending to ' + (d.to[0].name || to), function () { mailSendCommit(root, d, to, cc, bcc, text, html, realAtts, MC); }, function () {
+        if (d.forId && S().mailHandled) delete S().mailHandled[d.forId];
+        if (snap.open) openCompose(snap.draft);
+        else { S().composeDraft = snap.draft; S().composeOpen = false; S().mailOpen = snap.mailOpen; S().mailOpenThread = snap.thread; repaintMail(); }
+        toast(root, 'Not sent. Your draft is back.');
+      });
     },
     'intel-ask': function () {},
 
@@ -3539,10 +3569,32 @@
       repaintMail();
     },
     'mail-split': function (el) {
-      S().mailSplit = attr(el, 'data-split') || 'all';
+      var split = attr(el, 'data-split') || 'all';
+      S().mailSplit = split;
       S().mailOpen = null;
       S().mailOpenThread = null;
       S().mailAutoOpen = null;
+      var FOLDER_Q = { sent: 'in:sent', allmail: '-in:spam -in:trash' };
+      if (FOLDER_Q[split]) {
+        /* Sent and All mail come straight from Gmail; the inbox board is kept and comes back on any other split. */
+        if (!S().mailBoardMain) S().mailBoardMain = S().mailBoard;
+        S().mailFolder = split;
+        S().mailFolderLoading = true;
+        S().mailBoard = { messages: [], columns: (S().mailBoardMain || {}).columns || [], rules: (S().mailBoardMain || {}).rules || [] };
+        repaintMail();
+        api('/api/mail/board?q=' + encodeURIComponent(FOLDER_Q[split]), { method: 'GET' }).then(ok).then(json).then(function (d) {
+          if (S().mailFolder !== split || !d || !Array.isArray(d.messages)) return;
+          S().mailFolderLoading = false;
+          S().mailBoard = d;
+          repaintMail();
+        }).catch(function () { S().mailFolderLoading = false; repaintMail(); });
+        return;
+      }
+      if (S().mailFolder) {
+        S().mailFolder = '';
+        S().mailFolderLoading = false;
+        if (S().mailBoardMain) { S().mailBoard = S().mailBoardMain; S().mailBoardMain = null; }
+      }
       repaintMail();
     },
     'mail-full': function (el) {
@@ -3761,8 +3813,9 @@
     'mail-col-delete': function (el, root) {
       closePop(root);
       var key = attr(el, 'data-col');
-      if (!key || !window.confirm('Delete the "' + (attr(el, 'data-name') || key) + '" column? The emails stay in your inbox.')) return;
+      if (!key) return;
       if (!writeOk()) { toast(root, 'Column deleted (fixture)'); return; }
+      window.__undoLater('Deleting the ' + (attr(el, 'data-name') || key) + ' column', function () {
       api('/api/mail/columns', { method: 'POST', body: { action: 'delete', key: key } }).then(ok).then(json).then(function (d) {
         if (!d || !d.saved) throw new Error('not saved');
         setBoardColumns(d.columns);
@@ -3770,6 +3823,7 @@
         refresh('mail');
         toast(root, 'Column deleted');
       }).catch(function () { toast(root, 'Could not delete that column'); });
+      });
     },
     'mail-col-new': function (el, root) {
       closePop(root);
@@ -4186,13 +4240,12 @@
       var box = findPeopleBox(id, a !== 'remove');
       if (a === 'remove') {
         if (!box) { refresh('mail'); toast(root, view.n + ' is built from your mail - close it instead to hide it'); return; }
-        if (!window.confirm('Remove the ' + box.n + ' box? Its mail stays in the Inbox.')) { refresh('mail'); return; }
         var list = peopleBoxList();
         var at = list.indexOf(box);
         if (at >= 0) list.splice(at, 1);
         persistPeopleBoxes({ confirmRemove: [String(box.id)] });
         refresh('mail');
-        toast(root, 'Box removed', function () { list.splice(Math.max(0, at), 0, box); persistPeopleBoxes(); refresh('mail'); });
+        window.__undoLater('Box removed', function () {}, function () { list.splice(Math.max(0, at), 0, box); persistPeopleBoxes(); refresh('mail'); });
         return;
       }
       if (!box) { refresh('mail'); return; }
@@ -5038,12 +5091,15 @@
     var askEl = cp && cp.querySelector('[data-action="mail-ask-input"]');
     if (askEl) d.ask = String(askEl.value || '');
     if (mode === 'tone' && !String(d.body || '').trim()) { toast(root, 'Write something first, then pick a tone'); return; }
-    if (mode === 'write' && !String(d.ask || '').trim()) { toast(root, 'Tell me what to write'); return; }
+    var th = S().mailOpenThread || null;
+    var threadText = th && th.text ? String(th.text).slice(0, 12000) : '';
+    if (!threadText && S().mailOpen && S().mailOpen.preview) threadText = String(S().mailOpen.preview);
+    if (mode === 'write' && !String(d.ask || '').trim() && !threadText && !String(d.body || '').trim()) { toast(root, 'Open an email or write a line, then press Draft it'); return; }
     if (!writeOk()) { toast(root, 'Draft (fixture)'); return; }
     var first = (d.to || [])[0] || {};
     var before = d.body;
     toast(root, mode === 'tone' ? 'Rewriting…' : 'Writing…');
-    api('/api/mail/write', { method: 'POST', body: { mode: mode, tone: tone, text: d.body, ask: d.ask, subject: d.subject, toEmail: first.email || '', toName: first.name || '' } }).then(function (r) {
+    api('/api/mail/write', { method: 'POST', body: { mode: mode, tone: tone, text: d.body, ask: d.ask, thread: mode === 'tone' ? '' : threadText, subject: d.subject, toEmail: first.email || '', toName: first.name || '' } }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error((j && j.error) || 'fail'); return j; });
     }).then(function (j) {
       if (!j || !j.body) throw new Error('Writing help came back empty');
@@ -5058,6 +5114,37 @@
       repaintMail();
       toast(root, d.aiNote);
     });
+  }
+  function mailSendCommit(root, d, to, cc, bcc, text, html, realAtts, MC) {
+      var reply = !!(d.reply && d.threadId);
+      var attPayload = realAtts.map(function (a) {
+        if (a.data) return { name: a.name || 'File', type: a.type || a.mime || 'application/octet-stream', data: a.data };
+        var st = MC.staged ? MC.staged(a) : '';
+        if (st) return { name: a.name || 'File', stagedId: st };
+        return { name: a.name || 'File', driveFileId: MC.drive ? MC.drive(a) : (a.driveFileId || '') };
+      });
+      var body = { action: reply ? 'reply' : 'compose', to: to, cc: cc.join(', '), bcc: bcc.join(', '), subject: d.subject, text: text, html: html, attachments: attPayload, threadId: reply ? d.threadId : '', messageId: reply ? (d.messageId || '') : '' };
+      if (realAtts.length) toast(root, 'Attaching ' + realAtts.length + ' file' + (realAtts.length === 1 ? '' : 's') + ' and sending…');
+      api('/api/mail/act', { method: 'POST', body: body }).then(function (r) {
+        if (r && r.status === 413) throw new Error('Those files are too big to send from here. Attach them from Documents or Drive instead.');
+        if (r && r.status === 422) return r.json().catch(function () { return {}; }).then(function (j) { throw new Error((j && j.error) || 'Could not attach a file'); });
+        return ok(r);
+      }).then(json).then(function (res) {
+        if (!(res && (res.ok || res.drafted))) { toast(root, 'Gmail did not take it - check the address'); return; }
+        var name = d.to[0].name || to;
+        if (d.nudge) nudgeLater(root, name, to, d.subject);
+        if (d.log) logToPipeline(root, name, to);
+        toast(root, (res.drafted && !res.ok ? 'Saved as a Gmail draft' : 'Sent from Gmail') + (d.nudge ? ' · nudge set for 3 days' : '') + (d.log ? ' · logging to Pipeline' : ''));
+        if (d.forId) {
+          (S().mailDoneList || (S().mailDoneList = [])).push({ who: name, what: d.subject || 'Reply', at: new Date().toLocaleTimeString('en-GB', { timeZone: 'America/Vancouver', hour: '2-digit', minute: '2-digit', hour12: false }) });
+        }
+        repaintMail();
+      }).catch(function (err) {
+        if (d.forId && S().mailHandled) delete S().mailHandled[d.forId];
+        openCompose(d);
+        toast(root, errText(err, 'Gmail did not take that send') + '. Your draft is open again.');
+      });
+    
   }
   function composeState() {
     if (window.__mailCompose && window.__mailCompose.draft) return window.__mailCompose.draft();
@@ -6645,7 +6732,7 @@
   window.__deskMail = { sync: syncCompose, state: composeState, open: openCompose, repaint: repaintMail, bundle: bundleLinksText, toast: toast, root: mailRoot };
   if (!window.__r3Loaded && !document.querySelector('script[data-r3]')) {
     var r3 = document.createElement('script');
-    r3.src = '/redesign-pages-r3.js?v=3';
+    r3.src = '/redesign-pages-r3.js?v=4';
     r3.setAttribute('data-r3', '1');
     document.head.appendChild(r3);
   }

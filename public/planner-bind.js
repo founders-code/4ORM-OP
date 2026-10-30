@@ -16,7 +16,7 @@ window.bindPlannerPage = function (root, liveItems, livePrefs) {
 
 
 (function(){
-const DAY=864e5;
+const DAY=864e5;let VZ=1;
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const dn=s=>{const[a,b,c]=s.split('-').map(Number);return Math.round(Date.UTC(a,b-1,c)/DAY)};
@@ -217,6 +217,9 @@ function extendYear(){DAYS=END-START+1; if(ppdOf(state.zoom)<=LV.year()*1.2){con
 function renderBoard(){
   extendYear();
   ppd=ppdOf(state.zoom);W=DAYS*ppd;LW=innerWidth<640?150:252;
+  /* Zooming out also packs rows tighter: full height at month level and closer, about two thirds at a year. */
+  {const a=Math.log(Math.max(ppd,1e-6)/LV.year()),b=Math.log(LV.month()/LV.year());VZ=b>0?Math.max(.66,Math.min(1,.66+.34*a/b)):1}
+  canvas.style.setProperty('--vz',VZ.toFixed(3));canvas.classList.toggle('vzc',VZ<.97);
   const vis=visPipes();
   let h=`<div class="bands" style="left:${LW}px;width:${W}px">`;
   months().forEach((m,k)=>{h+=`<div class="band${k%2?' alt':''}" style="left:${x(m.s)}px;width:${(m.e-m.s+1)*ppd}px"></div>`});
@@ -244,12 +247,12 @@ function hdrRow(){let t='';const vis0=Math.floor((scroller.scrollLeft||0)/ppd)+S
   return `<div class="row hdr"><div class="lab corner"><span class="kick">Pipeline</span></div><div class="trk" style="width:${W}px">${t}</div></div>`}
 function goalRow(){const gs=GL();const lv=[];let o='';
   gs.forEach(g=>{const ps=Math.max(START,gPlan(g)),st=Math.max(START,gStart(g)),en=g.e;const xp=x(ps),xs=x(st),xe=x(en)+ppd;const pct=goalPct(g);
-    const lbl=`${g.n}`;const L=pack(lv,xp,Math.max(xe,xs+tw(lbl)+150)+14,10);const top=10+L*36;
+    const lbl=`${g.n}`;const L=pack(lv,xp,Math.max(xe,xs+tw(lbl)+150)+14,10);const top=10+L*Math.round(36*VZ);
     o+=`<div class="gspan${g.st==='done'?' done':''}${risky(g)?' risk':''}" data-id="${g.id}" data-open="${g.id}" style="left:${xp}px;top:${top}px;width:${Math.max(xe-xp,24)}px">`
       +`<i class="gplan" style="width:${Math.max(xs-xp,0)}px"></i><i class="grun" style="left:${xs-xp}px"><b style="width:${pct}%"></b></i><i class="gdia"></i>`
       +`<span class="glab" style="left:${xs-xp+8}px">${esc(lbl)}<small>${fmt(st)} to ${fmt(en)}${pct?' · '+pct+'%':''}</small></span></div>`});
   const red=gs.filter(risky).length;
-  return `<div class="row goalrow master"><div class="lab"><span class="ltitle">Milestones</span><span class="lmeta">${gs.length} big goals${red?` &middot; <em>${red} at risk</em>`:''}</span></div><div class="trk" style="width:${W}px;height:${Math.max(56,16+lv.length*36)}px">${o}</div></div>`}
+  return `<div class="row goalrow master"><div class="lab"><span class="ltitle">Milestones</span><span class="lmeta">${gs.length} big goals${red?` &middot; <em>${red} at risk</em>`:''}</span></div><div class="trk" style="width:${W}px;height:${Math.max(Math.round(56*VZ),16+lv.length*Math.round(36*VZ))}px">${o}</div></div>`}
 /* Workload, first on the timeline: running items per week, stacked by pipeline. Click a colour to light that pipeline's items
    (the ones running that week get an outline); click it again, or Clear, to show everything. */
 let WL=null;
@@ -257,7 +260,7 @@ function loadRow(vis){
   const spans=WORK().filter(i=>i.kind==='span');let max=1,peak=null;const weeks=[];
   for(let w=START;w<=END;w+=7){const we=Math.min(w+6,END);const seg=vis.map(p=>({p,n:spans.filter(i=>i.p===p.id&&i.s<=we&&i.e>=w).length}));
     const tot=seg.reduce((a,b)=>a+b.n,0);if(tot>max)max=tot;if(!peak||tot>peak.tot)peak={w,tot};weeks.push({w,we,seg})}
-  const H=150,unit=Math.min(14,(H-10)/max);
+  const H=Math.round(150*VZ),unit=Math.min(14,(H-10)/max);
   let s=`<svg class="load" width="${W}" height="${H}" role="img" aria-label="Items running per week, by pipeline">`;
   weeks.forEach(wk=>{let y=H-2;const bw=Math.max(2,(wk.we-wk.w+1)*ppd-3);
     wk.seg.forEach(g=>{if(!g.n)return;const hh=g.n*unit;y-=hh;const rh=Math.max(hh-2.5,1.5);
@@ -288,21 +291,21 @@ canvas.addEventListener('click',e=>{
 function msRow(vis){
   const ms=WORK().filter(i=>i.kind==='ms'&&!state.hidden.has(i.p)).sort((a,b)=>a.s-b.s);const lv=[];let o='';
   ms.forEach(i=>{const x0=x(i.s)+ppd/2-6;const L=pack(lv,x0,x0+18+tw(i.n)+40,8);
-    o+=`<button class="msi ${cls(i)}" data-open="${i.id}" style="left:${x0}px;top:${10+L*28}px;--c:var(${pc(i.p)})"><i class="dia"></i>${esc(i.n)}<small>${fmt(i.s)}</small></button>`});
-  return `<div class="row master"><div class="lab"><span class="ltitle">Key dates</span><span class="lmeta">${ms.length} across ${vis.length} pipeline${vis.length===1?'':'s'}</span></div><div class="trk" style="width:${W}px;height:${Math.max(48,16+lv.length*28)}px">${o}</div></div>`}
+    o+=`<button class="msi ${cls(i)}" data-open="${i.id}" style="left:${x0}px;top:${10+L*Math.round(28*VZ)}px;--c:var(${pc(i.p)})"><i class="dia"></i>${esc(i.n)}<small>${fmt(i.s)}</small></button>`});
+  return `<div class="row master"><div class="lab"><span class="ltitle">Key dates</span><span class="lmeta">${ms.length} across ${vis.length} pipeline${vis.length===1?'':'s'}</span></div><div class="trk" style="width:${W}px;height:${Math.max(Math.round(48*VZ),16+lv.length*Math.round(28*VZ))}px">${o}</div></div>`}
 function laneRow(p){
   const its=ITEMS.filter(i=>i.p===p.id);const open=state.open.has(p.id);
   const act=its.filter(i=>phase(i)==='active').length,att=its.filter(attention).length;
   const nx=its.filter(i=>i.kind==='ms'&&i.s>=TODAY&&i.st!=='done').sort((a,b)=>a.s-b.s)[0];
-  let trk='',H=84;
+  let trk='',H=Math.round(84*VZ);const R29=Math.round(29*VZ);
   if(open){const sp=its.filter(i=>i.kind!=='series');if(sp.length){const a=Math.max(START,Math.min(...sp.map(i=>i.s))),b=Math.max(...sp.map(i=>i.e));
     const pct=Math.max(0,Math.min(100,(TODAY-a+1)/(b-a+1)*100));trk=`<div class="range" style="left:${x(a)}px;width:${(b-a+1)*ppd}px;top:${H/2-4}px"><i style="width:${pct}%"></i></div>`}}
   else{const lv=[];const ent=[];const ts=s=>s.length*6.3+16;
     its.filter(i=>i.kind!=='series').sort((a,b)=>a.s-b.s).forEach(i=>{const s=Math.max(i.s,START);
       if(i.kind==='ms'){const x0=x(s)+ppd/2-5;ent.push({i,x0,L:pack(lv,x0,x0+16+ts(i.n),8)})}
       else{const bx=x(s),bw=Math.max((i.e-s+1)*ppd,8),w2=ts(i.n),nar=bw<w2;ent.push({i,x0:bx,w:bw,nar,pr:prog(i,s),L:pack(lv,bx,nar?bx+bw+7+w2:bx+bw,8)})}});
-    const n=lv.length;H=Math.max(84,n*29+22);const top=(H-n*29)/2+2;
-    ent.forEach(e=>{const tp=top+e.L*29;
+    const n=lv.length;H=Math.max(Math.round(84*VZ),n*R29+22);const top=(H-n*R29)/2+2;
+    ent.forEach(e=>{const tp=top+e.L*R29;
       trk+=e.i.kind==='ms'?`<button class="msi sm ${cls(e.i)}" data-id="${e.i.id}" data-open="${e.i.id}" style="left:${e.x0}px;top:${tp}px"><i class="dia anchor"></i>${esc(e.i.n)}</button>`
         :`<button class="bar sm ${cls(e.i)}${e.nar?' narrow':''} anchor" data-id="${e.i.id}" data-open="${e.i.id}" style="left:${e.x0}px;top:${tp}px;width:${e.w}px;--p:${e.pr.toFixed(1)}%"><span>${esc(e.i.n)}</span></button>`})}
   return `<div class="row lane" data-pipe="${p.id}" style="--c:var(${p.c})"><div class="lab" draggable="true" data-drag="${p.id}"><button class="lanebtn" data-toggle="${p.id}" aria-expanded="${open}"><span class="l1"><span class="nm">${p.name}</span><span class="oc">${open?'Close':'Open'}</span></span><span class="lmeta">${its.length} items &middot; ${act} in motion${att?` &middot; <em>${att} red</em>`:''}</span>${nx?`<span class="nx">Next: <b>${esc(nx.n)}</b> ${fmt(nx.s)}</span>`:''}</button><button class="solo" data-solo="${p.id}">Show only ${p.name}</button></div><div class="trk can-add" style="width:${W}px;height:${H}px">${trk}</div></div>`}
@@ -312,12 +315,12 @@ function trackRows(p){
     const its=ITEMS.filter(i=>i.p===p.id&&i.t===t).sort((a,b)=>a.s-b.s);const lv=[];let o='';
     its.forEach(i=>{const s=Math.max(i.s,START);
       if(i.kind==='series'){const L=pack(lv,x(i.s),W+1,0);const nd=nextOf(i)??i.dates[0];
-        o+=`<div class="series" data-id="${i.id}" style="top:${12+L*38}px;width:${W}px">`+i.dates.map(d=>`<i class="dot${d<TODAY?' past':''}" style="left:${x(d)+ppd/2-4}px"></i>`).join('')+`<button class="sname" data-open="${i.id}" style="left:${x(nd)+ppd/2+9}px">${esc(i.n)}</button></div>`}
+        o+=`<div class="series" data-id="${i.id}" style="top:${12+L*Math.round(38*VZ)}px;width:${W}px">`+i.dates.map(d=>`<i class="dot${d<TODAY?' past':''}" style="left:${x(d)+ppd/2-4}px"></i>`).join('')+`<button class="sname" data-open="${i.id}" style="left:${x(nd)+ppd/2+9}px">${esc(i.n)}</button></div>`}
       else if(i.kind==='ms'){const x0=x(s)+ppd/2-6;const L=pack(lv,x0,x0+18+tw(i.n)+40,8);
-        o+=`<button class="msi ${cls(i)}" data-id="${i.id}" data-open="${i.id}" style="left:${x0}px;top:${12+L*38}px"><i class="dia anchor"></i>${esc(i.n)}<small>${fmt(i.s)}</small></button>`}
+        o+=`<button class="msi ${cls(i)}" data-id="${i.id}" data-open="${i.id}" style="left:${x0}px;top:${12+L*Math.round(38*VZ)}px"><i class="dia anchor"></i>${esc(i.n)}<small>${fmt(i.s)}</small></button>`}
       else{const bx=x(s),bw=Math.max((i.e-s+1)*ppd,8),w2=tw(i.n),nar=bw<w2;const L=pack(lv,bx,nar?bx+bw+7+w2:bx+bw,6);
-        o+=`<button class="bar ${cls(i)}${nar?' narrow':''} anchor" data-id="${i.id}" data-open="${i.id}" style="left:${bx}px;top:${12+L*38}px;width:${bw}px;--p:${prog(i,s).toFixed(1)}%"><span>${esc(i.n)}</span></button>`}});
-    return `<div class="row trackrow" data-pipe="${p.id}" data-stream="${esc(t)}" style="--c:var(${p.c});animation-delay:${k*45}ms"><div class="lab"><span class="tn">${esc(t)}</span><small>${its.length} item${its.length===1?'':'s'}</small></div><div class="trk can-add" style="width:${W}px;height:${Math.max(56,18+lv.length*38)}px">${o}</div></div>`}).join('')}
+        o+=`<button class="bar ${cls(i)}${nar?' narrow':''} anchor" data-id="${i.id}" data-open="${i.id}" style="left:${bx}px;top:${12+L*Math.round(38*VZ)}px;width:${bw}px;--p:${prog(i,s).toFixed(1)}%"><span>${esc(i.n)}</span></button>`}});
+    return `<div class="row trackrow" data-pipe="${p.id}" data-stream="${esc(t)}" style="--c:var(${p.c});animation-delay:${k*45}ms"><div class="lab"><span class="tn">${esc(t)}</span><small>${its.length} item${its.length===1?'':'s'}</small></div><div class="trk can-add" style="width:${W}px;height:${Math.max(Math.round(56*VZ),18+lv.length*Math.round(38*VZ))}px">${o}</div></div>`}).join('')}
 function anchor(id){const el=canvas.querySelector(`[data-id="${id}"]`);if(!el)return null;return el.classList.contains('anchor')?el:el.querySelector('.anchor')}
 function drawLinks(){
   const svg=document.getElementById('links');if(!svg)return;svg.setAttribute('height',canvas.scrollHeight);
