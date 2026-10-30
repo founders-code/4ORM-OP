@@ -25,6 +25,8 @@ const SEED_BEATS: Array<{ name: string; color: string; sub: string; cadence: Cad
 export async function ensureBeats(sql: Sql) {
   try {
     await sql`ALTER TABLE playbook_rhythms ADD COLUMN IF NOT EXISTS cadence jsonb`;
+    /* 30 Oct 2026: the plan for each due date (steps ticked, a note per step), keyed by due day. Additive. */
+    await sql`ALTER TABLE playbook_rhythms ADD COLUMN IF NOT EXISTS plan jsonb NOT NULL DEFAULT '{}'::jsonb`;
   } catch (err) {
     fail('playbook_beats_column', err);
   }
@@ -117,7 +119,7 @@ export async function listBeats(sql: Sql, ownerId: string) {
   await seedBeats(sql, ownerId).catch((err) => fail('playbook_beats_seed', err));
   const today = pacificDay();
   const rows = (await sql`
-    SELECT id::text AS id, name, color, sub, sort, cadence
+    SELECT id::text AS id, name, color, sub, sort, cadence, plan
     FROM playbook_rhythms
     WHERE owner_id = ${ownerId} AND active = true AND cadence IS NOT NULL
     ORDER BY sort, name
@@ -156,6 +158,7 @@ export async function listBeats(sql: Sql, ownerId: string) {
       daysLeft: left,
       pct: Math.max(3, Math.min(100, Math.round(((span - left) / span) * 100))),
       lastDone,
+      plan: planFor(readJson(r.plan), due),
     });
   }
   return out;
@@ -206,5 +209,41 @@ export async function markBeat(sql: Sql, ownerId: string, id: string, day: strin
     VALUES (${ownerId}, ${id}::uuid, ${day}::date, 'done', '')
     ON CONFLICT (owner_id, rhythm_id, day) DO UPDATE SET status = 'done'
   `;
+  return true;
+}
+
+/** The saved steps for one due date: { stepKey: { done, note } }. */
+function planFor(value: unknown, due: string) {
+  const all = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+  const day = all[due];
+  const out: Record<string, { done: boolean; note: string }> = {};
+  if (day && typeof day === 'object') {
+    for (const [k, v] of Object.entries(day as Record<string, unknown>).slice(0, 30)) {
+      const o = (v && typeof v === 'object' ? v : {}) as Record<string, unknown>;
+      out[k.slice(0, 40)] = { done: !!o.done, note: String(o.note || '').slice(0, 1000) };
+    }
+  }
+  return out;
+}
+
+const STEP = /^[a-z0-9-]{1,40}$/;
+
+/** Tick a plan step or save its note for one due date. Nothing else on the beat changes. */
+export async function setPlanStep(sql: Sql, ownerId: string, id: string, day: string, step: string, input: { done?: boolean; note?: string }) {
+  if (!DAY.test(day) || !STEP.test(step)) return false;
+  await ensureBeats(sql);
+  const rows = (await sql`SELECT plan FROM playbook_rhythms WHERE id = ${id}::uuid AND owner_id = ${ownerId} AND cadence IS NOT NULL LIMIT 1`) as Array<{ plan: unknown }>;
+  if (!rows.length) return false;
+  const plan = (readJson(rows[0].plan) || {}) as Record<string, Record<string, { done?: boolean; note?: string }>>;
+  const keepFrom = addDays(day, -400);
+  for (const k of Object.keys(plan)) if (!DAY.test(k) || k < keepFrom) delete plan[k];
+  const cur = plan[day] || {};
+  const was = cur[step] || {};
+  cur[step] = {
+    done: typeof input.done === 'boolean' ? input.done : !!was.done,
+    note: input.note != null ? String(input.note).slice(0, 1000) : String(was.note || ''),
+  };
+  plan[day] = cur;
+  await sql`UPDATE playbook_rhythms SET plan = ${JSON.stringify(plan)}::jsonb WHERE id = ${id}::uuid AND owner_id = ${ownerId}`;
   return true;
 }
