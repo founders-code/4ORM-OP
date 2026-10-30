@@ -2149,6 +2149,7 @@
     try {
       var q = new URLSearchParams(String(location.search || ''));
       if (q.get('people') === '1' || q.get('view') === 'people' || (window.STATE && window.STATE.mailView === 'people')) return 'people';
+      if (window.STATE && window.STATE.mailView === 'prep') return 'prep';
     } catch (e) {}
     return 'inbox';
   }
@@ -2659,7 +2660,7 @@
     var sched = '<span' + (active === 'sched' ? ' class="on"' : '') + ' data-action="mail-sched-list">Scheduled' + ((S.mailSchedCount | 0) > 0 ? ' <em>' + (S.mailSchedCount | 0) + '</em>' : '') + '</span>';
     var search = o.search || '<input class="search" data-action="mail-search" placeholder="Search mail" value="' + esc(S.mailQ || '') + '">';
     return '<div class="bar"><h1>Email</h1>'
-      + '<div class="seg"><span' + (active === 'inbox' ? ' class="on"' : '') + ' data-action="mail-layout" data-layout="focus">Inbox</span><span' + (active === 'people' ? ' class="on"' : '') + ' data-action="mail-view" data-view="people">People</span>' + sched + '</div>'
+      + '<div class="seg"><span' + (active === 'inbox' ? ' class="on"' : '') + ' data-action="mail-layout" data-layout="focus">Inbox</span><span' + (active === 'people' ? ' class="on"' : '') + ' data-action="mail-view" data-view="people">People</span>' + sched + '<span' + (active === 'prep' ? ' class="on"' : '') + ' data-action="mail-view" data-view="prep">Prep</span></div>'
       + '<div class="cnt"><span><b>' + esc(need) + '</b> need a reply</span><span><b>' + esc(unread) + '</b> unread</span><span>junk hidden</span></div>'
       + '<div class="r"><span class="ef-prog"><b>' + done + '</b> done this session</span>' + search + '<button class="btn" data-action="mail-filters">Filters</button><button class="btn pri" id="composeBtn" data-action="mail-compose">Compose</button></div></div>';
   }
@@ -2831,6 +2832,13 @@
     S.mailPaintForce = false;
     var data = emailData();
     var view = mailViewName();
+    if (view === 'prep' && typeof window.paintMailPrep === 'function') {
+      if (P().applyPageCss) P().applyPageCss(wrap, 'mail');
+      S.mailInline = false;
+      window.paintMailPrep(wrap, emailBarHtml(S, 'prep', {}));
+      if (typeof markReady === 'function') markReady('mailDesk');
+      return;
+    }
     if (view === 'people') {
       if (P().applyPageCss) P().applyPageCss(wrap, 'mailPeople');
       paintEmailPeople(wrap);

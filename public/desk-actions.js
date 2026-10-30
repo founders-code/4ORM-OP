@@ -5163,6 +5163,8 @@
     repaintMail();
     setTimeout(function () { focusComposeField(composeState().to.length ? '' : 'to'); }, 80);
   }
+  /* Email > Prep: open compose already filled in (to, subject, body). Chad sends or schedules from there. */
+  window.openComposeDraft = function (d) { openCompose(d || {}); };
   /* The contact card's Email button opens compose here, addressed. */
   window.openComposeTo = function (email, name) {
     if (typeof window.switchView === 'function') { try { window.switchView('mail'); } catch (e) {} }
