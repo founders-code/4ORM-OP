@@ -139,6 +139,17 @@ export async function ensureGrowth(sql: Sql) {
     deleted_at timestamptz
   )`;
   await sql`CREATE INDEX IF NOT EXISTS growth_touches_owner ON growth_touches (owner_id, at DESC)`;
+  /* Every change made to a contact (30 Oct 2026), shown on Completed with the calls, notes and stage moves. */
+  await sql`CREATE TABLE IF NOT EXISTS growth_activity (
+    id bigserial PRIMARY KEY,
+    owner_id text NOT NULL,
+    record_id text NOT NULL,
+    at timestamptz NOT NULL DEFAULT now(),
+    kind text NOT NULL DEFAULT 'edit',
+    what text NOT NULL DEFAULT '',
+    detail text NOT NULL DEFAULT ''
+  )`;
+  await sql`CREATE INDEX IF NOT EXISTS growth_activity_owner ON growth_activity (owner_id, at DESC)`;
 }
 
 const s = (v: unknown, n = 2000) => String(v == null ? '' : v).slice(0, n);
@@ -297,7 +308,57 @@ export async function patchGrowth(sql: Sql, ownerId: string, id: string, body: R
       starred_at = CASE WHEN ${setStar} THEN (CASE WHEN ${!!body.starred} THEN COALESCE(starred_at, now()) ELSE NULL END) ELSE starred_at END,
       edited = ${JSON.stringify(edited)}::jsonb, updated_at = now()
     WHERE owner_id = ${ownerId} AND id = ${id} RETURNING *`;
+  const after = rows[0] as Record<string, unknown> | undefined;
+  if (after) await logEdits(sql, ownerId, id, cur, after, { setPlan, setNext, setDel, setStar, body }).catch((err) => fail('growth_activity', err));
   return rows[0] || null;
+}
+
+const FIELD_NAMES: Record<string, string> = {
+  name: 'Name', contact: 'Contact', title: 'Title', email: 'Email', phone: 'Phone', linkedin: 'LinkedIn', website: 'Website',
+  city: 'City', prov: 'Province', route: 'Route', next_action: 'Next action', owner_name: 'Owner', status: 'Status', stage: 'Stage',
+  notes: 'Notes', priority: 'Priority', list: 'List', type: 'Type',
+};
+function dayText(v: unknown) {
+  if (!v) return '';
+  const d = v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : '';
+}
+/** One line per field that actually changed. Notes say "edited", not the whole text. */
+async function logEdits(sql: Sql, ownerId: string, id: string, before: Record<string, unknown>, after: Record<string, unknown>,
+  o: { setPlan: boolean; setNext: boolean; setDel: boolean; setStar: boolean; body: Record<string, unknown> }) {
+  const out: Array<[string, string, string]> = [];
+  for (const [k, label] of Object.entries(FIELD_NAMES)) {
+    if (!Object.prototype.hasOwnProperty.call(o.body, k)) continue;
+    const a = String(before[k] ?? ''), b = String(after[k] ?? '');
+    if (a === b) continue;
+    if (k === 'notes') out.push(['edit', 'Notes edited', b.slice(0, 200)]);
+    else out.push(['edit', label + ' changed', (a ? a.slice(0, 120) + ' to ' : 'Set to ') + (b ? b.slice(0, 120) : 'blank')]);
+  }
+  if (o.setNext && dayText(before.next_date) !== dayText(after.next_date)) out.push(['followup', after.next_date ? 'Follow-up set' : 'Follow-up cleared', dayText(after.next_date)]);
+  if (o.setPlan && dayText(before.plan_day) !== dayText(after.plan_day)) out.push(['plan', after.plan_day ? 'Call day set' : 'Call day cleared', dayText(after.plan_day)]);
+  if (o.setStar && !!before.starred_at !== !!after.starred_at) out.push(['star', after.starred_at ? 'Starred' : 'Star removed', '']);
+  if (o.setDel && !!before.deleted_at !== !!after.deleted_at) out.push(['delete', after.deleted_at ? 'Deleted' : 'Restored', '']);
+  for (const [kind, what, detail] of out.slice(0, 20)) {
+    await sql`INSERT INTO growth_activity (owner_id, record_id, kind, what, detail) VALUES (${ownerId}, ${s(id, 40)}, ${kind}, ${s(what, 120)}, ${s(detail, 600)})`;
+  }
+}
+
+/** Everything done to contacts on one Vancouver day: calls and their outcomes, notes, stage moves, edits. Newest first. */
+export async function dayLog(sql: Sql, ownerId: string, day: string) {
+  await ensureGrowth(sql);
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : vanToday();
+  return (await sql`SELECT * FROM (
+      SELECT 'touch' AS src, t.id, t.at, t.channel, t.outcome, t.note AS detail, '' AS what, t.next_date, t.record_id
+        FROM growth_touches t
+        WHERE t.owner_id = ${ownerId} AND t.deleted_at IS NULL AND (t.at AT TIME ZONE 'America/Vancouver')::date = ${d}::date
+      UNION ALL
+      SELECT a.kind AS src, a.id, a.at, '' AS channel, '' AS outcome, a.detail, a.what, NULL::date AS next_date, a.record_id
+        FROM growth_activity a
+        WHERE a.owner_id = ${ownerId} AND (a.at AT TIME ZONE 'America/Vancouver')::date = ${d}::date
+    ) x LEFT JOIN LATERAL (
+      SELECT g.name, g.contact, g.list, g.phone, data->'ghl'->>'stage' AS ghl_stage FROM growth_records g WHERE g.owner_id = ${ownerId} AND g.id = x.record_id LIMIT 1
+    ) g ON true
+    ORDER BY x.at DESC LIMIT 800`) as Array<Record<string, unknown>>;
 }
 
 export async function addTouch(sql: Sql, ownerId: string, recordId: string, t: { channel?: string; outcome?: string; note?: string; next_date?: string; status?: string }) {

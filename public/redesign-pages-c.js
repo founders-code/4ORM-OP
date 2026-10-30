@@ -1170,6 +1170,59 @@
     });
   }
 
+  /* Contact log (30 Oct 2026): every call outcome, note, stage move and contact edit on the day you are looking at.
+     Read live from the contact records, so today shows as you work, not only after the 23:55 snapshot. */
+  var DAYLOG = {};
+  function dlTime(at) { try { return new Date(at).toLocaleTimeString('en-GB', { timeZone: 'America/Vancouver', hour: '2-digit', minute: '2-digit', hour12: false }); } catch (e) { return ''; } }
+  function dlRow(r) {
+    var tag = 'Note', what = '', det = String(r.detail || ''), cls = 't1';
+    if (r.src === 'touch') {
+      if (r.channel === 'GoHighLevel') { tag = 'Stage'; cls = 't3'; what = det.replace(/^(Moved in|Added to) GoHighLevel:\s*/, 'Moved to '); det = ''; }
+      else { tag = r.channel || 'Call'; what = r.outcome || (det ? 'Note' : 'Contacted'); cls = /answer|voicemail|gatekeeper|wrong/i.test(what) ? 't2' : 't1'; }
+      if (r.next_date) det = (det ? det + ' · ' : '') + 'Follow-up ' + String(r.next_date).slice(0, 10);
+    } else { tag = r.src === 'followup' ? 'Follow-up' : r.src === 'plan' ? 'Call day' : r.src === 'star' ? 'Star' : r.src === 'delete' ? 'Removed' : 'Edit'; cls = 't4'; what = r.what || 'Changed'; }
+    var who = r.name || 'Contact';
+    var person = r.contact && String(r.contact).split(/\s*[|;,]\s*/)[0];
+    return '<div class="li dl-r" data-rid="' + esc(r.record_id || '') + '" style="cursor:pointer;align-items:flex-start">'
+      + '<em style="min-width:42px;font-style:normal;font-variant-numeric:tabular-nums">' + esc(dlTime(r.at)) + '</em>'
+      + '<span class="tag ' + cls + '">' + esc(tag) + '</span>'
+      + '<span style="flex:1;min-width:0"><b>' + esc(who) + '</b>' + (person && person !== who ? ' <span style="opacity:.7">' + esc(person) + '</span>' : '') + ' &middot; ' + esc(what)
+      + (det ? '<br><span style="opacity:.75">' + esc(det.length > 220 ? det.slice(0, 220) + '...' : det) + '</span>' : '') + '</span></div>';
+  }
+  function dlHtml(day) {
+    var c = DAYLOG[day];
+    if (!c) return '<div class="sh"><b>Contact log</b><span>loading</span></div><div class="emp">Loading every call, note and change for this day...</div>';
+    if (c.err) return '<div class="sh"><b>Contact log</b><span></span></div><div class="emp">Could not load the contact log.</div>';
+    var rows = c.rows || [];
+    var calls = rows.filter(function (r) { return r.src === 'touch' && r.channel !== 'GoHighLevel'; });
+    var people = {}; rows.forEach(function (r) { if (r.record_id) people[r.record_id] = 1; });
+    var moves = rows.filter(function (r) { return r.src === 'touch' && r.channel === 'GoHighLevel'; }).length;
+    var edits = rows.length - calls.length - moves;
+    var outs = {}; calls.forEach(function (r) { var k = r.outcome || 'Note'; outs[k] = (outs[k] || 0) + 1; });
+    var sum = Object.keys(outs).sort(function (a, b) { return outs[b] - outs[a]; }).map(function (k) { return outs[k] + ' ' + k.toLowerCase(); }).join(' · ');
+    return '<div class="sh"><b>Contact log</b><span>' + Object.keys(people).length + ' contacts · ' + calls.length + ' logged · ' + moves + ' stage moves · ' + edits + ' edits</span></div>'
+      + (sum ? '<div style="margin:2px 0 8px;opacity:.8;font-size:12.5px">' + esc(sum) + '</div>' : '')
+      + (rows.length ? rows.map(dlRow).join('') : '<div class="emp">Nothing logged on a contact this day.</div>');
+  }
+  function dlLoad(day, wrap) {
+    var c = DAYLOG[day];
+    var fresh = c && !c.err && (Date.now() - c.at < 30000);
+    function fill() {
+      var box = wrap.querySelector('#doneLog'); if (!box) return;
+      box.innerHTML = dlHtml(day);
+      box.querySelectorAll('.dl-r').forEach(function (el) {
+        el.onclick = function () { var id = el.getAttribute('data-rid'); if (id && typeof window.openDossier === 'function') window.openDossier(id); };
+      });
+    }
+    fill();
+    if (fresh || (c && c.busy)) return;
+    DAYLOG[day] = Object.assign(c || {}, { busy: true });
+    auth('/api/growth?day=' + encodeURIComponent(day), { credentials: 'include', quiet: true }).then(function (r) { return r && r.ok ? r.json() : Promise.reject(); })
+      .then(function (d) { DAYLOG[day] = { rows: (d && d.log) || [], at: Date.now() }; })
+      .catch(function () { DAYLOG[day] = { err: true, at: Date.now() }; })
+      .then(fill);
+  }
+
   function paintCompletedLive() {
     var wrap = wrapOf('doneDesk');
     if (!wrap) { markReady('doneDesk'); return; }
@@ -1355,6 +1408,7 @@
       + '<div class="lay"><section class="card">' + statsHtml + '<div class="today"><span class="pulse"></span>Today is being recorded — snapshot at 23:55</div>' + list + '</section>'
       + '<section class="card det"><div class="dh"><div><h2>' + esc(title) + '</h2><div class="meta">' + (cur.date && cur.date >= vancouverTodayIso() ? 'Recording - not yet saved' : 'Snapshot saved · read-only') + '</div></div><div class="r2"><button class="btn" type="button" data-action="done-export">Export PDF</button><button class="btn" type="button" data-action="done-investor" data-date="' + esc(cur.date || '') + '" data-headline="' + esc(headline) + '">Add to investor update</button></div></div>'
       + '<div class="moved"><b>What moved today</b><p>' + esc(headline) + '</p></div>'
+      + '<div class="sec" id="doneLog" style="margin:12px 0 4px">' + dlHtml(cur.date || vancouverTodayIso()) + '</div>'
       + '<div class="tiles">'
       + '<div class="tl" data-action="done-tile" data-k="tasks"><b>' + (counts.tasks || 0) + '</b><span>tasks done</span></div>'
       + '<div class="tl" data-action="done-tile" data-k="meetings"><b>' + (counts.meetings || 0) + '</b><span>meeting</span></div>'
@@ -1373,6 +1427,7 @@
       + '<div class="quote" data-action="done-voice">' + esc(det.voice || det.quote || '-') + '</div></div>'
       + '<div class="sec"><div class="sh"><b>News saved</b><span>' + asList(det.news).length + '</span></div>' + (lines(det.news, 'News') || '<div class="emp">No news saved.</div>') + '</div>'
       + '</div></section></div>';
+    dlLoad(cur.date || vancouverTodayIso(), wrap);
     liveLog('completed', { snaps: snaps.length, open: openDate });
     if (P().finishPaint) P().finishPaint(wrap);
     markReady('doneDesk');
