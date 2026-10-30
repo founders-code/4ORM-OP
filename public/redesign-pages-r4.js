@@ -1006,19 +1006,31 @@
   function bindSpacesZoom(wrap) {
     function grids() { return Array.prototype.slice.call(wrap.querySelectorAll('.grid')); }
     function label() { var n = typeof window.gridCols === 'function' ? window.gridCols('spaces', 4) : 4; var z = wrap.querySelector('#zoomN'); if (z) z.textContent = n + ' across'; }
+    /* Never squeeze a card below what its zoom level needs: full cards 240px, short cards 170px, titles 120px. */
+    function fit(g) {
+      var n = typeof window.gridCols === 'function' ? window.gridCols('spaces', 4) : 4;
+      var w = g.clientWidth || (wrap.clientWidth - 40) || 900;
+      var min = n >= 7 ? 120 : n >= 6 ? 170 : 240;
+      var eff = Math.max(1, Math.min(n, Math.floor((w + 14) / (min + 14))));
+      g.style.setProperty('--cols', String(eff));
+    }
     function apply() {
       grids().forEach(function (g) {
         if (typeof window.bindGridZoom === 'function') window.bindGridZoom(wrap, g, 'spaces', 4);
         if (typeof window.applyGridCols === 'function') window.applyGridCols(g, 'spaces', 4);
+        fit(g);
       });
       label();
     }
+    if (!wrap._zoomRs) { wrap._zoomRs = 1; window.addEventListener('resize', function () { grids().forEach(fit); }); }
     apply();
     window.onGridZoom = function (key) { if (key === 'spaces') { apply(); } };
+    setTimeout(function () { grids().forEach(fit); }, 60);
     wrap.querySelectorAll('[data-zoom]').forEach(function (b) {
       b.addEventListener('click', function (e) {
         e.stopPropagation();
         if (typeof window.gridZoomStep === 'function') window.gridZoomStep('spaces', Number(b.getAttribute('data-zoom')), 4, grids());
+        grids().forEach(fit);
         label();
       });
     });
@@ -1026,7 +1038,7 @@
     if (wrap._zoomObs) wrap._zoomObs.disconnect();
     var cats = wrap.querySelector('#cats');
     if (cats && typeof MutationObserver === 'function') {
-      wrap._zoomObs = new MutationObserver(function () { grids().forEach(function (g) { if (!g.getAttribute('data-cols') && typeof window.applyGridCols === 'function') { window.applyGridCols(g, 'spaces', 4); if (typeof window.bindGridZoom === 'function') window.bindGridZoom(wrap, g, 'spaces', 4); } }); });
+      wrap._zoomObs = new MutationObserver(function () { grids().forEach(function (g) { if (!g.getAttribute('data-cols') && typeof window.applyGridCols === 'function') { window.applyGridCols(g, 'spaces', 4); if (typeof window.bindGridZoom === 'function') window.bindGridZoom(wrap, g, 'spaces', 4); fit(g); } }); });
       wrap._zoomObs.observe(cats, { childList: true, subtree: false });
     }
   }
