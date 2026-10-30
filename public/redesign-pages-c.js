@@ -1232,7 +1232,9 @@
     var fresh = c && !c.err && (Date.now() - c.at < 30000);
     function fill() {
       var box = wrap.querySelector('#doneLog'); if (!box) return;
-      box.innerHTML = dlHtml(day);
+      var h = dlHtml(day);
+      if (box.__ph === h && box.firstChild === box.__phFirst) return;
+      box.innerHTML = h; box.__ph = h; box.__phFirst = box.firstChild;
       box.querySelectorAll('.dl-r').forEach(function (el) {
         el.onclick = function () { var id = el.getAttribute('data-rid'); if (id && typeof window.openDossier === 'function') window.openDossier(id); };
       });
@@ -1251,6 +1253,7 @@
   function clHtml(day) {
     var c = CLLOG[day];
     var head = '<div class="sh" style="margin:0 0 8px"><b>Claude</b><span>' + (c && c.items ? c.items.length + ' changes' : 'built, changed and added') + '</span></div>';
+    if (c && c.busy && c.items) c = { items: c.items };
     if (!c || c.busy) return head + '<div class="emp">Loading the changes for this day...</div>';
     if (c.err) return head + '<div class="emp">Could not load the changes.</div>';
     if (!c.items.length) return head + '<div class="emp">No changes to 4ormop this day.</div>';
@@ -1260,7 +1263,7 @@
   }
   function clLoad(day, wrap) {
     var c = CLLOG[day];
-    function fill() { var box = wrap.querySelector('#clLog'); if (box) box.innerHTML = clHtml(day); }
+    function fill() { var box = wrap.querySelector('#clLog'); var h = clHtml(day); if (box && box.innerHTML !== h) box.innerHTML = h; }
     if (c && (c.busy || (!c.err && Date.now() - c.at < 120000))) { fill(); return; }
     CLLOG[day] = { busy: true, items: (c && c.items) || null };
     fill();
@@ -1454,7 +1457,7 @@
       + '<div class="hx" data-action="done-stat" data-k="thru"><b>' + thru + '</b><span>Throughput</span><div class="bars">' + bars + '</div></div>'
       + '<div class="hx wide" data-action="done-stat" data-k="slip"><b>Slipping by area</b><span>' + (slip.map(function (s) { return esc(s[0]) + ' ' + s[1]; }).join(' · ') || '-') + '</span></div>'
       + '<div class="hx wide" data-action="done-stat" data-k="tips"><b>What to improve</b>' + tips.slice(0, 3).map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') + '</div></div>';
-    wrap.innerHTML = '<div class="bar"><h1>Completed</h1><span class="sub">A snapshot of every day, saved at 23:55 — what moved, who you met, what you owe</span><div class="r"><button class="btn" type="button" data-action="done-search">Search days</button><button class="btn pri" type="button" id="snapNowLive" data-action="done-snap">Snapshot now</button></div></div>'
+    var doneHtml = '<div class="bar"><h1>Completed</h1><span class="sub">A snapshot of every day, saved at 23:55 — what moved, who you met, what you owe</span><div class="r"><button class="btn" type="button" data-action="done-search">Search days</button><button class="btn pri" type="button" id="snapNowLive" data-action="done-snap">Snapshot now</button></div></div>'
       + '<div class="lay"><section class="card">' + statsHtml + '<div class="today"><span class="pulse"></span>Today is being recorded — snapshot at 23:55</div>' + list + '</section>'
       + '<section class="card det"><div class="dh"><div><h2>' + esc(title) + '</h2><div class="meta">' + (cur.date && cur.date >= vancouverTodayIso() ? 'Recording - not yet saved' : 'Snapshot saved · read-only') + '</div></div><div class="r2"><button class="btn" type="button" data-action="done-export">Export PDF</button><button class="btn" type="button" data-action="done-investor" data-date="' + esc(cur.date || '') + '" data-headline="' + esc(headline) + '">Add to investor update</button></div></div>'
       + '<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start;margin-top:4px">'
@@ -1481,6 +1484,12 @@
       + '</div></div>'
       + '<div style="min-width:0;border-left:1px solid rgba(127,140,170,.22);padding-left:18px" id="clLog">' + clHtml(logDay) + '</div>'
       + '</div></section></div>';
+    /* 30 Oct 2026: Completed was painted three times on open, each time dropping the logs back to Loading.
+       The same page is now kept as it is; only a real change repaints it. */
+    var doneKey = doneHtml;
+    if (wrap.__ph !== doneKey || !wrap.firstChild || wrap.firstChild !== wrap.__phFirst) {
+      wrap.innerHTML = doneHtml; wrap.__ph = doneKey; wrap.__phFirst = wrap.firstChild;
+    }
     dlLoad(logDay, wrap);
     clLoad(logDay, wrap);
     liveLog('completed', { snaps: snaps.length, open: openDate });

@@ -259,7 +259,7 @@ test('the control room page does not carry secrets', () => {
   assert.equal(page.includes('id="docView"'), true);
   assert.equal(page.includes('Open in Drive'), true);
   assert.equal(page.includes('id="v-znotes"'), true);
-  assert.equal(page.includes('#v-znotes{background:linear-gradient(180deg,#1a2f70'), true);
+  assert.equal(page.includes('#v-znotes{background:#07080b'), true);
   assert.equal(page.includes('data-doc-url'), true);
   assert.equal(shellNav.includes("'war', '/planner'"), true);
   assert.equal(shellNav.includes("'drive', '/drive'"), false);

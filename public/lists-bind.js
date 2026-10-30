@@ -132,6 +132,10 @@
     root.__lbTok = bindTok;
     function stale() { return root.__lbTok !== bindTok; }
     function $(sel) { return stale() ? null : root.querySelector(sel); }
+    /* 30 Oct 2026: setH(el).innerHTML = html skips a repaint that would draw the same thing again (the page shook on open). */
+    function setH(el) {
+      return { set innerHTML(h) { if (el.__ph === h && el.firstChild && el.firstChild === el.__phFirst) return; el.innerHTML = h; el.__ph = h; el.__phFirst = el.firstChild; } };
+    }
     function toast(m, undo) {
       var t = $('#tmsg');
       var u = $('#tundo');
@@ -337,7 +341,7 @@
       var nav = $('#listnav');
       if (nav && state.mode === 'lists') {
         var lastSec = '';
-        nav.innerHTML = state.lists.map(function (l) {
+        setH(nav).innerHTML = state.lists.map(function (l) {
           var on = state.cur && state.cur.key === l.key;
           var sec = l.kind === 'master' ? 'MASTER LISTS' : l.kind === 'uploaded' || l.kind === 'manual' ? 'YOUR LISTS' : 'WORK NOW';
           var head = sec !== lastSec ? '<h6 class="lsec">' + sec + '</h6>' : '';
@@ -369,7 +373,7 @@
           ['cold', 'Going cold', all.filter(function (p) { return !!p.cold; }).length],
           ['cb', 'Callbacks due', all.filter(function (p) { return !!p.callback; }).length],
         ];
-        rnav.innerHTML = roles.map(function (r) {
+        setH(rnav).innerHTML = roles.map(function (r) {
           return '<button type="button" class="' + (state.role === r[0] ? 'on' : '') + '" data-r="' + esc(r[0]) + '">' + esc(r[1]) + '<small>' + r[2] + '</small></button>';
         }).join('') + '<h6 style="margin-top:12px">SMART LISTS</h6>' + smart.map(function (r) {
           return '<button type="button" class="' + (state.role === r[0] ? 'on' : '') + '" data-r="' + esc(r[0]) + '">' + esc(r[1]) + '<small>' + r[2] + '</small></button>';
@@ -773,7 +777,7 @@
       for (var i = 0; i < rows.length; i++) {
         if (stageIndex(rows[i].stage) === 0 && !rows[i].callback) { nextId = rows[i].id; break; }
       }
-      body.innerHTML = rows.map(function (p) {
+      setH(body).innerHTML = rows.map(function (p) {
         var phone = p.phone || '';
         var email = p.email || '';
         var g = stageIndex(p.stage);
@@ -907,7 +911,7 @@
       function col(id, cls, name, count, sub, list, cv) {
         return '<button type="button" class="st ' + cls + (curKey === 'funnel:' + name ? ' on' : '') + '" data-col="' + id + '"><div class="sh"><span class="sn">' + esc(name) + '</span><span class="sc">' + fmtN(count) + '</span><span class="ss">' + esc(sub) + '</span></div><ul>' + list + '</ul>' + (cv ? '<div class="cv">' + esc(cv) + '</div>' : '') + '</button>';
       }
-      box.innerHTML = '<div class="fk">'
+      setH(box).innerHTML = '<div class="fk">'
         + '<div><b>' + fmtN(F.total) + '</b><span>records in</span></div>'
         + '<div><b>' + fmtN(F.work.count) + '</b><span>on work lists</span></div>'
         + '<div><b>' + fmtN(F.contacted.all) + '</b><span>touched</span></div>'
