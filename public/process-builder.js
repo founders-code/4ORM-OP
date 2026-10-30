@@ -50,7 +50,7 @@
     + '.pbx .b{position:absolute;width:158px;height:92px;background:#fff;border:1px solid #d9dfea;border-radius:12px;padding:10px 11px;display:flex;flex-direction:column;gap:3px;text-align:left;cursor:pointer;box-shadow:0 1px 2px rgba(16,26,51,.04)}'
     + '.pbx .b:hover{border-color:#2e6bf2}'
     + '.pbx .b .kk{font:800 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase}'
-    + '.pbx .b.stage .kk{color:#2e6bf2}.pbx .b.email .kk{color:#7c4dff}.pbx .b.doc .kk{color:#0f8a6a}.pbx .b.wait .kk{color:#5b6678}.pbx .b.task .kk{color:#b5651d}'
+    + '.pbx .b.stage .kk{color:#2e6bf2}.pbx .b.email .kk{color:#7c4dff}.pbx .b.dc .kk{color:#0f8a6a}.pbx .b.wait .kk{color:#5b6678}.pbx .b.task .kk{color:#b5651d}'
     + '.pbx .b .tt{font-size:12.5px;font-weight:800;line-height:1.25;color:#101a33;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}'
     + '.pbx .b .cp{margin-top:auto;display:flex;gap:4px;flex-wrap:wrap}.pbx .b .cp em{font:700 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;font-style:normal;background:#eef2f9;color:#344055;border-radius:4px;padding:3px 5px;white-space:nowrap;max-width:132px;overflow:hidden;text-overflow:ellipsis}'
     + '.pbx .b .cp em.live{background:#e6eeff;color:#1f4fc4}.pbx .b .cp em.ns{background:#fff4e0;color:#9a6a12}.pbx .b .cp em.off{background:#fff4e0;color:#9a6a12}'
@@ -85,7 +85,7 @@
     + '.sgx ul{margin:0;padding-left:16px}.sgx li{color:#e6eaf2}.sgx .why{background:rgba(255,72,102,.12);color:#ff8a9c;border-radius:9px;padding:8px 10px;margin-top:10px}'
     + '.sgx .ft{display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #23252e}'
     + '.sgx button{font:inherit;font-size:12px;font-weight:800;padding:8px 12px;border-radius:9px;border:1px solid #2a2c35;background:#18191f;color:#fff;cursor:pointer}.sgx button:hover{border-color:#4272f9}.sgx button.pri{background:#00dc86;border-color:#00dc86;color:#03170d}';
-  var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+  var st = document.createElement('style'); st.id = 'pbCss'; st.textContent = CSS; (function () { var o = document.getElementById('pbCss'); if (o) o.remove(); })(); document.head.appendChild(st);
 
   var STARTERS = [
     { name: 'Investor: material requested', subject: '4ormIQ: the material you asked for', body: "Hi {{first_name}},\n\nThanks for taking the time. As promised, here is a short overview of 4ormIQ, with the deck and data room attached.\n\nThe problem:\n\nCanada's anti-money-laundering rules now reach well beyond the banks, and the cost of getting them wrong has jumped.\n\n- Since March 26, 2026, FINTRAC can fine a company up to C$20M for a single very serious violation. That is 40 times the old C$500,000 limit. Breaking a compliance order can now cost the greater of C$30M or 3% of worldwide gross revenue.\n\n- Since October 11, 2024, mortgage brokers, lenders and administrators carry full federal anti-money-laundering duties: a compliance program, client identity checks, record-keeping and reporting.\n\n- Compliance already costs a lot. For 24 Canadian property and casualty insurers, it rose 81% in two years, from C$416M in 2022 to C$753M in 2024.\n\nWho it affects:\n\nMortgage brokers, lenders and administrators; banks and credit unions; life insurers and their agents; securities dealers; real estate brokers and developers; money services businesses; accountants; BC notaries; dealers in precious metals and stones; and title insurers and factoring businesses.\n\nWhat we are building:\n\n4ormIQ is a set of AI tools that puts client counselling at the centre and plugs into the apps and compliance systems a business already uses.\n\n- Before any recommendation, the client privately works through their goals, circumstances and risk profile. They can model and compare outcomes and see the short- and long-term risks.\n\n- The client then chooses what to share with the professional. That shared brief gives the firm better context for a sound recommendation.\n\n- Every step is recorded as it happens, so the firm has an auditable record of the whole suitability and decision process.\n\nThe round:\n\nWe are raising C$500,000 in a pre-seed round at C$0.50 per share.\n\nWould next week be a challenge to get together?\n\nWith Gratitude,\n\nChad R Johnston\nFounder & CEO\n4orm Finance\n778-363-2423", follow: 4, task: 'Follow up on material sent to {{name}}' },
@@ -152,7 +152,7 @@
 
   var EXIT = /not now|not interested|parked|cancel|no response|not a fit|nurture|next round/i;
   var PHASES = [
-    { n: 'Reach out', re: /storage|cold|reach|attempt|contacted|found|invited|discovery|evaluate|intro|account created|^open$/i },
+    { n: 'Reach out', re: /storage|cold|reach|attempt|contacted|found|invited|discovery|evaluate|intro sent|intro \/|account created|^open$/i },
     { n: 'Connect', re: /contact made|send email|check back|call back|acknowledged|signed up|used|profile|target|outreach|proposal|^next$/i },
     { n: 'Meet and send', re: /meet|met$|info pack|package|material|notes|summary|follow up|rebooked|feedback|review|lane|terms|scoped|strategy|applied|conversation|documents/i },
     { n: 'Close and keep', re: /./ }
@@ -170,8 +170,8 @@
     var sp = shownPkg(s.id); if (!sp) return out;
     var p = sp.p, tag = sp.draft ? [{ v: 'Not saved', c: 'ns' }] : (p.active ? [] : [{ v: 'Paused', c: 'off' }]);
     out.push({ t: 'email', s: s, kk: 'Email', tt: p.subject || 'No subject yet', cp: tag.concat(p.design ? [{ v: 'Info pack' }] : []), draft: sp.draft, ex: ex });
-    (p.docs || []).forEach(function (d) { if (d && (d.name || d.url)) out.push({ t: 'doc', s: s, kk: 'Document', tt: d.name || 'Unnamed link', cp: [{ v: /\.pdf(\?|$)/i.test(d.url || '') ? 'PDF' : 'Link' }], draft: sp.draft, ex: ex }); });
-    if (p.spaceId) { var sx = ((S.data && S.data.spaces) || []).filter(function (x) { return x.id === p.spaceId; })[0]; out.push({ t: 'doc', s: s, kk: 'Document', tt: 'Space: ' + (sx ? sx.name : 'documents'), cp: [{ v: (sx ? sx.docs : 0) + ' files' }], draft: sp.draft, ex: ex }); }
+    (p.docs || []).forEach(function (d) { if (d && (d.name || d.url)) out.push({ t: 'dc', s: s, kk: 'Document', tt: d.name || 'Unnamed link', cp: [{ v: /\.pdf(\?|$)/i.test(d.url || '') ? 'PDF' : 'Link' }], draft: sp.draft, ex: ex }); });
+    if (p.spaceId) { var sx = ((S.data && S.data.spaces) || []).filter(function (x) { return x.id === p.spaceId; })[0]; out.push({ t: 'dc', s: s, kk: 'Document', tt: 'Space: ' + (sx ? sx.name : 'documents'), cp: [{ v: (sx ? sx.docs : 0) + ' files' }], draft: sp.draft, ex: ex }); }
     if (p.followDays) out.push({ t: 'wait', s: s, kk: 'Follow-up', tt: 'Follow up in ' + p.followDays + (p.followDays === 1 ? ' day' : ' days'), cp: [], draft: sp.draft, ex: ex });
     if (p.task) out.push({ t: 'task', s: s, kk: 'Task', tt: fill(p.task), cp: [{ v: 'GoHighLevel' }], draft: sp.draft, ex: ex });
     return out;
@@ -251,7 +251,7 @@
       var blocks = []; gr.st.forEach(function (s) { blocks = blocks.concat(chain(s, false)); });
       var rowW = blocks.length * (W + GX) - GX;
       if (x0 + rowW > MAXW) x0 = 0;
-      html += '<div class="ph" style="left:' + x0 + 'px;top:' + (y - 22) + 'px">' + String(gi + 1).padStart(2, '0') + ' ' + esc(gr.n) + '</div>';
+      html += '<div class="ph" style="left:' + x0 + 'px;top:' + (y - 22) + 'px">' + String(gi + 1).padStart(2, '0') + ' ' + esc(gr.n.toUpperCase()) + '</div>';
       if (prevLast) lines.push({ x1: prevLast.x + W / 2, y1: prevLast.y + H, x2: x0 + W / 2, y2: y, v: true });
       blocks.forEach(function (b, i) {
         var x = x0 + i * (W + GX);
@@ -264,9 +264,9 @@
     });
     if (exits.length) {
       y += 10;
-      html += '<div class="ph ex" style="left:0;top:' + (y - 22) + 'px">Off the path</div>';
+      html += '<div class="ph ex" style="left:0;top:' + (y - 22) + 'px">OFF THE PATH</div>';
       var ex = 0;
-      exits.forEach(function (s) { chain(s, true).forEach(function (b, i) { var x = ex * (W + GX); html += blockHtml(b, x, y); if (i) lines.push({ x1: x - GX, y1: y + H / 2, x2: x, y2: y + H / 2 }); maxX = Math.max(maxX, x + W); ex++; }); ex += 0.4; });
+      exits.forEach(function (s) { chain(s, true).forEach(function (b, i) { var x = ex * (W + GX); html += blockHtml(b, x, y); if (i) lines.push({ x1: x - GX, y1: y + H / 2, x2: x, y2: y + H / 2 }); maxX = Math.max(maxX, x + W); ex++; }); });
       y += PITCH;
     }
     var gw = maxX + 60, gh = y - 20;
@@ -298,7 +298,7 @@
   function blockHtml(b, x, y) {
     var sel = S.stage === b.s.id && (b.t === 'stage' || b.t === (S.focus || 'stage'));
     return '<button type="button" class="b ' + b.t + (b.ex ? ' ex' : '') + (b.draft ? ' draft' : '') + (sel ? ' sel' : '') + '" data-st="' + esc(b.s.id) + '" data-t="' + b.t + '" style="left:' + x + 'px;top:' + y + 'px">'
-      + '<span class="kk">' + esc(b.kk) + '</span><span class="tt">' + esc(b.tt) + '</span>'
+      + '<span class="kk">' + esc(String(b.kk).toUpperCase()) + '</span><span class="tt">' + esc(b.tt) + '</span>'
       + (b.cp && b.cp.length ? '<span class="cp">' + b.cp.map(function (c) { return '<em class="' + (c.c || '') + '">' + esc(c.v) + '</em>'; }).join('') + '</span>' : '') + '</button>';
   }
   function confirmLeave() { return window.confirm('You have changes on this stage that are not saved. Leave them?'); }
