@@ -8,12 +8,12 @@
     ['newfund', 'New funds', '#7a4df2'],
     ['regulator', 'Regulators', '#0f8a8a'],
     ['angel_li', 'Angels on LinkedIn', '#0a66c2'],
-    ['angel_em', 'Angels by email', '#e08a1e'],
+    ['angel_em', 'Angels by email and form', '#e08a1e'],
     ['angel_ph', 'Angels by phone', '#1f9d55'],
     ['task', 'Tasks', '#5b6678']
   ];
   var CH = { email: 'Email', linkedin: 'LinkedIn', form: 'Form', phone: 'Call', task: 'Task', intro: 'Warm intro' };
-  var DAYS = [['', 'All days'], ['2026-10-30', 'Friday 30'], ['2026-10-31', 'Saturday 31'], ['later', 'Next week']];
+  var DAYS = [['', 'All days'], ['2026-10-30', 'Friday 30'], ['2026-10-31', 'Saturday 31'], ['2026-11-02', 'Monday 2'], ['2026-11-03', 'Tuesday 3'], ['later', 'Later']];
   function S() { return window.STATE || (window.STATE = {}); }
   function P() { var s = S(); return s.prep || (s.prep = { items: null, day: '', show: 'ready', min: {}, open: '' }); }
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -33,7 +33,7 @@
   }
   function inDay(it, day) {
     if (!day) return true;
-    if (day === 'later') return !it.day || it.day > '2026-10-31';
+    if (day === 'later') return !it.day || it.day > '2026-11-03';
     return it.day === day;
   }
   function inShow(it, show) {
@@ -46,7 +46,7 @@
     if (it.channel === 'email') return 'Open in compose';
     if (it.channel === 'linkedin') return 'Copy and open LinkedIn';
     if (it.channel === 'form') return 'Copy and open the form';
-    if (it.channel === 'phone') return 'Call ' + (it.phone || '');
+    if (it.channel === 'phone') return it.phone ? 'Call ' + it.phone : 'Copy the agenda';
     if (it.channel === 'intro') return 'Copy the intro ask';
     return 'Mark done';
   }
@@ -111,10 +111,11 @@
     + '.pp-dr .b.r{margin-left:auto}';
 
   function counts(items) {
-    var c = { ready: 0, done: 0, today: 0 };
+    var c = { ready: 0, done: 0, today: 0, sat: 0 };
     items.forEach(function (it) {
       if (it.status === 'done') c.done += 1; else if (it.status !== 'skipped') c.ready += 1;
       if (it.day === '2026-10-30' && it.status !== 'done' && it.status !== 'skipped') c.today += 1;
+      if (it.day === '2026-10-31' && it.status !== 'done' && it.status !== 'skipped') c.sat += 1;
     });
     return c;
   }
@@ -139,12 +140,13 @@
       + '<div class="chips">' + [['ready', 'To do'], ['done', 'Done'], ['all', 'Everything']].map(function (d) { return '<span class="' + (p.show === d[0] ? 'on' : '') + '" data-action="prep-show" data-show="' + d[0] + '">' + d[1] + '</span>'; }).join('') + '</div>'
       + '<div class="zm"><button type="button" data-action="prep-zoom" data-dir="-1" aria-label="Fewer across">&minus;</button><em id="ppCols"></em><button type="button" data-action="prep-zoom" data-dir="1" aria-label="More across">+</button></div>'
       + '</div>'
-      + '<div class="kp"><span><b>' + c.today + '</b> lined up for Friday</span><span><b>' + c.ready + '</b> to do</span><span><b>' + c.done + '</b> done</span><span>Nothing sends from here. You send each one.</span></div>';
+      + '<div class="kp"><span><b>' + c.today + '</b> lined up for Friday</span><span><b>' + c.sat + '</b> for Saturday</span><span><b>' + c.ready + '</b> to do</span><span><b>' + c.done + '</b> done</span><span>Nothing sends from here. You send each one.</span></div>';
     if (p.items == null) return html + '<div class="empty">Loading Prep&hellip;</div></div>';
     if (p.err) return html + '<div class="empty">' + esc(p.err) + ' <a href="#" data-action="prep-reload" style="color:#9db9ff">Try again</a></div></div>';
     var any = false;
     CATS.forEach(function (cat) {
       var rows = list.filter(function (it) { return it.cat === cat[0]; });
+      rows.sort(function (a, b) { var x = (a.day || '9') + ' ' + (a.slot || '') , y = (b.day || '9') + ' ' + (b.slot || ''); return x < y ? -1 : x > y ? 1 : (a.sort - b.sort); });
       if (!rows.length) return;
       any = true;
       var all = items.filter(function (it) { return it.cat === cat[0]; });
@@ -330,7 +332,7 @@
         else copy(words(it));
         return;
       }
-      if (it.channel === 'phone') { window.location.href = 'tel:' + String(it.phone || '').replace(/[^+\d]/g, ''); return; }
+      if (it.channel === 'phone' && it.phone) { window.location.href = 'tel:' + String(it.phone || '').replace(/[^+\d]/g, ''); return; }
       var url = it.channel === 'linkedin' ? it.linkedin : it.url;
       copy(words(it)).then(function () { toast(root, 'Words copied. Paste them in.'); });
       if (url) window.open(/^https?:/.test(url) ? url : 'https://' + url, '_blank', 'noopener');
