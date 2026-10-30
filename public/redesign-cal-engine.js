@@ -268,7 +268,7 @@ function xpApply(){for(let i=E.length-1;i>=0;i--)if(E[i].xp)E.splice(i,1);
     paint((j.note?'<p style="margin:0 0 12px;color:#c8d1ea">'+escH(j.note)+'</p>':'')+SL.map((x,i)=>{const mv=/^Move:/i.test(x.title);
       return '<div style="border:1px solid rgba(120,150,255,.2);border-radius:10px;padding:10px 12px;margin-bottom:8px;'+(mv?'border-color:rgba(255,120,140,.45)':'')+'">'
         +'<div style="display:flex;gap:10px;align-items:baseline"><b style="flex:1">'+escH(x.title)+'</b><span style="color:#9fb2e6;font-weight:700;white-space:nowrap">'+escH(dayLabel(x.day))+' '+escH(x.start)+' · '+x.minutes+'m</span></div>'
-        +'<div style="color:#a3b0d2;font-size:12.5px;margin-top:3px">'+escH(x.why)+' <span style="color:#6f7fa8">'+escH(x.principle)+'</span></div>'
+        +'<div style="color:#a3b0d2;font-size:12.5px;margin-top:3px">'+escH(x.why)+(String(x.why).indexOf(x.principle)>=0?'':' <span style="color:#6f7fa8">'+escH(x.principle)+'</span>')+'</div>'
         +(mv?'':'<div style="margin-top:8px"><button type="button" data-iq="add" data-i="'+i+'" style="'+BTN+';background:#2E6BF2;border-color:#2E6BF2">Add to calendar</button></div>')+'</div>'}).join(''))}
   function load(){paint('<p>Reading your week, open work and pipelines...</p>');
     const fn=typeof window.authFetch==='function'?window.authFetch:fetch;

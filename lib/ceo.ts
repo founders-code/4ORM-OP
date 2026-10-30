@@ -1083,6 +1083,7 @@ export async function scheduleSuggest(sql: Sql, ownerId: string) {
   const system = [
     'You are 4IQ, the scheduling side of Chad Johnston\'s second CEO at 4orm Finance. Chad is in Vernon, BC (Pacific time). He sells to Canadian firms; Eastern is 3 hours ahead of Pacific.',
     'Place the open work into free time over the next 7 days, following the operating rhythm principle below exactly. Never overlap an existing event. Use 24-hour Pacific times on 15-minute marks. Never invent a meeting with another person; suggest blocks for Chad to do work (calls, email windows, build blocks, prep, follow-ups, weekly review).',
+    'Only weekdays (Monday to Friday). Never on Saturday or Sunday. Never earlier than now, and nothing before 05:30. The weekly review goes on Friday at 15:00. Do not put a P number inside "why".',
     'Also flag any existing event that breaks the rhythm (for example cold calls on Friday or over Eastern lunch, or a double booking) as a suggestion with title starting "Move:".',
     'Return JSON only: {"note": one sentence, "slots": [{"day":"YYYY-MM-DD","start":"HH:MM","minutes":number,"title":"under 60 characters","why":"one line, names the rule","principle":"P13 or another P number"}]}. 6 to 10 slots, earliest first.',
     '',
@@ -1107,6 +1108,13 @@ export async function scheduleSuggest(sql: Sql, ownerId: string) {
       why: String(r.why || '').replace(/[–—]/g, '-').slice(0, 200),
       principle: String(r.principle || 'P13').slice(0, 12),
     };
-  }).filter((s) => s.day && s.start && s.title).slice(0, 12);
+  }).filter((s) => {
+    if (!s.day || !s.start || !s.title) return false;
+    const wd = new Date(`${s.day}T12:00:00Z`).getUTCDay();
+    if (wd === 0 || wd === 6) return false;
+    /* Drop anything already in the past (Pacific); a Move: flag about an existing event may stay. */
+    if (!/^Move:/i.test(s.title) && `${s.day} ${s.start}` < `${today.day} ${today.hm}`) return false;
+    return true;
+  }).slice(0, 12);
   return { note: String(parsed.note || '').replace(/[–—]/g, '-').slice(0, 300), slots, model: raw ? 'live' : 'none' };
 }
