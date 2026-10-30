@@ -295,4 +295,7 @@
 .compose .tpl-h{font-size:11.5px;font-weight:800;color:var(--ink3);margin:12px 0 0;letter-spacing:.02em}.compose .tpls span{font-weight:750}
 
 /* 30 Oct 2026: ready emails sit side by side */
-.compose .tpls{gap:4px}.compose .tpls span{white-space:nowrap;font-size:11.5px;padding:3px 8px}
+.compose .tpls{gap:4px}.compose .tpls span{white-space:nowrap;font-size:11px;padding:3px 6px}
+
+/* 30 Oct 2026: the whole Email page is white */
+:host{display:block;background:#f4f6fa;margin:-20px -24px -40px;padding:20px 24px 40px;min-height:calc(100vh - 56px)}
