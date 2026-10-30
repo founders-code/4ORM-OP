@@ -1246,6 +1246,30 @@
       .then(fill);
   }
 
+  /* Claude's half (30 Oct 2026): everything built, changed or added on 4ormop that day, from the change history. */
+  var CLLOG = {};
+  function clHtml(day) {
+    var c = CLLOG[day];
+    var head = '<div class="sh" style="margin:0 0 8px"><b>Claude</b><span>' + (c && c.items ? c.items.length + ' changes' : 'built, changed and added') + '</span></div>';
+    if (!c || c.busy) return head + '<div class="emp">Loading the changes for this day...</div>';
+    if (c.err) return head + '<div class="emp">Could not load the changes.</div>';
+    if (!c.items.length) return head + '<div class="emp">No changes to 4ormop this day.</div>';
+    return head + c.items.map(function (it) {
+      return '<div class="li" style="align-items:flex-start"><span class="tag t3">' + esc(dlTime(it.at)) + '</span><span>' + esc(it.text) + '</span></div>';
+    }).join('');
+  }
+  function clLoad(day, wrap) {
+    var c = CLLOG[day];
+    function fill() { var box = wrap.querySelector('#clLog'); if (box) box.innerHTML = clHtml(day); }
+    if (c && (c.busy || (!c.err && Date.now() - c.at < 120000))) { fill(); return; }
+    CLLOG[day] = { busy: true, items: (c && c.items) || null };
+    fill();
+    auth('/api/buildlog?day=' + encodeURIComponent(day), { credentials: 'include', quiet: true }).then(function (r) { return r && r.ok ? r.json() : Promise.reject(); })
+      .then(function (d) { CLLOG[day] = { items: (d && d.items) || [], at: Date.now() }; })
+      .catch(function () { CLLOG[day] = { err: true, at: Date.now() }; })
+      .then(fill);
+  }
+
   function paintCompletedLive() {
     var wrap = wrapOf('doneDesk');
     if (!wrap) { markReady('doneDesk'); return; }
@@ -1433,6 +1457,8 @@
     wrap.innerHTML = '<div class="bar"><h1>Completed</h1><span class="sub">A snapshot of every day, saved at 23:55 — what moved, who you met, what you owe</span><div class="r"><button class="btn" type="button" data-action="done-search">Search days</button><button class="btn pri" type="button" id="snapNowLive" data-action="done-snap">Snapshot now</button></div></div>'
       + '<div class="lay"><section class="card">' + statsHtml + '<div class="today"><span class="pulse"></span>Today is being recorded — snapshot at 23:55</div>' + list + '</section>'
       + '<section class="card det"><div class="dh"><div><h2>' + esc(title) + '</h2><div class="meta">' + (cur.date && cur.date >= vancouverTodayIso() ? 'Recording - not yet saved' : 'Snapshot saved · read-only') + '</div></div><div class="r2"><button class="btn" type="button" data-action="done-export">Export PDF</button><button class="btn" type="button" data-action="done-investor" data-date="' + esc(cur.date || '') + '" data-headline="' + esc(headline) + '">Add to investor update</button></div></div>'
+      + '<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start;margin-top:4px">'
+      + '<div style="min-width:0"><div class="sh" style="margin:0 0 8px"><b>Chad</b><span>what you did</span></div>'
       + '<div class="moved"><b>What moved today</b><p>' + esc(headline) + '</p></div>'
       + '<div class="sec" id="doneLog" style="margin:12px 0 4px">' + dlHtml(logDay) + '</div>'
       + '<div class="tiles">'
@@ -1452,8 +1478,11 @@
       + '<div class="sec"><div class="sh"><b>Voice log</b><span>' + (det.voice ? '1 entry' : '0') + '</span></div>'
       + '<div class="quote" data-action="done-voice">' + esc(det.voice || det.quote || '-') + '</div></div>'
       + '<div class="sec"><div class="sh"><b>News saved</b><span>' + asList(det.news).length + '</span></div>' + (lines(det.news, 'News') || '<div class="emp">No news saved.</div>') + '</div>'
+      + '</div></div>'
+      + '<div style="min-width:0;border-left:1px solid rgba(127,140,170,.22);padding-left:18px" id="clLog">' + clHtml(logDay) + '</div>'
       + '</div></section></div>';
     dlLoad(logDay, wrap);
+    clLoad(logDay, wrap);
     liveLog('completed', { snaps: snaps.length, open: openDate });
     if (P().finishPaint) P().finishPaint(wrap);
     markReady('doneDesk');
