@@ -150,12 +150,14 @@
     }).catch(function (e) { el('.grid').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
   }
 
-  var EXIT = /not now|not interested|parked|cancel|no response|not a fit|nurture|next round/i;
+  var EXIT = /not now|not interested|parked|cancel|no response|not a fit|nurture|next round|withdrawn|taken down/i;
+  /* 30 Oct 2026: GoHighLevel stages change often. Each phase names its own words; a stage with none of them
+     stays in the phase of the stage before it, and no stage sits in an earlier phase than the one before it. */
   var PHASES = [
-    { n: 'Reach out', re: /storage|cold|reach|attempt|contacted|found|invited|discovery|evaluate|intro sent|intro \/|account created|^open$/i },
-    { n: 'Connect', re: /contact made|send email|intro to 4orm|email sent|check back|call back|follow up|acknowledged|signed up|used|profile|target|outreach|proposal|^next$/i },
+    { n: 'Reach out', re: /storage|cold|reach|attempt|contacted|found|invited|discovery$|^discovery|evaluate|platform due|intro sent|intro \/|account created|^open$/i },
+    { n: 'Connect', re: /contact made|send email|intro to 4orm|email sent|check back|call back|follow up|acknowledged|signed up|used|profile|target|outreach|proposal$|^proposal|^next$/i },
     { n: 'Meet and send', re: /meet|met$|info pack|package|material|notes|summary|rebooked|feedback|review|lane|terms|scope|strategy|applied|conversation|documents|dil+ig|issue/i },
-    { n: 'Close and keep', re: /./ }
+    { n: 'Close and keep', re: /agreement|signed|legal|money|funds|transferr?ed|live$|onboard|member|mou|active|deposit|accepted|paid|testimonial|conversion|role agreed|build|testing|launch|support|msa|subscription|case study|filed|cap table|handover|uat|acceptance|sign-off|decision|results|board approval|moved to|^done$/i }
   ];
   /* a retry branch GoHighLevel keeps at the end of the list (3rd reach out, 3rd attempt) stays in Reach out */
   var RETRY = /3rd|third|attempt/i;
@@ -168,7 +170,7 @@
     return i >= 0 ? body.slice(0, i).replace(/\s+$/, '') + '\n\n' + BOOK_LINE + '\n' + body.slice(i) : body.replace(/\s+$/, '') + '\n\n' + BOOK_LINE;
   }
   var W = 158, H = 92, GX = 30, PITCH = H + 70;
-  function phaseOf(name) { if (EXIT.test(name)) return -1; for (var i = 0; i < PHASES.length; i++) if (PHASES[i].re.test(name)) return i; return 3; }
+  function phaseOf(name) { if (EXIT.test(name)) return -1; for (var i = 0; i < PHASES.length; i++) if (PHASES[i].re.test(name)) return i; return null; }
   function fill(t) { return String(t || '').replace(/\{\{\s*name\s*\}\}/g, 'them').replace(/\{\{\s*first_name\s*\}\}/g, 'them').replace(/\{\{\s*company\s*\}\}/g, 'their firm'); }
   function shownPkg(stageId) {
     if (S.stage === stageId && S.draft && S.dirty) return { p: S.draft, draft: true };
@@ -262,9 +264,9 @@
     var floor = 0;
     pipe.stages.forEach(function (s) {
       var k = phaseOf(s.name);
-      if (k < 0) { exits.push(s); return; }
-      if (RETRY.test(s.name) && k === 0) { groups[0].st.push(s); return; }
-      k = Math.max(k, floor); floor = k; groups[k].st.push(s);
+      if (k === -1) { exits.push(s); return; }
+      if (k === 0 && RETRY.test(s.name)) { groups[0].st.push(s); return; }
+      k = k == null ? floor : Math.max(k, floor); floor = k; groups[k].st.push(s);
     });
     groups = groups.filter(function (x) { return x.st.length; });
 
