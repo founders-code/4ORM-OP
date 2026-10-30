@@ -55,7 +55,7 @@
     + '.flash-row{box-shadow:0 0 0 3px rgba(127,176,255,.85)!important;transition:box-shadow .2s}';
   var CSS = {
     room: '/port-css/dashboard.css?v=4', war: '/port-css/war-room.css?v=10', notes: '/port-css/notes.css?v=6',
-    notesCanvas: '/port-css/notes-canvas.css?v=11', spacesArrange: '/port-css/spaces-arrange.css?v=1', spacesCards: '/port-css/spaces-cards.css?v=22', signalsDetail: '/port-css/signals-detail.css?v=4', rec: '/port-css/recordings.css?v=3',
+    notesCanvas: '/port-css/notes-canvas.css?v=11', spacesArrange: '/port-css/spaces-arrange.css?v=1', spacesCards: '/port-css/spaces-cards.css?v=22', signalsDetail: '/port-css/signals-detail.css?v=4', rec: '/port-css/recordings.css?v=4',
     contacts: '/port-css/pipeline.css?v=11', work: '/port-css/spaces.css?v=15', spaceOpen: '/port-css/space-open.css?v=3', docs: '/port-css/documents.css?v=11',
     links: '/port-css/links.css?v=14', mail: '/port-css/email.css?v=14', mailPeople: '/port-css/email-people.css?v=10',
     playbook: '/port-css/playbook.css?v=12', calendar: '/port-css/calendar.css?v=9', zoom: '/port-css/zoom.css?v=5',

@@ -54,7 +54,7 @@
 .rw .src{font-size:11.5px;font-weight:800;border-radius:7px;padding:3px 8px;background:var(--blue50);color:var(--blue);justify-self:start;white-space:nowrap}
 .rw .src.mic{background:var(--green50);color:var(--green)}
 .rw .d{font-size:12.5px;color:var(--ink3);font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
-.ago,.when .ago,.rw .ago{font-size:11.5px;font-weight:800;color:#0e8a5f;background:#e3f6ee;border-radius:6px;padding:2px 7px;margin-left:6px}
+.ago,.when .ago,.rw .ago{white-space:nowrap;font-size:11.5px;font-weight:800;color:#0e8a5f;background:#e3f6ee;border-radius:6px;padding:2px 7px;margin-left:6px}
 .rw.proc{cursor:default;background:#f8faff}.rw.proc h4{color:var(--ink3)}
 .prog{height:5px;border-radius:999px;background:#e3e9f4;overflow:hidden;margin-top:6px;max-width:280px}.prog i{display:block;height:100%;background:var(--blue);transition:width .4s}
 .empty{padding:28px 16px;text-align:center;color:var(--ink3);font-size:13px}
@@ -82,3 +82,4 @@
 .rw.proc h4{color:#4a5672!important}
 .rw .t,.rw .tm,.rw time{color:#4a5672}
 .list{--ink:#101a33;--ink2:#4a5672;--ink3:#5b6678;color:#101a33}.list .day{background:#f3f6fb;color:#4a5672}
+.rw .r,.rw .rt,.rw .meta,.rw .when{white-space:nowrap}
