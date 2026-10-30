@@ -68,6 +68,7 @@ const nextConfig = {
       { source: '/integrations', destination: '/control-room.html' },
       { source: '/vault', destination: '/control-room.html' },
       { source: '/ops', destination: '/control-room.html' },
+      { source: '/bruce', destination: '/bruce.html' },
       { source: '/terms-of-service', destination: '/terms-of-service.html' },
       { source: '/privacy-policy', destination: '/privacy-policy.html' },
       { source: '/book', destination: '/book.html' },

@@ -160,7 +160,7 @@ export async function ensureGhlContact(input: { name: string; company?: string; 
   return (await createContact(input)) || '';
 }
 
-export async function sendViaGhl(input: { contactId: string; email: string; subject: string; html: string; text?: string; attachments?: string[] }) {
+export async function sendViaGhl(input: { contactId: string; email: string; subject: string; html: string; text?: string; attachments?: string[]; emailFrom?: string }) {
   if (!configured() || !locationId() || !input.contactId) return false;
   const json = await ghl('/conversations/messages', {
     method: 'POST',
@@ -169,7 +169,7 @@ export async function sendViaGhl(input: { contactId: string; email: string; subj
       contactId: input.contactId,
       locationId: locationId(),
       emailTo: String(input.email || ''),
-      emailFrom: 'chad@4ormfinance.com',
+      emailFrom: /^[a-z0-9._%+-]+@4ormfinance\.com$/i.test(String(input.emailFrom || '')) ? String(input.emailFrom) : 'chad@4ormfinance.com',
       subject: String(input.subject || '4orm Finance').slice(0, 200),
       html: String(input.html || '').slice(0, 120000),
       message: String(input.text || input.html || '').slice(0, 8000),

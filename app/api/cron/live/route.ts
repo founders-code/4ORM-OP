@@ -7,6 +7,7 @@ import { fail, note } from '@/lib/log';
 import { sampleOpsDials } from '@/lib/ops-sample';
 import { tape } from '@/lib/outbound';
 import { sendDueMail } from '@/lib/schedule';
+import { bwProcess } from '@/lib/bw';
 import { cronSecret } from '@/lib/secrets';
 import { roomOwner } from '@/lib/session';
 import { loadCredsFor } from '@/lib/vault';
@@ -33,6 +34,8 @@ export async function GET(req: Request) {
     // Scheduled sends first (B34): only rows Chad queued, each claimed atomically so nothing sends twice.
     const scheduled = await sendDueMail(sql, ownerId);
     const creds = await loadCredsFor(ownerId);
+    /* Bruce's group email: the next batch through GoHighLevel (claimed atomically, never twice). */
+    const bw = await withCreds(creds, () => bwProcess(sql, ownerId, Date.now() + 25000)).catch((err) => { fail('cron_bw', err); return { sent: 0, failed: 0, claimed: 0 }; });
     const origin = publicOrigin();
     const result = await withCreds(creds, () => safetySweep(sql, ownerId, origin));
     /* The Vault register only changes when a document is filed, so it is re-seeded once a day, not every 5 minutes. */
@@ -49,6 +52,7 @@ export async function GET(req: Request) {
       ok: true,
       ...result,
       scheduled: { sent: scheduled.sent, failed: scheduled.failed },
+      bw,
       vault,
       dials,
     });

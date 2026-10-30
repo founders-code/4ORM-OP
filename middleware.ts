@@ -62,6 +62,8 @@ const isControlRoom = createRouteMatcher([
   '/integrations',
   '/vault',
   '/ops',
+  '/bruce',
+  '/bruce.html',
 ]);
 const isDesign = createRouteMatcher(['/design', '/design/(.*)']);
 // Legal pages are public. Members read them before they sign in.
@@ -198,6 +200,8 @@ export const config = {
     '/completed',
     '/notes',
     '/pipeline',
+    '/bruce',
+    '/bruce.html',
     '/spaces',
     '/documents',
     '/links',
