@@ -212,7 +212,7 @@
     if (NEON_KEYS[key] && cssText.neon && key !== 'war' && key !== 'planner' && key !== 'contacts' && key !== 'docs' && key !== 'vault' && key !== 'ops') body = (cssText.neon || '') + body;
     body += cssText.contrastP10 || '';
     if (wrap && wrap.classList && NEON_KEYS[key]) wrap.classList.add('neon');
-    if (cssText[key] != null || body) style.textContent = TOKEN + body;
+    if ((cssText[key] != null || body) && style.textContent !== TOKEN + body) style.textContent = TOKEN + body;
   }
   function finishPaint(wrap) {
     var root = wrap && wrap.getRootNode ? wrap.getRootNode() : null;

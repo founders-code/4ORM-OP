@@ -1667,7 +1667,9 @@
       docs.forEach(function (d) { if (STATE.docPick[d.id]) live[d.id] = true; });
       STATE.docPick = live;
     }
-    el.innerHTML = libraryMarkup(docs, folders);
+    var libHtml = libraryMarkup(docs, folders);
+    /* 30 Oct 2026: the same library is not painted twice (the page shook on open). */
+    if (el.__ph !== libHtml || !el.firstChild || el.firstChild !== el.__phFirst) { el.innerHTML = libHtml; el.__ph = libHtml; el.__phFirst = el.firstChild; }
     if (!STATE.docSpacesAsked && typeof loadPackages === 'function') {
       STATE.docSpacesAsked = true;
       loadPackages().then(function () { renderLibrary(); });

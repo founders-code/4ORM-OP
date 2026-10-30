@@ -3,8 +3,8 @@
    When a contact is moved onto a stage that has a package, window.stageGate shows exactly what goes out and asks first.
    Also: jump buttons between the 15-minute sprint and the Pipeline. */
 (function () {
-  if ((window.__pbVer || 0) >= 9) return;
-  window.__pbVer = 9;
+  if ((window.__pbVer || 0) >= 10) return;
+  window.__pbVer = 10;
   (function () { var o = document.querySelector('.pbx'); if (o) o.remove(); })();
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function api(url, method, body) {
@@ -153,10 +153,12 @@
   var EXIT = /not now|not interested|parked|cancel|no response|not a fit|nurture|next round/i;
   var PHASES = [
     { n: 'Reach out', re: /storage|cold|reach|attempt|contacted|found|invited|discovery|evaluate|intro sent|intro \/|account created|^open$/i },
-    { n: 'Connect', re: /contact made|send email|check back|call back|acknowledged|signed up|used|profile|target|outreach|proposal|^next$/i },
-    { n: 'Meet and send', re: /meet|met$|info pack|package|material|notes|summary|follow up|rebooked|feedback|review|lane|terms|scoped|strategy|applied|conversation|documents/i },
+    { n: 'Connect', re: /contact made|send email|intro to 4orm|email sent|check back|call back|follow up|acknowledged|signed up|used|profile|target|outreach|proposal|^next$/i },
+    { n: 'Meet and send', re: /meet|met$|info pack|package|material|notes|summary|rebooked|feedback|review|lane|terms|scope|strategy|applied|conversation|documents|dil+ig|issue/i },
     { n: 'Close and keep', re: /./ }
   ];
+  /* a retry branch GoHighLevel keeps at the end of the list (3rd reach out, 3rd attempt) stays in Reach out */
+  var RETRY = /3rd|third|attempt/i;
   var BOOK_URL = 'https://www.4ormop.com/book';
   var BOOK_RE = /4ormop\.com\/book\b/i;
   var BOOK_LINE = 'If it is easier, pick a time that suits you here and the Zoom link comes with the invite: ' + BOOK_URL;
@@ -256,7 +258,14 @@
 
     /* group stages into phases, keep GoHighLevel order inside each */
     var groups = PHASES.map(function (ph) { return { n: ph.n, st: [] }; }), exits = [];
-    pipe.stages.forEach(function (s) { var k = phaseOf(s.name); (k < 0 ? exits : groups[k].st).push(s); });
+    /* a stage never sits in an earlier phase than the stage before it, so GoHighLevel's order is kept */
+    var floor = 0;
+    pipe.stages.forEach(function (s) {
+      var k = phaseOf(s.name);
+      if (k < 0) { exits.push(s); return; }
+      if (RETRY.test(s.name) && k === 0) { groups[0].st.push(s); return; }
+      k = Math.max(k, floor); floor = k; groups[k].st.push(s);
+    });
     groups = groups.filter(function (x) { return x.st.length; });
 
     var html = '', lines = [], maxX = 0, y = 34, x0 = 0, prevLast = null, MAXW = 2400;

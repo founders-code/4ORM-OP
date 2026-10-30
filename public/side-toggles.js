@@ -52,11 +52,30 @@
       apply();
     });
   }
+  /* 30 Oct 2026: the switches used to arrive up to a second after a page painted, pushing it down (the shake on open).
+     Each page is now watched, so the switches go in before the browser draws the new page. */
+  var queued = false;
+  function soon() { if (queued) return; queued = true; Promise.resolve().then(function () { queued = false; scan(); }); }
   function scan() {
     document.querySelectorAll('[id$="Desk"]').forEach(function (h) {
-      if (h.shadowRoot && h.offsetParent !== null) wire(h.shadowRoot, h.id);
+      if (!h.shadowRoot) return;
+      if (!h.__stObs && window.MutationObserver) { h.__stObs = new MutationObserver(soon); h.__stObs.observe(h.shadowRoot, { childList: true, subtree: true }); }
+      if (h.offsetParent !== null) wire(h.shadowRoot, h.id);
     });
   }
+  /* A page made after this file loads is watched from the moment its shadow root exists. */
+  try {
+    var nativeAttach = Element.prototype.attachShadow;
+    if (nativeAttach && !nativeAttach.__st) {
+      var wrapped = function (opts) {
+        var r = nativeAttach.call(this, opts);
+        try { if (/Desk$/.test(this.id || '') && !this.__stObs && window.MutationObserver) { this.__stObs = new MutationObserver(soon); this.__stObs.observe(r, { childList: true, subtree: true }); } } catch (e) {}
+        return r;
+      };
+      wrapped.__st = 1;
+      Element.prototype.attachShadow = wrapped;
+    }
+  } catch (e) {}
   setInterval(scan, 1200);
   window.addEventListener('load', scan);
 })();

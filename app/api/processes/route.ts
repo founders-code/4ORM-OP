@@ -8,7 +8,7 @@ import { growthRecord } from '@/lib/growth';
 import { TEST_SEND_TO } from '@/lib/send-gate.mjs';
 import { DESIGNS } from '@/lib/package-email';
 import {
-  listSpacesLite, listStagePackages, previewStageSend, readyStagePackages, recentSends, removeStagePackage, renderStagePreview, saveStagePackage, sendStagePackage, stageStats,
+  listSpacesLite, listStagePackages, syncStageNames, previewStageSend, readyStagePackages, recentSends, removeStagePackage, renderStagePreview, saveStagePackage, sendStagePackage, stageStats,
 } from '@/lib/stage-packages';
 
 export const dynamic = 'force-dynamic';
@@ -61,6 +61,7 @@ export async function GET(req: Request) {
       id: p.id, name: p.name, total: p.total,
       stages: p.stages.map((st) => ({ id: st.id, name: st.name, count: st.count })),
     }));
+    if (pipelines.length) await syncStageNames(g.sql, g.ownerId, pipelines, packages).catch((err) => fail('stage_names_sync', err));
     return NextResponse.json({ connected: pipes.status !== 'unavailable', pipelines, packages, stats, spaces, designs: DESIGNS, testTo: TEST_SEND_TO });
   } catch (err) {
     fail('processes_get', err);

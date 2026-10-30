@@ -112,6 +112,22 @@ export async function listStagePackages(sql: Sql, ownerId: string) {
   return (rows as Record<string, unknown>[]).map(shape);
 }
 
+/**
+ * GoHighLevel renames stages (30 Oct 2026: "Send Email" became "Intro To 4orm Email"). The saved email is keyed by stage id,
+ * so only the stored names go stale. This copies the current names onto the rows; nothing else changes and nothing is removed.
+ */
+export async function syncStageNames(sql: Sql, ownerId: string, pipelines: Array<{ id: string; name: string; stages: Array<{ id: string; name: string }> }>, packages: StagePackage[]) {
+  const live = new Map<string, { pipe: string; stage: string }>();
+  for (const p of pipelines) for (const st of p.stages) live.set(st.id, { pipe: p.name, stage: st.name });
+  const stale = packages.filter((pk) => { const l = live.get(pk.stageId); return l && (l.stage !== pk.stageName || l.pipe !== pk.pipelineName); });
+  for (const pk of stale.slice(0, 50)) {
+    const l = live.get(pk.stageId)!;
+    await sql`UPDATE stage_packages SET stage_name = ${l.stage.slice(0, 80)}, pipeline_name = ${l.pipe.slice(0, 80)} WHERE owner_id = ${ownerId} AND stage_id = ${pk.stageId}`;
+    pk.stageName = l.stage; pk.pipelineName = l.pipe;
+  }
+  return stale.length;
+}
+
 export async function stagePackageFor(sql: Sql, ownerId: string, stageId: string) {
   await ensureStagePackages(sql);
   const rows = await sql`SELECT * FROM stage_packages WHERE owner_id = ${ownerId} AND stage_id = ${s(stageId, 64)} AND deleted_at IS NULL AND active LIMIT 1`;

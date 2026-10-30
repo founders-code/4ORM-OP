@@ -155,11 +155,14 @@
       if (!it) return;
       html += '<div class="nav' + (it[0] === active ? ' on' : '') + '" data-action="nav-go" data-v="' + it[3] + '" data-path="' + it[4] + '" data-name="' + it[0] + '" draggable="' + drag + '" tabindex="0"><span class="grip" aria-hidden="true"></span><span class="nl">' + it[0] + '</span></div>';
     });
-    side.innerHTML = html;
+    /* 30 Oct 2026: a repaint with the same menu is skipped, so the menu does not flicker when a page loads. */
     var crumb = document.getElementById('pageCrumb');
-    if (crumb) crumb.textContent = active;
+    if (crumb && crumb.textContent !== active) crumb.textContent = active;
     var title = document.querySelector('title');
-    if (title) title.textContent = active + ' - 4orm Finance';
+    if (title && title.textContent !== active + ' - 4orm Finance') title.textContent = active + ' - 4orm Finance';
+    if (side.__ph === html && side.firstChild && side.firstChild === side.__phFirst) return;
+    side.innerHTML = html;
+    side.__ph = html; side.__phFirst = side.firstChild;
     bind();
   }
   function bind() {
