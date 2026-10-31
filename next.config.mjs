@@ -57,6 +57,7 @@ const nextConfig = {
       { source: '/space-detail', destination: '/control-room.html' },
       { source: '/zoom', destination: '/control-room.html' },
       { source: '/completed', destination: '/control-room.html' },
+      { source: '/development', destination: '/control-room.html' },
       { source: '/notes', destination: '/control-room.html' },
       { source: '/planner', destination: '/control-room.html' },
       { source: '/timeline', destination: '/control-room.html' },
