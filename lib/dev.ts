@@ -206,7 +206,7 @@ export async function addItem(sql: Sql, ownerId: string, projectId: string, body
 /**
  * Development feeds the rest of the site (31 Oct 2026).
  * Timeline: every gate and deliverable is a bar (or a key date) in the Planner's Development pipeline, one stream per layer.
- * Tasks: every deliverable that is open this week (started by Sunday, not passed) is a task in Today and This week,
+ * Tasks: every deliverable that starts within the next seven days and has not passed is a task in Today and This week,
  * area dev, and is closed there when its check passes. Keyed by the item's id, so a re-run updates instead of duplicating.
  * ownerId owns the plan; userId is the signed-in user whose Planner and tasks are written (the same person for Chad).
  */
@@ -219,8 +219,8 @@ export async function syncDevOut(sql: Sql, ownerId: string, userId: string, forc
       i.check_state, i.stage, i.archived, i.critical, p.name AS project, p.archived AS project_archived
     FROM dev_items i JOIN dev_projects p ON p.id = i.project_id WHERE i.owner_id = ${ownerId}`) as Array<Record<string, unknown>>;
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Vancouver', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-  const dow = new Date(`${today}T12:00:00Z`).getUTCDay();
-  const sunday = new Date(Date.parse(`${today}T12:00:00Z`) + ((7 - dow) % 7) * 86400000).toISOString().slice(0, 10);
+  /* The coming seven days, so on a weekend the week ahead is already in the tasks. */
+  const sunday = new Date(Date.parse(`${today}T12:00:00Z`) + 7 * 86400000).toISOString().slice(0, 10);
   let timeline = 0, tasks = 0;
   for (const r of rows) {
     const gone = !!r.archived || !!r.project_archived;
