@@ -263,7 +263,12 @@
     place(); box.classList.add('on'); load();
     if (push && location.pathname !== '/development') { try { history.pushState({}, '', '/development'); } catch (e) {} }
     try { document.title = 'Development - 4orm Finance'; var c = document.getElementById('pageCrumb'); if (c) c.textContent = 'Development'; } catch (e) {}
-    document.querySelectorAll('#side .nav').forEach(function (n) { n.classList.toggle('on', n.getAttribute('data-name') === 'Development'); });
+    var mark = function () {
+      if (!box || !box.classList.contains('on')) return;
+      document.querySelectorAll('#side .nav').forEach(function (n) { n.classList.toggle('on', n.getAttribute('data-name') === 'Development'); });
+      try { document.title = 'Development - 4orm Finance'; var c = document.getElementById('pageCrumb'); if (c && c.textContent !== 'Development') c.textContent = 'Development'; } catch (e) {}
+    };
+    mark(); setTimeout(mark, 400); setTimeout(mark, 1500);
   }
   function close() { if (box) { box.classList.remove('on'); S.open = ''; } }
   window.openDevelopment = function () { open(true); };
