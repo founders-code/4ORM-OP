@@ -12,6 +12,7 @@
     ['Spaces', '', '', 'work', '/spaces'],
     ['Pipeline', '', '', 'contacts', '/pipeline'],
     ['Stage emails', '', '', 'stagemail', '/pipeline?builder=1'],
+    ['Development', '', '', 'dev', '/development'],
     ['Library'],
     ['Links', '', '', 'links', '/links'],
     ['Notes', '', '', 'notes', '/notes'],
