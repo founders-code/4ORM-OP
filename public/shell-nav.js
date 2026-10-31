@@ -105,6 +105,9 @@
     };
   }
   function activeName() {
+    /* Development opens over the page it was called from; while it is open, it is the active page. */
+    var dv = document.getElementById('devRoomHost'), dvx = dv && dv.shadowRoot && dv.shadowRoot.querySelector('.dvx.on');
+    if (dvx || /^\/development\/?$/.test(location.pathname)) return 'Development';
     var v = (typeof STATE !== 'undefined' && STATE.desk) || 'room';
     if (v === 'people' && typeof STATE !== 'undefined' && STATE.peopleTab === 'lists') return 'Lists';
     return PAGE[v] || 'War Room';
