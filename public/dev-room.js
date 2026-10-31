@@ -221,13 +221,17 @@
   }
 
   function build() {
-    if (!document.getElementById('dvCss')) { var st = document.createElement('style'); st.id = 'dvCss'; st.textContent = CSS; document.head.appendChild(st); }
+    /* Its own shadow root, so the app's page styles (tabs, buttons, cards) cannot reach in. */
+    var host = document.createElement('div'); host.id = 'devRoomHost';
+    document.body.appendChild(host);
+    var root = host.attachShadow ? host.attachShadow({ mode: 'open' }) : host;
+    var st = document.createElement('style'); st.textContent = ':host{all:initial}' + CSS; root.appendChild(st);
     box = document.createElement('div'); box.className = 'dvx'; box.setAttribute('role', 'region'); box.setAttribute('aria-label', 'Development');
     box.innerHTML = '<div class="in"><div class="top"><h1>Development</h1><div class="tabs"><button type="button" data-tab="projects">Projects</button><button type="button" data-tab="board">Board</button><button type="button" data-tab="log">Log</button></div><span class="sp"></span>'
       + '<button type="button" class="btn" data-copyall>Copy plan for the team</button><button type="button" class="btn" data-printall>Print plan</button><button type="button" class="btn" data-paste>Paste plan</button><button type="button" class="btn pri" data-import>Import plan</button><input type="file" accept=".json,.txt,.md,application/json,text/plain" hidden data-file></div>'
       + '<div class="paste"><textarea placeholder="Paste the plan JSON from the planning chat"></textarea><div style="margin-top:8px;display:flex;gap:8px"><button type="button" class="btn pri" data-go>Import</button><button type="button" class="btn" data-paste>Cancel</button></div></div>'
       + '<div class="main"></div></div><aside class="dr" aria-label="Details"></aside><div class="toast" role="status"></div>';
-    document.body.appendChild(box);
+    root.appendChild(box);
     box.addEventListener('click', function (e) {
       var t = e.target;
       var tab = t.closest('[data-tab]'); if (tab) { S.tab = tab.getAttribute('data-tab'); paint(); return; }
