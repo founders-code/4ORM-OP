@@ -60,6 +60,11 @@
     + '.dvx .dr.on{transform:none}.dvx .dr h2{margin:0 0 4px;font-size:17px}.dvx .dr .x{float:right;font:inherit;font-weight:750;border:0;background:none;color:#4a5672;cursor:pointer}'
     + '.dvx .dr dl{display:grid;grid-template-columns:110px 1fr;gap:8px 12px;margin:14px 0}.dvx .dr dt{color:#7a86a0;font-weight:750;font-size:12px}.dvx .dr dd{margin:0}'
     + '.dvx .dr textarea{width:100%;min-height:90px;font:inherit;border:1px solid #dfe4ee;border-radius:9px;padding:8px;resize:vertical}'
+    + '.dvx .why{margin:0 0 12px;color:#26324d;line-height:1.55}.dvx ol.steps{margin:0 0 14px;padding:0;list-style:none;counter-reset:st}'
+    + '.dvx ol.steps li{counter-increment:st;border:1px solid #e8ecf3;border-radius:10px;padding:9px 10px;margin-bottom:6px}.dvx ol.steps li.ok{background:#f3fbf7;border-color:#cfeedd}'
+    + '.dvx ol.steps label{display:flex;gap:10px;cursor:pointer}.dvx ol.steps input{width:17px;height:17px;margin:2px 0 0;accent-color:#12a36a;flex:none}'
+    + '.dvx ol.steps b{display:block;font-weight:750}.dvx ol.steps b:before{content:counter(st) ". ";color:#7a86a0}.dvx ol.steps li.ok b{text-decoration:line-through;color:#4a5672}'
+    + '.dvx ol.steps em{display:block;font-style:normal;color:#4a5672;font-size:12.5px;margin-top:2px;line-height:1.5}.dvx .share{display:flex;gap:8px;margin:4px 0 16px;flex-wrap:wrap}'
     + '.dvx .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#101a33;color:#fff;border-radius:10px;padding:9px 14px;display:none;z-index:3;font-weight:650}.dvx .toast.on{display:block}'
     + '.dvx .paste{display:none;margin-bottom:14px}.dvx .paste.on{display:block}.dvx .paste textarea{width:100%;min-height:140px;font:12px/1.4 ui-monospace,Menlo,monospace;border:1px solid #dfe4ee;border-radius:9px;padding:8px}';
 
@@ -69,6 +74,40 @@
   function byId(id) { return ((S.data && S.data.items) || []).filter(function (i) { return i.id === id; })[0] || null; }
   function vanDate(ts) { return ts ? new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ts)) : ''; }
 
+  function stepsOf(it) { return Array.isArray(it.steps) ? it.steps : []; }
+  function stepsDone(it) { var d = it.step_done || {}; return stepsOf(it).filter(function (x, i) { return d[String(i)]; }).length; }
+  function stepCount(it) { var n = stepsOf(it).length; return n ? stepsDone(it) + ' of ' + n + ' steps' : ''; }
+  function gateName(code) { var g = ((S.data && S.data.items) || []).filter(function (i) { return i.kind === 'gate' && i.code === code && i.project_id === (proj() || {}).id; })[0]; return g ? g.code + ' ' + g.title + (g.due_date ? ', ' + dl(g.due_date) : '') : code; }
+  /* A plain brief anyone can read: what, why, the steps in order, what done looks like, what to keep. */
+  function brief(it) {
+    var p = proj() || {}, d = it.step_done || {}, L = [];
+    L.push(it.code + '  ' + it.title);
+    L.push('Project: ' + (p.name || ''));
+    if (it.kind !== 'gate' && it.gate) L.push('Feeds gate: ' + gateName(it.gate));
+    L.push('Owner: ' + (it.owner_name || 'unassigned') + '   Dates: ' + span(it.start_date, it.due_date));
+    if ((it.depends_on || []).length) L.push('Starts after: ' + it.depends_on.join(', '));
+    if (it.why) { L.push(''); L.push('Why this matters'); L.push(it.why); }
+    if (stepsOf(it).length) {
+      L.push(''); L.push('Steps');
+      stepsOf(it).forEach(function (x, i) { L.push((i + 1) + '. ' + (d[String(i)] ? '[done] ' : '') + x.t); if (x.how) L.push('   ' + x.how); });
+    }
+    L.push(''); L.push(it.kind === 'gate' ? 'This gate passes when' : 'Done when'); L.push(it.done_check || '');
+    if (it.kind === 'gate' && it.plan_note) { L.push(''); L.push('If it fails'); L.push(it.plan_note); }
+    if (it.evidence) { L.push(''); L.push('Keep this as the proof'); L.push(it.evidence); }
+    if (it.kind !== 'gate' && it.plan_note) { L.push(''); L.push('Note'); L.push(it.plan_note); }
+    return L.join('\n');
+  }
+  function copyText(t, msg) {
+    var done = function () { toast(msg); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, function () { fallbackCopy(t); done(); });
+    else { fallbackCopy(t); done(); }
+  }
+  function fallbackCopy(t) { var a = document.createElement('textarea'); a.value = t; a.style.position = 'fixed'; a.style.opacity = '0'; document.body.appendChild(a); a.select(); try { document.execCommand('copy'); } catch (e) {} a.remove(); }
+  function printText(title, t) {
+    var w = window.open('', '_blank'); if (!w) { toast('Allow pop-ups to print'); return; }
+    w.document.write('<!doctype html><title>' + esc(title) + '</title><body style="font:15px/1.6 Arial,Helvetica,sans-serif;color:#101a33;max-width:760px;margin:32px auto;padding:0 20px"><pre style="white-space:pre-wrap;font:inherit">' + esc(t) + '</pre></body>');
+    w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 300);
+  }
   function stageSel(it) {
     return '<select data-stage="' + esc(it.id) + '" class="s-' + esc(it.stage.split(' ')[0]) + '" aria-label="Stage for ' + esc(it.code) + '">'
       + STAGES.map(function (s) { return '<option value="' + s + '"' + (s === it.stage ? ' selected' : '') + '>' + s.charAt(0).toUpperCase() + s.slice(1) + '</option>'; }).join('') + '</select>';
@@ -99,7 +138,7 @@
       h += '<tr class="ly"><td colspan="7">' + esc(L || 'Other') + '</td></tr>';
       work.filter(function (i) { return i.layer === L; }).forEach(function (i) {
         var dd = daysTo(i.due_date), late = dd != null && dd < 0 && i.check_state !== 'pass';
-        h += '<tr class="it" data-open="' + esc(i.id) + '"><td class="c">' + esc(i.code) + '</td><td><b>' + esc(i.title) + (i.critical ? '<span class="crit">critical path</span>' : '') + '</b><small>' + esc(i.done_check).slice(0, 140) + '</small></td>'
+        h += '<tr class="it" data-open="' + esc(i.id) + '"><td class="c">' + esc(i.code) + '</td><td><b>' + esc(i.title) + (i.critical ? '<span class="crit">critical path</span>' : '') + '</b><small>' + (stepCount(i) ? esc(stepCount(i)) + ' · ' : '') + esc(i.done_check).slice(0, 140) + '</small></td>'
           + '<td' + (late ? ' class="late"' : '') + ' style="white-space:nowrap">' + esc(span(i.start_date, i.due_date)) + '</td><td>' + esc(i.owner_name) + '</td><td>' + stageSel(i) + '</td><td>' + checkSeg(i) + '</td>'
           + '<td class="ev' + (i.check_state === 'pass' ? ' ok' : '') + '">' + esc(i.evidence) + '</td></tr>';
       });
@@ -111,7 +150,7 @@
     return '<div class="board">' + STAGES.map(function (s) {
       var list = work.filter(function (i) { return i.stage === s; });
       return '<div class="col"><h4>' + esc(s) + '<span>' + list.length + '</span></h4>' + list.map(function (i) {
-        return '<div class="bc" data-open="' + esc(i.id) + '"><b>' + esc(i.code + ' ' + i.title) + '</b><small>' + esc(i.owner_name) + (i.due_date ? ' · ' + esc(dl(i.due_date)) : '') + '</small></div>';
+        return '<div class="bc" data-open="' + esc(i.id) + '"><b>' + esc(i.code + ' ' + i.title) + '</b><small>' + esc(i.owner_name) + (i.due_date ? ' · ' + esc(dl(i.due_date)) : '') + (stepCount(i) ? ' · ' + esc(stepCount(i)) : '') + '</small></div>';
       }).join('') + '</div>';
     }).join('') + '</div>';
   }
@@ -121,7 +160,7 @@
     return '<div class="card lg">' + rows.map(function (r) {
       var d = r.detail || {}, t = r.action === 'import' ? 'Plan imported: ' + (d.name || '') + ' (' + (d.gates || 0) + ' gates, ' + (d.deliverables || 0) + ' deliverables)'
         : r.action === 'add' ? r.code + ' added: ' + (d.title || '')
-        : r.code + ': ' + [d.stage ? 'stage ' + d.stage[0] + ' to ' + d.stage[1] : '', d.check ? 'check ' + d.check[0] + ' to ' + d.check[1] : '', d.note ? 'note edited' : '', d.archived != null ? (d.archived ? 'removed' : 'restored') : ''].filter(Boolean).join(', ');
+        : r.code + ': ' + [d.stage ? 'stage ' + d.stage[0] + ' to ' + d.stage[1] : '', d.check ? 'check ' + d.check[0] + ' to ' + d.check[1] : '', d.note ? 'note edited' : '', d.archived != null ? (d.archived ? 'removed' : 'restored') : '', d.step ? 'step ' + d.step[0] + (d.step[1] ? ' done' : ' reopened') : ''].filter(Boolean).join(', ');
       return '<div><em>' + esc(stamp(r.at)) + '</em>' + esc(t) + '</div>';
     }).join('') + '</div>';
   }
@@ -137,7 +176,14 @@
       + (it.gate && it.kind !== 'gate' ? '<dt>Feeds gate</dt><dd>' + esc(it.gate) + '</dd>' : '')
       + ((it.depends_on || []).length ? '<dt>Waits on</dt><dd>' + esc(it.depends_on.join(', ')) + '</dd>' : '')
       + (it.kind !== 'gate' && it.plan_note ? '<dt>Plan note</dt><dd>' + esc(it.plan_note) + '</dd>' : '')
-      + '</dl><h3>Your notes</h3><textarea data-note="' + esc(it.id) + '" placeholder="Notes, links, what happened">' + esc(it.note) + '</textarea>';
+      + '</dl>'
+      + (it.why ? '<h3>Why this matters</h3><p class="why">' + esc(it.why) + '</p>' : '')
+      + (stepsOf(it).length ? '<h3>Steps · ' + esc(stepCount(it)) + '</h3><ol class="steps">' + stepsOf(it).map(function (x, i) {
+          var on = (it.step_done || {})[String(i)];
+          return '<li class="' + (on ? 'ok' : '') + '"><label><input type="checkbox" data-step="' + esc(it.id) + '" data-ix="' + i + '"' + (on ? ' checked' : '') + '><span><b>' + esc(x.t) + '</b>' + (x.how ? '<em>' + esc(x.how) + '</em>' : '') + '</span></label></li>';
+        }).join('') + '</ol>' : '')
+      + '<div class="share"><button type="button" class="btn pri" data-copy="' + esc(it.id) + '">Copy brief</button><button type="button" class="btn" data-print="' + esc(it.id) + '">Print or save as PDF</button></div>'
+      + '<h3>Your notes</h3><textarea data-note="' + esc(it.id) + '" placeholder="Notes, links, what happened">' + esc(it.note) + '</textarea>';
     d.classList.add('on');
   }
   function paint() {
@@ -178,7 +224,7 @@
     if (!document.getElementById('dvCss')) { var st = document.createElement('style'); st.id = 'dvCss'; st.textContent = CSS; document.head.appendChild(st); }
     box = document.createElement('div'); box.className = 'dvx'; box.setAttribute('role', 'region'); box.setAttribute('aria-label', 'Development');
     box.innerHTML = '<div class="in"><div class="top"><h1>Development</h1><div class="tabs"><button type="button" data-tab="projects">Projects</button><button type="button" data-tab="board">Board</button><button type="button" data-tab="log">Log</button></div><span class="sp"></span>'
-      + '<button type="button" class="btn" data-paste>Paste plan</button><button type="button" class="btn pri" data-import>Import plan</button><input type="file" accept=".json,.txt,.md,application/json,text/plain" hidden data-file></div>'
+      + '<button type="button" class="btn" data-copyall>Copy plan for the team</button><button type="button" class="btn" data-printall>Print plan</button><button type="button" class="btn" data-paste>Paste plan</button><button type="button" class="btn pri" data-import>Import plan</button><input type="file" accept=".json,.txt,.md,application/json,text/plain" hidden data-file></div>'
       + '<div class="paste"><textarea placeholder="Paste the plan JSON from the planning chat"></textarea><div style="margin-top:8px;display:flex;gap:8px"><button type="button" class="btn pri" data-go>Import</button><button type="button" class="btn" data-paste>Cancel</button></div></div>'
       + '<div class="main"></div></div><aside class="dr" aria-label="Details"></aside><div class="toast" role="status"></div>';
     document.body.appendChild(box);
@@ -189,6 +235,10 @@
       var ck = t.closest('[data-check]'); if (ck) { var it = byId(ck.getAttribute('data-check')), v = ck.getAttribute('data-v'); if (it && it.check_state !== v) patch(it.id, { check: v }, it.code + (v === 'pass' ? ' passed' : v === 'fail' ? ' failed' : ' reopened')); return; }
       if (t.closest('select')) return;
       if (t.closest('[data-close]')) { S.open = ''; drawer(); return; }
+      var cp = t.closest('[data-copy]'); if (cp) { var ci = byId(cp.getAttribute('data-copy')); if (ci) copyText(brief(ci), 'Brief copied. Paste it into an email or message.'); return; }
+      var pr = t.closest('[data-print]'); if (pr) { var pi = byId(pr.getAttribute('data-print')); if (pi) printText(pi.code + ' ' + pi.title, brief(pi)); return; }
+      if (t.closest('[data-copyall]')) { var pp = proj(); if (pp) copyText(itemsOf(pp).map(brief).join('\n\n' + '-'.repeat(40) + '\n\n'), 'Whole plan copied for the team'); return; }
+      if (t.closest('[data-printall]')) { var p2 = proj(); if (p2) printText(p2.name, itemsOf(p2).map(brief).join('\n\n' + '-'.repeat(40) + '\n\n')); return; }
       if (t.closest('[data-import]')) { box.querySelector('[data-file]').click(); return; }
       if (t.closest('[data-paste]')) { box.querySelector('.paste').classList.toggle('on'); return; }
       if (t.closest('[data-go]')) { importText(box.querySelector('.paste textarea').value); return; }
@@ -197,6 +247,7 @@
     box.addEventListener('change', function (e) {
       var t = e.target;
       if (t.matches('[data-stage]')) { var it = byId(t.getAttribute('data-stage')); if (it) patch(it.id, { stage: t.value }, it.code + ' moved to ' + t.value); }
+      if (t.matches('[data-step]')) { patch(t.getAttribute('data-step'), { step: Number(t.getAttribute('data-ix')), stepDone: t.checked }, t.checked ? 'Step done' : 'Step reopened'); return; }
       if (t.matches('[data-note]')) patch(t.getAttribute('data-note'), { note: t.value }, 'Note saved');
       if (t.matches('[data-file]') && t.files && t.files[0]) { var f = t.files[0]; f.text().then(importText); t.value = ''; }
     });

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { addItem, importPlan, patchItem, readDev } from '@/lib/dev';
+import { addItem, importPlan, patchItem, readDev, syncDevOut } from '@/lib/dev';
 import { fail } from '@/lib/log';
 import { openBoard, sessionOwner } from '@/lib/session';
 
@@ -13,7 +13,7 @@ async function gate() {
   const ownerId = await sessionOwner(session);
   if (!ownerId) return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
   if (!session.sql) return { error: NextResponse.json({ error: 'No database' }, { status: 503 }) };
-  return { sql: session.sql, ownerId };
+  return { sql: session.sql, ownerId, userId: session.userId };
 }
 
 /** Development: projects, gates, deliverables and the change log. Chad only. */
@@ -21,6 +21,7 @@ export async function GET() {
   try {
     const g = await gate();
     if ('error' in g) return g.error;
+    await syncDevOut(g.sql, g.ownerId, g.userId).catch((err) => fail('dev_sync', err));
     return NextResponse.json(await readDev(g.sql, g.ownerId));
   } catch (err) {
     fail('dev_get', err);
@@ -40,7 +41,8 @@ export async function POST(req: Request) {
       if (!plan) return NextResponse.json({ error: 'That is not a plan file.' }, { status: 400 });
       const out = await importPlan(g.sql, g.ownerId, plan).catch((err: Error) => ({ error: err.message }));
       if ('error' in out) return NextResponse.json({ error: out.error }, { status: 400 });
-      return NextResponse.json({ ok: true, ...out, ...(await readDev(g.sql, g.ownerId)) });
+      const synced = await syncDevOut(g.sql, g.ownerId, g.userId, true).catch((err) => { fail('dev_sync', err); return null; });
+      return NextResponse.json({ ok: true, ...out, synced, ...(await readDev(g.sql, g.ownerId)) });
     }
     if (body.action === 'add') {
       const pid = String(body.projectId || '');
@@ -67,6 +69,7 @@ export async function PATCH(req: Request) {
     if (!ID.test(id)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     const ok = await patchItem(g.sql, g.ownerId, id, body || {});
     if (!ok) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (body && (body.check != null || body.stage != null || body.archived != null)) await syncDevOut(g.sql, g.ownerId, g.userId, true).catch((err) => fail('dev_sync', err));
     return NextResponse.json({ ok: true, ...(await readDev(g.sql, g.ownerId)) });
   } catch (err) {
     fail('dev_patch', err);
